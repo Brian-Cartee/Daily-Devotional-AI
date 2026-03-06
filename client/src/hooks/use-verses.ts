@@ -1,7 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { api, type GenerateRequestInput, type GenerateResponseResult, type VerseResponse } from "@shared/routes";
+import { api, type GenerateRequestInput, type GenerateResponseResult, type VerseResponse, type ChatRequest } from "@shared/routes";
 
-// Log zod errors for debugging
 function parseWithLogging<T>(schema: { parse: (data: unknown) => T }, data: unknown, label: string): T {
   try {
     return schema.parse(data);
@@ -30,20 +29,32 @@ export function useGenerateAI() {
   return useMutation({
     mutationFn: async (input: GenerateRequestInput) => {
       const validatedInput = api.ai.generate.input.parse(input);
-      
       const res = await fetch(api.ai.generate.path, {
         method: api.ai.generate.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validatedInput),
         credentials: "include",
       });
-      
-      if (!res.ok) {
-        throw new Error("Failed to generate AI response");
-      }
-      
+      if (!res.ok) throw new Error("Failed to generate AI response");
       const data = await res.json();
       return parseWithLogging(api.ai.generate.responses[200], data, "ai.generate");
+    },
+  });
+}
+
+export function useChatWithVerse() {
+  return useMutation({
+    mutationFn: async (input: ChatRequest) => {
+      const validatedInput = api.ai.chat.input.parse(input);
+      const res = await fetch(api.ai.chat.path, {
+        method: api.ai.chat.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validatedInput),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to get AI response");
+      const data = await res.json();
+      return parseWithLogging(api.ai.chat.responses[200], data, "ai.chat");
     },
   });
 }

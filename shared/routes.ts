@@ -14,6 +14,20 @@ export const errorSchemas = {
   }),
 };
 
+export const chatMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+});
+
+export const chatRequestSchema = z.object({
+  verseId: z.number(),
+  messages: z.array(chatMessageSchema),
+  question: z.string(),
+});
+
+export type ChatMessage = z.infer<typeof chatMessageSchema>;
+export type ChatRequest = z.infer<typeof chatRequestSchema>;
+
 export const api = {
   verses: {
     getDaily: {
@@ -30,6 +44,16 @@ export const api = {
       method: 'POST' as const,
       path: '/api/ai/generate' as const,
       input: generateRequestSchema,
+      responses: {
+        200: generateResponseSchema,
+        400: errorSchemas.validation,
+        500: errorSchemas.internal,
+      },
+    },
+    chat: {
+      method: 'POST' as const,
+      path: '/api/ai/chat' as const,
+      input: chatRequestSchema,
       responses: {
         200: generateResponseSchema,
         400: errorSchemas.validation,
