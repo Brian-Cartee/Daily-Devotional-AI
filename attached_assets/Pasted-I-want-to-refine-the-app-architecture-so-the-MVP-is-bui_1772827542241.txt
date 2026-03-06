@@ -1,0 +1,80 @@
+I want to refine the app architecture so the MVP is built around 3 primary experiences from the beginning.
+
+Please redesign the app structure around these three main sections:
+
+1. Daily Devotional
+Purpose:
+A quick daily spiritual touchpoint that is easy to use every day.
+
+Features:
+- Show today’s Bible verse
+- Show a short daily devotional / encouragement
+- Include a “Reflect with AI” button
+- Include a “Generate Prayer” button
+- Make it easy to share or forward the devotional to someone else
+- Allow optional follow-up interaction with AI on the same verse
+- Keep this section simple, warm, mobile-friendly, and habit-forming
+
+2. Understand the Bible
+Purpose:
+Help people who do not know where to start reading the Bible and want a more digestible, guided path through the most important chapters and themes.
+
+Features:
+- Create a guided Bible understanding path through key chapters in a logical order
+- This should NOT just be Genesis to Revelation
+- It should help users gain a strong understanding of the Bible in a more direct and digestible way
+- Each step or chapter should include:
+  - the scripture reference
+  - a short summary
+  - why it matters
+  - optional AI explanation / reflection
+  - optional prayer or application
+
+Examples of what this section should eventually support:
+- creation / fall
+- Abraham
+- Exodus
+- Psalms / wisdom
+- life of Jesus
+- teachings of Jesus
+- cross / resurrection
+- early church
+- major New Testament understanding
+
+3. Read the Bible
+Purpose:
+Provide the traditional reading experience for users who want to read the Bible from beginning to end.
+
+Features:
+- Start at Genesis
+- Continue all the way through Revelation
+- Allow chapter-by-chapter reading
+- Include optional AI help for:
+  - explanation
+  - context
+  - cross references
+  - practical application
+
+Important product direction:
+This app should feel like more than a static devotional app.
+It should become an interactive Bible study and spiritual growth tool.
+
+Home Screen:
+Please redesign the home screen so it clearly presents these three main options:
+- Daily Devotional
+- Understand the Bible
+- Read the Bible
+
+Design notes:
+- Keep the design clean, modern, beautiful, and mobile-friendly
+- Faith-based but not cheesy
+- Calm, elegant, and easy to use
+- Prioritize usability and clarity
+- Leave room for future features like saved favorites, streaks, notes, topic search, and deeper AI conversations
+
+Architecture notes:
+- Keep the current Google Sheet integration for daily verse/devotional content if helpful
+- Build the code structure so future phases can expand easily
+- Keep AI integrated directly in the app experience, not as an external redirect
+
+For now, focus on structuring the MVP around these 3 sections first.

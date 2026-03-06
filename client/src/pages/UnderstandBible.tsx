@@ -1,0 +1,328 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { NavBar } from "@/components/NavBar";
+import { Button } from "@/components/ui/button";
+import { GUIDED_PATH, type GuidedChapter } from "@/data/guidedPath";
+import { useQuery } from "@tanstack/react-query";
+
+const THEMES = Array.from(new Set(GUIDED_PATH.map((c) => c.theme)));
+
+function usePassageChat() {
+  return useMutation({
+    mutationFn: (data: { passageRef: string; passageText: string; messages: Array<{ role: string; content: string }> }) =>
+      apiRequest("POST", "/api/chat/passage", data).then((r) => r.json()),
+  });
+}
+
+function usePassageText(apiRef: string, enabled: boolean) {
+  const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
+  return useQuery<{ text: string; reference: string }>({
+    queryKey: [url],
+    enabled,
+  });
+}
+
+function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
+  const [open, setOpen] = useState(false);
+  const [aiMode, setAiMode] = useState<"reflect" | "pray" | "chat" | null>(null);
+  const [aiContent, setAiContent] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const textQuery = usePassageText(chapter.apiRef, open);
+  const passageChat = usePassageChat();
+
+  const generateAI = async (type: "reflect" | "pray") => {
+    setAiMode(type);
+    setAiContent("");
+    setIsAiLoading(true);
+    const passageText = textQuery.data?.text ?? chapter.summary;
+    try {
+      const res = await apiRequest("POST", "/api/chat/passage", {
+        passageRef: chapter.reference,
+        passageText,
+        messages: [
+          {
+            role: "user",
+            content: type === "reflect"
+              ? `Write a 2-paragraph devotional reflection on ${chapter.reference} that helps someone understand why this passage matters for their life today.`
+              : `Write a heartfelt prayer based on the themes of ${chapter.reference} — ${chapter.title}. Keep it personal, warm, and about 3 sentences.`,
+          },
+        ],
+      });
+      const data = await res.json();
+      setAiContent(data.content);
+    } catch {
+      setAiContent("Sorry, we couldn't generate a response right now. Please try again.");
+    }
+    setIsAiLoading(false);
+  };
+
+  const sendChat = async () => {
+    if (!chatInput.trim()) return;
+    const newMessages = [...chatMessages, { role: "user", content: chatInput }];
+    setChatMessages(newMessages);
+    setChatInput("");
+    setIsAiLoading(true);
+    const passageText = textQuery.data?.text ?? chapter.summary;
+    try {
+      const res = await apiRequest("POST", "/api/chat/passage", {
+        passageRef: chapter.reference,
+        passageText,
+        messages: newMessages,
+      });
+      const data = await res.json();
+      setChatMessages([...newMessages, { role: "assistant", content: data.content }]);
+    } catch {
+      setChatMessages([...newMessages, { role: "assistant", content: "Sorry, I couldn't respond. Please try again." }]);
+    }
+    setIsAiLoading(false);
+  };
+
+  return (
+    <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left p-5 flex items-start gap-4 hover:bg-white/30 dark:hover:bg-slate-700/20 transition-colors"
+        data-testid={`chapter-toggle-${chapter.id}`}
+      >
+        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+          {chapter.order}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-xs font-medium text-primary uppercase tracking-wide">{chapter.reference}</span>
+          </div>
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-base leading-tight">{chapter.title}</h3>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{chapter.summary}</p>
+        </div>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-1" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className="px-5 pb-5 space-y-4 border-t border-white/20 dark:border-slate-700/30 pt-4">
+              {/* Why it matters */}
+              <div className="bg-primary/5 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookMarked className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">Why it matters</span>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{chapter.whyItMatters}</p>
+              </div>
+
+              {/* Passage text */}
+              {textQuery.isLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading passage...
+                </div>
+              )}
+              {textQuery.data && (
+                <div className="bg-white/40 dark:bg-slate-700/30 rounded-xl p-4 max-h-56 overflow-y-auto">
+                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                    {textQuery.data.text}
+                  </p>
+                </div>
+              )}
+
+              {/* AI Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => generateAI("reflect")}
+                  disabled={isAiLoading}
+                  data-testid={`btn-reflect-${chapter.id}`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  AI Reflection
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => generateAI("pray")}
+                  disabled={isAiLoading}
+                  data-testid={`btn-pray-${chapter.id}`}
+                >
+                  <HeartHandshake className="w-3.5 h-3.5 mr-1.5" />
+                  Prayer
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full text-muted-foreground"
+                  onClick={() => { setAiMode("chat"); setChatMessages([]); }}
+                  disabled={isAiLoading}
+                >
+                  Ask a question
+                </Button>
+              </div>
+
+              {/* AI Loading */}
+              {isAiLoading && !aiContent && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Reflecting on {chapter.reference}...
+                </div>
+              )}
+
+              {/* AI Reflection/Prayer content */}
+              {aiContent && (aiMode === "reflect" || aiMode === "pray") && (
+                <div className="bg-white/50 dark:bg-slate-700/40 rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                      {aiMode === "reflect" ? "Reflection" : "Prayer"}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">
+                    {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
+                  </div>
+                </div>
+              )}
+
+              {/* Chat UI */}
+              {aiMode === "chat" && (
+                <div className="space-y-3">
+                  <div className="bg-white/40 dark:bg-slate-700/30 rounded-xl p-3 max-h-52 overflow-y-auto space-y-2">
+                    {chatMessages.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Ask anything about {chapter.reference}
+                      </p>
+                    )}
+                    {chatMessages.map((m, i) => (
+                      <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed ${
+                          m.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-white/60 dark:bg-slate-600/60 text-slate-700 dark:text-slate-200"
+                        }`}>
+                          {m.content}
+                        </div>
+                      </div>
+                    ))}
+                    {isAiLoading && (
+                      <div className="flex justify-start">
+                        <div className="bg-white/60 dark:bg-slate-600/60 px-3 py-2 rounded-xl">
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()}
+                      placeholder="Ask a question..."
+                      className="flex-1 bg-white/60 dark:bg-slate-700/60 border border-white/30 dark:border-slate-600/40 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                      disabled={isAiLoading}
+                    />
+                    <Button size="sm" onClick={sendChat} disabled={!chatInput.trim() || isAiLoading} className="rounded-xl">
+                      Send
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function UnderstandBible() {
+  const [activeTheme, setActiveTheme] = useState<string | null>(null);
+
+  const filtered = activeTheme
+    ? GUIDED_PATH.filter((c) => c.theme === activeTheme)
+    : GUIDED_PATH;
+
+  return (
+    <>
+      <NavBar showBack />
+      <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-background via-background to-accent/10 pt-20 pb-16 px-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <motion.header
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-10"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-sm font-medium mb-4">
+              <Compass className="w-4 h-4" />
+              Guided Path
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-foreground mb-3">
+              Understand the Bible
+            </h1>
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
+              18 key passages in a logical order — from Creation to the New Jerusalem. Each one includes a summary, why it matters, and optional AI reflection.
+            </p>
+          </motion.header>
+
+          {/* Theme filter pills */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap gap-2 justify-center mb-8"
+          >
+            <button
+              onClick={() => setActiveTheme(null)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                activeTheme === null
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"
+              }`}
+            >
+              All
+            </button>
+            {THEMES.map((theme) => (
+              <button
+                key={theme}
+                onClick={() => setActiveTheme(activeTheme === theme ? null : theme)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  activeTheme === theme
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"
+                }`}
+              >
+                {theme}
+              </button>
+            ))}
+          </motion.div>
+
+          {/* Chapter cards */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-3"
+          >
+            {filtered.map((chapter) => (
+              <ChapterCard key={chapter.id} chapter={chapter} />
+            ))}
+          </motion.div>
+        </div>
+      </main>
+    </>
+  );
+}

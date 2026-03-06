@@ -180,6 +180,52 @@ Answer all questions in the context of this scripture. Be concise but insightful
     }
   });
 
+  // Bible chapter text proxy (uses bible-api.com)
+  app.get("/api/bible", async (req, res) => {
+    const ref = req.query.ref as string;
+    if (!ref) return res.status(400).json({ message: "ref query param required" });
+    try {
+      const url = `https://bible-api.com/${encodeURIComponent(ref)}?translation=kjv`;
+      const resp = await fetch(url);
+      if (!resp.ok) return res.status(404).json({ message: "Passage not found" });
+      const data: any = await resp.json();
+      const text: string = (data.verses as Array<{ verse: number; text: string }>)
+        .map((v) => `[${v.verse}] ${v.text.trim()}`)
+        .join("\n");
+      res.json({ reference: data.reference, text });
+    } catch (err) {
+      console.error("Bible API error:", err);
+      res.status(500).json({ message: "Could not fetch passage" });
+    }
+  });
+
+  // AI chat for arbitrary passage (used by Understand and Read pages)
+  app.post("/api/chat/passage", async (req, res) => {
+    const { passageRef, passageText, messages } = req.body;
+    if (!passageRef || !passageText || !Array.isArray(messages)) {
+      return res.status(400).json({ message: "passageRef, passageText, and messages are required" });
+    }
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible to someone unfamiliar with the Bible.`,
+          },
+          ...messages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ],
+        max_tokens: 600,
+        temperature: 0.7,
+      });
+      const content = completion.choices[0]?.message?.content ?? "I couldn't generate a response.";
+      res.json({ content });
+    } catch (err) {
+      console.error("Passage AI error:", err);
+      res.status(500).json({ message: "AI generation failed" });
+    }
+  });
+
   // Subscribe to daily email
   app.post("/api/subscribe", async (req, res) => {
     try {
