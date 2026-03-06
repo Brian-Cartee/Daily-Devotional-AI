@@ -47,32 +47,32 @@ const sections = [
 export default function LandingHome() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero section with atmospheric image */}
-      <div className="relative h-[52vh] min-h-[340px] max-h-[520px] overflow-hidden">
+      {/* Hero section */}
+      <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
-          src="/hero-landing.png"
-          alt="Mountain landscape at golden hour"
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          src="/hero-landing.jpg"
+          alt="Sunlit street in Athens"
+          className="absolute inset-0 w-full h-full object-cover object-center scale-[1.02]"
         />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 hero-overlay" />
+        {/* Multi-layer overlay for bright image readability */}
+        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(15,10,35,0.42) 0%, rgba(15,10,35,0.30) 35%, rgba(15,10,35,0.72) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         {/* Hero text */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-5 pt-4">
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-white/80 text-xs font-semibold uppercase tracking-widest mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-xs font-semibold uppercase tracking-widest mb-5">
               Daily Bread
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight mb-4 text-balance">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight mb-4 text-balance drop-shadow-lg">
               A better way to<br />
-              <span className="text-amber-300">engage the Bible</span>
+              <span className="text-amber-200">engage the Bible</span>
             </h1>
-            <p className="text-white/65 text-base sm:text-lg max-w-sm mx-auto leading-relaxed">
+            <p className="text-white/70 text-base sm:text-lg max-w-sm mx-auto leading-relaxed drop-shadow">
               Daily devotionals. Guided paths. Full Bible reading. Powered by AI.
             </p>
           </motion.div>
