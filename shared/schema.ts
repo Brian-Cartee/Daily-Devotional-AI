@@ -7,6 +7,7 @@ export const verses = pgTable("verses", {
   reference: text("reference").notNull(),
   text: text("text").notNull(),
   encouragement: text("encouragement").notNull(),
+  reflectionPrompt: text("reflection_prompt").default(""),
   date: text("date").notNull().unique(), // e.g. "2023-10-01"
 });
 
