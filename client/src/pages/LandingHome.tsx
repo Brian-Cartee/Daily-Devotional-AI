@@ -50,12 +50,11 @@ export default function LandingHome() {
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
-          src="/hero-landing.jpg"
-          alt="Sunlit street in Athens"
-          className="absolute inset-0 w-full h-full object-cover object-center scale-[1.02]"
+          src="/hero-landing.png"
+          alt="Mountain peaks at blue hour"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        {/* Multi-layer overlay for bright image readability */}
-        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(15,10,35,0.42) 0%, rgba(15,10,35,0.30) 35%, rgba(15,10,35,0.72) 100%)"}} />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         {/* Hero text */}
@@ -68,11 +67,11 @@ export default function LandingHome() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-xs font-semibold uppercase tracking-widest mb-5">
               Daily Bread
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight mb-4 text-balance drop-shadow-lg">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight mb-4 text-balance">
               A better way to<br />
-              <span className="text-amber-200">engage the Bible</span>
+              <span className="text-amber-300">engage the Bible</span>
             </h1>
-            <p className="text-white/70 text-base sm:text-lg max-w-sm mx-auto leading-relaxed drop-shadow">
+            <p className="text-white/65 text-base sm:text-lg max-w-sm mx-auto leading-relaxed">
               Daily devotionals. Guided paths. Full Bible reading. Powered by AI.
             </p>
           </motion.div>
