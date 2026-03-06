@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 export const verses = pgTable("verses", {
   id: serial("id").primaryKey(),
@@ -25,3 +26,23 @@ export const generateResponseSchema = z.object({
   content: z.string(),
 });
 export type GenerateResponse = z.infer<typeof generateResponseSchema>;
+
+export const subscribers = pgTable("subscribers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  subscribedAt: timestamp("subscribed_at").default(sql`now()`),
+  active: boolean("active").default(true).notNull(),
+});
+
+export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
+  id: true,
+  subscribedAt: true,
+  active: true,
+}).extend({
+  email: z.string().email("Please enter a valid email address"),
+  name: z.string().optional(),
+});
+
+export type Subscriber = typeof subscribers.$inferSelect;
+export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;

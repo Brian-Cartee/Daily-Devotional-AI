@@ -5,6 +5,7 @@ import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
 import { AILoadingState } from "@/components/AILoadingState";
 import { AIResponseCard } from "@/components/AIResponseCard";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
+import { EmailSubscribe } from "@/components/EmailSubscribe";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -206,6 +207,11 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Email subscription */}
+        <motion.section variants={itemVariants} className="mt-12">
+          <EmailSubscribe />
+        </motion.section>
 
         <div className="pb-16" />
       </motion.div>
