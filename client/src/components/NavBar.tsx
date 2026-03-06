@@ -15,9 +15,9 @@ export function NavBar() {
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-2">
         <Link href="/" className="flex items-center gap-2 mr-auto group">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
-            <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">DB</span>
+            <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
           </div>
-          <span className="font-bold text-sm text-foreground hidden sm:inline tracking-tight">Daily Bread</span>
+          <span className="font-bold text-sm text-foreground hidden sm:inline tracking-tight">Shepard Path</span>
         </Link>
 
         <div className="flex items-center gap-0.5">

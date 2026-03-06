@@ -76,7 +76,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
           <tr>
             <td style="text-align:center;padding-bottom:28px;">
               <span style="display:inline-block;background-color:#e8e3d8;color:#7c6d5a;font-family:sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:6px 16px;border-radius:20px;">
-                Daily Bread
+                Shepard Path
               </span>
               <p style="margin:12px 0 0;font-family:sans-serif;font-size:13px;color:#9e9085;letter-spacing:1px;text-transform:uppercase;">
                 ${formattedDate}
@@ -121,7 +121,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
           <tr>
             <td style="text-align:center;padding-top:24px;">
               <p style="font-family:sans-serif;font-size:12px;color:#b5a898;margin:0;">
-                You're receiving this because you subscribed to Daily Bread.
+                You're receiving this because you subscribed to Shepard Path.
               </p>
               <p style="font-family:sans-serif;font-size:12px;color:#b5a898;margin:6px 0 0;">
                 <a href="${data.appUrl}/unsubscribe?email={{email}}" style="color:#b5a898;">Unsubscribe</a>
@@ -141,7 +141,7 @@ export function buildDailyVerseEmailText(data: DailyVerseEmailData): string {
   const formattedDate = new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
-  return `Daily Bread — ${formattedDate}
+  return `Shepard Path — ${formattedDate}
 
 "${data.text}"
 — ${data.reference}
