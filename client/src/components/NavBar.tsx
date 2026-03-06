@@ -3,7 +3,7 @@ import { BookOpen, Sun, Compass } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
-  { href: "/understand", label: "Understand", icon: Compass },
+  { href: "/understand", label: "Journey", icon: Compass },
   { href: "/read", label: "Read", icon: BookOpen },
 ];
 

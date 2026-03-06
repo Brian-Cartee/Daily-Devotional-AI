@@ -274,10 +274,10 @@ export default function UnderstandBible() {
                 Guided Path
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight text-balance">
-                Understand the Bible
+                Bible Journey
               </h1>
               <p className="text-white/60 text-xs mt-1.5 max-w-xs">
-                18 key passages from Creation to the New Jerusalem
+                A guided path through the most important passages of Scripture
               </p>
             </motion.div>
           </div>

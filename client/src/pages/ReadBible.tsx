@@ -131,10 +131,10 @@ export default function ReadBible() {
                         key={b.name}
                         onClick={() => handleBookSelect(b.name)}
                         data-testid={`book-${b.short}`}
-                        className="bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/30 rounded-xl px-3 py-3 text-left hover:bg-white/80 dark:hover:bg-slate-700/60 hover:shadow-sm transition-all"
+                        className="bg-card border border-border rounded-xl px-3 py-3 text-left hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm transition-all group"
                       >
-                        <p className="text-xs font-semibold text-foreground leading-tight">{b.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{b.chapters} ch</p>
+                        <p className="text-[13px] font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">{b.name}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{b.chapters} ch</p>
                       </button>
                     ))}
                   </div>
@@ -147,7 +147,7 @@ export default function ReadBible() {
               {/* Main reading pane */}
               <div className="flex-1 flex flex-col">
                 {/* Chapter navigation bar */}
-                <div className="sticky top-14 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-white/20 dark:border-slate-700/30 px-4 py-3 flex items-center gap-3">
+                <div className="sticky top-14 z-30 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-3 flex items-center gap-3">
                   <button
                     onClick={() => setSelectedBook(null)}
                     className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1 transition-colors"
@@ -193,7 +193,7 @@ export default function ReadBible() {
                 </div>
 
                 {/* Chapter text */}
-                <div className="flex-1 px-5 sm:px-8 py-8 max-w-2xl mx-auto w-full">
+                <div className="flex-1 px-6 sm:px-10 py-10 max-w-xl mx-auto w-full">
                   {chapterText.isLoading && (
                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
                       <Loader2 className="w-6 h-6 animate-spin" />
@@ -215,29 +215,54 @@ export default function ReadBible() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.35 }}
                     >
-                      <h2 className="text-lg font-serif font-semibold text-foreground mb-6">
-                        {chapterText.data.reference}
-                      </h2>
-                      <div className="font-serif text-base sm:text-lg text-slate-700 dark:text-slate-300 leading-[1.9] whitespace-pre-line">
-                        {chapterText.data.text}
+                      {/* Chapter heading */}
+                      <div className="mb-8">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-1">
+                          {selectedBook}
+                        </p>
+                        <h2 className="reading-chapter-title text-foreground">
+                          Chapter {selectedChapter}
+                        </h2>
+                        <div className="h-px bg-border mt-4" />
+                      </div>
+
+                      {/* Verse text — flowing paragraphs with styled verse numbers */}
+                      <div className="reading-text text-foreground/85">
+                        {chapterText.data.text
+                          .split('\n')
+                          .filter(line => line.trim())
+                          .map((line, i) => {
+                            const match = line.match(/^\[(\d+)\] (.*)/);
+                            if (!match) return <span key={i}>{line} </span>;
+                            const [, num, text] = match;
+                            return (
+                              <span key={i}>
+                                <span className="reading-verse-num">{num}</span>
+                                {text}{' '}
+                              </span>
+                            );
+                          })}
                       </div>
 
                       {/* Chapter nav at bottom */}
-                      <div className="flex justify-between mt-12 pt-6 border-t border-border/40">
+                      <div className="flex justify-between mt-14 pt-6 border-t border-border/40">
                         <Button
                           variant="ghost"
                           onClick={() => navigateChapter(-1)}
                           disabled={selectedChapter <= 1}
-                          className="rounded-full gap-2"
+                          className="rounded-xl gap-2 font-semibold text-sm"
                         >
                           <ChevronLeft className="w-4 h-4" />
                           Previous
                         </Button>
+                        <div className="text-xs text-muted-foreground self-center font-medium">
+                          {selectedBook} · Ch. {selectedChapter}
+                        </div>
                         <Button
                           variant="ghost"
                           onClick={() => navigateChapter(1)}
                           disabled={!book || selectedChapter >= book.chapters}
-                          className="rounded-full gap-2"
+                          className="rounded-xl gap-2 font-semibold text-sm"
                         >
                           Next
                           <ChevronRight className="w-4 h-4" />
