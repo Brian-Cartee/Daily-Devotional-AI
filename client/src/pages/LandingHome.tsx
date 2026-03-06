@@ -50,10 +50,10 @@ export default function LandingHome() {
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
-          src="/hero-landing.webp"
+          src="/hero-landing.png"
           alt="Autumn foliage over Washington with mountains"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "center 32%" }}
+          style={{ objectPosition: "center 40%" }}
         />
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.38) 0%, rgba(10,8,24,0.28) 40%, rgba(10,8,24,0.78) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
