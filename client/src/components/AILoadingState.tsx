@@ -6,45 +6,33 @@ interface AILoadingStateProps {
 }
 
 export function AILoadingState({ type }: AILoadingStateProps) {
-  const loadingText = type === "reflection" 
-    ? "Gathering thoughts for your reflection..." 
+  const loadingText = type === "reflection"
+    ? "Thinking through your reflection..."
     : "Writing a personalized prayer...";
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      className="p-8 mt-8 text-center rounded-2xl glass-card relative overflow-hidden"
+      className="mt-6 p-8 text-center rounded-2xl bg-card border border-border relative overflow-hidden"
     >
-      <div className="absolute inset-0 animate-shimmer opacity-30 pointer-events-none" />
-      
-      <div className="flex flex-col items-center justify-center space-y-4 relative z-10">
+      <div className="absolute inset-0 animate-shimmer opacity-20 pointer-events-none" />
+
+      <div className="flex flex-col items-center justify-center gap-4 relative z-10">
         <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, 5, -5, 0],
-            opacity: [0.5, 1, 0.5] 
-          }}
+          animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Sparkles className="w-8 h-8 text-primary/70" />
+          <Sparkles className="w-6 h-6 text-primary/60" />
         </motion.div>
-        
-        <p className="text-muted-foreground font-medium animate-pulse">
-          {loadingText}
-        </p>
-        
-        <div className="w-full max-w-sm space-y-3 mt-4">
-          <div className="h-3 bg-muted rounded-full w-full overflow-hidden relative">
-            <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-          </div>
-          <div className="h-3 bg-muted rounded-full w-4/5 mx-auto overflow-hidden relative">
-            <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-          </div>
-          <div className="h-3 bg-muted rounded-full w-5/6 mx-auto overflow-hidden relative">
-            <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-          </div>
+
+        <p className="text-muted-foreground text-sm font-medium animate-pulse">{loadingText}</p>
+
+        <div className="w-full max-w-xs space-y-2">
+          <div className="h-2.5 bg-muted rounded-full w-full" />
+          <div className="h-2.5 bg-muted rounded-full w-4/5 mx-auto" />
+          <div className="h-2.5 bg-muted rounded-full w-5/6 mx-auto" />
         </div>
       </div>
     </motion.div>

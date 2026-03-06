@@ -98,8 +98,8 @@ export default function ReadBible() {
 
   return (
     <>
-      <NavBar showBack />
-      <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-background via-background to-accent/10 pt-14">
+      <NavBar />
+      <main className="min-h-screen bg-background pt-14">
         <div className="max-w-4xl mx-auto">
           {!selectedBook ? (
             // Book picker

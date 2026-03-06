@@ -14,7 +14,6 @@ export function EmailSubscribe() {
   const [message, setMessage] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -29,7 +28,6 @@ export function EmailSubscribe() {
     e.preventDefault();
     if (!email.trim()) return;
     setStatus("loading");
-
     try {
       const res = await fetch("/api/subscribe", {
         method: "POST",
@@ -38,7 +36,6 @@ export function EmailSubscribe() {
         credentials: "include",
       });
       const data = await res.json();
-
       if (res.ok || res.status === 200) {
         setStatus("success");
         setMessage(data.message || "You're subscribed!");
@@ -53,19 +50,17 @@ export function EmailSubscribe() {
   };
 
   return (
-    <div ref={panelRef} className="fixed top-4 right-4 z-50">
-      {/* Trigger button */}
+    <div ref={panelRef} className="fixed top-3 right-4 z-50">
       <button
         data-testid="button-subscribe-toggle"
         onClick={() => setOpen((v) => !v)}
         aria-label="Subscribe to daily verse emails"
-        className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-white/30 dark:border-slate-600/40 shadow-md rounded-full px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:shadow-lg transition-shadow"
+        className="flex items-center gap-2 bg-card/90 backdrop-blur-md border border-border shadow-md rounded-full pl-3 pr-4 py-2 text-[13px] font-semibold text-foreground hover:shadow-lg transition-shadow"
       >
-        <Mail className="w-4 h-4 text-primary" />
+        <Mail className="w-3.5 h-3.5 text-primary" />
         <span className="hidden sm:inline">Daily email</span>
       </button>
 
-      {/* Dropdown panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -73,7 +68,7 @@ export function EmailSubscribe() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.18 }}
-            className="absolute top-12 right-0 w-80 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-white/30 dark:border-slate-600/40 shadow-xl rounded-2xl p-5"
+            className="absolute top-11 right-0 w-80 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-2xl p-5"
           >
             <button
               onClick={() => setOpen(false)}
@@ -90,12 +85,12 @@ export function EmailSubscribe() {
                 className="flex flex-col items-center gap-3 py-2 text-center"
               >
                 <CheckCircle className="w-8 h-8 text-green-500" />
-                <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
+                <p className="text-sm text-foreground font-medium">{message}</p>
               </motion.div>
             ) : (
               <>
                 <div className="mb-4">
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
+                  <h3 className="font-bold text-foreground text-sm tracking-tight">
                     Get today's verse by email
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -110,7 +105,7 @@ export function EmailSubscribe() {
                     placeholder="Your first name (optional)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="bg-white/60 dark:bg-slate-700/60 border-slate-200 dark:border-slate-600 rounded-xl text-sm"
+                    className="text-sm rounded-xl"
                     disabled={status === "loading"}
                   />
                   <Input
@@ -120,7 +115,7 @@ export function EmailSubscribe() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="bg-white/60 dark:bg-slate-700/60 border-slate-200 dark:border-slate-600 rounded-xl text-sm"
+                    className="text-sm rounded-xl"
                     disabled={status === "loading"}
                   />
                   {status === "error" && (
@@ -130,7 +125,7 @@ export function EmailSubscribe() {
                     data-testid="button-subscribe-submit"
                     type="submit"
                     disabled={!email.trim() || status === "loading"}
-                    className="w-full rounded-xl"
+                    className="w-full rounded-xl font-semibold"
                   >
                     {status === "loading" ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

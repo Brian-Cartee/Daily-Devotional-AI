@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Copy, Check } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check } from "lucide-react";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
 import { AILoadingState } from "@/components/AILoadingState";
 import { AIResponseCard } from "@/components/AIResponseCard";
@@ -33,11 +33,7 @@ export default function Devotional() {
     if (!verse) return;
     const text = `"${verse.text}" — ${verse.reference}\n\n${verse.encouragement}`;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: `Daily Verse: ${verse.reference}`, text });
-      } catch {
-        // user cancelled
-      }
+      try { await navigator.share({ title: `Daily Verse: ${verse.reference}`, text }); } catch { }
     } else {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -45,25 +41,13 @@ export default function Devotional() {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.18, delayChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
-  };
-
   if (isVerseLoading) {
     return (
       <>
-        <NavBar showBack />
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-accent/20 pt-14">
-          <Loader2 className="w-8 h-8 animate-spin text-primary/50 mb-4" />
-          <p className="text-muted-foreground font-serif italic text-lg animate-pulse">
-            Opening today's verse...
-          </p>
+        <NavBar />
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background pt-14">
+          <Loader2 className="w-6 h-6 animate-spin text-primary/40 mb-4" />
+          <p className="text-muted-foreground text-sm font-medium">Loading today's verse...</p>
         </div>
       </>
     );
@@ -72,15 +56,13 @@ export default function Devotional() {
   if (verseError || !verse) {
     return (
       <>
-        <NavBar showBack />
+        <NavBar />
         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background pt-14">
-          <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-white/20 p-10 rounded-3xl text-center max-w-md">
-            <HeartHandshake className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h2 className="text-2xl font-serif font-semibold text-foreground mb-2">Just a moment</h2>
-            <p className="text-muted-foreground">
-              We couldn't load today's verse. Please take a breath and try refreshing.
-            </p>
-            <Button variant="outline" className="mt-6 rounded-full px-8" onClick={() => window.location.reload()}>
+          <div className="bg-card border border-border p-10 rounded-2xl text-center max-w-md shadow-sm">
+            <HeartHandshake className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-foreground mb-2">Just a moment</h2>
+            <p className="text-muted-foreground text-sm">We couldn't load today's verse. Take a breath and try refreshing.</p>
+            <Button variant="outline" className="mt-6 rounded-full px-8 font-semibold" onClick={() => window.location.reload()}>
               Refresh
             </Button>
           </div>
@@ -91,62 +73,73 @@ export default function Devotional() {
 
   const reflectionReady = generateAI.isSuccess && generateAI.data && activeType === "reflection" && !generateAI.isPending;
 
+  const dateStr = new Date(verse.date + "T12:00:00").toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric"
+  });
+
   return (
     <>
-      <NavBar showBack />
-      <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-background via-background to-accent/10 py-12 px-4 sm:px-6 lg:px-8 pt-20">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="max-w-2xl mx-auto"
-        >
-          {/* Header */}
-          <motion.header variants={itemVariants} className="text-center mb-12">
-            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-sm font-medium tracking-wide mb-4">
-              Daily Devotional
-            </div>
-            <p className="text-sm font-medium text-muted-foreground tracking-widest uppercase">
-              {new Date(verse.date + "T12:00:00").toLocaleDateString("en-US", {
-                weekday: "long", month: "long", day: "numeric"
-              })}
-            </p>
-          </motion.header>
+      <NavBar />
 
-          {/* Verse */}
-          <motion.section variants={itemVariants} className="text-center mb-10 relative">
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 text-9xl text-primary/5 font-serif leading-none select-none pointer-events-none">
-              "
-            </span>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif text-slate-800 dark:text-slate-100 leading-snug mb-7 text-balance">
-              {verse.text}
-            </h1>
-            <div className="flex items-center justify-center gap-4">
-              <div className="h-px w-10 bg-border" />
-              <p className="font-semibold text-base text-primary tracking-wide">{verse.reference}</p>
-              <div className="h-px w-10 bg-border" />
+      {/* Hero image section */}
+      <div className="relative h-[46vh] min-h-[300px] max-h-[460px] overflow-hidden pt-14">
+        <img
+          src="/hero-devotional.png"
+          alt="Morning devotional"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 hero-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+
+        <div className="relative z-10 flex flex-col items-center justify-end h-full pb-8 px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-white/70 text-[11px] font-bold uppercase tracking-widest mb-3">
+              Daily Devotional · {dateStr}
             </div>
-          </motion.section>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main className="max-w-2xl mx-auto px-5 pb-20 -mt-2 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Verse card */}
+          <div className="bg-card border border-border rounded-2xl p-7 mb-4 shadow-sm">
+            <blockquote className="verse-text text-2xl sm:text-3xl text-foreground leading-relaxed mb-6 text-balance">
+              "{verse.text}"
+            </blockquote>
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-sm font-bold text-primary tracking-wide">{verse.reference}</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </div>
 
           {/* Encouragement */}
-          <motion.section variants={itemVariants} className="mb-10">
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm rounded-2xl p-6 border border-white/20 text-center">
-              <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                {verse.encouragement}
-              </p>
-            </div>
-          </motion.section>
+          <div className="bg-muted/60 border border-border/50 rounded-2xl px-6 py-5 mb-6">
+            <p className="text-[15px] text-foreground/80 leading-relaxed font-medium">
+              {verse.encouragement}
+            </p>
+          </div>
 
           {/* Action buttons */}
-          <motion.section variants={itemVariants} className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-wrap gap-2.5 mb-8">
             <Button
               data-testid="button-reflect-ai"
               size="lg"
               onClick={handleReflectWithAI}
               disabled={generateAI.isPending}
-              className="rounded-full px-8 text-base shadow-lg"
+              className="rounded-xl px-6 font-bold text-sm flex-1 sm:flex-none"
             >
-              <Sparkles className="w-5 h-5 mr-2" />
+              <Sparkles className="w-4 h-4 mr-2" />
               Reflect with AI
             </Button>
 
@@ -156,9 +149,9 @@ export default function Devotional() {
               variant="outline"
               onClick={() => handleGenerate("prayer")}
               disabled={generateAI.isPending}
-              className="rounded-full px-8 text-base border-2 bg-white/50 dark:bg-transparent backdrop-blur-sm"
+              className="rounded-xl px-6 font-bold text-sm flex-1 sm:flex-none"
             >
-              <HeartHandshake className="w-5 h-5 mr-2" />
+              <HeartHandshake className="w-4 h-4 mr-2" />
               Generate Prayer
             </Button>
 
@@ -167,12 +160,12 @@ export default function Devotional() {
               size="lg"
               variant="ghost"
               onClick={handleShare}
-              className="rounded-full px-6 text-base text-muted-foreground hover:text-foreground"
+              className="rounded-xl px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
             >
-              {copied ? <Check className="w-5 h-5 mr-2 text-green-500" /> : <Share2 className="w-5 h-5 mr-2" />}
+              {copied ? <Check className="w-4 h-4 mr-1.5 text-green-500" /> : <Share2 className="w-4 h-4 mr-1.5" />}
               {copied ? "Copied!" : "Share"}
             </Button>
-          </motion.section>
+          </div>
 
           {/* AI Response Area */}
           <AnimatePresence mode="wait">
@@ -181,11 +174,7 @@ export default function Devotional() {
             )}
 
             {generateAI.isSuccess && generateAI.data && activeType === "prayer" && !generateAI.isPending && (
-              <AIResponseCard
-                key="prayer-response"
-                type="prayer"
-                content={generateAI.data.content}
-              />
+              <AIResponseCard key="prayer-response" type="prayer" content={generateAI.data.content} />
             )}
 
             {reflectionReady && studyMode && (
@@ -195,29 +184,24 @@ export default function Devotional() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
-                className="mt-8"
+                className="space-y-4"
               >
-                <div className="bg-white/50 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-white/20 p-6 relative">
-                  <div className="absolute top-0 left-0 w-1.5 h-full rounded-l-2xl bg-gradient-to-b from-primary/40 to-primary/10" />
-                  <div className="flex items-center gap-2 mb-4 pl-1">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Sparkles className="w-4 h-4 text-primary" />
+                <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary/60 rounded-l-2xl" />
+                  <div className="flex items-center gap-2.5 mb-4 pl-2">
+                    <div className="p-1.5 bg-primary/10 rounded-lg">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
                     </div>
-                    <h3 className="font-semibold font-serif text-slate-800 dark:text-slate-100">
-                      Guided Reflection
-                    </h3>
+                    <h3 className="font-bold text-sm text-foreground tracking-tight">Guided Reflection</h3>
                   </div>
-                  <div className="pl-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300 space-y-3">
+                  <div className="pl-2 text-[14px] leading-relaxed text-foreground/75 space-y-3">
                     {generateAI.data!.content.split("\n").map((para, i) =>
                       para.trim() ? <p key={i}>{para}</p> : null
                     )}
                   </div>
                 </div>
 
-                <BibleStudyChat
-                  verseId={verse.id}
-                  initialReflection={generateAI.data!.content}
-                />
+                <BibleStudyChat verseId={verse.id} initialReflection={generateAI.data!.content} />
               </motion.div>
             )}
 
@@ -226,14 +210,12 @@ export default function Devotional() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="mt-8 p-6 bg-destructive/10 text-destructive rounded-2xl text-center border border-destructive/20"
+                className="p-5 bg-destructive/8 text-destructive rounded-2xl text-center border border-destructive/15 text-sm"
               >
-                <p>We couldn't generate that response right now. Please try again.</p>
+                We couldn't generate that response right now. Please try again.
               </motion.div>
             )}
           </AnimatePresence>
-
-          <div className="pb-16" />
         </motion.div>
       </main>
     </>

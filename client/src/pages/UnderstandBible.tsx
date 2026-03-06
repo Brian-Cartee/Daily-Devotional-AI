@@ -256,27 +256,31 @@ export default function UnderstandBible() {
 
   return (
     <>
-      <NavBar showBack />
-      <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-background via-background to-accent/10 pt-20 pb-16 px-4">
+      <NavBar />
+      <main className="min-h-screen bg-background pt-20 pb-16 px-4">
         <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <motion.header
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-10"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-sm font-medium mb-4">
-              <Compass className="w-4 h-4" />
-              Guided Path
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-foreground mb-3">
-              Understand the Bible
-            </h1>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
-              18 key passages in a logical order — from Creation to the New Jerusalem. Each one includes a summary, why it matters, and optional AI reflection.
-            </p>
-          </motion.header>
+          {/* Hero header */}
+          <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden mb-8">
+            <img src="/hero-understand.png" alt="Guided path" className="absolute inset-0 w-full h-full object-cover object-center" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2">
+                <Compass className="w-3 h-3" />
+                Guided Path
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight text-balance">
+                Understand the Bible
+              </h1>
+              <p className="text-white/60 text-xs mt-1.5 max-w-xs">
+                18 key passages from Creation to the New Jerusalem
+              </p>
+            </motion.div>
+          </div>
 
           {/* Theme filter pills */}
           <motion.div

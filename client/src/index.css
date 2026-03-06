@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Instrument+Serif:ital@0;1&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,75 +6,71 @@
 
 @layer base {
   :root {
-    /* Calming, minimal, faith-based palette */
-    /* Warm off-white background */
-    --background: 40 33% 98%;
-    /* Soft charcoal for high legibility without harshness */
-    --foreground: 220 20% 25%;
-    
-    /* Pure white for cards with subtle elevation */
+    /* Modern premium palette — warm ivory base, deep indigo primary, gold accent */
+    --background: 38 22% 97%;
+    --foreground: 224 28% 10%;
+
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 25%;
-    
+    --card-foreground: 224 28% 10%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 25%;
-    
-    /* Sage green / subtle teal as primary - representing growth and peace */
-    --primary: 165 25% 45%;
+    --popover-foreground: 224 28% 10%;
+
+    /* Deep indigo/violet — spiritual, premium, distinctive */
+    --primary: 249 58% 40%;
     --primary-foreground: 0 0% 100%;
-    
-    /* Slate blue as secondary/accent - representing depth and reflection */
-    --secondary: 215 20% 50%;
-    --secondary-foreground: 0 0% 100%;
-    
-    --muted: 40 20% 93%;
-    --muted-foreground: 220 15% 45%;
-    
-    --accent: 40 30% 92%;
-    --accent-foreground: 220 20% 25%;
-    
-    --destructive: 0 70% 60%;
+
+    /* Warm amber-gold — energy, warmth, editorial */
+    --secondary: 37 95% 53%;
+    --secondary-foreground: 224 28% 10%;
+
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 12% 46%;
+
+    --accent: 37 30% 93%;
+    --accent-foreground: 224 28% 10%;
+
+    --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 15% 88%;
-    --input: 40 15% 88%;
-    --ring: 165 25% 45%;
+    --border: 220 14% 89%;
+    --input: 220 14% 89%;
+    --ring: 249 58% 40%;
 
-    --radius: 1rem;
+    --radius: 0.875rem;
 
-    --font-sans: 'DM Sans', sans-serif;
-    --font-serif: 'Lora', serif;
+    --font-sans: 'Plus Jakarta Sans', sans-serif;
+    --font-serif: 'Instrument Serif', serif;
   }
 
   .dark {
-    /* Muted dark mode, avoiding pure black */
-    --background: 220 20% 12%;
-    --foreground: 40 20% 90%;
-    
-    --card: 220 20% 15%;
-    --card-foreground: 40 20% 90%;
-    
-    --popover: 220 20% 15%;
-    --popover-foreground: 40 20% 90%;
-    
-    --primary: 165 20% 55%;
-    --primary-foreground: 220 20% 12%;
-    
-    --secondary: 215 20% 60%;
-    --secondary-foreground: 220 20% 12%;
-    
-    --muted: 220 20% 20%;
-    --muted-foreground: 40 15% 70%;
-    
-    --accent: 220 20% 20%;
-    --accent-foreground: 40 20% 90%;
-    
-    --destructive: 0 60% 50%;
-    --destructive-foreground: 40 20% 90%;
-    
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 165 20% 55%;
+    --background: 224 28% 9%;
+    --foreground: 38 20% 93%;
+
+    --card: 224 25% 12%;
+    --card-foreground: 38 20% 93%;
+
+    --popover: 224 25% 12%;
+    --popover-foreground: 38 20% 93%;
+
+    --primary: 249 55% 62%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 37 90% 57%;
+    --secondary-foreground: 224 28% 10%;
+
+    --muted: 224 25% 18%;
+    --muted-foreground: 220 12% 58%;
+
+    --accent: 224 25% 18%;
+    --accent-foreground: 38 20% 93%;
+
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 38 20% 93%;
+
+    --border: 224 25% 20%;
+    --input: 224 25% 20%;
+    --ring: 249 55% 62%;
   }
 }
 
@@ -83,42 +79,89 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
   }
+  /* Headings use bold sans — modern and confident */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight text-slate-900 dark:text-slate-100;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    @apply text-foreground;
+  }
+  /* Scripture/verse text gets the editorial serif */
+  .verse-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    line-height: 1.75;
   }
 }
 
-/* Custom premium utilities */
 @layer utilities {
-  .glass-card {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)];
-  }
-  
   .text-balance {
     text-wrap: balance;
   }
 
-  /* Shimmer effect for elegant loading */
+  /* Glass-morphism card for layered UI */
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/50;
+  }
+
+  /* Strong glass for hero overlays */
+  .glass-dark {
+    background: rgba(10, 10, 20, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Inset hero image with overlay gradient */
+  .hero-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 8, 26, 0.35) 0%,
+      rgba(10, 8, 26, 0.15) 40%,
+      rgba(10, 8, 26, 0.55) 100%
+    );
+  }
+
+  /* Bold display number style */
+  .display-number {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  /* Shimmer effect for loading */
   .animate-shimmer {
     animation: shimmer 2s infinite linear;
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.4) 50%,
-      rgba(255, 255, 255, 0) 100%
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.4) 50%,
+      rgba(255,255,255,0) 100%
     );
     background-size: 200% 100%;
   }
 
   @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
+
+  /* Gradient text utility */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(37 95% 53%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Selection color */
+::selection {
+  background: hsl(249 58% 40% / 0.18);
+  color: hsl(249 58% 30%);
 }

@@ -14,32 +14,30 @@ export function AIResponseCard({ content, type }: AIResponseCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="mt-8 glass-card rounded-3xl p-8 md:p-10 relative overflow-hidden group"
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="mt-6 bg-card border border-border rounded-2xl p-6 sm:p-7 relative overflow-hidden"
     >
-      <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-primary/40 to-secondary/40" />
-      
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
-          <Icon className="w-5 h-5" />
+      <div className="absolute top-0 left-0 w-1 h-full bg-primary/50 rounded-l-2xl" />
+
+      <div className="flex items-center gap-2.5 mb-5 pl-2">
+        <div className="p-1.5 bg-primary/10 rounded-lg">
+          <Icon className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="text-xl font-bold font-serif text-slate-800 dark:text-slate-100">
-          {title}
-        </h3>
+        <h3 className="font-bold text-sm text-foreground tracking-tight">{title}</h3>
       </div>
-      
-      <div className="prose prose-slate dark:prose-invert prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-300 max-w-none">
-        {content.split('\n').map((paragraph, idx) => (
+
+      <div className="pl-2 space-y-3">
+        {content.split('\n').map((paragraph, idx) =>
           paragraph.trim() ? (
-            <p key={idx} className="mb-4 last:mb-0">
+            <p key={idx} className="text-[14px] leading-relaxed text-foreground/75">
               {paragraph}
             </p>
           ) : null
-        ))}
+        )}
       </div>
-      
-      <div className="absolute bottom-0 right-0 p-6 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity duration-500">
-        <Icon className="w-24 h-24" />
+
+      <div className="absolute bottom-0 right-0 p-6 opacity-[0.04] pointer-events-none">
+        <Icon className="w-20 h-20" />
       </div>
     </motion.div>
   );
