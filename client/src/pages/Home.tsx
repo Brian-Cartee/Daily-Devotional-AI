@@ -73,6 +73,8 @@ export default function Home() {
   const reflectionReady = generateAI.isSuccess && generateAI.data && activeType === "reflection" && !generateAI.isPending;
 
   return (
+    <>
+    <EmailSubscribe />
     <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-background via-background to-accent/10 py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         variants={containerVariants}
@@ -208,13 +210,9 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Email subscription */}
-        <motion.section variants={itemVariants} className="mt-12">
-          <EmailSubscribe />
-        </motion.section>
-
         <div className="pb-16" />
       </motion.div>
     </main>
+    </>
   );
 }

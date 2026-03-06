@@ -1,22 +1,33 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, CheckCircle, Loader2 } from "lucide-react";
+import { Mail, CheckCircle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Status = "idle" | "loading" | "success" | "error";
 
 export function EmailSubscribe() {
+  const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-
     setStatus("loading");
 
     try {
@@ -26,7 +37,6 @@ export function EmailSubscribe() {
         body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
         credentials: "include",
       });
-
       const data = await res.json();
 
       if (res.ok || res.status === 200) {
@@ -42,92 +52,95 @@ export function EmailSubscribe() {
     }
   };
 
-  if (status === "success") {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex items-center gap-3 bg-white/50 dark:bg-slate-800/50 border border-white/30 rounded-2xl px-5 py-4"
-      >
-        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-        <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
-      </motion.div>
-    );
-  }
-
   return (
-    <div className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden">
+    <div ref={panelRef} className="fixed top-4 right-4 z-50">
+      {/* Trigger button */}
       <button
         data-testid="button-subscribe-toggle"
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left hover-elevate"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Subscribe to daily verse emails"
+        className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-white/30 dark:border-slate-600/40 shadow-md rounded-full px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:shadow-lg transition-shadow"
       >
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Mail className="w-4 h-4 text-primary" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Get today's verse by email
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Delivered to your inbox each morning
-          </p>
-        </div>
-        <motion.span
-          animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="text-muted-foreground text-xs"
-        >
-          ▾
-        </motion.span>
+        <Mail className="w-4 h-4 text-primary" />
+        <span className="hidden sm:inline">Daily email</span>
       </button>
 
+      {/* Dropdown panel */}
       <AnimatePresence>
-        {expanded && (
+        {open && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.18 }}
+            className="absolute top-12 right-0 w-80 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-white/30 dark:border-slate-600/40 shadow-xl rounded-2xl p-5"
           >
-            <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
-              <Input
-                data-testid="input-subscribe-name"
-                type="text"
-                placeholder="Your first name (optional)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="bg-white/60 dark:bg-slate-700/60 border-white/30 rounded-xl text-sm"
-                disabled={status === "loading"}
-              />
-              <div className="flex gap-2">
-                <Input
-                  data-testid="input-subscribe-email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="flex-1 bg-white/60 dark:bg-slate-700/60 border-white/30 rounded-xl text-sm"
-                  disabled={status === "loading"}
-                />
-                <Button
-                  data-testid="button-subscribe-submit"
-                  type="submit"
-                  disabled={!email.trim() || status === "loading"}
-                  className="rounded-xl px-4 flex-shrink-0"
-                >
-                  {status === "loading" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Subscribe"
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {status === "success" ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center gap-3 py-2 text-center"
+              >
+                <CheckCircle className="w-8 h-8 text-green-500" />
+                <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
+              </motion.div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
+                    Get today's verse by email
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Delivered to your inbox each morning
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-2.5">
+                  <Input
+                    data-testid="input-subscribe-name"
+                    type="text"
+                    placeholder="Your first name (optional)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="bg-white/60 dark:bg-slate-700/60 border-slate-200 dark:border-slate-600 rounded-xl text-sm"
+                    disabled={status === "loading"}
+                  />
+                  <Input
+                    data-testid="input-subscribe-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-white/60 dark:bg-slate-700/60 border-slate-200 dark:border-slate-600 rounded-xl text-sm"
+                    disabled={status === "loading"}
+                  />
+                  {status === "error" && (
+                    <p className="text-xs text-destructive">{message}</p>
                   )}
-                </Button>
-              </div>
-              {status === "error" && (
-                <p className="text-xs text-destructive">{message}</p>
-              )}
-            </form>
+                  <Button
+                    data-testid="button-subscribe-submit"
+                    type="submit"
+                    disabled={!email.trim() || status === "loading"}
+                    className="w-full rounded-xl"
+                  >
+                    {status === "loading" ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Subscribe"
+                    )}
+                  </Button>
+                </form>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
