@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked, BookOpen, X } from "lucide-react";
+import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked, BookOpen, X, Search, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { NavBar } from "@/components/NavBar";
@@ -371,6 +372,27 @@ export default function UnderstandBible() {
             </motion.div>
           </div>
 
+
+          {/* Quick Bible Study link */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="mb-6"
+          >
+            <Link href="/study">
+              <div className="bg-card border border-border/60 rounded-2xl px-5 py-4 shadow-sm flex items-center gap-4 hover:bg-muted/30 hover:shadow-md transition-all cursor-pointer group">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Search className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-foreground leading-tight">Quick Bible Study</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">Any topic, passage, or question — studied in seconds</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+              </div>
+            </Link>
+          </motion.div>
 
           {/* Track Selector */}
           <motion.div
