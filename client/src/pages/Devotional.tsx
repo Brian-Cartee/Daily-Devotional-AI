@@ -1,43 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle } from "lucide-react";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
-import { AILoadingState } from "@/components/AILoadingState";
-import { AIResponseCard } from "@/components/AIResponseCard";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 
+function StepLabel({ number, label }: { number: number; label: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+        <span className="text-[11px] font-extrabold text-primary">{number}</span>
+      </div>
+      <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+      <div className="h-px flex-1 bg-border/60" />
+    </div>
+  );
+}
+
+function PrayerText({ text }: { text: string }) {
+  const cleaned = text.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
+  return (
+    <p className="text-[15px] leading-relaxed text-foreground/80 italic font-medium">
+      {cleaned}
+    </p>
+  );
+}
+
 export default function Devotional() {
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
-  const generateAI = useGenerateAI();
-  const [activeType, setActiveType] = useState<"reflection" | "prayer" | null>(null);
-  const [studyMode, setStudyMode] = useState(false);
+  const reflectionMutation = useGenerateAI();
+  const prayerMutation = useGenerateAI();
+  const [chatOpen, setChatOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [devotionalStarted, setDevotionalStarted] = useState(false);
 
-  const handleGenerate = (type: "reflection" | "prayer") => {
-    if (!verse) return;
-    setActiveType(type);
-    setStudyMode(false);
-    generateAI.mutate({ verseId: verse.id, type });
-  };
-
-  const handleReflectWithAI = () => {
-    if (!verse) return;
-    setActiveType("reflection");
-    setStudyMode(true);
-    generateAI.mutate({ verseId: verse.id, type: "reflection" });
-  };
+  useEffect(() => {
+    if (verse && !devotionalStarted) {
+      setDevotionalStarted(true);
+      reflectionMutation.mutate({ verseId: verse.id, type: "reflection" });
+      prayerMutation.mutate({ verseId: verse.id, type: "prayer" });
+    }
+  }, [verse]);
 
   const handleShare = async () => {
     if (!verse) return;
-    const text = `"${verse.text}" — ${verse.reference}\n\n${verse.encouragement}`;
+    const prayerText = prayerMutation.data?.content
+      ? "\n\n🙏 " + prayerMutation.data.content.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim()
+      : "";
+    const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd Path`;
     if (navigator.share) {
-      try { await navigator.share({ title: `Daily Verse: ${verse.reference}`, text }); } catch { }
+      try { await navigator.share({ title: `Today's Word: ${verse.reference}`, text }); } catch { }
     } else {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2500);
     }
   };
 
@@ -47,7 +64,7 @@ export default function Devotional() {
         <NavBar />
         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background pt-14">
           <Loader2 className="w-6 h-6 animate-spin text-primary/40 mb-4" />
-          <p className="text-muted-foreground text-sm font-medium">Loading today's verse...</p>
+          <p className="text-muted-foreground text-sm font-medium">Loading today's word...</p>
         </div>
       </>
     );
@@ -71,8 +88,6 @@ export default function Devotional() {
     );
   }
 
-  const reflectionReady = generateAI.isSuccess && generateAI.data && activeType === "reflection" && !generateAI.isPending;
-
   const dateStr = new Date(verse.date + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric"
   });
@@ -81,8 +96,8 @@ export default function Devotional() {
     <>
       <NavBar />
 
-      {/* Hero image section */}
-      <div className="relative h-[46vh] min-h-[300px] max-h-[460px] overflow-hidden pt-14">
+      {/* Hero */}
+      <div className="relative h-[40vh] min-h-[260px] max-h-[400px] overflow-hidden pt-14">
         <img
           src="/hero-devotional.png"
           alt="Morning devotional"
@@ -90,132 +105,134 @@ export default function Devotional() {
         />
         <div className="absolute inset-0 hero-overlay" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-
         <div className="relative z-10 flex flex-col items-center justify-end h-full pb-8 px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-white/70 text-[11px] font-bold uppercase tracking-widest mb-3">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2">
               Daily Devotional · {dateStr}
             </div>
+            <p className="text-white/50 text-[13px] italic">Walk the path. Follow the Word.</p>
           </motion.div>
         </div>
       </div>
 
       {/* Main content */}
-      <main className="max-w-2xl mx-auto px-5 pb-20 -mt-2 relative z-10">
+      <main className="max-w-xl mx-auto px-5 pb-24 -mt-2 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-4"
         >
-          {/* Verse card */}
-          <div className="bg-card border border-border rounded-2xl p-7 mb-4 shadow-sm">
-            <blockquote className="verse-text text-2xl sm:text-3xl text-foreground leading-relaxed mb-6 text-balance">
+
+          {/* STEP 1: TODAY'S WORD */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <StepLabel number={1} label="Today's Word" />
+            <blockquote className="verse-text text-[1.35rem] sm:text-2xl text-foreground leading-relaxed mb-5 text-balance">
               "{verse.text}"
             </blockquote>
             <div className="flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-sm font-bold text-primary tracking-wide">{verse.reference}</span>
+              <span className="text-sm font-bold text-primary tracking-wide flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                {verse.reference}
+              </span>
               <div className="h-px flex-1 bg-border" />
             </div>
           </div>
 
-          {/* Encouragement */}
-          <div className="bg-muted/60 border border-border/50 rounded-2xl px-6 py-5 mb-6">
-            <p className="text-[15px] text-foreground/80 leading-relaxed font-medium">
-              {verse.encouragement}
-            </p>
+          {/* STEP 2: REFLECTION */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <StepLabel number={2} label="Reflection" />
+            <AnimatePresence mode="wait">
+              {reflectionMutation.isPending && (
+                <motion.div key="ref-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-full" />
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-5/6" />
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-4/5" />
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-3/4 mt-1" />
+                </motion.div>
+              )}
+              {reflectionMutation.isSuccess && reflectionMutation.data && (
+                <motion.div key="ref-content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                  <div className="text-[15px] leading-relaxed text-foreground/80 space-y-3">
+                    {reflectionMutation.data.content.split("\n").filter(p => p.trim()).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+              {reflectionMutation.isError && (
+                <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
+                  Could not load reflection. <button onClick={() => reflectionMutation.mutate({ verseId: verse.id, type: "reflection" })} className="underline text-primary">Try again</button>
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2.5 mb-8">
-            <Button
-              data-testid="button-reflect-ai"
-              size="lg"
-              onClick={handleReflectWithAI}
-              disabled={generateAI.isPending}
-              className="rounded-xl px-6 font-bold text-sm flex-1 sm:flex-none"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Reflect with AI
-            </Button>
+          {/* STEP 3: PRAYER */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <StepLabel number={3} label="Prayer" />
+            <AnimatePresence mode="wait">
+              {prayerMutation.isPending && (
+                <motion.div key="pray-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-full" />
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-5/6" />
+                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-2/3" />
+                </motion.div>
+              )}
+              {prayerMutation.isSuccess && prayerMutation.data && (
+                <motion.div key="pray-content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                  <PrayerText text={prayerMutation.data.content} />
+                </motion.div>
+              )}
+              {prayerMutation.isError && (
+                <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
+                  Could not load prayer. <button onClick={() => prayerMutation.mutate({ verseId: verse.id, type: "prayer" })} className="underline text-primary">Try again</button>
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
 
+          {/* Actions */}
+          <div className="flex gap-2.5 pt-1">
             <Button
-              data-testid="button-generate-prayer"
+              data-testid="button-ask-scripture"
               size="lg"
-              variant="outline"
-              onClick={() => handleGenerate("prayer")}
-              disabled={generateAI.isPending}
-              className="rounded-xl px-6 font-bold text-sm flex-1 sm:flex-none"
+              onClick={() => setChatOpen(v => !v)}
+              className="rounded-xl px-5 font-bold text-sm flex-1"
             >
-              <HeartHandshake className="w-4 h-4 mr-2" />
-              Generate Prayer
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Ask About This Scripture
             </Button>
-
             <Button
               data-testid="button-share"
               size="lg"
-              variant="ghost"
+              variant="outline"
               onClick={handleShare}
-              className="rounded-xl px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
+              className="rounded-xl px-4 font-semibold text-sm"
             >
-              {copied ? <Check className="w-4 h-4 mr-1.5 text-green-500" /> : <Share2 className="w-4 h-4 mr-1.5" />}
-              {copied ? "Copied!" : "Share"}
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
             </Button>
           </div>
 
-          {/* AI Response Area */}
-          <AnimatePresence mode="wait">
-            {generateAI.isPending && activeType && (
-              <AILoadingState key="loading" type={activeType} />
-            )}
-
-            {generateAI.isSuccess && generateAI.data && activeType === "prayer" && !generateAI.isPending && (
-              <AIResponseCard key="prayer-response" type="prayer" content={generateAI.data.content} />
-            )}
-
-            {reflectionReady && studyMode && (
+          {/* AI Chat */}
+          <AnimatePresence>
+            {chatOpen && (
               <motion.div
-                key="study-session"
-                initial={{ opacity: 0, y: 16 }}
+                key="chat"
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-4"
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.4 }}
               >
-                <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-primary/60 rounded-l-2xl" />
-                  <div className="flex items-center gap-2.5 mb-4 pl-2">
-                    <div className="p-1.5 bg-primary/10 rounded-lg">
-                      <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    <h3 className="font-bold text-sm text-foreground tracking-tight">Guided Reflection</h3>
-                  </div>
-                  <div className="pl-2 text-[14px] leading-relaxed text-foreground/75 space-y-3">
-                    {generateAI.data!.content.split("\n").map((para, i) =>
-                      para.trim() ? <p key={i}>{para}</p> : null
-                    )}
-                  </div>
-                </div>
-
-                <BibleStudyChat verseId={verse.id} initialReflection={generateAI.data!.content} />
-              </motion.div>
-            )}
-
-            {generateAI.isError && !generateAI.isPending && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="p-5 bg-destructive/8 text-destructive rounded-2xl text-center border border-destructive/15 text-sm"
-              >
-                We couldn't generate that response right now. Please try again.
+                <BibleStudyChat
+                  verseId={verse.id}
+                  initialReflection={reflectionMutation.data?.content ?? ""}
+                />
               </motion.div>
             )}
           </AnimatePresence>
+
         </motion.div>
       </main>
     </>

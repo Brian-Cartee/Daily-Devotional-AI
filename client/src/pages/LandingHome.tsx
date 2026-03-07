@@ -73,7 +73,7 @@ export default function LandingHome() {
               <span className="text-amber-300">engage the Bible</span>
             </h1>
             <p className="text-white/75 text-base sm:text-lg max-w-sm mx-auto leading-relaxed drop-shadow">
-              Daily devotionals. Guided paths. Full Bible reading. Powered by AI.
+              Walk the path. Follow the Word.
             </p>
           </motion.div>
         </div>
