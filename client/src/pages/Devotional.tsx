@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart } from "lucide-react";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
@@ -39,6 +39,10 @@ export default function Devotional() {
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
+  const [gratitudeInput, setGratitudeInput] = useState("");
+  const [gratitudePrayer, setGratitudePrayer] = useState("");
+  const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
+  const [savedGratitude, setSavedGratitude] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -80,6 +84,31 @@ export default function Devotional() {
       }).catch(() => {});
     }
   }, [verse]);
+
+  const handleGratitudePrayer = async () => {
+    if (!gratitudeInput.trim() || !verse) return;
+    setGratitudePrayerLoading(true);
+    setGratitudePrayer("");
+    try {
+      const res = await fetch("/api/chat/passage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passageRef: verse.reference,
+          passageText: verse.text,
+          messages: [{
+            role: "user",
+            content: `The reader has just finished their devotional on ${verse.reference}: "${verse.text}". They want to offer a personal prayer of thanksgiving to God. What they are grateful for today: "${gratitudeInput.trim()}". Write a short, intimate closing prayer (3–4 sentences) that weaves together their gratitude and the spirit of today's verse. Begin with "Lord," or "Father," and close with "Amen." Write in first person as if they are speaking it aloud. Keep it warm and unhurried.`,
+          }],
+        }),
+      });
+      const data = await res.json();
+      setGratitudePrayer(data.content ?? "");
+    } catch {
+      setGratitudePrayer("Sorry, we couldn't generate your prayer right now. Please try again.");
+    }
+    setGratitudePrayerLoading(false);
+  };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,6 +325,62 @@ export default function Devotional() {
                 <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
                   Could not load prayer. <button onClick={() => prayerMutation.mutate({ verseId: verse.id, type: "prayer" })} className="underline text-primary">Try again</button>
                 </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* STEP 4: THANK HIM */}
+          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
+            <StepLabel number={4} label="Thank Him" />
+            <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
+              What are you grateful for today?
+            </p>
+            <textarea
+              value={gratitudeInput}
+              onChange={(e) => setGratitudeInput(e.target.value)}
+              placeholder="My family, a quiet morning, a door that opened..."
+              rows={3}
+              data-testid="input-gratitude"
+              className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/25 resize-none placeholder:text-muted-foreground/50 transition-shadow"
+            />
+            <div className="mt-3 flex items-center gap-3">
+              <Button
+                size="sm"
+                onClick={handleGratitudePrayer}
+                disabled={!gratitudeInput.trim() || gratitudePrayerLoading}
+                data-testid="button-generate-gratitude-prayer"
+                className="rounded-xl font-semibold"
+              >
+                {gratitudePrayerLoading
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Praying...</>
+                  : <><Heart className="w-3.5 h-3.5 mr-2" /> Generate Closing Prayer</>
+                }
+              </Button>
+            </div>
+
+            <AnimatePresence>
+              {gratitudePrayer && (
+                <motion.div
+                  key="gratitude-prayer"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.9, ease: "easeOut" }}
+                  className="mt-6 pt-5 border-t border-border/40"
+                >
+                  <PrayerText text={gratitudePrayer} />
+                  <button
+                    data-testid="save-gratitude-prayer"
+                    onClick={() => {
+                      saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse.reference, verseDate: verse.date });
+                      setSavedGratitude(true);
+                    }}
+                    disabled={savedGratitude || saveMutation.isPending}
+                    className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                  >
+                    {savedGratitude ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                    {savedGratitude ? "Saved to Journal" : "Save to Journal"}
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
