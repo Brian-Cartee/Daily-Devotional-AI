@@ -171,7 +171,7 @@ export default function Devotional() {
               >
                 <Flame className="w-3.5 h-3.5 text-amber-500/80" />
                 <span className="text-[12px] font-medium text-muted-foreground">
-                  {streak.currentStreak} days in a row
+                  {streak.currentStreak} Day Walk
                 </span>
                 {streak.longestStreak > streak.currentStreak && (
                   <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
