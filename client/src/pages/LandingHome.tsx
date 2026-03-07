@@ -51,11 +51,11 @@ export default function LandingHome() {
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
           src="/hero-landing.png"
-          alt="Autumn foliage over Washington with mountains"
+          alt="A road cresting a green hill toward golden light"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "center 40%" }}
+          style={{ objectPosition: "center center" }}
         />
-        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.38) 0%, rgba(10,8,24,0.28) 40%, rgba(10,8,24,0.78) 100%)"}} />
+        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.30) 0%, rgba(10,8,24,0.18) 35%, rgba(10,8,24,0.72) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         {/* Hero text */}
