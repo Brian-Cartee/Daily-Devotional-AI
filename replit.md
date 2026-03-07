@@ -1,17 +1,23 @@
-# Daily Bread — Interactive Bible Study & Spiritual Growth App
+# Shepherd Path — AI-Guided Scripture & Spiritual Growth App
+
+Tagline: **Walk the path. Follow the Word.**
 
 ## Overview
 
-An interactive Bible study and spiritual growth companion organized around three core experiences:
-1. **Daily Devotional** — Daily verse from Google Sheets, AI reflection, prayer, share
-2. **Understand the Bible** — Curated guided path through 18 key passages with AI study tools
-3. **Read the Bible** — Full Bible chapter-by-chapter reading (via bible-api.com) with AI assistance
+A faith-centered Bible companion with daily devotionals, guided scripture paths, full Bible reading, and a prayer journal. Designed for the 20–40 age range with a calm, sacred, premium aesthetic.
+
+## Four Core Experiences
+
+1. **Daily Devotional** (`/devotional`) — Today's Word → AI Reflection → AI Prayer → Ask About Scripture
+2. **Bible Journey** (`/understand`) — Curated guided path through 18 key passages with AI study tools
+3. **Read the Bible** (`/read`) — Full Bible chapter-by-chapter reading (KJV via bible-api.com) with AI assistance
+4. **Prayer Journal** (`/journal`) — Save prayers, reflections, and scriptures; organized in 3 tabs
 
 ## Architecture
 
 - **Frontend**: React + Vite + TypeScript, TailwindCSS, ShadCN UI, Framer Motion, Wouter routing
 - **Backend**: Express (Node.js/TypeScript)
-- **Database**: PostgreSQL (via Drizzle ORM) — caches daily verses and subscribers
+- **Database**: PostgreSQL (via Drizzle ORM)
 - **AI**: OpenAI GPT-4o-mini via Replit AI Integrations (no user API key required)
 - **Data source**: Google Sheets (live sync at startup via googleapis)
 - **Email**: Resend (daily email subscription system with welcome email + 7AM UTC scheduler)
@@ -21,15 +27,16 @@ An interactive Bible study and spiritual growth companion organized around three
 
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | LandingHome | 3-card home screen with section links |
-| `/devotional` | Devotional | Daily verse, AI reflection, prayer, share |
+| `/` | LandingHome | Home screen with 3-card section links |
+| `/devotional` | Devotional | 3-step daily flow: Word → Reflection → Prayer + AI chat |
 | `/understand` | UnderstandBible | 18 guided key passages with AI tools |
-| `/read` | ReadBible | Full Bible reading with AI assistance sidebar |
+| `/read` | ReadBible | Full Bible reading (Literata font, parsed verse numbers) |
+| `/journal` | Journal | Prayer journal — My Prayers, My Reflections, Saved Scriptures |
 
 ## Key Components
 
-- `NavBar.tsx` — Fixed top nav, shows on all inner pages
-- `EmailSubscribe.tsx` — Fixed top-right floating subscription button (in App.tsx globally)
+- `NavBar.tsx` — Fixed top nav (Devotional, Journey, Read, Journal)
+- `EmailSubscribe.tsx` — Floating subscription button (global in App.tsx)
 - `BibleStudyChat.tsx` — Interactive AI chat for devotional verse
 - `AILoadingState.tsx`, `AIResponseCard.tsx` — AI response UI
 
@@ -41,15 +48,23 @@ An interactive Bible study and spiritual growth companion organized around three
 | POST | `/api/ai/generate` | AI reflection or prayer for today's verse |
 | POST | `/api/ai/chat` | Follow-up chat for daily verse |
 | GET | `/api/bible?ref=...` | Bible chapter text proxy (bible-api.com KJV) |
-| POST | `/api/chat/passage` | AI chat for arbitrary Bible passage (Understand/Read) |
+| POST | `/api/chat/passage` | AI chat for arbitrary Bible passage |
 | POST | `/api/subscribe` | Subscribe to daily email |
 | GET | `/api/unsubscribe?email=...` | Unsubscribe from daily email |
 | POST | `/api/admin/send-daily-email` | Manually trigger daily email send |
+| GET | `/api/journal?sessionId=...` | Get journal entries for session |
+| POST | `/api/journal` | Create journal entry |
+| DELETE | `/api/journal/:id` | Delete journal entry |
 
 ## Database Schema
 
 - `verses` — id, reference, text, encouragement, reflection_prompt, date (unique)
 - `subscribers` — id, email (unique), name, subscribed_at, active
+- `journal_entries` — id, session_id, type (prayer/reflection/verse), content, reference, verse_date, created_at
+
+## Journal Session Model
+
+Journal entries are tied to a browser-generated UUID stored in localStorage (`sp_session_id`). No login required — entries persist per browser. Future: migrate to user accounts when auth is added.
 
 ## Google Sheet Column Layout
 
@@ -65,28 +80,39 @@ Spreadsheet ID: `1Zhg_rL3i-eIyBNWOpB8Vld0awv6e-l9UoG6lvY3r4jI`
 | F | Takeaway/Encouragement |
 | G | Reflection Prompt |
 
+## Visual Design System
+
+- **Fonts**: Plus Jakarta Sans (UI/headings), Instrument Serif italic (verse quotes), Literata (Bible reading)
+- **Colors**: Warm parchment background (`38 28% 96%`), deep indigo primary (`249 58% 40%`), amber-gold accent
+- **Hero overlays**: Deep dark gradient (52%→28%→72%) for sacred, cinematic feel
+- **Body texture**: Subtle SVG grain at 3% opacity for warmth
+- **Target feel**: Calm, sacred, premium — inspired by Hallow and Glorify
+
+## Planned Premium Model (NOT YET IMPLEMENTED)
+
+**Free Tier:**
+- Daily verse
+- Daily devotional (Word + Reflection + Prayer)
+- Limited AI questions per day
+
+**Premium Tier ($5–9/month):**
+- Unlimited AI guidance & chat
+- Prayer journal (unlimited saves)
+- Deeper devotional content
+- Bible study tools & guided paths
+
+Comparable pricing: Hallow (~$8.99/mo), Glorify (~$6.99/mo)
+
+Implementation will require: user auth, subscription/payment integration (Stripe), usage tracking, and feature gating middleware.
+
 ## Guided Bible Path
 
-18 curated passages defined in `client/src/data/guidedPath.ts`, organized by theme:
-- The Beginning (Genesis 1–3)
-- The Covenant (Genesis 12)
-- Rescue (Exodus 14)
-- Worship & Wisdom (Psalm 23, Proverbs 3)
-- The Promise (Isaiah 53)
+18 curated passages in `client/src/data/guidedPath.ts`:
+- The Beginning (Genesis 1–3), The Covenant (Genesis 12), Rescue (Exodus 14)
+- Worship & Wisdom (Psalm 23, Proverbs 3), The Promise (Isaiah 53)
 - Jesus (John 1, 3, Matthew 5, Luke 15, John 11, 19–20)
-- The Church (Acts 2)
-- The Letters (Romans 8, 1 Cor 13, Ephesians 2)
-- The End & New Beginning (Revelation 21)
-
-## Future Phase Architecture Hooks
-
-- **User accounts**: Add `users` table, Replit Auth integration
-- **Save reflections / Favorites**: Add `saved_reflections`, `favorites` tables with userId FK
-- **Streaks/habits**: Add `user_activity` table with streak tracking
-- **Topic search**: Add topic tags to verses + search endpoint
-- **Progress tracking for Understand path**: Track which chapters explored (needs user accounts)
-- **Push notifications**: Add push subscription table + cron job
-- **Reading plans**: Curated multi-day plans linking Devotional + Understand + Read
+- The Church (Acts 2), The Letters (Romans 8, 1 Cor 13, Ephesians 2)
+- The End (Revelation 21)
 
 ## Running
 
