@@ -9,14 +9,12 @@ import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 
-function StepLabel({ number, label }: { number: number; label: string }) {
+function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-        <span className="text-[11px] font-extrabold text-primary">{number}</span>
-      </div>
-      <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
-      <div className="h-px flex-1 bg-border/60" />
+    <div className="flex items-center gap-4 mb-5">
+      <div className="h-px w-5 bg-border/70" />
+      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">{label}</span>
+      <div className="h-px flex-1 bg-border/40" />
     </div>
   );
 }
@@ -24,7 +22,7 @@ function StepLabel({ number, label }: { number: number; label: string }) {
 function PrayerText({ text }: { text: string }) {
   const cleaned = text.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
   return (
-    <p className="text-[15px] leading-relaxed text-foreground/80 italic font-medium">
+    <p className="text-[15px] leading-[2] text-foreground/75 italic font-normal">
       {cleaned}
     </p>
   );
@@ -135,7 +133,7 @@ export default function Devotional() {
         <div className="absolute inset-0 hero-overlay" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         <div className="relative z-10 flex flex-col items-center justify-end h-full pb-8 px-6 text-center">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2">
               Daily Devotional · {dateStr}
             </div>
@@ -147,16 +145,16 @@ export default function Devotional() {
       {/* Main content */}
       <main className="max-w-xl mx-auto px-5 pb-24 -mt-2 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="space-y-4"
+          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-3"
         >
 
           {/* STEP 1: TODAY'S WORD */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={1} label="Today's Word" />
-            <blockquote className="verse-text text-[1.35rem] sm:text-2xl text-foreground leading-relaxed mb-5 text-balance">
+            <blockquote className="verse-text text-[1.3rem] sm:text-[1.45rem] text-balance mb-7">
               "{verse.text}"
             </blockquote>
             <div className="flex items-center gap-3">
@@ -179,7 +177,7 @@ export default function Devotional() {
           </div>
 
           {/* STEP 2: REFLECTION */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={2} label="Reflection" />
             <AnimatePresence mode="wait">
               {reflectionMutation.isPending && (
@@ -191,7 +189,7 @@ export default function Devotional() {
                 </motion.div>
               )}
               {reflectionMutation.isSuccess && reflectionMutation.data && (
-                <motion.div key="ref-content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                <motion.div key="ref-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                   <div className="text-[15px] leading-relaxed text-foreground/80 space-y-3">
                     {reflectionMutation.data.content.split("\n").filter(p => p.trim()).map((para, i) => (
                       <p key={i}>{para}</p>
@@ -217,7 +215,7 @@ export default function Devotional() {
           </div>
 
           {/* STEP 3: PRAYER */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={3} label="Prayer" />
             <AnimatePresence mode="wait">
               {prayerMutation.isPending && (
@@ -228,7 +226,7 @@ export default function Devotional() {
                 </motion.div>
               )}
               {prayerMutation.isSuccess && prayerMutation.data && (
-                <motion.div key="pray-content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                   <PrayerText text={prayerMutation.data.content} />
                   <button
                     data-testid="save-prayer"
