@@ -9,6 +9,8 @@ import { BIBLE_BOOKS } from "@/data/bibleBooks";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang, getStoredLangInfo } from "@/lib/language";
 import { getHeroImage } from "@/lib/heroImage";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 type AIPanel = "explain" | "context" | "apply" | "crossref" | "chat" | null;
 
@@ -64,6 +66,7 @@ export default function ReadBible() {
   });
 
   const [showTransMenu, setShowTransMenu] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => { localStorage.setItem(LS_FONT, String(fontSize)); }, [fontSize]);
   useEffect(() => { localStorage.setItem(LS_TRANS, translation); }, [translation]);
@@ -98,6 +101,8 @@ export default function ReadBible() {
 
   const handleAI = async (type: Exclude<AIPanel, "chat" | null>) => {
     if (!chapterText.data) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     setActivePanel(type);
     setAiResult("");
     const lang = getStoredLang();
@@ -112,6 +117,8 @@ export default function ReadBible() {
 
   const sendChat = async () => {
     if (!chatInput.trim() || !chapterText.data) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     const newMessages = [...chatMessages, { role: "user", content: chatInput }];
     setChatMessages(newMessages);
     setChatInput("");
@@ -443,6 +450,10 @@ export default function ReadBible() {
           )}
         </div>
       </main>
+
+      <AnimatePresence>
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      </AnimatePresence>
     </>
   );
 }

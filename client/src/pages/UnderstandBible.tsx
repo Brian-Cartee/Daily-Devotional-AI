@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { GUIDED_PATH, type GuidedChapter } from "@/data/guidedPath";
@@ -30,11 +32,14 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const textQuery = usePassageText(chapter.apiRef, open);
   const passageChat = usePassageChat();
 
   const generateAI = async (type: "reflect" | "pray") => {
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     setAiMode(type);
     setAiContent("");
     setIsAiLoading(true);
@@ -62,6 +67,8 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
 
   const sendChat = async () => {
     if (!chatInput.trim()) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     const newMessages = [...chatMessages, { role: "user", content: chatInput }];
     setChatMessages(newMessages);
     setChatInput("");
@@ -164,6 +171,10 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
       </AnimatePresence>
     </div>
   );

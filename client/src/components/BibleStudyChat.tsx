@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatWithVerse } from "@/hooks/use-verses";
 import type { ChatMessage } from "@shared/routes";
+import { canUseAi, recordAiUsage, getRemainingAi, AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface BibleStudyChatProps {
   verseId: number;
@@ -28,6 +30,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
     { role: "assistant", content: initialReflection }
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const chatMutation = useChatWithVerse();
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -40,6 +43,8 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
 
   const sendMessage = async (question: string) => {
     if (!question.trim() || chatMutation.isPending) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
 
     const userMessage: ChatMessage = { role: "user", content: question.trim() };
     const historyBeforeThisQuestion = [...messages];
@@ -196,9 +201,24 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
           )}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground text-center -mt-1">
-        Press Enter to send · Shift+Enter for new line
-      </p>
+      {(() => {
+        const remaining = getRemainingAi();
+        return remaining <= 3 ? (
+          <p className="text-xs text-center -mt-1">
+            <span className="text-amber-500 font-semibold">{remaining} free AI {remaining === 1 ? "response" : "responses"} left today</span>
+            {" · "}
+            <button onClick={() => setShowUpgrade(true)} className="text-primary underline underline-offset-2">Upgrade for unlimited</button>
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground text-center -mt-1">
+            Press Enter to send · Shift+Enter for new line
+          </p>
+        );
+      })()}
+
+      <AnimatePresence>
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

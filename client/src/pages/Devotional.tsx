@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getHeroImage } from "@/lib/heroImage";
+import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -49,6 +51,7 @@ export default function Devotional() {
   const [emailInput, setEmailInput] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
@@ -91,6 +94,8 @@ export default function Devotional() {
 
   const handleGratitudePrayer = async () => {
     if (!gratitudeInput.trim() || !verse) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     setGratitudePrayerLoading(true);
     setGratitudePrayer("");
     try {
@@ -502,6 +507,10 @@ export default function Devotional() {
 
         </motion.div>
       </main>
+
+      <AnimatePresence>
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      </AnimatePresence>
     </>
   );
 }

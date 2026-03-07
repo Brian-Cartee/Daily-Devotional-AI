@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -295,6 +297,7 @@ export default function QuickStudyPage() {
   const [activeTopic, setActiveTopic] = useState("");
   const [savedStudy, setSavedStudy] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<TrackId | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const saveJournal = useJournalSave();
 
   useEffect(() => {
@@ -318,6 +321,8 @@ export default function QuickStudyPage() {
     if (e) e.preventDefault();
     const q = (overrideTopic ?? topic).trim();
     if (!q) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     setLoading(true);
     setStudy("");
     setSubmitted(true);
@@ -514,6 +519,10 @@ Keep it warm, accessible, and grounded in Scripture.`,
 
         </div>
       </main>
+
+      <AnimatePresence>
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      </AnimatePresence>
     </>
   );
 }
