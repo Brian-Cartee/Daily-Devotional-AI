@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked, BookOpen, X, Search } from "lucide-react";
+import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked, BookOpen, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { NavBar } from "@/components/NavBar";
@@ -8,105 +8,6 @@ import { Button } from "@/components/ui/button";
 import { GUIDED_PATH, type GuidedChapter } from "@/data/guidedPath";
 import { TRACKS, getTodaysPassage, getPassageIndex, type TrackId, type Track } from "@/data/trackPaths";
 import { useQuery } from "@tanstack/react-query";
-
-function QuickStudy() {
-  const [topic, setTopic] = useState("");
-  const [study, setStudy] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const generate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!topic.trim()) return;
-    setLoading(true);
-    setStudy("");
-    setSubmitted(true);
-    try {
-      const res = await apiRequest("POST", "/api/chat/passage", {
-        passageRef: topic.trim(),
-        passageText: topic.trim(),
-        messages: [{
-          role: "user",
-          content: `Create a short, structured Bible study on: "${topic.trim()}". Format it as:
-1. Key Verses (2–3 relevant scriptures with brief notes)
-2. Central Truth (1 paragraph on the main insight)
-3. Personal Application (2–3 practical questions to reflect on)
-4. Closing Prayer (2–3 sentences)
-Keep it warm, accessible, and grounded in Scripture.`,
-        }],
-      });
-      const data = await res.json();
-      setStudy(data.content ?? "");
-    } catch {
-      setStudy("Sorry, we couldn't generate a study right now. Please try again.");
-    }
-    setLoading(false);
-  };
-
-  const reset = () => { setTopic(""); setStudy(""); setSubmitted(false); };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1, duration: 0.6 }}
-      className="bg-card border border-border/60 rounded-2xl px-6 py-5 shadow-sm mb-7"
-    >
-      <div className="flex items-center gap-2.5 mb-4">
-        <Search className="w-4 h-4 text-primary shrink-0" />
-        <div>
-          <p className="text-base font-bold text-foreground">Quick Bible Study</p>
-          <p className="text-[12px] text-muted-foreground/85">Any topic, passage, or question</p>
-        </div>
-      </div>
-
-      {!submitted ? (
-        <form onSubmit={generate} className="flex gap-2.5">
-          <input
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder='e.g. "anxiety", "Romans 8", "forgiveness"'
-            data-testid="quick-study-input"
-            className="flex-1 bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
-          />
-          <Button type="submit" size="sm" disabled={!topic.trim()} className="rounded-xl font-semibold shrink-0" data-testid="quick-study-submit">
-            Study
-          </Button>
-        </form>
-      ) : (
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 py-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Preparing your study on "{topic}"...</span>
-              </div>
-              {[1, 0.9, 0.8, 0.7].map((w, i) => (
-                <div key={i} className="h-3 bg-muted animate-pulse rounded-full" style={{ width: `${w * 100}%` }} />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div key="result" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-primary uppercase tracking-wide">{topic}</p>
-                <button onClick={reset} className="text-[11px] text-muted-foreground hover:text-foreground underline" data-testid="quick-study-reset">New study</button>
-              </div>
-              <div className="text-sm text-foreground/80 leading-relaxed space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                {study.split("\n").map((line, i) => {
-                  if (!line.trim()) return null;
-                  const isHeading = /^\d+\.|^#{1,3}\s/.test(line.trim());
-                  return isHeading
-                    ? <p key={i} className="font-bold text-foreground mt-3 first:mt-0">{line.replace(/^#+\s/, "")}</p>
-                    : <p key={i}>{line}</p>;
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
-    </motion.div>
-  );
-}
 
 const TRACK_COLORS: Record<TrackId, { bg: string; border: string; pill: string; icon: string }> = {
   psalms:   { bg: "bg-amber-50/60",  border: "border-amber-200/60",  pill: "bg-amber-100 text-amber-700",   icon: "text-amber-500" },
@@ -470,8 +371,6 @@ export default function UnderstandBible() {
             </motion.div>
           </div>
 
-          {/* Quick Bible Study */}
-          <QuickStudy />
 
           {/* Track Selector */}
           <motion.div
