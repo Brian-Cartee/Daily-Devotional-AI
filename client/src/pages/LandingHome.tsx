@@ -55,7 +55,7 @@ export default function LandingHome() {
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: "center center" }}
         />
-        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.30) 0%, rgba(10,8,24,0.18) 35%, rgba(10,8,24,0.72) 100%)"}} />
+        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         {/* Hero text */}
