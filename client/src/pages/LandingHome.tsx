@@ -69,7 +69,7 @@ export default function LandingHome() {
               Shepherd's Path
             </div>
             <p className="text-white/90 text-xl sm:text-2xl max-w-sm mx-auto drop-shadow font-semibold tracking-wide">
-              Your daily walk with God.
+              Your daily walk with Jesus.
             </p>
           </motion.div>
         </div>
