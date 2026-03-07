@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 
 const LEFT_NAV = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -14,6 +15,7 @@ const LEFT_NAV = [
 export function NavBar() {
   const [location] = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const navLink = (href: string, label: string, Icon: React.ElementType) => {
     const active = location === href || location.startsWith(href + "/");
@@ -54,13 +56,32 @@ export function NavBar() {
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Journal — right-justified */}
+          {/* Right side: Journal · Mail · Bell */}
           <div className="flex items-center gap-0.5">
             {navLink("/journal", "Journal", NotebookPen)}
+
+            {/* Daily email trigger */}
+            <div className="relative ml-1">
+              <button
+                onClick={() => { setEmailOpen((v) => !v); setNotifOpen(false); }}
+                data-testid="button-subscribe-toggle"
+                aria-label="Subscribe to daily verse emails"
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                  emailOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5" />
+              </button>
+              <AnimatePresence>
+                {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
+              </AnimatePresence>
+            </div>
+
+            {/* Notifications */}
             <button
-              onClick={() => setNotifOpen(true)}
+              onClick={() => { setNotifOpen(true); setEmailOpen(false); }}
               data-testid="nav-notifications"
-              className="ml-1 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all"
+              className="ml-0.5 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all"
               aria-label="Notification settings"
             >
               <Bell className="w-3.5 h-3.5" />

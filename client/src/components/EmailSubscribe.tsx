@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,23 +6,11 @@ import { Input } from "@/components/ui/input";
 
 type Status = "idle" | "loading" | "success" | "error";
 
-export function EmailSubscribe() {
-  const [open, setOpen] = useState(false);
+export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,95 +38,79 @@ export function EmailSubscribe() {
   };
 
   return (
-    <div ref={panelRef} className="fixed top-3 right-4 z-50">
+    <motion.div
+      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+      transition={{ duration: 0.18 }}
+      className="absolute top-12 right-0 w-80 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-2xl p-5 z-50"
+    >
       <button
-        data-testid="button-subscribe-toggle"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Subscribe to daily verse emails"
-        className="flex items-center gap-2 bg-card/90 backdrop-blur-md border border-border shadow-md rounded-full pl-3 pr-4 py-2 text-[13px] font-semibold text-foreground hover:shadow-lg transition-shadow"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
       >
-        <Mail className="w-3.5 h-3.5 text-primary" />
-        <span className="hidden sm:inline">Daily email</span>
+        <X className="w-4 h-4" />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: 0.18 }}
-            className="absolute top-11 right-0 w-80 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-2xl p-5"
-          >
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {status === "success" ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-3 py-2 text-center"
+        >
+          <CheckCircle className="w-8 h-8 text-green-500" />
+          <p className="text-sm text-foreground font-medium">{message}</p>
+        </motion.div>
+      ) : (
+        <>
+          <div className="mb-4">
+            <h3 className="font-bold text-foreground text-sm tracking-tight">
+              Get today's verse by email
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Delivered to your inbox each morning
+            </p>
+          </div>
 
-            {status === "success" ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center gap-3 py-2 text-center"
-              >
-                <CheckCircle className="w-8 h-8 text-green-500" />
-                <p className="text-sm text-foreground font-medium">{message}</p>
-              </motion.div>
-            ) : (
-              <>
-                <div className="mb-4">
-                  <h3 className="font-bold text-foreground text-sm tracking-tight">
-                    Get today's verse by email
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Delivered to your inbox each morning
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-2.5">
-                  <Input
-                    data-testid="input-subscribe-name"
-                    type="text"
-                    placeholder="Your first name (optional)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="text-sm rounded-xl"
-                    disabled={status === "loading"}
-                  />
-                  <Input
-                    data-testid="input-subscribe-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="text-sm rounded-xl"
-                    disabled={status === "loading"}
-                  />
-                  {status === "error" && (
-                    <p className="text-xs text-destructive">{message}</p>
-                  )}
-                  <Button
-                    data-testid="button-subscribe-submit"
-                    type="submit"
-                    disabled={!email.trim() || status === "loading"}
-                    className="w-full rounded-xl font-semibold"
-                  >
-                    {status === "loading" ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Subscribe"
-                    )}
-                  </Button>
-                </form>
-              </>
+          <form onSubmit={handleSubmit} className="space-y-2.5">
+            <Input
+              data-testid="input-subscribe-name"
+              type="text"
+              placeholder="Your first name (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="text-sm rounded-xl"
+              disabled={status === "loading"}
+            />
+            <Input
+              data-testid="input-subscribe-email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="text-sm rounded-xl"
+              disabled={status === "loading"}
+            />
+            {status === "error" && (
+              <p className="text-xs text-destructive">{message}</p>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            <Button
+              data-testid="button-subscribe-submit"
+              type="submit"
+              disabled={!email.trim() || status === "loading"}
+              className="w-full rounded-xl font-semibold"
+            >
+              {status === "loading" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Subscribe"
+              )}
+            </Button>
+          </form>
+        </>
+      )}
+    </motion.div>
   );
 }
