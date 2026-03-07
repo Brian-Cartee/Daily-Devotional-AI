@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck } from "lucide-react";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
+import { getSessionId } from "@/lib/session";
+import { useToast } from "@/hooks/use-toast";
 
 function StepLabel({ number, label }: { number: number; label: string }) {
   return (
@@ -34,6 +37,32 @@ export default function Devotional() {
   const [chatOpen, setChatOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
+  const [savedReflection, setSavedReflection] = useState(false);
+  const [savedPrayer, setSavedPrayer] = useState(false);
+  const [savedVerse, setSavedVerse] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const sessionId = getSessionId();
+
+  const saveMutation = useMutation({
+    mutationFn: async (body: { type: string; content: string; reference?: string; verseDate?: string }) => {
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, sessionId }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] });
+      if (variables.type === "reflection") setSavedReflection(true);
+      if (variables.type === "prayer") setSavedPrayer(true);
+      if (variables.type === "verse") setSavedVerse(true);
+      toast({ description: "Saved to your journal." });
+    },
+    onError: () => toast({ description: "Could not save. Please try again.", variant: "destructive" }),
+  });
 
   useEffect(() => {
     if (verse && !devotionalStarted) {
@@ -138,6 +167,15 @@ export default function Devotional() {
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
+            <button
+              data-testid="save-verse"
+              onClick={() => saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date })}
+              disabled={savedVerse || saveMutation.isPending}
+              className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+            >
+              {savedVerse ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+              {savedVerse ? "Saved to Journal" : "Save to Journal"}
+            </button>
           </div>
 
           {/* STEP 2: REFLECTION */}
@@ -159,6 +197,15 @@ export default function Devotional() {
                       <p key={i}>{para}</p>
                     ))}
                   </div>
+                  <button
+                    data-testid="save-reflection"
+                    onClick={() => saveMutation.mutate({ type: "reflection", content: reflectionMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
+                    disabled={savedReflection || saveMutation.isPending}
+                    className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                  >
+                    {savedReflection ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                    {savedReflection ? "Saved to Journal" : "Save to Journal"}
+                  </button>
                 </motion.div>
               )}
               {reflectionMutation.isError && (
@@ -183,6 +230,15 @@ export default function Devotional() {
               {prayerMutation.isSuccess && prayerMutation.data && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   <PrayerText text={prayerMutation.data.content} />
+                  <button
+                    data-testid="save-prayer"
+                    onClick={() => saveMutation.mutate({ type: "prayer", content: prayerMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
+                    disabled={savedPrayer || saveMutation.isPending}
+                    className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                  >
+                    {savedPrayer ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                    {savedPrayer ? "Saved to Journal" : "Save to Journal"}
+                  </button>
                 </motion.div>
               )}
               {prayerMutation.isError && (

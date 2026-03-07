@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { verses, subscribers, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { verses, subscribers, journalEntries, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry } from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
@@ -9,6 +9,9 @@ export interface IStorage {
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
   deactivateSubscriber(email: string): Promise<void>;
+  getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
+  createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
+  deleteJournalEntry(id: number, sessionId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -41,6 +44,25 @@ export class DatabaseStorage implements IStorage {
 
   async deactivateSubscriber(email: string): Promise<void> {
     await db.update(subscribers).set({ active: false }).where(eq(subscribers.email, email));
+  }
+
+  async getJournalEntries(sessionId: string): Promise<JournalEntry[]> {
+    return db
+      .select()
+      .from(journalEntries)
+      .where(eq(journalEntries.sessionId, sessionId))
+      .orderBy(desc(journalEntries.createdAt));
+  }
+
+  async createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry> {
+    const [result] = await db.insert(journalEntries).values(entry).returning();
+    return result;
+  }
+
+  async deleteJournalEntry(id: number, sessionId: string): Promise<void> {
+    await db.delete(journalEntries).where(
+      and(eq(journalEntries.id, id), eq(journalEntries.sessionId, sessionId))
+    );
   }
 }
 

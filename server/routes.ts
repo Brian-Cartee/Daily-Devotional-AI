@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
-import { insertSubscriberSchema } from "@shared/schema";
+import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
@@ -322,6 +322,42 @@ Answer all questions in the context of this scripture. Be concise but insightful
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Failed to send emails." });
+    }
+  });
+
+  // ── Journal Routes ──────────────────────────────────────────────────────────
+
+  app.get("/api/journal", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      res.json(entries);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to load journal" });
+    }
+  });
+
+  app.post("/api/journal", async (req, res) => {
+    const parsed = insertJournalEntrySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid entry", errors: parsed.error.flatten() });
+    try {
+      const entry = await storage.createJournalEntry(parsed.data);
+      res.status(201).json(entry);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to save entry" });
+    }
+  });
+
+  app.delete("/api/journal/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { sessionId } = req.body;
+    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
+    try {
+      await storage.deleteJournalEntry(id, sessionId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete entry" });
     }
   });
 

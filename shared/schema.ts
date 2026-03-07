@@ -46,3 +46,27 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
 
 export type Subscriber = typeof subscribers.$inferSelect;
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
+
+export const journalEntries = pgTable("journal_entries", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  type: text("type").notNull(),
+  content: text("content").notNull(),
+  reference: text("reference"),
+  verseDate: text("verse_date"),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  type: z.enum(["prayer", "reflection", "verse"]),
+  sessionId: z.string().min(1),
+  content: z.string().min(1),
+  reference: z.string().optional(),
+  verseDate: z.string().optional(),
+});
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;

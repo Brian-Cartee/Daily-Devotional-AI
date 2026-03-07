@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
   { href: "/understand", label: "Journey", icon: Compass },
   { href: "/read", label: "Read", icon: BookOpen },
+  { href: "/journal", label: "Journal", icon: NotebookPen },
 ];
 
 export function NavBar() {
