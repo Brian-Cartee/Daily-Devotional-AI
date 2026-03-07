@@ -51,6 +51,7 @@ export const journalEntries = pgTable("journal_entries", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
   type: text("type").notNull(),
+  title: text("title"),
   content: text("content").notNull(),
   reference: text("reference"),
   verseDate: text("verse_date"),
@@ -61,9 +62,10 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit(
   id: true,
   createdAt: true,
 }).extend({
-  type: z.enum(["prayer", "reflection", "verse"]),
+  type: z.enum(["prayer", "reflection", "verse", "note"]),
   sessionId: z.string().min(1),
   content: z.string().min(1),
+  title: z.string().optional(),
   reference: z.string().optional(),
   verseDate: z.string().optional(),
 });
