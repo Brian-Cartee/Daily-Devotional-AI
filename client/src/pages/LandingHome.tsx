@@ -68,13 +68,9 @@ export default function LandingHome() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-sm font-semibold uppercase tracking-widest mb-4">
               Shepherd Path
             </div>
-            <p className="text-white/90 text-base sm:text-lg max-w-sm mx-auto leading-relaxed drop-shadow mb-6 font-medium">
+            <p className="text-white/90 text-2xl sm:text-3xl max-w-sm mx-auto drop-shadow font-semibold tracking-wide">
               Walk the path. Follow the Word.
             </p>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight text-balance drop-shadow-lg">
-              A better way to<br />
-              <span className="text-amber-300">engage the Bible</span>
-            </h1>
           </motion.div>
         </div>
       </div>
