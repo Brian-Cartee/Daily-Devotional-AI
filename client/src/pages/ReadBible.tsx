@@ -100,6 +100,29 @@ export default function ReadBible() {
     <>
       <NavBar />
       <main className="min-h-screen bg-background pt-14">
+        {/* Hero */}
+        <div className="relative h-44 sm:h-52 overflow-hidden">
+          <img
+            src="/hero-read.png"
+            alt="Open Bible by candlelight"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/65" />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white text-[11px] font-bold uppercase tracking-widest mb-2">
+              <BookOpen className="w-3 h-3" />
+              Full Bible
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Read the Bible</h1>
+            <p className="text-white/90 text-xs mt-1.5 drop-shadow" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>Every book. Every chapter. With AI insight.</p>
+          </motion.div>
+        </div>
+
         <div className="max-w-4xl mx-auto">
           {!selectedBook ? (
             // Book picker
@@ -110,13 +133,6 @@ export default function ReadBible() {
               className="px-5 py-10"
             >
               <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-4">
-                  <BookOpen className="w-4 h-4" />
-                  Full Bible
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-foreground mb-2">
-                  Read the Bible
-                </h1>
                 <p className="text-muted-foreground text-sm">
                   Choose a book to begin reading
                 </p>
