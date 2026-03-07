@@ -55,8 +55,8 @@ Keep it warm, accessible, and grounded in Scripture.`,
       <div className="flex items-center gap-2.5 mb-4">
         <Search className="w-4 h-4 text-primary shrink-0" />
         <div>
-          <p className="text-[13px] font-bold text-foreground">Quick Bible Study</p>
-          <p className="text-[11px] text-muted-foreground">Any topic, passage, or question</p>
+          <p className="text-base font-bold text-foreground">Quick Bible Study</p>
+          <p className="text-[12px] text-muted-foreground/85">Any topic, passage, or question</p>
         </div>
       </div>
 
@@ -461,12 +461,12 @@ export default function UnderstandBible() {
               transition={{ duration: 0.5 }}
               className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white text-[11px] font-bold uppercase tracking-widest mb-2">
                 <Compass className="w-3 h-3" />
-                Guided Path
+                Bible Journey
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight text-balance">Bible Journey</h1>
-              <p className="text-white/60 text-xs mt-1.5 max-w-xs">Choose a track. Follow it daily.</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight text-balance drop-shadow-lg">What's it all about?</h1>
+              <p className="text-white/90 text-xs mt-1.5 max-w-xs drop-shadow" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>A 30-day journey through the heart of Scripture</p>
             </motion.div>
           </div>
 

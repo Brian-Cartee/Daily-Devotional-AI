@@ -18,8 +18,8 @@ export interface Track {
 export const TRACKS: Track[] = [
   {
     id: "psalms",
-    name: "Psalms",
-    description: "Songs of lament, praise, and trust",
+    name: "The Songs",
+    description: "Prayers and praises from God's people",
     icon: "🎵",
     accent: "text-amber-600",
     passages: [
@@ -56,8 +56,8 @@ export const TRACKS: Track[] = [
   },
   {
     id: "proverbs",
-    name: "Proverbs",
-    description: "Ancient wisdom for daily decisions",
+    name: "The Way",
+    description: "Ancient wisdom for everyday living",
     icon: "💡",
     accent: "text-yellow-600",
     passages: [
@@ -93,8 +93,8 @@ export const TRACKS: Track[] = [
   },
   {
     id: "gospel",
-    name: "Gospel",
-    description: "The life of Jesus through Luke's eyes",
+    name: "The Good News",
+    description: "The life and words of Jesus",
     icon: "✝️",
     accent: "text-indigo-600",
     passages: [
@@ -130,8 +130,8 @@ export const TRACKS: Track[] = [
   },
   {
     id: "wisdom",
-    name: "Wisdom",
-    description: "Life's hard questions, honestly answered",
+    name: "The Questions",
+    description: "Faith through life's hardest moments",
     icon: "📜",
     accent: "text-teal-600",
     passages: [
