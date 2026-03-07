@@ -155,7 +155,7 @@ export default function Journal() {
               </div>
               <p className="text-sm font-medium text-muted-foreground max-w-[220px]">{activeTabConfig.emptyText}</p>
               <p className="text-xs text-muted-foreground/60 mt-2 max-w-[240px]">
-                Use the save buttons on the Daily Devotional page to add entries.
+                Use the save buttons on the Devotional or Study pages to add entries.
               </p>
             </motion.div>
           ) : (

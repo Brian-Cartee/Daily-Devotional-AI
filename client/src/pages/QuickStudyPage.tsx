@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X } from "lucide-react";
+import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { TRACKS, getTodaysPassage, getPassageIndex, type TrackId, type Track } from "@/data/trackPaths";
+import { useToast } from "@/hooks/use-toast";
+import { getSessionId } from "@/lib/session";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -18,6 +20,47 @@ const TRACK_COLORS: Record<TrackId, { bg: string; border: string; pill: string; 
   gospel:   { bg: "bg-indigo-50/60", border: "border-indigo-200/60", pill: "bg-indigo-100 text-indigo-700",  icon: "text-indigo-500" },
   wisdom:   { bg: "bg-teal-50/60",   border: "border-teal-200/60",   pill: "bg-teal-100 text-teal-700",     icon: "text-teal-600" },
 };
+
+function useJournalSave() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const sessionId = getSessionId();
+
+  return useMutation({
+    mutationFn: async (body: { type: string; content: string; reference?: string }) => {
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, sessionId }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] });
+      toast({ description: "Saved to your journal." });
+    },
+    onError: () => toast({ description: "Could not save. Please try again.", variant: "destructive" }),
+  });
+}
+
+function SaveButton({ onClick, saved, label = "Save to Journal" }: { onClick: () => void; saved: boolean; label?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={saved}
+      data-testid="btn-save-journal"
+      className={`inline-flex items-center gap-1.5 text-[12px] font-semibold rounded-full px-3 py-1.5 transition-all ${
+        saved
+          ? "bg-green-100 text-green-700 cursor-default"
+          : "bg-primary/10 text-primary hover:bg-primary/20"
+      }`}
+    >
+      {saved ? <Check className="w-3 h-3" /> : <BookmarkPlus className="w-3 h-3" />}
+      {saved ? "Saved!" : label}
+    </button>
+  );
+}
 
 function usePassageText(apiRef: string, enabled: boolean) {
   const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
@@ -33,11 +76,17 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
   const [aiContent, setAiContent] = useState("");
   const [aiMode, setAiMode] = useState<"reflect" | "pray" | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [savedReflection, setSavedReflection] = useState(false);
+  const [savedPrayer, setSavedPrayer] = useState(false);
+  const [savedScripture, setSavedScripture] = useState(false);
+  const saveJournal = useJournalSave();
 
   const generateAI = async (type: "reflect" | "pray") => {
     setAiMode(type);
     setAiContent("");
     setIsAiLoading(true);
+    setSavedReflection(false);
+    setSavedPrayer(false);
     const passageText = textQuery.data?.text ?? passage.title;
     try {
       const res = await apiRequest("POST", "/api/chat/passage", {
@@ -56,6 +105,27 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
       setAiContent("Sorry, we couldn't generate a response right now. Please try again.");
     }
     setIsAiLoading(false);
+  };
+
+  const handleSaveAi = () => {
+    if (!aiContent || !aiMode) return;
+    saveJournal.mutate(
+      { type: aiMode === "reflect" ? "reflection" : "prayer", content: aiContent, reference: passage.reference },
+      {
+        onSuccess: () => {
+          if (aiMode === "reflect") setSavedReflection(true);
+          if (aiMode === "pray") setSavedPrayer(true);
+        },
+      }
+    );
+  };
+
+  const handleSaveScripture = () => {
+    if (!textQuery.data) return;
+    saveJournal.mutate(
+      { type: "verse", content: textQuery.data.text, reference: passage.reference },
+      { onSuccess: () => setSavedScripture(true) }
+    );
   };
 
   return (
@@ -103,9 +173,16 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
                 </div>
               )}
               {textQuery.data && (
-                <div className="bg-white/50 rounded-xl p-4 max-h-60 overflow-y-auto">
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{textQuery.data.text}</p>
-                </div>
+                <>
+                  <div className="bg-white/50 rounded-xl p-4 max-h-60 overflow-y-auto">
+                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{textQuery.data.text}</p>
+                  </div>
+                  <SaveButton
+                    onClick={handleSaveScripture}
+                    saved={savedScripture}
+                    label="Save scripture"
+                  />
+                </>
               )}
               <div className="flex gap-2 flex-wrap">
                 <Button size="sm" variant="outline" className="rounded-full" onClick={() => generateAI("reflect")} disabled={isAiLoading} data-testid="btn-track-reflect">
@@ -122,9 +199,16 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
               )}
               {aiContent && aiMode && (
                 <div className="bg-white/60 rounded-xl p-4 border border-white/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
+                    </div>
+                    <SaveButton
+                      onClick={handleSaveAi}
+                      saved={aiMode === "reflect" ? savedReflection : savedPrayer}
+                      label={aiMode === "reflect" ? "Save reflection" : "Save prayer"}
+                    />
                   </div>
                   <div className="text-sm text-slate-600 leading-relaxed space-y-3">
                     {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
@@ -154,7 +238,17 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
 function TrackPassageRow({ passage, index, trackId }: { passage: { reference: string; apiRef: string; title: string }; index: number; trackId: TrackId }) {
   const colors = TRACK_COLORS[trackId];
   const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const textQuery = usePassageText(passage.apiRef, open);
+  const saveJournal = useJournalSave();
+
+  const handleSave = () => {
+    if (!textQuery.data) return;
+    saveJournal.mutate(
+      { type: "verse", content: textQuery.data.text, reference: passage.reference },
+      { onSuccess: () => setSaved(true) }
+    );
+  };
 
   return (
     <div className="bg-white/40 border border-white/20 rounded-xl overflow-hidden">
@@ -177,10 +271,13 @@ function TrackPassageRow({ passage, index, trackId }: { passage: { reference: st
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-            <div className="px-4 pb-4 pt-2 border-t border-white/20">
+            <div className="px-4 pb-4 pt-2 border-t border-white/20 space-y-3">
               {textQuery.isLoading && <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...</div>}
               {textQuery.data && (
-                <p className="text-sm text-slate-600 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-line">{textQuery.data.text}</p>
+                <>
+                  <p className="text-sm text-slate-600 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-line">{textQuery.data.text}</p>
+                  <SaveButton onClick={handleSave} saved={saved} label="Save scripture" />
+                </>
               )}
             </div>
           </motion.div>
@@ -196,7 +293,9 @@ export default function QuickStudyPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [activeTopic, setActiveTopic] = useState("");
+  const [savedStudy, setSavedStudy] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<TrackId | null>(null);
+  const saveJournal = useJournalSave();
 
   useEffect(() => {
     const saved = localStorage.getItem("sp_track") as TrackId | null;
@@ -222,6 +321,7 @@ export default function QuickStudyPage() {
     setLoading(true);
     setStudy("");
     setSubmitted(true);
+    setSavedStudy(false);
     setActiveTopic(q);
     try {
       const res = await apiRequest("POST", "/api/chat/passage", {
@@ -245,7 +345,15 @@ Keep it warm, accessible, and grounded in Scripture.`,
     setLoading(false);
   };
 
-  const reset = () => { setTopic(""); setStudy(""); setSubmitted(false); setActiveTopic(""); };
+  const reset = () => { setTopic(""); setStudy(""); setSubmitted(false); setActiveTopic(""); setSavedStudy(false); };
+
+  const handleSaveStudy = () => {
+    if (!study) return;
+    saveJournal.mutate(
+      { type: "reflection", content: study, reference: activeTopic },
+      { onSuccess: () => setSavedStudy(true) }
+    );
+  };
 
   return (
     <>
@@ -337,6 +445,15 @@ Keep it warm, accessible, and grounded in Scripture.`,
                           : <p key={i}>{line}</p>;
                       })}
                     </div>
+                    {study && (
+                      <div className="mt-5 pt-4 border-t border-border/40">
+                        <SaveButton
+                          onClick={handleSaveStudy}
+                          saved={savedStudy}
+                          label="Save study to Journal"
+                        />
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
