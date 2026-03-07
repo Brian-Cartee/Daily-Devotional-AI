@@ -8,8 +8,8 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 
 ## Four Core Experiences
 
-1. **Daily Devotional** (`/devotional`) — Today's Word → AI Reflection → AI Prayer → Ask About Scripture
-2. **Bible Journey** (`/understand`) — Curated guided path through 18 key passages with AI study tools
+1. **Daily Devotional** (`/devotional`) — 4-step spiritual loop: Today's Word → AI Reflection → AI Prayer → Thank Him (personalized gratitude closing prayer). Email capture at bottom. Streak tracking.
+2. **Bible Journey** (`/understand`) — 4 curated reading tracks (Psalms, Proverbs, Gospel, Wisdom) with daily-rotated passage + full 18-passage canonical guided path with AI tools
 3. **Read the Bible** (`/read`) — Full Bible chapter-by-chapter reading (KJV via bible-api.com) with AI assistance
 4. **Prayer Journal** (`/journal`) — Save prayers, reflections, and scriptures; organized in 3 tabs
 
@@ -28,8 +28,8 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 | Route | Page | Description |
 |-------|------|-------------|
 | `/` | LandingHome | Home screen with 3-card section links |
-| `/devotional` | Devotional | 3-step daily flow: Word → Reflection → Prayer + AI chat |
-| `/understand` | UnderstandBible | 18 guided key passages with AI tools |
+| `/devotional` | Devotional | 4-step daily flow: Word → Reflection → Prayer → Thank Him + email capture |
+| `/understand` | UnderstandBible | 4 Bible tracks + 18 canonical guided passages with AI tools |
 | `/read` | ReadBible | Full Bible reading (Literata font, parsed verse numbers) |
 | `/journal` | Journal | Prayer journal — My Prayers, My Reflections, Saved Scriptures |
 
@@ -55,12 +55,14 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 | GET | `/api/journal?sessionId=...` | Get journal entries for session |
 | POST | `/api/journal` | Create journal entry |
 | DELETE | `/api/journal/:id` | Delete journal entry |
+| POST | `/api/streak` | Record daily visit, return current/longest streak |
 
 ## Database Schema
 
 - `verses` — id, reference, text, encouragement, reflection_prompt, date (unique)
 - `subscribers` — id, email (unique), name, subscribed_at, active
 - `journal_entries` — id, session_id, type (prayer/reflection/verse), content, reference, verse_date, created_at
+- `streaks` — id, session_id (unique), current_streak, longest_streak, last_visit_date
 
 ## Journal Session Model
 
@@ -104,6 +106,16 @@ Spreadsheet ID: `1Zhg_rL3i-eIyBNWOpB8Vld0awv6e-l9UoG6lvY3r4jI`
 Comparable pricing: Hallow (~$8.99/mo), Glorify (~$6.99/mo)
 
 Implementation will require: user auth, subscription/payment integration (Stripe), usage tracking, and feature gating middleware.
+
+## Future Features (Not Yet Built)
+
+### "Pray for Me" — Community Prayer Wall
+Users submit anonymous prayer requests. Others tap 🙏 "I prayed for you." This turns the app into a community, not just a tool — and is a genuine virality driver.
+Implementation will require: prayer_requests table (anonymous or session-based), prayer_reactions table, a public feed UI, moderation/reporting.
+
+### User Accounts + Premium Tier
+Auth (Replit Auth or email/password), Stripe subscriptions, feature gating for unlimited AI.
+Pricing target: $5–9/mo (comparable to Hallow $8.99, Glorify $6.99).
 
 ## Guided Bible Path
 
