@@ -247,15 +247,25 @@ export default function Devotional() {
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <button
-              data-testid="save-verse"
-              onClick={() => saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date })}
-              disabled={savedVerse || saveMutation.isPending}
-              className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-            >
-              {savedVerse ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-              {savedVerse ? "Saved to Journal" : "Save to Journal"}
-            </button>
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                data-testid="save-verse"
+                onClick={() => saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date })}
+                disabled={savedVerse || saveMutation.isPending}
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+              >
+                {savedVerse ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                {savedVerse ? "Saved to Journal" : "Save to Journal"}
+              </button>
+              <button
+                data-testid="button-share"
+                onClick={handleShare}
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                {copied ? "Copied!" : "Share"}
+              </button>
+            </div>
           </div>
 
           {/* STEP 2: REFLECTION */}
@@ -386,24 +396,15 @@ export default function Devotional() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2.5 pt-1">
+          <div className="pt-1">
             <Button
               data-testid="button-ask-scripture"
               size="lg"
               onClick={() => setChatOpen(v => !v)}
-              className="rounded-xl px-5 font-bold text-sm flex-1"
+              className="rounded-xl px-5 font-bold text-sm w-full"
             >
               <MessageCircle className="w-4 h-4 mr-2" />
               Ask About This Scripture
-            </Button>
-            <Button
-              data-testid="button-share"
-              size="lg"
-              variant="outline"
-              onClick={handleShare}
-              className="rounded-xl px-4 font-semibold text-sm"
-            >
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
             </Button>
           </div>
 
