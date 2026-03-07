@@ -41,8 +41,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "This is the beginning of God's rescue plan. The promise to Abraham is the seed from which all of Scripture grows — and it ultimately points to Jesus."
   },
   {
-    id: "exodus",
+    id: "isaac",
     order: 4,
+    theme: "The Covenant",
+    title: "The Testing of Abraham",
+    reference: "Genesis 22",
+    apiRef: "genesis 22",
+    summary: "God asks Abraham to sacrifice his only son Isaac. Abraham obeys, and at the last moment God provides a ram as a substitute. It is the most agonizing — and most hope-filled — story in Genesis.",
+    whyItMatters: "This story foreshadows the cross with striking precision: a beloved son, a sacrificial substitute, and a God who provides what he requires. It has echoed through Christian theology ever since."
+  },
+  {
+    id: "exodus",
+    order: 5,
     theme: "Rescue",
     title: "The Exodus",
     reference: "Exodus 14",
@@ -51,8 +61,48 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "The Exodus is the defining rescue story of the Old Testament. It shows that God hears the cries of the oppressed, acts with power, and brings his people to freedom."
   },
   {
+    id: "commandments",
+    order: 6,
+    theme: "The Law",
+    title: "The Ten Commandments",
+    reference: "Exodus 20",
+    apiRef: "exodus 20",
+    summary: "At Mount Sinai, God gives Israel the Ten Commandments — instructions for how a redeemed people should live: loving God above all else, and treating one another with justice and care.",
+    whyItMatters: "The Law isn't a ticket to earn God's favor — he already rescued Israel before giving it. It shows what a flourishing life looks like and how deeply our hearts fall short of it, pointing us to our need for grace."
+  },
+  {
+    id: "joshua",
+    order: 7,
+    theme: "The Promise",
+    title: "Be Strong and Courageous",
+    reference: "Joshua 1",
+    apiRef: "joshua 1",
+    summary: "After Moses dies, Joshua is called to lead Israel into the Promised Land. God appears to him and repeats the command three times: be strong and courageous, for I am with you wherever you go.",
+    whyItMatters: "Every generation faces its own 'Jordan River' — a threshold that requires courage. This passage speaks to anyone stepping into the unknown and reminds us that the same God who went before Israel goes before us."
+  },
+  {
+    id: "ruth",
+    order: 8,
+    theme: "Faithfulness",
+    title: "Where You Go, I Will Go",
+    reference: "Ruth 1",
+    apiRef: "ruth 1",
+    summary: "After losing her husband, a foreign woman named Ruth refuses to abandon her mother-in-law Naomi. She makes a stunning declaration of loyalty: 'Where you go I will go. Your people will be my people and your God my God.'",
+    whyItMatters: "Ruth's covenant love is one of the most beautiful pictures of hesed — faithful, loyal, self-giving love — in the Bible. It also shows that God's story was always bigger than one nation."
+  },
+  {
+    id: "david-goliath",
+    order: 9,
+    theme: "David",
+    title: "David and Goliath",
+    reference: "1 Samuel 17",
+    apiRef: "1 samuel 17",
+    summary: "A giant warrior named Goliath taunts Israel for forty days. A teenage shepherd named David steps forward, refusing to wear armor. Armed with a sling and five stones, he faces the giant — and wins.",
+    whyItMatters: "David's victory isn't about human heroism — it's about trusting that the battle belongs to God. The story anticipates Jesus: the unlikely, underestimated champion who defeats the enemy no one else could face."
+  },
+  {
     id: "psalm23",
-    order: 5,
+    order: 10,
     theme: "Worship & Wisdom",
     title: "The Lord Is My Shepherd",
     reference: "Psalm 23",
@@ -62,7 +112,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
   },
   {
     id: "proverbs3",
-    order: 6,
+    order: 11,
     theme: "Worship & Wisdom",
     title: "Trust in the Lord",
     reference: "Proverbs 3",
@@ -72,7 +122,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
   },
   {
     id: "isaiah53",
-    order: 7,
+    order: 12,
     theme: "The Promise",
     title: "The Suffering Servant",
     reference: "Isaiah 53",
@@ -81,8 +131,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "This is one of the most remarkable prophecies in the Bible. Christians see it as a precise picture of Jesus — making it a bridge between the Old and New Testaments."
   },
   {
+    id: "jeremiah31",
+    order: 13,
+    theme: "The Promise",
+    title: "The New Covenant",
+    reference: "Jeremiah 31",
+    apiRef: "jeremiah 31",
+    summary: "God speaks to exiled Israel with stunning tenderness: the days are coming when I will make a new covenant — not written on stone, but on human hearts. I will forgive their wickedness and remember their sin no more.",
+    whyItMatters: "Written during Israel's darkest hour, this passage promises that the problem between God and humanity will be solved from the inside out. Jesus quotes this passage at the Last Supper when he holds up the cup."
+  },
+  {
     id: "john1",
-    order: 8,
+    order: 14,
     theme: "Jesus",
     title: "The Word Became Flesh",
     reference: "John 1",
@@ -91,8 +151,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "John's prologue is the theological foundation for understanding who Jesus is — not merely a good teacher, but God himself entering the human story to bring light into darkness."
   },
   {
+    id: "luke4",
+    order: 15,
+    theme: "Jesus",
+    title: "The Spirit of the Lord Is on Me",
+    reference: "Luke 4",
+    apiRef: "luke 4",
+    summary: "Jesus returns from the wilderness and enters the synagogue in Nazareth. He reads from Isaiah 61 — 'The Spirit of the Lord is on me, to proclaim good news to the poor' — then says, 'Today this scripture is fulfilled in your hearing.'",
+    whyItMatters: "This is Jesus's mission statement. He comes not for the powerful but for the poor, the prisoner, the broken. Understanding his purpose changes how we see everything else he does."
+  },
+  {
     id: "john3",
-    order: 9,
+    order: 16,
     theme: "Jesus",
     title: "Born Again",
     reference: "John 3",
@@ -102,7 +172,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
   },
   {
     id: "matthew5",
-    order: 10,
+    order: 17,
     theme: "Jesus",
     title: "The Sermon on the Mount",
     reference: "Matthew 5",
@@ -111,8 +181,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "The Sermon on the Mount is the clearest picture of what life in God's Kingdom looks like. It challenges comfortable religion and calls people to a transformed inner life."
   },
   {
+    id: "john10",
+    order: 18,
+    theme: "Jesus",
+    title: "The Good Shepherd",
+    reference: "John 10",
+    apiRef: "john 10",
+    summary: "Jesus declares 'I am the good shepherd' — the one who knows his sheep by name, leads them, and lays down his life for them. He contrasts himself with hired hands who abandon the flock when danger comes.",
+    whyItMatters: "Echoing Psalm 23, this passage reveals the heart of Jesus: not a distant ruler but a shepherd who goes out searching, who knows each person individually, and who gives his life rather than losing one."
+  },
+  {
     id: "luke15",
-    order: 11,
+    order: 19,
     theme: "Jesus",
     title: "The Prodigal Son",
     reference: "Luke 15",
@@ -121,8 +201,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "This is the most powerful story of grace in the Bible. The running father is a picture of how God responds to those who return to him — not with judgment, but with overwhelming love."
   },
   {
+    id: "john13",
+    order: 20,
+    theme: "Jesus",
+    title: "Love One Another",
+    reference: "John 13",
+    apiRef: "john 13",
+    summary: "At the Last Supper, Jesus kneels down and washes his disciples' feet — the task of the lowest servant. Then he gives a new command: love one another as I have loved you.",
+    whyItMatters: "The night before his death, Jesus defines greatness as service. This single act and command reoriented the entire Christian community around a love that goes to the floor — and to the cross."
+  },
+  {
     id: "john11",
-    order: 12,
+    order: 21,
     theme: "Jesus",
     title: "I Am the Resurrection",
     reference: "John 11",
@@ -132,7 +222,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
   },
   {
     id: "john19-20",
-    order: 13,
+    order: 22,
     theme: "The Cross & Resurrection",
     title: "The Crucifixion & Resurrection",
     reference: "John 19–20",
@@ -142,7 +232,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
   },
   {
     id: "acts2",
-    order: 14,
+    order: 23,
     theme: "The Church",
     title: "Pentecost",
     reference: "Acts 2",
@@ -151,8 +241,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "Pentecost marks the birthday of the Christian church. It shows that the Spirit isn't just for special people — he is poured out on all who believe, empowering ordinary people for extraordinary things."
   },
   {
+    id: "acts9",
+    order: 24,
+    theme: "The Church",
+    title: "The Conversion of Paul",
+    reference: "Acts 9",
+    apiRef: "acts 9",
+    summary: "Saul of Tarsus — Christianity's most dangerous persecutor — is suddenly blinded by a light on the road to Damascus. He hears the voice of Jesus, and his life is turned completely upside down.",
+    whyItMatters: "Paul's conversion is the ultimate story of grace reaching the most unlikely person. If God could redeem the man who was hunting Christians, no one is beyond his reach."
+  },
+  {
     id: "romans8",
-    order: 15,
+    order: 25,
     theme: "The Letters",
     title: "No Condemnation",
     reference: "Romans 8",
@@ -161,8 +261,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "Romans 8 is one of the greatest chapters in the Bible. It moves from the struggle of the sinful nature all the way to the unshakeable security of God's love. Many call it the summit of the New Testament."
   },
   {
+    id: "galatians5",
+    order: 26,
+    theme: "The Letters",
+    title: "The Fruit of the Spirit",
+    reference: "Galatians 5",
+    apiRef: "galatians 5",
+    summary: "Paul contrasts living by our own impulses with living by the Spirit, who produces love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, and self-control in us.",
+    whyItMatters: "This passage answers the question: what does a changed life actually look like? The fruit of the Spirit isn't a performance standard — it's the natural result of staying connected to the vine."
+  },
+  {
     id: "1cor13",
-    order: 16,
+    order: 27,
     theme: "The Letters",
     title: "The Greatest of These Is Love",
     reference: "1 Corinthians 13",
@@ -172,7 +282,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
   },
   {
     id: "eph2",
-    order: 17,
+    order: 28,
     theme: "The Letters",
     title: "Saved by Grace",
     reference: "Ephesians 2",
@@ -181,8 +291,18 @@ export const GUIDED_PATH: GuidedChapter[] = [
     whyItMatters: "Ephesians 2 is the clearest statement of the gospel in Paul's letters. It answers the question 'how can I be right with God?' with two words: through grace."
   },
   {
+    id: "hebrews11",
+    order: 29,
+    theme: "The Letters",
+    title: "The Hall of Faith",
+    reference: "Hebrews 11",
+    apiRef: "hebrews 11",
+    summary: "The writer of Hebrews defines faith as 'confidence in what we hope for, assurance about what we do not see,' then rolls through the whole Old Testament: Abel, Noah, Abraham, Moses, and more — all of whom acted on faith.",
+    whyItMatters: "This chapter connects every reader to a vast community of people who trusted God without seeing the full picture. We are invited to join them — part of a story much larger than our own."
+  },
+  {
     id: "revelation21",
-    order: 18,
+    order: 30,
     theme: "The End & the New Beginning",
     title: "All Things New",
     reference: "Revelation 21",
