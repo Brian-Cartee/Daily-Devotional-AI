@@ -83,6 +83,34 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
 
   const sections = [
     {
+      id: "sms",
+      icon: Smartphone,
+      label: "SMS Reminders",
+      description: "Daily verse via text message at 7 AM",
+      color: "text-teal-500",
+      content: phoneSaved ? (
+        <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+          <Check className="w-4 h-4" />
+          Number saved · You'll be notified when SMS is live
+        </div>
+      ) : (
+        <form onSubmit={handleSavePhone} className="flex gap-2">
+          <input
+            type="tel"
+            value={phoneInput}
+            onChange={(e) => setPhoneInput(e.target.value)}
+            placeholder="+1 (555) 000-0000"
+            required
+            data-testid="notif-sms-input"
+            className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
+          />
+          <Button type="submit" size="sm" disabled={!phoneInput.trim()} className="rounded-xl shrink-0" data-testid="notif-sms-submit">
+            Save Number
+          </Button>
+        </form>
+      ),
+    },
+    {
       id: "email",
       icon: Mail,
       label: "Email Reminders",
@@ -131,34 +159,6 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         </Button>
       ),
     },
-    {
-      id: "sms",
-      icon: Smartphone,
-      label: "SMS Reminders",
-      description: "Text message reminder at 7 AM · Coming soon",
-      color: "text-teal-500",
-      content: phoneSaved ? (
-        <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
-          <Check className="w-4 h-4" />
-          Number saved · You'll be notified when SMS is live
-        </div>
-      ) : (
-        <form onSubmit={handleSavePhone} className="flex gap-2">
-          <input
-            type="tel"
-            value={phoneInput}
-            onChange={(e) => setPhoneInput(e.target.value)}
-            placeholder="+1 (555) 000-0000"
-            required
-            data-testid="notif-sms-input"
-            className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
-          />
-          <Button type="submit" size="sm" variant="outline" disabled={!phoneInput.trim()} className="rounded-xl shrink-0 opacity-70" data-testid="notif-sms-submit">
-            Notify Me
-          </Button>
-        </form>
-      ),
-    },
   ];
 
   return (
@@ -203,7 +203,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
               <div className="pl-6">{content}</div>
-              {id !== "sms" && <div className="h-px bg-border/40" />}
+              {id !== "browser" && <div className="h-px bg-border/40" />}
             </div>
           ))}
         </div>

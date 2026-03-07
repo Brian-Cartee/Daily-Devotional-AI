@@ -4,6 +4,7 @@ import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
+  getVerseById(id: number): Promise<Verse | undefined>;
   createVerse(verse: InsertVerse): Promise<Verse>;
   getAllActiveSubscribers(): Promise<Subscriber[]>;
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
@@ -18,6 +19,11 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async getVerseByDate(date: string): Promise<Verse | undefined> {
     const [verse] = await db.select().from(verses).where(eq(verses.date, date));
+    return verse;
+  }
+
+  async getVerseById(id: number): Promise<Verse | undefined> {
+    const [verse] = await db.select().from(verses).where(eq(verses.id, id));
     return verse;
   }
 

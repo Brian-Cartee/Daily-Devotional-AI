@@ -14,7 +14,8 @@ export function useDailyVerse() {
   return useQuery({
     queryKey: [api.verses.getDaily.path],
     queryFn: async () => {
-      const res = await fetch(api.verses.getDaily.path, { credentials: "include" });
+      const localDate = new Intl.DateTimeFormat("en-CA").format(new Date());
+      const res = await fetch(`${api.verses.getDaily.path}?date=${localDate}`, { credentials: "include" });
       if (!res.ok) {
         if (res.status === 404) return null;
         throw new Error("Failed to fetch daily verse");

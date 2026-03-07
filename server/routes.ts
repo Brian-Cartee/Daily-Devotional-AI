@@ -60,7 +60,7 @@ export async function registerRoutes(
 
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = (req.query.date as string) || new Date().toISOString().split("T")[0];
     let verse = await storage.getVerseByDate(today);
 
     // If not cached yet, try syncing on-demand
@@ -90,8 +90,7 @@ export async function registerRoutes(
   app.post(api.ai.generate.path, async (req, res) => {
     try {
       const input = api.ai.generate.input.parse(req.body);
-      const today = new Date().toISOString().split("T")[0];
-      const verse = await storage.getVerseByDate(today);
+      const verse = await storage.getVerseById(input.verseId);
 
       if (!verse) {
         return res.status(404).json({ message: "Verse not found to reflect on." });
@@ -139,8 +138,7 @@ export async function registerRoutes(
   app.post(api.ai.chat.path, async (req, res) => {
     try {
       const input = chatRequestSchema.parse(req.body);
-      const today = new Date().toISOString().split("T")[0];
-      const verse = await storage.getVerseByDate(today);
+      const verse = await storage.getVerseById(input.verseId);
 
       if (!verse) {
         return res.status(404).json({ message: "Verse not found." });
