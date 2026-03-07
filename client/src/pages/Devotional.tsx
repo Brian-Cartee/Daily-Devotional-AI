@@ -383,18 +383,24 @@ export default function Devotional() {
                   className="mt-6 pt-5 border-t border-border/40"
                 >
                   <PrayerText text={gratitudePrayer} />
-                  <button
-                    data-testid="save-gratitude-prayer"
-                    onClick={() => {
-                      saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse.reference, verseDate: verse.date });
-                      setSavedGratitude(true);
-                    }}
-                    disabled={savedGratitude || saveMutation.isPending}
-                    className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                  >
-                    {savedGratitude ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    {savedGratitude ? "Saved to Journal" : "Save to Journal"}
-                  </button>
+                  <div className="mt-4 flex items-center justify-between">
+                    <button
+                      data-testid="save-gratitude-prayer"
+                      onClick={() => {
+                        saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse.reference, verseDate: verse.date });
+                        setSavedGratitude(true);
+                      }}
+                      disabled={savedGratitude || saveMutation.isPending}
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {savedGratitude ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                      {savedGratitude ? "Saved to Journal" : "Save to Journal"}
+                    </button>
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
+                      <Sparkles className="w-3 h-3" />
+                      GPT-4o · Shepherd's Path
+                    </span>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -402,15 +408,27 @@ export default function Devotional() {
 
           {/* Actions */}
           <div className="pt-1">
-            <Button
+            <button
               data-testid="button-ask-scripture"
-              size="lg"
               onClick={() => setChatOpen(v => !v)}
-              className="rounded-xl px-5 font-bold text-sm w-full"
+              className="w-full rounded-2xl border border-primary/25 bg-primary/5 hover:bg-primary/10 transition-all px-5 py-4 text-left group"
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Ask About This Scripture
-            </Button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground leading-tight">Ask AI About This Scripture</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">History · context · cross-references · application</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-semibold text-muted-foreground/70 bg-muted/80 px-2 py-0.5 rounded-full hidden sm:inline">GPT-4o</span>
+                  <MessageCircle className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+                </div>
+              </div>
+            </button>
           </div>
 
           {/* AI Chat */}

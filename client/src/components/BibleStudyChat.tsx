@@ -70,7 +70,24 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
   };
 
   return (
-    <div className="mt-8 flex flex-col gap-4">
+    <div className="mt-6 flex flex-col gap-4">
+
+      {/* Chat header — source + capability summary */}
+      <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-primary/5 border border-primary/15">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-foreground leading-tight">AI Bible Scholar</p>
+            <p className="text-[10px] text-muted-foreground">Powered by OpenAI GPT-4o</p>
+          </div>
+        </div>
+        <span className="text-[10px] text-muted-foreground/60 hidden sm:block text-right leading-tight max-w-[140px]">
+          Ask about history, meaning,<br />cross-refs & life application
+        </span>
+      </div>
+
       {/* Conversation thread — skip first message (it's the reflection card above) */}
       <AnimatePresence initial={false}>
         {messages.slice(1).map((msg, idx) => (
