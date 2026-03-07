@@ -65,16 +65,16 @@ export default function LandingHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-sm font-semibold uppercase tracking-widest mb-5">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-sm font-semibold uppercase tracking-widest mb-4">
               Shepherd Path
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight mb-4 text-balance drop-shadow-lg">
+            <p className="text-white/90 text-base sm:text-lg max-w-sm mx-auto leading-relaxed drop-shadow mb-6 font-medium">
+              Walk the path. Follow the Word.
+            </p>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.08] tracking-tight text-balance drop-shadow-lg">
               A better way to<br />
               <span className="text-amber-300">engage the Bible</span>
             </h1>
-            <p className="text-white/75 text-base sm:text-lg max-w-sm mx-auto leading-relaxed drop-shadow">
-              Walk the path. Follow the Word.
-            </p>
           </motion.div>
         </div>
       </div>
