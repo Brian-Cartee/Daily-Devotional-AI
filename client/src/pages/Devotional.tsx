@@ -39,6 +39,9 @@ export default function Devotional() {
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
+  const [emailInput, setEmailInput] = useState("");
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
@@ -77,6 +80,27 @@ export default function Devotional() {
       }).catch(() => {});
     }
   }, [verse]);
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+    setEmailLoading(true);
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.trim() }),
+      });
+      if (res.ok || res.status === 409) {
+        setEmailSubmitted(true);
+      } else {
+        toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+      }
+    } catch {
+      toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+    }
+    setEmailLoading(false);
+  };
 
   const handleShare = async () => {
     if (!verse) return;
@@ -315,6 +339,57 @@ export default function Devotional() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Email Capture */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+            className="bg-card border border-border/50 rounded-2xl px-7 py-7 text-center shadow-sm"
+            data-testid="email-capture"
+          >
+            <AnimatePresence mode="wait">
+              {emailSubmitted ? (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-1.5"
+                >
+                  <p className="text-base font-semibold text-foreground">You're on the list.</p>
+                  <p className="text-sm text-muted-foreground">Tomorrow's verse will be in your inbox by 7 AM.</p>
+                </motion.div>
+              ) : (
+                <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                  <div>
+                    <p className="text-base font-semibold text-foreground">Get tomorrow's verse by email</p>
+                    <p className="text-sm text-muted-foreground mt-1">Delivered every morning at 7 AM. Free.</p>
+                  </div>
+                  <form onSubmit={handleEmailSubmit} className="flex gap-2.5 max-w-xs mx-auto">
+                    <input
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="your@email.com"
+                      required
+                      data-testid="input-email-capture"
+                      className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 min-w-0"
+                    />
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={emailLoading || !emailInput.trim()}
+                      data-testid="button-email-subscribe"
+                      className="rounded-xl px-4 font-semibold shrink-0"
+                    >
+                      {emailLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Subscribe"}
+                    </Button>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
         </motion.div>
       </main>
