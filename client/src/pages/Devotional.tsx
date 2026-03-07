@@ -13,7 +13,7 @@ function StepLabel({ number: _number, label }: { number: number; label: string }
   return (
     <div className="flex items-center gap-4 mb-5">
       <div className="h-px w-5 bg-border/70" />
-      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/85">{label}</span>
       <div className="h-px flex-1 bg-border/40" />
     </div>
   );
