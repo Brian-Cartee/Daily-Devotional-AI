@@ -70,3 +70,13 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit(
 
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+
+export const streaks = pgTable("streaks", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull().unique(),
+  currentStreak: integer("current_streak").default(1).notNull(),
+  longestStreak: integer("longest_streak").default(1).notNull(),
+  lastVisitDate: text("last_visit_date").notNull(),
+});
+
+export type Streak = typeof streaks.$inferSelect;

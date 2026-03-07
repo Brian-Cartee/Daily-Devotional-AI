@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -12,6 +12,7 @@ export interface IStorage {
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
+  recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -63,6 +64,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(journalEntries).where(
       and(eq(journalEntries.id, id), eq(journalEntries.sessionId, sessionId))
     );
+  }
+
+  async recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean }> {
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+    const [existing] = await db.select().from(streaks).where(eq(streaks.sessionId, sessionId));
+
+    if (!existing) {
+      await db.insert(streaks).values({ sessionId, currentStreak: 1, longestStreak: 1, lastVisitDate: today });
+      return { currentStreak: 1, longestStreak: 1, isNewDay: true };
+    }
+
+    if (existing.lastVisitDate === today) {
+      return { currentStreak: existing.currentStreak, longestStreak: existing.longestStreak, isNewDay: false };
+    }
+
+    const newStreak = existing.lastVisitDate === yesterday ? existing.currentStreak + 1 : 1;
+    const newLongest = Math.max(newStreak, existing.longestStreak);
+
+    await db.update(streaks).set({
+      currentStreak: newStreak,
+      longestStreak: newLongest,
+      lastVisitDate: today,
+    }).where(eq(streaks.sessionId, sessionId));
+
+    return { currentStreak: newStreak, longestStreak: newLongest, isNewDay: true };
   }
 }
 

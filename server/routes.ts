@@ -325,6 +325,19 @@ Answer all questions in the context of this scripture. Be concise but insightful
     }
   });
 
+  // ── Streak Routes ───────────────────────────────────────────────────────────
+
+  app.post("/api/streak", async (req, res) => {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const result = await storage.recordStreak(sessionId);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to record streak" });
+    }
+  });
+
   // ── Journal Routes ──────────────────────────────────────────────────────────
 
   app.get("/api/journal", async (req, res) => {

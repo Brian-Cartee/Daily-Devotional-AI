@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame } from "lucide-react";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
@@ -38,6 +38,7 @@ export default function Devotional() {
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
+  const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
@@ -67,6 +68,13 @@ export default function Devotional() {
       setDevotionalStarted(true);
       reflectionMutation.mutate({ verseId: verse.id, type: "reflection" });
       prayerMutation.mutate({ verseId: verse.id, type: "prayer" });
+      fetch("/api/streak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      }).then(r => r.json()).then(data => {
+        if (data.currentStreak) setStreak(data);
+      }).catch(() => {});
     }
   }, [verse]);
 
@@ -150,6 +158,27 @@ export default function Devotional() {
           transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="space-y-3"
         >
+
+          {/* Streak indicator */}
+          <AnimatePresence>
+            {streak && streak.currentStreak > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+                className="flex items-center justify-center gap-2.5 py-1"
+                data-testid="streak-indicator"
+              >
+                <Flame className="w-3.5 h-3.5 text-amber-500/80" />
+                <span className="text-[12px] font-medium text-muted-foreground">
+                  {streak.currentStreak} days in a row
+                </span>
+                {streak.longestStreak > streak.currentStreak && (
+                  <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* STEP 1: TODAY'S WORD */}
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
