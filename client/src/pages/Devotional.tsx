@@ -8,6 +8,9 @@ import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
+import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
+import { getStoredLang } from "@/lib/language";
+import { getHeroImage } from "@/lib/heroImage";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -73,8 +76,9 @@ export default function Devotional() {
   useEffect(() => {
     if (verse && !devotionalStarted) {
       setDevotionalStarted(true);
-      reflectionMutation.mutate({ verseId: verse.id, type: "reflection" });
-      prayerMutation.mutate({ verseId: verse.id, type: "prayer" });
+      const lang = getStoredLang();
+      reflectionMutation.mutate({ verseId: verse.id, type: "reflection", lang });
+      prayerMutation.mutate({ verseId: verse.id, type: "prayer", lang });
       fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -96,6 +100,7 @@ export default function Devotional() {
         body: JSON.stringify({
           passageRef: verse.reference,
           passageText: verse.text,
+          lang: getStoredLang(),
           messages: [{
             role: "user",
             content: `The reader has just finished their devotional on ${verse.reference}: "${verse.text}". They want to offer a personal prayer of thanksgiving to God. What they are grateful for today: "${gratitudeInput.trim()}". Write a short, intimate closing prayer (3–4 sentences) that weaves together their gratitude and the spirit of today's verse. Begin with "Lord," or "Father," and close with "Amen." Write in first person as if they are speaking it aloud. Keep it warm and unhurried.`,
@@ -103,7 +108,7 @@ export default function Devotional() {
         }),
       });
       const data = await res.json();
-      setGratitudePrayer(data.content ?? "");
+      setGratitudePrayer(capitalizeDivinePronouns(data.content ?? ""));
     } catch {
       setGratitudePrayer("Sorry, we couldn't generate your prayer right now. Please try again.");
     }
@@ -187,7 +192,7 @@ export default function Devotional() {
       {/* Hero */}
       <div className="relative h-[40vh] min-h-[260px] max-h-[400px] overflow-hidden pt-14">
         <img
-          src="/hero-devotional.png"
+          src={getHeroImage("devotional")}
           alt="Morning devotional"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
@@ -263,7 +268,7 @@ export default function Devotional() {
                 className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Share2 className="w-3.5 h-3.5" />}
-                {copied ? "Copied!" : "Share"}
+                {copied ? "Copied!" : "Share Scripture"}
               </button>
             </div>
           </div>
@@ -283,7 +288,7 @@ export default function Devotional() {
               {reflectionMutation.isSuccess && reflectionMutation.data && (
                 <motion.div key="ref-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                   <div className="text-[15px] leading-relaxed text-foreground/80 space-y-3">
-                    {reflectionMutation.data.content.split("\n").filter(p => p.trim()).map((para, i) => (
+                    {capitalizeDivinePronouns(reflectionMutation.data.content).split("\n").filter(p => p.trim()).map((para, i) => (
                       <p key={i}>{para}</p>
                     ))}
                   </div>
@@ -319,7 +324,7 @@ export default function Devotional() {
               )}
               {prayerMutation.isSuccess && prayerMutation.data && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                  <PrayerText text={prayerMutation.data.content} />
+                  <PrayerText text={capitalizeDivinePronouns(prayerMutation.data.content)} />
                   <button
                     data-testid="save-prayer"
                     onClick={() => saveMutation.mutate({ type: "prayer", content: prayerMutation.data!.content, reference: verse.reference, verseDate: verse.date })}

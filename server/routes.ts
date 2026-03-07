@@ -91,6 +91,13 @@ export async function registerRoutes(
     try {
       const input = api.ai.generate.input.parse(req.body);
       const verse = await storage.getVerseById(input.verseId);
+      const langInstruction2: Record<string, string> = {
+        es: " Respond entirely in Spanish (Español).",
+        fr: " Respond entirely in French (Français).",
+        pt: " Respond entirely in Portuguese (Português).",
+      };
+      const lang2: string = (req.body as any).lang || "en";
+      const langNote2 = langInstruction2[lang2] || "";
 
       if (!verse) {
         return res.status(404).json({ message: "Verse not found to reflect on." });
@@ -101,14 +108,14 @@ export async function registerRoutes(
 
       if (input.type === "reflection") {
         systemPrompt =
-          "You are a thoughtful and empathetic spiritual guide. Write a SHORT devotional reflection on the provided Bible verse — 2 concise paragraphs maximum. Be warm, personal, and easy to read on mobile. Do not repeat the verse text.";
+          `You are a thoughtful and empathetic spiritual guide. Write a SHORT devotional reflection on the provided Bible verse — 2 concise paragraphs maximum. Be warm, personal, and easy to read on mobile. Do not repeat the verse text.${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
         }
       } else if (input.type === "prayer") {
         systemPrompt =
-          "You are a thoughtful and empathetic spiritual guide. Write a short, meaningful prayer based on the provided Bible verse. Keep it concise, genuine, and encouraging. Begin with 'Lord,' or 'Heavenly Father,' and close with 'Amen.'";
+          `You are a thoughtful and empathetic spiritual guide. Write a short, meaningful prayer based on the provided Bible verse. Keep it concise, genuine, and encouraging. Begin with 'Lord,' or 'Heavenly Father,' and close with 'Amen.'${langNote2}`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
@@ -181,9 +188,10 @@ Answer all questions in the context of this scripture. Be concise but insightful
   // Bible chapter text proxy (uses bible-api.com)
   app.get("/api/bible", async (req, res) => {
     const ref = req.query.ref as string;
+    const translation = (req.query.translation as string) || "kjv";
     if (!ref) return res.status(400).json({ message: "ref query param required" });
     try {
-      const url = `https://bible-api.com/${encodeURIComponent(ref)}?translation=kjv`;
+      const url = `https://bible-api.com/${encodeURIComponent(ref)}?translation=${encodeURIComponent(translation)}`;
       const resp = await fetch(url);
       if (!resp.ok) return res.status(404).json({ message: "Passage not found" });
       const data: any = await resp.json();
@@ -199,17 +207,23 @@ Answer all questions in the context of this scripture. Be concise but insightful
 
   // AI chat for arbitrary passage (used by Understand and Read pages)
   app.post("/api/chat/passage", async (req, res) => {
-    const { passageRef, passageText, messages } = req.body;
+    const { passageRef, passageText, messages, lang } = req.body;
     if (!passageRef || !passageText || !Array.isArray(messages)) {
       return res.status(400).json({ message: "passageRef, passageText, and messages are required" });
     }
+    const langInstruction: Record<string, string> = {
+      es: "Respond entirely in Spanish (Español).",
+      fr: "Respond entirely in French (Français).",
+      pt: "Respond entirely in Portuguese (Português).",
+    };
+    const langNote = langInstruction[lang] ? ` ${langInstruction[lang]}` : "";
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible to someone unfamiliar with the Bible.`,
+            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible to someone unfamiliar with the Bible.${langNote}`,
           },
           ...messages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],

@@ -7,10 +7,13 @@ import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { GUIDED_PATH, type GuidedChapter } from "@/data/guidedPath";
 import { useQuery } from "@tanstack/react-query";
+import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
+import { getStoredLang } from "@/lib/language";
+import { getHeroImage } from "@/lib/heroImage";
 
 function usePassageChat() {
   return useMutation({
-    mutationFn: (data: { passageRef: string; passageText: string; messages: Array<{ role: string; content: string }> }) =>
+    mutationFn: (data: { passageRef: string; passageText: string; messages: Array<{ role: string; content: string }>; lang?: string }) =>
       apiRequest("POST", "/api/chat/passage", data).then((r) => r.json()),
   });
 }
@@ -36,10 +39,12 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     setAiContent("");
     setIsAiLoading(true);
     const passageText = textQuery.data?.text ?? chapter.summary;
+    const lang = getStoredLang();
     try {
       const res = await apiRequest("POST", "/api/chat/passage", {
         passageRef: chapter.reference,
         passageText,
+        lang,
         messages: [{
           role: "user",
           content: type === "reflect"
@@ -48,7 +53,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
         }],
       });
       const data = await res.json();
-      setAiContent(data.content);
+      setAiContent(capitalizeDivinePronouns(data.content));
     } catch {
       setAiContent("Sorry, we couldn't generate a response right now. Please try again.");
     }
@@ -62,10 +67,11 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     setChatInput("");
     setIsAiLoading(true);
     const passageText = textQuery.data?.text ?? chapter.summary;
+    const lang = getStoredLang();
     try {
-      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, messages: newMessages });
+      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, lang, messages: newMessages });
       const data = await res.json();
-      setChatMessages([...newMessages, { role: "assistant", content: data.content }]);
+      setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(data.content) }]);
     } catch {
       setChatMessages([...newMessages, { role: "assistant", content: "Sorry, I couldn't respond. Please try again." }]);
     }
@@ -176,7 +182,7 @@ export default function UnderstandBible() {
         <div className="max-w-2xl mx-auto">
           {/* Hero header */}
           <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden mb-8">
-            <img src="/hero-understand.png" alt="Guided path" className="absolute inset-0 w-full h-full object-cover object-center" />
+            <img src={getHeroImage("understand")} alt="Guided path" className="absolute inset-0 w-full h-full object-cover object-center" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
             <motion.div
               initial={{ opacity: 0, y: 12 }}

@@ -19,6 +19,7 @@ export type InsertVerse = z.infer<typeof insertVerseSchema>;
 export const generateRequestSchema = z.object({
   verseId: z.number(),
   type: z.enum(["reflection", "prayer"]),
+  lang: z.string().optional(),
 });
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
 

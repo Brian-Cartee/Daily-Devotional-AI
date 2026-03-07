@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
+import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 
 const LEFT_NAV = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -16,6 +17,10 @@ export function NavBar() {
   const [location] = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const { lang, setLang } = useLanguage();
+
+  const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); };
 
   const navLink = (href: string, label: string, Icon: React.ElementType) => {
     const active = location === href || location.startsWith(href + "/");
@@ -24,7 +29,7 @@ export function NavBar() {
         key={href}
         href={href}
         data-testid={`nav-${label.toLowerCase()}`}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
           active
             ? "bg-primary text-primary-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
@@ -39,9 +44,9 @@ export function NavBar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1 sm:gap-2">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <Link href="/" className="flex items-center gap-1.5 group shrink-0">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
               <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
             </div>
@@ -49,21 +54,21 @@ export function NavBar() {
           </Link>
 
           {/* Left nav items */}
-          <div className="flex items-center gap-0.5 ml-2">
+          <div className="flex items-center gap-0">
             {LEFT_NAV.map(({ href, label, icon: Icon }) => navLink(href, label, Icon))}
           </div>
 
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Right side: Journal · Mail · Bell */}
-          <div className="flex items-center gap-0.5">
+          {/* Right side: Journal · Mail · Globe · Bell — all shrink-0 so bell never gets clipped */}
+          <div className="flex items-center gap-0 shrink-0">
             {navLink("/journal", "Journal", NotebookPen)}
 
-            {/* Daily email trigger */}
-            <div className="relative ml-1">
+            {/* Daily email */}
+            <div className="relative">
               <button
-                onClick={() => { setEmailOpen((v) => !v); setNotifOpen(false); }}
+                onClick={() => { setEmailOpen((v) => !v); setNotifOpen(false); setLangOpen(false); }}
                 data-testid="button-subscribe-toggle"
                 aria-label="Subscribe to daily verse emails"
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
@@ -77,11 +82,48 @@ export function NavBar() {
               </AnimatePresence>
             </div>
 
-            {/* Notifications */}
+            {/* Language selector */}
+            <div className="relative">
+              <button
+                onClick={() => { setLangOpen((v) => !v); setEmailOpen(false); setNotifOpen(false); }}
+                data-testid="button-language-toggle"
+                aria-label="Change language"
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                  langOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+              </button>
+              <AnimatePresence>
+                {langOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-10 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[150px]"
+                  >
+                    {LANGUAGES.map((l) => (
+                      <button
+                        key={l.code}
+                        data-testid={`lang-${l.code}`}
+                        onClick={() => { setLang(l.code as LangCode); setLangOpen(false); }}
+                        className="w-full flex items-center justify-between px-3.5 py-2 text-sm hover:bg-muted/70 transition-colors"
+                      >
+                        <span className="font-medium">{l.native}</span>
+                        {lang === l.code && <Check className="w-3.5 h-3.5 text-primary" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Notifications bell — always visible, shrink-0 guaranteed by parent */}
             <button
-              onClick={() => { setNotifOpen(true); setEmailOpen(false); }}
+              onClick={() => { setNotifOpen(true); closeAll(); setNotifOpen(true); }}
               data-testid="nav-notifications"
-              className="ml-0.5 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all"
               aria-label="Notification settings"
             >
               <Bell className="w-3.5 h-3.5" />
