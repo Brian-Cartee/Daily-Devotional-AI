@@ -1,4 +1,4 @@
-# Shepherd Path — AI-Guided Scripture & Spiritual Growth App
+# Shepherd's Path — AI-Guided Scripture & Spiritual Growth App
 
 Tagline: **Walk the path. Follow the Word.**
 

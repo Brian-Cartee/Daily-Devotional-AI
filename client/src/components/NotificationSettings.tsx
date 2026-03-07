@@ -66,7 +66,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
     setBrowserStatus(permission as "unknown" | "granted" | "denied");
     if (permission === "granted") {
       savePrefs({ browserEnabled: true });
-      new Notification("Shepherd Path", {
+      new Notification("Shepherd's Path", {
         body: "Daily devotional reminders are on. See you at 7 AM. 🙏",
         icon: "/favicon.png",
       });
@@ -142,7 +142,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
       id: "browser",
       icon: MonitorSmartphone,
       label: "Browser / App Notifications",
-      description: "Pop-up reminder when you open Shepherd Path",
+      description: "Pop-up reminder when you open Shepherd's Path",
       color: "text-amber-500",
       content: browserStatus === "granted" ? (
         <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">

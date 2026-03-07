@@ -1,6 +1,6 @@
 {
-  "name": "Shepherd Path",
-  "short_name": "Shepherd Path",
+  "name": "Shepherd's Path",
+  "short_name": "Shepherd's Path",
   "description": "Daily devotionals, guided Bible paths, and AI-powered prayer.",
   "start_url": "/devotional",
   "display": "standalone",

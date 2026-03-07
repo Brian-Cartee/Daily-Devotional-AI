@@ -45,7 +45,7 @@ export function NavBar() {
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
               <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
             </div>
-            <span className="font-bold text-sm text-foreground hidden sm:inline tracking-tight">Shepherd Path</span>
+            <span className="font-bold text-sm text-foreground hidden sm:inline tracking-tight">Shepherd's Path</span>
           </Link>
 
           {/* Left nav items */}

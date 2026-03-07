@@ -10,7 +10,7 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("push", (e) => {
   const data = e.data?.json() ?? {
-    title: "Shepherd Path",
+    title: "Shepherd's Path",
     body: "Your daily devotional is ready. Walk the path.",
   };
   e.waitUntil(

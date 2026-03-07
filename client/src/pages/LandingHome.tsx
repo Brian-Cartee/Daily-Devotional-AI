@@ -66,7 +66,7 @@ export default function LandingHome() {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-[17px] font-semibold uppercase tracking-widest mb-4">
-              Shepherd Path
+              Shepherd's Path
             </div>
             <p className="text-white/90 text-2xl sm:text-3xl max-w-sm mx-auto drop-shadow font-semibold tracking-wide">
               Your daily walk with God.

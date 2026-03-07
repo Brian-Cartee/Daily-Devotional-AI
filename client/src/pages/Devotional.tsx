@@ -136,7 +136,7 @@ export default function Devotional() {
     const prayerText = prayerMutation.data?.content
       ? "\n\n🙏 " + prayerMutation.data.content.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim()
       : "";
-    const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd Path`;
+    const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd's Path`;
     if (navigator.share) {
       try { await navigator.share({ title: `Today's Word: ${verse.reference}`, text }); } catch { }
     } else {

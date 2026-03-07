@@ -248,14 +248,14 @@ Answer all questions in the context of this scripture. Be concise but insightful
         await client.emails.send({
           from: fromEmail,
           to: input.email,
-          subject: "Welcome to Shepherd Path",
+          subject: "Welcome to Shepherd's Path",
           html: `<div style="font-family:Georgia,serif;max-width:500px;margin:auto;padding:32px;">
             <h2 style="color:#3d3530;">Welcome${input.name ? `, ${input.name}` : ''}!</h2>
-            <p style="color:#5c5248;line-height:1.7;">You're now subscribed to Shepherd Path. Each morning you'll receive today's scripture, an encouragement message, and a link to explore it deeper with AI.</p>
+            <p style="color:#5c5248;line-height:1.7;">You're now subscribed to Shepherd's Path. Each morning you'll receive today's scripture, an encouragement message, and a link to explore it deeper with AI.</p>
             <p style="color:#5c5248;">May each verse be a blessing to your day.</p>
             <p style="margin-top:32px;"><a href="${appUrl}" style="background:#8b6f47;color:#fff;padding:12px 28px;border-radius:40px;text-decoration:none;font-family:sans-serif;font-size:14px;">Visit the App</a></p>
           </div>`,
-          text: `Welcome${input.name ? `, ${input.name}` : ''}!\n\nYou're now subscribed to Shepherd Path. Each morning you'll receive today's scripture and encouragement.\n\n${appUrl}`,
+          text: `Welcome${input.name ? `, ${input.name}` : ''}!\n\nYou're now subscribed to Shepherd's Path. Each morning you'll receive today's scripture and encouragement.\n\n${appUrl}`,
         });
       } catch (emailErr) {
         console.error("Welcome email failed (non-fatal):", emailErr);
