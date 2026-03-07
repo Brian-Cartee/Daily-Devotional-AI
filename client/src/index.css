@@ -162,8 +162,8 @@
   /* Bible reading typography */
   .reading-text {
     font-family: var(--font-reading);
-    font-size: 1.25rem;
-    line-height: 2.05;
+    font-size: 1.5rem;
+    line-height: 2.0;
     letter-spacing: 0.005em;
     font-weight: 400;
     font-optical-sizing: auto;
