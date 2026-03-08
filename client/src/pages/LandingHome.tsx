@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
-import { WelcomeOverlay, useWelcomeOverlay } from "@/components/WelcomeOverlay";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 
 const sections = [
   {

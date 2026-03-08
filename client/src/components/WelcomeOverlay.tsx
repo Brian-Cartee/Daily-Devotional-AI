@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const WELCOMED_KEY = "sp_welcomed";
-
 const WELCOME_SCRIPT = `Welcome to Shepherd's Path. We are so glad you are here.
 
 We exist for one reason — to help solidify or develop your walk with Jesus. Everything in this app is built around that single purpose.
@@ -20,6 +18,8 @@ We have also placed the entire Bible at your fingertips. Every book, every chapt
 Your Prayer Journal is a private space to capture your prayers, reflections, and saved scriptures. A personal record of your walk with God, growing richer with every visit.
 
 And as you show up day after day, your devotional streak grows — a gentle, faithful reminder of your commitment.
+
+One more thing — and we believe it matters deeply. You will find on the home screen a section called Our Commitment to Scripture. We want you to know that every A-I response in this app is always grounded in the actual Bible passage being studied. Nothing here is presented as equal to, or a replacement for, God's Word. The content is shaped by the historic, orthodox Christian faith — not cultural opinion. That commitment applies to every user, and every church that chooses to use this platform.
 
 We are grateful you have chosen to walk this path. Let us begin together.`;
 
@@ -106,7 +106,6 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
 
   const handleDismiss = () => {
     window.speechSynthesis.cancel();
-    localStorage.setItem(WELCOMED_KEY, "true");
     onDismiss();
   };
 
@@ -151,6 +150,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               { icon: "📖", title: "Read the Bible", desc: "Every book & chapter with AI insight on demand" },
               { icon: "✍️", title: "Prayer Journal", desc: "Capture prayers, reflections & saved scriptures" },
               { icon: "🔥", title: "Daily Streak", desc: "A gentle record of your faithfulness" },
+              { icon: "📜", title: "Our Commitment to Scripture", desc: "Every AI response is grounded in God's Word — always" },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-3">
                 <span className="text-base mt-0.5 shrink-0">{f.icon}</span>
@@ -233,18 +233,3 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   );
 }
 
-export function useWelcomeOverlay() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const welcomed = localStorage.getItem(WELCOMED_KEY);
-    if (!welcomed) {
-      const timer = setTimeout(() => setShow(true), 800);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const dismiss = () => setShow(false);
-
-  return { show, dismiss };
-}
