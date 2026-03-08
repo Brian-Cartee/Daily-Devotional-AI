@@ -17,6 +17,11 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+// Separate client for TTS — uses direct OpenAI key (integration proxy doesn't support audio)
+const openaiTTS = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 async function syncTodayVerseFromSheet(): Promise<void> {
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -94,7 +99,7 @@ export async function registerRoutes(
     const { text } = req.body as { text: string };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
     try {
-      const mp3 = await openai.audio.speech.create({
+      const mp3 = await openaiTTS.audio.speech.create({
         model: "tts-1",
         voice: "onyx",
         input: text.trim(),
