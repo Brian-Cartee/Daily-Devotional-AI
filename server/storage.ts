@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -18,6 +18,11 @@ export interface IStorage {
   getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined>;
   upsertProSubscriber(data: { email: string; stripeCustomerId: string; stripeSubscriptionId: string; plan: string; status: string }): Promise<ProSubscriber>;
   updateProSubscriberStatus(stripeSubscriptionId: string, status: string): Promise<void>;
+  upsertPushSubscription(data: InsertPushSubscription): Promise<PushSubscription>;
+  getPushSubscription(sessionId: string): Promise<PushSubscription | undefined>;
+  updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'>>): Promise<void>;
+  deletePushSubscription(sessionId: string): Promise<void>;
+  getAllPushSubscriptions(): Promise<PushSubscription[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -135,6 +140,39 @@ export class DatabaseStorage implements IStorage {
       .update(proSubscribers)
       .set({ status })
       .where(eq(proSubscribers.stripeSubscriptionId, stripeSubscriptionId));
+  }
+
+  async upsertPushSubscription(data: InsertPushSubscription): Promise<PushSubscription> {
+    const [row] = await db
+      .insert(pushSubscriptions)
+      .values(data)
+      .onConflictDoUpdate({
+        target: pushSubscriptions.sessionId,
+        set: {
+          endpoint: data.endpoint,
+          p256dh: data.p256dh,
+          auth: data.auth,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async getPushSubscription(sessionId: string): Promise<PushSubscription | undefined> {
+    const [row] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.sessionId, sessionId));
+    return row;
+  }
+
+  async updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'>>): Promise<void> {
+    await db.update(pushSubscriptions).set(settings).where(eq(pushSubscriptions.sessionId, sessionId));
+  }
+
+  async deletePushSubscription(sessionId: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.sessionId, sessionId));
+  }
+
+  async getAllPushSubscriptions(): Promise<PushSubscription[]> {
+    return db.select().from(pushSubscriptions);
   }
 }
 

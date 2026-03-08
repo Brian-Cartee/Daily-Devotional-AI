@@ -6,9 +6,11 @@ import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema
 import { z } from "zod";
 import OpenAI from "openai";
 import Stripe from "stripe";
+import webpush from "web-push";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
+import { schedulePushNotifications } from "./pushScheduler";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
@@ -114,6 +116,74 @@ export async function registerRoutes(
       res.status(500).json({ message: "TTS failed" });
     }
   });
+
+  // Push notification VAPID public key
+  app.get("/api/push/vapid-key", (_req, res) => {
+    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || "" });
+  });
+
+  // Subscribe or update push subscription
+  app.post("/api/push/subscribe", async (req, res) => {
+    const { sessionId, subscription } = req.body as {
+      sessionId: string;
+      subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
+    };
+    if (!sessionId || !subscription?.endpoint) return res.status(400).json({ message: "invalid" });
+    try {
+      const row = await storage.upsertPushSubscription({
+        sessionId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      });
+
+      if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+        webpush.setVapidDetails(
+          process.env.VAPID_SUBJECT || "mailto:admin@shepherdspathAI.com",
+          process.env.VAPID_PUBLIC_KEY,
+          process.env.VAPID_PRIVATE_KEY
+        );
+        await webpush.sendNotification(
+          { endpoint: subscription.endpoint, keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth } },
+          JSON.stringify({ title: "You're set! 🙏", body: "Shepherd's Path will now remind you daily. Walk the path.", tag: "welcome", url: "/devotional" })
+        ).catch(() => {});
+      }
+
+      res.json(row);
+    } catch (err: any) {
+      console.error("[push] subscribe error:", err);
+      res.status(500).json({ message: "subscribe failed" });
+    }
+  });
+
+  // Get current push settings for a session
+  app.get("/api/push/settings/:sessionId", async (req, res) => {
+    const sub = await storage.getPushSubscription(req.params.sessionId);
+    if (!sub) return res.status(404).json({ message: "not found" });
+    res.json(sub);
+  });
+
+  // Update push notification settings
+  app.patch("/api/push/settings", async (req, res) => {
+    const { sessionId, ...settings } = req.body as {
+      sessionId: string;
+      morningEnabled?: boolean; morningTime?: string;
+      eveningEnabled?: boolean; eveningTime?: string;
+      middayEnabled?: boolean; streakReminder?: boolean; weeklySummary?: boolean;
+    };
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    await storage.updatePushSettings(sessionId, settings);
+    res.json({ ok: true });
+  });
+
+  // Unsubscribe
+  app.delete("/api/push/subscribe/:sessionId", async (req, res) => {
+    await storage.deletePushSubscription(req.params.sessionId);
+    res.json({ ok: true });
+  });
+
+  // Start push scheduler (email scheduler started separately)
+  schedulePushNotifications();
 
   // Generate AI reflection or prayer based on today's verse
   app.post(api.ai.generate.path, async (req, res) => {

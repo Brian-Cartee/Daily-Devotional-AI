@@ -116,14 +116,19 @@ export function NavBar() {
             </div>
 
             {/* Notifications bell */}
-            <button
-              onClick={() => { closeAll(); setNotifOpen(true); }}
-              data-testid="nav-notifications"
-              aria-label="Notification settings"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
-            >
-              <Bell className="w-3.5 h-3.5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => { closeAll(); setNotifOpen(true); }}
+                data-testid="nav-notifications"
+                aria-label="Notification settings"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+              >
+                <Bell className="w-3.5 h-3.5" />
+              </button>
+              {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary animate-pulse pointer-events-none" />
+              )}
+            </div>
 
           </div>
         </div>

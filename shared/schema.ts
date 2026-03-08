@@ -102,3 +102,22 @@ export const streaks = pgTable("streaks", {
 });
 
 export type Streak = typeof streaks.$inferSelect;
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull().unique(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  morningEnabled: boolean("morning_enabled").default(true).notNull(),
+  morningTime: text("morning_time").default("07:00").notNull(),
+  eveningEnabled: boolean("evening_enabled").default(true).notNull(),
+  eveningTime: text("evening_time").default("20:00").notNull(),
+  middayEnabled: boolean("midday_enabled").default(false).notNull(),
+  streakReminder: boolean("streak_reminder").default(true).notNull(),
+  weeklySummary: boolean("weekly_summary").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;

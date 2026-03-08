@@ -46,3 +46,6 @@ integrations = ["javascript_openai_ai_integrations:2.0.0", "google-sheet:1.0.0",
 
 [userenv.shared]
 VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51T8lwsQhbATyG9HtMEXo6XjMeID5HTEruznptqjG2ncQp23qtWSrZVWxMjOFUCpi9cvElsLWLa4NxJASbD5BPvgo00wkmgPTBk"
+VAPID_PUBLIC_KEY = "BP91RlYkJ3xrF_p38tl0h1v-3RtLxWT-Xxs8r7nFUEPLjsVzsFIkuXaLNEPqI9pDLwyKyaIK_cbdOCQzuxSH8rk"
+VAPID_PRIVATE_KEY = "P8GWQSdI1QxSZ98GPLV5xDXtHk30B-T4AYIBGp7z7Wk"
+VAPID_SUBJECT = "mailto:admin@shepherdspathAI.com"
