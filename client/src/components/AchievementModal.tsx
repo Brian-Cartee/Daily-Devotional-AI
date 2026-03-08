@@ -12,17 +12,23 @@ interface AchievementModalProps {
 function getBestVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   const preferred = [
-    "Google US English",
-    "Microsoft Aria Online (Natural) - English (United States)",
-    "Microsoft Jenny Online (Natural) - English (United States)",
-    "Samantha",
-    "Karen",
-    "Moira",
+    "Microsoft Christopher Online (Natural) - English (United States)",
+    "Microsoft Guy Online (Natural) - English (United States)",
+    "Microsoft Davis Online (Natural) - English (United States)",
+    "Microsoft David Online (Natural) - English (United States)",
+    "Microsoft Eric Online (Natural) - English (United States)",
+    "Google UK English Male",
+    "Alex",
+    "Fred",
+    "Tom",
+    "Daniel",
   ];
   for (const name of preferred) {
     const match = voices.find(v => v.name.includes(name));
     if (match) return match;
   }
+  const maleFallback = voices.find(v => v.lang.startsWith("en") && /male/i.test(v.name));
+  if (maleFallback) return maleFallback;
   return voices.find(v => v.lang.startsWith("en")) ?? voices[0] ?? null;
 }
 
@@ -50,7 +56,7 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
       const voice = getBestVoice();
       if (voice) utterance.voice = voice;
       utterance.rate = 0.80;
-      utterance.pitch = 0.95;
+      utterance.pitch = 0.88;
       utterance.volume = 1.0;
     };
 
