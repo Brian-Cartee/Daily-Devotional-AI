@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
+import { WelcomeOverlay, useWelcomeOverlay } from "@/components/WelcomeOverlay";
 
 const sections = [
   {
@@ -54,9 +55,13 @@ const COMMITMENT_POINTS = [
 
 export default function LandingHome() {
   const [expanded, setExpanded] = useState(false);
+  const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
 
   return (
     <div className="min-h-screen bg-background">
+      <AnimatePresence>
+        {showWelcome && <WelcomeOverlay onDismiss={dismissWelcome} />}
+      </AnimatePresence>
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
