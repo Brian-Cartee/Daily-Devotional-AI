@@ -34,7 +34,7 @@ const sections = [
     icon: BookOpen,
     pillText: "Full Bible",
     title: "Read the Bible",
-    description: "Chapter-by-chapter from Genesis to Revelation, with AI available for context, explanation, and reflection.",
+    description: "Read Genesis to Revelation in KJV, WEB, or ASV — with AI available for context, explanation, and reflection.",
     cta: "Start Reading",
     testid: "card-read",
     imageBg: "bg-gradient-to-br from-teal-500/10 to-emerald-500/5",
