@@ -89,6 +89,27 @@ export async function registerRoutes(
     }
   });
 
+  // Text-to-speech using OpenAI — returns audio/mpeg
+  app.post("/api/tts", async (req, res) => {
+    const { text } = req.body as { text: string };
+    if (!text?.trim()) return res.status(400).json({ message: "text required" });
+    try {
+      const mp3 = await openai.audio.speech.create({
+        model: "tts-1",
+        voice: "onyx",
+        input: text.trim(),
+        speed: 0.92,
+      });
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=86400");
+      res.send(buffer);
+    } catch (err: any) {
+      console.error("TTS error:", err);
+      res.status(500).json({ message: "TTS failed" });
+    }
+  });
+
   // Generate AI reflection or prayer based on today's verse
   app.post(api.ai.generate.path, async (req, res) => {
     try {

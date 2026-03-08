@@ -1,105 +1,25 @@
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTTS } from "@/hooks/use-tts";
 
 const WELCOME_SCRIPT = `Welcome. We are so glad you are here.
 
 Shepherd's Path is your quiet, daily walk with Jesus. Start with the Daily Devotional — and we will be right here with you, every morning.`;
-
-function getBestVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = [
-    "Microsoft Christopher Online (Natural) - English (United States)",
-    "Microsoft Guy Online (Natural) - English (United States)",
-    "Microsoft Davis Online (Natural) - English (United States)",
-    "Microsoft David Online (Natural) - English (United States)",
-    "Microsoft Eric Online (Natural) - English (United States)",
-    "Google UK English Male",
-    "Alex",
-    "Fred",
-    "Tom",
-    "Daniel",
-  ];
-  for (const name of preferred) {
-    const match = voices.find(v => v.name.includes(name));
-    if (match) return match;
-  }
-  // fallback: any male-labeled English voice
-  const maleFallback = voices.find(v => v.lang.startsWith("en") && /male/i.test(v.name));
-  if (maleFallback) return maleFallback;
-  return voices.find(v => v.lang.startsWith("en")) ?? voices[0] ?? null;
-}
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
 }
 
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
-  const [playing, setPlaying] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [wordIndex, setWordIndex] = useState(0);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const totalWords = WELCOME_SCRIPT.split(/\s+/).length;
-
-  useEffect(() => {
-    return () => {
-      window.speechSynthesis.cancel();
-    };
-  }, []);
-
-  const handleListen = () => {
-    if (playing) {
-      window.speechSynthesis.cancel();
-      setPlaying(false);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(WELCOME_SCRIPT);
-    utteranceRef.current = utterance;
-
-    const setVoice = () => {
-      const voice = getBestVoice();
-      if (voice) utterance.voice = voice;
-      utterance.rate = 0.78;
-      utterance.pitch = 0.88;
-      utterance.volume = 1.0;
-    };
-
-    if (window.speechSynthesis.getVoices().length > 0) {
-      setVoice();
-    } else {
-      window.speechSynthesis.onvoiceschanged = setVoice;
-    }
-
-    utterance.onboundary = (e) => {
-      if (e.name === "word") {
-        setWordIndex(Math.floor((e.charIndex / WELCOME_SCRIPT.length) * totalWords));
-      }
-    };
-
-    utterance.onend = () => {
-      setPlaying(false);
-      setWordIndex(totalWords);
-    };
-
-    utterance.onerror = () => {
-      setPlaying(false);
-    };
-
-    window.speechSynthesis.speak(utterance);
-    setPlaying(true);
-    setStarted(true);
-  };
+  const { toggle, stop, playing, loading, progress } = useTTS();
 
   const handleDismiss = () => {
-    window.speechSynthesis.cancel();
+    stop();
     onDismiss();
   };
 
-  const progress = started ? Math.min(100, Math.round((wordIndex / totalWords) * 100)) : 0;
+  const started = progress > 0 || playing || loading;
 
   return (
     <motion.div
@@ -169,35 +89,38 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   : <VolumeX className="w-4 h-4 text-muted-foreground" />
                 }
                 <span className="text-[13px] font-semibold text-foreground">
-                  {playing ? "Playing welcome message…" : started ? "Welcome message" : "Hear a personal welcome"}
+                  {loading ? "Preparing…" : playing ? "Playing welcome…" : started ? "Welcome message" : "Hear a personal welcome"}
                 </span>
               </div>
               <button
                 data-testid="btn-toggle-audio"
-                onClick={handleListen}
+                onClick={() => toggle(WELCOME_SCRIPT)}
+                disabled={loading}
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                   playing
                     ? "bg-red-100 dark:bg-red-950/50 text-red-500 hover:bg-red-200"
                     : "bg-primary/10 text-primary hover:bg-primary/20"
-                }`}
+                } disabled:opacity-50`}
               >
-                {playing
-                  ? <Square className="w-3.5 h-3.5" />
-                  : <Play className="w-3.5 h-3.5 translate-x-[1px]" />
+                {loading
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : playing
+                    ? <Square className="w-3.5 h-3.5" />
+                    : <Play className="w-3.5 h-3.5 translate-x-[1px]" />
                 }
               </button>
             </div>
 
             {/* Progress bar */}
             {started && (
-              <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+              <motion.div className="w-full h-1 bg-muted rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-primary rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.3 }}
                 />
-              </div>
+              </motion.div>
             )}
 
             <p className="text-[11px] text-muted-foreground leading-snug">
@@ -230,4 +153,3 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
     </motion.div>
   );
 }
-

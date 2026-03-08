@@ -1,81 +1,19 @@
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Volume2, VolumeX, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Achievement } from "@/lib/achievements";
+import { useTTS } from "@/hooks/use-tts";
 
 interface AchievementModalProps {
   achievement: Achievement;
   onClose: () => void;
 }
 
-function getBestVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = [
-    "Microsoft Christopher Online (Natural) - English (United States)",
-    "Microsoft Guy Online (Natural) - English (United States)",
-    "Microsoft Davis Online (Natural) - English (United States)",
-    "Microsoft David Online (Natural) - English (United States)",
-    "Microsoft Eric Online (Natural) - English (United States)",
-    "Google UK English Male",
-    "Alex",
-    "Fred",
-    "Tom",
-    "Daniel",
-  ];
-  for (const name of preferred) {
-    const match = voices.find(v => v.name.includes(name));
-    if (match) return match;
-  }
-  const maleFallback = voices.find(v => v.lang.startsWith("en") && /male/i.test(v.name));
-  if (maleFallback) return maleFallback;
-  return voices.find(v => v.lang.startsWith("en")) ?? voices[0] ?? null;
-}
-
 export function AchievementModal({ achievement, onClose }: AchievementModalProps) {
-  const [playing, setPlaying] = useState(false);
-  const [started, setStarted] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-
-  useEffect(() => {
-    return () => { window.speechSynthesis.cancel(); };
-  }, []);
-
-  const handleToggleAudio = () => {
-    if (playing) {
-      window.speechSynthesis.cancel();
-      setPlaying(false);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(achievement.voiceScript);
-    utteranceRef.current = utterance;
-
-    const applyVoice = () => {
-      const voice = getBestVoice();
-      if (voice) utterance.voice = voice;
-      utterance.rate = 0.80;
-      utterance.pitch = 0.88;
-      utterance.volume = 1.0;
-    };
-
-    if (window.speechSynthesis.getVoices().length > 0) {
-      applyVoice();
-    } else {
-      window.speechSynthesis.onvoiceschanged = applyVoice;
-    }
-
-    utterance.onend = () => setPlaying(false);
-    utterance.onerror = () => setPlaying(false);
-
-    window.speechSynthesis.speak(utterance);
-    setPlaying(true);
-    setStarted(true);
-  };
+  const { toggle, stop, playing, loading } = useTTS();
 
   const handleClose = () => {
-    window.speechSynthesis.cancel();
+    stop();
     onClose();
   };
 
@@ -100,7 +38,6 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
       >
         {/* Gradient header */}
         <div className={`bg-gradient-to-br ${achievement.colorFrom} ${achievement.colorTo} px-7 pt-8 pb-12 text-center`}>
-          {/* Big emoji */}
           <motion.div
             initial={{ scale: 0.5, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -124,7 +61,6 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
 
         {/* Pull-up card */}
         <div className="-mt-5 bg-background rounded-t-3xl px-7 pt-6 pb-7 space-y-4">
-          {/* Message */}
           <p className="text-[14px] text-foreground/80 leading-relaxed text-center">
             {achievement.message}
           </p>
@@ -136,25 +72,27 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
               : <VolumeX className="w-4 h-4 text-muted-foreground shrink-0" />
             }
             <span className="text-[12px] text-muted-foreground flex-1">
-              {playing ? "Playing…" : started ? "Hear this message" : "Hear a personal word"}
+              {loading ? "Preparing…" : playing ? "Playing…" : "Hear a personal word"}
             </span>
             <button
               data-testid="btn-achievement-audio"
-              onClick={handleToggleAudio}
+              onClick={() => toggle(achievement.voiceScript)}
+              disabled={loading}
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${
                 playing
                   ? "bg-red-100 dark:bg-red-950/50 text-red-500 hover:bg-red-200"
                   : "bg-primary/10 text-primary hover:bg-primary/20"
-              }`}
+              } disabled:opacity-50`}
             >
-              {playing
-                ? <Square className="w-3 h-3" />
-                : <Play className="w-3 h-3 translate-x-[1px]" />
+              {loading
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : playing
+                  ? <Square className="w-3 h-3" />
+                  : <Play className="w-3 h-3 translate-x-[1px]" />
               }
             </button>
           </div>
 
-          {/* CTA */}
           <Button
             data-testid="btn-achievement-close"
             className={`w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r ${achievement.colorFrom} ${achievement.colorTo} hover:opacity-90 transition-opacity border-0 text-white`}
