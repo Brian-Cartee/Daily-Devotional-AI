@@ -459,6 +459,89 @@ Answer all questions in the context of this scripture. Be concise but insightful
     }
   });
 
+  app.post("/api/stripe/request-refund", async (req, res) => {
+    const { email } = req.body as { email: string };
+    if (!email) return res.status(400).json({ message: "Email required" });
+
+    try {
+      const pro = await storage.getProSubscriberByEmail(email.toLowerCase());
+
+      if (!pro || !pro.stripeSubscriptionId) {
+        return res.status(404).json({
+          eligible: false,
+          reason: "no_subscription",
+          message: "No active subscription found for this email address.",
+        });
+      }
+
+      if (pro.status === "cancelled") {
+        return res.status(400).json({
+          eligible: false,
+          reason: "already_cancelled",
+          message: "This subscription has already been cancelled.",
+        });
+      }
+
+      // Check 30-day window using activatedAt
+      const activatedAt = pro.activatedAt ? new Date(pro.activatedAt) : null;
+      const daysSince = activatedAt
+        ? (Date.now() - activatedAt.getTime()) / (1000 * 60 * 60 * 24)
+        : 999;
+
+      if (daysSince > 30) {
+        return res.status(400).json({
+          eligible: false,
+          reason: "outside_window",
+          message: `Your subscription is ${Math.floor(daysSince)} days old. The money-back guarantee applies within the first 30 days.`,
+        });
+      }
+
+      // Get the latest invoice for refund
+      const invoices = await stripe.invoices.list({
+        subscription: pro.stripeSubscriptionId,
+        limit: 1,
+      });
+
+      const invoice = invoices.data[0];
+      if (!invoice || !invoice.charge) {
+        return res.status(400).json({
+          eligible: false,
+          reason: "no_charge",
+          message: "We couldn't find a charge to refund. Please contact support.",
+        });
+      }
+
+      // Issue the refund
+      const refund = await stripe.refunds.create({
+        charge: invoice.charge as string,
+        reason: "requested_by_customer",
+      });
+
+      // Cancel the subscription immediately
+      await stripe.subscriptions.cancel(pro.stripeSubscriptionId);
+
+      // Update our DB
+      await storage.updateProSubscriberStatus(pro.stripeSubscriptionId, "cancelled");
+
+      console.log(`Refund issued for ${email}: refund ${refund.id}, amount ${refund.amount}`);
+
+      res.json({
+        eligible: true,
+        success: true,
+        amount: (refund.amount / 100).toFixed(2),
+        currency: refund.currency.toUpperCase(),
+        message: "Refund issued successfully. Funds will appear in 5–10 business days.",
+      });
+    } catch (err: any) {
+      console.error("Refund error:", err);
+      res.status(500).json({
+        eligible: false,
+        reason: "stripe_error",
+        message: err.message || "Refund could not be processed. Please contact support.",
+      });
+    }
+  });
+
   // Stripe webhook — must use raw body
   app.post("/api/stripe/webhook", async (req, res) => {
     const sig = req.headers["stripe-signature"] as string;

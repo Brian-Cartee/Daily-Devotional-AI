@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
@@ -24,6 +25,7 @@ interface UpgradeModalProps {
 
 export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<"monthly" | "annual">("annual");
   const [loading, setLoading] = useState(false);
   const [showActivate, setShowActivate] = useState(false);
@@ -206,6 +208,21 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
               )}
               {loading ? "Redirecting…" : "Upgrade to Pro"}
             </Button>
+
+            {/* 30-day guarantee */}
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
+              <span>
+                30-day money-back guarantee ·{" "}
+                <button
+                  type="button"
+                  onClick={() => { onClose(); setLocation("/refund"); }}
+                  className="underline hover:text-foreground transition-colors"
+                >
+                  request a refund
+                </button>
+              </span>
+            </div>
 
             <button
               data-testid="btn-upgrade-later"
