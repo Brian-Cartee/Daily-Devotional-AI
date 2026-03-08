@@ -117,17 +117,25 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
       >
-        {/* Header band */}
-        <div className="bg-gradient-to-br from-primary via-primary/90 to-amber-500/80 px-8 pt-9 pb-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-4">
-            ✦ Welcome
+        {/* Header band — hero image */}
+        <div className="relative px-8 pt-9 pb-10 text-center overflow-hidden" style={{ minHeight: 160 }}>
+          <img
+            src="/hero-landing.png"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.62) 100%)" }} />
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-4">
+              ✦ Welcome
+            </div>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
+              Shepherd's Path
+            </h1>
+            <p className="text-white/80 text-sm mt-2 leading-relaxed">
+              Your daily walk with Jesus
+            </p>
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
-            Shepherd's Path
-          </h1>
-          <p className="text-white/80 text-sm mt-2 leading-relaxed">
-            Your daily walk with Jesus
-          </p>
         </div>
 
         {/* Content */}
