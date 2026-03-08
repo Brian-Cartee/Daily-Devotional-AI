@@ -3,9 +3,21 @@ import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight, Loader2 } fro
 import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 
-const WELCOME_SCRIPT = `Welcome. We are so glad you are here.
+const WELCOME_SCRIPT = `Welcome. I mean that with everything I have — welcome.
 
-Shepherd's Path is your quiet, daily walk with Jesus. Start with the Daily Devotional — and we will be right here with you, every morning.`;
+Wherever you are right now — whether your faith is solid as a rock, or barely holding on by a thread — you are in the right place.
+
+Shepherd's Path exists for one reason: to help you build a daily, living relationship with Jesus Christ. Not a religion. Not a checklist. A relationship — real, honest, and transformative.
+
+Here is what we know to be true: the single most important thing you can do with your time on this earth is draw closer to God every single day. Not weekly. Not when it feels convenient. Every. Single. Day.
+
+This app was built to make that possible. A daily scripture. A guided reflection. A prayer rooted in God's Word. Tools to read the entire Bible with understanding. A journal to capture what He is doing in your life.
+
+And as you show up — day after day — something begins to happen. Sin loses its grip. Peace finds its way in. And the person God created you to be starts to come forward.
+
+We are not here to entertain you. We are here to walk with you.
+
+Let us begin.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
@@ -124,7 +136,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             )}
 
             <p className="text-[11px] text-muted-foreground leading-snug">
-              A brief personal welcome — about 15 seconds.
+              A personal welcome — about 90 seconds.
             </p>
           </div>
 
