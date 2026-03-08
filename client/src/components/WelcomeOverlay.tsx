@@ -213,7 +213,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               onClick={handleDismiss}
               className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1 flex items-center justify-center gap-1"
             >
-              Skip introduction
+              Skip voice intro
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
