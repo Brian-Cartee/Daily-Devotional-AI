@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check } from "lucide-react";
+import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -298,6 +298,14 @@ export default function QuickStudyPage() {
   const [savedStudy, setSavedStudy] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<TrackId | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const [storyFinderOpen, setStoryFinderOpen] = useState(false);
+  const [storyDescription, setStoryDescription] = useState("");
+  const [storyResult, setStoryResult] = useState("");
+  const [storyLoading, setStoryLoading] = useState(false);
+  const [savedStory, setSavedStory] = useState(false);
+  const storyInputRef = useRef<HTMLTextAreaElement>(null);
+
   const saveJournal = useJournalSave();
 
   useEffect(() => {
@@ -351,6 +359,57 @@ Keep it warm, accessible, and grounded in Scripture.`,
   };
 
   const reset = () => { setTopic(""); setStudy(""); setSubmitted(false); setActiveTopic(""); setSavedStudy(false); };
+
+  const findStory = async () => {
+    const desc = storyDescription.trim();
+    if (!desc) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
+    setStoryLoading(true);
+    setStoryResult("");
+    setSavedStory(false);
+    try {
+      const res = await apiRequest("POST", "/api/chat/passage", {
+        passageRef: "story-finder",
+        passageText: desc,
+        messages: [{
+          role: "user",
+          content: `A user is trying to find a Bible story or passage they remember. They described it as:
+
+"${desc}"
+
+Your job is to identify the scripture(s) that best match this description. For each match, provide:
+- **Story/Passage Name** (the common title, e.g. "The Feeding of the Five Thousand")
+- **Reference** (e.g. John 6:1–14; also note any parallel passages)
+- **Why it matches** (1 sentence connecting their description to the passage)
+- **Key Verse** (the single most memorable line from the passage)
+
+Provide 1–3 matches. If you are confident it is one specific passage, give only that one. If the description is ambiguous, list up to 3 possibilities and briefly note which is the most likely fit.
+
+Be warm, clear, and helpful. End with an encouraging sentence inviting them to read the full passage.`,
+        }],
+      });
+      const data = await res.json();
+      setStoryResult(data.content ?? "");
+    } catch {
+      setStoryResult("Sorry, we couldn't search right now. Please try again.");
+    }
+    setStoryLoading(false);
+  };
+
+  const handleSaveStory = () => {
+    if (!storyResult) return;
+    saveJournal.mutate(
+      { type: "reflection", content: `Story Search: "${storyDescription}"\n\n${storyResult}`, reference: "Story Finder" },
+      { onSuccess: () => setSavedStory(true) }
+    );
+  };
+
+  const resetStoryFinder = () => {
+    setStoryDescription("");
+    setStoryResult("");
+    setSavedStory(false);
+  };
 
   const handleSaveStudy = () => {
     if (!study) return;
@@ -518,7 +577,126 @@ Keep it warm, accessible, and grounded in Scripture.`,
                   </button>
                 );
               })}
+
+              {/* Story Finder — full-width card */}
+              <button
+                data-testid="track-btn-story-finder"
+                onClick={() => {
+                  setStoryFinderOpen(!storyFinderOpen);
+                  if (!storyFinderOpen) setTimeout(() => storyInputRef.current?.focus(), 300);
+                }}
+                className={`col-span-2 rounded-2xl p-4 text-left transition-all duration-300 border ${
+                  storyFinderOpen
+                    ? "bg-violet-50/70 dark:bg-violet-950/30 border-violet-300/60 dark:border-violet-700/50 shadow-sm"
+                    : "bg-white/40 border-border/40 hover:bg-white/60 hover:shadow-sm"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🔍</span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground leading-tight">Find a Bible Story</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                        Describe what you remember — we'll find the scripture
+                      </p>
+                    </div>
+                  </div>
+                  <motion.div animate={{ rotate: storyFinderOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  </motion.div>
+                </div>
+              </button>
             </div>
+
+            {/* Story Finder expanded panel */}
+            <AnimatePresence>
+              {storyFinderOpen && (
+                <motion.div
+                  key="story-finder-panel"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2.5 bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-700/40 rounded-2xl px-5 py-5 space-y-4">
+
+                    {!storyResult ? (
+                      <>
+                        <div>
+                          <p className="text-[12px] font-semibold text-violet-700 dark:text-violet-400 uppercase tracking-widest mb-2">
+                            Describe the story
+                          </p>
+                          <textarea
+                            ref={storyInputRef}
+                            value={storyDescription}
+                            onChange={(e) => setStoryDescription(e.target.value)}
+                            data-testid="story-finder-input"
+                            placeholder={'e.g. "The story where someone walks on water" or "Jesus heals a blind man near a pool" or "the part where bread and fish fed thousands"'}
+                            rows={3}
+                            className="w-full bg-white/70 dark:bg-background border border-violet-200/60 dark:border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-violet-400/30 resize-none placeholder:text-muted-foreground/60 leading-relaxed"
+                          />
+                        </div>
+                        <Button
+                          onClick={findStory}
+                          disabled={!storyDescription.trim() || storyLoading}
+                          data-testid="story-finder-submit"
+                          className="w-full rounded-xl font-semibold bg-violet-600 hover:bg-violet-700 text-white border-0 py-5"
+                        >
+                          {storyLoading
+                            ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Searching Scripture…</>
+                            : <><BookOpen className="w-4 h-4 mr-2" /> Find the Story</>
+                          }
+                        </Button>
+                        {storyLoading && (
+                          <div className="space-y-2 pt-1">
+                            {[1, 0.88, 0.75, 0.92, 0.68].map((w, i) => (
+                              <div key={i} className="h-3 bg-violet-200/60 dark:bg-violet-800/40 animate-pulse rounded-full" style={{ width: `${w * 100}%` }} />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-violet-600" />
+                            <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-widest">Story Found</span>
+                          </div>
+                          <button
+                            onClick={resetStoryFinder}
+                            data-testid="story-finder-reset"
+                            className="text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors underline"
+                          >
+                            Search again
+                          </button>
+                        </div>
+                        <div className="bg-white/60 dark:bg-background/60 rounded-xl p-4 border border-violet-200/40">
+                          <div className="text-[14px] text-foreground/80 leading-relaxed space-y-2.5">
+                            {storyResult.split("\n").map((line, i) => {
+                              if (!line.trim()) return null;
+                              const isBold = /^\*\*/.test(line.trim()) || /^#{1,3}\s/.test(line.trim());
+                              const clean = line.replace(/^\*\*|\*\*$/g, "").replace(/^#+\s/, "").replace(/\*\*(.*?)\*\*/g, "$1");
+                              return isBold
+                                ? <p key={i} className="font-bold text-foreground mt-3 first:mt-0">{clean}</p>
+                                : <p key={i}>{clean}</p>;
+                            })}
+                          </div>
+                        </div>
+                        <div className="pt-3">
+                          <SaveButton
+                            onClick={handleSaveStory}
+                            saved={savedStory}
+                            label="Save to Journal"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
           </motion.div>
 
         </div>
