@@ -73,27 +73,8 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
 
         {/* Scrollable content */}
         <div className="-mt-5 bg-background rounded-t-3xl px-6 pt-6 pb-3 space-y-4 overflow-y-auto flex-1">
-          {/* Feature list — compact 2-per-row grid */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {[
-              { icon: "🌅", title: "Daily Devotional", desc: "Scripture, reflection & prayer" },
-              { icon: "🧭", title: "Bible Journey", desc: "30-day guided transformation" },
-              { icon: "📖", title: "Read the Bible", desc: "Every chapter with AI insight" },
-              { icon: "✍️", title: "Prayer Journal", desc: "Prayers, reflections & verses" },
-              { icon: "🔥", title: "Daily Streak", desc: "Track your faithfulness" },
-              { icon: "📜", title: "Scripture First", desc: "Every AI response is grounded" },
-            ].map(f => (
-              <div key={f.title} className="flex items-start gap-2 bg-muted/30 rounded-xl px-3 py-2.5">
-                <span className="text-sm mt-0.5 shrink-0">{f.icon}</span>
-                <div>
-                  <p className="text-[12px] font-semibold text-foreground leading-tight">{f.title}</p>
-                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Audio player */}
+          {/* Audio player — first thing they see */}
           <div className="bg-muted/40 border border-border/50 rounded-2xl px-5 py-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -139,6 +120,37 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             <p className="text-[11px] text-muted-foreground leading-snug">
               A personal welcome — about 90 seconds.
             </p>
+          </div>
+
+          {/* Scripture First — full-width trust statement */}
+          <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl px-4 py-3">
+            <span className="text-lg shrink-0">📜</span>
+            <div>
+              <p className="text-[13px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
+              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                Every AI response is grounded in God's Word — always. We are a Bible-first app.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature list — compact 2-per-row grid */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { icon: "🌅", title: "Daily Devotional", desc: "Scripture, reflection & prayer" },
+              { icon: "🧭", title: "Bible Journey", desc: "30-day guided transformation" },
+              { icon: "📖", title: "Read the Bible", desc: "Every chapter with AI insight" },
+              { icon: "✍️", title: "Prayer Journal", desc: "Prayers, reflections & verses" },
+              { icon: "🔥", title: "Daily Streak", desc: "Track your faithfulness" },
+              { icon: "📚", title: "Bible Study", desc: "Deep AI-guided study tools" },
+            ].map(f => (
+              <div key={f.title} className="flex items-start gap-2 bg-muted/30 rounded-xl px-3 py-2.5">
+                <span className="text-sm mt-0.5 shrink-0">{f.icon}</span>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground leading-tight">{f.title}</p>
+                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
         </div>
