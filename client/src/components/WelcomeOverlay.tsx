@@ -3,25 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const WELCOME_SCRIPT = `Welcome to Shepherd's Path. We are so glad you are here.
+const WELCOME_SCRIPT = `Welcome. We are really glad you are here.
 
-We exist for one reason — to help solidify or develop your walk with Jesus. Everything in this app is built around that single purpose.
+Shepherd's Path is a quiet place to meet with God each day. It is built around one simple thing — helping you walk a little closer with Jesus.
 
-Here is what we offer:
+Take a look around. The Daily Devotional is a wonderful place to start.
 
-The Daily Devotional gives you a fresh scripture every morning, along with an A-I guided reflection and prayer, crafted to anchor you in daily spiritual discipline. Think of it as a quiet moment with God — every single day.
-
-The Bible Journey is a 30-day guided transformation through God's Word. Carefully curated passages that build a strong foundation in your faith, moving from Creation all the way to Revelation — with insight at every step.
-
-We have also placed the entire Bible at your fingertips. Every book, every chapter — in multiple translations — with A-I available to help you understand the history, context, and meaning behind every passage.
-
-Your Prayer Journal is a private space to capture your prayers, reflections, and saved scriptures. A personal record of your walk with God, growing richer with every visit.
-
-And as you show up day after day, your devotional streak grows — a gentle, faithful reminder of your commitment.
-
-One more thing — and we believe it matters deeply. You will find on the home screen a section called Our Commitment to Scripture. We want you to know that every A-I response in this app is always grounded in the actual Bible passage being studied. Nothing here is presented as equal to, or a replacement for, God's Word. The content is shaped by the historic, orthodox Christian faith — not cultural opinion. That commitment applies to every user, and every church that chooses to use this platform.
-
-We are grateful you have chosen to walk this path. Let us begin together.`;
+We will be right here, every morning, walking this path with you.`;
 
 function getBestVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -73,8 +61,8 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
     const setVoice = () => {
       const voice = getBestVoice();
       if (voice) utterance.voice = voice;
-      utterance.rate = 0.88;
-      utterance.pitch = 1.0;
+      utterance.rate = 0.78;
+      utterance.pitch = 0.95;
       utterance.volume = 1.0;
     };
 
@@ -203,7 +191,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             )}
 
             <p className="text-[11px] text-muted-foreground leading-snug">
-              A ~90-second spoken overview of everything Shepherd's Path offers.
+              A brief personal welcome — about 20 seconds.
             </p>
           </div>
 

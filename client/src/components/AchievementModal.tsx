@@ -49,8 +49,8 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
     const applyVoice = () => {
       const voice = getBestVoice();
       if (voice) utterance.voice = voice;
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
+      utterance.rate = 0.80;
+      utterance.pitch = 0.95;
       utterance.volume = 1.0;
     };
 
