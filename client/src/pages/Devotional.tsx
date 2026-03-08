@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart } from "lucide-react";
 import { SiX, SiFacebook, SiWhatsapp } from "react-icons/si";
@@ -47,6 +47,7 @@ export default function Devotional() {
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
+  const pendingStreakAchievementRef = useRef<Achievement | null>(null);
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [gratitudePrayer, setGratitudePrayer] = useState("");
   const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
@@ -95,10 +96,7 @@ export default function Devotional() {
           setStreak(data);
           const achievement = checkStreakAchievement(data.currentStreak, data.isNewDay);
           if (achievement) {
-            setTimeout(() => {
-              markAchievementSeen(achievement.id);
-              setCurrentAchievement(achievement);
-            }, 1800);
+            pendingStreakAchievementRef.current = achievement;
           }
         }
       }).catch(() => {});
@@ -129,13 +127,20 @@ export default function Devotional() {
       const prayer = capitalizeDivinePronouns(data.content ?? "");
       setGratitudePrayer(prayer);
 
-      // Check for first-ever devotional completion
+      // Fire achievement after full devotional completion (Step 4 — Thank Him)
       if (prayer) {
-        const achievement = checkDevotionalFirstComplete();
-        if (achievement) {
+        const devotionalAchievement = checkDevotionalFirstComplete();
+        if (devotionalAchievement) {
           setTimeout(() => {
-            markAchievementSeen(achievement.id);
-            setCurrentAchievement(achievement);
+            markAchievementSeen(devotionalAchievement.id);
+            setCurrentAchievement(devotionalAchievement);
+          }, 1200);
+        } else if (pendingStreakAchievementRef.current) {
+          const streakAchievement = pendingStreakAchievementRef.current;
+          pendingStreakAchievementRef.current = null;
+          setTimeout(() => {
+            markAchievementSeen(streakAchievement.id);
+            setCurrentAchievement(streakAchievement);
           }, 1200);
         }
       }

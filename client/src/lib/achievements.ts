@@ -18,9 +18,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "First Devotional Complete",
     subtitle: "You've taken your first full step",
     message:
-      "You opened God's Word, sat with it, prayed through it, and offered your gratitude. That is not a small thing. That is a soul turning toward its Maker.",
+      "Read it. Reflected on it. Prayed it. Thanked God. That is the whole thing — and you nailed it. Not bad for a first timer.",
     voiceScript:
-      "You just completed your first full devotional. You opened God's Word, sat with it, prayed through it, and offered your gratitude back to God. That is not a small thing. That is a soul turning toward its Maker. This is exactly how transformation begins — not in one dramatic moment, but in a quiet decision to show up. God saw you today. Well done. We will be here tomorrow.",
+      "Well, look at that. You just completed your first full devotional. You read God's Word, reflected on it, prayed through it, and thanked Him. That is the whole thing — and you nailed it. Not bad for a first timer. Not bad at all. God saw every moment of it. We will be right here tomorrow.",
     colorFrom: "from-amber-500",
     colorTo: "to-orange-500",
   },
@@ -30,9 +30,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "Day One — You Showed Up",
     subtitle: "The most important step",
     message:
-      "In a world full of noise and distraction, you chose something different today. You chose God. Do not underestimate what you started.",
+      "In a world where everything fights for your attention — you chose God first. Don't let it go to your head. Just do it again tomorrow.",
     voiceScript:
-      "Day one. You showed up. In a world full of noise, distraction, and things competing for your attention — you chose something different. You chose God. That choice, made consistently and faithfully every single morning, will change your life. We have seen it happen. Do not underestimate what you started today. See you tomorrow.",
+      "Day one is in the books. You showed up. In a world where everything is competing for your attention — your phone, the news, the noise — you chose God first. And honestly? That is kind of a big deal. Don't let it go to your head though. Just do it again tomorrow. And the day after that.",
     colorFrom: "from-amber-400",
     colorTo: "to-red-400",
   },
@@ -42,9 +42,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "One Week of Faithfulness",
     subtitle: "7-day devotional streak",
     message:
-      "Seven days of choosing God before anything else. The disciples walked with Jesus daily for years — and so are you. Keep going.",
+      "Seven days in a row. At this point you should probably just accept that this is your life now. We think it's a great life to have.",
     voiceScript:
-      "Seven days. One full week of choosing God before you chose anything else. Let that sink in. The disciples did not become men of God in a single afternoon — they walked with Jesus, daily, for years. And right now, you are doing the same thing. Seven days is the beginning of a habit. A habit is the beginning of a life. Keep going.",
+      "Seven days in a row. Seven. At this point, you should probably just accept that this is your life now — and honestly, we think that is a fantastic life to have. The disciples walked with Jesus daily for years. You are doing the same thing. Seven days is the beginning of a habit. A habit is the beginning of a life. Keep going.",
     colorFrom: "from-yellow-400",
     colorTo: "to-amber-500",
   },
@@ -54,9 +54,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "Two Weeks Strong",
     subtitle: "14-day devotional streak",
     message:
-      "Fourteen mornings where you could have scrolled your phone and instead opened God's Word. That is conviction. That is character being built.",
+      "Fourteen mornings of choosing God over the snooze button. We're not sure the snooze button has noticed. But God definitely has.",
     voiceScript:
-      "Two weeks. Fourteen mornings where you could have rolled over, checked your phone, and let the world in first — and instead you opened God's Word. That is conviction. That is character. Studies show habits form around 21 days — you are nearly there. But more than a habit, you are building a life of accountability before God. He has seen every single one of those days. And He is pleased. Keep going.",
+      "Two weeks. Fourteen mornings of choosing God over the snooze button. That is no small thing. Studies say habits form around 21 days — you are almost there. And between you and us, you are already a different person than when you started. We are not sure the snooze button has noticed. But God has. Every single morning. Keep going.",
     colorFrom: "from-sky-400",
     colorTo: "to-blue-500",
   },
@@ -66,9 +66,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "One Month Walk",
     subtitle: "30-day devotional streak",
     message:
-      "Thirty days. Something has shifted in you — even if you can't fully name it yet. That is what daily time with God does. Your roots are growing.",
+      "Thirty days. We believed in you from day one — but thirty days? That's impressive. Sin is losing ground. Peace is moving in. Don't stop now.",
     voiceScript:
-      "Thirty days. One full month. Do you feel it? Something has shifted in you — even if you cannot fully name it yet. That is what daily time with God does. It does not always come in flashes of lightning. Most of the time it comes quietly, steadily — like roots growing deep into soil you cannot even see. Sin is losing ground. Peace is gaining it. This is real spiritual formation. Keep going.",
+      "Thirty days. One whole month. Okay — we have to be honest with you. We believed in you from day one. But thirty days? That is genuinely impressive. Something is shifting inside you, even if you cannot fully name it yet. Sin is losing ground. Peace is moving in. That is not an accident — that is what daily time with God does. Keep going. Do not stop now.",
     colorFrom: "from-violet-500",
     colorTo: "to-purple-600",
   },
@@ -78,9 +78,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "Century of Grace",
     subtitle: "100-day devotional streak",
     message:
-      "One hundred days. What you have built is not just a streak — it is a way of life quietly reshaping who you are from the inside out.",
+      "One hundred days. We need a moment. A hundred mornings choosing God before anything else. That is not normal. That is extraordinary.",
     voiceScript:
-      "One hundred days. A hundred mornings where you chose the Lord over everything else competing for your attention. This is not ordinary. Most people never get here. What you have built is not just a streak — it is a way of life. A daily rhythm of Scripture, reflection, and prayer that is quietly reshaping who you are from the inside out. Sin does not stand a chance against a life rooted in God's Word. God sees every single one of those days. Well done, good and faithful servant.",
+      "One hundred days. We need a moment. Okay — we are back. A hundred mornings where you chose God before your phone, before your coffee, before anything else. That is not normal. That is extraordinary. You have made the daily walk with Jesus part of who you are — and sin does not stand a chance against a life built on God's Word. Well done, good and faithful servant.",
     colorFrom: "from-rose-400",
     colorTo: "to-pink-600",
   },
