@@ -41,3 +41,8 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_openai_ai_integrations:2.0.0", "google-sheet:1.0.0", "resend:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_51T8lwsQhbATyG9HtMEXo6XjMeID5HTEruznptqjG2ncQp23qtWSrZVWxMjOFUCpi9cvElsLWLa4NxJASbD5BPvgo00wkmgPTBk"
