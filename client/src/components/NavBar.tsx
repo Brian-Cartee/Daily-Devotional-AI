@@ -6,64 +6,60 @@ import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 
-const LEFT_NAV = [
+const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
-  { href: "/understand", label: "Journey", icon: Compass },
-  { href: "/read", label: "Read", icon: BookOpen },
-  { href: "/study", label: "Study", icon: Search },
+  { href: "/understand", label: "Journey",    icon: Compass },
+  { href: "/read",       label: "Read",       icon: BookOpen },
+  { href: "/study",      label: "Study",      icon: Search },
+  { href: "/journal",    label: "Journal",    icon: NotebookPen },
 ];
 
 export function NavBar() {
   const [location] = useLocation();
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
+  const [notifOpen, setNotifOpen]   = useState(false);
+  const [emailOpen, setEmailOpen]   = useState(false);
+  const [langOpen,  setLangOpen]    = useState(false);
   const { lang, setLang } = useLanguage();
 
   const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); };
 
-  const navLink = (href: string, label: string, Icon: React.ElementType) => {
-    const active = location === href || location.startsWith(href + "/");
-    return (
-      <Link
-        key={href}
-        href={href}
-        data-testid={`nav-${label.toLowerCase()}`}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
-          active
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-        }`}
-      >
-        <Icon className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">{label}</span>
-      </Link>
-    );
-  };
-
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1 sm:gap-2">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-1.5 group shrink-0">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2">
+
+          {/* Logo — icon only on mobile, full name on sm+ */}
+          <Link href="/" className="flex items-center gap-1.5 group shrink-0 mr-1">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
               <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
             </div>
-            <span className="font-bold text-sm text-foreground hidden sm:inline tracking-tight">Shepherd's Path</span>
+            <span className="font-bold text-sm text-foreground hidden md:inline tracking-tight">Shepherd's Path</span>
           </Link>
 
-          {/* Left nav items */}
-          <div className="flex items-center gap-0">
-            {LEFT_NAV.map(({ href, label, icon: Icon }) => navLink(href, label, Icon))}
+          {/* All 5 nav items together */}
+          <div className="flex items-center gap-0 flex-1 min-w-0">
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              const active = location === href || location.startsWith(href + "/");
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  data-testid={`nav-${label.toLowerCase()}`}
+                  className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-all whitespace-nowrap ${
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">{label}</span>
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Right side: Journal · Mail · Globe · Bell — all shrink-0 so bell never gets clipped */}
+          {/* Utility icons — Mail · Globe · Bell — always on the right */}
           <div className="flex items-center gap-0 shrink-0">
-            {navLink("/journal", "Journal", NotebookPen)}
 
             {/* Daily email */}
             <div className="relative">
@@ -119,15 +115,16 @@ export function NavBar() {
               </AnimatePresence>
             </div>
 
-            {/* Notifications bell — always visible, shrink-0 guaranteed by parent */}
+            {/* Notifications bell */}
             <button
-              onClick={() => { setNotifOpen(true); closeAll(); setNotifOpen(true); }}
+              onClick={() => { closeAll(); setNotifOpen(true); }}
               data-testid="nav-notifications"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all"
               aria-label="Notification settings"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
             >
               <Bell className="w-3.5 h-3.5" />
             </button>
+
           </div>
         </div>
       </nav>
