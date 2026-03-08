@@ -3,13 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const WELCOME_SCRIPT = `Welcome. We are really glad you are here.
+const WELCOME_SCRIPT = `Welcome. We are so glad you are here.
 
-Shepherd's Path is a quiet place to meet with God each day. It is built around one simple thing — helping you walk a little closer with Jesus.
-
-Take a look around. The Daily Devotional is a wonderful place to start.
-
-We will be right here, every morning, walking this path with you.`;
+Shepherd's Path is your quiet, daily walk with Jesus. Start with the Daily Devotional — and we will be right here with you, every morning.`;
 
 function getBestVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -191,7 +187,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             )}
 
             <p className="text-[11px] text-muted-foreground leading-snug">
-              A brief personal welcome — about 20 seconds.
+              A brief personal welcome — about 15 seconds.
             </p>
           </div>
 
