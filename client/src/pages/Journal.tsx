@@ -493,7 +493,7 @@ export default function Journal() {
         {/* Hero banner */}
         <div className="relative w-full overflow-hidden" style={{ height: 180 }}>
           <img
-            src="/hero-journal.png"
+            src="/hero-landing.jpg"
             alt=""
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
