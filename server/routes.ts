@@ -5,9 +5,12 @@ import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
 import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
+import Stripe from "stripe";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -383,6 +386,128 @@ Answer all questions in the context of this scripture. Be concise but insightful
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ message: "Failed to delete entry" });
+    }
+  });
+
+  // ── Stripe Routes ────────────────────────────────────────────────────────────
+
+  app.post("/api/stripe/create-checkout-session", async (req, res) => {
+    const { plan } = req.body as { plan: "monthly" | "annual" };
+    if (!plan || !["monthly", "annual"].includes(plan)) {
+      return res.status(400).json({ message: "Invalid plan" });
+    }
+
+    try {
+      const origin = req.headers.origin || `https://${req.headers.host}`;
+
+      // Dynamically find price IDs by looking up the product
+      const products = await stripe.products.search({ query: 'name:"Shepherd\'s Path Pro"', limit: 1 });
+      if (!products.data.length) {
+        return res.status(500).json({ message: "Stripe product not found" });
+      }
+      const productId = products.data[0].id;
+
+      const prices = await stripe.prices.list({ product: productId, active: true, limit: 10 });
+      const target = prices.data.find((p) =>
+        plan === "annual"
+          ? p.recurring?.interval === "year"
+          : p.recurring?.interval === "month"
+      );
+
+      if (!target) {
+        return res.status(500).json({ message: "Price not found for plan" });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        line_items: [{ price: target.id, quantity: 1 }],
+        success_url: `${origin}/pro-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/?upgrade=cancelled`,
+        allow_promotion_codes: true,
+        billing_address_collection: "auto",
+        metadata: { plan },
+      });
+
+      res.json({ url: session.url });
+    } catch (err: any) {
+      console.error("Stripe checkout error:", err);
+      res.status(500).json({ message: err.message || "Checkout failed" });
+    }
+  });
+
+  app.get("/api/stripe/session-email", async (req, res) => {
+    const sessionId = req.query.session_id as string;
+    if (!sessionId) return res.status(400).json({ message: "session_id required" });
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      res.json({ email: session.customer_email ?? null });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message || "Failed to retrieve session" });
+    }
+  });
+
+  app.post("/api/stripe/check-pro", async (req, res) => {
+    const { email } = req.body as { email: string };
+    if (!email) return res.status(400).json({ message: "Email required" });
+
+    try {
+      const pro = await storage.getProSubscriberByEmail(email.toLowerCase());
+      const isPro = pro?.status === "active";
+      res.json({ isPro, plan: pro?.plan ?? null });
+    } catch (err) {
+      res.status(500).json({ message: "Lookup failed" });
+    }
+  });
+
+  // Stripe webhook — must use raw body
+  app.post("/api/stripe/webhook", async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event: Stripe.Event;
+    try {
+      if (webhookSecret) {
+        event = stripe.webhooks.constructEvent(req.rawBody as Buffer, sig, webhookSecret);
+      } else {
+        event = req.body as Stripe.Event;
+      }
+    } catch (err: any) {
+      console.error("Webhook signature error:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object as Stripe.Checkout.Session;
+          if (session.mode === "subscription" && session.customer_email) {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+            const plan = (session.metadata?.plan as string) ?? "monthly";
+            await storage.upsertProSubscriber({
+              email: session.customer_email,
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: subscription.id,
+              plan,
+              status: "active",
+            });
+          }
+          break;
+        }
+        case "customer.subscription.updated": {
+          const sub = event.data.object as Stripe.Subscription;
+          await storage.updateProSubscriberStatus(sub.id, sub.status === "active" ? "active" : sub.status);
+          break;
+        }
+        case "customer.subscription.deleted": {
+          const sub = event.data.object as Stripe.Subscription;
+          await storage.updateProSubscriberStatus(sub.id, "cancelled");
+          break;
+        }
+      }
+      res.json({ received: true });
+    } catch (err) {
+      console.error("Webhook handler error:", err);
+      res.status(500).json({ message: "Webhook handler failed" });
     }
   });
 

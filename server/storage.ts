@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -14,6 +14,10 @@ export interface IStorage {
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
   recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean }>;
+  getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined>;
+  getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined>;
+  upsertProSubscriber(data: { email: string; stripeCustomerId: string; stripeSubscriptionId: string; plan: string; status: string }): Promise<ProSubscriber>;
+  updateProSubscriberStatus(stripeSubscriptionId: string, status: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -97,6 +101,40 @@ export class DatabaseStorage implements IStorage {
     }).where(eq(streaks.sessionId, sessionId));
 
     return { currentStreak: newStreak, longestStreak: newLongest, isNewDay: true };
+  }
+
+  async getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined> {
+    const [row] = await db.select().from(proSubscribers).where(eq(proSubscribers.email, email.toLowerCase()));
+    return row;
+  }
+
+  async getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined> {
+    const [row] = await db.select().from(proSubscribers).where(eq(proSubscribers.stripeCustomerId, customerId));
+    return row;
+  }
+
+  async upsertProSubscriber(data: { email: string; stripeCustomerId: string; stripeSubscriptionId: string; plan: string; status: string }): Promise<ProSubscriber> {
+    const [row] = await db
+      .insert(proSubscribers)
+      .values({ ...data, email: data.email.toLowerCase() })
+      .onConflictDoUpdate({
+        target: proSubscribers.email,
+        set: {
+          stripeCustomerId: data.stripeCustomerId,
+          stripeSubscriptionId: data.stripeSubscriptionId,
+          plan: data.plan,
+          status: data.status,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async updateProSubscriberStatus(stripeSubscriptionId: string, status: string): Promise<void> {
+    await db
+      .update(proSubscribers)
+      .set({ status })
+      .where(eq(proSubscribers.stripeSubscriptionId, stripeSubscriptionId));
   }
 }
 

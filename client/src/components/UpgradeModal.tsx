@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Lock, Check, X, Zap, RefreshCw } from "lucide-react";
+import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { checkProWithServer, markProVerified } from "@/lib/proStatus";
+import { useToast } from "@/hooks/use-toast";
 
 const PRO_FEATURES = [
   "Unlimited AI responses every day",
@@ -15,9 +19,17 @@ const PRO_FEATURES = [
 
 interface UpgradeModalProps {
   onClose: () => void;
+  onProActivated?: () => void;
 }
 
-export function UpgradeModal({ onClose }: UpgradeModalProps) {
+export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
+  const { toast } = useToast();
+  const [plan, setPlan] = useState<"monthly" | "annual">("annual");
+  const [loading, setLoading] = useState(false);
+  const [showActivate, setShowActivate] = useState(false);
+  const [activateEmail, setActivateEmail] = useState("");
+  const [activating, setActivating] = useState(false);
+
   const resetTime = (() => {
     const now = new Date();
     const midnight = new Date(now);
@@ -28,6 +40,48 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins} minutes`;
   })();
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({ title: "Error", description: data.message || "Could not start checkout.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Network error. Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivatePro = async () => {
+    if (!activateEmail.includes("@")) {
+      toast({ title: "Invalid email", description: "Please enter a valid email address.", variant: "destructive" });
+      return;
+    }
+    setActivating(true);
+    const isPro = await checkProWithServer(activateEmail);
+    setActivating(false);
+    if (isPro) {
+      toast({ title: "Pro Activated!", description: "Welcome to Shepherd's Path Pro. Enjoy unlimited AI.", });
+      onProActivated?.();
+      onClose();
+    } else {
+      toast({
+        title: "No active subscription found",
+        description: "Make sure you use the same email you used to purchase. Contact support if you need help.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -44,7 +98,7 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
           exit={{ opacity: 0, scale: 0.93, y: 20 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           onClick={e => e.stopPropagation()}
-          className="bg-background border border-border rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden"
+          className="bg-background border border-border rounded-3xl shadow-2xl max-w-sm w-full overflow-y-auto max-h-[92vh]"
         >
           {/* Header */}
           <div className="relative bg-gradient-to-br from-primary via-primary/90 to-amber-500/80 px-7 pt-8 pb-12 text-center">
@@ -78,7 +132,8 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
           </div>
 
           {/* Pull-up card */}
-          <div className="-mt-6 bg-background rounded-t-3xl px-7 pt-7 pb-7 space-y-4">
+          <div className="-mt-6 bg-background rounded-t-3xl px-7 pt-7 pb-6 space-y-4">
+            {/* Feature list */}
             <div className="space-y-2.5">
               {PRO_FEATURES.map((f) => (
                 <div key={f} className="flex items-start gap-3">
@@ -90,32 +145,118 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
               ))}
             </div>
 
-            <div className="pt-1 space-y-2">
-              <div className="text-center">
-                <span className="text-2xl font-extrabold text-foreground">$5.99</span>
-                <span className="text-sm text-muted-foreground">/mo</span>
-                <span className="ml-2 text-xs text-muted-foreground">or $44.99/year</span>
-              </div>
-
-              <Button
-                data-testid="btn-upgrade-pro"
-                className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
-                onClick={() => {
-                  window.open("https://shepherdspathAI.com/pro", "_blank");
-                  onClose();
-                }}
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Upgrade to Pro
-              </Button>
-
+            {/* Plan toggle */}
+            <div className="flex rounded-xl border border-border overflow-hidden text-sm font-semibold">
               <button
-                data-testid="btn-upgrade-later"
-                onClick={onClose}
-                className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+                data-testid="btn-plan-annual"
+                onClick={() => setPlan("annual")}
+                className={`flex-1 py-2.5 text-center transition-colors relative ${
+                  plan === "annual"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
               >
-                Continue with free — responses reset in {resetTime}
+                Annual
+                {plan === "annual" && (
+                  <span className="ml-1.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded px-1">
+                    SAVE 37%
+                  </span>
+                )}
               </button>
+              <button
+                data-testid="btn-plan-monthly"
+                onClick={() => setPlan("monthly")}
+                className={`flex-1 py-2.5 text-center transition-colors ${
+                  plan === "monthly"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
+
+            {/* Price display */}
+            <div className="text-center -mt-1">
+              {plan === "annual" ? (
+                <>
+                  <span className="text-2xl font-extrabold text-foreground">$44.99</span>
+                  <span className="text-sm text-muted-foreground">/year</span>
+                  <span className="ml-2 text-xs text-muted-foreground">($3.75/mo)</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl font-extrabold text-foreground">$5.99</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                </>
+              )}
+            </div>
+
+            {/* Checkout button */}
+            <Button
+              data-testid="btn-upgrade-pro"
+              className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+              onClick={handleCheckout}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4 mr-2" />
+              )}
+              {loading ? "Redirecting…" : "Upgrade to Pro"}
+            </Button>
+
+            <button
+              data-testid="btn-upgrade-later"
+              onClick={onClose}
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              Continue with free — responses reset in {resetTime}
+            </button>
+
+            {/* Already have Pro */}
+            <div className="border-t border-border pt-3">
+              <button
+                data-testid="btn-already-pro"
+                onClick={() => setShowActivate(v => !v)}
+                className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Already subscribed?
+                {showActivate ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+
+              <AnimatePresence>
+                {showActivate && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-3 flex gap-2">
+                      <Input
+                        data-testid="input-pro-email"
+                        type="email"
+                        placeholder="Enter your Pro email"
+                        value={activateEmail}
+                        onChange={e => setActivateEmail(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleActivatePro()}
+                        className="text-sm h-9 rounded-xl"
+                      />
+                      <Button
+                        data-testid="btn-activate-pro"
+                        size="sm"
+                        onClick={handleActivatePro}
+                        disabled={activating}
+                        className="rounded-xl shrink-0 h-9 px-3"
+                      >
+                        {activating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Activate"}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </motion.div>

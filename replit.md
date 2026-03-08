@@ -48,6 +48,27 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 | POST | `/api/ai/generate` | AI reflection or prayer for today's verse |
 | POST | `/api/ai/chat` | Follow-up chat for daily verse |
 | GET | `/api/bible?ref=...` | Bible chapter text proxy (bible-api.com KJV) |
+| POST | `/api/stripe/create-checkout-session` | Create Stripe checkout session (body: `{plan: "monthly"|"annual"}`) |
+| GET | `/api/stripe/session-email` | Get customer email from checkout session (query: `session_id`) |
+| POST | `/api/stripe/check-pro` | Check if an email has active Pro subscription |
+| POST | `/api/stripe/webhook` | Stripe webhook handler (events: checkout.session.completed, subscription updated/deleted) |
+
+## Stripe / Pro Subscription
+
+- **Products**: "Shepherd's Path Pro" in Stripe test mode — $5.99/month and $44.99/year
+- **Secrets**: `STRIPE_SECRET_KEY` (stored), `VITE_STRIPE_PUBLISHABLE_KEY` (stored)
+- **Webhook secret**: `STRIPE_WEBHOOK_SECRET` — set this after deploying to your public URL
+- **Webhook URL** (set in Stripe dashboard after deploy): `https://yourdomain/api/stripe/webhook`
+- **Pro subscriber table**: `pro_subscribers` in PostgreSQL (email, stripe_customer_id, stripe_subscription_id, plan, status)
+- **Frontend Pro check**: `client/src/lib/proStatus.ts` — `isProVerifiedLocally()`, `checkProWithServer()`, `markProVerified()`
+- **AI limit bypass**: Pro users skip the 10/day AI usage limit (checked in `aiUsage.ts`)
+- **Success page**: `/pro-success` — auto-retrieves customer email from Stripe session, marks Pro in localStorage
+- **"Already subscribed?" flow**: UpgradeModal has email input that calls `/api/stripe/check-pro` to activate Pro locally
+
+## Email Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
 | POST | `/api/chat/passage` | AI chat for arbitrary Bible passage |
 | POST | `/api/subscribe` | Subscribe to daily email |
 | GET | `/api/unsubscribe?email=...` | Unsubscribe from daily email |

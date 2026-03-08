@@ -10,6 +10,7 @@ import UnderstandBible from "@/pages/UnderstandBible";
 import ReadBible from "@/pages/ReadBible";
 import Journal from "@/pages/Journal";
 import QuickStudyPage from "@/pages/QuickStudyPage";
+import ProSuccess from "@/pages/ProSuccess";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/read" component={ReadBible} />
       <Route path="/study" component={QuickStudyPage} />
       <Route path="/journal" component={Journal} />
+      <Route path="/pro-success" component={ProSuccess} />
       <Route component={NotFound} />
     </Switch>
   );

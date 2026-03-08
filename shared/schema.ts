@@ -74,6 +74,25 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit(
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
 
+export const proSubscribers = pgTable("pro_subscribers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  plan: text("plan").notNull().default("monthly"), // "monthly" | "annual" | "lifetime"
+  status: text("status").notNull().default("active"), // "active" | "cancelled" | "past_due"
+  activatedAt: timestamp("activated_at").default(sql`now()`),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const insertProSubscriberSchema = createInsertSchema(proSubscribers).omit({
+  id: true,
+  activatedAt: true,
+});
+
+export type ProSubscriber = typeof proSubscribers.$inferSelect;
+export type InsertProSubscriber = z.infer<typeof insertProSubscriberSchema>;
+
 export const streaks = pgTable("streaks", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull().unique(),
