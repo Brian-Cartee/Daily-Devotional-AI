@@ -47,10 +47,11 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
+        className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col"
+        style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
-        {/* Header band — hero image */}
-        <div className="relative px-8 pt-9 pb-10 text-center overflow-hidden" style={{ minHeight: 160 }}>
+        {/* Header band — hero image — fixed, not scrollable */}
+        <div className="relative px-8 pt-7 pb-8 text-center overflow-hidden shrink-0" style={{ minHeight: 130 }}>
           <img
             src="/hero-landing.png"
             alt=""
@@ -58,35 +59,35 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.62) 100%)" }} />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-3">
               ✦ Welcome
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
             </h1>
-            <p className="text-white/80 text-sm mt-2 leading-relaxed">
+            <p className="text-white/80 text-sm mt-1.5 leading-relaxed">
               Your daily walk with Jesus
             </p>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="-mt-5 bg-background rounded-t-3xl px-8 pt-7 pb-8 space-y-5">
-          {/* Feature list */}
-          <div className="space-y-3">
+        {/* Scrollable content */}
+        <div className="-mt-5 bg-background rounded-t-3xl px-6 pt-6 pb-3 space-y-4 overflow-y-auto flex-1">
+          {/* Feature list — compact 2-per-row grid */}
+          <div className="grid grid-cols-2 gap-2.5">
             {[
-              { icon: "🌅", title: "Daily Devotional", desc: "A fresh scripture, reflection & prayer — every morning" },
-              { icon: "🧭", title: "Bible Journey", desc: "30-day guided transformation through God's Word" },
-              { icon: "📖", title: "Read the Bible", desc: "Every book & chapter with AI insight on demand" },
-              { icon: "✍️", title: "Prayer Journal", desc: "Capture prayers, reflections & saved scriptures" },
-              { icon: "🔥", title: "Daily Streak", desc: "A gentle record of your faithfulness" },
-              { icon: "📜", title: "Our Commitment to Scripture", desc: "Every AI response is grounded in God's Word — always" },
+              { icon: "🌅", title: "Daily Devotional", desc: "Scripture, reflection & prayer" },
+              { icon: "🧭", title: "Bible Journey", desc: "30-day guided transformation" },
+              { icon: "📖", title: "Read the Bible", desc: "Every chapter with AI insight" },
+              { icon: "✍️", title: "Prayer Journal", desc: "Prayers, reflections & verses" },
+              { icon: "🔥", title: "Daily Streak", desc: "Track your faithfulness" },
+              { icon: "📜", title: "Scripture First", desc: "Every AI response is grounded" },
             ].map(f => (
-              <div key={f.title} className="flex items-start gap-3">
-                <span className="text-base mt-0.5 shrink-0">{f.icon}</span>
+              <div key={f.title} className="flex items-start gap-2 bg-muted/30 rounded-xl px-3 py-2.5">
+                <span className="text-sm mt-0.5 shrink-0">{f.icon}</span>
                 <div>
-                  <p className="text-sm font-semibold text-foreground leading-tight">{f.title}</p>
-                  <p className="text-[12px] text-muted-foreground leading-snug">{f.desc}</p>
+                  <p className="text-[12px] font-semibold text-foreground leading-tight">{f.title}</p>
+                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -140,26 +141,27 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             </p>
           </div>
 
-          {/* CTA buttons */}
-          <div className="space-y-2.5 pt-1">
-            <Button
-              data-testid="btn-start-exploring"
-              className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
-              onClick={handleDismiss}
-            >
-              Start Exploring
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+        </div>
 
-            <button
-              data-testid="btn-skip-welcome"
-              onClick={handleDismiss}
-              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1 flex items-center justify-center gap-1"
-            >
-              Skip voice intro
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        {/* CTA footer — always visible, pinned to bottom */}
+        <div className="shrink-0 px-6 pb-6 pt-3 bg-background rounded-b-3xl border-t border-border/40 space-y-2">
+          <Button
+            data-testid="btn-start-exploring"
+            className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+            onClick={handleDismiss}
+          >
+            Start Exploring
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+
+          <button
+            data-testid="btn-skip-welcome"
+            onClick={handleDismiss}
+            className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1 flex items-center justify-center gap-1"
+          >
+            Skip voice intro
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </motion.div>
     </motion.div>
