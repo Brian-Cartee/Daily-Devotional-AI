@@ -14,6 +14,8 @@ import { getStoredLang } from "@/lib/language";
 import { getHeroImage } from "@/lib/heroImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { AchievementModal } from "@/components/AchievementModal";
+import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, type Achievement } from "@/lib/achievements";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -53,6 +55,7 @@ export default function Devotional() {
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
@@ -88,7 +91,16 @@ export default function Devotional() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
       }).then(r => r.json()).then(data => {
-        if (data.currentStreak) setStreak(data);
+        if (data.currentStreak) {
+          setStreak(data);
+          const achievement = checkStreakAchievement(data.currentStreak, data.isNewDay);
+          if (achievement) {
+            setTimeout(() => {
+              markAchievementSeen(achievement.id);
+              setCurrentAchievement(achievement);
+            }, 1800);
+          }
+        }
       }).catch(() => {});
     }
   }, [verse]);
@@ -114,7 +126,19 @@ export default function Devotional() {
         }),
       });
       const data = await res.json();
-      setGratitudePrayer(capitalizeDivinePronouns(data.content ?? ""));
+      const prayer = capitalizeDivinePronouns(data.content ?? "");
+      setGratitudePrayer(prayer);
+
+      // Check for first-ever devotional completion
+      if (prayer) {
+        const achievement = checkDevotionalFirstComplete();
+        if (achievement) {
+          setTimeout(() => {
+            markAchievementSeen(achievement.id);
+            setCurrentAchievement(achievement);
+          }, 1200);
+        }
+      }
     } catch {
       setGratitudePrayer("Sorry, we couldn't generate your prayer right now. Please try again.");
     }
@@ -560,6 +584,15 @@ export default function Devotional() {
 
       <AnimatePresence>
         {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {currentAchievement && (
+          <AchievementModal
+            achievement={currentAchievement}
+            onClose={() => setCurrentAchievement(null)}
+          />
+        )}
       </AnimatePresence>
     </>
   );
