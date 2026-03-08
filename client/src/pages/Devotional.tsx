@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart } from "lucide-react";
+import { SiX, SiFacebook, SiWhatsapp } from "react-icons/si";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
@@ -156,6 +157,26 @@ export default function Devotional() {
     }
   };
 
+  const buildShareText = () => {
+    if (!verse) return "";
+    return `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏\nshepherdspathAI.com`;
+  };
+
+  const shareOnX = () => {
+    const text = encodeURIComponent(buildShareText());
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank", "noopener,width=600,height=450");
+  };
+
+  const shareOnFacebook = () => {
+    const text = encodeURIComponent(buildShareText());
+    window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=https://shepherdspathAI.com`, "_blank", "noopener,width=600,height=450");
+  };
+
+  const shareOnWhatsApp = () => {
+    const text = encodeURIComponent(buildShareText());
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener");
+  };
+
   if (isVerseLoading) {
     return (
       <>
@@ -274,6 +295,35 @@ export default function Devotional() {
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Share2 className="w-3.5 h-3.5" />}
                 {copied ? "Copied!" : "Share Scripture"}
+              </button>
+            </div>
+
+            {/* Social sharing row */}
+            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-center gap-3">
+              <span className="text-[11px] text-muted-foreground/45 font-medium">Share on</span>
+              <button
+                data-testid="share-x"
+                onClick={shareOnX}
+                title="Share on X (Twitter)"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-all"
+              >
+                <SiX className="w-3.5 h-3.5" />
+              </button>
+              <button
+                data-testid="share-facebook"
+                onClick={shareOnFacebook}
+                title="Share on Facebook"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all"
+              >
+                <SiFacebook className="w-3.5 h-3.5" />
+              </button>
+              <button
+                data-testid="share-whatsapp"
+                onClick={shareOnWhatsApp}
+                title="Share on WhatsApp"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all"
+              >
+                <SiWhatsapp className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
