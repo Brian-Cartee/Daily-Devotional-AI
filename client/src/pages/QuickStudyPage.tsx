@@ -363,23 +363,27 @@ Keep it warm, accessible, and grounded in Scripture.`,
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-background pt-20 pb-16 px-4">
-        <div className="max-w-2xl mx-auto">
 
-          {/* Page header */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-3">
-              <Sparkles className="w-3 h-3" />
-              AI-Powered
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight mb-2">Quick Bible Study</h1>
-            <p className="text-muted-foreground text-sm max-w-xs mx-auto">Any topic, passage, or question — studied in seconds.</p>
-          </motion.div>
+      {/* Hero banner */}
+      <div className="relative w-full overflow-hidden pt-14" style={{ height: 194 }}>
+        <img
+          src="/hero-study.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.70) 100%)" }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/25 text-white/90 text-[10px] font-bold uppercase tracking-widest mb-1.5">
+            <Sparkles className="w-2.5 h-2.5" />
+            AI-Powered
+          </div>
+          <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Quick Bible Study</h2>
+          <p className="text-white/70 text-[12px] mt-1">Any topic, passage, or question — studied in seconds.</p>
+        </div>
+      </div>
+
+      <main className="min-h-screen bg-background pt-6 pb-16 px-4">
+        <div className="max-w-2xl mx-auto">
 
           {/* Search card */}
           <motion.div
