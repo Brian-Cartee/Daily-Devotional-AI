@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getUserName } from "@/lib/userName";
+import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 
@@ -119,6 +120,10 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
               {textQuery.isLoading && <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading passage...</div>}
               {textQuery.data && (
                 <div className="bg-white/40 dark:bg-slate-700/30 rounded-xl p-4 max-h-56 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{chapter.reference}</span>
+                    <ListenButton text={textQuery.data.text} label="Listen" className="text-[11px]" />
+                  </div>
                   <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{textQuery.data.text}</p>
                 </div>
               )}
@@ -138,9 +143,12 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
               )}
               {aiContent && (aiMode === "reflect" || aiMode === "pray") && (
                 <div className="bg-white/50 dark:bg-slate-700/40 rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center gap-2 mb-3">
-                    {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
+                    </div>
+                    <ListenButton text={aiContent} label="Listen" className="text-[11px]" />
                   </div>
                   <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">
                     {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}

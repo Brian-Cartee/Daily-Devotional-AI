@@ -88,16 +88,6 @@ export default function LandingHome() {
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-        {/* Watermark logo — upper-right, below navbar, ghosted */}
-        <div className="absolute top-16 right-5 sm:top-[72px] sm:right-8 z-10 pointer-events-none select-none">
-          <img
-            src={logoTransparent}
-            alt=""
-            aria-hidden="true"
-            className="w-16 h-16 sm:w-20 sm:h-20 object-contain opacity-30 drop-shadow-[0_2px_16px_rgba(255,255,255,0.5)]"
-          />
-        </div>
-
         {/* Hero text */}
         <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14">
           <motion.div
@@ -135,6 +125,14 @@ export default function LandingHome() {
                 data-testid={testid}
                 className={`group relative rounded-2xl ${imageBg} border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden`}
               >
+                {/* SP logo watermark — top-right of each card */}
+                <img
+                  src={logoTransparent}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute top-3 right-3 w-9 h-9 object-contain opacity-[0.12] pointer-events-none select-none"
+                  style={{ filter: "brightness(0)" }}
+                />
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />

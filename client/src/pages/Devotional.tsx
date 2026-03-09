@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getUserName } from "@/lib/userName";
+import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -330,6 +331,7 @@ export default function Devotional() {
                 {savedVerse ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
                 {savedVerse ? "Saved to Journal" : "Save to Journal"}
               </button>
+              <ListenButton text={`${verse.text} — ${verse.reference}`} label="Listen" />
               <button
                 data-testid="button-share"
                 onClick={handleShare}
@@ -405,15 +407,18 @@ export default function Devotional() {
                       <p key={i}>{para}</p>
                     ))}
                   </div>
-                  <button
-                    data-testid="save-reflection"
-                    onClick={() => saveMutation.mutate({ type: "reflection", content: reflectionMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
-                    disabled={savedReflection || saveMutation.isPending}
-                    className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                  >
-                    {savedReflection ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    {savedReflection ? "Saved to Journal" : "Save to Journal"}
-                  </button>
+                  <div className="mt-4 flex items-center gap-4">
+                    <button
+                      data-testid="save-reflection"
+                      onClick={() => saveMutation.mutate({ type: "reflection", content: reflectionMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
+                      disabled={savedReflection || saveMutation.isPending}
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {savedReflection ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                      {savedReflection ? "Saved to Journal" : "Save to Journal"}
+                    </button>
+                    <ListenButton text={reflectionMutation.data!.content} label="Listen" />
+                  </div>
                 </motion.div>
               )}
               {reflectionMutation.isError && (
@@ -438,15 +443,18 @@ export default function Devotional() {
               {prayerMutation.isSuccess && prayerMutation.data && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                   <PrayerText text={capitalizeDivinePronouns(prayerMutation.data.content)} />
-                  <button
-                    data-testid="save-prayer"
-                    onClick={() => saveMutation.mutate({ type: "prayer", content: prayerMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
-                    disabled={savedPrayer || saveMutation.isPending}
-                    className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                  >
-                    {savedPrayer ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    {savedPrayer ? "Saved to Journal" : "Save to Journal"}
-                  </button>
+                  <div className="mt-4 flex items-center gap-4">
+                    <button
+                      data-testid="save-prayer"
+                      onClick={() => saveMutation.mutate({ type: "prayer", content: prayerMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
+                      disabled={savedPrayer || saveMutation.isPending}
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {savedPrayer ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                      {savedPrayer ? "Saved to Journal" : "Save to Journal"}
+                    </button>
+                    <ListenButton text={prayerMutation.data!.content} label="Listen" />
+                  </div>
                 </motion.div>
               )}
               {prayerMutation.isError && (

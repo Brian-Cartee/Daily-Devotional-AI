@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus, Plus, Check } from "lucide-react";
+import { ListenButton } from "@/components/ListenButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { NavBar } from "@/components/NavBar";
@@ -318,7 +319,10 @@ export default function ReadBible() {
                     >
                       <div className="mb-8">
                         <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-1">{selectedBook}</p>
-                        <h2 className="reading-chapter-title text-foreground">Chapter {selectedChapter}</h2>
+                        <div className="flex items-center justify-between">
+                          <h2 className="reading-chapter-title text-foreground">Chapter {selectedChapter}</h2>
+                          <ListenButton text={chapterText.data!.text.replace(/\[\d+\]/g, "")} label="Listen" size="md" />
+                        </div>
                         <div className="h-px bg-border mt-4" />
                       </div>
 
