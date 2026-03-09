@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
@@ -329,19 +330,25 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
 }
 
 export default function UnderstandBible() {
-  const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+  const [location, navigate] = useLocation();
+  const params = new URLSearchParams(location.split("?")[1] || "");
+  const journeyId = params.get("j");
+  const selectedJourney = journeyId ? (ALL_JOURNEYS.find(j => j.id === journeyId) ?? null) : null;
+
+  const handleSelect = (journey: Journey) => navigate(`/understand?j=${journey.id}`);
+  const handleBack = () => navigate("/understand");
 
   return (
     <>
       <NavBar />
       <AnimatePresence mode="wait">
         {selectedJourney ? (
-          <motion.div key="detail" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
-            <JourneyDetail journey={selectedJourney} onBack={() => setSelectedJourney(null)} />
+          <motion.div key={selectedJourney.id} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
+            <JourneyDetail journey={selectedJourney} onBack={handleBack} />
           </motion.div>
         ) : (
           <motion.div key="hub" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.25 }}>
-            <JourneyHub onSelect={setSelectedJourney} />
+            <JourneyHub onSelect={handleSelect} />
           </motion.div>
         )}
       </AnimatePresence>
