@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
 import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema";
@@ -87,6 +88,15 @@ export async function registerRoutes(
   });
 
   // Debug endpoint: inspect raw sheet rows to confirm column mapping
+  app.get("/api/download/growth-plan", (_req, res) => {
+    const pdfPath = path.resolve(process.cwd(), "scripts/shepherds-path-growth-plan.pdf");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=\"shepherds-path-growth-plan.pdf\"");
+    res.sendFile(pdfPath, (err) => {
+      if (err) res.status(404).json({ message: "PDF not found." });
+    });
+  });
+
   app.get("/api/debug/sheet-rows", async (req, res) => {
     try {
       const rows = await getRawSheetRows();
