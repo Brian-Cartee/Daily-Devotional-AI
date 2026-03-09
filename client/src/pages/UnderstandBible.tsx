@@ -190,9 +190,9 @@ function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
   return (
     <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-8">
+        <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
           <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/65" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
