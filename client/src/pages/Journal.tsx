@@ -490,35 +490,6 @@ export default function Journal() {
       <NavBar />
       <div className="min-h-screen bg-background pt-14" onClick={() => exportOpen && setExportOpen(false)}>
 
-        {/* Hero banner */}
-        <div className="relative w-full overflow-hidden" style={{ height: 280 }}>
-          <img
-            src="/journal-hero.png"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center center" }}
-          />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.68) 100%)" }} />
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
-            <h2 className="text-white text-lg font-extrabold tracking-tight leading-snug drop-shadow-md">
-              Prayer Journal
-            </h2>
-            <p
-              style={{
-                fontFamily: "var(--font-decorative)",
-                fontStyle: "italic",
-                fontWeight: 400,
-                fontSize: "1.15rem",
-                color: "rgba(255,255,255,0.93)",
-                textShadow: "0 1px 6px rgba(0,0,0,0.55)",
-                marginTop: "3px",
-              }}
-            >
-              A record of your walk with Jesus.
-            </p>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-14 z-30">
           <div className="max-w-xl mx-auto px-5">
