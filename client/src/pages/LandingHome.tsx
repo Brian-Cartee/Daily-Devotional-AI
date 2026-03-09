@@ -70,7 +70,7 @@ export default function LandingHome() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background md:bg-transparent relative">
       <AnimatePresence>
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
