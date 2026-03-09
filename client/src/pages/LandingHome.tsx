@@ -83,7 +83,7 @@ export default function LandingHome() {
           >
             <div className="flex flex-col items-start leading-none mb-3 select-none">
               <span className="text-white/80 mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 300, fontSize: "clamp(1.1rem, 4vw, 1.5rem)", letterSpacing: "0.28em", textTransform: "uppercase", textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}>Shepherd's</span>
-              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(3.5rem, 14vw, 5.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
+              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
             <div className="flex items-center justify-start gap-3 mb-3">
               <div className="h-px w-10 bg-white/40" />
