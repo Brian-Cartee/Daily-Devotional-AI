@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import journalHero from "@assets/NEW_S_P_LOGO__(1400_x_600_px)-2_1773078851969.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,12 +6,48 @@ import {
   BookHeart, Sparkles, HandIcon, BookOpen, Trash2, Loader2,
   NotebookPen, PenLine, Plus, X, ChevronDown, Church, User, BookMarked, Calendar,
   Download, FileText, FileType2, Lock, Star, Check,
+  Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb,
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
+import { isProVerifiedLocally } from "@/lib/proStatus";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import type { JournalEntry } from "@shared/schema";
+
+const SERMON_USAGE_KEY = "sp_sermon_recordings";
+
+function getSermonMonth() { return new Date().toISOString().slice(0, 7); }
+
+function canRecordSermon() {
+  if (isProVerifiedLocally()) return true;
+  try {
+    const raw = localStorage.getItem(SERMON_USAGE_KEY);
+    if (!raw) return true;
+    const data = JSON.parse(raw);
+    return data.month !== getSermonMonth() || data.count < 1;
+  } catch { return true; }
+}
+
+function recordSermonUsage() {
+  if (isProVerifiedLocally()) return;
+  const month = getSermonMonth();
+  let count = 0;
+  try {
+    const raw = localStorage.getItem(SERMON_USAGE_KEY);
+    if (raw) { const d = JSON.parse(raw); if (d.month === month) count = d.count; }
+  } catch {}
+  localStorage.setItem(SERMON_USAGE_KEY, JSON.stringify({ month, count: count + 1 }));
+}
+
+interface TranscriptResult {
+  transcript: string;
+  title: string;
+  keyPoints: string[];
+  scriptures: string[];
+  application: string;
+}
 
 type TabType = "prayer" | "reflection" | "verse" | "note";
 
@@ -358,6 +394,284 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: nu
   );
 }
 
+function SermonRecorder({ onSave }: { onSave: () => void }) {
+  const [state, setState] = useState<"idle" | "requesting" | "recording" | "processing" | "review">("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const [result, setResult] = useState<TranscriptResult | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const sessionId = getSessionId();
+
+  useEffect(() => {
+    if (state === "recording") {
+      timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+      return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (state === "idle") setElapsed(0);
+    }
+  }, [state]);
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const startRecording = async () => {
+    if (!canRecordSermon()) { setShowUpgrade(true); return; }
+    setState("requesting");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+      });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => processAudio();
+      recorder.start(1000);
+      setState("recording");
+    } catch {
+      setState("idle");
+      toast({ description: "Could not access microphone. Please check your browser permissions.", variant: "destructive" });
+    }
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    setState("processing");
+  };
+
+  const processAudio = async () => {
+    recordSermonUsage();
+    const mimeType = recorderRef.current?.mimeType || "audio/webm";
+    const blob = new Blob(chunksRef.current, { type: mimeType });
+    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+    const formData = new FormData();
+    formData.append("audio", blob, `sermon.${ext}`);
+    try {
+      const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("failed");
+      const data: TranscriptResult = await res.json();
+      setResult(data);
+      setEditTitle(data.title || "Sermon Notes");
+      setState("review");
+    } catch {
+      setState("idle");
+      toast({ description: "Transcription failed. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!result) throw new Error("No result");
+      const sections = [
+        result.keyPoints.length > 0
+          ? `KEY POINTS\n${result.keyPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}`
+          : null,
+        result.scriptures.length > 0 ? `SCRIPTURES MENTIONED\n${result.scriptures.join(", ")}` : null,
+        result.application ? `APPLICATION\n${result.application}` : null,
+        `FULL TRANSCRIPT\n${result.transcript}`,
+      ].filter(Boolean).join("\n\n");
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, type: "note", title: editTitle.trim() || "Sermon Notes", content: sections }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] });
+      toast({ description: "Sermon saved to your journal." });
+      setState("idle"); setResult(null); setEditTitle(""); setShowTranscript(false);
+      onSave();
+    },
+    onError: () => toast({ description: "Could not save. Please try again.", variant: "destructive" }),
+  });
+
+  if (state === "idle") return (
+    <div className="mb-4">
+      <AnimatePresence>{showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}</AnimatePresence>
+      <button
+        onClick={startRecording}
+        data-testid="btn-record-sermon"
+        className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20 text-primary hover:bg-primary/15 hover:border-primary/40 transition-all text-sm font-semibold"
+      >
+        <Mic className="w-4 h-4" />
+        Record a Sermon
+        <span className="text-[10px] font-bold text-primary/60 bg-primary/10 px-1.5 py-0.5 rounded-full ml-1">
+          {isProVerifiedLocally() ? "Pro" : canRecordSermon() ? "1 free/mo" : "Upgrade"}
+        </span>
+      </button>
+    </div>
+  );
+
+  if (state === "requesting") return (
+    <div className="mb-4 flex items-center justify-center gap-3 py-5 rounded-2xl border border-border/50 bg-muted/30">
+      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+      <span className="text-sm text-muted-foreground">Requesting microphone access…</span>
+    </div>
+  );
+
+  if (state === "recording") return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+      className="mb-4 rounded-2xl border-2 border-red-400/30 bg-red-50/50 dark:bg-red-950/20 p-4"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+          </span>
+          <span className="text-sm font-bold text-red-600 dark:text-red-400">Recording</span>
+          <span className="font-mono text-sm font-semibold text-foreground">{fmt(elapsed)}</span>
+        </div>
+        <button
+          onClick={stopRecording}
+          data-testid="btn-stop-recording"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors"
+        >
+          <Square className="w-3.5 h-3.5 fill-white" />
+          Stop
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground mt-2.5">Noise suppression is active. Stop when the sermon ends.</p>
+    </motion.div>
+  );
+
+  if (state === "processing") return (
+    <div className="mb-4 flex flex-col items-center justify-center gap-3 py-8 rounded-2xl border border-border/50 bg-muted/20">
+      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="text-center">
+        <p className="text-sm font-semibold text-foreground">Transcribing your sermon…</p>
+        <p className="text-xs text-muted-foreground mt-1">This takes about 30–60 seconds depending on length.</p>
+      </div>
+    </div>
+  );
+
+  if (state === "review" && result) return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+      className="mb-4 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+    >
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <Mic className="w-4 h-4 text-primary" />
+          <span className="font-bold text-foreground text-sm">Sermon Recorded</span>
+        </div>
+        <button onClick={() => { setState("idle"); setResult(null); }} className="text-muted-foreground hover:text-foreground transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="px-5 py-4 space-y-4">
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 block">Sermon Title</label>
+          <input
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            data-testid="input-sermon-title-ai"
+            className="w-full bg-background border border-border/60 rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+
+        {result.keyPoints.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <ListChecks className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Key Points</span>
+            </div>
+            <ul className="space-y-1.5">
+              {result.keyPoints.map((pt, i) => (
+                <li key={i} className="flex gap-2 text-sm text-foreground leading-snug">
+                  <span className="text-primary font-bold mt-px shrink-0">{i + 1}.</span>
+                  <span>{pt}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {result.scriptures.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <BookText className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Scriptures Referenced</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {result.scriptures.map((s, i) => (
+                <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {result.application && (
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Application</span>
+            </div>
+            <p className="text-sm text-amber-800 dark:text-amber-300 leading-snug">{result.application}</p>
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowTranscript(v => !v)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="btn-toggle-transcript"
+        >
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showTranscript ? "rotate-90" : ""}`} />
+          {showTranscript ? "Hide" : "View"} full transcript ({Math.round(result.transcript.split(" ").length / 130)} min read)
+        </button>
+
+        {showTranscript && (
+          <div className="bg-muted/30 rounded-xl px-4 py-3 max-h-48 overflow-y-auto">
+            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{result.transcript}</p>
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={() => { setState("idle"); setResult(null); setEditTitle(""); setShowTranscript(false); }}
+            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            Discard
+          </button>
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            data-testid="btn-save-sermon-recording"
+            className="flex-1 rounded-xl font-semibold"
+          >
+            {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save to Journal"}
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  return null;
+}
+
 function SermonNoteForm({ onSave }: { onSave: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -586,6 +900,7 @@ export default function Journal() {
             </div>
           ) : activeTab === "note" ? (
             <>
+              <SermonRecorder onSave={() => {}} />
               <SermonNoteForm onSave={() => {}} />
               {filtered.length > 0 && (
                 <>

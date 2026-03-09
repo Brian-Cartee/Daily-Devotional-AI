@@ -7,6 +7,7 @@ import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
 import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
+import multer from "multer";
 import Stripe from "stripe";
 import webpush from "web-push";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
@@ -146,6 +147,55 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("TTS error:", err);
       if (!res.headersSent) res.status(500).json({ message: "TTS failed" });
+    }
+  });
+
+  // Sermon transcription — audio → Whisper transcript → AI summary
+  const audioUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+  app.post("/api/transcribe", audioUpload.single("audio"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No audio file provided" });
+    try {
+      const audioFile = new File([req.file.buffer], req.file.originalname || "sermon.webm", {
+        type: req.file.mimetype || "audio/webm",
+      });
+      const transcription = await openaiTTS.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+      });
+      if (!transcription.text?.trim()) {
+        return res.json({ transcript: "", title: "Sermon Notes", keyPoints: [], scriptures: [], application: "" });
+      }
+      const summaryRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You summarize sermons. Respond with valid JSON only, no markdown." },
+          {
+            role: "user",
+            content: `Analyze this sermon transcript and respond with JSON containing:
+- "title": suggested sermon title (4-8 words)
+- "keyPoints": array of 3-5 key points (each 1-2 sentences)
+- "scriptures": array of scripture references mentioned (e.g. ["John 3:16", "Psalm 23"])
+- "application": one sentence of personal application for the listener
+
+Transcript:
+${transcription.text.slice(0, 8000)}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      });
+      let summary: { title?: string; keyPoints?: string[]; scriptures?: string[]; application?: string } = {};
+      try { summary = JSON.parse(summaryRes.choices[0].message.content ?? "{}"); } catch {}
+      res.json({
+        transcript: transcription.text,
+        title: summary.title ?? "Sermon Notes",
+        keyPoints: summary.keyPoints ?? [],
+        scriptures: summary.scriptures ?? [],
+        application: summary.application ?? "",
+      });
+    } catch (err: any) {
+      console.error("Transcription error:", err);
+      res.status(500).json({ message: "Transcription failed. Please try again." });
     }
   });
 
