@@ -70,15 +70,27 @@ export default function LandingHome() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <AnimatePresence>
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       <AnimatePresence>
         {showNamePrompt && <NamePrompt onDone={() => setShowNamePrompt(false)} />}
       </AnimatePresence>
+
+      {/* Desktop atmospheric background — blurred hero fills blank side areas */}
+      <div className="hidden md:block fixed inset-0 z-0 pointer-events-none select-none" aria-hidden="true">
+        <img
+          src="/hero-landing.png"
+          alt=""
+          className="w-full h-full object-cover"
+          style={{ filter: "blur(28px) brightness(0.28) saturate(0.7)", transform: "scale(1.08)" }}
+        />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,8,24,0.55) 0%, rgba(10,8,24,0.35) 50%, rgba(10,8,24,0.6) 100%)" }} />
+      </div>
+
       {/* Hero section */}
-      <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
+      <div className="relative z-10 h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
           src="/hero-landing.png"
           alt="A road cresting a green hill toward golden light"
@@ -112,7 +124,7 @@ export default function LandingHome() {
       </div>
 
       {/* Section cards */}
-      <div className="max-w-xl mx-auto px-5 -mt-6 pb-20 relative z-20">
+      <div className="max-w-xl mx-auto px-5 -mt-6 pb-20 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -227,7 +239,7 @@ export default function LandingHome() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="text-center text-xs text-muted-foreground mt-8"
+          className="text-center text-xs text-muted-foreground md:text-white/40 mt-8"
         >
           Faith-rooted · AI-powered · Built for daily life
         </motion.p>
