@@ -34,8 +34,8 @@ export function NavBar() {
               <img src="/sp-logo.png" alt="SP" className="w-full h-full object-contain scale-[1.15]" style={{ mixBlendMode: "screen" }} />
             </div>
             <div className="hidden sm:flex flex-col leading-none select-none">
-              <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-foreground/60 mb-[2px]">Shepherd's</span>
-              <span className="text-[1.35rem] font-black tracking-tight text-foreground leading-none">PATH</span>
+              <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-white/60 mb-[2px]">Shepherd's</span>
+              <span className="text-[1.35rem] font-black tracking-tight text-white leading-none">PATH</span>
             </div>
           </Link>
 
