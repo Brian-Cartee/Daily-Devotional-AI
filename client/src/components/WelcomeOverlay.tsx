@@ -70,7 +70,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
             </h1>
-            <p className="text-white/80 text-sm mt-1.5 leading-relaxed">
+            <p className="text-white/90 mt-1.5 leading-relaxed" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.15rem", letterSpacing: "0.01em" }}>
               Your daily walk with Jesus
             </p>
           </div>
