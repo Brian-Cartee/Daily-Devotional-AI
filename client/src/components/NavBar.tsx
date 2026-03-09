@@ -28,12 +28,15 @@ export function NavBar() {
       <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2">
 
-          {/* Logo — icon only on mobile, full name on sm+ */}
-          <Link href="/" className="flex items-center gap-1.5 group shrink-0 mr-1">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
+          {/* Logo — icon only on mobile, stacked wordmark on sm+ */}
+          <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
               <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
             </div>
-            <span className="font-bold text-sm text-foreground hidden md:inline tracking-tight">Shepherd's Path</span>
+            <div className="hidden sm:flex flex-col leading-none select-none">
+              <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 mb-[2px]">Shepherd's</span>
+              <span className="text-[1.35rem] font-black tracking-tight text-foreground leading-none">PATH</span>
+            </div>
           </Link>
 
           {/* All 5 nav items together */}
