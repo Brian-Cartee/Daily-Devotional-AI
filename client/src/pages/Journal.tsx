@@ -492,15 +492,15 @@ export default function Journal() {
       <div className="min-h-screen bg-background pt-14" onClick={() => exportOpen && setExportOpen(false)}>
 
         {/* Hero banner */}
-        <div className="relative w-full overflow-hidden" style={{ height: 220 }}>
+        <div className="relative w-full overflow-hidden" style={{ height: 300 }}>
           <img
             src={journalHero}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center 30%" }}
+            style={{ objectPosition: "center center" }}
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.0) 50%, rgba(0,0,0,0.62) 100%)" }} />
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.72) 100%)" }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-7 text-center px-6">
             <h2 className="text-white text-lg font-extrabold tracking-tight leading-snug drop-shadow-md">
               Prayer Journal
             </h2>
@@ -511,7 +511,7 @@ export default function Journal() {
                 fontWeight: 400,
                 fontSize: "1.15rem",
                 color: "rgba(255,255,255,0.92)",
-                textShadow: "0 1px 8px rgba(0,0,0,0.6)",
+                textShadow: "0 1px 8px rgba(0,0,0,0.65)",
                 marginTop: "3px",
               }}
             >
