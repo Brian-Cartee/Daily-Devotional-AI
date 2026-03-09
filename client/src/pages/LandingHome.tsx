@@ -130,7 +130,7 @@ export default function LandingHome() {
                   src={logoTransparent}
                   alt=""
                   aria-hidden="true"
-                  className="absolute top-3 right-3 w-9 h-9 object-contain opacity-[0.12] pointer-events-none select-none"
+                  className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.22] pointer-events-none select-none"
                   style={{ filter: "brightness(0)" }}
                 />
                 <div className="flex items-start gap-4">
