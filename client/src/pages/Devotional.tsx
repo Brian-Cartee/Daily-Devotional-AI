@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart } from "lucide-react";
-import { SiX, SiFacebook, SiWhatsapp } from "react-icons/si";
+import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse, useGenerateAI } from "@/hooks/use-verses";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
@@ -206,6 +206,16 @@ export default function Devotional() {
     window.open(`https://wa.me/?text=${text}`, "_blank", "noopener");
   };
 
+  const shareOnTruthSocial = () => {
+    const text = encodeURIComponent(buildShareText());
+    window.open(`https://truthsocial.com/share?text=${text}`, "_blank", "noopener");
+  };
+
+  const shareOnTelegram = () => {
+    const text = encodeURIComponent(buildShareText());
+    window.open(`https://t.me/share/url?url=https://shepherdspathAI.com&text=${text}`, "_blank", "noopener");
+  };
+
   if (isVerseLoading) {
     return (
       <>
@@ -328,7 +338,7 @@ export default function Devotional() {
             </div>
 
             {/* Social sharing row */}
-            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-center gap-3">
+            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-center gap-2.5 flex-wrap">
               <span className="text-[11px] text-muted-foreground/45 font-medium">Share on</span>
               <button
                 data-testid="share-x"
@@ -353,6 +363,22 @@ export default function Devotional() {
                 className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all"
               >
                 <SiWhatsapp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                data-testid="share-truthsocial"
+                onClick={shareOnTruthSocial}
+                title="Share on Truth Social"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#7347CC] hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-all"
+              >
+                <span className="text-[11px] font-black leading-none">T</span>
+              </button>
+              <button
+                data-testid="share-telegram"
+                onClick={shareOnTelegram}
+                title="Share on Telegram"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all"
+              >
+                <SiTelegram className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
