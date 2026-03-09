@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import journalHero from "@assets/NEW_S_P_LOGO__(1400_x_600_px)-2_1773078851969.png";
+import journalHero from "@assets/REV1001_S_P_(1400_x_600_px)-2_1773097642649.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
