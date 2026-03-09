@@ -81,9 +81,14 @@ export default function LandingHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex flex-col items-center leading-none mb-4 select-none">
-              <span className="text-white/70 text-[26px] font-semibold uppercase tracking-[0.35em] mb-1 drop-shadow">Shepherd's</span>
+            <div className="flex flex-col items-center leading-none mb-3 select-none">
+              <span className="text-white/80 mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 300, fontSize: "clamp(1.1rem, 4vw, 1.5rem)", letterSpacing: "0.28em", textTransform: "uppercase", textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}>Shepherd's</span>
               <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(3.5rem, 14vw, 5.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="h-px w-10 bg-white/40" />
+              <span className="text-white/60 text-[11px]">✦</span>
+              <div className="h-px w-10 bg-white/40" />
             </div>
             <p className="text-white/90 max-w-xs mx-auto drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
               Your daily walk with Jesus.
