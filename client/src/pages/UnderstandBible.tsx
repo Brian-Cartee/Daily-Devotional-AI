@@ -176,7 +176,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
 
 function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
   return (
-    <main className="min-h-screen bg-background pt-20 pb-16 px-4">
+    <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-8">
           <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
@@ -242,7 +242,7 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
   const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
 
   return (
-    <main className="min-h-screen bg-background pt-20 pb-16 px-4">
+    <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-6">
           <img src={getHeroImage("understand")} alt={journey.title} className="absolute inset-0 w-full h-full object-cover object-center" />

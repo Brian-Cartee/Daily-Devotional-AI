@@ -441,7 +441,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
         </div>
       </div>
 
-      <main className="min-h-screen bg-background pt-6 pb-16 px-4">
+      <main className="min-h-screen bg-background pt-6 pb-28 sm:pb-16 px-4">
         <div className="max-w-2xl mx-auto">
 
           {/* Search card */}

@@ -139,7 +139,7 @@ export default function ReadBible() {
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-background pt-14">
+      <main className="min-h-screen bg-background pt-14 pb-28 sm:pb-8">
         {/* Hero */}
         <div className="relative h-44 sm:h-52 overflow-hidden">
           <img

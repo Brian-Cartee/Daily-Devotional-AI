@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Home } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -14,21 +14,31 @@ const NAV_ITEMS = [
   { href: "/journal",    label: "Journal",    icon: NotebookPen },
 ];
 
+const BOTTOM_NAV_ITEMS = [
+  { href: "/",           label: "Home",       icon: Home },
+  { href: "/devotional", label: "Devotional", icon: Sun },
+  { href: "/understand", label: "Journey",    icon: Compass },
+  { href: "/read",       label: "Read",       icon: BookOpen },
+  { href: "/study",      label: "Study",      icon: Search },
+  { href: "/journal",    label: "Journal",    icon: NotebookPen },
+];
+
 export function NavBar() {
   const [location] = useLocation();
-  const [notifOpen, setNotifOpen]   = useState(false);
-  const [emailOpen, setEmailOpen]   = useState(false);
-  const [langOpen,  setLangOpen]    = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [langOpen,  setLangOpen]  = useState(false);
   const { lang, setLang } = useLanguage();
 
   const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); };
 
   return (
     <>
+      {/* ── Top navigation bar ── */}
       <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2">
 
-          {/* Logo — icon only on mobile, stacked wordmark on sm+ */}
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
               <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
@@ -39,8 +49,8 @@ export function NavBar() {
             </div>
           </Link>
 
-          {/* All 5 nav items together */}
-          <div className="flex items-center gap-0 flex-1 min-w-0">
+          {/* Nav items — desktop only (mobile uses bottom tab bar) */}
+          <div className="hidden sm:flex items-center gap-0 flex-1 min-w-0">
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
               const active = location === href || location.startsWith(href + "/");
               return (
@@ -48,23 +58,25 @@ export function NavBar() {
                   key={href}
                   href={href}
                   data-testid={`nav-${label.toLowerCase()}`}
-                  className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all whitespace-nowrap ${
                     active
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="hidden sm:inline">{label}</span>
+                  {label}
                 </Link>
               );
             })}
           </div>
 
-          {/* Utility icons — Mail · Globe · Bell — always on the right */}
+          {/* Spacer on mobile so utility icons sit at the right */}
+          <div className="flex-1 sm:hidden" />
+
+          {/* Utility icons — Mail · Globe · Bell */}
           <div className="flex items-center gap-0 shrink-0">
 
-            {/* Daily email */}
             <div className="relative">
               <button
                 onClick={() => { setEmailOpen((v) => !v); setNotifOpen(false); setLangOpen(false); }}
@@ -81,7 +93,6 @@ export function NavBar() {
               </AnimatePresence>
             </div>
 
-            {/* Language selector */}
             <div className="relative">
               <button
                 onClick={() => { setLangOpen((v) => !v); setEmailOpen(false); setNotifOpen(false); }}
@@ -118,7 +129,6 @@ export function NavBar() {
               </AnimatePresence>
             </div>
 
-            {/* Notifications bell */}
             <div className="relative">
               <button
                 onClick={() => { closeAll(); setNotifOpen(true); }}
@@ -134,6 +144,39 @@ export function NavBar() {
             </div>
 
           </div>
+        </div>
+      </nav>
+
+      {/* ── Bottom tab bar — mobile only ── */}
+      <nav
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/50"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-stretch h-16">
+          {BOTTOM_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            const active = href === "/"
+              ? location === "/"
+              : location === href || location.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                data-testid={`bottom-nav-${label.toLowerCase()}`}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all ${
+                  active ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all ${
+                  active ? "bg-primary/10" : ""
+                }`}>
+                  <Icon className={`transition-all ${active ? "w-5 h-5" : "w-[18px] h-[18px]"}`} />
+                </div>
+                <span className={`text-[10px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
