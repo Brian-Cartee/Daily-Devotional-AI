@@ -51,7 +51,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
         {/* Header band — hero image — fixed, not scrollable */}
-        <div className="relative px-8 pt-7 pb-8 text-center overflow-hidden shrink-0" style={{ minHeight: 130 }}>
+        <div className="relative px-8 pt-6 pb-8 text-center overflow-hidden shrink-0" style={{ minHeight: 200 }}>
           <img
             src="/hero-landing.png"
             alt=""
@@ -59,8 +59,13 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.62) 100%)" }} />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-3">
-              ✦ Welcome
+            <div className="flex justify-center mb-2">
+              <img
+                src="/logo-mark.png"
+                alt="Shepherd's Path logo"
+                className="w-20 h-20 rounded-2xl shadow-lg"
+                style={{ objectFit: "cover", objectPosition: "center" }}
+              />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
