@@ -88,13 +88,13 @@ export default function LandingHome() {
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-        {/* Watermark logo — bottom-right, ghosted */}
-        <div className="absolute bottom-8 right-6 sm:right-10 z-10 pointer-events-none select-none">
+        {/* Watermark logo — upper-right, below navbar, ghosted */}
+        <div className="absolute top-16 right-5 sm:top-[72px] sm:right-8 z-10 pointer-events-none select-none">
           <img
             src={logoTransparent}
             alt=""
             aria-hidden="true"
-            className="w-20 h-20 sm:w-24 sm:h-24 object-contain opacity-[0.18] drop-shadow-[0_2px_12px_rgba(255,255,255,0.3)]"
+            className="w-16 h-16 sm:w-20 sm:h-20 object-contain opacity-30 drop-shadow-[0_2px_16px_rgba(255,255,255,0.5)]"
           />
         </div>
 
