@@ -30,8 +30,8 @@ export function NavBar() {
 
           {/* Logo — icon only on mobile, stacked wordmark on sm+ */}
           <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
-            <div className="w-7 h-7 rounded-lg overflow-hidden transition-transform group-hover:scale-105 shrink-0">
-              <img src="/logo-mark.png" alt="Shepherd's Path" className="w-full h-full object-cover" style={{ objectPosition: "50% 30%" }} />
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
+              <span className="text-primary-foreground text-[11px] font-extrabold tracking-tight">SP</span>
             </div>
             <div className="hidden sm:flex flex-col leading-none select-none">
               <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 mb-[2px]">Shepherd's</span>
