@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { TRACKS, getTodaysPassage, getPassageIndex, type TrackId, type Track } from "@/data/trackPaths";
 import { useToast } from "@/hooks/use-toast";
 import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -96,6 +97,8 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
         passageRef: passage.reference,
         passageText,
         userName: getUserName() ?? undefined,
+        sessionId: getSessionId(),
+        daysWithApp: getRelationshipAge(),
         messages: [{
           role: "user",
           content: type === "reflect"
@@ -343,6 +346,8 @@ export default function QuickStudyPage() {
         passageRef: q,
         passageText: q,
         userName: getUserName() ?? undefined,
+        sessionId: getSessionId(),
+        daysWithApp: getRelationshipAge(),
         messages: [{
           role: "user",
           content: `Create a short, structured Bible study on: "${q}". Format it as:
@@ -376,6 +381,8 @@ Keep it warm, accessible, and grounded in Scripture.`,
         passageRef: "story-finder",
         passageText: desc,
         userName: getUserName() ?? undefined,
+        sessionId: getSessionId(),
+        daysWithApp: getRelationshipAge(),
         messages: [{
           role: "user",
           content: `A user is trying to find a Bible story or passage they remember. They described it as:

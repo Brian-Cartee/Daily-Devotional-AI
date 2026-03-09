@@ -8,6 +8,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { NavBar } from "@/components/NavBar";
+import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
@@ -48,6 +50,8 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
         passageText,
         lang,
         userName,
+        sessionId: getSessionId(),
+        daysWithApp: getRelationshipAge(),
         messages: [{
           role: "user",
           content: type === "reflect"
@@ -75,7 +79,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     const lang = getStoredLang();
     const userName = getUserName() ?? undefined;
     try {
-      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, lang, userName, messages: newMessages });
+      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, lang, userName, sessionId: getSessionId(), daysWithApp: getRelationshipAge(), messages: newMessages });
       const data = await res.json();
       setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(data.content) }]);
     } catch {

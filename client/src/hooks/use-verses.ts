@@ -1,5 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, type GenerateRequestInput, type GenerateResponseResult, type VerseResponse, type ChatRequest } from "@shared/routes";
+import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 
 function parseWithLogging<T>(schema: { parse: (data: unknown) => T }, data: unknown, label: string): T {
   try {
@@ -34,7 +36,7 @@ export function useGenerateAI() {
       const res = await fetch(api.ai.generate.path, {
         method: api.ai.generate.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...validatedInput, userName }),
+        body: JSON.stringify({ ...validatedInput, userName, sessionId: getSessionId(), daysWithApp: getRelationshipAge() }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to generate AI response");
@@ -52,7 +54,7 @@ export function useChatWithVerse() {
       const res = await fetch(api.ai.chat.path, {
         method: api.ai.chat.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...validatedInput, userName }),
+        body: JSON.stringify({ ...validatedInput, userName, sessionId: getSessionId(), daysWithApp: getRelationshipAge() }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to get AI response");

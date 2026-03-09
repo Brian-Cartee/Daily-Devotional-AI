@@ -267,7 +267,61 @@ ${transcription.text.slice(0, 8000)}`,
   // Start push scheduler (email scheduler started separately)
   schedulePushNotifications();
 
-  // Generate AI reflection or prayer based on today's verse
+  // ── Spiritual memory + safety helpers ──────────────────────────────────────
+
+  const CRISIS_PHRASES = [
+    "suicidal", "want to die", "kill myself", "end my life",
+    "don't want to live", "wish i was dead", "ending it all",
+    "not worth living", "hurt myself", "self-harm", "cut myself",
+    "harm myself", "no reason to live", "better off dead",
+    "want to kill myself", "thinking about suicide",
+  ];
+
+  const CRISIS_RESPONSE = `I hear you, and what you're sharing matters deeply. You are not alone in this moment.
+
+Please reach out right now to someone trained to help:
+
+• 988 Suicide & Crisis Lifeline — call or text 988 (US, 24/7)
+• Crisis Text Line — text HOME to 741741
+• International resources — https://findahelpline.com
+
+God loves you. Your life carries meaning and purpose that extends far beyond what you can see right now. Please connect with a crisis counselor — they are here for exactly this.
+
+I'm here whenever you're ready to continue your walk.`;
+
+  function detectCrisis(text: string): boolean {
+    const lower = text.toLowerCase();
+    return CRISIS_PHRASES.some(p => lower.includes(p));
+  }
+
+  async function getJournalContext(sessionId: string): Promise<{ context: string; count: number }> {
+    if (!sessionId) return { context: "", count: 0 };
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      if (!entries || entries.length === 0) return { context: "", count: 0 };
+      const recent = entries.slice(0, 6);
+      const context = recent.map(e => {
+        const label = e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
+        const snippet = e.content.replace(/\n+/g, " ").slice(0, 200);
+        return `[${label}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
+      }).join("\n");
+      return { context, count: entries.length };
+    } catch { return { context: "", count: 0 }; }
+  }
+
+  function buildRelationshipNote(daysWithApp: number, entryCount: number): string {
+    if (daysWithApp <= 3) {
+      return `\n\nRelationship context: This person is new to Shepherd's Path (Day ${daysWithApp}). Welcome them with warmth and gentleness. You are just beginning to know each other. Don't assume familiarity — be an inviting, safe presence that makes them want to return.`;
+    } else if (daysWithApp <= 14) {
+      return `\n\nRelationship context: This person has been walking with Shepherd's Path for ${daysWithApp} days${entryCount > 0 ? ` and has written ${entryCount} journal entries` : ""}. You are building rapport. Begin noticing and naming patterns you observe in their journey. Offer a bit more depth. Let them feel you are paying attention.`;
+    } else if (daysWithApp <= 30) {
+      return `\n\nRelationship context: This person has walked faithfully with Shepherd's Path for ${daysWithApp} days${entryCount > 0 ? `, writing ${entryCount} journal entries` : ""}. You have a real friendship now. Speak with genuine warmth and familiarity. Reference growth and themes you've witnessed. Let them feel known.`;
+    } else {
+      return `\n\nRelationship context: This person has walked alongside Shepherd's Path for ${daysWithApp} days${entryCount > 0 ? ` and has written ${entryCount} journal entries` : ""}. You are a trusted spiritual companion who has been present through multiple seasons of their life. Speak with the intimacy of someone who truly knows them. Reference their journey meaningfully. They are not a newcomer — honor how far they've come.`;
+    }
+  }
+
+  // ── Generate AI reflection or prayer based on today's verse ───────────────
   app.post(api.ai.generate.path, async (req, res) => {
     try {
       const input = api.ai.generate.input.parse(req.body);
@@ -288,18 +342,26 @@ ${transcription.text.slice(0, 8000)}`,
       let userPrompt = "";
 
       const userName2: string = (req.body as any).userName || "";
+      const sessionId2: string = (req.body as any).sessionId || "";
+      const daysWithApp2: number = Number((req.body as any).daysWithApp) || 1;
       const nameNote2 = userName2 ? ` You are speaking with ${userName2}. Address them by name naturally once in your response.` : "";
+      const { context: journalCtx2, count: journalCount2 } = await getJournalContext(sessionId2);
+      const memoryNote2 = journalCtx2
+        ? `\n\nRecent spiritual context for this person — use to make your response more personal and connected to their journey; do not quote these entries directly unless it flows naturally:\n${journalCtx2}`
+        : "";
+      const relationshipNote2 = buildRelationshipNote(daysWithApp2, journalCount2);
+      const probeNote = `\n\nApproximately 1 in 4 times, when it feels genuinely natural — not forced — close your response with a single warm, personal question that invites deeper reflection. The question should feel like it comes from a caring spiritual companion, relevant to this verse and this person's life.`;
 
       if (input.type === "reflection") {
         systemPrompt =
-          `You are a thoughtful and empathetic spiritual guide. Write a SHORT devotional reflection on the provided Bible verse — 2 concise paragraphs maximum. Be warm, personal, and easy to read on mobile. Do not repeat the verse text.${nameNote2}${langNote2}`;
+          `You are a thoughtful and empathetic spiritual guide. Write a SHORT devotional reflection on the provided Bible verse — 2 concise paragraphs maximum. Be warm, personal, and easy to read on mobile. Do not repeat the verse text.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
         }
       } else if (input.type === "prayer") {
         systemPrompt =
-          `You are a thoughtful and empathetic spiritual guide. Write a short, meaningful prayer based on the provided Bible verse. Keep it concise, genuine, and encouraging. Begin with 'Lord,' or 'Heavenly Father,' and close with 'Amen.'${nameNote2}${langNote2}`;
+          `You are a thoughtful and empathetic spiritual guide. Write a short, meaningful prayer based on the provided Bible verse. Keep it concise, genuine, and encouraging. Begin with 'Lord,' or 'Heavenly Father,' and close with 'Amen.' If the person's journal reveals specific burdens or themes, weave those into the prayer naturally.${nameNote2}${relationshipNote2}${memoryNote2}${langNote2}`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
@@ -336,13 +398,27 @@ ${transcription.text.slice(0, 8000)}`,
       }
 
       const chatUserName: string = (req.body as any).userName || "";
+      const chatSessionId: string = (req.body as any).sessionId || "";
+      const chatDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
       const chatNameNote = chatUserName ? ` The user's name is ${chatUserName}. Use their name naturally when appropriate.` : "";
+
+      if (detectCrisis(input.question)) {
+        return res.status(200).json({ content: CRISIS_RESPONSE });
+      }
+
+      const { context: chatJournalCtx, count: chatEntryCount } = await getJournalContext(chatSessionId);
+      const chatMemoryNote = chatJournalCtx
+        ? `\n\nRecent spiritual context for this person — use to personalize your responses naturally:\n${chatJournalCtx}`
+        : "";
+      const chatRelationshipNote = buildRelationshipNote(chatDaysWithApp, chatEntryCount);
 
       const systemPrompt = `You are a warm, knowledgeable Bible study guide. The user is reflecting on today's verse:
 
 "${verse.text}" — ${verse.reference}
 
-Answer all questions in the context of this scripture. Be concise but insightful — 2 to 4 short paragraphs at most. Use accessible, encouraging language suitable for daily spiritual growth. When writing prayers, begin with "Lord," or "Heavenly Father," and close with "Amen."${chatNameNote}`;
+Answer all questions in the context of this scripture. Be concise but insightful — 2 to 4 short paragraphs at most. Use accessible, encouraging language suitable for daily spiritual growth. When writing prayers, begin with "Lord," or "Heavenly Father," and close with "Amen."
+
+Often — roughly 1 in 3 responses — end naturally with a single thoughtful question that invites the person to share more or go deeper. The question should feel like a caring friend wanting to understand, never clinical or formulaic. Read the emotional tone of what they share and respond accordingly — if they seem joyful, celebrate with them; if they seem heavy, lead with compassion before scripture.${chatNameNote}${chatRelationshipNote}${chatMemoryNote}`;
 
       const conversationHistory = input.messages.map((m: ChatMessage) => ({
         role: m.role as "user" | "assistant",
@@ -394,24 +470,37 @@ Answer all questions in the context of this scripture. Be concise but insightful
 
   // AI chat for arbitrary passage (used by Understand and Read pages)
   app.post("/api/chat/passage", async (req, res) => {
-    const { passageRef, passageText, messages, lang, userName } = req.body;
+    const { passageRef, passageText, messages, lang, userName, sessionId: passageSessionId } = req.body;
     if (!passageRef || !passageText || !Array.isArray(messages)) {
       return res.status(400).json({ message: "passageRef, passageText, and messages are required" });
     }
+
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
+    if (detectCrisis(lastUserMsg)) {
+      return res.json({ content: CRISIS_RESPONSE });
+    }
+
     const langInstruction: Record<string, string> = {
       es: "Respond entirely in Spanish (Español).",
       fr: "Respond entirely in French (Français).",
       pt: "Respond entirely in Portuguese (Português).",
     };
     const langNote = langInstruction[lang] ? ` ${langInstruction[lang]}` : "";
-    const passageNameNote = userName ? ` The person you are speaking with is named ${userName}. Use their name naturally once in your response.` : "";
+    const passageDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
+    const passageNameNote = userName ? ` The person you are speaking with is named ${userName}. Use their name naturally when appropriate.` : "";
+    const { context: passageJournalCtx, count: passageEntryCount } = await getJournalContext(passageSessionId || "");
+    const passageMemoryNote = passageJournalCtx
+      ? `\n\nRecent spiritual context for this person — weave naturally into responses when relevant:\n${passageJournalCtx}`
+      : "";
+    const passageRelationshipNote = buildRelationshipNote(passageDaysWithApp, passageEntryCount);
+
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible to someone unfamiliar with the Bible.${passageNameNote}${langNote}`,
+            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible. Read the emotional tone of each message and respond with matching warmth. Often — roughly 1 in 3 responses — close with a single thoughtful question that invites the person to go deeper or share more of their own experience. The question should feel natural, like a caring friend.${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`,
           },
           ...messages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],

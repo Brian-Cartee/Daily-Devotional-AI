@@ -128,6 +128,31 @@ Comparable pricing: Hallow (~$8.99/mo), Glorify (~$6.99/mo)
 
 Implementation will require: user auth, subscription/payment integration (Stripe), usage tracking, and feature gating middleware.
 
+## AI Personalization System (Built)
+
+### Spiritual Memory
+All AI endpoints fetch the user's last 6 journal entries (prayers, reflections, notes) and inject them as context into the system prompt. The AI uses these to make connections and personalize responses naturally — without quoting entries directly unless it flows.
+
+### Relationship Depth (Day 1 → Day 30+)
+`client/src/lib/relationship.ts` tracks `sp_first_use` in localStorage and calculates days since first use. This `daysWithApp` value is passed to every AI call. The server's `buildRelationshipNote()` function assigns one of four relationship stages:
+- **Day 1–3**: Welcoming, gentle, introductory — you are just beginning to know each other
+- **Day 4–14**: Building rapport — begin noticing patterns, offer more depth
+- **Day 15–30**: Established friendship — speak with genuine familiarity, reference growth
+- **Day 30+**: Deep spiritual companion — intimate, honors how far they've come
+
+### Probing Questions
+AI is instructed to close ~1 in 4 reflections and ~1 in 3 chat responses with a single warm question that invites the person to go deeper. Never clinical or formulaic — always like a caring friend wanting to understand.
+
+### Crisis Detection
+All interactive AI chat endpoints run `detectCrisis()` before calling OpenAI. If crisis phrases are detected (suicidal ideation, self-harm), the endpoint immediately returns a fixed, warmth-first crisis response with 988 Lifeline, Crisis Text Line, and findahelpline.com. Never routes crisis through AI.
+
+### Emotional Tone Adaptation
+AI system prompts instruct reading emotional tone and responding accordingly — if a person seems heavy, lead with compassion before scripture; if joyful, celebrate with them.
+
+### Files
+- `client/src/lib/relationship.ts` — relationship age tracker
+- `server/routes.ts` — `detectCrisis()`, `getJournalContext()`, `buildRelationshipNote()`
+
 ## Future Features (Not Yet Built)
 
 ### "Pray for Me" — Community Prayer Wall

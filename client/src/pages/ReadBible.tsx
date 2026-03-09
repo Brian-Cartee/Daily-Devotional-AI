@@ -12,6 +12,8 @@ import { getStoredLang, getStoredLangInfo } from "@/lib/language";
 import { getHeroImage } from "@/lib/heroImage";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 
 type AIPanel = "explain" | "context" | "apply" | "crossref" | "chat" | null;
 
@@ -37,7 +39,7 @@ function useChapterText(bookName: string, chapter: number, translation: string) 
 function usePassageAI() {
   return useMutation({
     mutationFn: (data: { passageRef: string; passageText: string; messages: Array<{ role: string; content: string }>; lang?: string }) =>
-      apiRequest("POST", "/api/chat/passage", data).then((r) => r.json()),
+      apiRequest("POST", "/api/chat/passage", { ...data, sessionId: getSessionId(), daysWithApp: getRelationshipAge() }).then((r) => r.json()),
   });
 }
 

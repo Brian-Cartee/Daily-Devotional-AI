@@ -8,6 +8,7 @@ import { BibleStudyChat } from "@/components/BibleStudyChat";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
@@ -121,6 +122,8 @@ export default function Devotional() {
           passageText: verse.text,
           lang: getStoredLang(),
           userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
           messages: [{
             role: "user",
             content: `The reader has just finished their devotional on ${verse.reference}: "${verse.text}". They want to offer a personal prayer of thanksgiving to God. What they are grateful for today: "${gratitudeInput.trim()}". Write a short, intimate closing prayer (3–4 sentences) that weaves together their gratitude and the spirit of today's verse. Begin with "Lord," or "Father," and close with "Amen." Write in first person as if they are speaking it aloud. Keep it warm and unhurried.`,
