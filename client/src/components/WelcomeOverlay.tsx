@@ -128,7 +128,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </div>
 
           {/* Scripture First — full-width trust statement */}
-          <div className="flex items-start gap-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3">
             <span className="text-lg shrink-0">📜</span>
             <div>
               <p className="text-[13px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
