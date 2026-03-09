@@ -338,8 +338,8 @@ export default function Devotional() {
             </div>
 
             {/* Social sharing row */}
-            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-center gap-2.5 flex-wrap">
-              <span className="text-[11px] text-muted-foreground/45 font-medium">Share on</span>
+            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-center gap-1.5">
+              <span className="text-[11px] text-muted-foreground/45 font-medium mr-1">Share</span>
               <button
                 data-testid="share-x"
                 onClick={shareOnX}
