@@ -388,25 +388,21 @@ I'm here whenever you're ready to continue your walk.`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
+      await streamCompletion(
+        [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-      });
-
-      const content = response.choices[0]?.message?.content || "Could not generate response.";
-      res.status(200).json({ content });
+        res
+      );
     } catch (err) {
       console.error(err);
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join("."),
-        });
+      if (!res.headersSent) {
+        if (err instanceof z.ZodError) {
+          return res.status(400).json({ message: err.errors[0].message });
+        }
+        res.status(500).json({ message: "Internal server error" });
       }
-      res.status(500).json({ message: "Internal server error" });
     }
   });
 

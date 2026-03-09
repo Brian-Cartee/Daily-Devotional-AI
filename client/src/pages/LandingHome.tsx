@@ -179,8 +179,11 @@ export default function LandingHome() {
               <ShieldCheck className="w-4.5 h-4.5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">AI grounded in God's Word — always</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[13px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded px-1.5 py-0.5 leading-none">Read This</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">We mean every word. AI grounded in God's Word — always.</p>
             </div>
             <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />

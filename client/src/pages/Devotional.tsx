@@ -43,8 +43,12 @@ function PrayerText({ text }: { text: string }) {
 
 export default function Devotional() {
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
-  const reflectionMutation = useGenerateAI();
-  const prayerMutation = useGenerateAI();
+  const [reflectionContent, setReflectionContent] = useState("");
+  const [reflectionLoading, setReflectionLoading] = useState(false);
+  const [reflectionError, setReflectionError] = useState(false);
+  const [prayerContent, setPrayerContent] = useState("");
+  const [prayerLoading, setPrayerLoading] = useState(false);
+  const [prayerError, setPrayerError] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
@@ -91,8 +95,8 @@ export default function Devotional() {
       setDevotionalStarted(true);
       const lang = getStoredLang();
       const userName = getUserName() ?? undefined;
-      reflectionMutation.mutate({ verseId: verse.id, type: "reflection", lang, userName });
-      prayerMutation.mutate({ verseId: verse.id, type: "prayer", lang, userName });
+      generateReflection(verse.id, lang, userName);
+      generatePrayer(verse.id, lang, userName);
       fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,6 +112,38 @@ export default function Devotional() {
       }).catch(() => {});
     }
   }, [verse]);
+
+  const generateReflection = async (verseId: number, lang: string, userName?: string) => {
+    setReflectionLoading(true);
+    setReflectionContent("");
+    setReflectionError(false);
+    try {
+      const result = await streamAI("/api/ai/generate", {
+        verseId, type: "reflection", lang, userName,
+        sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
+      }, (text) => setReflectionContent(capitalizeDivinePronouns(text)));
+      setReflectionContent(capitalizeDivinePronouns(result));
+    } catch {
+      setReflectionError(true);
+    }
+    setReflectionLoading(false);
+  };
+
+  const generatePrayer = async (verseId: number, lang: string, userName?: string) => {
+    setPrayerLoading(true);
+    setPrayerContent("");
+    setPrayerError(false);
+    try {
+      const result = await streamAI("/api/ai/generate", {
+        verseId, type: "prayer", lang, userName,
+        sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
+      }, (text) => setPrayerContent(capitalizeDivinePronouns(text)));
+      setPrayerContent(capitalizeDivinePronouns(result));
+    } catch {
+      setPrayerError(true);
+    }
+    setPrayerLoading(false);
+  };
 
   const handleGratitudePrayer = async () => {
     if (!gratitudeInput.trim() || !verse) return;
@@ -182,8 +218,8 @@ export default function Devotional() {
 
   const handleShare = async () => {
     if (!verse) return;
-    const prayerText = prayerMutation.data?.content
-      ? "\n\n🙏 " + prayerMutation.data.content.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim()
+    const prayerText = prayerContent
+      ? "\n\n🙏 " + prayerContent.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim()
       : "";
     const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd's Path`;
     if (navigator.share) {
@@ -403,7 +439,7 @@ export default function Devotional() {
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={2} label="Reflection" />
             <AnimatePresence mode="wait">
-              {reflectionMutation.isPending && (
+              {reflectionLoading && !reflectionContent && (
                 <motion.div key="ref-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
                   <div className="h-3.5 bg-muted animate-pulse rounded-full w-full" />
                   <div className="h-3.5 bg-muted animate-pulse rounded-full w-5/6" />
@@ -411,35 +447,33 @@ export default function Devotional() {
                   <div className="h-3.5 bg-muted animate-pulse rounded-full w-3/4 mt-1" />
                 </motion.div>
               )}
-              {reflectionMutation.isSuccess && reflectionMutation.data && (
+              {reflectionContent && (
                 <motion.div key="ref-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                   <div className="text-[15px] leading-relaxed text-foreground/80 space-y-3">
-                    {capitalizeDivinePronouns(reflectionMutation.data.content).split("\n").filter(p => p.trim()).map((para, i) => (
+                    {reflectionContent.split("\n").filter(p => p.trim()).map((para, i) => (
                       <p key={i}>{para}</p>
                     ))}
                   </div>
-                  <div className="mt-4 flex items-center gap-4">
-                    <button
-                      data-testid="save-reflection"
-                      onClick={() => saveMutation.mutate({ type: "reflection", content: reflectionMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
-                      disabled={savedReflection || saveMutation.isPending}
-                      className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                    >
-                      {savedReflection ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-                      {savedReflection ? "Saved to Journal" : "Save to Journal"}
-                    </button>
-                    <ShareButton
-                      title={`Reflection — ${verse.reference}`}
-                      text={reflectionMutation.data!.content}
-                      className="text-[12px] font-semibold"
-                    />
-                    <ListenButton text={reflectionMutation.data!.content} label="Listen" />
-                  </div>
+                  {!reflectionLoading && (
+                    <div className="mt-4 flex items-center gap-4">
+                      <button
+                        data-testid="save-reflection"
+                        onClick={() => saveMutation.mutate({ type: "reflection", content: reflectionContent, reference: verse.reference, verseDate: verse.date })}
+                        disabled={savedReflection || saveMutation.isPending}
+                        className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        {savedReflection ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                        {savedReflection ? "Saved to Journal" : "Save to Journal"}
+                      </button>
+                      <ShareButton title={`Reflection — ${verse.reference}`} text={reflectionContent} className="text-[12px] font-semibold" />
+                      <ListenButton text={reflectionContent} label="Listen" />
+                    </div>
+                  )}
                 </motion.div>
               )}
-              {reflectionMutation.isError && (
+              {reflectionError && (
                 <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
-                  Could not load reflection. <button onClick={() => reflectionMutation.mutate({ verseId: verse.id, type: "reflection", userName: getUserName() ?? undefined })} className="underline text-primary">Try again</button>
+                  Could not load reflection. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>
@@ -449,38 +483,36 @@ export default function Devotional() {
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={3} label="Prayer" />
             <AnimatePresence mode="wait">
-              {prayerMutation.isPending && (
+              {prayerLoading && !prayerContent && (
                 <motion.div key="pray-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
                   <div className="h-3.5 bg-muted animate-pulse rounded-full w-full" />
                   <div className="h-3.5 bg-muted animate-pulse rounded-full w-5/6" />
                   <div className="h-3.5 bg-muted animate-pulse rounded-full w-2/3" />
                 </motion.div>
               )}
-              {prayerMutation.isSuccess && prayerMutation.data && (
+              {prayerContent && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                  <PrayerText text={capitalizeDivinePronouns(prayerMutation.data.content)} />
-                  <div className="mt-4 flex items-center gap-4">
-                    <button
-                      data-testid="save-prayer"
-                      onClick={() => saveMutation.mutate({ type: "prayer", content: prayerMutation.data!.content, reference: verse.reference, verseDate: verse.date })}
-                      disabled={savedPrayer || saveMutation.isPending}
-                      className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                    >
-                      {savedPrayer ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-                      {savedPrayer ? "Saved to Journal" : "Save to Journal"}
-                    </button>
-                    <ShareButton
-                      title={`Prayer — ${verse.reference}`}
-                      text={prayerMutation.data!.content}
-                      className="text-[12px] font-semibold"
-                    />
-                    <ListenButton text={prayerMutation.data!.content} label="Listen" />
-                  </div>
+                  <PrayerText text={prayerContent} />
+                  {!prayerLoading && (
+                    <div className="mt-4 flex items-center gap-4">
+                      <button
+                        data-testid="save-prayer"
+                        onClick={() => saveMutation.mutate({ type: "prayer", content: prayerContent, reference: verse.reference, verseDate: verse.date })}
+                        disabled={savedPrayer || saveMutation.isPending}
+                        className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        {savedPrayer ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
+                        {savedPrayer ? "Saved to Journal" : "Save to Journal"}
+                      </button>
+                      <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
+                      <ListenButton text={prayerContent} label="Listen" />
+                    </div>
+                  )}
                 </motion.div>
               )}
-              {prayerMutation.isError && (
+              {prayerError && (
                 <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
-                  Could not load prayer. <button onClick={() => prayerMutation.mutate({ verseId: verse.id, type: "prayer", userName: getUserName() ?? undefined })} className="underline text-primary">Try again</button>
+                  Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>
@@ -587,7 +619,7 @@ export default function Devotional() {
               >
                 <BibleStudyChat
                   verseId={verse.id}
-                  initialReflection={reflectionMutation.data?.content ?? ""}
+                  initialReflection={reflectionContent}
                 />
               </motion.div>
             )}
