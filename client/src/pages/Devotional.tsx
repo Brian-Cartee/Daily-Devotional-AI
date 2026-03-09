@@ -284,7 +284,7 @@ export default function Devotional() {
 
           {/* Streak indicator */}
           <AnimatePresence>
-            {streak && streak.currentStreak > 1 && (
+            {streak && streak.currentStreak >= 1 && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -294,7 +294,7 @@ export default function Devotional() {
               >
                 <Flame className="w-3.5 h-3.5 text-amber-500/80" />
                 <span className="text-[12px] font-medium text-muted-foreground">
-                  {streak.currentStreak} Day Walk
+                  Day #{streak.currentStreak} of my Walk
                 </span>
                 {streak.longestStreak > streak.currentStreak && (
                   <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
