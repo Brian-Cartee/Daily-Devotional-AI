@@ -496,13 +496,13 @@ export default function Journal() {
             src="/journal-hero.png"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center center" }}
+            style={{ objectPosition: "center 35%" }}
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.72) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.68) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
-            <p className="text-white/70 text-[11px] font-semibold uppercase tracking-widest mb-1">Your private space</p>
-            <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Prayer Journal</h2>
-            <p className="text-white/65 text-[12px] mt-1 leading-snug" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontSize: "0.9rem" }}>A record of your walk with God</p>
+            <h2 className="text-white text-lg font-extrabold tracking-tight leading-tight">
+              Prayer Journal: <span style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.05rem" }}>A record of your walk with God.</span>
+            </h2>
           </div>
         </div>
 
