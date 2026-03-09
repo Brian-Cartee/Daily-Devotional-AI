@@ -3,19 +3,21 @@ import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight, Loader2 } fro
 import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 
-const WELCOME_SCRIPT = `Welcome. I mean that with everything I have — welcome.
+const WELCOME_SCRIPT = `Welcome. And we mean that — genuinely, from the bottom of our hearts — welcome.
 
-Wherever you are right now — whether your faith is solid as a rock, or barely holding on by a thread — you are in the right place.
+The fact that you are here right now means something. You chose this. Out of everything you could have done with this moment, you showed up. And we do not take that lightly — not even for a second.
 
-Shepherd's Path exists for one reason: to help you build a daily, living relationship with Jesus Christ. Not a religion. Not a checklist. A relationship — real, honest, and transformative.
+Wherever you are in your faith — whether it feels solid and sure, or quiet and uncertain — you are in exactly the right place.
 
-Here is what we know to be true: the single most important thing you can do with your time on this earth is draw closer to God every single day. Not weekly. Not when it feels convenient. Every. Single. Day.
+Shepherd's Path was built for one reason: to help you build a daily, living relationship with Jesus Christ. Not a religion. Not a checklist. A relationship — real, honest, and transformative.
 
-This app was built to make that possible. A daily scripture. A guided reflection. A prayer rooted in God's Word. Tools to read the entire Bible with understanding. A journal to capture what He is doing in your life.
+And here is what we believe with everything we have: the single most important thing you can do with your time on this earth is draw closer to God every single day. Not when life slows down. Not when you feel ready. Every day. Including the hard ones — especially the hard ones.
 
-And as you show up — day after day — something begins to happen. Sin loses its grip. Peace finds its way in. And the person God created you to be starts to come forward.
+This app walks with you through all of it. A daily scripture. A reflection made just for you. A prayer rooted in God's Word. The full Bible with understanding. A journal to capture what He is doing in your story.
 
-We are not here to entertain you. We are here to walk with you.
+And when you show up consistently, something begins to shift. Sin loses its grip. Peace finds its way in. And the person God created you to be starts to come forward. We have seen it. We believe it for you.
+
+We are grateful — truly grateful — that you are here. We are not here to entertain you. We are here to walk with you.
 
 Let us begin.`;
 
