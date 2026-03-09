@@ -496,7 +496,7 @@ export default function Journal() {
             src="/journal-hero.png"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center 38%" }}
+            style={{ objectPosition: "center center" }}
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.72) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
