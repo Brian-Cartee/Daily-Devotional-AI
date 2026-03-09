@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
@@ -86,6 +87,16 @@ export default function LandingHome() {
         />
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+
+        {/* Watermark logo — bottom-right, ghosted */}
+        <div className="absolute bottom-8 right-6 sm:right-10 z-10 pointer-events-none select-none">
+          <img
+            src={logoTransparent}
+            alt=""
+            aria-hidden="true"
+            className="w-20 h-20 sm:w-24 sm:h-24 object-contain opacity-[0.18] drop-shadow-[0_2px_12px_rgba(255,255,255,0.3)]"
+          />
+        </div>
 
         {/* Hero text */}
         <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14">
