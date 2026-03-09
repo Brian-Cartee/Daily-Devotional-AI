@@ -185,7 +185,7 @@ export default function ReadBible() {
                         data-testid={`book-${b.short}`}
                         className="bg-card border border-border rounded-xl px-3 py-3 text-left hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm transition-all group"
                       >
-                        <p className="text-[13px] font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">{b.name}</p>
+                        <p className="text-[12px] font-semibold text-foreground leading-tight group-hover:text-primary transition-colors break-words">{b.name}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">{b.chapters} ch</p>
                       </button>
                     ))}
