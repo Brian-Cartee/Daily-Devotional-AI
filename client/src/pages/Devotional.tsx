@@ -326,24 +326,30 @@ export default function Devotional() {
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-5 pt-4 border-t border-border/25 grid grid-cols-3 divide-x divide-border/30">
               <button
                 data-testid="save-verse"
                 onClick={() => saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date })}
                 disabled={savedVerse || saveMutation.isPending}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                className="flex flex-col items-center gap-1.5 py-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
               >
-                {savedVerse ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
-                {savedVerse ? "Saved to Journal" : "Save to Journal"}
+                {savedVerse ? <BookmarkCheck className="w-4 h-4 text-primary" /> : <Bookmark className="w-4 h-4" />}
+                <span className="text-[11px] font-semibold leading-none">{savedVerse ? "Saved" : "Save"}</span>
               </button>
-              <ListenButton text={`${verse.text} — ${verse.reference}`} label="Listen" />
+              <div className="flex justify-center">
+                <ListenButton
+                  text={`${verse.text} — ${verse.reference}`}
+                  label="Listen"
+                  vertical
+                />
+              </div>
               <button
                 data-testid="button-share"
                 onClick={handleShare}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors"
+                className="flex flex-col items-center gap-1.5 py-1 text-muted-foreground hover:text-primary transition-colors"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Share2 className="w-3.5 h-3.5" />}
-                {copied ? "Copied!" : "Share Scripture"}
+                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                <span className="text-[11px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
               </button>
             </div>
 
