@@ -81,10 +81,11 @@ export default function LandingHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 text-white/85 text-[21px] font-semibold uppercase tracking-widest mb-4">
-              Shepherd's Path
+            <div className="flex flex-col items-center leading-none mb-4 select-none">
+              <span className="text-white/70 text-[13px] font-semibold uppercase tracking-[0.35em] mb-1 drop-shadow">Shepherd's</span>
+              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(4.5rem, 18vw, 7rem)", letterSpacing: "-0.02em", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
-            <p className="text-white/90 text-xl sm:text-2xl max-w-sm mx-auto drop-shadow font-semibold tracking-wide">
+            <p className="text-white/90 max-w-xs mx-auto drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.1rem, 4vw, 1.4rem)", letterSpacing: "0.01em" }}>
               Your daily walk with Jesus.
             </p>
           </motion.div>
