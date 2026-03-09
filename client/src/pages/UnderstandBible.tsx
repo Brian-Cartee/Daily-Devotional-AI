@@ -11,6 +11,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { NavBar } from "@/components/NavBar";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { ShareButton } from "@/components/ShareButton";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
@@ -153,7 +154,13 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                       {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
                       <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
                     </div>
-                    <ListenButton text={aiContent} label="Listen" className="text-[11px]" />
+                    <div className="flex items-center gap-3">
+                      <ShareButton
+                        title={`${aiMode === "reflect" ? "Reflection" : "Prayer"} — ${chapter.reference}`}
+                        text={aiContent}
+                      />
+                      <ListenButton text={aiContent} label="Listen" className="text-[11px]" />
+                    </div>
                   </div>
                   <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">
                     {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}

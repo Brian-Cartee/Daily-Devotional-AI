@@ -9,6 +9,7 @@ import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { ShareButton } from "@/components/ShareButton";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
@@ -420,6 +421,11 @@ export default function Devotional() {
                       {savedReflection ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
                       {savedReflection ? "Saved to Journal" : "Save to Journal"}
                     </button>
+                    <ShareButton
+                      title={`Reflection — ${verse.reference}`}
+                      text={reflectionMutation.data!.content}
+                      className="text-[12px] font-semibold"
+                    />
                     <ListenButton text={reflectionMutation.data!.content} label="Listen" />
                   </div>
                 </motion.div>
@@ -456,6 +462,11 @@ export default function Devotional() {
                       {savedPrayer ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
                       {savedPrayer ? "Saved to Journal" : "Save to Journal"}
                     </button>
+                    <ShareButton
+                      title={`Prayer — ${verse.reference}`}
+                      text={prayerMutation.data!.content}
+                      className="text-[12px] font-semibold"
+                    />
                     <ListenButton text={prayerMutation.data!.content} label="Listen" />
                   </div>
                 </motion.div>
@@ -507,7 +518,7 @@ export default function Devotional() {
                   className="mt-6 pt-5 border-t border-border/40"
                 >
                   <PrayerText text={gratitudePrayer} />
-                  <div className="mt-4 flex items-center justify-between">
+                  <div className="mt-4 flex items-center gap-4 flex-wrap">
                     <button
                       data-testid="save-gratitude-prayer"
                       onClick={() => {
@@ -520,10 +531,12 @@ export default function Devotional() {
                       {savedGratitude ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5" />}
                       {savedGratitude ? "Saved to Journal" : "Save to Journal"}
                     </button>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
-                      <Sparkles className="w-3 h-3" />
-                      GPT-4o · Shepherd's Path
-                    </span>
+                    <ShareButton
+                      title={`Closing Prayer — ${verse.reference}`}
+                      text={gratitudePrayer}
+                      className="text-[12px] font-semibold"
+                    />
+                    <ListenButton text={gratitudePrayer} label="Listen" />
                   </div>
                 </motion.div>
               )}

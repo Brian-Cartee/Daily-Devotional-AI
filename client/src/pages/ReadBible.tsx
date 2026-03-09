@@ -14,6 +14,7 @@ import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { ShareButton } from "@/components/ShareButton";
 
 type AIPanel = "explain" | "context" | "apply" | "crossref" | "chat" | null;
 
@@ -410,6 +411,12 @@ export default function ReadBible() {
                       {aiResult && activePanel && activePanel !== "chat" && !passageAI.isPending && (
                         <motion.div key={activePanel} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-white/60 dark:bg-slate-700/50 rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2 max-h-80 overflow-y-auto">
                           {aiResult.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
+                          <div className="pt-2 border-t border-white/20">
+                            <ShareButton
+                              title={`${selectedBook} ${selectedChapter} — Bible Study`}
+                              text={aiResult}
+                            />
+                          </div>
                         </motion.div>
                       )}
                       {activePanel === "chat" && (

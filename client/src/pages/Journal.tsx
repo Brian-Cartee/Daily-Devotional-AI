@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ShareButton";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -322,7 +323,12 @@ function NoteCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: num
           )}
         </AnimatePresence>
 
-        <div className="flex justify-end mt-4">
+        <div className="flex items-center justify-between mt-4">
+          <ShareButton
+            title={entry.title || (entry.reference ? `Notes — ${entry.reference}` : "Sermon Notes")}
+            text={noteBody}
+            className="text-[12px] font-semibold"
+          />
           {!confirming ? (
             <button
               onClick={() => setConfirming(true)}
@@ -373,7 +379,12 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: nu
       <p className={`text-[15px] leading-relaxed text-foreground/80 ${entry.type === "prayer" ? "italic" : ""}`}>
         {entry.content}
       </p>
-      <div className="flex justify-end mt-4">
+      <div className="flex items-center justify-between mt-4">
+        <ShareButton
+          title={entry.reference ? `${entry.type === "prayer" ? "Prayer" : "Reflection"} — ${entry.reference}` : "Shepherd's Path"}
+          text={entry.content}
+          className="text-[12px] font-semibold"
+        />
         {!confirming ? (
           <button
             onClick={() => setConfirming(true)}

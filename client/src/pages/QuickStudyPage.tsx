@@ -12,6 +12,7 @@ import { TRACKS, getTodaysPassage, getPassageIndex, type TrackId, type Track } f
 import { useToast } from "@/hooks/use-toast";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { ShareButton } from "@/components/ShareButton";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -211,11 +212,17 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
                       {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
                       <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
                     </div>
-                    <SaveButton
-                      onClick={handleSaveAi}
-                      saved={aiMode === "reflect" ? savedReflection : savedPrayer}
-                      label={aiMode === "reflect" ? "Save reflection" : "Save prayer"}
-                    />
+                    <div className="flex items-center gap-3">
+                      <ShareButton
+                        title={`${aiMode === "reflect" ? "Reflection" : "Prayer"} — ${passage.reference}`}
+                        text={aiContent}
+                      />
+                      <SaveButton
+                        onClick={handleSaveAi}
+                        saved={aiMode === "reflect" ? savedReflection : savedPrayer}
+                        label={aiMode === "reflect" ? "Save reflection" : "Save prayer"}
+                      />
+                    </div>
                   </div>
                   <div className="text-sm text-slate-600 leading-relaxed space-y-3">
                     {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
@@ -525,11 +532,15 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                       })}
                     </div>
                     {study && (
-                      <div className="mt-5 pt-4 border-t border-border/40">
+                      <div className="mt-5 pt-4 border-t border-border/40 flex items-center gap-4 flex-wrap">
                         <SaveButton
                           onClick={handleSaveStudy}
                           saved={savedStudy}
                           label="Save study to Journal"
+                        />
+                        <ShareButton
+                          title={`Bible Study — ${activeTopic}`}
+                          text={study}
                         />
                       </div>
                     )}
@@ -694,11 +705,15 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                             })}
                           </div>
                         </div>
-                        <div className="pt-3">
+                        <div className="pt-3 flex items-center gap-4 flex-wrap">
                           <SaveButton
                             onClick={handleSaveStory}
                             saved={savedStory}
                             label="Save to Journal"
+                          />
+                          <ShareButton
+                            title="Bible Story Found — Shepherd's Path"
+                            text={`${storyDescription}\n\n${storyResult}`}
                           />
                         </div>
                       </motion.div>

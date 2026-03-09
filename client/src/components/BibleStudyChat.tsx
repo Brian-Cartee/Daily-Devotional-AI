@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatWithVerse } from "@/hooks/use-verses";
+import { ShareButton } from "@/components/ShareButton";
 import type { ChatMessage } from "@shared/routes";
 import { canUseAi, recordAiUsage, getRemainingAi, AI_FREE_LIMIT } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -110,15 +111,20 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
             )}
-            <div
-              className={`max-w-[85%] rounded-2xl px-5 py-4 text-sm leading-relaxed ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-tr-sm"
-                  : "bg-white/50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 border border-white/20 rounded-tl-sm"
-              }`}
-            >
-              {msg.content.split("\n").map((para, i) =>
-                para.trim() ? <p key={i} className="mb-2 last:mb-0">{para}</p> : null
+            <div className={`max-w-[85%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div
+                className={`rounded-2xl px-5 py-4 text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-tr-sm"
+                    : "bg-white/50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 border border-white/20 rounded-tl-sm"
+                }`}
+              >
+                {msg.content.split("\n").map((para, i) =>
+                  para.trim() ? <p key={i} className="mb-2 last:mb-0">{para}</p> : null
+                )}
+              </div>
+              {msg.role === "assistant" && (
+                <ShareButton title="Shepherd's Path Reflection" text={msg.content} showLabel={false} className="ml-1 opacity-50 hover:opacity-100" />
               )}
             </div>
             {msg.role === "user" && (
