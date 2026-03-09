@@ -306,7 +306,7 @@ export default function Devotional() {
           {/* STEP 1: TODAY'S WORD */}
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={1} label="Today's Word" />
-            <blockquote className="verse-text text-[1.3rem] sm:text-[1.45rem] text-balance mb-7">
+            <blockquote className="verse-text text-[1.55rem] sm:text-[1.8rem] text-balance mb-7 leading-relaxed">
               "{verse.text}"
             </blockquote>
             <div className="flex items-center gap-3">
