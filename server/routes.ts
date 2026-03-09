@@ -309,6 +309,29 @@ I'm here whenever you're ready to continue your walk.`;
     } catch { return { context: "", count: 0 }; }
   }
 
+  async function streamCompletion(
+    messages: OpenAI.Chat.ChatCompletionMessageParam[],
+    res: import("express").Response,
+    options: { model?: string; maxTokens?: number; temperature?: number } = {}
+  ) {
+    const { model = "gpt-4o-mini", maxTokens, temperature } = options;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
+    const stream = await openai.chat.completions.create({
+      model,
+      messages,
+      stream: true,
+      ...(maxTokens ? { max_tokens: maxTokens } : {}),
+      ...(temperature !== undefined ? { temperature } : {}),
+    });
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || "";
+      if (content) res.write(content);
+    }
+    res.end();
+  }
+
   function buildRelationshipNote(daysWithApp: number, entryCount: number): string {
     if (daysWithApp <= 3) {
       return `\n\nRelationship context: This person is new to Shepherd's Path (Day ${daysWithApp}). Welcome them with warmth and gentleness. You are just beginning to know each other. Don't assume familiarity — be an inviting, safe presence that makes them want to return.`;

@@ -6,7 +6,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useChatWithVerse } from "@/hooks/use-verses";
+import { streamAI } from "@/lib/streamAI";
+import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import type { ChatMessage } from "@shared/routes";
 import { canUseAi, recordAiUsage, getRemainingAi, AI_FREE_LIMIT } from "@/lib/aiUsage";
