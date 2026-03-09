@@ -51,7 +51,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
         {/* Header band — hero image — fixed, not scrollable */}
-        <div className="relative px-8 pt-6 pb-8 text-center overflow-hidden shrink-0" style={{ minHeight: 200 }}>
+        <div className="relative px-8 pt-6 pb-8 text-center overflow-hidden shrink-0 rounded-t-3xl" style={{ minHeight: 200 }}>
           <img
             src="/hero-landing.png"
             alt=""
