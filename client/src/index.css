@@ -16,8 +16,8 @@
     --popover: 38 25% 99%;
     --popover-foreground: 224 22% 14%;
 
-    /* Deep indigo/violet — spiritual, premium, distinctive */
-    --primary: 249 58% 40%;
+    /* Rich violet-purple — matches SP logo */
+    --primary: 263 56% 46%;
     --primary-foreground: 0 0% 100%;
 
     /* Warm amber-gold — warmth, reverence */
@@ -35,7 +35,7 @@
 
     --border: 38 18% 86%;
     --input: 38 18% 86%;
-    --ring: 249 58% 40%;
+    --ring: 263 56% 46%;
 
     --radius: 0.875rem;
 
@@ -55,7 +55,7 @@
     --popover: 224 25% 12%;
     --popover-foreground: 38 20% 93%;
 
-    --primary: 249 55% 62%;
+    --primary: 263 55% 64%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 37 90% 57%;
@@ -72,7 +72,7 @@
 
     --border: 224 25% 20%;
     --input: 224 25% 20%;
-    --ring: 249 55% 62%;
+    --ring: 263 55% 64%;
   }
 }
 
