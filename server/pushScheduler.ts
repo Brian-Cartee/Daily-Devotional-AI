@@ -159,17 +159,21 @@ export function schedulePushNotifications() {
     run();
   };
 
-  scheduleHourly(7, sendMorningNotifications, "morning push");
-  scheduleHourly(12, sendMiddayNotifications, "midday push");
-  scheduleHourly(20, sendEveningNotifications, "evening push");
-  scheduleHourly(21, sendStreakReminders, "streak reminder");
+  // All times are Eastern Time (ET). UTC offsets: EST = UTC-5, EDT = UTC-4.
+  // Using UTC-5 (EST) as baseline: 7 AM ET = UTC 12, 12 PM ET = UTC 17,
+  // 8 PM ET = UTC 01, 9 PM ET = UTC 02, Sunday 7 PM ET = UTC Mon 00
+  scheduleHourly(12, sendMorningNotifications, "morning push");   // 7 AM ET
+  scheduleHourly(17, sendMiddayNotifications, "midday push");     // 12 PM ET
+  scheduleHourly(1,  sendEveningNotifications, "evening push");   // 8 PM ET
+  scheduleHourly(2,  sendStreakReminders, "streak reminder");     // 9 PM ET
 
   const scheduleSundaySummary = () => {
     const now = new Date();
     const next = new Date(now);
-    const daysUntilSunday = (7 - now.getUTCDay()) % 7 || 7;
-    next.setUTCDate(now.getUTCDate() + daysUntilSunday);
-    next.setUTCHours(19, 0, 0, 0);
+    // Sunday 7 PM ET (UTC-5) = Monday 00:00 UTC
+    const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7;
+    next.setUTCDate(now.getUTCDate() + daysUntilMonday);
+    next.setUTCHours(0, 0, 0, 0);
     const delay = next.getTime() - now.getTime();
     console.log(`[push] Next weekly summary: ${next.toISOString()}`);
     setTimeout(async () => {

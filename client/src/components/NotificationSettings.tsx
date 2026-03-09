@@ -111,7 +111,7 @@ function EmailSection({ onClose }: { onClose: () => void }) {
         <Mail className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
         <div>
           <p className="text-[13px] font-semibold text-foreground">Daily email</p>
-          <p className="text-[11px] text-muted-foreground">Today's verse delivered every morning at 7 AM</p>
+          <p className="text-[11px] text-muted-foreground">Today's verse delivered every morning at 7 AM ET</p>
         </div>
       </div>
       <div className="pl-5">
