@@ -1,5 +1,6 @@
 import { useState } from "react";
 import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.png";
+import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
@@ -114,6 +115,14 @@ export default function LandingHome() {
 
       {/* Section cards */}
       <div className="max-w-xl md:max-w-4xl mx-auto px-5 -mt-6 pb-20 relative z-10">
+
+        {/* Side logo watermarks — only on very wide screens where margins exist */}
+        <div className="hidden xl:block fixed top-1/2 -translate-y-1/2 pointer-events-none select-none" style={{ left: "calc(50% - 560px)", transform: "translateY(-40%) translateX(-100%)" }} aria-hidden="true">
+          <img src={logoLarge} alt="" className="w-44 h-44 object-contain rounded-3xl" style={{ opacity: 0.055 }} />
+        </div>
+        <div className="hidden xl:block fixed top-1/2 -translate-y-1/2 pointer-events-none select-none" style={{ left: "calc(50% + 560px)", transform: "translateY(-40%)" }} aria-hidden="true">
+          <img src={logoLarge} alt="" className="w-44 h-44 object-contain rounded-3xl" style={{ opacity: 0.055 }} />
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
