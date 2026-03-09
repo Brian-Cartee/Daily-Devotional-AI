@@ -500,9 +500,22 @@ export default function Journal() {
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.68) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
-            <h2 className="text-white text-lg font-extrabold tracking-tight leading-tight">
-              Prayer Journal: <span style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.05rem" }}>A record of your walk with God.</span>
+            <h2 className="text-white text-lg font-extrabold tracking-tight leading-snug drop-shadow-md">
+              Prayer Journal
             </h2>
+            <p
+              style={{
+                fontFamily: "var(--font-decorative)",
+                fontStyle: "italic",
+                fontWeight: 400,
+                fontSize: "1.15rem",
+                color: "rgba(255,255,255,0.93)",
+                textShadow: "0 1px 6px rgba(0,0,0,0.55)",
+                marginTop: "3px",
+              }}
+            >
+              A record of your walk with Jesus.
+            </p>
           </div>
         </div>
 
