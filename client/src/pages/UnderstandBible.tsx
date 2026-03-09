@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
@@ -330,8 +330,9 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
 }
 
 export default function UnderstandBible() {
-  const [location, navigate] = useLocation();
-  const params = new URLSearchParams(location.split("?")[1] || "");
+  const [, navigate] = useLocation();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
   const journeyId = params.get("j");
   const selectedJourney = journeyId ? (ALL_JOURNEYS.find(j => j.id === journeyId) ?? null) : null;
 
