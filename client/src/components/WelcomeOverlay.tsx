@@ -61,10 +61,10 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="relative z-10">
             <div className="flex justify-center mb-2">
               <img
-                src="/logo-mark.png"
+                src="/sp-logo.png"
                 alt="Shepherd's Path logo"
-                className="w-20 h-20 rounded-2xl shadow-lg"
-                style={{ objectFit: "cover", objectPosition: "center" }}
+                className="w-24 h-24"
+                style={{ mixBlendMode: "screen" }}
               />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
