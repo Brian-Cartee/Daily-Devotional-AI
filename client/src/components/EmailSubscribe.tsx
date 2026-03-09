@@ -43,7 +43,7 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.97 }}
       transition={{ duration: 0.18 }}
-      className="absolute top-12 right-0 w-80 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-2xl p-5 z-50"
+      className="fixed top-14 right-2 w-80 max-w-[calc(100vw-1rem)] bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-2xl p-5 z-50"
     >
       <button
         onClick={onClose}
