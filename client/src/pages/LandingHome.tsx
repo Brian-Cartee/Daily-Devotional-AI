@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
+import { NamePrompt } from "@/components/NamePrompt";
+import { hasBeenPrompted } from "@/lib/userName";
 
 const sections = [
   {
@@ -56,12 +58,23 @@ const COMMITMENT_POINTS = [
 
 export default function LandingHome() {
   const [expanded, setExpanded] = useState(false);
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+
+  const handleDismissWelcome = () => {
+    dismissWelcome();
+    if (!hasBeenPrompted()) {
+      setTimeout(() => setShowNamePrompt(true), 400);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <AnimatePresence>
-        {showWelcome && <WelcomeOverlay onDismiss={dismissWelcome} />}
+        {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showNamePrompt && <NamePrompt onDone={() => setShowNamePrompt(false)} />}
       </AnimatePresence>
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">

@@ -11,6 +11,7 @@ import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
+import { getUserName } from "@/lib/userName";
 import { getHeroImage } from "@/lib/heroImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -85,8 +86,9 @@ export default function Devotional() {
     if (verse && !devotionalStarted) {
       setDevotionalStarted(true);
       const lang = getStoredLang();
-      reflectionMutation.mutate({ verseId: verse.id, type: "reflection", lang });
-      prayerMutation.mutate({ verseId: verse.id, type: "prayer", lang });
+      const userName = getUserName() ?? undefined;
+      reflectionMutation.mutate({ verseId: verse.id, type: "reflection", lang, userName });
+      prayerMutation.mutate({ verseId: verse.id, type: "prayer", lang, userName });
       fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,6 +119,7 @@ export default function Devotional() {
           passageRef: verse.reference,
           passageText: verse.text,
           lang: getStoredLang(),
+          userName: getUserName() ?? undefined,
           messages: [{
             role: "user",
             content: `The reader has just finished their devotional on ${verse.reference}: "${verse.text}". They want to offer a personal prayer of thanksgiving to God. What they are grateful for today: "${gratitudeInput.trim()}". Write a short, intimate closing prayer (3–4 sentences) that weaves together their gratitude and the spirit of today's verse. Begin with "Lord," or "Father," and close with "Amen." Write in first person as if they are speaking it aloud. Keep it warm and unhurried.`,
@@ -415,7 +418,7 @@ export default function Devotional() {
               )}
               {reflectionMutation.isError && (
                 <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
-                  Could not load reflection. <button onClick={() => reflectionMutation.mutate({ verseId: verse.id, type: "reflection" })} className="underline text-primary">Try again</button>
+                  Could not load reflection. <button onClick={() => reflectionMutation.mutate({ verseId: verse.id, type: "reflection", userName: getUserName() ?? undefined })} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>
@@ -448,7 +451,7 @@ export default function Devotional() {
               )}
               {prayerMutation.isError && (
                 <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
-                  Could not load prayer. <button onClick={() => prayerMutation.mutate({ verseId: verse.id, type: "prayer" })} className="underline text-primary">Try again</button>
+                  Could not load prayer. <button onClick={() => prayerMutation.mutate({ verseId: verse.id, type: "prayer", userName: getUserName() ?? undefined })} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>

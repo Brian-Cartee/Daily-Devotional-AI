@@ -28,12 +28,13 @@ export function useDailyVerse() {
 
 export function useGenerateAI() {
   return useMutation({
-    mutationFn: async (input: GenerateRequestInput) => {
-      const validatedInput = api.ai.generate.input.parse(input);
+    mutationFn: async (input: GenerateRequestInput & { userName?: string }) => {
+      const { userName, ...rest } = input;
+      const validatedInput = api.ai.generate.input.parse(rest);
       const res = await fetch(api.ai.generate.path, {
         method: api.ai.generate.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validatedInput),
+        body: JSON.stringify({ ...validatedInput, userName }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to generate AI response");
@@ -45,12 +46,13 @@ export function useGenerateAI() {
 
 export function useChatWithVerse() {
   return useMutation({
-    mutationFn: async (input: ChatRequest) => {
-      const validatedInput = api.ai.chat.input.parse(input);
+    mutationFn: async (input: ChatRequest & { userName?: string }) => {
+      const { userName, ...rest } = input;
+      const validatedInput = api.ai.chat.input.parse(rest);
       const res = await fetch(api.ai.chat.path, {
         method: api.ai.chat.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validatedInput),
+        body: JSON.stringify({ ...validatedInput, userName }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to get AI response");

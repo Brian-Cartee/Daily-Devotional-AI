@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
+import { getUserName } from "@/lib/userName";
 import { getHeroImage } from "@/lib/heroImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 
@@ -39,11 +40,13 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     setIsAiLoading(true);
     const passageText = textQuery.data?.text ?? chapter.summary;
     const lang = getStoredLang();
+    const userName = getUserName() ?? undefined;
     try {
       const res = await apiRequest("POST", "/api/chat/passage", {
         passageRef: chapter.reference,
         passageText,
         lang,
+        userName,
         messages: [{
           role: "user",
           content: type === "reflect"
@@ -69,8 +72,9 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     setIsAiLoading(true);
     const passageText = textQuery.data?.text ?? chapter.summary;
     const lang = getStoredLang();
+    const userName = getUserName() ?? undefined;
     try {
-      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, lang, messages: newMessages });
+      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, lang, userName, messages: newMessages });
       const data = await res.json();
       setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(data.content) }]);
     } catch {

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { getUserName } from "@/lib/userName";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
@@ -94,6 +95,7 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
       const res = await apiRequest("POST", "/api/chat/passage", {
         passageRef: passage.reference,
         passageText,
+        userName: getUserName() ?? undefined,
         messages: [{
           role: "user",
           content: type === "reflect"
@@ -340,6 +342,7 @@ export default function QuickStudyPage() {
       const res = await apiRequest("POST", "/api/chat/passage", {
         passageRef: q,
         passageText: q,
+        userName: getUserName() ?? undefined,
         messages: [{
           role: "user",
           content: `Create a short, structured Bible study on: "${q}". Format it as:
@@ -372,6 +375,7 @@ Keep it warm, accessible, and grounded in Scripture.`,
       const res = await apiRequest("POST", "/api/chat/passage", {
         passageRef: "story-finder",
         passageText: desc,
+        userName: getUserName() ?? undefined,
         messages: [{
           role: "user",
           content: `A user is trying to find a Bible story or passage they remember. They described it as:

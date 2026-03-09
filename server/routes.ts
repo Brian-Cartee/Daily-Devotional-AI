@@ -205,16 +205,19 @@ export async function registerRoutes(
       let systemPrompt = "";
       let userPrompt = "";
 
+      const userName2: string = (req.body as any).userName || "";
+      const nameNote2 = userName2 ? ` You are speaking with ${userName2}. Address them by name naturally once in your response.` : "";
+
       if (input.type === "reflection") {
         systemPrompt =
-          `You are a thoughtful and empathetic spiritual guide. Write a SHORT devotional reflection on the provided Bible verse — 2 concise paragraphs maximum. Be warm, personal, and easy to read on mobile. Do not repeat the verse text.${langNote2}`;
+          `You are a thoughtful and empathetic spiritual guide. Write a SHORT devotional reflection on the provided Bible verse — 2 concise paragraphs maximum. Be warm, personal, and easy to read on mobile. Do not repeat the verse text.${nameNote2}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
         }
       } else if (input.type === "prayer") {
         systemPrompt =
-          `You are a thoughtful and empathetic spiritual guide. Write a short, meaningful prayer based on the provided Bible verse. Keep it concise, genuine, and encouraging. Begin with 'Lord,' or 'Heavenly Father,' and close with 'Amen.'${langNote2}`;
+          `You are a thoughtful and empathetic spiritual guide. Write a short, meaningful prayer based on the provided Bible verse. Keep it concise, genuine, and encouraging. Begin with 'Lord,' or 'Heavenly Father,' and close with 'Amen.'${nameNote2}${langNote2}`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
@@ -250,11 +253,14 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Verse not found." });
       }
 
+      const chatUserName: string = (req.body as any).userName || "";
+      const chatNameNote = chatUserName ? ` The user's name is ${chatUserName}. Use their name naturally when appropriate.` : "";
+
       const systemPrompt = `You are a warm, knowledgeable Bible study guide. The user is reflecting on today's verse:
 
 "${verse.text}" — ${verse.reference}
 
-Answer all questions in the context of this scripture. Be concise but insightful — 2 to 4 short paragraphs at most. Use accessible, encouraging language suitable for daily spiritual growth. When writing prayers, begin with "Lord," or "Heavenly Father," and close with "Amen."`;
+Answer all questions in the context of this scripture. Be concise but insightful — 2 to 4 short paragraphs at most. Use accessible, encouraging language suitable for daily spiritual growth. When writing prayers, begin with "Lord," or "Heavenly Father," and close with "Amen."${chatNameNote}`;
 
       const conversationHistory = input.messages.map((m: ChatMessage) => ({
         role: m.role as "user" | "assistant",
@@ -306,7 +312,7 @@ Answer all questions in the context of this scripture. Be concise but insightful
 
   // AI chat for arbitrary passage (used by Understand and Read pages)
   app.post("/api/chat/passage", async (req, res) => {
-    const { passageRef, passageText, messages, lang } = req.body;
+    const { passageRef, passageText, messages, lang, userName } = req.body;
     if (!passageRef || !passageText || !Array.isArray(messages)) {
       return res.status(400).json({ message: "passageRef, passageText, and messages are required" });
     }
@@ -316,13 +322,14 @@ Answer all questions in the context of this scripture. Be concise but insightful
       pt: "Respond entirely in Portuguese (Português).",
     };
     const langNote = langInstruction[lang] ? ` ${langInstruction[lang]}` : "";
+    const passageNameNote = userName ? ` The person you are speaking with is named ${userName}. Use their name naturally once in your response.` : "";
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible to someone unfamiliar with the Bible.${langNote}`,
+            content: `You are a knowledgeable, warm Bible teacher helping someone study ${passageRef}. The passage text is:\n\n${passageText}\n\nKeep your answers concise, warm, and accessible to someone unfamiliar with the Bible.${passageNameNote}${langNote}`,
           },
           ...messages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],
