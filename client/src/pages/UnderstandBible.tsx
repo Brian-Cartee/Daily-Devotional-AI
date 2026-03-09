@@ -1,24 +1,19 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, ChevronDown, Sparkles, HeartHandshake, Loader2, BookMarked } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import {
+  Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
+  BookMarked, ArrowLeft, MapPin,
+} from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
-import { GUIDED_PATH, type GuidedChapter } from "@/data/guidedPath";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getHeroImage } from "@/lib/heroImage";
-
-function usePassageChat() {
-  return useMutation({
-    mutationFn: (data: { passageRef: string; passageText: string; messages: Array<{ role: string; content: string }>; lang?: string }) =>
-      apiRequest("POST", "/api/chat/passage", data).then((r) => r.json()),
-  });
-}
+import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 
 function usePassageText(apiRef: string, enabled: boolean) {
   const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
@@ -35,7 +30,6 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   const textQuery = usePassageText(chapter.apiRef, open);
-  const passageChat = usePassageChat();
 
   const generateAI = async (type: "reflect" | "pray") => {
     if (!canUseAi()) { setShowUpgrade(true); return; }
@@ -180,42 +174,110 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   );
 }
 
-const THEMES = Array.from(new Set(GUIDED_PATH.map((c) => c.theme)));
+function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
+  return (
+    <main className="min-h-screen bg-background pt-20 pb-16 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-8">
+          <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/65" />
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white text-[13px] font-bold uppercase tracking-widest mb-2">
+              <Compass className="w-3 h-3" />
+              Bible Journeys
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Choose Your Path</h1>
+            <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">Guided reading plans through the heart of Scripture</p>
+          </motion.div>
+        </div>
 
-export default function UnderstandBible() {
+        <div className="space-y-4">
+          {ALL_JOURNEYS.map((journey, i) => (
+            <motion.button
+              key={journey.id}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              onClick={() => onSelect(journey)}
+              data-testid={`journey-card-${journey.id}`}
+              className={`w-full text-left rounded-2xl bg-gradient-to-br ${journey.colorFrom} ${journey.colorTo} border ${journey.borderColor} bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-xl ${journey.pillBg} flex items-center justify-center flex-shrink-0`}>
+                  <MapPin className={`w-5 h-5 ${journey.iconColor}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className={`text-[11px] font-bold uppercase tracking-widest ${journey.pillText} ${journey.pillBg} px-2 py-0.5 rounded-full`}>
+                      {journey.length} passages
+                    </span>
+                    {journey.badgeText && (
+                      <span className={`text-[11px] font-bold uppercase tracking-widest text-white px-2 py-0.5 rounded-full ${journey.badgeBg}`}>
+                        {journey.badgeText}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-[17px] font-bold text-foreground leading-tight">{journey.title}</h2>
+                  <p className={`text-xs font-semibold ${journey.iconColor} mb-1.5`}>{journey.subtitle}</p>
+                  <p className="text-sm text-muted-foreground leading-snug">{journey.description}</p>
+                </div>
+                <ChevronDown className={`w-5 h-5 ${journey.iconColor} flex-shrink-0 mt-1 -rotate-90`} />
+              </div>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => void }) {
+  const themes = Array.from(new Set(journey.entries.map((e) => e.theme)));
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
-  const filtered = activeTheme ? GUIDED_PATH.filter((c) => c.theme === activeTheme) : GUIDED_PATH;
+  const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
 
   return (
-    <>
-      <NavBar />
-      <main className="min-h-screen bg-background pt-20 pb-16 px-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Hero header */}
-          <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden mb-8">
-            <img src={getHeroImage("understand")} alt="Guided path" className="absolute inset-0 w-full h-full object-cover object-center" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
+    <main className="min-h-screen bg-background pt-20 pb-16 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-6">
+          <img src={getHeroImage("understand")} alt={journey.title} className="absolute inset-0 w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/65" />
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative z-10 flex flex-col h-full pb-5 px-5"
+          >
+            <button
+              onClick={onBack}
+              data-testid="btn-journey-back"
+              className="mt-4 self-start flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white text-[13px] font-bold uppercase tracking-widest mb-2">
-                <Compass className="w-3 h-3" />
-                Bible Journey
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight text-balance drop-shadow-lg">What's it all about?</h1>
-              <p className="text-white/90 text-[14px] mt-1.5 max-w-xs drop-shadow" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>A 30-day journey through the heart of Scripture</p>
-            </motion.div>
-          </div>
+              <ArrowLeft className="w-4 h-4" /> All Journeys
+            </button>
+            <div className="flex-1 flex flex-col justify-end">
+              {journey.badgeText && (
+                <span className={`self-start text-[11px] font-bold uppercase tracking-widest text-white px-2.5 py-0.5 rounded-full mb-2 ${journey.badgeBg}`}>
+                  {journey.badgeText}
+                </span>
+              )}
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
+              <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
+            </div>
+          </motion.div>
+        </div>
 
-          {/* Theme filter pills */}
+        {themes.length > 1 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-wrap gap-2 justify-center mb-6"
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap gap-2 justify-center mb-5"
           >
             <button
               onClick={() => setActiveTheme(null)}
@@ -223,7 +285,7 @@ export default function UnderstandBible() {
             >
               All
             </button>
-            {THEMES.map((theme) => (
+            {themes.map((theme) => (
               <button
                 key={theme}
                 onClick={() => setActiveTheme(activeTheme === theme ? null : theme)}
@@ -233,20 +295,40 @@ export default function UnderstandBible() {
               </button>
             ))}
           </motion.div>
+        )}
 
-          {/* Chapter cards */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="space-y-3"
-          >
-            {filtered.map((chapter) => (
-              <ChapterCard key={chapter.id} chapter={chapter} />
-            ))}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          className="space-y-3"
+        >
+          {filtered.map((entry) => (
+            <ChapterCard key={entry.id} chapter={entry} />
+          ))}
+        </motion.div>
+      </div>
+    </main>
+  );
+}
+
+export default function UnderstandBible() {
+  const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+
+  return (
+    <>
+      <NavBar />
+      <AnimatePresence mode="wait">
+        {selectedJourney ? (
+          <motion.div key="detail" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
+            <JourneyDetail journey={selectedJourney} onBack={() => setSelectedJourney(null)} />
           </motion.div>
-        </div>
-      </main>
+        ) : (
+          <motion.div key="hub" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.25 }}>
+            <JourneyHub onSelect={setSelectedJourney} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
