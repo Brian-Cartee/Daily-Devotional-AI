@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import path from "path";
+import { Readable } from "stream";
 import { storage } from "./storage";
 import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
 import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema";
@@ -107,6 +108,27 @@ export async function registerRoutes(
   });
 
   // Text-to-speech using OpenAI — returns audio/mpeg
+  // Streaming GET endpoint — browser starts playing as first bytes arrive
+  app.get("/api/tts", async (req, res) => {
+    const text = (req.query.text as string)?.trim();
+    if (!text) return res.status(400).json({ message: "text required" });
+    try {
+      const mp3 = await openaiTTS.audio.speech.create({
+        model: "tts-1",
+        voice: "onyx",
+        input: text.slice(0, 4000),
+        speed: 0.92,
+      });
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=86400");
+      res.set("Transfer-Encoding", "chunked");
+      Readable.fromWeb(mp3.body as import("stream/web").ReadableStream<Uint8Array>).pipe(res);
+    } catch (err: any) {
+      console.error("TTS error:", err);
+      if (!res.headersSent) res.status(500).json({ message: "TTS failed" });
+    }
+  });
+
   app.post("/api/tts", async (req, res) => {
     const { text } = req.body as { text: string };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
@@ -114,16 +136,16 @@ export async function registerRoutes(
       const mp3 = await openaiTTS.audio.speech.create({
         model: "tts-1",
         voice: "onyx",
-        input: text.trim(),
+        input: text.trim().slice(0, 4000),
         speed: 0.92,
       });
-      const buffer = Buffer.from(await mp3.arrayBuffer());
       res.set("Content-Type", "audio/mpeg");
       res.set("Cache-Control", "public, max-age=86400");
-      res.send(buffer);
+      res.set("Transfer-Encoding", "chunked");
+      Readable.fromWeb(mp3.body as import("stream/web").ReadableStream<Uint8Array>).pipe(res);
     } catch (err: any) {
       console.error("TTS error:", err);
-      res.status(500).json({ message: "TTS failed" });
+      if (!res.headersSent) res.status(500).json({ message: "TTS failed" });
     }
   });
 
