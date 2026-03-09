@@ -83,7 +83,7 @@ export default function LandingHome() {
           >
             <div className="flex flex-col items-center leading-none mb-4 select-none">
               <span className="text-white/70 text-[26px] font-semibold uppercase tracking-[0.35em] mb-1 drop-shadow">Shepherd's</span>
-              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(4.5rem, 18vw, 7rem)", letterSpacing: "-0.02em", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
+              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(3.5rem, 14vw, 5.5rem)", letterSpacing: "-0.02em", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
             <p className="text-white/90 max-w-xs mx-auto drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
               Your daily walk with Jesus.
