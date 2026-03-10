@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { getUserVoice } from "@/lib/userName";
 
 export function useTTS() {
@@ -7,6 +7,7 @@ export function useTTS() {
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
+  const preloadingRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (audioRef.current) {
@@ -26,22 +27,67 @@ export function useTTS() {
     setProgress(0);
   }, [cleanup]);
 
-  const play = useCallback(async (text: string, voice?: string) => {
-    cleanup();
-    setProgress(0);
-    setLoading(true);
-
+  // Pre-fetch audio in the background so it's ready when play is called.
+  // If the blob is already cached nothing happens.
+  const preload = useCallback(async (text: string, voice?: string) => {
+    if (blobUrlRef.current || preloadingRef.current) return;
+    preloadingRef.current = true;
     const selectedVoice = voice ?? getUserVoice();
-
     try {
-      // POST the full text in the request body — no URL length limits.
-      // Wait for the full audio blob before playing so nothing gets cut off.
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, voice: selectedVoice }),
       });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      blobUrlRef.current = URL.createObjectURL(blob);
+    } catch {
+      // silently ignore preload errors
+    } finally {
+      preloadingRef.current = false;
+    }
+  }, []);
 
+  const play = useCallback(async (text: string, voice?: string) => {
+    const selectedVoice = voice ?? getUserVoice();
+
+    // If preloaded blob is ready, use it immediately — no loading wait
+    if (blobUrlRef.current) {
+      const url = blobUrlRef.current;
+      blobUrlRef.current = null; // will be re-set after we detach it from the ref
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      setLoading(false);
+      setPlaying(true);
+      setProgress(0);
+
+      audio.ontimeupdate = () => {
+        if (audio.duration) setProgress(Math.round((audio.currentTime / audio.duration) * 100));
+      };
+      audio.onended = () => {
+        setPlaying(false);
+        setProgress(100);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setPlaying(false);
+      };
+      await audio.play();
+      return;
+    }
+
+    // No preloaded blob — fetch fresh
+    cleanup();
+    setProgress(0);
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice: selectedVoice }),
+      });
       if (!response.ok) throw new Error("TTS failed");
 
       const blob = await response.blob();
@@ -55,13 +101,9 @@ export function useTTS() {
         setLoading(false);
         setPlaying(true);
       };
-
       audio.ontimeupdate = () => {
-        if (audio.duration) {
-          setProgress(Math.round((audio.currentTime / audio.duration) * 100));
-        }
+        if (audio.duration) setProgress(Math.round((audio.currentTime / audio.duration) * 100));
       };
-
       audio.onended = () => {
         setPlaying(false);
         setProgress(100);
@@ -70,7 +112,6 @@ export function useTTS() {
           blobUrlRef.current = null;
         }
       };
-
       audio.onerror = () => {
         setPlaying(false);
         setLoading(false);
@@ -95,5 +136,8 @@ export function useTTS() {
     [playing, play, stop]
   );
 
-  return { play, stop, toggle, playing, loading, progress };
+  // Cleanup on unmount
+  useEffect(() => () => cleanup(), [cleanup]);
+
+  return { play, stop, toggle, preload, playing, loading, progress };
 }

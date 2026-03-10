@@ -3,7 +3,7 @@ import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.p
 import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Share2, Check } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -61,7 +61,25 @@ const COMMITMENT_POINTS = [
 export default function LandingHome() {
   const [expanded, setExpanded] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [shared, setShared] = useState(false);
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: "Shepherd's Path",
+      text: "Your daily walk with Jesus — AI-guided devotionals, Bible journeys, prayer & more.",
+      url: "https://www.shepherdspathai.com",
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+      }
+      setShared(true);
+      setTimeout(() => setShared(false), 2500);
+    } catch { }
+  };
 
   const handleDismissWelcome = () => {
     dismissWelcome();
@@ -89,6 +107,18 @@ export default function LandingHome() {
         />
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+
+        {/* Share App button — top right of hero */}
+        <button
+          onClick={handleShareApp}
+          data-testid="btn-share-app"
+          className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/50 transition-all text-[12px] font-medium"
+        >
+          {shared
+            ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
+            : <><Share2 className="w-3.5 h-3.5" /> Share</>
+          }
+        </button>
 
         {/* Hero text */}
         <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14">

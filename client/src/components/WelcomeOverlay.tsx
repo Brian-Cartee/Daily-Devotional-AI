@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,12 @@ interface WelcomeOverlayProps {
 }
 
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
-  const { toggle, stop, playing, loading, progress } = useTTS();
+  const { toggle, stop, preload, playing, loading, progress } = useTTS();
+
+  // Start fetching audio the moment the overlay appears so it's ready instantly
+  useEffect(() => {
+    preload(WELCOME_SCRIPT, getUserVoice());
+  }, []);
 
   const handleDismiss = () => {
     stop();
