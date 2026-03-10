@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Home } from "lucide-react";
 import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.png";
@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
+import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -16,13 +17,37 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_NAV_ITEMS = [
-  { href: "/",           label: "Home",       icon: Home },
-  { href: "/devotional", label: "Devotional", icon: Sun },
-  { href: "/understand", label: "Journey",    icon: Compass },
-  { href: "/read",       label: "Read",       icon: BookOpen },
-  { href: "/study",      label: "Study",      icon: Search },
-  { href: "/journal",    label: "Journal",    icon: NotebookPen },
+  { href: "/",           label: "Home",       icon: Home,        bookmark: null },
+  { href: "/devotional", label: "Devotional", icon: Sun,         bookmark: "devotional" as BookmarkSection },
+  { href: "/understand", label: "Journey",    icon: Compass,     bookmark: "journey" as BookmarkSection },
+  { href: "/read",       label: "Read",       icon: BookOpen,    bookmark: "read" as BookmarkSection },
+  { href: "/study",      label: "Study",      icon: Search,      bookmark: "study" as BookmarkSection },
+  { href: "/journal",    label: "Journal",    icon: NotebookPen, bookmark: "journal" as BookmarkSection },
 ];
+
+const NAV_BOOKMARK_MAP: Record<string, BookmarkSection> = {
+  "/devotional": "devotional",
+  "/understand": "journey",
+  "/read":       "read",
+  "/study":      "study",
+  "/journal":    "journal",
+};
+
+function useBookmarkedSections() {
+  const [bookmarked, setBookmarked] = useState<Set<BookmarkSection>>(() => {
+    const sections: BookmarkSection[] = ["read", "study", "journey", "devotional", "journal"];
+    return new Set(sections.filter(hasBookmark));
+  });
+  useEffect(() => {
+    const update = () => {
+      const sections: BookmarkSection[] = ["read", "study", "journey", "devotional", "journal"];
+      setBookmarked(new Set(sections.filter(hasBookmark)));
+    };
+    window.addEventListener("sp-bookmark-change", update);
+    return () => window.removeEventListener("sp-bookmark-change", update);
+  }, []);
+  return bookmarked;
+}
 
 export function NavBar() {
   const [location] = useLocation();
@@ -30,6 +55,7 @@ export function NavBar() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [langOpen,  setLangOpen]  = useState(false);
   const { lang, setLang } = useLanguage();
+  const bookmarked = useBookmarkedSections();
 
   const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); };
 
@@ -54,6 +80,8 @@ export function NavBar() {
           <div className="hidden sm:flex items-center gap-0 flex-1 min-w-0">
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
               const active = location === href || location.startsWith(href + "/");
+              const bm = NAV_BOOKMARK_MAP[href];
+              const hasPlace = bm && bookmarked.has(bm) && !active;
               return (
                 <Link
                   key={href}
@@ -65,7 +93,12 @@ export function NavBar() {
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <div className="relative">
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    {hasPlace && (
+                      <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
+                    )}
+                  </div>
                   {label}
                 </Link>
               );
@@ -154,10 +187,11 @@ export function NavBar() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-stretch h-16">
-          {BOTTOM_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {BOTTOM_NAV_ITEMS.map(({ href, label, icon: Icon, bookmark }) => {
             const active = href === "/"
               ? location === "/"
               : location === href || location.startsWith(href + "/");
+            const hasPlace = bookmark && bookmarked.has(bookmark) && !active;
             return (
               <Link
                 key={href}
@@ -167,10 +201,13 @@ export function NavBar() {
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all ${
+                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all relative ${
                   active ? "bg-primary/10" : ""
                 }`}>
                   <Icon className={`transition-all ${active ? "w-5 h-5" : "w-[18px] h-[18px]"}`} />
+                  {hasPlace && (
+                    <span className="absolute top-0.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
+                  )}
                 </div>
                 <span className={`text-[10px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
                   {label}

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { saveBookmark, getBookmark } from "@/lib/bookmarks";
+import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart } from "lucide-react";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
@@ -105,6 +107,10 @@ export default function Devotional() {
   useEffect(() => {
     if (verse && !devotionalStarted) {
       setDevotionalStarted(true);
+      saveBookmark("devotional", {
+        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        label: `Today's devotional · ${verse.reference}`,
+      });
       const lang = getStoredLang();
       const userName = getUserName() ?? undefined;
       generateReflection(verse.id, lang, userName);

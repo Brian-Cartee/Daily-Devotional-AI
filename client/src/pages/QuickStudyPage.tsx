@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal } from "lucide-react";
+import { saveBookmark, getBookmark } from "@/lib/bookmarks";
+import { ResumeBar } from "@/components/ResumeBar";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { getUserName } from "@/lib/userName";
@@ -320,6 +322,8 @@ export default function QuickStudyPage() {
 
   const saveJournal = useJournalSave();
 
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+
   useEffect(() => {
     const saved = localStorage.getItem("sp_track") as TrackId | null;
     if (saved && TRACKS.find(t => t.id === saved)) setSelectedTrack(saved);
@@ -328,6 +332,8 @@ export default function QuickStudyPage() {
   const selectTrack = (id: TrackId) => {
     setSelectedTrack(id);
     localStorage.setItem("sp_track", id);
+    const track = TRACKS.find(t => t.id === id);
+    if (track) saveBookmark("study", { trackId: id, label: track.name });
   };
 
   const clearTrack = () => {
@@ -461,6 +467,23 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
 
       <main className="min-h-screen bg-background pt-6 pb-28 sm:pb-16 px-4">
         <div className="max-w-2xl mx-auto">
+
+          <AnimatePresence>
+            {!resumeDismissed && (() => {
+              const bm = getBookmark("study");
+              return bm && !activeTrack ? (
+                <ResumeBar
+                  key="study-resume"
+                  label={bm.label}
+                  onResume={() => {
+                    selectTrack(bm.trackId as TrackId);
+                    setResumeDismissed(true);
+                  }}
+                  onDismiss={() => setResumeDismissed(true)}
+                />
+              ) : null;
+            })()}
+          </AnimatePresence>
 
           {/* Search card */}
           <motion.div

@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { saveBookmark, getBookmark } from "@/lib/bookmarks";
+import { ResumeBar } from "@/components/ResumeBar";
 import journalHero from "@assets/REV1001_S_P_(1400_x_600_px)-2_1773097642649.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -782,8 +784,18 @@ function SermonNoteForm({ onSave }: { onSave: () => void }) {
 }
 
 export default function Journal() {
-  const [activeTab, setActiveTab] = useState<TabType>("prayer");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const bm = getBookmark("journal");
+    return (bm?.tab as TabType) ?? "prayer";
+  });
+  const [resumeDismissed, setResumeDismissed] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+
+  useEffect(() => {
+    const label = TABS.find(t => t.key === activeTab)?.label ?? activeTab;
+    saveBookmark("journal", { tab: activeTab, label });
+  }, [activeTab]);
+
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
 

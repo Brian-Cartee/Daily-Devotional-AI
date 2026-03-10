@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus, Plus, Check } from "lucide-react";
+import { saveBookmark, getBookmark } from "@/lib/bookmarks";
+import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -71,6 +73,18 @@ export default function ReadBible() {
 
   const [showTransMenu, setShowTransMenu] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+
+  useEffect(() => {
+    if (selectedBook) {
+      saveBookmark("read", {
+        book: selectedBook,
+        chapter: selectedChapter,
+        translation,
+        label: `${selectedBook} · Ch. ${selectedChapter}`,
+      });
+    }
+  }, [selectedBook, selectedChapter, translation]);
 
   useEffect(() => { localStorage.setItem(LS_FONT, String(fontSize)); }, [fontSize]);
   useEffect(() => { localStorage.setItem(LS_TRANS, translation); }, [translation]);
@@ -175,6 +189,24 @@ export default function ReadBible() {
               transition={{ duration: 0.4 }}
               className="px-5 py-10"
             >
+              <AnimatePresence>
+                {!resumeDismissed && (() => {
+                  const bm = getBookmark("read");
+                  return bm ? (
+                    <ResumeBar
+                      key="read-resume"
+                      label={bm.label}
+                      onResume={() => {
+                        setSelectedBook(bm.book);
+                        setSelectedChapter(bm.chapter);
+                        setTranslation(bm.translation);
+                        setResumeDismissed(true);
+                      }}
+                      onDismiss={() => setResumeDismissed(true)}
+                    />
+                  ) : null;
+                })()}
+              </AnimatePresence>
               <div className="text-center mb-10">
                 <p className="text-muted-foreground text-sm">Choose a book to begin reading</p>
               </div>

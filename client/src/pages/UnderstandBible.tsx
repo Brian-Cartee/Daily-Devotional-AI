@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,6 +9,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { NavBar } from "@/components/NavBar";
+import { saveBookmark, getBookmark } from "@/lib/bookmarks";
+import { ResumeBar } from "@/components/ResumeBar";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
@@ -342,6 +344,13 @@ export default function UnderstandBible() {
   const params = new URLSearchParams(search);
   const journeyId = params.get("j");
   const selectedJourney = journeyId ? (ALL_JOURNEYS.find(j => j.id === journeyId) ?? null) : null;
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+
+  useEffect(() => {
+    if (selectedJourney) {
+      saveBookmark("journey", { journeyId: selectedJourney.id, label: selectedJourney.title });
+    }
+  }, [selectedJourney?.id]);
 
   const handleSelect = (journey: Journey) => navigate(`/understand?j=${journey.id}`);
   const handleBack = () => navigate("/understand");
@@ -356,6 +365,19 @@ export default function UnderstandBible() {
           </motion.div>
         ) : (
           <motion.div key="hub" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.25 }}>
+            <AnimatePresence>
+              {!resumeDismissed && (() => {
+                const bm = getBookmark("journey");
+                return bm ? (
+                  <ResumeBar
+                    key="journey-resume"
+                    label={bm.label}
+                    onResume={() => { navigate(`/understand?j=${bm.journeyId}`); setResumeDismissed(true); }}
+                    onDismiss={() => setResumeDismissed(true)}
+                  />
+                ) : null;
+              })()}
+            </AnimatePresence>
             <JourneyHub onSelect={handleSelect} />
           </motion.div>
         )}
