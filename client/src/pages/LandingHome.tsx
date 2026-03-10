@@ -117,10 +117,10 @@ export default function LandingHome() {
       <div className="max-w-xl md:max-w-4xl mx-auto px-5 -mt-6 pb-20 relative z-10">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
-        <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "-155px", top: "38%", transform: "translateY(-50%)" }} aria-hidden="true">
+        <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
           <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
-        <div className="hidden xl:block absolute pointer-events-none select-none" style={{ right: "-155px", top: "38%", transform: "translateY(-50%)" }} aria-hidden="true">
+        <div className="hidden xl:block absolute pointer-events-none select-none" style={{ right: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
           <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
         <motion.div
