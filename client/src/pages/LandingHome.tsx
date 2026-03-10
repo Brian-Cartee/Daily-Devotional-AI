@@ -116,7 +116,7 @@ export default function LandingHome() {
         >
           {shared
             ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-            : <><Share2 className="w-3.5 h-3.5" /> Share</>
+            : <><Share2 className="w-3.5 h-3.5" /> Share App</>
           }
         </button>
 
