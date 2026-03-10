@@ -116,12 +116,12 @@ export default function LandingHome() {
       {/* Section cards */}
       <div className="max-w-xl md:max-w-4xl mx-auto px-5 -mt-6 pb-20 relative z-10">
 
-        {/* Side logo watermarks — only on very wide screens where margins exist */}
-        <div className="hidden xl:block fixed top-1/2 -translate-y-1/2 pointer-events-none select-none" style={{ left: "calc(50% - 560px)", transform: "translateY(-40%) translateX(-100%)" }} aria-hidden="true">
-          <img src={logoLarge} alt="" className="w-44 h-44 object-contain rounded-3xl" style={{ opacity: 0.055 }} />
+        {/* Side logo watermarks — centered in each side margin, vertically centered in cards section */}
+        <div className="hidden xl:block absolute top-1/2 pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", transform: "translateY(-50%)" }} aria-hidden="true">
+          <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
-        <div className="hidden xl:block fixed top-1/2 -translate-y-1/2 pointer-events-none select-none" style={{ left: "calc(50% + 560px)", transform: "translateY(-40%)" }} aria-hidden="true">
-          <img src={logoLarge} alt="" className="w-44 h-44 object-contain rounded-3xl" style={{ opacity: 0.055 }} />
+        <div className="hidden xl:block absolute top-1/2 pointer-events-none select-none" style={{ right: "calc((100% - 100vw) / 4 - 72px)", transform: "translateY(-50%)" }} aria-hidden="true">
+          <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
