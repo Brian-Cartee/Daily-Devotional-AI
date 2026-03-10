@@ -233,14 +233,25 @@ export default function LandingHome() {
           </AnimatePresence>
         </motion.div>
 
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="text-center text-xs text-muted-foreground mt-8"
+          className="text-center mt-8 space-y-2"
         >
-          Faith-rooted · AI-powered · Built for daily life
-        </motion.p>
+          <p className="text-xs text-muted-foreground">
+            Faith-rooted · AI-powered · Built for daily life
+          </p>
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <Link href="/pricing" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-pricing-footer">
+              Plans & Pricing
+            </Link>
+            <span>·</span>
+            <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
+              support@shepherdspathai.com
+            </a>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
