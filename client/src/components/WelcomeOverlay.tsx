@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
+import { getUserVoice } from "@/lib/userName";
 
 const WELCOME_SCRIPT = `Welcome. And we mean that — genuinely, from the bottom of our hearts — welcome.
 
@@ -95,7 +96,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               </div>
               <button
                 data-testid="btn-toggle-audio"
-                onClick={() => toggle(WELCOME_SCRIPT)}
+                onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
                 disabled={loading}
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                   playing

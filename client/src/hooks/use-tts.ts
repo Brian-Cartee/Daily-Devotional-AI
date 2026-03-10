@@ -1,34 +1,53 @@
 import { useState, useRef, useCallback } from "react";
+import { getUserVoice } from "@/lib/userName";
 
 export function useTTS() {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
 
-  const stop = useCallback(() => {
+  const cleanup = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    setPlaying(false);
-    setProgress(0);
-  }, []);
-
-  const play = useCallback(async (text: string) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.src = "";
       audioRef.current = null;
     }
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+  }, []);
+
+  const stop = useCallback(() => {
+    cleanup();
+    setPlaying(false);
+    setProgress(0);
+  }, [cleanup]);
+
+  const play = useCallback(async (text: string, voice?: string) => {
+    cleanup();
     setProgress(0);
     setLoading(true);
 
+    const selectedVoice = voice ?? getUserVoice();
+
     try {
-      // Point the audio element directly at the streaming GET endpoint.
-      // The browser starts buffering and fires `canplay` as soon as the
-      // first chunks arrive — no need to wait for the full file.
-      const url = `/api/tts?text=${encodeURIComponent(text.slice(0, 4000))}`;
+      // POST the full text in the request body — no URL length limits.
+      // Wait for the full audio blob before playing so nothing gets cut off.
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice: selectedVoice }),
+      });
+
+      if (!response.ok) throw new Error("TTS failed");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      blobUrlRef.current = url;
+
       const audio = new Audio(url);
       audioRef.current = audio;
 
@@ -46,6 +65,10 @@ export function useTTS() {
       audio.onended = () => {
         setPlaying(false);
         setProgress(100);
+        if (blobUrlRef.current) {
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = null;
+        }
       };
 
       audio.onerror = () => {
@@ -59,14 +82,14 @@ export function useTTS() {
       setLoading(false);
       setPlaying(false);
     }
-  }, []);
+  }, [cleanup]);
 
   const toggle = useCallback(
-    (text: string) => {
+    (text: string, voice?: string) => {
       if (playing) {
         stop();
       } else {
-        play(text);
+        play(text, voice);
       }
     },
     [playing, play, stop]

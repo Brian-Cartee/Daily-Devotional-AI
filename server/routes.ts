@@ -131,13 +131,15 @@ export async function registerRoutes(
   });
 
   app.post("/api/tts", async (req, res) => {
-    const { text } = req.body as { text: string };
+    const { text, voice } = req.body as { text: string; voice?: string };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
+    const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
+    const selectedVoice = allowedVoices.includes(voice ?? "") ? (voice as any) : "onyx";
     try {
       const mp3 = await openaiTTS.audio.speech.create({
         model: "tts-1",
-        voice: "onyx",
-        input: text.trim().slice(0, 4000),
+        voice: selectedVoice,
+        input: text.trim().slice(0, 4096),
         speed: 0.92,
       });
       res.set("Content-Type", "audio/mpeg");
