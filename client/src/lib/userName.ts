@@ -1,6 +1,6 @@
 const USER_NAME_KEY = "sp_user_name";
 const NAME_PROMPTED_KEY = "sp_name_prompted";
-const GENDER_KEY = "sp_gender";
+const VOICE_KEY = "sp_voice";
 
 export function getUserName(): string | null {
   try {
@@ -31,31 +31,18 @@ export function hasBeenPrompted(): boolean {
   }
 }
 
-export type UserGender = "male" | "female" | "unset";
-
-export function getUserGender(): UserGender {
+export function getUserVoice(): string {
   try {
-    const g = localStorage.getItem(GENDER_KEY);
-    if (g === "male" || g === "female") return g;
-    return "unset";
+    const v = localStorage.getItem(VOICE_KEY);
+    if (v === "onyx" || v === "nova") return v;
+    return "onyx";
   } catch {
-    return "unset";
+    return "onyx";
   }
 }
 
-export function setUserGender(gender: UserGender): void {
+export function setUserVoice(voice: string): void {
   try {
-    localStorage.setItem(GENDER_KEY, gender);
+    localStorage.setItem(VOICE_KEY, voice);
   } catch {}
-}
-
-/**
- * Returns the TTS voice to use based on the stored gender preference.
- * Men hear a female voice (nova), women hear a male voice (onyx).
- */
-export function getUserVoice(): string {
-  const gender = getUserGender();
-  if (gender === "male") return "nova";
-  if (gender === "female") return "onyx";
-  return "onyx";
 }
