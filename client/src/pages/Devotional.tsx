@@ -21,6 +21,7 @@ import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
 import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, type Achievement } from "@/lib/achievements";
+import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -66,7 +67,18 @@ export default function Devotional() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+  const [showTipPrompt, setShowTipPrompt] = useState(false);
+  const [streakForTip, setStreakForTip] = useState(0);
   const { toast } = useToast();
+
+  // Show thank-you toast if returning from tip checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tip") === "thank-you") {
+      toast({ description: "Thank you for your gift. It means everything. 🙏" });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
 
@@ -687,7 +699,25 @@ export default function Devotional() {
         {currentAchievement && (
           <AchievementModal
             achievement={currentAchievement}
-            onClose={() => setCurrentAchievement(null)}
+            onClose={() => {
+              const achieved = currentAchievement;
+              setCurrentAchievement(null);
+              // After a milestone streak achievement, gently offer the tip prompt
+              const milestones = ["streak_7", "streak_14", "streak_30", "streak_60", "streak_100"];
+              if (milestones.includes(achieved.id) && shouldShowTip()) {
+                const s = streak?.currentStreak ?? 7;
+                setTimeout(() => { setStreakForTip(s); setShowTipPrompt(true); }, 600);
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTipPrompt && (
+          <TipPrompt
+            streakDays={streakForTip}
+            onClose={() => setShowTipPrompt(false)}
           />
         )}
       </AnimatePresence>

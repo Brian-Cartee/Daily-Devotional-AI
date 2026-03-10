@@ -730,6 +730,37 @@ Often — roughly 1 in 3 responses — end naturally with a single thoughtful qu
     }
   });
 
+  // One-time tip / support-the-mission checkout
+  app.post("/api/stripe/create-tip-session", async (req, res) => {
+    const { amount } = req.body as { amount: number };
+    if (!amount || amount < 100 || amount > 10000) {
+      return res.status(400).json({ message: "Invalid tip amount" });
+    }
+    try {
+      const origin = req.headers.origin || `https://${req.headers.host}`;
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [{
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: amount,
+            product_data: {
+              name: "Support the Mission — Shepherd's Path",
+              description: "A one-time gift to help keep the app free for everyone.",
+            },
+          },
+        }],
+        success_url: `${origin}/devotional?tip=thank-you`,
+        cancel_url: `${origin}/devotional`,
+      });
+      res.json({ url: session.url });
+    } catch (err: any) {
+      console.error("Tip checkout error:", err);
+      res.status(500).json({ message: err.message || "Tip checkout failed" });
+    }
+  });
+
   app.get("/api/stripe/session-email", async (req, res) => {
     const sessionId = req.query.session_id as string;
     if (!sessionId) return res.status(400).json({ message: "session_id required" });
