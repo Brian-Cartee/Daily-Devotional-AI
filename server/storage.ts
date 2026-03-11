@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -23,6 +23,8 @@ export interface IStorage {
   updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'>>): Promise<void>;
   deletePushSubscription(sessionId: string): Promise<void>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
+  getSmsConversation(phone: string): Promise<SmsConversation | undefined>;
+  upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean): Promise<SmsConversation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -173,6 +175,23 @@ export class DatabaseStorage implements IStorage {
 
   async getAllPushSubscriptions(): Promise<PushSubscription[]> {
     return db.select().from(pushSubscriptions);
+  }
+
+  async getSmsConversation(phone: string): Promise<SmsConversation | undefined> {
+    const [row] = await db.select().from(smsConversations).where(eq(smsConversations.phone, phone));
+    return row;
+  }
+
+  async upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean): Promise<SmsConversation> {
+    const [row] = await db
+      .insert(smsConversations)
+      .values({ phone, messages, exchangeCount, ctaSent, lastMessageAt: new Date() })
+      .onConflictDoUpdate({
+        target: smsConversations.phone,
+        set: { messages, exchangeCount, ctaSent, lastMessageAt: new Date() },
+      })
+      .returning();
+    return row;
   }
 }
 

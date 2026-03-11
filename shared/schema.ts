@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
@@ -121,3 +121,17 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+export type SmsMessage = { role: "user" | "assistant"; content: string; ts: string };
+
+export const smsConversations = pgTable("sms_conversations", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull().unique(),
+  messages: jsonb("messages").$type<SmsMessage[]>().notNull().default([]),
+  exchangeCount: integer("exchange_count").default(0).notNull(),
+  ctaSent: boolean("cta_sent").default(false).notNull(),
+  lastMessageAt: timestamp("last_message_at").default(sql`now()`).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type SmsConversation = typeof smsConversations.$inferSelect;

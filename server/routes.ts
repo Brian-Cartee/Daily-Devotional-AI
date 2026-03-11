@@ -979,6 +979,107 @@ What you never do:
     }
   });
 
+  // ── SMS Webhook (Twilio inbound) ──────────────────────────────────────────
+  const SMS_CRISIS_RESPONSE = "You matter, and what you're sharing is serious. Please reach out right now — call or text 988 (Suicide & Crisis Lifeline, 24/7), or call 911 if you're in immediate danger. You are not alone.";
+
+  function buildSmsSystemPrompt(exchangeCount: number): string {
+    const historyNote = exchangeCount === 0
+      ? "This is their very first message to you. Make them feel immediately heard and cared for."
+      : exchangeCount === 1
+      ? "This person has texted you once before. They've engaged — deepen the warmth and remember what they shared."
+      : `This person has texted you ${exchangeCount} times. You have a growing connection. Be more personal and less introductory.`;
+
+    return `You are Shepherd's Path, a warm Christian companion responding by text message. Someone has just texted you — meet them exactly where they are.
+
+In one flowing message (no headers, no labels, no bullet points), respond with:
+- A real Bible verse cited accurately. Prefer NKJV, ESV, or Amplified. Example: "Psalm 46:1 says, 'God is our refuge and strength, an ever-present help in trouble.'"
+- 2 sentences of warm, personal reflection tied directly to what they shared — spoken like a trusted friend, not a preacher.
+- A short, intimate prayer of 1–2 sentences, specific to their moment.
+- One gentle question inviting them to share more.
+
+Rules:
+- Write as one natural flowing message — no "Verse:", "Reflection:", "Prayer:", or "Follow-up:" labels
+- Keep total response under 450 characters (this is SMS — every word must earn its place)
+- Never invent or misquote Bible verses; if uncertain of exact wording, paraphrase carefully and note it
+- Zero preachiness, zero hollow affirmations, zero clichés ("lean into", "walk in His truth", "God is good all the time")
+- End with exactly one follow-up question — gentle, open, and personal
+
+${historyNote}`;
+  }
+
+  app.post("/api/sms/webhook", async (req, res) => {
+    const from = (req.body.From as string | undefined)?.trim();
+    const body = (req.body.Body as string | undefined)?.trim() ?? "";
+
+    if (!from) {
+      res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+      return;
+    }
+
+    // Crisis detection
+    if (detectCrisis(body)) {
+      res.type("text/xml").send(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${SMS_CRISIS_RESPONSE}</Message></Response>`
+      );
+      return;
+    }
+
+    try {
+      const convo = await storage.getSmsConversation(from);
+      const priorMessages: Array<{ role: string; content: string }> = (convo?.messages ?? [])
+        .slice(-8)
+        .map(m => ({ role: m.role, content: m.content }));
+      const exchangeCount = convo?.exchangeCount ?? 0;
+      const ctaSent = convo?.ctaSent ?? false;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: buildSmsSystemPrompt(exchangeCount) },
+          ...priorMessages,
+          { role: "user", content: body },
+        ],
+        max_tokens: 200,
+        temperature: 0.88,
+      });
+
+      let aiText = completion.choices[0].message.content?.trim()
+        ?? "God sees you right now. Isaiah 41:10 says, 'Do not fear, for I am with you.' You are not walking this alone.";
+
+      // Append CTA on the 2nd exchange (first time they've replied back)
+      let newCtaSent = ctaSent;
+      if (!ctaSent && exchangeCount >= 1) {
+        aiText += "\n\nIf you'd like daily devotionals, guided Bible journeys & more, they're waiting — free at ShepherdPathAI.com";
+        newCtaSent = true;
+      }
+
+      // Save conversation
+      const ts = new Date().toISOString();
+      const newMessages = [
+        ...(convo?.messages ?? []),
+        { role: "user" as const, content: body, ts },
+        { role: "assistant" as const, content: aiText, ts },
+      ];
+      await storage.upsertSmsConversation(from, newMessages, exchangeCount + 1, newCtaSent);
+
+      // Escape XML special characters
+      const safeText = aiText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+      res.type("text/xml").send(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${safeText}</Message></Response>`
+      );
+    } catch (err) {
+      console.error("[SMS webhook error]", err);
+      res.type("text/xml").send(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Something went wrong on our end. Please try again in a moment.</Message></Response>`
+      );
+    }
+  });
+
   return httpServer;
 }
 
