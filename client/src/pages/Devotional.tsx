@@ -668,7 +668,6 @@ export default function Devotional() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-semibold text-muted-foreground/70 bg-muted/80 px-2 py-0.5 rounded-full hidden sm:inline">GPT-4o</span>
                   <MessageCircle className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
                 </div>
               </div>

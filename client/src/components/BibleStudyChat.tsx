@@ -90,7 +90,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
           </div>
           <div>
             <p className="text-[13px] font-bold text-foreground leading-tight">AI Bible Scholar</p>
-            <p className="text-[10px] text-muted-foreground">Powered by OpenAI GPT-4o</p>
+            <p className="text-[10px] text-muted-foreground">AI-guided reflection</p>
           </div>
         </div>
         <span className="text-[10px] text-muted-foreground/60 hidden sm:block text-right leading-tight max-w-[140px]">
