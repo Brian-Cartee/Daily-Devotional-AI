@@ -117,7 +117,7 @@ export default function LandingHome() {
         >
           {shared
             ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-            : <><span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden ring-1 ring-white/20" style={{ background: "linear-gradient(135deg,#4c1d95,#2e1065)" }}><img src={logoTransparent} className="w-4 h-4 object-contain" alt="" /></span> Share App</>
+            : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg,#5b21b6,#2e1065)", boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoTransparent} className="w-5 h-5 object-contain" alt="" /></span> Share App</>
           }
         </button>
 
