@@ -130,6 +130,10 @@ export const smsConversations = pgTable("sms_conversations", {
   messages: jsonb("messages").$type<SmsMessage[]>().notNull().default([]),
   exchangeCount: integer("exchange_count").default(0).notNull(),
   ctaSent: boolean("cta_sent").default(false).notNull(),
+  dailyCount: integer("daily_count").default(0).notNull(),
+  dailyCountDate: text("daily_count_date").default("").notNull(),
+  optedOut: boolean("opted_out").default(false).notNull(),
+  enrolledForDaily: boolean("enrolled_for_daily").default(true).notNull(),
   lastMessageAt: timestamp("last_message_at").default(sql`now()`).notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });

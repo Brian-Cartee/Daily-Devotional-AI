@@ -15,6 +15,7 @@ import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
 import { schedulePushNotifications } from "./pushScheduler";
+import { scheduleDailySms } from "./smsScheduler";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
@@ -269,6 +270,9 @@ ${transcription.text.slice(0, 8000)}`,
 
   // Start push scheduler (email scheduler started separately)
   schedulePushNotifications();
+
+  // Start SMS daily devotional scheduler
+  scheduleDailySms();
 
   // ── Spiritual memory + safety helpers ──────────────────────────────────────
 
@@ -1060,88 +1064,147 @@ Rules:
 ${historyNote}`;
   }
 
+  function smsXml(text: string): string {
+    const safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${safe}</Message></Response>`;
+  }
+
+  const SMS_FREE_DAILY_LIMIT = 10;
+
   app.post("/api/sms/webhook", (req, res, next) => {
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     if (authToken) {
       const twilioSig = req.headers["x-twilio-signature"] as string | undefined;
       const fullUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
       const valid = twilio.validateRequest(authToken, twilioSig ?? "", fullUrl, req.body);
-      if (!valid) {
-        res.status(403).send("Forbidden");
-        return;
-      }
+      if (!valid) { res.status(403).send("Forbidden"); return; }
     }
     next();
   }, async (req, res) => {
     const from = (req.body.From as string | undefined)?.trim();
-    const body = (req.body.Body as string | undefined)?.trim() ?? "";
+    const rawBody = (req.body.Body as string | undefined)?.trim() ?? "";
+    const cmd = rawBody.toUpperCase().trim();
 
-    if (!from) {
-      res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+    if (!from) { res.type("text/xml").send(smsXml("")); return; }
+
+    // Crisis always takes priority
+    if (detectCrisis(rawBody)) {
+      res.type("text/xml").send(smsXml(SMS_CRISIS_RESPONSE));
       return;
     }
 
-    // Crisis detection
-    if (detectCrisis(body)) {
-      res.type("text/xml").send(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${SMS_CRISIS_RESPONSE}</Message></Response>`
-      );
+    const convo = await storage.getSmsConversation(from);
+    const today = new Date().toISOString().split("T")[0];
+
+    // ── STOP command ─────────────────────────────────────────────────────────
+    if (cmd === "STOP" || cmd === "UNSUBSCRIBE" || cmd === "QUIT") {
+      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { optedOut: true, enrolledForDaily: false });
+      res.type("text/xml").send(smsXml("You've been unsubscribed from Shepherd's Path daily messages. Text START any time to return. God bless you."));
       return;
     }
 
+    // ── Check opted out ───────────────────────────────────────────────────────
+    if (convo?.optedOut && cmd !== "START") {
+      res.type("text/xml").send(smsXml("You're currently unsubscribed. Text START to receive messages again."));
+      return;
+    }
+
+    // ── START command ─────────────────────────────────────────────────────────
+    if (cmd === "START" || cmd === "UNSTOP") {
+      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { optedOut: false, enrolledForDaily: true });
+      res.type("text/xml").send(smsXml("Welcome back to Shepherd's Path. Text anything on your heart, VERSE for today's scripture, or DEVOTIONAL for your daily reflection. We're glad you're here."));
+      return;
+    }
+
+    // ── Daily limit check (for AI responses only) ────────────────────────────
+    const isAiCommand = cmd !== "HELP" && cmd !== "VERSE";
+    const prevDate = convo?.dailyCountDate ?? "";
+    const prevCount = (prevDate === today) ? (convo?.dailyCount ?? 0) : 0;
+
+    if (isAiCommand && prevCount >= SMS_FREE_DAILY_LIMIT) {
+      res.type("text/xml").send(smsXml(`You've reached today's limit of ${SMS_FREE_DAILY_LIMIT} free messages. Text again tomorrow, or visit ShepherdPathAI.com for unlimited conversations with Pro.`));
+      return;
+    }
+
+    // ── HELP command ──────────────────────────────────────────────────────────
+    if (cmd === "HELP") {
+      const remaining = SMS_FREE_DAILY_LIMIT - prevCount;
+      res.type("text/xml").send(smsXml(
+        `Shepherd's Path — what you can text:\n\nAnything → scripture + prayer\nVERSE → today's verse\nDEVOTIONAL → full morning reflection\nSTOP → stop daily messages\nSTART → resume messages\n\n${remaining} of ${SMS_FREE_DAILY_LIMIT} free messages left today.\nshepherdspathAI.com for unlimited.`
+      ));
+      return;
+    }
+
+    // ── VERSE command ─────────────────────────────────────────────────────────
+    if (cmd === "VERSE") {
+      try {
+        const verse = await storage.getVerseByDate(today);
+        if (verse) {
+          res.type("text/xml").send(smsXml(
+            `Today's verse — ${verse.reference}\n\n"${verse.text}"\n\nText DEVOTIONAL for a full reflection, or share anything on your heart.`
+          ));
+        } else {
+          res.type("text/xml").send(smsXml(`"Your word is a lamp to my feet and a light to my path." — Psalm 119:105\n\nText DEVOTIONAL for a full reflection, or share anything on your heart.`));
+        }
+      } catch {
+        res.type("text/xml").send(smsXml("Text anything on your heart and I'll share scripture and prayer with you."));
+      }
+      return;
+    }
+
+    // ── DEVOTIONAL command or AI conversation ─────────────────────────────────
     try {
-      const convo = await storage.getSmsConversation(from);
-      const priorMessages: Array<{ role: string; content: string }> = (convo?.messages ?? [])
-        .slice(-8)
-        .map(m => ({ role: m.role, content: m.content }));
+      const priorMessages = (convo?.messages ?? []).slice(-8).map(m => ({ role: m.role, content: m.content }));
       const exchangeCount = convo?.exchangeCount ?? 0;
       const ctaSent = convo?.ctaSent ?? false;
+
+      let systemPrompt: string;
+      if (cmd === "DEVOTIONAL") {
+        const verse = await storage.getVerseByDate(today);
+        const verseText = verse ? `Today's verse: ${verse.reference} — "${verse.text}"` : "";
+        systemPrompt = `You are Shepherd's Path, sending a morning devotional by text message. ${verseText}\n\nWrite a devotional message in one flowing paragraph (no headers or labels). Include the verse reference and text, 2 warm sentences of reflection, and a short 1-sentence prayer. Keep total under 400 characters. No follow-up question — this is a gift, not a conversation starter. Warm, pastoral, no clichés.`;
+      } else {
+        systemPrompt = buildSmsSystemPrompt(exchangeCount);
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: buildSmsSystemPrompt(exchangeCount) },
+          { role: "system", content: systemPrompt },
           ...priorMessages,
-          { role: "user", content: body },
+          { role: "user", content: rawBody },
         ],
         max_tokens: 200,
         temperature: 0.88,
       });
 
       let aiText = completion.choices[0].message.content?.trim()
-        ?? "God sees you right now. Isaiah 41:10 says, 'Do not fear, for I am with you.' You are not walking this alone.";
+        ?? "Isaiah 41:10 says, 'Do not fear, for I am with you.' You are not walking this alone. What's on your heart?";
 
-      // Append CTA on the 2nd exchange (first time they've replied back)
+      // CTA on 2nd+ exchange (conversation only, not DEVOTIONAL command)
       let newCtaSent = ctaSent;
-      if (!ctaSent && exchangeCount >= 1) {
-        aiText += "\n\nIf you'd like daily devotionals, guided Bible journeys & more, they're waiting — free at ShepherdPathAI.com";
+      if (!ctaSent && exchangeCount >= 1 && cmd !== "DEVOTIONAL") {
+        aiText += "\n\nDaily devotionals & more await you free at ShepherdPathAI.com";
         newCtaSent = true;
       }
 
-      // Save conversation
       const ts = new Date().toISOString();
       const newMessages = [
         ...(convo?.messages ?? []),
-        { role: "user" as const, content: body, ts },
+        { role: "user" as const, content: rawBody, ts },
         { role: "assistant" as const, content: aiText, ts },
       ];
-      await storage.upsertSmsConversation(from, newMessages, exchangeCount + 1, newCtaSent);
 
-      // Escape XML special characters
-      const safeText = aiText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+      await storage.upsertSmsConversation(from, newMessages, exchangeCount + 1, newCtaSent, {
+        dailyCount: prevCount + 1,
+        dailyCountDate: today,
+        enrolledForDaily: true,
+      });
 
-      res.type("text/xml").send(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${safeText}</Message></Response>`
-      );
+      res.type("text/xml").send(smsXml(aiText));
     } catch (err) {
       console.error("[SMS webhook error]", err);
-      res.type("text/xml").send(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Something went wrong on our end. Please try again in a moment.</Message></Response>`
-      );
+      res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
     }
   });
 

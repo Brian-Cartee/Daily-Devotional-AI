@@ -24,7 +24,8 @@ export interface IStorage {
   deletePushSubscription(sessionId: string): Promise<void>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
   getSmsConversation(phone: string): Promise<SmsConversation | undefined>;
-  upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean): Promise<SmsConversation>;
+  upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean, opts?: { dailyCount?: number; dailyCountDate?: string; optedOut?: boolean; enrolledForDaily?: boolean }): Promise<SmsConversation>;
+  getSmsOptedInNumbers(): Promise<SmsConversation[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -182,16 +183,29 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
-  async upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean): Promise<SmsConversation> {
+  async upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean, opts?: { dailyCount?: number; dailyCountDate?: string; optedOut?: boolean; enrolledForDaily?: boolean }): Promise<SmsConversation> {
+    const extraFields = {
+      ...(opts?.dailyCount !== undefined && { dailyCount: opts.dailyCount }),
+      ...(opts?.dailyCountDate !== undefined && { dailyCountDate: opts.dailyCountDate }),
+      ...(opts?.optedOut !== undefined && { optedOut: opts.optedOut }),
+      ...(opts?.enrolledForDaily !== undefined && { enrolledForDaily: opts.enrolledForDaily }),
+    };
     const [row] = await db
       .insert(smsConversations)
-      .values({ phone, messages, exchangeCount, ctaSent, lastMessageAt: new Date() })
+      .values({ phone, messages, exchangeCount, ctaSent, lastMessageAt: new Date(), ...extraFields })
       .onConflictDoUpdate({
         target: smsConversations.phone,
-        set: { messages, exchangeCount, ctaSent, lastMessageAt: new Date() },
+        set: { messages, exchangeCount, ctaSent, lastMessageAt: new Date(), ...extraFields },
       })
       .returning();
     return row;
+  }
+
+  async getSmsOptedInNumbers(): Promise<SmsConversation[]> {
+    const { and, eq: eq2 } = await import("drizzle-orm");
+    return db.select().from(smsConversations).where(
+      and(eq2(smsConversations.optedOut, false), eq2(smsConversations.enrolledForDaily, true))
+    );
   }
 }
 
