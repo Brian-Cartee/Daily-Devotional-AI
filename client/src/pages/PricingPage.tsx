@@ -97,7 +97,7 @@ const WHITE_LABEL_WHAT_YOU_GET = [
 ];
 
 export default function PricingPage() {
-  const [plan, setPlan] = useState<"annual" | "monthly">("annual");
+  const [plan, setPlan] = useState<"annual" | "monthly">("monthly");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
