@@ -79,10 +79,10 @@ function DevotionalCard() {
         className="group relative rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
       >
         <img
-          src={logoWhite}
+          src={logoSmall}
           alt=""
           aria-hidden="true"
-          className="absolute top-3 right-3 w-12 h-12 object-contain opacity-[0.28] pointer-events-none select-none"
+          className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.12] pointer-events-none select-none"
         />
 
         <div className="flex items-start gap-4 mb-4">
@@ -265,10 +265,10 @@ export default function LandingHome() {
               >
                 {/* SP logo watermark — top-right of each card */}
                 <img
-                  src={logoWhite}
+                  src={logoSmall}
                   alt=""
                   aria-hidden="true"
-                  className="absolute top-3 right-3 w-12 h-12 object-contain opacity-[0.28] pointer-events-none select-none"
+                  className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.12] pointer-events-none select-none"
                 />
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm`}>

@@ -73,10 +73,10 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
       }}
       data-testid="streak-widget"
     >
-      <div className="px-5 pt-4 pb-4">
+      <div className="px-4 pt-3 pb-3">
 
         {/* Greeting row */}
-        <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p
@@ -123,7 +123,7 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
         </div>
 
         {/* Weekly tracker */}
-        <div className="flex items-center justify-between mb-3.5 px-0.5">
+        <div className="flex items-center justify-between mb-2.5 px-0.5">
           {WEEK_LABELS.map((label, i) => {
             const date = weekDates[i];
             const visited = visitSet.has(date);
@@ -131,14 +131,14 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
             const isFuture = i > todayIdx;
 
             return (
-              <div key={i} className="flex flex-col items-center gap-1">
+              <div key={i} className="flex flex-col items-center gap-0.5">
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-widest ${isToday ? "text-primary" : "text-muted-foreground/40"}`}
+                  className={`text-[9px] font-bold uppercase tracking-widest ${isToday ? "text-primary" : "text-muted-foreground/40"}`}
                 >
                   {label}
                 </span>
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
                     visited && isToday
                       ? "bg-primary shadow-md"
                       : visited
@@ -152,9 +152,9 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
                   data-testid={`week-day-${i}`}
                 >
                   {visited && isToday ? (
-                    <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
+                    <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
                   ) : visited ? (
-                    <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    <div className="w-2 h-2 rounded-full bg-primary" />
                   ) : isToday ? (
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                   ) : null}
