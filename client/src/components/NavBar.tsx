@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Home } from "lucide-react";
 import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.png";
+import logoSmall from "@assets/P_(1024_x_1024_px)_(64_x_64_px)_1773256980463.png";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -68,7 +69,7 @@ export function NavBar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105 shrink-0 overflow-hidden">
-              <img src={logoTransparent} alt="Shepherd's Path" className="w-6 h-6 object-contain" />
+              <img src={logoSmall} alt="Shepherd's Path" className="w-6 h-6 object-contain rounded-md" />
             </div>
             <div className="hidden sm:flex flex-col leading-none select-none">
               <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>

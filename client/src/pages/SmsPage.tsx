@@ -1,6 +1,6 @@
 import { MessageCircle, ArrowRight, BookOpen, Heart, Bell, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
-import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.png";
+import logoSmall from "@assets/P_(1024_x_1024_px)_(64_x_64_px)_1773256980463.png";
 
 const EXAMPLES = [
   {
@@ -35,7 +35,7 @@ export default function SmsPage() {
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg,#5b21b6,#2e1065)" }}>
-                <img src={logoTransparent} className="w-6 h-6 object-contain" alt="" />
+                <img src={logoSmall} className="w-6 h-6 object-contain rounded-md" alt="" />
               </div>
               <span className="font-bold text-foreground text-[15px]">Shepherd's Path</span>
             </div>

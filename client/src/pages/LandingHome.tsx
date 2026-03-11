@@ -1,5 +1,6 @@
 import { useState } from "react";
 import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.png";
+import logoSmall from "@assets/P_(1024_x_1024_px)_(64_x_64_px)_1773256980463.png";
 import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 
 import { Link } from "wouter";
@@ -210,7 +211,7 @@ export default function LandingHome() {
         >
           {shared
             ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-            : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg,#5b21b6,#2e1065)", boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoTransparent} className="w-5 h-5 object-contain" alt="" /></span> Share App</>
+            : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-6 h-6 object-contain" alt="" /></span> Share App</>
           }
         </button>
 
