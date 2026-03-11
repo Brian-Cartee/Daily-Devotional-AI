@@ -55,11 +55,18 @@ async function sendDailyDevotionalSms() {
 
   for (const sub of subscribers) {
     try {
-      await client.messages.create({
-        body: devotionalText,
-        from: fromNumber,
-        to: sub.phone,
-      });
+      // Day-3 invite to the prayer network (only for those who haven't joined yet)
+      const createdAt = sub.createdAt ? new Date(sub.createdAt) : null;
+      const daysSinceJoin = createdAt
+        ? Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+      const shouldInviteToPrayer = daysSinceJoin >= 3 && !sub.joinedPrayerNetwork;
+
+      const body = shouldInviteToPrayer
+        ? `${devotionalText}\n\nP.S. Text JOIN PRAYER to join our prayer chain — share needs and pray for others. It's beautiful.`
+        : devotionalText;
+
+      await client.messages.create({ body, from: fromNumber, to: sub.phone });
       sent++;
     } catch (err: any) {
       console.error(`[sms] Failed to send to ${sub.phone}:`, err.message);
@@ -68,6 +75,39 @@ async function sendDailyDevotionalSms() {
   }
 
   console.log(`[sms] Daily devotional sent: ${sent} delivered, ${failed} failed`);
+}
+
+async function sendPrayerFollowUps() {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !fromNumber) return;
+
+  const pending = await storage.getPrayerRequestsForFollowUp();
+  if (pending.length === 0) return;
+
+  const client = twilio(accountSid, authToken);
+
+  for (const req of pending) {
+    try {
+      const count = req.amenCount;
+      let msg: string;
+      if (count === 0) {
+        msg = `Your prayer from yesterday is still held before God. Sometimes the quiet moments are where He works most deeply. Keep trusting Him. 🙏`;
+      } else {
+        msg = `${count} ${count === 1 ? "person" : "people"} prayed for you yesterday — and God heard every word. May He answer in His perfect time. 🙏`;
+      }
+      await client.messages.create({ body: msg, from: fromNumber, to: req.requesterPhone });
+      await storage.markFollowUpSent(req.id);
+    } catch (err: any) {
+      console.error(`[sms] Failed to send prayer follow-up for request ${req.id}:`, err.message);
+    }
+  }
+
+  if (pending.length > 0) {
+    console.log(`[sms] Sent ${pending.length} prayer follow-up(s)`);
+  }
 }
 
 function msUntilNextHour(targetHour: number): number {
@@ -91,6 +131,7 @@ export function scheduleDailySms() {
     console.log(`[sms] Next daily devotional SMS scheduled for: ${nextRun.toISOString()}`);
     setTimeout(async () => {
       await sendDailyDevotionalSms();
+      await sendPrayerFollowUps();
       run();
     }, delay);
   };

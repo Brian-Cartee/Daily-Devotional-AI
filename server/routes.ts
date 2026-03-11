@@ -1116,6 +1116,47 @@ ${historyNote}`;
       return;
     }
 
+    // ── JOIN PRAYER command ───────────────────────────────────────────────────
+    if (cmd === "JOIN PRAYER") {
+      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { joinedPrayerNetwork: true });
+      res.type("text/xml").send(smsXml(
+        "You've joined the Shepherd's Path Prayer Chain. When someone shares a prayer need, you'll receive it and can reply AMEN-[number] to stand with them.\n\nTo request prayer yourself, text: PRAY FOR [your need]\n\nText LEAVE PRAYER to stop."
+      ));
+      return;
+    }
+
+    // ── LEAVE PRAYER command ──────────────────────────────────────────────────
+    if (cmd === "LEAVE PRAYER") {
+      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { joinedPrayerNetwork: false });
+      res.type("text/xml").send(smsXml("You've left the prayer chain. Text JOIN PRAYER any time to rejoin. You'll still receive your daily morning devotional."));
+      return;
+    }
+
+    // ── AMEN command ──────────────────────────────────────────────────────────
+    const amenMatch = cmd.match(/^AMEN[- ](\d+)$/);
+    if (amenMatch) {
+      const requestId = parseInt(amenMatch[1], 10);
+      const prayerReq = await storage.getPrayerRequest(requestId);
+      if (!prayerReq) {
+        res.type("text/xml").send(smsXml("That prayer request wasn't found. Text HELP to see available commands."));
+        return;
+      }
+      const newCount = await storage.addAmen(requestId, from);
+      res.type("text/xml").send(smsXml(`Amen. Your prayer has been counted. ${newCount} ${newCount === 1 ? "person is" : "people are"} praying with them.`));
+      // Notify the requester (fire and forget)
+      const sid = process.env.TWILIO_ACCOUNT_SID;
+      const auth = process.env.TWILIO_AUTH_TOKEN;
+      const fromNum = process.env.TWILIO_PHONE_NUMBER;
+      if (sid && auth && fromNum && prayerReq.requesterPhone !== from) {
+        twilio(sid, auth).messages.create({
+          body: `${newCount} ${newCount === 1 ? "person is" : "people are"} praying with you right now. You are not alone. \uD83D\uDE4F`,
+          from: fromNum,
+          to: prayerReq.requesterPhone,
+        }).catch(() => {});
+      }
+      return;
+    }
+
     // ── Daily limit check (for AI responses only) ────────────────────────────
     const isAiCommand = cmd !== "HELP" && cmd !== "VERSE";
     const prevDate = convo?.dailyCountDate ?? "";
@@ -1130,7 +1171,7 @@ ${historyNote}`;
     if (cmd === "HELP") {
       const remaining = SMS_FREE_DAILY_LIMIT - prevCount;
       res.type("text/xml").send(smsXml(
-        `Shepherd's Path — what you can text:\n\nAnything → scripture + prayer\nVERSE → today's verse\nDEVOTIONAL → full morning reflection\nSTOP → stop daily messages\nSTART → resume messages\n\n${remaining} of ${SMS_FREE_DAILY_LIMIT} free messages left today.\nshepherdspathAI.com for unlimited.`
+        `Shepherd's Path — what you can text:\n\nAnything → scripture + prayer\nVERSE → today's verse\nDEVOTIONAL → morning reflection\nPRAY FOR [need] → share to prayer chain\nJOIN PRAYER → join the prayer chain\nAMEN-[#] → pray with someone\nSTOP / START → daily messages\n\n${remaining} free messages left today.\nShepherdPathAI.com for unlimited.`
       ));
       return;
     }
@@ -1148,6 +1189,62 @@ ${historyNote}`;
         }
       } catch {
         res.type("text/xml").send(smsXml("Text anything on your heart and I'll share scripture and prayer with you."));
+      }
+      return;
+    }
+
+    // ── PRAY FOR command ──────────────────────────────────────────────────────
+    if (cmd.startsWith("PRAY FOR ")) {
+      const prayerText = rawBody.slice(9).trim();
+      if (!prayerText) {
+        res.type("text/xml").send(smsXml("Please include your prayer need after PRAY FOR. Example: PRAY FOR my mother's healing."));
+        return;
+      }
+      try {
+        // AI formats the request with pastoral warmth and anonymity
+        const formatCompletion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You format prayer requests for a Christian prayer chain. Take the raw request and write a single sentence that is warm, specific, and anonymous — no names, no identifying details. It should move people to genuinely pray. Under 120 characters. Start with 'Please pray for' or 'Please lift up'. No quotes." },
+            { role: "user", content: prayerText },
+          ],
+          max_tokens: 60,
+          temperature: 0.7,
+        });
+        const formattedRequest = formatCompletion.choices[0].message.content?.trim() ?? `Please pray for someone who needs God's comfort and strength right now.`;
+
+        // Save to DB and broadcast to prayer network
+        const prayerRecord = await storage.createPrayerRequest(from, prayerText, formattedRequest);
+        await storage.markPrayerBroadcast(prayerRecord.id);
+
+        const network = await storage.getPrayerNetworkNumbers();
+        const networkWithoutRequester = network.filter(n => n.phone !== from);
+
+        const sid = process.env.TWILIO_ACCOUNT_SID;
+        const auth = process.env.TWILIO_AUTH_TOKEN;
+        const fromNum = process.env.TWILIO_PHONE_NUMBER;
+
+        if (sid && auth && fromNum && networkWithoutRequester.length > 0) {
+          const broadcastMsg = `Shepherd's Path Prayer Chain\n\n${formattedRequest}\n\nReply AMEN-${prayerRecord.id} to pray with them.`;
+          const twilioClient = twilio(sid, auth);
+          for (const member of networkWithoutRequester) {
+            twilioClient.messages.create({ body: broadcastMsg, from: fromNum, to: member.phone }).catch(() => {});
+          }
+        }
+
+        const partnerCount = networkWithoutRequester.length;
+        const confirmMsg = partnerCount > 0
+          ? `Your prayer has been shared with ${partnerCount} prayer ${partnerCount === 1 ? "partner" : "partners"}. You'll hear back as they pray with you. God hears every word. \uD83D\uDE4F`
+          : `Your prayer has been received. Text JOIN PRAYER to connect with others who will pray with you.`;
+
+        // Update daily count
+        const newCount = prevCount + 1;
+        await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { dailyCount: newCount, dailyCountDate: today });
+
+        res.type("text/xml").send(smsXml(confirmMsg));
+      } catch (err) {
+        console.error("[sms] PRAY FOR error:", err);
+        res.type("text/xml").send(smsXml("Your prayer request was received. God hears you."));
       }
       return;
     }

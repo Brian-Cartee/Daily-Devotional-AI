@@ -134,8 +134,29 @@ export const smsConversations = pgTable("sms_conversations", {
   dailyCountDate: text("daily_count_date").default("").notNull(),
   optedOut: boolean("opted_out").default(false).notNull(),
   enrolledForDaily: boolean("enrolled_for_daily").default(true).notNull(),
+  joinedPrayerNetwork: boolean("joined_prayer_network").default(false).notNull(),
   lastMessageAt: timestamp("last_message_at").default(sql`now()`).notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
 export type SmsConversation = typeof smsConversations.$inferSelect;
+
+export const prayerRequests = pgTable("prayer_requests", {
+  id: serial("id").primaryKey(),
+  requesterPhone: text("requester_phone").notNull(),
+  originalRequest: text("original_request").notNull(),
+  formattedRequest: text("formatted_request").notNull(),
+  amenCount: integer("amen_count").default(0).notNull(),
+  broadcastAt: timestamp("broadcast_at"),
+  followUpSentAt: timestamp("follow_up_sent_at"),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type PrayerRequest = typeof prayerRequests.$inferSelect;
+
+export const prayerAmens = pgTable("prayer_amens", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  phone: text("phone").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});

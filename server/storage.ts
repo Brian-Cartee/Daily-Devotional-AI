@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest } from "@shared/schema";
+import { eq, and, desc, isNull, isNotNull, lt, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
@@ -24,8 +24,15 @@ export interface IStorage {
   deletePushSubscription(sessionId: string): Promise<void>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
   getSmsConversation(phone: string): Promise<SmsConversation | undefined>;
-  upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean, opts?: { dailyCount?: number; dailyCountDate?: string; optedOut?: boolean; enrolledForDaily?: boolean }): Promise<SmsConversation>;
+  upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean, opts?: { dailyCount?: number; dailyCountDate?: string; optedOut?: boolean; enrolledForDaily?: boolean; joinedPrayerNetwork?: boolean }): Promise<SmsConversation>;
   getSmsOptedInNumbers(): Promise<SmsConversation[]>;
+  getPrayerNetworkNumbers(): Promise<SmsConversation[]>;
+  createPrayerRequest(phone: string, originalRequest: string, formattedRequest: string): Promise<PrayerRequest>;
+  getPrayerRequest(id: number): Promise<PrayerRequest | undefined>;
+  addAmen(requestId: number, phone: string): Promise<number>;
+  markPrayerBroadcast(requestId: number): Promise<void>;
+  getPrayerRequestsForFollowUp(): Promise<PrayerRequest[]>;
+  markFollowUpSent(requestId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -183,12 +190,13 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
-  async upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean, opts?: { dailyCount?: number; dailyCountDate?: string; optedOut?: boolean; enrolledForDaily?: boolean }): Promise<SmsConversation> {
+  async upsertSmsConversation(phone: string, messages: SmsMessage[], exchangeCount: number, ctaSent: boolean, opts?: { dailyCount?: number; dailyCountDate?: string; optedOut?: boolean; enrolledForDaily?: boolean; joinedPrayerNetwork?: boolean }): Promise<SmsConversation> {
     const extraFields = {
       ...(opts?.dailyCount !== undefined && { dailyCount: opts.dailyCount }),
       ...(opts?.dailyCountDate !== undefined && { dailyCountDate: opts.dailyCountDate }),
       ...(opts?.optedOut !== undefined && { optedOut: opts.optedOut }),
       ...(opts?.enrolledForDaily !== undefined && { enrolledForDaily: opts.enrolledForDaily }),
+      ...(opts?.joinedPrayerNetwork !== undefined && { joinedPrayerNetwork: opts.joinedPrayerNetwork }),
     };
     const [row] = await db
       .insert(smsConversations)
@@ -202,10 +210,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSmsOptedInNumbers(): Promise<SmsConversation[]> {
-    const { and, eq: eq2 } = await import("drizzle-orm");
     return db.select().from(smsConversations).where(
-      and(eq2(smsConversations.optedOut, false), eq2(smsConversations.enrolledForDaily, true))
+      and(eq(smsConversations.optedOut, false), eq(smsConversations.enrolledForDaily, true))
     );
+  }
+
+  async getPrayerNetworkNumbers(): Promise<SmsConversation[]> {
+    return db.select().from(smsConversations).where(
+      and(eq(smsConversations.optedOut, false), eq(smsConversations.joinedPrayerNetwork, true))
+    );
+  }
+
+  async createPrayerRequest(phone: string, originalRequest: string, formattedRequest: string): Promise<PrayerRequest> {
+    const [row] = await db.insert(prayerRequests).values({ requesterPhone: phone, originalRequest, formattedRequest }).returning();
+    return row;
+  }
+
+  async getPrayerRequest(id: number): Promise<PrayerRequest | undefined> {
+    const [row] = await db.select().from(prayerRequests).where(eq(prayerRequests.id, id));
+    return row;
+  }
+
+  async addAmen(requestId: number, phone: string): Promise<number> {
+    const existing = await db.select().from(prayerAmens).where(
+      and(eq(prayerAmens.requestId, requestId), eq(prayerAmens.phone, phone))
+    );
+    if (existing.length > 0) {
+      const [pr] = await db.select().from(prayerRequests).where(eq(prayerRequests.id, requestId));
+      return pr?.amenCount ?? 0;
+    }
+    await db.insert(prayerAmens).values({ requestId, phone });
+    const [updated] = await db
+      .update(prayerRequests)
+      .set({ amenCount: sqlExpr`${prayerRequests.amenCount} + 1` })
+      .where(eq(prayerRequests.id, requestId))
+      .returning();
+    return updated?.amenCount ?? 1;
+  }
+
+  async markPrayerBroadcast(requestId: number): Promise<void> {
+    await db.update(prayerRequests).set({ broadcastAt: new Date() }).where(eq(prayerRequests.id, requestId));
+  }
+
+  async getPrayerRequestsForFollowUp(): Promise<PrayerRequest[]> {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return db.select().from(prayerRequests).where(
+      and(isNotNull(prayerRequests.broadcastAt), isNull(prayerRequests.followUpSentAt), lt(prayerRequests.broadcastAt, cutoff))
+    );
+  }
+
+  async markFollowUpSent(requestId: number): Promise<void> {
+    await db.update(prayerRequests).set({ followUpSentAt: new Date() }).where(eq(prayerRequests.id, requestId));
   }
 }
 
