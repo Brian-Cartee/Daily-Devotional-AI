@@ -97,7 +97,7 @@ const LENT_PATH: GuidedChapter[] = [
     title: "I Am the Resurrection",
     reference: "John 11:17–44",
     apiRef: "john 11",
-    summary: "When Lazarus dies, Jesus weeps with his sisters. Then He calls Lazarus out of the tomb — four days dead — as a sign of the resurrection He will himself accomplish.",
+    summary: "When Lazarus dies, Jesus weeps with his sisters. Then He calls Lazarus out of the tomb — four days dead — as a sign of the resurrection He will Himself accomplish.",
     whyItMatters: "Jesus doesn't comfort Mary and Martha with theology — He weeps. Then He acts. This passage shows that resurrection power is paired with genuine compassion.",
   },
   {
@@ -210,7 +210,7 @@ const PSALMS_PATH: GuidedChapter[] = [
     title: "The Lord Is My Light",
     reference: "Psalm 27",
     apiRef: "psalm 27",
-    summary: "David declares that with God as his light and salvation, there is nothing to fear — not enemies, not war, not abandonment. His one desire: to dwell in the house of the Lord all the days of his life.",
+    summary: "David declares that with God as his light and salvation, there is nothing to fear — not enemies, not war, not abandonment. His one desire was to dwell in the house of the Lord all the days of his life.",
     whyItMatters: "Psalm 27 is for seasons when everything feels threatening. The answer isn't courage summoned from within — it's confidence grounded in who God is. Seek His face.",
   },
   {
@@ -353,7 +353,7 @@ const JESUS_PATH: GuidedChapter[] = [
     title: "The Good Shepherd",
     reference: "John 10:1–21",
     apiRef: "john 10",
-    summary: "Jesus declares: 'I am the good shepherd.' The good shepherd knows his sheep by name, leads them out, and lays down his life for them. He has come so that they may have life — and have it to the full.",
+    summary: "Jesus declares: 'I am the good shepherd.' The good shepherd knows His sheep by name, leads them out, and lays down His life for them. He has come so that they may have life — and have it to the full.",
     whyItMatters: "The image of the shepherd was Israel's way of describing God Himself. Jesus applies it to Himself. He doesn't merely manage the flock — He dies for it. This is the kind of leader He is.",
   },
   {

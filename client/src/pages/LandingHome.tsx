@@ -232,7 +232,7 @@ export default function LandingHome() {
               </div>
               <div className="flex justify-start">
                 <div className="bg-white/90 text-amber-900 text-[11px] rounded-2xl rounded-bl-sm px-3 py-1.5 max-w-[88%] leading-snug shadow-sm border border-amber-100">
-                  "Cast all your anxiety on him because he cares for you." — 1 Peter 5:7. You don't have to carry tomorrow alone. What's weighing on you most?
+                  "Cast all your anxiety on Him because He cares for you." — 1 Peter 5:7. You don't have to carry tomorrow alone. What's weighing on you most?
                 </div>
               </div>
             </div>

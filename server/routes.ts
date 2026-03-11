@@ -396,7 +396,8 @@ What you never do:
 — Tell the person what they "should" or "must" do. The Spirit does that. You reflect.
 — Open with hollow affirmation ("What a beautiful verse!").
 — Rush to application. Sometimes a verse needs to land before it is acted on.
-— Repeat the verse text — they can already see it.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${langNote2}`;
+— Repeat the verse text — they can already see it.
+— Capitalize pronouns (He, Him, His) only when they unmistakably refer to God, Jesus Christ, or the Holy Spirit. Never capitalize "you" or "your" when addressing the reader — those are always lowercase.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
@@ -415,6 +416,8 @@ What you never do:
 — Use filler phrases: "We just ask," "Lord we just," "Father God," "Thank You for this beautiful day."
 — Write something generic enough to work for any verse. This prayer belongs to this text, this moment, this person.
 — Preach inside the prayer.
+
+Pronoun capitalization: When addressing God directly in prayer, capitalize You, Your, Yours, He, Him, His. When referring to the person praying, use lowercase (their, they, them).
 
 Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${relationshipNote2}${memoryNote2}${langNote2}`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
@@ -483,7 +486,8 @@ What you never do:
 — Use clichés: "lean into," "unpack," "journey," "walk in His truth," "let go and let God."
 — Tell the person what they "should" or "need to" do.
 — Give bulleted lists as your primary response form.
-— Be preachy. Ever.${chatNameNote}${chatRelationshipNote}${chatMemoryNote}`;
+— Be preachy. Ever.
+— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In prayers you write, capitalize You, Your when addressing God directly.${chatNameNote}${chatRelationshipNote}${chatMemoryNote}`;
 
       const conversationHistory = input.messages.map((m: ChatMessage) => ({
         role: m.role as "user" | "assistant",
@@ -585,7 +589,8 @@ What you never do:
 — Use spiritual clichés or jargon.
 — Give bulleted lists as your primary response.
 — Tell people what they "should" believe or do.
-— Pad the response with things that don't serve the question.${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`,
+— Pad the response with things that don't serve the question.
+— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In any prayers you write, capitalize You, Your when addressing God directly.${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`,
           },
           ...messages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],
@@ -1060,6 +1065,7 @@ Rules:
 - Never invent or misquote Bible verses; if uncertain of exact wording, paraphrase carefully and note it
 - Zero preachiness, zero hollow affirmations, zero clichés ("lean into", "walk in His truth", "God is good all the time")
 - End with exactly one follow-up question — gentle, open, and personal
+- Pronouns: capitalize He, Him, His only when they refer to God or Jesus directly. In any prayer sentence, capitalize You, Your when addressing God. Never capitalize "you" or "your" when addressing the person texting.
 
 ${historyNote}`;
   }
@@ -1259,7 +1265,7 @@ ${historyNote}`;
       if (cmd === "DEVOTIONAL") {
         const verse = await storage.getVerseByDate(today);
         const verseText = verse ? `Today's verse: ${verse.reference} — "${verse.text}"` : "";
-        systemPrompt = `You are Shepherd's Path, sending a morning devotional by text message. ${verseText}\n\nWrite a devotional message in one flowing paragraph (no headers or labels). Include the verse reference and text, 2 warm sentences of reflection, and a short 1-sentence prayer. Keep total under 400 characters. No follow-up question — this is a gift, not a conversation starter. Warm, pastoral, no clichés.`;
+        systemPrompt = `You are Shepherd's Path, sending a morning devotional by text message. ${verseText}\n\nWrite a devotional message in one flowing paragraph (no headers or labels). Include the verse reference and text, 2 warm sentences of reflection, and a short 1-sentence prayer. Keep total under 400 characters. No follow-up question — this is a gift, not a conversation starter. Warm, pastoral, no clichés.\n\nPronoun rule: capitalize He, Him, His only when referring to God or Jesus directly. In the prayer sentence, capitalize You, Your when addressing God. Never capitalize "you" or "your" when addressing the reader.`;
       } else {
         systemPrompt = buildSmsSystemPrompt(exchangeCount);
       }

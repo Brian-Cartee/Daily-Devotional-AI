@@ -48,7 +48,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Genesis 22",
     apiRef: "genesis 22",
     summary: "God asks Abraham to sacrifice his only son Isaac. Abraham obeys, and at the last moment God provides a ram as a substitute. It is the most agonizing — and most hope-filled — story in Genesis.",
-    whyItMatters: "This story foreshadows the cross with striking precision: a beloved son, a sacrificial substitute, and a God who provides what he requires. It has echoed through Christian theology ever since."
+    whyItMatters: "This story foreshadows the cross with striking precision: a beloved son, a sacrificial substitute, and a God who provides what He requires. It has echoed through Christian theology ever since."
   },
   {
     id: "exodus",
@@ -57,8 +57,8 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "The Exodus",
     reference: "Exodus 14",
     apiRef: "exodus 14",
-    summary: "Moses leads the Israelites out of slavery in Egypt. Cornered at the Red Sea with Pharaoh's army approaching, God parts the waters and brings his people safely through.",
-    whyItMatters: "The Exodus is the defining rescue story of the Old Testament. It shows that God hears the cries of the oppressed, acts with power, and brings his people to freedom."
+    summary: "Moses leads the Israelites out of slavery in Egypt. Cornered at the Red Sea with Pharaoh's army approaching, God parts the waters and brings His people safely through.",
+    whyItMatters: "The Exodus is the defining rescue story of the Old Testament. It shows that God hears the cries of the oppressed, acts with power, and brings His people to freedom."
   },
   {
     id: "commandments",
@@ -68,7 +68,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Exodus 20",
     apiRef: "exodus 20",
     summary: "At Mount Sinai, God gives Israel the Ten Commandments — instructions for how a redeemed people should live: loving God above all else, and treating one another with justice and care.",
-    whyItMatters: "The Law isn't a ticket to earn God's favor — he already rescued Israel before giving it. It shows what a flourishing life looks like and how deeply our hearts fall short of it, pointing us to our need for grace."
+    whyItMatters: "The Law isn't a ticket to earn God's favor — He already rescued Israel before giving it. It shows what a flourishing life looks like and how deeply our hearts fall short of it, pointing us to our need for grace."
   },
   {
     id: "joshua",
@@ -117,7 +117,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "Trust in the Lord",
     reference: "Proverbs 3",
     apiRef: "proverbs 3",
-    summary: "Solomon teaches the path to a wise life — trusting God with your whole heart, honoring him, and not leaning on your own understanding. Wisdom is portrayed as more valuable than silver or gold.",
+    summary: "Solomon teaches the path to a wise life — trusting God with your whole heart, honoring Him, and not leaning on your own understanding. Wisdom is portrayed as more valuable than silver or gold.",
     whyItMatters: "Wisdom literature shows that faith isn't just about belief — it shapes how we live, work, speak, and treat others. This chapter distills timeless principles for a life well-lived."
   },
   {
@@ -138,7 +138,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Jeremiah 31",
     apiRef: "jeremiah 31",
     summary: "God speaks to exiled Israel with stunning tenderness: the days are coming when I will make a new covenant — not written on stone, but on human hearts. I will forgive their wickedness and remember their sin no more.",
-    whyItMatters: "Written during Israel's darkest hour, this passage promises that the problem between God and humanity will be solved from the inside out. Jesus quotes this passage at the Last Supper when he holds up the cup."
+    whyItMatters: "Written during Israel's darkest hour, this passage promises that the problem between God and humanity will be solved from the inside out. Jesus quotes this passage at the Last Supper when He holds up the cup."
   },
   {
     id: "john1",
@@ -148,7 +148,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "John 1",
     apiRef: "john 1",
     summary: "John opens his Gospel in the same way Genesis opens the Bible: 'In the beginning.' He declares that Jesus is the eternal Word of God who created all things and stepped into human history.",
-    whyItMatters: "John's prologue is the theological foundation for understanding who Jesus is — not merely a good teacher, but God himself entering the human story to bring light into darkness."
+    whyItMatters: "John's prologue is the theological foundation for understanding who Jesus is — not merely a good teacher, but God Himself entering the human story to bring light into darkness."
   },
   {
     id: "luke4",
@@ -158,7 +158,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Luke 4",
     apiRef: "luke 4",
     summary: "Jesus returns from the wilderness and enters the synagogue in Nazareth. He reads from Isaiah 61 — 'The Spirit of the Lord is on me, to proclaim good news to the poor' — then says, 'Today this scripture is fulfilled in your hearing.'",
-    whyItMatters: "This is Jesus's mission statement. He comes not for the powerful but for the poor, the prisoner, the broken. Understanding his purpose changes how we see everything else he does."
+    whyItMatters: "This is Jesus's mission statement. He comes not for the powerful but for the poor, the prisoner, the broken. Understanding His purpose changes how we see everything else He does."
   },
   {
     id: "john3",
@@ -168,7 +168,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "John 3",
     apiRef: "john 3",
     summary: "Jesus tells Nicodemus that to see the Kingdom of God, a person must be born again. The chapter contains the most quoted verse in the Bible: 'For God so loved the world...'",
-    whyItMatters: "This conversation answers how a person enters a relationship with God. It reveals the heart of the gospel — that God's motive is love, and his offer is eternal life through faith."
+    whyItMatters: "This conversation answers how a person enters a relationship with God. It reveals the heart of the gospel — that God's motive is love, and His offer is eternal life through faith."
   },
   {
     id: "matthew5",
@@ -177,7 +177,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "The Sermon on the Mount",
     reference: "Matthew 5",
     apiRef: "matthew 5",
-    summary: "Jesus delivers his most famous teaching to the crowds. He redefines what it means to be blessed, talks about salt and light, and calls his followers to a higher standard of love and integrity.",
+    summary: "Jesus delivers His most famous teaching to the crowds. He redefines what it means to be blessed, talks about salt and light, and calls His followers to a higher standard of love and integrity.",
     whyItMatters: "The Sermon on the Mount is the clearest picture of what life in God's Kingdom looks like. It challenges comfortable religion and calls people to a transformed inner life."
   },
   {
@@ -187,8 +187,8 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "The Good Shepherd",
     reference: "John 10",
     apiRef: "john 10",
-    summary: "Jesus declares 'I am the good shepherd' — the one who knows his sheep by name, leads them, and lays down his life for them. He contrasts himself with hired hands who abandon the flock when danger comes.",
-    whyItMatters: "Echoing Psalm 23, this passage reveals the heart of Jesus: not a distant ruler but a shepherd who goes out searching, who knows each person individually, and who gives his life rather than losing one."
+    summary: "Jesus declares 'I am the good shepherd' — the one who knows His sheep by name, leads them, and lays down His life for them. He contrasts Himself with hired hands who abandon the flock when danger comes.",
+    whyItMatters: "Echoing Psalm 23, this passage reveals the heart of Jesus: not a distant ruler but a shepherd who goes out searching, who knows each person individually, and who gives His life rather than losing one."
   },
   {
     id: "luke15",
@@ -198,7 +198,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Luke 15",
     apiRef: "luke 15",
     summary: "Jesus tells three parables about lost things — a lost sheep, a lost coin, and a lost son. A young man squanders his inheritance but comes home to a father who runs to meet him.",
-    whyItMatters: "This is the most powerful story of grace in the Bible. The running father is a picture of how God responds to those who return to him — not with judgment, but with overwhelming love."
+    whyItMatters: "This is the most powerful story of grace in the Bible. The running father is a picture of how God responds to those who return to Him — not with judgment, but with overwhelming love."
   },
   {
     id: "john13",
@@ -207,8 +207,8 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "Love One Another",
     reference: "John 13",
     apiRef: "john 13",
-    summary: "At the Last Supper, Jesus kneels down and washes his disciples' feet — the task of the lowest servant. Then he gives a new command: love one another as I have loved you.",
-    whyItMatters: "The night before his death, Jesus defines greatness as service. This single act and command reoriented the entire Christian community around a love that goes to the floor — and to the cross."
+    summary: "At the Last Supper, Jesus kneels down and washes His disciples' feet — the task of the lowest servant. Then He gives a new command: love one another as I have loved you.",
+    whyItMatters: "The night before His death, Jesus defines greatness as service. This single act and command reoriented the entire Christian community around a love that goes to the floor — and to the cross."
   },
   {
     id: "john11",
@@ -217,8 +217,8 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "I Am the Resurrection",
     reference: "John 11",
     apiRef: "john 11",
-    summary: "Jesus raises his friend Lazarus from the dead after four days in the tomb. He declares 'I am the resurrection and the life' — making his most stunning claim before the crucifixion.",
-    whyItMatters: "This miracle sets the stage for everything that follows. Jesus demonstrates his power over death and foreshadows his own resurrection — the event that changes everything."
+    summary: "Jesus raises His friend Lazarus from the dead after four days in the tomb. He declares 'I am the resurrection and the life' — making His most stunning claim before the crucifixion.",
+    whyItMatters: "This miracle sets the stage for everything that follows. Jesus demonstrates His power over death and foreshadows His own resurrection — the event that changes everything."
   },
   {
     id: "john19-20",
@@ -227,7 +227,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "The Crucifixion & Resurrection",
     reference: "John 19–20",
     apiRef: "john 19",
-    summary: "Jesus is crucified and buried, and on the third day the tomb is empty. Mary Magdalene sees him first, and he appears to the disciples, showing them his hands and side.",
+    summary: "Jesus is crucified and buried, and on the third day the tomb is empty. Mary Magdalene sees Him first, and He appears to the disciples, showing them His hands and side.",
     whyItMatters: "The death and resurrection of Jesus is the central event of human history in Christian faith. Without the cross, there is no forgiveness. Without the empty tomb, there is no hope."
   },
   {
@@ -238,7 +238,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Acts 2",
     apiRef: "acts 2",
     summary: "Fifty days after the resurrection, the Holy Spirit comes on the disciples like fire. Peter preaches and three thousand people are baptized. The early church is born.",
-    whyItMatters: "Pentecost marks the birthday of the Christian church. It shows that the Spirit isn't just for special people — he is poured out on all who believe, empowering ordinary people for extraordinary things."
+    whyItMatters: "Pentecost marks the birthday of the Christian church. It shows that the Spirit isn't just for special people — He is poured out on all who believe, empowering ordinary people for extraordinary things."
   },
   {
     id: "acts9",
@@ -248,7 +248,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     reference: "Acts 9",
     apiRef: "acts 9",
     summary: "Saul of Tarsus — Christianity's most dangerous persecutor — is suddenly blinded by a light on the road to Damascus. He hears the voice of Jesus, and his life is turned completely upside down.",
-    whyItMatters: "Paul's conversion is the ultimate story of grace reaching the most unlikely person. If God could redeem the man who was hunting Christians, no one is beyond his reach."
+    whyItMatters: "Paul's conversion is the ultimate story of grace reaching the most unlikely person. If God could redeem the man who was hunting Christians, no one is beyond His reach."
   },
   {
     id: "romans8",
@@ -307,7 +307,7 @@ export const GUIDED_PATH: GuidedChapter[] = [
     title: "All Things New",
     reference: "Revelation 21",
     apiRef: "revelation 21",
-    summary: "John sees a vision of a new heaven and a new earth. God makes his home among humanity, wiping every tear from their eyes. There is no more death, mourning, crying, or pain.",
+    summary: "John sees a vision of a new heaven and a new earth. God makes His home among humanity, wiping every tear from their eyes. There is no more death, mourning, crying, or pain.",
     whyItMatters: "The Bible ends where it began — with God and humanity together, with everything made right. This final chapter gives the Christian story its ultimate destination and deepest hope."
   }
 ];
