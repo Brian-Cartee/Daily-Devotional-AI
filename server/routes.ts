@@ -706,6 +706,17 @@ What you never do:
 
   // ── Streak Routes ───────────────────────────────────────────────────────────
 
+  app.get("/api/streak", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const result = await storage.getStreak(sessionId);
+      res.json(result ?? { currentStreak: 0, longestStreak: 0, visitDates: [] });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to get streak" });
+    }
+  });
+
   app.post("/api/streak", async (req, res) => {
     const { sessionId } = req.body;
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });

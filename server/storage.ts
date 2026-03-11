@@ -13,7 +13,8 @@ export interface IStorage {
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
-  recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean }>;
+  recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean; visitDates: string[] }>;
+  getStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; visitDates: string[] } | null>;
   getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined>;
   getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined>;
   upsertProSubscriber(data: { email: string; stripeCustomerId: string; stripeSubscriptionId: string; plan: string; status: string }): Promise<ProSubscriber>;
@@ -91,19 +92,29 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
-  async recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean }> {
+  private _addVisitDate(dates: string[], today: string): string[] {
+    if (dates.includes(today)) return dates;
+    const updated = [...dates, today];
+    const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().split("T")[0];
+    return updated.filter(d => d >= cutoff).slice(-14);
+  }
+
+  async recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean; visitDates: string[] }> {
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
     const [existing] = await db.select().from(streaks).where(eq(streaks.sessionId, sessionId));
 
     if (!existing) {
-      await db.insert(streaks).values({ sessionId, currentStreak: 1, longestStreak: 1, lastVisitDate: today });
-      return { currentStreak: 1, longestStreak: 1, isNewDay: true };
+      const visitDates = [today];
+      await db.insert(streaks).values({ sessionId, currentStreak: 1, longestStreak: 1, lastVisitDate: today, visitDates: JSON.stringify(visitDates) });
+      return { currentStreak: 1, longestStreak: 1, isNewDay: true, visitDates };
     }
 
+    const visitDates = this._addVisitDate(JSON.parse(existing.visitDates || "[]"), today);
+
     if (existing.lastVisitDate === today) {
-      return { currentStreak: existing.currentStreak, longestStreak: existing.longestStreak, isNewDay: false };
+      return { currentStreak: existing.currentStreak, longestStreak: existing.longestStreak, isNewDay: false, visitDates };
     }
 
     const newStreak = existing.lastVisitDate === yesterday ? existing.currentStreak + 1 : 1;
@@ -113,9 +124,17 @@ export class DatabaseStorage implements IStorage {
       currentStreak: newStreak,
       longestStreak: newLongest,
       lastVisitDate: today,
+      visitDates: JSON.stringify(visitDates),
     }).where(eq(streaks.sessionId, sessionId));
 
-    return { currentStreak: newStreak, longestStreak: newLongest, isNewDay: true };
+    return { currentStreak: newStreak, longestStreak: newLongest, isNewDay: true, visitDates };
+  }
+
+  async getStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; visitDates: string[] } | null> {
+    const [existing] = await db.select().from(streaks).where(eq(streaks.sessionId, sessionId));
+    if (!existing) return null;
+    const visitDates: string[] = (() => { try { return JSON.parse(existing.visitDates || "[]"); } catch { return []; } })();
+    return { currentStreak: existing.currentStreak, longestStreak: existing.longestStreak, visitDates };
   }
 
   async getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined> {

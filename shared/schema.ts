@@ -99,6 +99,7 @@ export const streaks = pgTable("streaks", {
   currentStreak: integer("current_streak").default(1).notNull(),
   longestStreak: integer("longest_streak").default(1).notNull(),
   lastVisitDate: text("last_visit_date").notNull(),
+  visitDates: text("visit_dates").default("[]").notNull(),
 });
 
 export type Streak = typeof streaks.$inferSelect;
