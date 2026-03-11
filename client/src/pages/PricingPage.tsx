@@ -316,7 +316,7 @@ export default function PricingPage() {
             For Churches & Ministries
           </div>
           <h2 className="text-2xl font-extrabold text-foreground tracking-tight mb-2">
-            White-Label Shepherd's Path
+            Ministry Edition
           </h2>
           <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mx-auto">
             Launch a fully branded faith app for your congregation — your name, your logo, your domain. Powered by the same technology, delivered in days.
@@ -386,7 +386,7 @@ export default function PricingPage() {
             We'll walk you through everything — no commitment required. Most churches are up and running within a week.
           </p>
           <a
-            href="mailto:partnerships@shepherdspathai.com?subject=White-Label%20Inquiry"
+            href="mailto:partnerships@shepherdspathai.com?subject=Ministry%20Edition%20Inquiry"
             data-testid="link-whitelabel-contact"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-primary-foreground text-[13px] font-bold hover:opacity-90 transition-opacity"
           >

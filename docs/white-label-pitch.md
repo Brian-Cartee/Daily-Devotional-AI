@@ -1,4 +1,4 @@
-# Shepherd's Path — White-Label Partnership
+# Shepherd's Path — Ministry Edition
 
 ## Your Church. Your Brand. Your Congregation's Daily Walk with God.
 
