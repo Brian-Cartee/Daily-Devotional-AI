@@ -980,6 +980,58 @@ What you never do:
     }
   });
 
+  // ── Voice Webhook (Twilio inbound calls) ─────────────────────────────────
+  // Serves the greeting MP3 generated via OpenAI TTS (cached after first call)
+  let greetingAudioCache: Buffer | null = null;
+
+  app.get("/api/sms/greeting.mp3", async (req, res) => {
+    try {
+      if (!greetingAudioCache) {
+        const greetingText = "You've reached Shepherd's Path — your daily walk with Jesus. " +
+          "To receive scripture, prayer, and spiritual encouragement right now, just text this number anything on your heart. " +
+          "You can also visit Shepherd Path AI dot com for daily devotionals, guided Bible journeys, and more. " +
+          "May God bless you today.";
+
+        const mp3 = await openai.audio.speech.create({
+          model: "tts-1",
+          voice: "onyx",
+          input: greetingText,
+        });
+        greetingAudioCache = Buffer.from(await mp3.arrayBuffer());
+      }
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=86400");
+      res.send(greetingAudioCache);
+    } catch (err) {
+      console.error("[Voice greeting error]", err);
+      res.status(500).send("Error generating greeting");
+    }
+  });
+
+  app.post("/api/sms/voice", (req, res) => {
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (authToken) {
+      const twilioSig = req.headers["x-twilio-signature"] as string | undefined;
+      const fullUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
+      const valid = twilio.validateRequest(authToken, twilioSig ?? "", fullUrl, req.body);
+      if (!valid) {
+        res.status(403).send("Forbidden");
+        return;
+      }
+    }
+
+    const host = req.headers["x-forwarded-host"] ?? req.hostname;
+    const protocol = req.headers["x-forwarded-proto"] ?? req.protocol;
+    const greetingUrl = `${protocol}://${host}/api/sms/greeting.mp3`;
+
+    res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Play>${greetingUrl}</Play>
+  <Pause length="1"/>
+  <Hangup/>
+</Response>`);
+  });
+
   // ── SMS Webhook (Twilio inbound) ──────────────────────────────────────────
   const SMS_CRISIS_RESPONSE = "You matter, and what you're sharing is serious. Please reach out right now — call or text 988 (Suicide & Crisis Lifeline, 24/7), or call 911 if you're in immediate danger. You are not alone.";
 
