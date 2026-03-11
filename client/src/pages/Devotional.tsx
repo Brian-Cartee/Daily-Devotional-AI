@@ -393,14 +393,14 @@ export default function Devotional() {
                             </span>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                               visited
-                                ? "bg-amber-500/90 shadow-sm"
+                                ? "bg-primary shadow-sm"
                                 : isToday
                                 ? "border border-primary/40 bg-primary/5"
                                 : isFuture
                                 ? "border border-muted-foreground/10 bg-muted/20"
                                 : "border border-muted-foreground/15 bg-muted/15"
                             }`}>
-                              {visited && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                              {visited && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
                               {!visited && isToday && <div className="w-1 h-1 rounded-full bg-primary/60" />}
                             </div>
                           </div>
