@@ -3,7 +3,7 @@ import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.p
 import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Share2, Check } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Share2, Check, MessageCircle } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -200,6 +200,55 @@ export default function LandingHome() {
               </div>
             </Link>
           ))}
+        </motion.div>
+
+        {/* SMS entry section */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-5 rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-700/40"
+          style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
+          data-testid="sms-entry-card"
+        >
+          <div className="px-5 pt-5 pb-5">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-400/20 flex items-center justify-center shrink-0 mt-0.5">
+                <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-amber-900 leading-tight">Try it right now — no app needed</p>
+                <p className="text-[11px] text-amber-700/80 mt-0.5">Text anything on your heart. Get scripture, reflection, and prayer back.</p>
+              </div>
+            </div>
+
+            {/* Mini conversation preview */}
+            <div className="space-y-2 mb-4 px-1">
+              <div className="flex justify-end">
+                <div className="bg-amber-500 text-white text-[12px] rounded-2xl rounded-br-sm px-3 py-1.5 max-w-[80%] leading-snug shadow-sm">
+                  I'm anxious about tomorrow
+                </div>
+              </div>
+              <div className="flex justify-start">
+                <div className="bg-white/90 text-amber-900 text-[11px] rounded-2xl rounded-bl-sm px-3 py-1.5 max-w-[88%] leading-snug shadow-sm border border-amber-100">
+                  "Cast all your anxiety on him because he cares for you." — 1 Peter 5:7. You don't have to carry tomorrow alone. What's weighing on you most?
+                </div>
+              </div>
+            </div>
+
+            {/* Phone number + CTA */}
+            <a
+              href="sms:+18339629341&body=Pray"
+              data-testid="btn-sms-text-us"
+              className="flex items-center justify-between w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl px-4 py-3 transition-colors"
+            >
+              <div>
+                <p className="text-[13px] font-bold leading-tight">Text PRAY to get started</p>
+                <p className="text-[11px] opacity-80 mt-0.5">+1 (833) 962-9341 · Free · No account needed</p>
+              </div>
+              <ArrowRight className="w-4 h-4 shrink-0 opacity-80" />
+            </a>
+          </div>
         </motion.div>
 
         {/* Scripture commitment card */}
