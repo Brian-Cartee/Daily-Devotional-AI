@@ -13,6 +13,7 @@ import QuickStudyPage from "@/pages/QuickStudyPage";
 import ProSuccess from "@/pages/ProSuccess";
 import RefundPage from "@/pages/RefundPage";
 import PricingPage from "@/pages/PricingPage";
+import PrayPage from "@/pages/PrayPage";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/pro-success" component={ProSuccess} />
       <Route path="/refund" component={RefundPage} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/pray" component={PrayPage} />
       <Route component={NotFound} />
     </Switch>
   );
