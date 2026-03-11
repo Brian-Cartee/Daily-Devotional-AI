@@ -10,6 +10,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import Stripe from "stripe";
 import webpush from "web-push";
+import twilio from "twilio";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
@@ -1007,7 +1008,19 @@ Rules:
 ${historyNote}`;
   }
 
-  app.post("/api/sms/webhook", async (req, res) => {
+  app.post("/api/sms/webhook", (req, res, next) => {
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (authToken) {
+      const twilioSig = req.headers["x-twilio-signature"] as string | undefined;
+      const fullUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
+      const valid = twilio.validateRequest(authToken, twilioSig ?? "", fullUrl, req.body);
+      if (!valid) {
+        res.status(403).send("Forbidden");
+        return;
+      }
+    }
+    next();
+  }, async (req, res) => {
     const from = (req.body.From as string | undefined)?.trim();
     const body = (req.body.Body as string | undefined)?.trim() ?? "";
 
