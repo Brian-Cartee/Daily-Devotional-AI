@@ -321,10 +321,11 @@ export default function LandingHome() {
           style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
           data-testid="sms-entry-card"
         >
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-500 opacity-70 rounded-l-2xl" />
           <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
           <div className="px-5 pt-5 pb-5">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-400/20 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-200 to-orange-100 shadow-sm shadow-amber-200/60 flex items-center justify-center shrink-0 mt-0.5">
                 <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
               </div>
               <div>
