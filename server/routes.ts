@@ -19,6 +19,14 @@ import { scheduleDailySms } from "./smsScheduler";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
+// In-memory TTS cache — key: "voice::text_hash", value: Buffer of mp3 bytes
+const ttsCache = new Map<string, Buffer>();
+function ttsCacheKey(text: string, voice: string) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) { hash = (Math.imul(31, hash) + text.charCodeAt(i)) | 0; }
+  return `${voice}::${hash}`;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -115,17 +123,28 @@ export async function registerRoutes(
   app.get("/api/tts", async (req, res) => {
     const text = (req.query.text as string)?.trim();
     if (!text) return res.status(400).json({ message: "text required" });
+    const voice = "onyx";
+    const cacheKey = ttsCacheKey(text, voice);
     try {
+      if (ttsCache.has(cacheKey)) {
+        const cached = ttsCache.get(cacheKey)!;
+        res.set("Content-Type", "audio/mpeg");
+        res.set("Cache-Control", "public, max-age=86400");
+        res.set("X-TTS-Cache", "HIT");
+        return res.send(cached);
+      }
       const mp3 = await openaiTTS.audio.speech.create({
         model: "tts-1",
-        voice: "onyx",
+        voice,
         input: text.slice(0, 4000),
         speed: 0.92,
       });
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      ttsCache.set(cacheKey, buffer);
       res.set("Content-Type", "audio/mpeg");
       res.set("Cache-Control", "public, max-age=86400");
-      res.set("Transfer-Encoding", "chunked");
-      Readable.fromWeb(mp3.body as import("stream/web").ReadableStream<Uint8Array>).pipe(res);
+      res.set("X-TTS-Cache", "MISS");
+      res.send(buffer);
     } catch (err: any) {
       console.error("TTS error:", err);
       if (!res.headersSent) res.status(500).json({ message: "TTS failed" });
@@ -137,17 +156,27 @@ export async function registerRoutes(
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const selectedVoice = allowedVoices.includes(voice ?? "") ? (voice as any) : "onyx";
+    const cacheKey = ttsCacheKey(text.trim(), selectedVoice);
     try {
+      if (ttsCache.has(cacheKey)) {
+        const cached = ttsCache.get(cacheKey)!;
+        res.set("Content-Type", "audio/mpeg");
+        res.set("Cache-Control", "public, max-age=86400");
+        res.set("X-TTS-Cache", "HIT");
+        return res.send(cached);
+      }
       const mp3 = await openaiTTS.audio.speech.create({
         model: "tts-1",
         voice: selectedVoice,
         input: text.trim().slice(0, 4096),
         speed: 0.92,
       });
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      ttsCache.set(cacheKey, buffer);
       res.set("Content-Type", "audio/mpeg");
       res.set("Cache-Control", "public, max-age=86400");
-      res.set("Transfer-Encoding", "chunked");
-      Readable.fromWeb(mp3.body as import("stream/web").ReadableStream<Uint8Array>).pipe(res);
+      res.set("X-TTS-Cache", "MISS");
+      res.send(buffer);
     } catch (err: any) {
       console.error("TTS error:", err);
       if (!res.headersSent) res.status(500).json({ message: "TTS failed" });

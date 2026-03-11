@@ -7,19 +7,13 @@ import { getUserVoice } from "@/lib/userName";
 
 const WELCOME_SCRIPT = `Welcome. And we mean that — genuinely, from the bottom of our hearts — welcome.
 
-The fact that you are here right now means something. You chose this. Out of everything you could have done with this moment, you showed up. And we do not take that lightly — not even for a second.
+The fact that you are here right now means something. You chose this. And wherever you are in your faith — whether it feels solid or uncertain — you are in exactly the right place.
 
-Wherever you are in your faith — whether it feels solid and sure, or quiet and uncertain — you are in exactly the right place.
+Shepherd's Path was built for one reason: to help you build a daily, living relationship with Jesus Christ. Not a religion. Not a checklist. A real relationship.
 
-Shepherd's Path was built for one reason: to help you build a daily, living relationship with Jesus Christ. Not a religion. Not a checklist. A relationship — real, honest, and transformative.
+Show up every day. Open the Word. Let it speak. Something begins to shift when you do — and we believe it for you.
 
-And here is what we believe with everything we have: the single most important thing you can do with your time on this earth is draw closer to God every single day. Not when life slows down. Not when you feel ready. Every day. Including the hard ones — especially the hard ones.
-
-This app walks with you through all of it. A daily scripture. A reflection made just for you. A prayer rooted in God's Word. The full Bible with understanding. A journal to capture what He is doing in your story.
-
-And when you show up consistently, something begins to shift. Sin loses its grip. Peace finds its way in. And the person God created you to be starts to come forward. We have seen it. We believe it for you.
-
-We are grateful — truly grateful — that you are here. We are not here to entertain you. We are here to walk with you.
+We are not here to entertain you. We are here to walk with you.
 
 Let us begin.`;
 
@@ -132,7 +126,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             )}
 
             <p className="text-[11px] text-muted-foreground leading-snug">
-              A personal welcome — about 90 seconds.
+              A personal welcome — about 30 seconds.
             </p>
           </div>
 
