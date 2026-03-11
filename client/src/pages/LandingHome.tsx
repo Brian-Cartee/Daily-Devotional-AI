@@ -155,7 +155,7 @@ export default function LandingHome() {
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ right: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
           <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
-        <StreakWidget />
+        <StreakWidget onAddName={() => setShowNamePrompt(true)} />
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Zap, Check, Flame } from "lucide-react";
+import { Zap, Check, Flame, UserRound } from "lucide-react";
 import { Link } from "wouter";
 import { getSessionId } from "@/lib/session";
 import { getUserName } from "@/lib/userName";
@@ -31,7 +31,11 @@ function getTodayIndex(): number {
   return day === 0 ? 6 : day - 1;
 }
 
-export function StreakWidget() {
+interface StreakWidgetProps {
+  onAddName?: () => void;
+}
+
+export function StreakWidget({ onAddName }: StreakWidgetProps) {
   const sessionId = getSessionId();
   const userName = getUserName();
 
@@ -45,9 +49,17 @@ export function StreakWidget() {
   const todayIdx = getTodayIndex();
   const visitSet = new Set(data?.visitDates ?? []);
   const streak = data?.currentStreak ?? 0;
+  const visitedToday = visitSet.has(weekDates[todayIdx]);
 
   const greeting = getTimeGreeting();
   const firstName = userName?.split(" ")[0] ?? null;
+
+  function getSubtitle() {
+    if (streak >= 7) return `${streak} days strong — keep going.`;
+    if (streak > 1) return `${streak} days in a row. Don't break the chain.`;
+    if (streak === 1 && visitedToday) return "Day one — well done for showing up.";
+    return "Your walk starts with one step.";
+  }
 
   return (
     <motion.div
@@ -62,26 +74,37 @@ export function StreakWidget() {
       data-testid="streak-widget"
     >
       <div className="px-5 pt-4 pb-4">
+
         {/* Greeting row */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p
-              className="text-[15px] font-semibold text-foreground leading-tight"
-              data-testid="streak-greeting"
-            >
-              {greeting}{firstName ? `, ${firstName}` : ""}
-            </p>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p
+                className="text-[15px] font-semibold text-foreground leading-tight"
+                data-testid="streak-greeting"
+              >
+                {greeting}{firstName ? `, ${firstName}` : ""}
+              </p>
+              {!firstName && onAddName && (
+                <button
+                  onClick={onAddName}
+                  className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+                  data-testid="btn-add-name"
+                >
+                  <UserRound className="w-3 h-3" />
+                  Add your name
+                </button>
+              )}
+            </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {streak > 0
-                ? `You've shown up ${streak} day${streak === 1 ? "" : "s"} in a row.`
-                : "Start your walk today — day one counts."}
+              {getSubtitle()}
             </p>
           </div>
 
           {/* Streak badge */}
           {streak > 0 && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[12px] font-bold"
+              className="ml-3 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[12px] font-bold shrink-0"
               style={{
                 background: streak >= 7
                   ? "linear-gradient(135deg, #f59e0b, #ef4444)"
@@ -110,7 +133,7 @@ export function StreakWidget() {
             return (
               <div key={i} className="flex flex-col items-center gap-1">
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-widest ${isToday ? "text-primary" : "text-muted-foreground/50"}`}
+                  className={`text-[10px] font-bold uppercase tracking-widest ${isToday ? "text-primary" : "text-muted-foreground/40"}`}
                 >
                   {label}
                 </span>
@@ -119,9 +142,9 @@ export function StreakWidget() {
                     visited
                       ? "bg-primary shadow-sm"
                       : isToday
-                      ? "border-2 border-primary/60 bg-primary/5"
+                      ? "border-2 border-primary/50 bg-primary/5"
                       : isFuture
-                      ? "border border-muted-foreground/15 bg-muted/30"
+                      ? "border border-muted-foreground/12 bg-muted/20"
                       : "border border-muted-foreground/20 bg-muted/20"
                   }`}
                   data-testid={`week-day-${i}`}
@@ -129,7 +152,7 @@ export function StreakWidget() {
                   {visited ? (
                     <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
                   ) : isToday ? (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary/70" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                   ) : null}
                 </div>
               </div>
@@ -144,7 +167,7 @@ export function StreakWidget() {
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.85))" }}
             data-testid="streak-cta-devotional"
           >
-            {visitSet.has(weekDates[todayIdx])
+            {visitedToday
               ? "Continue today's devotional →"
               : "Open today's devotional →"}
           </button>

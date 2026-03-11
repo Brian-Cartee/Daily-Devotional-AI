@@ -1088,13 +1088,24 @@ ${historyNote}`;
 
   const SMS_FREE_DAILY_LIMIT = 10;
 
+  app.get("/api/sms/ping", (_req, res) => {
+    res.json({ ok: true, message: "SMS webhook endpoint is reachable", ts: new Date().toISOString() });
+  });
+
   app.post("/api/sms/webhook", (req, res, next) => {
     const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const host = (req.headers["x-forwarded-host"] ?? req.hostname) as string;
+    const protocol = (req.headers["x-forwarded-proto"] ?? req.protocol) as string;
+    const fullUrl = `${protocol}://${host}${req.originalUrl}`;
+    console.log(`[sms] Incoming webhook from=${req.body?.From ?? "unknown"} body="${req.body?.Body ?? ""}" url=${fullUrl}`);
     if (authToken) {
       const twilioSig = req.headers["x-twilio-signature"] as string | undefined;
-      const fullUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
       const valid = twilio.validateRequest(authToken, twilioSig ?? "", fullUrl, req.body);
-      if (!valid) { res.status(403).send("Forbidden"); return; }
+      if (!valid) {
+        console.warn(`[sms] Signature INVALID — reconstructed URL: ${fullUrl} | sig header: ${twilioSig ?? "none"}`);
+        res.status(403).send("Forbidden");
+        return;
+      }
     }
     next();
   }, async (req, res) => {

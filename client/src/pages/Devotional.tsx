@@ -58,7 +58,7 @@ export default function Devotional() {
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
-  const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
+  const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number; visitDates?: string[] } | null>(null);
   const pendingStreakAchievementRef = useRef<Achievement | null>(null);
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [gratitudePrayer, setGratitudePrayer] = useState("");
@@ -345,23 +345,70 @@ export default function Devotional() {
           className="space-y-3"
         >
 
-          {/* Streak indicator */}
+          {/* Streak indicator + weekly tracker */}
           <AnimatePresence>
             {streak && streak.currentStreak >= 1 && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                className="flex items-center justify-center gap-2.5 py-1"
+                className="flex flex-col items-center gap-2 py-1"
                 data-testid="streak-indicator"
               >
-                <Flame className="w-3.5 h-3.5 text-amber-500/80" />
-                <span className="text-[12px] font-medium text-muted-foreground">
-                  Day #{streak.currentStreak} of my Walk
-                </span>
-                {streak.longestStreak > streak.currentStreak && (
-                  <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
-                )}
+                {/* Day count row */}
+                <div className="flex items-center gap-2.5">
+                  <Flame className="w-3.5 h-3.5 text-amber-500/80" />
+                  <span className="text-[12px] font-medium text-muted-foreground">
+                    Day #{streak.currentStreak} of my Walk
+                  </span>
+                  {streak.longestStreak > streak.currentStreak && (
+                    <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
+                  )}
+                </div>
+
+                {/* Weekly dots */}
+                {(() => {
+                  const LABELS = ["M","T","W","T","F","S","S"];
+                  const today = new Date();
+                  const day = today.getDay();
+                  const monday = new Date(today);
+                  monday.setDate(today.getDate() - ((day === 0 ? 7 : day) - 1));
+                  const weekDates = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + i);
+                    return d.toISOString().split("T")[0];
+                  });
+                  const todayIdx = day === 0 ? 6 : day - 1;
+                  const visitSet = new Set(streak.visitDates ?? []);
+                  return (
+                    <div className="flex items-center gap-1.5">
+                      {LABELS.map((label, i) => {
+                        const visited = visitSet.has(weekDates[i]);
+                        const isToday = i === todayIdx;
+                        const isFuture = i > todayIdx;
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-0.5">
+                            <span className={`text-[9px] font-bold uppercase tracking-widest ${isToday ? "text-primary/80" : "text-muted-foreground/30"}`}>
+                              {label}
+                            </span>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                              visited
+                                ? "bg-amber-500/90 shadow-sm"
+                                : isToday
+                                ? "border border-primary/40 bg-primary/5"
+                                : isFuture
+                                ? "border border-muted-foreground/10 bg-muted/20"
+                                : "border border-muted-foreground/15 bg-muted/15"
+                            }`}>
+                              {visited && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                              {!visited && isToday && <div className="w-1 h-1 rounded-full bg-primary/60" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </motion.div>
             )}
           </AnimatePresence>
