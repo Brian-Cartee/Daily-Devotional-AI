@@ -1,6 +1,6 @@
 # Shepherd's Path — Master Reference Document
 
-**As of: March 10, 2026**
+**As of: March 11, 2026**
 *Update the date above each time this document is revised.*
 
 ---
@@ -80,8 +80,18 @@ Six sections accessible from the bottom navigation bar:
 | Read | `/read` | Full Bible reading with AI companion |
 | Study | `/study` | Topic-based Bible study with AI |
 | Journal | `/journal` | Personal spiritual journal entries |
-| *(Landing)* | `/` | Marketing homepage (non-logged-in users) |
+| *(Landing)* | `/` | Marketing homepage |
 | Pricing | `/pricing` | Plan comparison page |
+
+**Bookmark system:** All 5 sections save progress to `localStorage`. NavBar shows amber dots on sections with saved progress. Read/Study/Journey show a "Resume" banner. Journal auto-restores last-viewed tab. Devotional silently saves.
+
+| LocalStorage Key | Section |
+|---|---|
+| `sp_bm_read` | Read Bible |
+| `sp_bm_study` | Quick Study |
+| `sp_bm_journey` | Understand/Journey |
+| `sp_bm_devotional` | Devotional |
+| `sp_bm_journal` | Journal |
 
 ---
 
@@ -99,16 +109,21 @@ Six sections accessible from the bottom navigation bar:
 | `POST /api/ai/chat` | Follow-up conversation anchored to daily verse |
 | `POST /api/chat/passage` | AI companion for Bible reading (Read/Study pages) |
 | `POST /api/tts` | Text-to-speech audio generation |
+| `POST /api/sms/webhook` | Inbound SMS handler (Twilio) |
+| `POST /api/sms/voice` | Inbound call handler — plays voice greeting (Twilio) |
+| `GET /api/sms/greeting.mp3` | OpenAI TTS voice greeting audio (cached) |
 
 ### Voice System
 Users choose their preferred AI voice during onboarding (2-step name → voice preview flow).
 
 | Voice | OpenAI Voice ID | Character |
 |---|---|---|
-| Voice A | `onyx` | Deep & warm |
+| Voice A | `onyx` | Deep & warm (default) |
 | Voice B | `nova` | Gentle & clear |
 
 Voice preference is stored in `localStorage` under key `sp_voice`. No gender framing — users preview and choose by sound.
+
+**SMS & Voice greeting voice:** `onyx` (same as app default, for consistency)
 
 ### AI Character & Guardrails
 The AI is instructed to be a deeply thoughtful spiritual companion — a trusted friend who knows the Bible well and speaks plainly. It is explicitly instructed **never** to:
@@ -117,15 +132,24 @@ The AI is instructed to be a deeply thoughtful spiritual companion — a trusted
 - Tell users what they "should" or "must" do
 - Open with hollow affirmations ("Great question!", "What a beautiful verse!")
 - Be preachy
+- Invent or misquote Bible verses (prefer NKJV, ESV, or Amplified wording in AI-generated text)
 
 ### Crisis Detection
-A built-in crisis detection function (`detectCrisis()`) scans every user message for keywords indicating self-harm or crisis. When triggered, it bypasses the AI model and returns a fixed compassionate response with crisis resources. This cannot be disabled.
+A built-in crisis detection function (`detectCrisis()`) scans every user message for keywords indicating self-harm or crisis. When triggered, it bypasses the AI model and returns a fixed compassionate response with crisis resources (988 Lifeline + 911). This applies to **both** the app and the SMS channel. Cannot be disabled.
+
+### Relationship Tiers (AI voice adapts by usage age)
+| Days in App | Tier |
+|---|---|
+| 1–3 days | New — welcoming, no assumed familiarity |
+| 4–14 days | Building — attentive, learning who they are |
+| 15–30 days | Established — real rapport, genuine warmth |
+| 31+ days | Trusted companion — speaks with earned intimacy |
 
 ---
 
 ## 7. Bible Versions
 
-Only three versions are available in the app:
+Only three versions are available in the app's Bible reader:
 
 | Abbreviation | Full Name |
 |---|---|
@@ -134,6 +158,8 @@ Only three versions are available in the app:
 | ASV | American Standard Version |
 
 These are public-domain translations served via `bible-api.com`. No licensing fees apply.
+
+AI-generated text (reflections, SMS responses) may quote NKJV, ESV, or Amplified since those are generated text, not API-fetched.
 
 ---
 
@@ -159,6 +185,45 @@ These are public-domain translations served via `bible-api.com`. No licensing fe
 - Email includes: today's verse, encouragement, and a deep link into the app
 - Unsubscribe is handled via Resend
 
+### SMS Channel (Twilio)
+- **Phone number:** +1 (833) 962-9341
+- **Provider:** Twilio (Trial account — upgrade to Pay-as-you-go before running ads)
+- **Inbound webhook:** `POST /api/sms/webhook`
+- **Voice greeting webhook:** `POST /api/sms/voice`
+
+#### SMS Commands (texters can send these)
+| Command | Response |
+|---|---|
+| Anything (e.g. "Pray", "I'm anxious") | AI conversation response with scripture + reflection + prayer |
+| `VERSE` | Today's verse, formatted cleanly |
+| `DEVOTIONAL` | AI-generated full morning devotional (verse + reflection + prayer, no follow-up question) |
+| `HELP` | Lists available commands + remaining free messages today |
+| `STOP` / UNSUBSCRIBE | Opts out of all messages |
+| `START` / UNSTOP | Re-opts in and welcomes back |
+
+#### SMS Limits
+- **Free:** 10 AI replies per day per phone number (VERSE and HELP don't count)
+- When limit is hit: directed to ShepherdPathAI.com for Pro upgrade
+- **Pro SMS tier:** Not yet built (Phase 2)
+
+#### Daily Morning Devotional SMS
+- Sent automatically at **8:00 AM Eastern** (13:00 UTC) every day
+- Everyone who has ever texted in is enrolled automatically
+- Sends today's verse + AI-written reflection to all opted-in numbers
+- STOP command removes them; START re-enrolls them
+- Scheduler: `server/smsScheduler.ts`
+
+#### Voice Greeting (when someone calls the number)
+- Plays an OpenAI TTS greeting using the `onyx` voice
+- Message: *"You've reached Shepherd's Path — your daily walk with Jesus. To receive scripture, prayer, and spiritual encouragement right now, just text this number anything on your heart. You can also visit ShepherdPathAI.com for daily devotionals, guided Bible journeys, and more. May God bless you today."*
+- Audio is cached in memory after first generation
+- Gracefully ends the call after playing
+
+#### Conversion Strategy
+- First text: warm AI response, no sales pitch
+- Second exchange: natural CTA appended: *"Daily devotionals & more await you free at ShepherdPathAI.com"*
+- CTA is sent only once per phone number (`ctaSent` flag in DB)
+
 ---
 
 ## 10. Refund Policy
@@ -180,6 +245,11 @@ These are public-domain translations served via `bible-api.com`. No licensing fe
 | `sp_tip_dismissed` | Timestamp of last tip prompt dismissal (90-day cooldown) |
 | `sp_session_id` | Anonymous session identifier for journal memory |
 | `sp_start_date` | Date user first opened the app (for relationship tier calculation) |
+| `sp_bm_read` | Read Bible bookmark (book + chapter) |
+| `sp_bm_study` | Study bookmark (track ID + label) |
+| `sp_bm_journey` | Journey bookmark (journey ID + label) |
+| `sp_bm_devotional` | Devotional bookmark (date + label) |
+| `sp_bm_journal` | Journal bookmark (active tab) |
 
 ---
 
@@ -196,23 +266,17 @@ These are public-domain translations served via `bible-api.com`. No licensing fe
 ### Primary Color
 - **Brand purple:** `#3b1f7a` / HSL `263 56% 46%`
 
-### Relationship Tiers (AI voice adapts by usage age)
-| Days in App | Tier |
-|---|---|
-| 1–3 days | New — welcoming, no assumed familiarity |
-| 4–14 days | Building — attentive, learning who they are |
-| 15–30 days | Established — real rapport, genuine warmth |
-| 31+ days | Trusted companion — speaks with earned intimacy |
-
 ---
 
 ## 13. Monetization Notes (Future)
 
-The following have been discussed but not yet built. Handle via direct email sales for now:
+The following have been discussed but not yet built:
 
+- **SMS Pro tier** — unlimited SMS AI replies, Pro status linked to phone number, SUBSCRIBE command sends Stripe payment link. Family-gifted option (family member pays via web, links parent's phone).
 - **White label for churches** — custom branding, group pricing (contact via support email)
 - **Influencer referral program** — discussed; to be built as formal feature later
 - **Annual price lock guarantee** — users who subscribe annually lock in their rate
+- **`/pray` landing page** — dedicated ad campaign landing page for Meta ads
 
 ---
 
@@ -225,10 +289,24 @@ All secrets are stored as Replit environment variables. Never commit to code.
 | `OPENAI_API_KEY` | AI reflections, prayers, chat, TTS |
 | `STRIPE_SECRET_KEY` | Subscriptions, tips, refunds |
 | `SESSION_SECRET` | Session security |
+| `TWILIO_ACCOUNT_SID` | SMS + Voice (Twilio) |
+| `TWILIO_AUTH_TOKEN` | SMS webhook signature validation |
+| `TWILIO_PHONE_NUMBER` | Outbound SMS sender number (`+18339629341`) |
 | VAPID public/private keys | Web push notifications |
 | Resend API key | Transactional + daily emails |
 | Google Sheet integration | Daily verse management |
 
 ---
 
-*To update this document: edit the content above, update the "As of" date at the top, and export/print to PDF.*
+## 15. Beta Testing Plan
+
+- **Testers:** 2–3 people, 2 weeks, minimal instructions
+- **Key feedback questions:**
+  1. How did the AI responses feel? Warm and human, or robotic?
+  2. Would you pay $5.99/month for this? Why or why not?
+  3. What made you come back a second time?
+- **SMS testers:** Add their numbers as verified contacts in Twilio Trial account (up to 5)
+
+---
+
+*To update this document: edit `SHEPHERDS_PATH_REFERENCE.md` in the project root, update the "As of" date at the top.*

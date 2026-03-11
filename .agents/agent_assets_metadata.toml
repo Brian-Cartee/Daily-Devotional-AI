@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "5eXKSYOD9ozG_qHKJmLBU"
+uri = "file://SHEPHERDS_PATH_REFERENCE.md"
+type = "text"
+title = "Shepherd's Path — Master Reference Document (March 11, 2026)"
