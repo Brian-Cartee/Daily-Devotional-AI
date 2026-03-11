@@ -3,7 +3,7 @@ import logoTransparent from "@assets/S_P_LOGO_TRANS_(64_x_64_px)_1773075432609.p
 import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Share2, Check, MessageCircle } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -116,7 +116,7 @@ export default function LandingHome() {
         >
           {shared
             ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-            : <><Share2 className="w-3.5 h-3.5" /> Share App</>
+            : <><img src="/logo-mark.png" className="w-4 h-4 object-contain" alt="" /> Share App</>
           }
         </button>
 
