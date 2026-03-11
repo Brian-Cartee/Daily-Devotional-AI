@@ -4,27 +4,16 @@ import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, CalendarCheck } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
 import { hasBeenPrompted } from "@/lib/userName";
 import { StreakWidget } from "@/components/StreakWidget";
+import { useQuery } from "@tanstack/react-query";
+import { getSessionId } from "@/lib/session";
 
 const sections = [
-  {
-    href: "/devotional",
-    icon: Sun,
-    pillText: "Daily",
-    title: "Daily Devotional",
-    description: "Today's scripture, an encouragement, and a moment of AI-guided reflection — made for how you actually live.",
-    cta: "Open Today's Verse",
-    testid: "card-devotional",
-    imageBg: "bg-gradient-to-br from-teal-500/10 to-emerald-500/5",
-    border: "border-teal-900/10",
-    iconColor: "text-teal-500",
-    pillClass: "bg-teal-500/10 text-teal-600",
-  },
   {
     href: "/understand",
     icon: Compass,
@@ -52,6 +41,109 @@ const sections = [
     pillClass: "bg-amber-500/10 text-amber-600",
   },
 ];
+
+function formatVisitDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const d = new Date(year, month - 1, day);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const todayStr = today.toISOString().split("T")[0];
+  const yestStr = yesterday.toISOString().split("T")[0];
+  if (dateStr === todayStr) return "Today";
+  if (dateStr === yestStr) return "Yesterday";
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function DevotionalCard() {
+  const sessionId = getSessionId();
+  const { data } = useQuery<{ currentStreak: number; longestStreak: number; visitDates: string[] }>({
+    queryKey: ["/api/streak", sessionId],
+    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const visitDates: string[] = data?.visitDates ?? [];
+  const visitedToday = visitDates.includes(todayStr);
+  const streak = data?.currentStreak ?? 0;
+
+  const sortedDates = [...visitDates].sort((a, b) => b.localeCompare(a));
+  const recentCompleted = sortedDates.filter(d => d !== todayStr).slice(0, 3);
+
+  return (
+    <Link href="/devotional">
+      <div
+        data-testid="card-devotional"
+        className="group relative rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
+      >
+        <img
+          src={logoTransparent}
+          alt=""
+          aria-hidden="true"
+          className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.22] pointer-events-none select-none"
+          style={{ filter: "brightness(0)" }}
+        />
+
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
+            <Sun className="w-5 h-5 text-teal-500" />
+          </div>
+          <div className="flex-1 min-w-0 py-0.5 pr-14">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600">
+                Daily
+              </span>
+              {visitedToday && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
+                  <Check className="w-3 h-3" strokeWidth={3} /> Done today
+                </span>
+              )}
+            </div>
+            <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+              Daily Devotional
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Each day brings a new scripture, a personal reflection, and an AI-guided moment to hear from God — grounded in the actual passage, shaped for your real life. Open it, sit with it, let it speak.
+            </p>
+            <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
+              {visitedToday ? "Continue today's devotional" : "Open today's devotional"}
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </div>
+        </div>
+
+        {recentCompleted.length > 0 && (
+          <div className="border-t border-teal-900/8 pt-3 mt-1">
+            <div className="flex items-center gap-1.5 mb-2">
+              <CalendarCheck className="w-3.5 h-3.5 text-teal-500/70" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Recent completions</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {recentCompleted.map((date) => (
+                <div
+                  key={date}
+                  className="flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-2.5 py-1 rounded-full"
+                  data-testid={`completed-day-${date}`}
+                >
+                  <Check className="w-3 h-3 shrink-0" strokeWidth={3} />
+                  {formatVisitDate(date)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {streak > 1 && (
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-400" />
+            {streak}-day streak · keep going
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
 
 const COMMITMENT_POINTS = [
   "AI reflections are always grounded in the actual Bible passage being studied",
@@ -161,10 +253,12 @@ export default function LandingHome() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+          className="flex flex-col gap-3"
         >
+          <DevotionalCard />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass }) => (
-            <Link key={href} href={href} className={testid === "card-devotional" ? "md:col-span-2" : ""}>
+            <Link key={href} href={href}>
               <div
                 data-testid={testid}
                 className={`group relative rounded-2xl ${imageBg} border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
@@ -204,6 +298,7 @@ export default function LandingHome() {
               </div>
             </Link>
           ))}
+          </div>
         </motion.div>
 
         {/* SMS entry section */}
