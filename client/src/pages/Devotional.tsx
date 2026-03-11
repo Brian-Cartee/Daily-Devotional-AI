@@ -392,15 +392,18 @@ export default function Devotional() {
                               {label}
                             </span>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                              visited
+                              visited && isToday
                                 ? "bg-primary shadow-sm"
+                                : visited
+                                ? "border border-primary/25 bg-transparent"
                                 : isToday
                                 ? "border border-primary/40 bg-primary/5"
                                 : isFuture
                                 ? "border border-muted-foreground/10 bg-muted/20"
                                 : "border border-muted-foreground/15 bg-muted/15"
                             }`}>
-                              {visited && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                              {visited && isToday && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                              {visited && !isToday && <div className="w-2 h-2 rounded-full bg-primary" />}
                               {!visited && isToday && <div className="w-1 h-1 rounded-full bg-primary/60" />}
                             </div>
                           </div>

@@ -139,8 +139,10 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
                 </span>
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    visited
-                      ? "bg-primary shadow-sm"
+                    visited && isToday
+                      ? "bg-primary shadow-md"
+                      : visited
+                      ? "border border-primary/25 bg-transparent"
                       : isToday
                       ? "border-2 border-primary/50 bg-primary/5"
                       : isFuture
@@ -149,8 +151,10 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
                   }`}
                   data-testid={`week-day-${i}`}
                 >
-                  {visited ? (
+                  {visited && isToday ? (
                     <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
+                  ) : visited ? (
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary" />
                   ) : isToday ? (
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                   ) : null}
