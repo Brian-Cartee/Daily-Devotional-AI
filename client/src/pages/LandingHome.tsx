@@ -27,6 +27,9 @@ const sections = [
     border: "border-indigo-900/10",
     iconColor: "text-indigo-500",
     pillClass: "bg-indigo-500/10 text-indigo-600",
+    accentGradient: "bg-gradient-to-b from-indigo-400 to-violet-500",
+    iconBg: "bg-gradient-to-br from-indigo-100 to-violet-50",
+    iconShadow: "shadow-indigo-200/60",
   },
   {
     href: "/read",
@@ -40,6 +43,9 @@ const sections = [
     border: "border-amber-900/10",
     iconColor: "text-amber-500",
     pillClass: "bg-amber-500/10 text-amber-600",
+    accentGradient: "bg-gradient-to-b from-amber-400 to-orange-500",
+    iconBg: "bg-gradient-to-br from-amber-100 to-orange-50",
+    iconShadow: "shadow-amber-200/60",
   },
 ];
 
@@ -78,6 +84,8 @@ function DevotionalCard() {
         data-testid="card-devotional"
         className="group relative rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
       >
+        {/* Left accent strip */}
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
         <img
           src={logoWhite}
           alt=""
@@ -87,7 +95,7 @@ function DevotionalCard() {
         />
 
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-teal-100 to-emerald-50 shadow-sm shadow-teal-200/60">
             <Sun className="w-5 h-5 text-teal-500" />
           </div>
           <div className="flex-1 min-w-0 py-0.5 pr-14">
@@ -258,12 +266,14 @@ export default function LandingHome() {
         >
           <DevotionalCard />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass }) => (
+          {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow }) => (
             <Link key={href} href={href}>
               <div
                 data-testid={testid}
                 className={`group relative rounded-2xl ${imageBg} border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
               >
+                {/* Left accent strip */}
+                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accentGradient} opacity-70 rounded-l-2xl`} />
                 {/* SP logo watermark — top-right of each card */}
                 <img
                   src={logoWhite}
@@ -273,7 +283,7 @@ export default function LandingHome() {
                   style={{ filter: "invert(1)" }}
                 />
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
 
