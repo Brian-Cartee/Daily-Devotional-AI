@@ -307,10 +307,11 @@ export default function LandingHome() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-5 rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-700/40"
+          className="relative mt-5 rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-700/40"
           style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
           data-testid="sms-entry-card"
         >
+          <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
           <div className="px-5 pt-5 pb-5">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-amber-400/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -356,9 +357,10 @@ export default function LandingHome() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden"
+          className="relative mt-5 rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden"
           data-testid="commitment-card"
         >
+          <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.15] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
           <button
             onClick={() => setExpanded(v => !v)}
             data-testid="btn-commitment-toggle"
