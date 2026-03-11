@@ -6,3 +6,9 @@ id = "5eXKSYOD9ozG_qHKJmLBU"
 uri = "file://SHEPHERDS_PATH_REFERENCE.md"
 type = "text"
 title = "Shepherd's Path — Master Reference Document (March 11, 2026)"
+
+[[outputs]]
+id = "XeYF8blZPQrjm-8dnYarB"
+uri = "file://docs/white-label-pitch.md"
+type = "text"
+title = "Shepherd's Path — White-Label Partnership Pitch"
