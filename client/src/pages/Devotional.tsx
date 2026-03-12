@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2 } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,40 @@ export default function Devotional() {
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const [showTipPrompt, setShowTipPrompt] = useState(false);
   const [streakForTip, setStreakForTip] = useState(0);
+  const [verseArtUrl, setVerseArtUrl] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Check if today's verse art has already been generated (cached on server)
+  const verseDate = verse?.date ?? "";
+  useQuery({
+    queryKey: ["/api/verse-art", verseDate],
+    queryFn: async () => {
+      if (!verseDate) return null;
+      const res = await fetch(`/api/verse-art/${verseDate}`);
+      const data = await res.json();
+      if (data.imageUrl) setVerseArtUrl(data.imageUrl);
+      return data;
+    },
+    enabled: !!verseDate,
+    staleTime: Infinity,
+  });
+
+  const verseArtMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/verse-art/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verseDate: verse?.date, verseText: verse?.text, verseReference: verse?.reference }),
+      });
+      if (!res.ok) throw new Error("Generation failed");
+      return res.json() as Promise<{ imageUrl: string }>;
+    },
+    onSuccess: (data) => {
+      setVerseArtUrl(data.imageUrl);
+      toast({ description: "Your verse art is ready ✨" });
+    },
+    onError: () => toast({ description: "Could not generate art. Please try again.", variant: "destructive" }),
+  });
 
   // Show thank-you toast if returning from tip checkout
   useEffect(() => {
@@ -470,14 +503,22 @@ export default function Devotional() {
             >
               {/* Photo layer — separate so we can filter it without affecting text */}
               <div
-                className="absolute inset-0"
+                className="absolute inset-0 transition-all duration-1000"
                 style={{
-                  backgroundImage: `url(${getDailyVersePhoto()})`,
+                  backgroundImage: `url(${verseArtUrl || getDailyVersePhoto()})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  filter: "brightness(0.72) saturate(1.2)",
+                  filter: verseArtUrl ? "brightness(0.78) saturate(1.1)" : "brightness(0.72) saturate(1.2)",
                 }}
               />
+
+              {/* Loading shimmer while generating AI art */}
+              {verseArtMutation.isPending && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-sm">
+                  <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                  <p className="text-white/80 text-[13px] font-medium tracking-wide">Painting your verse…</p>
+                </div>
+              )}
 
               {/* 3-zone veil — additional darkening at top/bottom for pill + reference */}
               <div
@@ -499,6 +540,28 @@ export default function Devotional() {
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 px-3 py-1.5 rounded-full bg-white/12 backdrop-blur-md border border-white/15">
                   Today's Word
                 </span>
+              </div>
+
+              {/* AI Art button — top right */}
+              <div className="absolute top-4 right-4 z-10">
+                <button
+                  data-testid="button-generate-verse-art"
+                  onClick={() => {
+                    if (!isProVerifiedLocally()) { setShowUpgrade(true); return; }
+                    verseArtMutation.mutate();
+                  }}
+                  disabled={verseArtMutation.isPending}
+                  title={verseArtUrl ? "Regenerate AI Verse Art (Pro)" : "Generate AI Verse Art (Pro)"}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-md border border-white/20 bg-white/10 hover:bg-white/20 transition-all disabled:opacity-60"
+                >
+                  {verseArtMutation.isPending
+                    ? <Loader2 className="w-3 h-3 text-white animate-spin" />
+                    : <Wand2 className="w-3 h-3 text-white/85" />}
+                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/75">
+                    {verseArtUrl ? "Regen Art" : "AI Art"}
+                  </span>
+                  {!isProVerifiedLocally() && <span className="text-[9px] text-amber-300/90 font-bold">Pro</span>}
+                </button>
               </div>
 
               {/* Verse + reference */}

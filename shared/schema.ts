@@ -161,3 +161,14 @@ export const prayerAmens = pgTable("prayer_amens", {
   phone: text("phone").notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
+
+// One AI-generated image per verse date, shared across all users (cached)
+export const verseArt = pgTable("verse_art", {
+  id: serial("id").primaryKey(),
+  verseDate: text("verse_date").notNull().unique(),
+  verseReference: text("verse_reference").notNull(),
+  imageUrl: text("image_url").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type VerseArt = typeof verseArt.$inferSelect;

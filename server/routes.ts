@@ -795,6 +795,56 @@ What you never do:
     }
   });
 
+  // ── Verse Art (AI-generated image, cached per day) ───────────────────────────
+
+  app.get("/api/verse-art/:date", async (req, res) => {
+    try {
+      const { date } = req.params;
+      const art = await storage.getVerseArt(date);
+      if (art) return res.json({ imageUrl: art.imageUrl, cached: true });
+      return res.json({ imageUrl: null, cached: false });
+    } catch (e) {
+      console.error("verse-art GET error:", e);
+      res.status(500).json({ message: "Failed to fetch verse art" });
+    }
+  });
+
+  app.post("/api/verse-art/generate", async (req, res) => {
+    try {
+      const { verseDate, verseText, verseReference } = req.body as {
+        verseDate: string; verseText: string; verseReference: string;
+      };
+      if (!verseDate || !verseText || !verseReference) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Return cached image if already generated for this date
+      const existing = await storage.getVerseArt(verseDate);
+      if (existing) return res.json({ imageUrl: existing.imageUrl, cached: true });
+
+      const prompt = `A breathtaking, painterly spiritual landscape that captures the essence of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Cinematic oil painting style. Scene: dramatic natural scenery such as golden sunrise over misty mountains, ancient cathedral forest with God-rays of light, calm ocean at sunset with dramatic clouds, rolling hills at golden hour, or Milky Way over a wilderness valley. Rich warm tones, atmospheric depth, spiritual mood. IMPORTANT: absolutely no people, no human figures, no faces, no text, no words, no letters anywhere in the image. Pure nature only.`;
+
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+        style: "vivid",
+      });
+
+      const imageUrl = response.data[0]?.url;
+      if (!imageUrl) return res.status(500).json({ message: "No image returned" });
+
+      // Cache it so all users on this day share the same image
+      await storage.saveVerseArt(verseDate, verseReference, imageUrl);
+      res.json({ imageUrl, cached: false });
+    } catch (e: any) {
+      console.error("verse-art generate error:", e);
+      res.status(500).json({ message: e?.message ?? "Image generation failed" });
+    }
+  });
+
   // ── Stripe Routes ────────────────────────────────────────────────────────────
 
   app.post("/api/stripe/create-checkout-session", async (req, res) => {

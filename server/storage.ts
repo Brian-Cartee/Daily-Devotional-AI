@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt } from "@shared/schema";
 import { eq, and, desc, isNull, isNotNull, lt, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -34,6 +34,8 @@ export interface IStorage {
   markPrayerBroadcast(requestId: number): Promise<void>;
   getPrayerRequestsForFollowUp(): Promise<PrayerRequest[]>;
   markFollowUpSent(requestId: number): Promise<void>;
+  getVerseArt(verseDate: string): Promise<VerseArt | undefined>;
+  saveVerseArt(verseDate: string, verseReference: string, imageUrl: string): Promise<VerseArt>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -280,6 +282,20 @@ export class DatabaseStorage implements IStorage {
 
   async markFollowUpSent(requestId: number): Promise<void> {
     await db.update(prayerRequests).set({ followUpSentAt: new Date() }).where(eq(prayerRequests.id, requestId));
+  }
+
+  async getVerseArt(verseDate: string): Promise<VerseArt | undefined> {
+    const [row] = await db.select().from(verseArt).where(eq(verseArt.verseDate, verseDate));
+    return row;
+  }
+
+  async saveVerseArt(verseDate: string, verseReference: string, imageUrl: string): Promise<VerseArt> {
+    const [row] = await db
+      .insert(verseArt)
+      .values({ verseDate, verseReference, imageUrl })
+      .onConflictDoUpdate({ target: verseArt.verseDate, set: { imageUrl, verseReference } })
+      .returning();
+    return row;
   }
 }
 
