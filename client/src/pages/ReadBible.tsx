@@ -208,21 +208,21 @@ export default function ReadBible() {
                 })()}
               </AnimatePresence>
               <div className="text-center mb-10">
-                <p className="text-muted-foreground text-sm">Choose a book to begin reading</p>
+                <p className="text-amber-700/60 dark:text-amber-400/50 text-sm">Choose a book to begin reading</p>
               </div>
               {[{ label: "Old Testament", books: OT }, { label: "New Testament", books: NT }].map(({ label, books }) => (
                 <div key={label} className="mb-8">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 px-1">{label}</h2>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-amber-700/70 dark:text-amber-500/60 mb-3 px-1">{label}</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {books.map((b) => (
                       <button
                         key={b.name}
                         onClick={() => handleBookSelect(b.name)}
                         data-testid={`book-${b.short}`}
-                        className="bg-card border border-border rounded-xl px-3 py-3 text-left hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm transition-all group"
+                        className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-xl px-3 py-3 text-left hover:border-amber-400/60 dark:hover:border-amber-600/50 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:shadow-md hover:shadow-amber-100/60 dark:-hover:shadow-amber-900/20 transition-all group"
                       >
-                        <p className="text-[12px] font-semibold text-foreground leading-tight group-hover:text-primary transition-colors break-words">{b.name}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{b.chapters} ch</p>
+                        <p className="text-[12px] font-semibold text-amber-900 dark:text-amber-200 leading-tight group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors break-words">{b.name}</p>
+                        <p className="text-[11px] text-amber-600/60 dark:text-amber-500/50 mt-0.5">{b.chapters} ch</p>
                       </button>
                     ))}
                   </div>
