@@ -19,7 +19,7 @@ const sections = [
   {
     href: "/understand",
     icon: Compass,
-    pillText: "Several Amazing Journeys — You Choose",
+    pillText: "Choose Your Journey",
     title: "Bible Journeys",
     description: "Guided paths through Scripture — the Psalms, the Life of Jesus, Lent, the Sermon on the Mount, and more. Each one takes you deeper.",
     cta: "Explore Journeys",
@@ -341,7 +341,7 @@ export default function LandingHome() {
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
-                  <div className="flex-1 min-w-0 py-0.5 pr-14">
+                  <div className="flex-1 min-w-0 py-0.5 pr-8 sm:pr-14">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass}`}>
                         {pillText}
