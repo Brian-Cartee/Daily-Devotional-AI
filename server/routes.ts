@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import path from "path";
+import fs from "fs";
 import { Readable } from "stream";
 import { storage } from "./storage";
 import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
@@ -24,7 +25,38 @@ const ttsCache = new Map<string, Buffer>();
 function ttsCacheKey(text: string, voice: string) {
   let hash = 0;
   for (let i = 0; i < text.length; i++) { hash = (Math.imul(31, hash) + text.charCodeAt(i)) | 0; }
-  return `${voice}::${hash}`;
+  return `${voice}_${Math.abs(hash)}`;
+}
+
+// Disk cache — persists across server restarts
+const TTS_DISK_CACHE_DIR = path.resolve(process.cwd(), "server/tts-cache");
+if (!fs.existsSync(TTS_DISK_CACHE_DIR)) fs.mkdirSync(TTS_DISK_CACHE_DIR, { recursive: true });
+
+function readDiskCache(key: string): Buffer | null {
+  const filePath = path.join(TTS_DISK_CACHE_DIR, `${key}.mp3`);
+  try { return fs.existsSync(filePath) ? fs.readFileSync(filePath) : null; } catch { return null; }
+}
+
+function writeDiskCache(key: string, buffer: Buffer): void {
+  const filePath = path.join(TTS_DISK_CACHE_DIR, `${key}.mp3`);
+  try { fs.writeFileSync(filePath, buffer); } catch (e) { console.warn("TTS disk cache write failed:", e); }
+}
+
+async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
+  const cacheKey = ttsCacheKey(text, voice);
+  // 1. Memory cache (instant)
+  if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey)!;
+  // 2. Disk cache (fast, survives restarts)
+  const diskHit = readDiskCache(cacheKey);
+  if (diskHit) { ttsCache.set(cacheKey, diskHit); return diskHit; }
+  // 3. Generate via OpenAI (slow, then cache both places)
+  const mp3 = await openaiTTS.audio.speech.create({
+    model: "tts-1", voice: voice as any, input: text.slice(0, 4096), speed: 0.92,
+  });
+  const buffer = Buffer.from(await mp3.arrayBuffer());
+  ttsCache.set(cacheKey, buffer);
+  writeDiskCache(cacheKey, buffer);
+  return buffer;
 }
 
 const openai = new OpenAI({
@@ -119,31 +151,14 @@ export async function registerRoutes(
   });
 
   // Text-to-speech using OpenAI — returns audio/mpeg
-  // Streaming GET endpoint — browser starts playing as first bytes arrive
+  // GET endpoint (used by preload hook)
   app.get("/api/tts", async (req, res) => {
     const text = (req.query.text as string)?.trim();
     if (!text) return res.status(400).json({ message: "text required" });
-    const voice = "onyx";
-    const cacheKey = ttsCacheKey(text, voice);
     try {
-      if (ttsCache.has(cacheKey)) {
-        const cached = ttsCache.get(cacheKey)!;
-        res.set("Content-Type", "audio/mpeg");
-        res.set("Cache-Control", "public, max-age=86400");
-        res.set("X-TTS-Cache", "HIT");
-        return res.send(cached);
-      }
-      const mp3 = await openaiTTS.audio.speech.create({
-        model: "tts-1",
-        voice,
-        input: text.slice(0, 4000),
-        speed: 0.92,
-      });
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      ttsCache.set(cacheKey, buffer);
+      const buffer = await getTTSAudio(text, "onyx");
       res.set("Content-Type", "audio/mpeg");
-      res.set("Cache-Control", "public, max-age=86400");
-      res.set("X-TTS-Cache", "MISS");
+      res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
     } catch (err: any) {
       console.error("TTS error:", err);
@@ -151,31 +166,16 @@ export async function registerRoutes(
     }
   });
 
+  // POST endpoint (used by devotional listen button — allows voice selection)
   app.post("/api/tts", async (req, res) => {
     const { text, voice } = req.body as { text: string; voice?: string };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
-    const selectedVoice = allowedVoices.includes(voice ?? "") ? (voice as any) : "onyx";
-    const cacheKey = ttsCacheKey(text.trim(), selectedVoice);
+    const selectedVoice = allowedVoices.includes(voice ?? "") ? voice! : "onyx";
     try {
-      if (ttsCache.has(cacheKey)) {
-        const cached = ttsCache.get(cacheKey)!;
-        res.set("Content-Type", "audio/mpeg");
-        res.set("Cache-Control", "public, max-age=86400");
-        res.set("X-TTS-Cache", "HIT");
-        return res.send(cached);
-      }
-      const mp3 = await openaiTTS.audio.speech.create({
-        model: "tts-1",
-        voice: selectedVoice,
-        input: text.trim().slice(0, 4096),
-        speed: 0.92,
-      });
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      ttsCache.set(cacheKey, buffer);
+      const buffer = await getTTSAudio(text.trim(), selectedVoice);
       res.set("Content-Type", "audio/mpeg");
-      res.set("Cache-Control", "public, max-age=86400");
-      res.set("X-TTS-Cache", "MISS");
+      res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
     } catch (err: any) {
       console.error("TTS error:", err);
