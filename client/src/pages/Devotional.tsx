@@ -471,10 +471,10 @@ export default function Devotional() {
                 minHeight: verse.text.length > 200 ? "440px" : verse.text.length > 100 ? "400px" : "360px",
               }}
             >
-              {/* 3-zone veil */}
+              {/* 3-zone veil — dark top/bottom, photo shows through the middle */}
               <div
                 className="absolute inset-0"
-                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.30) 38%, rgba(0,0,0,0.30) 62%, rgba(0,0,0,0.78) 100%)" }}
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.10) 32%, rgba(0,0,0,0.10) 68%, rgba(0,0,0,0.72) 100%)" }}
               />
 
               {/* Ghost decorative quote mark */}
