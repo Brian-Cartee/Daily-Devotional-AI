@@ -64,8 +64,12 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
               <div
-                className="w-20 h-20 rounded-3xl overflow-hidden shadow-xl"
-                style={{ boxShadow: "0 8px 32px rgba(76,29,149,0.55), 0 2px 8px rgba(0,0,0,0.35)" }}
+                className="w-20 h-20"
+                style={{
+                  borderRadius: "22px",
+                  overflow: "hidden",
+                  boxShadow: "0 8px 32px rgba(76,29,149,0.55), 0 2px 8px rgba(0,0,0,0.35)"
+                }}
               >
                 <img
                   src="/sp-logo.png"
