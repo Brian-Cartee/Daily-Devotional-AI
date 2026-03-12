@@ -182,7 +182,7 @@ export default function Devotional() {
           daysWithApp: getRelationshipAge(),
           messages: [{
             role: "user",
-            content: `The reader has just finished their devotional on ${verse.reference}: "${verse.text}". They want to offer a personal prayer of thanksgiving to God. What they are grateful for today: "${gratitudeInput.trim()}". Write a short, intimate closing prayer (3–4 sentences) that weaves together their gratitude and the spirit of today's verse. Begin with "Lord," or "Father," and close with "Amen." Write in first person as if they are speaking it aloud. Keep it warm and unhurried.`,
+            content: `This person has just spent time with ${verse.reference}: "${verse.text}". They want to close by speaking their heart to God. Here is what they are grateful for today: "${gratitudeInput.trim()}". Write an intimate, personal closing prayer — 3 to 5 sentences — as if they are quietly talking to God, not performing for an audience. Let their specific gratitude and the spirit of today's verse meet each other naturally inside the prayer. Begin with "Lord," or "Father," — close with "Amen." Make it feel like it could only have been written for this person, in this moment. Warm. Unhurried. Real. When addressing God, capitalize You, Your, Yours. Never capitalize "you" or "your" when referring to the person praying.`,
           }],
         }),
       });
