@@ -264,47 +264,10 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
+          {/* Daily Devotional — primary action */}
           <DevotionalCard />
 
-          {/* Pray card — full width */}
-          <Link href="/pray">
-            <div
-              data-testid="card-pray"
-              className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
-            >
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
-              <img
-                src={logoWhite}
-                alt=""
-                aria-hidden="true"
-                className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"
-                style={{ filter: "invert(1)" }}
-              />
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60">
-                  <Heart className="w-5 h-5 text-rose-500" />
-                </div>
-                <div className="flex-1 min-w-0 py-0.5 pr-14">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600">
-                      Guided Prayer
-                    </span>
-                  </div>
-                  <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
-                    Pray
-                  </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Bring whatever is on your heart — worry, gratitude, grief, or hope. AI helps you shape your prayer, rooted in God's Word.
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-rose-500 group-hover:gap-2.5 transition-all">
-                    Open Prayer
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
-
+          {/* Bible Journeys + Read — core content, moved up */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow }) => (
             <Link key={href} href={href}>
@@ -312,9 +275,7 @@ export default function LandingHome() {
                 data-testid={testid}
                 className={`group relative rounded-2xl ${imageBg} border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
               >
-                {/* Left accent strip */}
                 <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accentGradient} opacity-70 rounded-l-2xl`} />
-                {/* SP logo watermark — top-right of each card */}
                 <img
                   src={logoWhite}
                   alt=""
@@ -326,7 +287,6 @@ export default function LandingHome() {
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
-
                   <div className="flex-1 min-w-0 py-0.5 pr-14">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass}`}>
@@ -339,7 +299,6 @@ export default function LandingHome() {
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {description}
                     </p>
-
                     <div className={`flex items-center gap-1.5 mt-3.5 text-sm font-semibold ${iconColor} group-hover:gap-2.5 transition-all`}>
                       {cta}
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -350,60 +309,66 @@ export default function LandingHome() {
             </Link>
           ))}
           </div>
-        </motion.div>
 
-        {/* SMS entry section */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="relative mt-5 rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-700/40"
-          style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
-          data-testid="sms-entry-card"
-        >
-          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-500 opacity-70 rounded-l-2xl" />
-          <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
-          <div className="px-5 pt-5 pb-5">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-200 to-orange-100 shadow-sm shadow-amber-200/60 flex items-center justify-center shrink-0 mt-0.5">
-                <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-[13px] font-bold text-amber-900 leading-tight">Try it right now — no app needed</p>
-                <p className="text-[11px] text-amber-700/80 mt-0.5">Text anything on your heart. Get scripture, reflection, and prayer back.</p>
-              </div>
-            </div>
+          {/* Pray + Text — side by side at the bottom of the main cards */}
+          <div className="grid grid-cols-2 gap-3">
 
-            {/* Mini conversation preview */}
-            <div className="space-y-2 mb-4 px-1">
-              <div className="flex justify-end">
-                <div className="bg-amber-500 text-white text-[12px] rounded-2xl rounded-br-sm px-3 py-1.5 max-w-[80%] leading-snug shadow-sm">
-                  I'm anxious about tomorrow
+            {/* Pray in the app */}
+            <Link href="/pray">
+              <div
+                data-testid="card-pray"
+                className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full flex flex-col"
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 mb-3">
+                  <Heart className="w-4.5 h-4.5 text-rose-500" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 self-start mb-2">
+                  In the app
+                </span>
+                <h2 className="text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+                  Guided Prayer
+                </h2>
+                <p className="text-[12px] text-muted-foreground leading-relaxed flex-1">
+                  Whatever you're carrying — bring it here. Receive scripture, reflection, and a prayer shaped just for you.
+                </p>
+                <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-rose-500 group-hover:gap-2 transition-all">
+                  Open Prayer
+                  <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
                 </div>
               </div>
-              <div className="flex justify-start">
-                <div className="bg-white/90 text-amber-900 text-[11px] rounded-2xl rounded-bl-sm px-3 py-1.5 max-w-[88%] leading-snug shadow-sm border border-amber-100">
-                  "Cast all your anxiety on Him because He cares for you." — 1 Peter 5:7. You don't have to carry tomorrow alone. What's weighing on you most?
-                </div>
-              </div>
-            </div>
+            </Link>
 
-            {/* Phone number + CTA */}
+            {/* Text from anywhere */}
             <a
               href="sms:+18339629341&body=Pray"
               data-testid="btn-sms-text-us"
-              className="flex items-center justify-between w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl px-4 py-3 transition-colors"
+              className="group relative rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-700/40 p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 flex flex-col"
+              style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
             >
-              <div>
-                <p className="text-[13px] font-bold leading-tight">Text PRAY to get started</p>
-                <p className="text-[11px] opacity-80 mt-0.5">+1 (833) 962-9341 · Free · No account needed</p>
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-500 opacity-70 rounded-l-2xl" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-200 to-orange-100 shadow-sm shadow-amber-200/60 flex items-center justify-center shrink-0 mb-3">
+                <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
               </div>
-              <ArrowRight className="w-4 h-4 shrink-0 opacity-80" />
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 self-start mb-2">
+                No app needed
+              </span>
+              <h2 className="text-[15px] font-bold text-amber-900 mb-1 leading-tight tracking-tight">
+                Text PRAY
+              </h2>
+              <p className="text-[12px] text-amber-800/70 leading-relaxed flex-1">
+                Just your phone. Text anything on your heart to our number — scripture and prayer come straight back.
+              </p>
+              <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-amber-700 group-hover:gap-2 transition-all">
+                Text +1 (833) 962-9341
+                <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </a>
+
           </div>
         </motion.div>
 
-        {/* Scripture commitment card */}
+        {/* Scripture commitment card — trust footer, sits at the very bottom */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
