@@ -439,6 +439,13 @@ export default function LandingHome() {
           className="relative mt-5 rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden"
           data-testid="commitment-card"
         >
+          <img
+            src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800&q=80"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+            style={{ opacity: 0.09, filter: "saturate(0.7) brightness(0.95)" }}
+          />
           <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.15] pointer-events-none select-none"  />
           <button
             onClick={() => setExpanded(v => !v)}
