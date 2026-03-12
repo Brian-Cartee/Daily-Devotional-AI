@@ -64,16 +64,13 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
               <div
-                className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl"
-                style={{
-                  background: "linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%)",
-                  boxShadow: "0 8px 32px rgba(76,29,149,0.55), 0 2px 8px rgba(0,0,0,0.35)"
-                }}
+                className="w-20 h-20 rounded-3xl overflow-hidden shadow-xl"
+                style={{ boxShadow: "0 8px 32px rgba(76,29,149,0.55), 0 2px 8px rgba(0,0,0,0.35)" }}
               >
                 <img
-                  src="/logo-mark-white.png"
+                  src="/sp-logo.png"
                   alt="Shepherd's Path logo"
-                  className="w-12 h-12 object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
