@@ -243,9 +243,18 @@ function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
                           transition={{ duration: 0.4, delay: (ci * 0.1) + i * 0.07 }}
                           onClick={() => onSelect(journey)}
                           data-testid={`journey-card-${journey.id}`}
-                          className={`w-full text-left rounded-2xl bg-gradient-to-br ${journey.colorFrom} ${journey.colorTo} border ${journey.borderColor} bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
+                          className={`w-full text-left rounded-2xl relative overflow-hidden border ${journey.borderColor} bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
                         >
-                          <div className="flex items-start gap-4">
+                          {journey.image && (
+                            <img
+                              src={journey.image}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 w-full h-full object-cover opacity-[0.14] pointer-events-none select-none"
+                            />
+                          )}
+                          <div className={`absolute inset-0 bg-gradient-to-br ${journey.colorFrom} ${journey.colorTo} pointer-events-none`} />
+                          <div className="relative z-10 flex items-start gap-4">
                             <div className={`w-10 h-10 rounded-xl ${journey.pillBg} flex items-center justify-center flex-shrink-0`}>
                               <MapPin className={`w-5 h-5 ${journey.iconColor}`} />
                             </div>
@@ -289,7 +298,7 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
     <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-6">
-          <img src={getHeroImage("understand")} alt={journey.title} className="absolute inset-0 w-full h-full object-cover object-center" />
+          <img src={journey.image || getHeroImage("understand")} alt={journey.title} className="absolute inset-0 w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/65" />
           <motion.div
             initial={{ opacity: 0, y: 12 }}

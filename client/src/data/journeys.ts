@@ -1178,6 +1178,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-indigo-500",
     pillBg: "bg-indigo-500/10",
     pillText: "text-indigo-600",
+    image: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=70&auto=format&fit=crop",
     entries: GUIDED_PATH,
   },
   {
@@ -1193,6 +1194,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-amber-500",
     pillBg: "bg-amber-500/10",
     pillText: "text-amber-600",
+    image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=70&auto=format&fit=crop",
     entries: PSALMS_PATH,
   },
   {
@@ -1208,6 +1210,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-teal-500",
     pillBg: "bg-teal-500/10",
     pillText: "text-teal-600",
+    image: "https://images.unsplash.com/photo-1499155286265-79a3e96e8be4?w=800&q=70&auto=format&fit=crop",
     entries: JESUS_PATH,
   },
   {
@@ -1223,6 +1226,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-green-600",
     pillBg: "bg-green-500/10",
     pillText: "text-green-700",
+    image: "https://images.unsplash.com/photo-1476900543704-4312b21a13a0?w=800&q=70&auto=format&fit=crop",
     entries: SERMON_MOUNT_PATH,
   },
   {
@@ -1240,6 +1244,7 @@ export const ALL_JOURNEYS: Journey[] = [
     pillText: "text-rose-600",
     badgeText: "Lent 2026",
     badgeBg: "bg-rose-500",
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=70&auto=format&fit=crop",
     entries: LENT_PATH,
   },
   {
@@ -1255,6 +1260,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-purple-600",
     pillBg: "bg-purple-600/10",
     pillText: "text-purple-700",
+    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&q=70&auto=format&fit=crop",
     entries: ADVENT_PATH,
   },
   {
@@ -1270,6 +1276,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-yellow-700",
     pillBg: "bg-yellow-500/10",
     pillText: "text-yellow-800",
+    image: "https://images.unsplash.com/photo-1458682625221-3a45f8a844c7?w=800&q=70&auto=format&fit=crop",
     entries: NAMES_OF_GOD_PATH,
   },
   {
@@ -1285,6 +1292,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-cyan-600",
     pillBg: "bg-cyan-500/10",
     pillText: "text-cyan-700",
+    image: "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&q=70&auto=format&fit=crop",
     entries: HOLY_SPIRIT_PATH,
   },
   {
@@ -1300,6 +1308,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-sky-600",
     pillBg: "bg-sky-500/10",
     pillText: "text-sky-700",
+    image: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=70&auto=format&fit=crop",
     entries: ANXIETY_PEACE_PATH,
   },
   {
@@ -1315,6 +1324,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-violet-600",
     pillBg: "bg-violet-500/10",
     pillText: "text-violet-700",
+    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=70&auto=format&fit=crop",
     entries: FORGIVENESS_GRACE_PATH,
   },
   {
@@ -1330,6 +1340,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-orange-600",
     pillBg: "bg-orange-500/10",
     pillText: "text-orange-700",
+    image: "https://images.unsplash.com/photo-1490750967868-88df5691cc9e?w=800&q=70&auto=format&fit=crop",
     entries: FRUIT_SPIRIT_PATH,
   },
   {
@@ -1345,6 +1356,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-pink-600",
     pillBg: "bg-pink-500/10",
     pillText: "text-pink-700",
+    image: "https://images.unsplash.com/photo-1467043237213-65f2da53396f?w=800&q=70&auto=format&fit=crop",
     entries: WOMEN_BIBLE_PATH,
   },
 ];

@@ -30,6 +30,7 @@ const sections = [
     accentGradient: "bg-gradient-to-b from-indigo-400 to-violet-500",
     iconBg: "bg-gradient-to-br from-indigo-100 to-violet-50",
     iconShadow: "shadow-indigo-200/60",
+    photo: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=700&q=70&auto=format&fit=crop",
   },
   {
     href: "/read",
@@ -46,6 +47,7 @@ const sections = [
     accentGradient: "bg-gradient-to-b from-amber-400 to-orange-500",
     iconBg: "bg-gradient-to-br from-amber-100 to-orange-50",
     iconShadow: "shadow-amber-200/60",
+    photo: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=700&q=70&auto=format&fit=crop",
   },
 ];
 
@@ -82,8 +84,15 @@ function DevotionalCard() {
     <Link href="/devotional">
       <div
         data-testid="card-devotional"
-        className="group relative rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
+        className="group relative rounded-2xl border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
       >
+        <img
+          src="https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=700&q=70&auto=format&fit=crop"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 pointer-events-none" />
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
         <img
@@ -94,7 +103,7 @@ function DevotionalCard() {
           style={{ filter: "invert(1)" }}
         />
 
-        <div className="flex items-start gap-4 mb-4">
+        <div className="relative z-10 flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-teal-100 to-emerald-50 shadow-sm shadow-teal-200/60">
             <Sun className="w-5 h-5 text-teal-500" />
           </div>
@@ -123,7 +132,7 @@ function DevotionalCard() {
         </div>
 
         {recentCompleted.length > 0 && (
-          <div className="border-t border-teal-900/8 pt-3 mt-1">
+          <div className="relative z-10 border-t border-teal-900/8 pt-3 mt-1">
             <div className="flex items-center gap-1.5 mb-2">
               <CalendarCheck className="w-3.5 h-3.5 text-teal-500/70" />
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Recent completions</span>
@@ -144,7 +153,7 @@ function DevotionalCard() {
         )}
 
         {streak > 1 && (
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+          <div className="relative z-10 mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-400" />
             {streak}-day streak · keep going
           </div>
@@ -270,12 +279,21 @@ export default function LandingHome() {
 
           {/* Bible Journeys + Read — core content, moved up */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow }) => (
+          {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow, photo }) => (
             <Link key={href} href={href}>
               <div
                 data-testid={testid}
-                className={`group relative rounded-2xl ${imageBg} border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
+                className={`group relative rounded-2xl border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
               >
+                {photo && (
+                  <img
+                    src={photo}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none"
+                  />
+                )}
+                <div className={`absolute inset-0 ${imageBg} pointer-events-none`} />
                 <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accentGradient} opacity-70 rounded-l-2xl`} />
                 <img
                   src={logoWhite}
@@ -284,7 +302,7 @@ export default function LandingHome() {
                   className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"
                   style={{ filter: "invert(1)" }}
                 />
-                <div className="flex items-start gap-4">
+                <div className="relative z-10 flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
@@ -318,25 +336,29 @@ export default function LandingHome() {
             <Link href="/pray">
               <div
                 data-testid="card-pray"
-                className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full flex flex-col"
+                className="group relative rounded-2xl border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full flex flex-col"
               >
+                <img src="https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=500&q=70&auto=format&fit=crop" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5 pointer-events-none" />
                 <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
                 <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 mb-3">
-                  <Heart className="w-4.5 h-4.5 text-rose-500" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 self-start mb-2">
-                  In the app
-                </span>
-                <h2 className="text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight">
-                  Guided Prayer
-                </h2>
-                <p className="text-[12px] text-muted-foreground leading-relaxed flex-1">
-                  Whatever you're carrying — bring it here. Receive scripture, reflection, and a prayer shaped just for you.
-                </p>
-                <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-rose-500 group-hover:gap-2 transition-all">
-                  Open Prayer
-                  <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 mb-3">
+                    <Heart className="w-4.5 h-4.5 text-rose-500" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 self-start mb-2">
+                    In the app
+                  </span>
+                  <h2 className="text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+                    Guided Prayer
+                  </h2>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed flex-1">
+                    Whatever you're carrying — bring it here. Receive scripture, reflection, and a prayer shaped just for you.
+                  </p>
+                  <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-rose-500 group-hover:gap-2 transition-all">
+                    Open Prayer
+                    <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                  </div>
                 </div>
               </div>
             </Link>
@@ -345,25 +367,29 @@ export default function LandingHome() {
             <a
               href="sms:+18339629341&body=Pray"
               data-testid="btn-sms-text-us"
-              className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden flex flex-col"
+              className="group relative rounded-2xl border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden flex flex-col"
             >
+              <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=500&q=70&auto=format&fit=crop" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5 pointer-events-none" />
               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
               <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 flex items-center justify-center shrink-0 mb-3">
-                <MessageCircle className="w-4.5 h-4.5 text-rose-500" />
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 self-start mb-2">
-                No app needed
-              </span>
-              <h2 className="text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight">
-                Text PRAY
-              </h2>
-              <p className="text-[12px] text-muted-foreground leading-relaxed flex-1">
-                Just your phone. Text anything on your heart to our number — scripture and prayer come straight back.
-              </p>
-              <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-rose-500 group-hover:gap-2 transition-all">
-                Text +1 (833) 962-9341
-                <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+              <div className="relative z-10 flex flex-col flex-1">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 flex items-center justify-center shrink-0 mb-3">
+                  <MessageCircle className="w-4.5 h-4.5 text-rose-500" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 self-start mb-2">
+                  No app needed
+                </span>
+                <h2 className="text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+                  Text PRAY
+                </h2>
+                <p className="text-[12px] text-muted-foreground leading-relaxed flex-1">
+                  Just your phone. Text anything on your heart to our number — scripture and prayer come straight back.
+                </p>
+                <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-rose-500 group-hover:gap-2 transition-all">
+                  Text +1 (833) 962-9341
+                  <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                </div>
               </div>
             </a>
 
