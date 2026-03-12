@@ -699,56 +699,56 @@ export default function Devotional() {
             </AnimatePresence>
           </div>
 
-          {/* Save Today's Devotional — unified bottom card */}
+          {/* Save Today's Devotional — slim inline bar */}
           {(reflectionContent || prayerContent) && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-2xl px-7 py-6 shadow-sm"
+              className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-xl px-4 py-3 shadow-sm"
             >
-              <div className="flex items-center gap-2.5 mb-4">
-                <Bookmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-sm font-bold text-amber-900 dark:text-amber-200">Save Today's Devotional</span>
-              </div>
-              <div className="space-y-3 mb-5">
-                {[
-                  { label: "Today's Verse", available: !!verse?.text, saved: savedVerse },
-                  { label: "Reflection", available: !!reflectionContent, saved: savedReflection },
-                  { label: "Prayer", available: !!prayerContent, saved: savedPrayer },
-                  ...(gratitudePrayer ? [{ label: "Closing Prayer", available: true, saved: savedGratitude }] : []),
-                ].map(({ label, available, saved }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${saved ? "bg-amber-500 border-amber-500" : "border-amber-300/80 dark:border-amber-600"}`}>
-                      {saved && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+              <div className="flex items-center gap-3">
+                <Bookmark className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
+                <div className="flex items-center gap-x-3 gap-y-1 flex-1 flex-wrap">
+                  <span className="text-[12px] font-semibold text-amber-900 dark:text-amber-200">Save to Journal:</span>
+                  {[
+                    { label: "Verse", available: !!verse?.text, saved: savedVerse },
+                    { label: "Reflection", available: !!reflectionContent, saved: savedReflection },
+                    { label: "Prayer", available: !!prayerContent, saved: savedPrayer },
+                    ...(gratitudePrayer ? [{ label: "Closing Prayer", available: true, saved: savedGratitude }] : []),
+                  ].map(({ label, available, saved }) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <div className={`w-3 h-3 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-all ${saved ? "bg-amber-500 border-amber-500" : "border-amber-300/80 dark:border-amber-600"}`}>
+                        {saved && <Check className="w-2 h-2 text-white" strokeWidth={3.5} />}
+                      </div>
+                      <span className={`text-[11.5px] font-medium transition-all ${saved ? "line-through text-amber-400/50" : available ? "text-amber-800 dark:text-amber-300" : "text-amber-400/40"}`}>
+                        {label}
+                      </span>
                     </div>
-                    <span className={`text-[13px] font-medium transition-all ${saved ? "line-through text-amber-400/60" : available ? "text-amber-900 dark:text-amber-200" : "text-amber-400/50"}`}>
-                      {label}
-                    </span>
-                    {!available && <span className="text-[11px] text-amber-400/40 italic">loading…</span>}
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <Button
+                  data-testid="btn-save-all-devotional"
+                  size="sm"
+                  className="shrink-0 rounded-lg text-xs h-7 px-3 font-semibold"
+                  disabled={
+                    (savedVerse || !verse?.text) &&
+                    (savedReflection || !reflectionContent) &&
+                    (savedPrayer || !prayerContent) &&
+                    (!gratitudePrayer || savedGratitude)
+                  }
+                  onClick={() => {
+                    if (!savedVerse && verse?.text) saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date });
+                    if (!savedReflection && reflectionContent) saveMutation.mutate({ type: "reflection", content: reflectionContent, reference: verse?.reference, verseDate: verse?.date });
+                    if (!savedPrayer && prayerContent) saveMutation.mutate({ type: "prayer", content: prayerContent, reference: verse?.reference, verseDate: verse?.date });
+                    if (!savedGratitude && gratitudePrayer) { saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse?.reference, verseDate: verse?.date }); setSavedGratitude(true); }
+                  }}
+                >
+                  {saveMutation.isPending
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : "Save All"}
+                </Button>
               </div>
-              <Button
-                data-testid="btn-save-all-devotional"
-                className="w-full rounded-xl font-semibold"
-                disabled={
-                  (savedVerse || !verse?.text) &&
-                  (savedReflection || !reflectionContent) &&
-                  (savedPrayer || !prayerContent) &&
-                  (!gratitudePrayer || savedGratitude)
-                }
-                onClick={() => {
-                  if (!savedVerse && verse?.text) saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date });
-                  if (!savedReflection && reflectionContent) saveMutation.mutate({ type: "reflection", content: reflectionContent, reference: verse?.reference, verseDate: verse?.date });
-                  if (!savedPrayer && prayerContent) saveMutation.mutate({ type: "prayer", content: prayerContent, reference: verse?.reference, verseDate: verse?.date });
-                  if (!savedGratitude && gratitudePrayer) { saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse?.reference, verseDate: verse?.date }); setSavedGratitude(true); }
-                }}
-              >
-                {saveMutation.isPending
-                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</>
-                  : "Save All to Journal"}
-              </Button>
             </motion.div>
           )}
 
