@@ -38,6 +38,12 @@ const PHOTO_POOL = [
   "https://images.unsplash.com/photo-1490750967868-88df5691cc35?w=1080&q=85&auto=format&fit=crop",
 ];
 
+export function getDailyVersePhoto(): string {
+  const startOfYear = new Date(new Date().getFullYear(), 0, 0).getTime();
+  const dayOfYear = Math.floor((Date.now() - startOfYear) / 86_400_000);
+  return PHOTO_POOL[dayOfYear % PHOTO_POOL.length];
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

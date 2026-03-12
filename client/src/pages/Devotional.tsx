@@ -3,7 +3,7 @@ import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap } from "lucide-react";
-import { createShareImage } from "@/lib/shareImage";
+import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
@@ -458,92 +458,119 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {/* STEP 1: TODAY'S WORD */}
-          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
-            <StepLabel number={1} label="Today's Word" />
-            <blockquote className="verse-text text-[1.7rem] sm:text-[2rem] text-balance mb-7 leading-relaxed">
-              "{verse.text}"
-            </blockquote>
-            <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-sm font-bold text-primary tracking-wide flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" />
-                {verse.reference}
-              </span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <div className="mt-5 pt-4 border-t border-border/25 grid grid-cols-3 divide-x divide-border/30">
-              <div className="flex justify-center">
-                <ListenButton
-                  text={`${verse.text} — ${verse.reference}`}
-                  label="Listen"
-                  vertical
-                />
+          {/* STEP 1: TODAY'S WORD — cinematic hero card */}
+          <div className="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-black/10 dark:ring-white/8">
+
+            {/* ── Photo hero ─────────────────────────────────── */}
+            <div
+              className="relative flex flex-col items-center justify-center px-8 text-center select-none"
+              style={{
+                backgroundImage: `url(${getDailyVersePhoto()})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                minHeight: verse.text.length > 200 ? "440px" : verse.text.length > 100 ? "400px" : "360px",
+              }}
+            >
+              {/* 3-zone veil */}
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.30) 38%, rgba(0,0,0,0.30) 62%, rgba(0,0,0,0.78) 100%)" }}
+              />
+
+              {/* Ghost decorative quote mark */}
+              <div
+                className="absolute left-3 top-[18%] text-[200px] leading-none font-serif pointer-events-none"
+                style={{ color: "rgba(255,255,255,0.07)", userSelect: "none" }}
+                aria-hidden="true"
+              >
+                ❝
               </div>
-              <button
-                data-testid="button-share-image"
-                onClick={handleShareImage}
-                disabled={sharingImage}
-                className="flex flex-col items-center gap-1.5 py-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-              >
-                {sharingImage
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <ImageDown className="w-4 h-4" />}
-                <span className="text-[11px] font-semibold leading-none">Save Image</span>
-              </button>
-              <button
-                data-testid="button-share"
-                onClick={handleShare}
-                className="flex flex-col items-center gap-1.5 py-1 text-muted-foreground hover:text-primary transition-colors"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-                <span className="text-[11px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
-              </button>
+
+              {/* Top pill — step label */}
+              <div className="absolute top-4 left-4 z-10">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 px-3 py-1.5 rounded-full bg-white/12 backdrop-blur-md border border-white/15">
+                  Today's Word
+                </span>
+              </div>
+
+              {/* Verse + reference */}
+              <div className="relative z-10 py-14 max-w-lg">
+                <blockquote
+                  className="verse-text text-white text-balance leading-relaxed mb-6"
+                  style={{
+                    fontSize: verse.text.length > 180 ? "1.18rem" : verse.text.length > 100 ? "1.38rem" : "1.6rem",
+                    textShadow: "0 2px 20px rgba(0,0,0,0.75)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  "{verse.text}"
+                </blockquote>
+
+                {/* Glowing reference line */}
+                <div className="flex items-center justify-center gap-3">
+                  <div className="h-px flex-1 max-w-[56px]" style={{ background: "linear-gradient(to right, transparent, rgba(255,255,255,0.35))" }} />
+                  <span
+                    className="text-[13px] font-bold text-white/90 tracking-wide flex items-center gap-1.5"
+                    style={{ textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}
+                  >
+                    <BookOpen className="w-3.5 h-3.5 opacity-75" />
+                    {verse.reference}
+                  </span>
+                  <div className="h-px flex-1 max-w-[56px]" style={{ background: "linear-gradient(to left, transparent, rgba(255,255,255,0.35))" }} />
+                </div>
+              </div>
             </div>
 
-            {/* Social sharing row */}
-            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-center gap-1.5">
-              <span className="text-[11px] text-muted-foreground/45 font-medium mr-1">Share</span>
-              <button
-                data-testid="share-x"
-                onClick={shareOnX}
-                title="Share on X (Twitter)"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-all"
-              >
-                <SiX className="w-3.5 h-3.5" />
-              </button>
-              <button
-                data-testid="share-facebook"
-                onClick={shareOnFacebook}
-                title="Share on Facebook"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all"
-              >
-                <SiFacebook className="w-3.5 h-3.5" />
-              </button>
-              <button
-                data-testid="share-whatsapp"
-                onClick={shareOnWhatsApp}
-                title="Share on WhatsApp"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all"
-              >
-                <SiWhatsapp className="w-3.5 h-3.5" />
-              </button>
-              <button
-                data-testid="share-truthsocial"
-                onClick={shareOnTruthSocial}
-                title="Share on Truth Social"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#7347CC] hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-all"
-              >
-                <span className="text-[11px] font-black leading-none">T</span>
-              </button>
-              <button
-                data-testid="share-telegram"
-                onClick={shareOnTelegram}
-                title="Share on Telegram"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all"
-              >
-                <SiTelegram className="w-3.5 h-3.5" />
-              </button>
+            {/* ── Action bar ─────────────────────────────────── */}
+            <div className="bg-card border-t border-border/20">
+              <div className="grid grid-cols-3 divide-x divide-border/30 px-0">
+                <div className="flex justify-center py-3.5">
+                  <ListenButton
+                    text={`${verse.text} — ${verse.reference}`}
+                    label="Listen"
+                    vertical
+                  />
+                </div>
+                <button
+                  data-testid="button-share-image"
+                  onClick={handleShareImage}
+                  disabled={sharingImage}
+                  className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                >
+                  {sharingImage
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <ImageDown className="w-4 h-4" />}
+                  <span className="text-[11px] font-semibold leading-none">Save Image</span>
+                </button>
+                <button
+                  data-testid="button-share"
+                  onClick={handleShare}
+                  className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                  <span className="text-[11px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
+                </button>
+              </div>
+
+              {/* Social sharing row */}
+              <div className="px-4 pb-3.5 pt-0.5 border-t border-border/20 flex items-center justify-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground/40 font-medium mr-1">Share</span>
+                <button data-testid="share-x" onClick={shareOnX} title="Share on X" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-all">
+                  <SiX className="w-3.5 h-3.5" />
+                </button>
+                <button data-testid="share-facebook" onClick={shareOnFacebook} title="Share on Facebook" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all">
+                  <SiFacebook className="w-3.5 h-3.5" />
+                </button>
+                <button data-testid="share-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all">
+                  <SiWhatsapp className="w-3.5 h-3.5" />
+                </button>
+                <button data-testid="share-truthsocial" onClick={shareOnTruthSocial} title="Share on Truth Social" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#7347CC] hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-all">
+                  <span className="text-[11px] font-black leading-none">T</span>
+                </button>
+                <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all">
+                  <SiTelegram className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 
