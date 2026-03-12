@@ -222,7 +222,7 @@ export default function ReadBible() {
                         className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-xl px-3 py-3 text-left hover:border-amber-400/60 dark:hover:border-amber-600/50 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:shadow-md hover:shadow-amber-100/60 dark:-hover:shadow-amber-900/20 transition-all group"
                       >
                         <p className="text-[12px] font-semibold text-amber-900 dark:text-amber-200 leading-tight group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors break-words">{b.name}</p>
-                        <p className="text-[11px] text-amber-600/60 dark:text-amber-500/50 mt-0.5">{b.chapters} ch</p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">{b.chapters} ch</p>
                       </button>
                     ))}
                   </div>
