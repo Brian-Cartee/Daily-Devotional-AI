@@ -75,9 +75,18 @@ function DevotionalCard() {
   const weekDates = getCurrentWeekDates();
   const todayIdx = getTodayIndex();
   const visitDates: string[] = data?.visitDates ?? [];
-  const visitSet = new Set(visitDates);
-  const visitedToday = visitSet.has(weekDates[todayIdx]);
   const streak = data?.currentStreak ?? 0;
+
+  // Build the visit set. If streak > stored dates (data gap from before visitDates was tracked),
+  // infer the missing prior days by counting back from today.
+  const visitSet = new Set(visitDates);
+  if (streak > visitSet.size) {
+    for (let i = 0; i < streak; i++) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().split("T")[0];
+      visitSet.add(d);
+    }
+  }
+  const visitedToday = visitSet.has(weekDates[todayIdx]);
 
   return (
     <Link href="/devotional">
