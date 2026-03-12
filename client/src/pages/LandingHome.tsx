@@ -99,9 +99,11 @@ function DevotionalCard() {
           src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=700&q=70&auto=format&fit=crop"
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none"
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.32] pointer-events-none select-none"
+          style={{ filter: "saturate(0.75) brightness(1.05)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/8 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-transparent to-transparent pointer-events-none" />
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
         <div className="relative z-10 flex items-start gap-4">
