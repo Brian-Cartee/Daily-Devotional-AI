@@ -212,6 +212,7 @@ export function NavBar() {
                 <span className={`text-[10px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
                   {label}
                 </span>
+                {active && <span className="w-3.5 h-0.5 rounded-full bg-amber-400/80 -mt-px" />}
               </Link>
             );
           })}

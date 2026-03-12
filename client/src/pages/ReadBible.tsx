@@ -332,7 +332,7 @@ export default function ReadBible() {
                 </div>
 
                 {/* Chapter text */}
-                <div className="flex-1 px-6 sm:px-10 py-10 max-w-xl mx-auto w-full">
+                <div className="flex-1 px-6 sm:px-10 py-10 max-w-xl mx-auto w-full bg-[#faf5ea] dark:bg-transparent">
                   {chapterText.isLoading && (
                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
                       <Loader2 className="w-6 h-6 animate-spin" />

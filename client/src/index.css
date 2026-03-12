@@ -7,10 +7,10 @@
 @layer base {
   :root {
     /* Shepherd's Path — warm parchment base, deep indigo primary, soft gold accent */
-    --background: 38 28% 96%;
+    --background: 38 38% 95%;
     --foreground: 224 22% 14%;
 
-    --card: 38 25% 99%;
+    --card: 38 35% 97.5%;
     --card-foreground: 224 22% 14%;
 
     --popover: 38 25% 99%;
@@ -175,7 +175,7 @@
     font-size: 0.625rem;
     font-weight: 700;
     letter-spacing: 0.05em;
-    color: hsl(var(--primary) / 0.65);
+    color: hsl(37 75% 48% / 0.7);
     vertical-align: super;
     line-height: 0;
     margin-right: 0.2em;

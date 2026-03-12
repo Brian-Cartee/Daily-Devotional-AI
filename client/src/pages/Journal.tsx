@@ -362,7 +362,7 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: nu
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.3 }}
-      className="bg-card border border-border rounded-2xl p-5 relative group"
+      className="bg-[#fdf8f0] dark:bg-amber-950/15 border border-amber-200/60 dark:border-amber-800/30 rounded-2xl p-5 relative group"
       data-testid={`journal-entry-${entry.id}`}
     >
       {entry.reference && (
