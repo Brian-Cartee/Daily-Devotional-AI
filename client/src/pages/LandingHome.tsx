@@ -239,8 +239,17 @@ export default function LandingHome() {
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-        {/* Share App — top right of hero */}
-        <div className="absolute top-4 right-4 z-20">
+        {/* Brand mark + Share App — top right of hero */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col items-center gap-2">
+          {/* Watermark logo — brand stamp, not a button */}
+          <img
+            src={logoSmall}
+            alt=""
+            aria-hidden="true"
+            className="w-10 h-10 object-contain pointer-events-none select-none drop-shadow-md"
+            style={{ opacity: 0.32, filter: "drop-shadow(0 1px 8px rgba(0,0,0,0.4))" }}
+          />
+          {/* Share button — clean, no logo */}
           <button
             onClick={handleShareApp}
             data-testid="btn-share-app"
@@ -248,7 +257,7 @@ export default function LandingHome() {
           >
             {shared
               ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-              : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#3b1f7a]" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-5 h-5 object-contain p-0.5" alt="" /></span> Share App</>
+              : <><MessageCircle className="w-3.5 h-3.5 opacity-80" /> Share App</>
             }
           </button>
         </div>
