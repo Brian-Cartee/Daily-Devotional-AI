@@ -5,7 +5,7 @@ import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, CalendarCheck } from "lucide-react";
+import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, CalendarCheck } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -265,6 +265,46 @@ export default function LandingHome() {
           className="flex flex-col gap-3"
         >
           <DevotionalCard />
+
+          {/* Pray card — full width */}
+          <Link href="/pray">
+            <div
+              data-testid="card-pray"
+              className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
+            >
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
+              <img
+                src={logoWhite}
+                alt=""
+                aria-hidden="true"
+                className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"
+                style={{ filter: "invert(1)" }}
+              />
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60">
+                  <Heart className="w-5 h-5 text-rose-500" />
+                </div>
+                <div className="flex-1 min-w-0 py-0.5 pr-14">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600">
+                      Guided Prayer
+                    </span>
+                  </div>
+                  <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+                    Pray
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Bring whatever is on your heart — worry, gratitude, grief, or hope. AI helps you shape your prayer, rooted in God's Word.
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-rose-500 group-hover:gap-2.5 transition-all">
+                    Open Prayer
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow }) => (
             <Link key={href} href={href}>
