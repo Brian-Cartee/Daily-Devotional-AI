@@ -546,12 +546,9 @@ export default function Devotional() {
               <div className="absolute top-4 right-4 z-10">
                 <button
                   data-testid="button-generate-verse-art"
-                  onClick={() => {
-                    if (!isProVerifiedLocally()) { setShowUpgrade(true); return; }
-                    verseArtMutation.mutate();
-                  }}
+                  onClick={() => verseArtMutation.mutate()}
                   disabled={verseArtMutation.isPending}
-                  title={verseArtUrl ? "Regenerate AI Verse Art (Pro)" : "Generate AI Verse Art (Pro)"}
+                  title={verseArtUrl ? "Regenerate AI Verse Art" : "Generate AI Verse Art"}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-md border border-white/20 bg-white/10 hover:bg-white/20 transition-all disabled:opacity-60"
                 >
                   {verseArtMutation.isPending
@@ -560,7 +557,6 @@ export default function Devotional() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/75">
                     {verseArtUrl ? "Regen Art" : "AI Art"}
                   </span>
-                  {!isProVerifiedLocally() && <span className="text-[9px] text-amber-300/90 font-bold">Pro</span>}
                 </button>
               </div>
 

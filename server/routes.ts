@@ -824,7 +824,8 @@ What you never do:
 
       const prompt = `A breathtaking, painterly spiritual landscape that captures the essence of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Cinematic oil painting style. Scene: dramatic natural scenery such as golden sunrise over misty mountains, ancient cathedral forest with God-rays of light, calm ocean at sunset with dramatic clouds, rolling hills at golden hour, or Milky Way over a wilderness valley. Rich warm tones, atmospheric depth, spiritual mood. IMPORTANT: absolutely no people, no human figures, no faces, no text, no words, no letters anywhere in the image. Pure nature only.`;
 
-      const response = await openai.images.generate({
+      // Use direct OpenAI client — the AI integrations proxy doesn't support image generation
+      const response = await openaiTTS.images.generate({
         model: "dall-e-3",
         prompt,
         n: 1,
