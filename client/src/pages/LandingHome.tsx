@@ -320,7 +320,7 @@ export default function LandingHome() {
                 className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full flex flex-col"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
-                <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-2 right-2 w-9 h-9 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
+                <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 mb-3">
                   <Heart className="w-4.5 h-4.5 text-rose-500" />
                 </div>
@@ -348,7 +348,7 @@ export default function LandingHome() {
               style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
             >
               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-500 opacity-70 rounded-l-2xl" />
-              <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-2 right-2 w-9 h-9 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
+              <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-200 to-orange-100 shadow-sm shadow-amber-200/60 flex items-center justify-center shrink-0 mb-3">
                 <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
               </div>
