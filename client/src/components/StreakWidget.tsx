@@ -56,7 +56,7 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
 
   function getSubtitle() {
     if (streak >= 7) return `${streak} days strong — keep going.`;
-    if (streak > 1) return `${streak} days in a row. Don't break the chain.`;
+    if (streak > 1) return `${streak} days in a row. Don't break the momentum.`;
     if (streak === 1 && visitedToday) return "Day one — well done for showing up.";
     return "Your walk starts with one step.";
   }
