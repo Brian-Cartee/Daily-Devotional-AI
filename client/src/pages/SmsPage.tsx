@@ -1,6 +1,7 @@
 import { MessageCircle, ArrowRight, BookOpen, Heart, Bell, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
-import logoSmall from "@assets/P_(1024_x_1024_px)_(64_x_64_px)_1773256980463.png";
+
+const logoSmall = "/logo-mark-white.png";
 
 const EXAMPLES = [
   {

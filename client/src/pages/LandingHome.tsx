@@ -1,8 +1,4 @@
 import { useState } from "react";
-import logoSmall from "@assets/P_(1024_x_1024_px)_(64_x_64_px)_1773256980463.png";
-import logoWhite from "@assets/TRANS__(64_x_64_px)_1773259581717.png";
-import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
-
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, Flame } from "lucide-react";
@@ -13,6 +9,10 @@ import { hasBeenPrompted } from "@/lib/userName";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
+
+const logoSmall = "/logo-mark-white.png";
+const logoWhite = "/logo-mark-white.png";
+const logoLarge = "/logo-mark-white.png";
 
 const sections = [
   {
