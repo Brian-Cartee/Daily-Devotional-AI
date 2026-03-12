@@ -251,6 +251,7 @@ function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
                               alt=""
                               aria-hidden="true"
                               className="absolute inset-0 w-full h-full object-cover opacity-[0.14] pointer-events-none select-none"
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
                             />
                           )}
                           <div className={`absolute inset-0 bg-gradient-to-br ${journey.colorFrom} ${journey.colorTo} pointer-events-none`} />

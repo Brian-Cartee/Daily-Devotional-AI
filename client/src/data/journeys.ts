@@ -1210,7 +1210,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-teal-500",
     pillBg: "bg-teal-500/10",
     pillText: "text-teal-600",
-    image: "https://images.unsplash.com/photo-1499155286265-79a3e96e8be4?w=800&q=70&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1527430253228-e93688616381?w=800&q=70&auto=format&fit=crop",
     entries: JESUS_PATH,
   },
   {
@@ -1226,7 +1226,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-green-600",
     pillBg: "bg-green-500/10",
     pillText: "text-green-700",
-    image: "https://images.unsplash.com/photo-1476900543704-4312b21a13a0?w=800&q=70&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=70&auto=format&fit=crop",
     entries: SERMON_MOUNT_PATH,
   },
   {
