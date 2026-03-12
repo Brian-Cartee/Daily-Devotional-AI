@@ -490,19 +490,19 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="bg-card border border-border/60 rounded-2xl px-6 py-6 shadow-sm mb-5"
+            className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-2xl px-6 py-6 shadow-sm mb-5"
           >
             {!submitted ? (
               <>
                 <form onSubmit={generate} className="flex gap-2.5 mb-5">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-600/60 dark:text-amber-400/60" />
                     <input
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       placeholder='e.g. "anxiety", "Romans 8", "forgiveness"'
                       data-testid="quick-study-input"
-                      className="w-full bg-background border border-border/60 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/25"
+                      className="w-full bg-[#faf5ea] dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/40 rounded-xl pl-10 pr-4 py-3 text-sm text-amber-900 dark:text-amber-100 placeholder:text-amber-500/50 dark:placeholder:text-amber-400/40 outline-none focus:ring-2 focus:ring-amber-400/30"
                     />
                   </div>
                   <Button type="submit" disabled={!topic.trim()} className="rounded-xl font-semibold shrink-0 px-5" data-testid="quick-study-submit">
@@ -510,14 +510,14 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                   </Button>
                 </form>
                 <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">Try one of these</p>
+                  <p className="text-[11px] font-semibold text-amber-700/70 dark:text-amber-500/60 uppercase tracking-widest mb-2.5">Try one of these</p>
                   <div className="flex flex-wrap gap-2">
                     {SUGGESTIONS.map((s) => (
                       <button
                         key={s}
                         data-testid={`suggestion-${s}`}
                         onClick={() => { setTopic(s); generate(null, s); }}
-                        className="px-3 py-1.5 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary border border-border/40 text-[12px] font-medium text-muted-foreground transition-colors"
+                        className="px-3 py-1.5 rounded-full bg-[#faf5ea] dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:text-amber-800 dark:hover:text-amber-300 border border-amber-200/60 dark:border-amber-700/40 text-[12px] font-medium text-amber-800/70 dark:text-amber-400/80 transition-colors"
                       >
                         {s}
                       </button>
@@ -575,9 +575,9 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-8">
-            <div className="flex-1 h-px bg-border/40" />
-            <span className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest">Reading Tracks</span>
-            <div className="flex-1 h-px bg-border/40" />
+            <div className="flex-1 h-px bg-amber-200/50 dark:bg-amber-800/30" />
+            <span className="text-[11px] font-semibold text-amber-700/60 dark:text-amber-500/50 uppercase tracking-widest">Reading Tracks</span>
+            <div className="flex-1 h-px bg-amber-200/50 dark:bg-amber-800/30" />
           </div>
 
           {/* Today's Track Reading */}
@@ -593,7 +593,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.6 }}
           >
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center mb-3">
+            <p className="text-xs font-semibold text-amber-700/70 dark:text-amber-500/60 uppercase tracking-widest text-center mb-3">
               {activeTrack ? "Switch Track" : "Choose Your Track"}
             </p>
             <div className="grid grid-cols-2 gap-2.5">
@@ -608,12 +608,12 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                     className={`relative rounded-2xl p-4 text-left transition-all duration-300 border ${
                       isActive
                         ? `${colors.bg} ${colors.border} shadow-md ring-2 ring-offset-1 ring-offset-background ring-current/20`
-                        : "bg-white/40 border-border/40 hover:bg-white/60 hover:shadow-sm"
+                        : "bg-[#fdf8f0] dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300/70 hover:shadow-md hover:shadow-amber-100/50"
                     }`}
                   >
                     <span className="text-2xl mb-2 block">{track.icon}</span>
-                    <p className="text-sm font-bold text-foreground leading-tight">{track.name}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{track.description}</p>
+                    <p className="text-sm font-bold text-amber-900 dark:text-amber-100 leading-tight">{track.name}</p>
+                    <p className="text-[11px] text-amber-700/60 dark:text-amber-400/60 mt-0.5 leading-tight">{track.description}</p>
                     {isActive && (
                       <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${colors.pill}`}>
                         Active
@@ -633,7 +633,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                 className={`col-span-2 rounded-2xl p-4 text-left transition-all duration-300 border ${
                   storyFinderOpen
                     ? "bg-violet-50/70 dark:bg-violet-950/30 border-violet-300/60 dark:border-violet-700/50 shadow-sm"
-                    : "bg-white/40 border-border/40 hover:bg-white/60 hover:shadow-sm"
+                    : "bg-[#fdf8f0] dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300/70 hover:shadow-md hover:shadow-amber-100/50"
                 }`}
               >
                 <div className="flex items-center justify-between">
