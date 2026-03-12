@@ -7,6 +7,8 @@ import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 
+const logoSmall = "/logo-mark-white.png";
+
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
   { href: "/understand", label: "Journey",    icon: Compass },

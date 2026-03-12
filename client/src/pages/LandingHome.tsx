@@ -246,7 +246,7 @@ export default function LandingHome() {
           >
             {shared
               ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-              : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-6 h-6 object-contain" alt="" /></span> Share App</>
+              : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#3b1f7a]" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-5 h-5 object-contain p-0.5" alt="" /></span> Share App</>
             }
           </button>
         </div>
@@ -316,7 +316,7 @@ export default function LandingHome() {
                   alt=""
                   aria-hidden="true"
                   className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"
-                  style={{ filter: "invert(1)" }}
+                  
                 />
                 <div className="relative z-10 flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
@@ -357,7 +357,7 @@ export default function LandingHome() {
                 <img src="https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=500&q=70&auto=format&fit=crop" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" />
                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5 pointer-events-none" />
                 <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
-                <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
+                <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"  />
                 <div className="relative z-10 flex flex-col flex-1">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 mb-3">
                     <Heart className="w-4.5 h-4.5 text-rose-500" />
@@ -388,7 +388,7 @@ export default function LandingHome() {
               <img src="https://images.unsplash.com/photo-1532452119098-a3650b3c46d3?w=500&q=70&auto=format&fit=crop" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" onError={e => (e.currentTarget.style.display = "none")} />
               <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5 pointer-events-none" />
               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
-              <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
+              <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"  />
               <div className="relative z-10 flex flex-col flex-1">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 flex items-center justify-center shrink-0 mb-3">
                   <MessageCircle className="w-4.5 h-4.5 text-rose-500" />
@@ -420,7 +420,7 @@ export default function LandingHome() {
           className="relative mt-5 rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden"
           data-testid="commitment-card"
         >
-          <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.15] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
+          <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.15] pointer-events-none select-none"  />
           <button
             onClick={() => setExpanded(v => !v)}
             data-testid="btn-commitment-toggle"
