@@ -117,14 +117,14 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
             </div>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-3">
-              <Lock className="w-3 h-3" /> Daily Limit Reached
+              <Sparkles className="w-3 h-3" /> You're Going Deep Today
             </div>
 
             <h2 className="text-xl font-extrabold text-white tracking-tight">
-              You've used all {AI_FREE_LIMIT} free AI responses today
+              You've used your {AI_FREE_LIMIT} free AI responses
             </h2>
             <p className="text-white/80 text-sm mt-2 leading-snug">
-              Upgrade to Pro for unlimited daily responses and the full Shepherd's Path experience.
+              That's a sign of real engagement with God's Word. Go Pro to keep the conversation going — no limits, ever.
             </p>
 
             <div className="flex items-center justify-center gap-1.5 mt-3 text-white/60 text-xs">
@@ -224,12 +224,16 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
               </span>
             </div>
 
+            <p className="text-center text-[11px] text-muted-foreground/50 italic -mt-1">
+              Joining thousands of believers walking the path daily
+            </p>
+
             <button
               data-testid="btn-upgrade-later"
               onClick={onClose}
               className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
             >
-              Continue with free — responses reset in {resetTime}
+              Come back tomorrow — resets in {resetTime}
             </button>
 
             {/* Already have Pro */}

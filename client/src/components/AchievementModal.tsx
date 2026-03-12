@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
-import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2 } from "lucide-react";
+import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import type { Achievement } from "@/lib/achievements";
 import { useTTS } from "@/hooks/use-tts";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 
 interface AchievementModalProps {
   achievement: Achievement;
@@ -11,6 +13,9 @@ interface AchievementModalProps {
 
 export function AchievementModal({ achievement, onClose }: AchievementModalProps) {
   const { toggle, stop, playing, loading } = useTTS();
+  const showProNudge =
+    !isProVerifiedLocally() &&
+    ["streak_7", "streak_14", "streak_30", "streak_100"].includes(achievement.id);
 
   const handleClose = () => {
     stop();
@@ -120,6 +125,18 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
             Keep Going
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
+
+          {showProNudge && (
+            <Link
+              href="/pricing"
+              onClick={handleClose}
+              data-testid="btn-achievement-pro-nudge"
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-2xl border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-semibold hover:bg-amber-100/80 dark:hover:bg-amber-950/40 transition-colors"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              Protect your streak with Pro — never lose it to a busy day
+            </Link>
+          )}
         </div>
       </motion.div>
     </motion.div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap } from "lucide-react";
 import { createShareImage } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -21,6 +21,8 @@ import { getUserName } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { isProVerifiedLocally } from "@/lib/proStatus";
+import { Link } from "wouter";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
 import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, type Achievement } from "@/lib/achievements";
@@ -437,6 +439,24 @@ export default function Devotional() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Streak Pro nudge — soft, contextual, only at 5+ days for non-Pro users */}
+          {streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 1.1, ease: "easeOut" }}
+            >
+              <Link
+                href="/pricing"
+                data-testid="link-streak-pro-nudge"
+                className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors group"
+              >
+                <Zap className="w-3 h-3 shrink-0" />
+                <span>{streak.currentStreak}-day streak — Pro protects it so one busy day never resets your progress</span>
+              </Link>
+            </motion.div>
+          )}
 
           {/* STEP 1: TODAY'S WORD */}
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
