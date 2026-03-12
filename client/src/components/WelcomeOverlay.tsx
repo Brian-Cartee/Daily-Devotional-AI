@@ -64,19 +64,17 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
               <div
-                className="w-20 h-20"
+                aria-label="Shepherd's Path logo"
                 style={{
+                  width: 80,
+                  height: 80,
                   borderRadius: "50%",
-                  overflow: "hidden",
+                  backgroundImage: "url(/sp-logo.png)",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
                   boxShadow: "0 8px 32px rgba(76,29,149,0.55), 0 2px 8px rgba(0,0,0,0.35)"
                 }}
-              >
-                <img
-                  src="/sp-logo.png"
-                  alt="Shepherd's Path logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
