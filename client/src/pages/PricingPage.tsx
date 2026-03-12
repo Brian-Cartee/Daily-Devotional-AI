@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Check, Zap, Loader2, ArrowLeft, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare } from "lucide-react";
+import { Check, Zap, Loader2, ArrowLeft, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
@@ -27,6 +27,24 @@ const PRO_FEATURES = [
   { icon: FileText, text: "PDF export with beautiful formatting" },
   { icon: BookMarked, text: "Unlimited sermon notes" },
   { icon: Mail, text: "Weekly AI-powered spiritual summary email" },
+];
+
+const PRO_SCENARIOS = [
+  {
+    icon: Zap,
+    title: "Never cut off mid-reflection",
+    body: "Free users hit a daily limit. Pro means every question, prayer, and reflection goes as deep as God takes you — no interruptions.",
+  },
+  {
+    icon: Download,
+    title: "Take your notes with you",
+    body: "Export your journal, devotional notes, and prayers as a beautifully formatted PDF — to print, share, or keep forever.",
+  },
+  {
+    icon: Flame,
+    title: "Streak protection built in",
+    body: "Miss a day of life, not a day of faith. Pro protects your streak so one busy day doesn't wipe out weeks of consistency.",
+  },
 ];
 
 const WHITE_LABEL_TIERS = [
@@ -94,6 +112,33 @@ const WHITE_LABEL_WHAT_YOU_GET = [
   { icon: MessageSquare, text: "Custom devotional paths tied to your sermon series" },
   { icon: Users, text: "All features: devotionals, journeys, Bible, journaling, prayer" },
   { icon: ShieldCheck, text: "Isolated deployment — your congregation's data stays yours" },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "Do I need a credit card to start?",
+    a: "No. The free plan is completely free — no card required. You only need payment info when upgrading to Pro."
+  },
+  {
+    q: "What counts as an AI response?",
+    a: `Each AI-generated reflection, prayer, explanation, or study response counts as one. Free users get ${AI_FREE_LIMIT} per day, resetting at midnight. Listening to audio and reading the Bible never count.`
+  },
+  {
+    q: "Is the AI content biblically sound?",
+    a: "Yes — every AI response is grounded in the actual Bible passage being studied and shaped by the historic, orthodox Christian faith. We do not use AI to reinterpret or replace Scripture. The Word is our only source and standard. You can read our full commitment on the home screen."
+  },
+  {
+    q: "Can I cancel Pro anytime?",
+    a: "Yes — you can cancel at any time from your Stripe account. Your Pro access continues until the end of the paid period."
+  },
+  {
+    q: "What is the 30-day guarantee?",
+    a: "If you're not satisfied within 30 days of your purchase, just reach out and we'll refund you — no questions asked."
+  },
+  {
+    q: "I already subscribed — how do I activate Pro?",
+    a: "On any AI limit screen, tap 'Already subscribed?' and enter your purchase email to restore access on this device."
+  },
 ];
 
 export default function PricingPage() {
@@ -244,12 +289,13 @@ export default function PricingPage() {
 
           <div className="px-6 pt-6 pb-5 border-b border-primary/20 bg-gradient-to-br from-primary/5 to-amber-500/5">
             <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Pro</p>
-            <div className="flex items-baseline gap-1 mb-1">
+            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
               {plan === "annual" ? (
                 <>
                   <span className="text-3xl font-extrabold text-foreground">$44.99</span>
                   <span className="text-sm text-muted-foreground">/year</span>
-                  <span className="text-xs text-muted-foreground ml-1">($3.75/mo)</span>
+                  <span className="text-xs text-muted-foreground/60 line-through">$71.88</span>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-400/15 rounded px-1.5 py-0.5">Save $26.89</span>
                 </>
               ) : (
                 <>
@@ -285,7 +331,14 @@ export default function PricingPage() {
               {loading ? "Redirecting…" : plan === "annual" ? "Get Pro — $44.99/yr" : "Get Pro — $5.99/mo"}
             </Button>
 
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+            {/* Trust anchor */}
+            <p className="text-[11px] text-muted-foreground text-center">
+              {plan === "annual"
+                ? "Just $3.75/mo — less than a cup of coffee a month"
+                : "Less than $0.20/day — less than a cup of coffee a month"}
+            </p>
+
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
               <span>
                 30-day money-back guarantee ·{" "}
@@ -302,25 +355,64 @@ export default function PricingPage() {
         </motion.div>
       </div>
 
+      {/* "What changes with Pro?" scenarios */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.32 }}
+        className="max-w-2xl mx-auto px-5 pb-10"
+      >
+        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center mb-4">
+          What actually changes with Pro
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {PRO_SCENARIOS.map(({ icon: Icon, title, body }) => (
+            <div
+              key={title}
+              className="bg-muted/30 border border-border rounded-2xl px-5 py-4 flex flex-col gap-2"
+            >
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Icon className="w-4 h-4 text-primary" />
+              </div>
+              <p className="text-[13px] font-bold text-foreground leading-snug">{title}</p>
+              <p className="text-[12px] text-muted-foreground leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── Divider: Individual → Ministry ── */}
+      <div className="max-w-2xl mx-auto px-5 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-border" />
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/50 border border-border">
+            <Building2 className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">For Churches & Ministries</span>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+      </div>
+
       {/* White Label Section */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
-        className="max-w-2xl mx-auto px-5 pb-8 mt-6"
+        className="max-w-2xl mx-auto px-5 pb-8"
       >
         {/* Section header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-widest mb-3">
-            <Building2 className="w-3 h-3" />
-            For Churches & Ministries
-          </div>
           <h2 className="text-2xl font-extrabold text-foreground tracking-tight mb-2">
             Ministry Edition
           </h2>
-          <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mx-auto">
+          <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
             Launch a fully branded faith app for your congregation — your name, your logo, your domain. Powered by the same technology, delivered in days.
           </p>
+          {/* Social proof */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-700 dark:text-amber-400 text-[11px] font-semibold">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            Already trusted by churches across the US
+          </div>
         </div>
 
         {/* What you get */}
@@ -378,22 +470,31 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* CTA */}
+        {/* CTA — Schedule a call */}
         <div className="bg-gradient-to-br from-primary/8 to-primary/4 border border-primary/20 rounded-3xl px-6 py-6 text-center">
-          <Building2 className="w-7 h-7 text-primary mx-auto mb-3" />
-          <h3 className="text-[15px] font-bold text-foreground mb-1.5">Interested in a white-label partnership?</h3>
+          <CalendarClock className="w-7 h-7 text-primary mx-auto mb-3" />
+          <h3 className="text-[15px] font-bold text-foreground mb-1.5">Ready to bring this to your church?</h3>
           <p className="text-[13px] text-muted-foreground leading-relaxed mb-4 max-w-sm mx-auto">
-            We'll walk you through everything — no commitment required. Most churches are up and running within a week.
+            Book a free 15-minute call — we'll walk through your needs, show you a live demo, and answer every question. No commitment, no pressure.
           </p>
-          <a
-            href="mailto:partnerships@shepherdspathai.com?subject=Ministry%20Edition%20Inquiry"
-            data-testid="link-whitelabel-contact"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-primary-foreground text-[13px] font-bold hover:opacity-90 transition-opacity"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            Contact us about white-label
-          </a>
-          <p className="text-[11px] text-muted-foreground mt-3">partnerships@shepherdspathai.com</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="mailto:partnerships@shepherdspathai.com?subject=Ministry%20Edition%20—%20Schedule%20a%20Demo"
+              data-testid="link-whitelabel-contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-primary-foreground text-[13px] font-bold hover:opacity-90 transition-opacity"
+            >
+              <CalendarClock className="w-3.5 h-3.5" />
+              Book a 15-min demo call
+            </a>
+            <a
+              href="mailto:partnerships@shepherdspathai.com?subject=Ministry%20Edition%20Inquiry"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-border bg-background text-[13px] font-semibold text-foreground hover:bg-muted transition-colors"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              Send an email instead
+            </a>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3">partnerships@shepherdspathai.com · Most churches are live within a week</p>
         </div>
       </motion.div>
 
@@ -407,28 +508,7 @@ export default function PricingPage() {
         <h2 className="text-lg font-bold text-foreground mb-4 text-center">Common Questions</h2>
 
         <div className="space-y-3">
-          {[
-            {
-              q: "Do I need a credit card to start?",
-              a: "No. The free plan is completely free — no card required. You only need payment info when upgrading to Pro."
-            },
-            {
-              q: "What counts as an AI response?",
-              a: `Each AI-generated reflection, prayer, explanation, or study response counts as one. Free users get ${AI_FREE_LIMIT} per day, resetting at midnight. Listening to audio and reading the Bible never count.`
-            },
-            {
-              q: "Can I cancel Pro anytime?",
-              a: "Yes — you can cancel at any time from your Stripe account. Your Pro access continues until the end of the paid period."
-            },
-            {
-              q: "What is the 30-day guarantee?",
-              a: "If you're not satisfied within 30 days of your purchase, just reach out and we'll refund you — no questions asked."
-            },
-            {
-              q: "I already subscribed — how do I activate Pro?",
-              a: "On any AI limit screen, tap 'Already subscribed?' and enter your purchase email to restore access on this device."
-            },
-          ].map(({ q, a }) => (
+          {FAQ_ITEMS.map(({ q, a }) => (
             <div key={q} className="bg-muted/30 border border-border rounded-2xl px-5 py-4">
               <p className="text-[13px] font-bold text-foreground mb-1.5">{q}</p>
               <p className="text-[13px] text-muted-foreground leading-relaxed">{a}</p>
