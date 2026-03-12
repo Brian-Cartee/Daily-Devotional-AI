@@ -371,7 +371,7 @@ export default function Devotional() {
 
           {/* Streak indicator + weekly tracker */}
           <AnimatePresence>
-            {streak && streak.currentStreak >= 1 && (
+            {streak && streak.currentStreak >= 3 && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
