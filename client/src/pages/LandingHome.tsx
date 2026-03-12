@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame } from "lucide-react";
+import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
