@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles } from "lucide-react";
+import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Bookmark, NotebookPen } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -71,6 +71,70 @@ const AI_CHIPS = [
   { label: "Study a passage", icon: BookOpen, href: "/study", cls: "text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border-amber-300/40" },
   { label: "Start a journey", icon: Compass, href: "/understand", cls: "text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-300/40" },
 ];
+
+const QUICK_LINKS = [
+  {
+    href: "/devotional",
+    icon: Sun,
+    label: "Devotional",
+    accent: "from-teal-400 to-emerald-500",
+    iconBg: "bg-teal-50",
+    iconColor: "text-teal-600",
+    border: "border-teal-900/10",
+    testid: "bookmark-devotional",
+  },
+  {
+    href: "/journal",
+    icon: NotebookPen,
+    label: "Journal",
+    accent: "from-amber-400 to-orange-500",
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-600",
+    border: "border-amber-900/10",
+    testid: "bookmark-journal",
+  },
+  {
+    href: "/pray",
+    icon: Heart,
+    label: "Prayer",
+    accent: "from-rose-400 to-pink-500",
+    iconBg: "bg-rose-50",
+    iconColor: "text-rose-600",
+    border: "border-rose-900/10",
+    testid: "bookmark-prayer",
+  },
+];
+
+function QuickAccess() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="flex items-center gap-2 mb-2 px-0.5">
+        <Bookmark className="w-3.5 h-3.5 text-primary/50" />
+        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">Quick Access</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2.5">
+        {QUICK_LINKS.map(({ href, icon: Icon, label, accent, iconBg, iconColor, border, testid }) => (
+          <Link key={href} href={href}>
+            <div
+              data-testid={testid}
+              className={`group relative rounded-2xl border ${border} bg-card p-3.5 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col items-center gap-2.5 text-center`}
+            >
+              <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${accent} opacity-70 rounded-l-2xl`} />
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg} shadow-sm`}>
+                <Icon className={`w-[18px] h-[18px] ${iconColor}`} />
+              </div>
+              <span className="text-[12px] font-semibold text-foreground leading-tight">{label}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
 
 function HeroAIPrompt() {
   const [query, setQuery] = useState("");
@@ -383,6 +447,9 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
+          {/* Quick Access — pinned shortcuts */}
+          <QuickAccess />
+
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
 

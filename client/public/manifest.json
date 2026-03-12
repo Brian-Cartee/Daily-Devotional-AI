@@ -20,5 +20,28 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's Devotional",
+      "short_name": "Devotional",
+      "description": "Open today's daily devotional",
+      "url": "/devotional",
+      "icons": [{ "src": "/app-icon.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "My Journal",
+      "short_name": "Journal",
+      "description": "Write in your spiritual journal",
+      "url": "/journal",
+      "icons": [{ "src": "/app-icon.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Pray with AI",
+      "short_name": "Prayer",
+      "description": "Open a prayer session",
+      "url": "/pray",
+      "icons": [{ "src": "/app-icon.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }
