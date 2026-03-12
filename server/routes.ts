@@ -797,9 +797,27 @@ What you never do:
 
   // ── Verse Art (AI-generated image, cached per day) ───────────────────────────
 
+  // Verse art local cache directory — serves self-hosted images (OpenAI URLs expire in ~1hr)
+  const VERSE_ART_DIR = path.resolve(process.cwd(), "server/verse-art-cache");
+  if (!fs.existsSync(VERSE_ART_DIR)) fs.mkdirSync(VERSE_ART_DIR, { recursive: true });
+
+  app.get("/api/verse-art/image/:date", (req, res) => {
+    const filePath = path.join(VERSE_ART_DIR, `${req.params.date}.png`);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "Not found" });
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.sendFile(filePath);
+  });
+
   app.get("/api/verse-art/:date", async (req, res) => {
     try {
       const { date } = req.params;
+      // First check local disk cache
+      const localPath = path.join(VERSE_ART_DIR, `${date}.png`);
+      if (fs.existsSync(localPath)) {
+        return res.json({ imageUrl: `/api/verse-art/image/${date}`, cached: true });
+      }
+      // Fall back to DB (for any legacy entries)
       const art = await storage.getVerseArt(date);
       if (art) return res.json({ imageUrl: art.imageUrl, cached: true });
       return res.json({ imageUrl: null, cached: false });
@@ -818,9 +836,11 @@ What you never do:
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      // Return cached image if already generated for this date
-      const existing = await storage.getVerseArt(verseDate);
-      if (existing) return res.json({ imageUrl: existing.imageUrl, cached: true });
+      // Return self-hosted cached file if it already exists for this date
+      const localPath = path.join(VERSE_ART_DIR, `${verseDate}.png`);
+      if (fs.existsSync(localPath)) {
+        return res.json({ imageUrl: `/api/verse-art/image/${verseDate}`, cached: true });
+      }
 
       const prompt = `A breathtaking, painterly spiritual landscape that captures the essence of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Cinematic oil painting style. Scene: dramatic natural scenery such as golden sunrise over misty mountains, ancient cathedral forest with God-rays of light, calm ocean at sunset with dramatic clouds, rolling hills at golden hour, or Milky Way over a wilderness valley. Rich warm tones, atmospheric depth, spiritual mood. IMPORTANT: absolutely no people, no human figures, no faces, no text, no words, no letters anywhere in the image. Pure nature only.`;
 
@@ -834,12 +854,20 @@ What you never do:
         style: "vivid",
       });
 
-      const imageUrl = response.data[0]?.url;
-      if (!imageUrl) return res.status(500).json({ message: "No image returned" });
+      const tempUrl = response.data[0]?.url;
+      if (!tempUrl) return res.status(500).json({ message: "No image returned" });
 
-      // Cache it so all users on this day share the same image
-      await storage.saveVerseArt(verseDate, verseReference, imageUrl);
-      res.json({ imageUrl, cached: false });
+      // Download and save permanently — OpenAI URLs expire in ~1hr
+      const imgRes = await fetch(tempUrl);
+      if (!imgRes.ok) throw new Error("Failed to download generated image");
+      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+      fs.writeFileSync(localPath, imgBuffer);
+
+      // Save stable local URL to DB
+      const stableUrl = `/api/verse-art/image/${verseDate}`;
+      await storage.saveVerseArt(verseDate, verseReference, stableUrl);
+
+      res.json({ imageUrl: stableUrl, cached: false });
     } catch (e: any) {
       console.error("verse-art generate error:", e);
       res.status(500).json({ message: e?.message ?? "Image generation failed" });
