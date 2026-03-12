@@ -161,7 +161,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               { icon: "💡", title: "Bible Study", desc: "Deep AI-guided study tools" },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-2 bg-muted/30 rounded-xl px-3 py-2.5">
-                <span className="text-sm mt-0.5 shrink-0">{f.icon}</span>
+                <span className="text-lg mt-0.5 shrink-0">{f.icon}</span>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground leading-tight">{f.title}</p>
                   <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
