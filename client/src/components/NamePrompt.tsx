@@ -9,7 +9,7 @@ interface Props {
   onDone: () => void;
 }
 
-type VoiceId = "onyx" | "nova";
+type VoiceId = "onyx" | "shimmer";
 
 export function NamePrompt({ onDone }: Props) {
   const [step, setStep] = useState<"name" | "voice">("name");
@@ -107,7 +107,7 @@ export function NamePrompt({ onDone }: Props) {
 
   const voices: { id: VoiceId; label: string; description: string }[] = [
     { id: "onyx", label: "Voice A", description: "Deep & warm" },
-    { id: "nova", label: "Voice B", description: "Gentle & clear" },
+    { id: "shimmer", label: "Voice B", description: "Smooth & elegant" },
   ];
 
   return (

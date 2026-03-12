@@ -34,7 +34,7 @@ export function hasBeenPrompted(): boolean {
 export function getUserVoice(): string {
   try {
     const v = localStorage.getItem(VOICE_KEY);
-    if (v === "onyx" || v === "nova") return v;
+    if (v === "onyx" || v === "shimmer") return v;
     return "onyx";
   } catch {
     return "onyx";

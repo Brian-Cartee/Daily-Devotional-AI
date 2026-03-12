@@ -222,41 +222,59 @@ function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
           </motion.div>
         </div>
 
-        <div className="space-y-4">
-          {ALL_JOURNEYS.map((journey, i) => (
-            <motion.button
-              key={journey.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-              onClick={() => onSelect(journey)}
-              data-testid={`journey-card-${journey.id}`}
-              className={`w-full text-left rounded-2xl bg-gradient-to-br ${journey.colorFrom} ${journey.colorTo} border ${journey.borderColor} bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-xl ${journey.pillBg} flex items-center justify-center flex-shrink-0`}>
-                  <MapPin className={`w-5 h-5 ${journey.iconColor}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className={`text-[11px] font-bold uppercase tracking-widest ${journey.pillText} ${journey.pillBg} px-2 py-0.5 rounded-full`}>
-                      {journey.length} passages
-                    </span>
-                    {journey.badgeText && (
-                      <span className={`text-[11px] font-bold uppercase tracking-widest text-white px-2 py-0.5 rounded-full ${journey.badgeBg}`}>
-                        {journey.badgeText}
-                      </span>
-                    )}
+        {(() => {
+          const categories = Array.from(new Set(ALL_JOURNEYS.map(j => j.category)));
+          return (
+            <div className="space-y-7">
+              {categories.map((cat, ci) => {
+                const group = ALL_JOURNEYS.filter(j => j.category === cat);
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center gap-2 mb-3 px-0.5">
+                      <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">{cat}</span>
+                      <div className="flex-1 h-px bg-border/60" />
+                    </div>
+                    <div className="space-y-3">
+                      {group.map((journey, i) => (
+                        <motion.button
+                          key={journey.id}
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: (ci * 0.1) + i * 0.07 }}
+                          onClick={() => onSelect(journey)}
+                          data-testid={`journey-card-${journey.id}`}
+                          className={`w-full text-left rounded-2xl bg-gradient-to-br ${journey.colorFrom} ${journey.colorTo} border ${journey.borderColor} bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className={`w-10 h-10 rounded-xl ${journey.pillBg} flex items-center justify-center flex-shrink-0`}>
+                              <MapPin className={`w-5 h-5 ${journey.iconColor}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className={`text-[11px] font-bold uppercase tracking-widest ${journey.pillText} ${journey.pillBg} px-2 py-0.5 rounded-full`}>
+                                  {journey.length} passages
+                                </span>
+                                {journey.badgeText && (
+                                  <span className={`text-[11px] font-bold uppercase tracking-widest text-white px-2 py-0.5 rounded-full ${journey.badgeBg}`}>
+                                    {journey.badgeText}
+                                  </span>
+                                )}
+                              </div>
+                              <h2 className="text-[17px] font-bold text-foreground leading-tight">{journey.title}</h2>
+                              <p className={`text-xs font-semibold ${journey.iconColor} mb-1.5`}>{journey.subtitle}</p>
+                              <p className="text-sm text-muted-foreground leading-snug">{journey.description}</p>
+                            </div>
+                            <ChevronDown className={`w-5 h-5 ${journey.iconColor} flex-shrink-0 mt-1 -rotate-90`} />
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
                   </div>
-                  <h2 className="text-[17px] font-bold text-foreground leading-tight">{journey.title}</h2>
-                  <p className={`text-xs font-semibold ${journey.iconColor} mb-1.5`}>{journey.subtitle}</p>
-                  <p className="text-sm text-muted-foreground leading-snug">{journey.description}</p>
-                </div>
-                <ChevronDown className={`w-5 h-5 ${journey.iconColor} flex-shrink-0 mt-1 -rotate-90`} />
-              </div>
-            </motion.button>
-          ))}
-        </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </main>
   );

@@ -18,9 +18,9 @@ const sections = [
   {
     href: "/understand",
     icon: Compass,
-    pillText: "4 Journeys — You Choose",
+    pillText: "Several Amazing Journeys — You Choose",
     title: "Bible Journeys",
-    description: "Choose from 4 guided paths — a 30-Day Foundation, Lent, the Psalms, or the Life of Jesus. Each one takes you deeper.",
+    description: "Guided paths through Scripture — the Psalms, the Life of Jesus, Lent, the Sermon on the Mount, and more. Each one takes you deeper.",
     cta: "Explore Journeys",
     testid: "card-understand",
     imageBg: "bg-gradient-to-br from-indigo-500/10 to-violet-500/5",
@@ -344,24 +344,23 @@ export default function LandingHome() {
             <a
               href="sms:+18339629341&body=Pray"
               data-testid="btn-sms-text-us"
-              className="group relative rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-700/40 p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 flex flex-col"
-              style={{ background: "linear-gradient(135deg, hsl(38 96% 97%) 0%, hsl(43 100% 94%) 100%)" }}
+              className="group relative rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden flex flex-col"
             >
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-500 opacity-70 rounded-l-2xl" />
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
               <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-200 to-orange-100 shadow-sm shadow-amber-200/60 flex items-center justify-center shrink-0 mb-3">
-                <MessageCircle className="w-4.5 h-4.5 text-amber-600" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 shadow-sm shadow-rose-200/60 flex items-center justify-center shrink-0 mb-3">
+                <MessageCircle className="w-4.5 h-4.5 text-rose-500" />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 self-start mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 self-start mb-2">
                 No app needed
               </span>
-              <h2 className="text-[15px] font-bold text-amber-900 mb-1 leading-tight tracking-tight">
+              <h2 className="text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight">
                 Text PRAY
               </h2>
-              <p className="text-[12px] text-amber-800/70 leading-relaxed flex-1">
+              <p className="text-[12px] text-muted-foreground leading-relaxed flex-1">
                 Just your phone. Text anything on your heart to our number — scripture and prayer come straight back.
               </p>
-              <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-amber-700 group-hover:gap-2 transition-all">
+              <div className="flex items-center gap-1 mt-3 text-[12px] font-semibold text-rose-500 group-hover:gap-2 transition-all">
                 Text +1 (833) 962-9341
                 <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
               </div>
