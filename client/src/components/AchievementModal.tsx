@@ -36,27 +36,46 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
         className="bg-background border border-border rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden"
         data-testid="achievement-modal"
       >
-        {/* Gradient header */}
-        <div className={`bg-gradient-to-br ${achievement.colorFrom} ${achievement.colorTo} px-7 pt-8 pb-12 text-center`}>
-          <motion.div
-            initial={{ scale: 0.5, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl mb-4 inline-block"
-          >
-            {achievement.emoji}
-          </motion.div>
+        {/* Header — photo or gradient */}
+        <div
+          className={`relative overflow-hidden px-7 pt-8 pb-12 text-center ${achievement.photo ? "" : `bg-gradient-to-br ${achievement.colorFrom} ${achievement.colorTo}`}`}
+        >
+          {achievement.photo && (
+            <>
+              <img
+                src={achievement.photo}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                style={{ filter: "brightness(0.85) saturate(1.1)" }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: `linear-gradient(to bottom, ${achievement.photoOverlay ?? "rgba(150,70,10,0.5)"} 0%, ${achievement.photoOverlay ?? "rgba(150,70,10,0.65)"} 100%)` }}
+              />
+            </>
+          )}
+          <div className="relative z-10">
+            <motion.div
+              initial={{ scale: 0.5, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="text-5xl mb-4 inline-block"
+            >
+              {achievement.emoji}
+            </motion.div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
-            Achievement Unlocked
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
+              Achievement Unlocked
+            </div>
+
+            <h2 className="text-xl font-extrabold text-white tracking-tight leading-tight drop-shadow-md">
+              {achievement.title}
+            </h2>
+            <p className="text-white/80 text-sm mt-1.5 drop-shadow">
+              {achievement.subtitle}
+            </p>
           </div>
-
-          <h2 className="text-xl font-extrabold text-white tracking-tight leading-tight">
-            {achievement.title}
-          </h2>
-          <p className="text-white/75 text-sm mt-1.5">
-            {achievement.subtitle}
-          </p>
         </div>
 
         {/* Pull-up card */}

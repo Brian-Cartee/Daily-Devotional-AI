@@ -9,6 +9,8 @@ export interface Achievement {
   voiceScript: string;
   colorFrom: string;
   colorTo: string;
+  photo?: string;
+  photoOverlay?: string;
 }
 
 export const ACHIEVEMENTS: Record<string, Achievement> = {
@@ -23,6 +25,8 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
       "Well, look at that. You just completed your first full devotional. You read God's Word, reflected on it, prayed through it, and thanked Him. That is the whole thing — and you nailed it. Not bad for a first timer. Not bad at all. God saw every moment of it. We will be right here tomorrow.",
     colorFrom: "from-amber-500",
     colorTo: "to-orange-500",
+    photo: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=800&q=80",
+    photoOverlay: "rgba(160,70,10,0.52)",
   },
   streak_1: {
     id: "streak_1",
@@ -35,6 +39,8 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
       "Day one is in the books. You showed up. In a world where everything is competing for your attention — your phone, the news, the noise — you chose God first. And honestly? That is kind of a big deal. Don't let it go to your head though. Just do it again tomorrow. And the day after that.",
     colorFrom: "from-amber-400",
     colorTo: "to-red-400",
+    photo: "https://images.unsplash.com/photo-1418050327236-8de8ba25f5a1?w=800&q=80",
+    photoOverlay: "rgba(140,50,10,0.50)",
   },
   streak_7: {
     id: "streak_7",
@@ -47,6 +53,8 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
       "Seven days in a row. Seven. At this point, you should probably just accept that this is your life now — and honestly, we think that is a fantastic life to have. The disciples walked with Jesus daily for years. You are doing the same thing. Seven days is the beginning of a habit. A habit is the beginning of a life. Keep going.",
     colorFrom: "from-yellow-400",
     colorTo: "to-amber-500",
+    photo: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+    photoOverlay: "rgba(130,80,0,0.48)",
   },
   streak_14: {
     id: "streak_14",
