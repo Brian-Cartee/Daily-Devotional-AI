@@ -133,6 +133,163 @@ function drawFallbackGradient(
   ctx.fillRect(0, 0, S, S);
 }
 
+// ── Tailwind gradient class → hex ─────────────────────────────────────────
+const TW_HEX: Record<string, string> = {
+  "from-amber-500": "#f59e0b",
+  "to-orange-500":  "#f97316",
+  "from-amber-400": "#fbbf24",
+  "to-red-400":     "#f87171",
+  "from-yellow-400":"#facc15",
+  "to-amber-500":   "#f59e0b",
+  "from-sky-400":   "#38bdf8",
+  "to-blue-500":    "#3b82f6",
+  "from-violet-500":"#8b5cf6",
+  "to-purple-600":  "#9333ea",
+  "from-rose-400":  "#fb7185",
+  "to-pink-600":    "#db2777",
+};
+
+function drawRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawAchievementGradient(
+  ctx: CanvasRenderingContext2D,
+  S: number,
+  colorFrom: string,
+  colorTo: string
+) {
+  const from = TW_HEX[colorFrom] ?? "#6b21a8";
+  const to   = TW_HEX[colorTo]   ?? "#9333ea";
+  const bg = ctx.createLinearGradient(0, 0, S * 0.7, S);
+  bg.addColorStop(0, from);
+  bg.addColorStop(1, to);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+  // Soft center glow
+  const glow = ctx.createRadialGradient(S / 2, S * 0.45, 0, S / 2, S * 0.45, S * 0.55);
+  glow.addColorStop(0, "rgba(255,255,255,0.14)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+}
+
+export async function createAchievementShareImage(achievement: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  photo?: string;
+  colorFrom: string;
+  colorTo: string;
+}): Promise<Blob> {
+  const S = 1080;
+  const canvas = document.createElement("canvas");
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext("2d")!;
+
+  // ── Background ──────────────────────────────────────────────
+  if (achievement.photo) {
+    try {
+      const img = await loadImage(achievement.photo);
+      drawImageCover(ctx, img, S, S);
+    } catch {
+      drawAchievementGradient(ctx, S, achievement.colorFrom, achievement.colorTo);
+    }
+  } else {
+    drawAchievementGradient(ctx, S, achievement.colorFrom, achievement.colorTo);
+  }
+
+  // ── Veils ───────────────────────────────────────────────────
+  // Uniform mid-tone
+  ctx.fillStyle = "rgba(0,0,0,0.38)";
+  ctx.fillRect(0, 0, S, S);
+  // Top darkening for brand header
+  const topVeil = ctx.createLinearGradient(0, 0, 0, S * 0.28);
+  topVeil.addColorStop(0, "rgba(0,0,0,0.68)");
+  topVeil.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = topVeil;
+  ctx.fillRect(0, 0, S, S);
+  // Bottom darkening for footer
+  const btmVeil = ctx.createLinearGradient(0, S * 0.66, 0, S);
+  btmVeil.addColorStop(0, "rgba(0,0,0,0)");
+  btmVeil.addColorStop(1, "rgba(0,0,0,0.78)");
+  ctx.fillStyle = btmVeil;
+  ctx.fillRect(0, 0, S, S);
+
+  // ── Brand header ────────────────────────────────────────────
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = "600 26px Georgia, serif";
+  ctx.fillText("SHEPHERD'S PATH", S / 2, 88);
+  horizontalGlowLine(ctx, 106, "rgba(255,255,255,0.22)");
+
+  // ── "Achievement Unlocked" pill ──────────────────────────────
+  ctx.font = "bold 22px Arial, sans-serif";
+  const badgeText = "ACHIEVEMENT UNLOCKED";
+  const badgeW = ctx.measureText(badgeText).width + 52;
+  const badgeH = 50;
+  const badgeX = (S - badgeW) / 2;
+  const badgeY = 186;
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  drawRoundRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  ctx.textAlign = "center";
+  ctx.fillText(badgeText, S / 2, badgeY + 33);
+
+  // ── Large emoji ──────────────────────────────────────────────
+  ctx.font = "148px serif";
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 24;
+  ctx.fillText(achievement.emoji, S / 2, 450);
+  ctx.shadowBlur = 0;
+
+  // ── Title ────────────────────────────────────────────────────
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.65)";
+  ctx.shadowBlur = 22;
+  const titleFontSize = achievement.title.length > 22 ? 58 : 72;
+  ctx.font = `bold ${titleFontSize}px Georgia, serif`;
+  ctx.textAlign = "center";
+  wrapText(ctx, achievement.title, S / 2, 560, 940, titleFontSize * 1.3);
+  ctx.shadowBlur = 0;
+
+  // ── Subtitle ─────────────────────────────────────────────────
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = "40px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText(achievement.subtitle, S / 2, 680);
+
+  // ── Divider ──────────────────────────────────────────────────
+  horizontalGlowLine(ctx, 722, "rgba(255,255,255,0.28)");
+
+  // ── Footer ───────────────────────────────────────────────────
+  horizontalGlowLine(ctx, S - 72, "rgba(255,255,255,0.14)");
+  ctx.fillStyle = "rgba(255,255,255,0.32)";
+  ctx.font = "24px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText("shepherdspathai.com", S / 2, S - 36);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob!), "image/png");
+  });
+}
+
 export async function createShareImage(
   verseText: string,
   reference: string

@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2, Zap } from "lucide-react";
+import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2, Zap, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import type { Achievement } from "@/lib/achievements";
 import { useTTS } from "@/hooks/use-tts";
 import { isProVerifiedLocally } from "@/lib/proStatus";
+import { createAchievementShareImage } from "@/lib/shareImage";
 
 interface AchievementModalProps {
   achievement: Achievement;
@@ -13,9 +15,37 @@ interface AchievementModalProps {
 
 export function AchievementModal({ achievement, onClose }: AchievementModalProps) {
   const { toggle, stop, playing, loading } = useTTS();
+  const [sharing, setSharing] = useState(false);
   const showProNudge =
     !isProVerifiedLocally() &&
     ["streak_7", "streak_14", "streak_30", "streak_100"].includes(achievement.id);
+
+  const handleShare = async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      const blob = await createAchievementShareImage(achievement);
+      const file = new File([blob], `shepherds-path-${achievement.id}.png`, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: achievement.title,
+          text: `${achievement.emoji} ${achievement.title} — ${achievement.subtitle} | Shepherd's Path`,
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `shepherds-path-${achievement.id}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      // User cancelled share or error — silently ignore
+    } finally {
+      setSharing(false);
+    }
+  };
 
   const handleClose = () => {
     stop();
@@ -117,14 +147,28 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
             </button>
           </div>
 
-          <Button
-            data-testid="btn-achievement-close"
-            className={`w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r ${achievement.colorFrom} ${achievement.colorTo} hover:opacity-90 transition-opacity border-0 text-white`}
-            onClick={handleClose}
-          >
-            Keep Going
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          <div className="flex gap-2">
+            <button
+              data-testid="btn-achievement-share"
+              onClick={handleShare}
+              disabled={sharing}
+              title="Share your achievement"
+              className="shrink-0 h-12 w-12 rounded-2xl border border-border bg-muted/40 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+            >
+              {sharing
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Share2 className="w-4 h-4" />
+              }
+            </button>
+            <Button
+              data-testid="btn-achievement-close"
+              className={`flex-1 rounded-2xl font-bold py-5 text-sm bg-gradient-to-r ${achievement.colorFrom} ${achievement.colorTo} hover:opacity-90 transition-opacity border-0 text-white`}
+              onClick={handleClose}
+            >
+              Keep Going
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
 
           {showProNudge && (
             <Link
