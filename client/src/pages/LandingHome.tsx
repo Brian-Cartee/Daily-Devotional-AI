@@ -9,6 +9,7 @@ import { hasBeenPrompted } from "@/lib/userName";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
+import { useDemoMode } from "@/components/DemoProvider";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -192,6 +193,7 @@ export default function LandingHome() {
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [shared, setShared] = useState(false);
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+  const demo = useDemoMode();
 
   const handleShareApp = async () => {
     const shareData = {
@@ -270,6 +272,12 @@ export default function LandingHome() {
             <p className="text-white/90 max-w-xs drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
               Your daily walk with Jesus.
             </p>
+            {demo?.config.isDemo && (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
+                <span className="text-white/60 text-[10px] uppercase tracking-wider font-semibold">For</span>
+                <span className="text-white text-[12px] font-bold">{demo.config.churchName}</span>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>

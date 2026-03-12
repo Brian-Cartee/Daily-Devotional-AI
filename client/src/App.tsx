@@ -16,6 +16,9 @@ import PricingPage from "@/pages/PricingPage";
 import PrayPage from "@/pages/PrayPage";
 import SmsPage from "@/pages/SmsPage";
 import PresentMode from "@/pages/PresentMode";
+import DemoCreate from "@/pages/DemoCreate";
+import { DemoProvider } from "@/components/DemoProvider";
+import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 
 function Router() {
   return (
@@ -32,6 +35,7 @@ function Router() {
       <Route path="/pray" component={PrayPage} />
       <Route path="/sms" component={SmsPage} />
       <Route path="/present" component={PresentMode} />
+      <Route path="/demo" component={DemoCreate} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -41,8 +45,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <DemoProvider>
+          <Toaster />
+          <Router />
+          <DemoFloatingBar />
+        </DemoProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
