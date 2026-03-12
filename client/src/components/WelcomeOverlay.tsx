@@ -63,16 +63,14 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.62) 100%)" }} />
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
-              <div
-                aria-label="Shepherd's Path logo"
+              <img
+                src="/logo-mark-white.png"
+                alt="Shepherd's Path logo"
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  backgroundImage: "url(/sp-logo.png)",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  boxShadow: "0 8px 32px rgba(76,29,149,0.55), 0 2px 8px rgba(0,0,0,0.35)"
+                  width: 112,
+                  height: 112,
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.6))"
                 }}
               />
             </div>
