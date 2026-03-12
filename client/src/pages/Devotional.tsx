@@ -498,8 +498,8 @@ export default function Devotional() {
                 <blockquote
                   className="verse-text text-white text-balance leading-relaxed mb-6"
                   style={{
-                    fontSize: verse.text.length > 180 ? "1.18rem" : verse.text.length > 100 ? "1.38rem" : "1.6rem",
-                    textShadow: "0 2px 20px rgba(0,0,0,0.75)",
+                    fontSize: verse.text.length > 180 ? "1.45rem" : verse.text.length > 100 ? "1.72rem" : "2.1rem",
+                    textShadow: "0 2px 22px rgba(0,0,0,0.80)",
                     fontStyle: "italic",
                   }}
                 >
