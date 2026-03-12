@@ -76,6 +76,7 @@ export default function Devotional() {
   const [showTipPrompt, setShowTipPrompt] = useState(false);
   const [streakForTip, setStreakForTip] = useState(0);
   const [verseArtUrl, setVerseArtUrl] = useState<string | null>(null);
+  const [showAiArt, setShowAiArt] = useState(true);
   const { toast } = useToast();
 
   // Check if today's verse art has already been generated (cached on server)
@@ -505,10 +506,10 @@ export default function Devotional() {
               <div
                 className="absolute inset-0 transition-all duration-1000"
                 style={{
-                  backgroundImage: `url(${verseArtUrl || getDailyVersePhoto()})`,
+                  backgroundImage: `url(${(showAiArt && verseArtUrl) ? verseArtUrl : getDailyVersePhoto()})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  filter: verseArtUrl ? "brightness(0.78) saturate(1.1)" : "brightness(0.72) saturate(1.2)",
+                  filter: (showAiArt && verseArtUrl) ? "brightness(0.78) saturate(1.1)" : "brightness(0.72) saturate(1.2)",
                 }}
               />
 
@@ -602,15 +603,21 @@ export default function Devotional() {
                 </button>
                 <button
                   data-testid="button-generate-verse-art"
-                  onClick={() => verseArtMutation.mutate()}
+                  onClick={() => {
+                    if (verseArtUrl) {
+                      setShowAiArt(v => !v);
+                    } else {
+                      verseArtMutation.mutate();
+                    }
+                  }}
                   disabled={verseArtMutation.isPending}
                   className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                 >
                   {verseArtMutation.isPending
                     ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Wand2 className={`w-4 h-4 ${verseArtUrl ? "text-primary" : ""}`} />}
+                    : <Wand2 className={`w-4 h-4 ${verseArtUrl && showAiArt ? "text-primary" : ""}`} />}
                   <span className="text-[11px] font-semibold leading-none">
-                    {verseArtMutation.isPending ? "Painting…" : verseArtUrl ? "AI Art ✓" : "AI Art"}
+                    {verseArtMutation.isPending ? "Painting…" : verseArtUrl ? (showAiArt ? "AI Art ✓" : "Original") : "AI Art"}
                   </span>
                 </button>
               </div>
