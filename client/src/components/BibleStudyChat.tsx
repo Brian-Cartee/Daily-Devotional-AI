@@ -14,6 +14,7 @@ import type { ChatMessage } from "@shared/routes";
 import { canUseAi, recordAiUsage, getRemainingAi, AI_FREE_LIMIT } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { getUserName } from "@/lib/userName";
+import { useChatWithVerse } from "@/hooks/use-verses";
 
 interface BibleStudyChatProps {
   verseId: number;
