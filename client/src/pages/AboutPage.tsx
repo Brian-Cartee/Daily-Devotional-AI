@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -109,6 +109,8 @@ const COMMITMENTS = [
 
 export default function AboutPage() {
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const handleShare = async () => {
     const url = "https://daily-devotional-ai.replit.app/about";
