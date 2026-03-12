@@ -94,49 +94,11 @@ function DevotionalCard() {
         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 pointer-events-none" />
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
-        {/* Vertical week tracker — top right */}
-        <div className="absolute top-4 right-4 z-10 flex flex-col items-center gap-1.5">
-          {streak > 0 && (
-            <div className="flex items-center gap-0.5 mb-0.5">
-              {streak >= 7
-                ? <Flame className="w-3 h-3 text-amber-500" />
-                : <span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />
-              }
-              <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400">{streak}d</span>
-            </div>
-          )}
-          <div className="w-full h-px bg-teal-900/10 mb-0.5" />
-          {WEEK_LABELS.map((label, i) => {
-            const date = weekDates[i];
-            const visited = visitSet.has(date);
-            const isToday = i === todayIdx;
-            const isFuture = i > todayIdx;
-            return (
-              <div key={i} className="flex items-center gap-1.5 justify-between w-full">
-                <span className={`text-[9px] font-bold uppercase leading-none w-3 text-center ${isToday ? "text-teal-600 dark:text-teal-400" : "text-muted-foreground/30"}`}>
-                  {label}
-                </span>
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${
-                  visited && isToday ? "bg-teal-500 shadow-sm shadow-teal-400/40"
-                  : visited ? "bg-teal-200/70 dark:bg-teal-800/50"
-                  : isToday ? "border-2 border-teal-400/70"
-                  : isFuture ? "border border-muted-foreground/10"
-                  : "border border-muted-foreground/15"
-                }`}>
-                  {visited && isToday && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
-                  {visited && !isToday && <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />}
-                  {isToday && !visited && <div className="w-1 h-1 rounded-full bg-teal-400/60" />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         <div className="relative z-10 flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-teal-100 to-emerald-50 shadow-sm shadow-teal-200/60">
             <Sun className="w-5 h-5 text-teal-500" />
           </div>
-          <div className="flex-1 min-w-0 py-0.5 pr-16">
+          <div className="flex-1 min-w-0 py-0.5">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600">
                 Daily
@@ -157,6 +119,51 @@ function DevotionalCard() {
               {visitedToday ? "Continue today's devotional" : "Open today's devotional"}
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
+          </div>
+        </div>
+
+        {/* Horizontal week tracker */}
+        <div className="relative z-10 mt-4 pt-3 border-t border-teal-900/8">
+          <div className="flex items-end justify-between">
+            <div className="flex items-end gap-2.5">
+              {WEEK_LABELS.map((label, i) => {
+                const date = weekDates[i];
+                const visited = visitSet.has(date);
+                const isToday = i === todayIdx;
+                const isFuture = i > todayIdx;
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <span className={`text-[9px] font-bold uppercase leading-none ${isToday ? "text-teal-600 dark:text-teal-400" : visited ? "text-teal-500/60" : "text-muted-foreground/25"}`}>
+                      {label}
+                    </span>
+                    <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all ${
+                      visited && isToday
+                        ? "bg-teal-500 shadow-sm shadow-teal-400/50"
+                        : visited
+                        ? "bg-teal-50 dark:bg-teal-900/30 border border-teal-300/70 dark:border-teal-700/50"
+                        : isToday
+                        ? "border-2 border-teal-400/60 bg-teal-50/50"
+                        : isFuture
+                        ? "border border-muted-foreground/10"
+                        : "border border-muted-foreground/12 bg-muted/10"
+                    }`}>
+                      {visited && isToday && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                      {visited && !isToday && <Check className="w-2.5 h-2.5 text-teal-400" strokeWidth={3} />}
+                      {isToday && !visited && <div className="w-1.5 h-1.5 rounded-full bg-teal-400/50" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {streak > 0 && (
+              <div className="flex items-center gap-1 pb-0.5">
+                {streak >= 7
+                  ? <Flame className="w-3.5 h-3.5 text-amber-500" />
+                  : <span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />
+                }
+                <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400">{streak}d</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -369,7 +376,7 @@ export default function LandingHome() {
               data-testid="btn-sms-text-us"
               className="group relative rounded-2xl border border-rose-900/10 bg-card p-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden flex flex-col"
             >
-              <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=500&q=70&auto=format&fit=crop" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" />
+              <img src="https://images.unsplash.com/photo-1532452119098-a3650b3c46d3?w=500&q=70&auto=format&fit=crop" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" onError={e => (e.currentTarget.style.display = "none")} />
               <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5 pointer-events-none" />
               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-rose-400 to-pink-500 opacity-70 rounded-l-2xl" />
               <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" style={{ filter: "invert(1)" }} />
