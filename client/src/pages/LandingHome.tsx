@@ -542,6 +542,10 @@ export default function LandingHome() {
               Plans & Pricing
             </Link>
             <span>·</span>
+            <Link href="/about" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
+              About the App
+            </Link>
+            <span>·</span>
             <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
               support@shepherdspathai.com
             </a>

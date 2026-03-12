@@ -17,6 +17,7 @@ import PrayPage from "@/pages/PrayPage";
 import SmsPage from "@/pages/SmsPage";
 import PresentMode from "@/pages/PresentMode";
 import DemoCreate from "@/pages/DemoCreate";
+import AboutPage from "@/pages/AboutPage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/sms" component={SmsPage} />
       <Route path="/present" component={PresentMode} />
       <Route path="/demo" component={DemoCreate} />
+      <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );
