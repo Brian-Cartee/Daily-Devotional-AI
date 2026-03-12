@@ -246,7 +246,7 @@ export default function LandingHome() {
             src={logoSmall}
             alt=""
             aria-hidden="true"
-            className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain pointer-events-none select-none drop-shadow-md"
+            className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain pointer-events-none select-none drop-shadow-md"
             style={{ opacity: 0.32, filter: "drop-shadow(0 1px 8px rgba(0,0,0,0.4))" }}
           />
           {/* Share button — clean, no logo */}
