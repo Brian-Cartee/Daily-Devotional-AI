@@ -86,7 +86,7 @@ function DevotionalCard() {
         className="group relative rounded-2xl border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
       >
         <img
-          src="https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=700&q=70&auto=format&fit=crop"
+          src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=700&q=70&auto=format&fit=crop"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none"
@@ -124,7 +124,7 @@ function DevotionalCard() {
 
         {/* Horizontal week tracker */}
         <div className="relative z-10 mt-4 pt-3 border-t border-teal-900/8">
-          <div className="flex items-end justify-between">
+          <div className="flex items-end justify-center gap-3">
             <div className="flex items-end gap-2.5">
               {WEEK_LABELS.map((label, i) => {
                 const date = weekDates[i];
