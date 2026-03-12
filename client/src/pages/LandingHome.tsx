@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame } from "lucide-react";
+import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -63,6 +63,80 @@ function formatVisitDate(dateStr: string): string {
   if (dateStr === todayStr) return "Today";
   if (dateStr === yestStr) return "Yesterday";
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+const AI_CHIPS = [
+  { label: "Today's devotional", icon: Sun, href: "/devotional", cls: "text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 border-teal-300/40" },
+  { label: "Pray with me", icon: Heart, href: "/pray", cls: "text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 border-rose-300/40" },
+  { label: "Study a passage", icon: BookOpen, href: "/study", cls: "text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border-amber-300/40" },
+  { label: "Start a journey", icon: Compass, href: "/understand", cls: "text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-300/40" },
+];
+
+function HeroAIPrompt() {
+  const [query, setQuery] = useState("");
+  const [, navigate] = useLocation();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    navigate(`/study?q=${encodeURIComponent(query.trim())}`);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      className="relative rounded-2xl border border-primary/15 bg-card shadow-lg shadow-primary/5 overflow-hidden mb-1"
+    >
+      {/* Subtle top gradient accent */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/40 via-violet-400/40 to-primary/20 rounded-t-2xl" />
+
+      <div className="px-5 pt-5 pb-4">
+        {/* Label row */}
+        <div className="flex items-center gap-2 mb-3.5">
+          <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Ask the AI</span>
+        </div>
+
+        {/* Input */}
+        <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="What's on your heart today?"
+            data-testid="hero-ai-input"
+            className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+          />
+          <button
+            type="submit"
+            disabled={!query.trim()}
+            data-testid="hero-ai-submit"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-white disabled:opacity-25 hover:bg-primary/90 transition-all flex-shrink-0 shadow-sm shadow-primary/30"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </form>
+
+        {/* Chips */}
+        <div className="flex flex-wrap gap-2">
+          {AI_CHIPS.map(chip => (
+            <Link key={chip.href} href={chip.href}>
+              <button
+                data-testid={`hero-chip-${chip.label.replace(/\s+/g, "-").toLowerCase()}`}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all ${chip.cls}`}
+              >
+                <chip.icon className="w-3 h-3" />
+                {chip.label}
+              </button>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
 }
 
 function DevotionalCard() {
@@ -309,6 +383,9 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
+          {/* AI Prompt — hero entry point */}
+          <HeroAIPrompt />
+
           {/* Daily Devotional — primary action */}
           <DevotionalCard />
 

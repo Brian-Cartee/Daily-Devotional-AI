@@ -379,6 +379,12 @@ Keep it warm, accessible, and grounded in Scripture.`,
     setLoading(false);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) { setTopic(q); generate(null, q); }
+  }, []);
+
   const reset = () => { setTopic(""); setStudy(""); setSubmitted(false); setActiveTopic(""); setSavedStudy(false); };
 
   const findStory = async () => {
