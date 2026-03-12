@@ -470,7 +470,18 @@ export default function LandingHome() {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-primary/10 md:grid md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px] md:gap-0">
+                {/* Bible photo — full-width banner on mobile */}
+                  <div className="relative h-36 overflow-hidden md:hidden border-t border-primary/10">
+                    <img
+                      src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&q=85"
+                      alt="Open Bible"
+                      className="w-full h-full object-cover object-center"
+                      style={{ filter: "brightness(0.88) saturate(0.82)" }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/85" />
+                  </div>
+
+                <div className="border-t border-primary/10 md:grid md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px] md:gap-0 md:border-t-0">
                   {/* Text content */}
                   <div className="px-5 pb-6 pt-4">
                     <p className="text-sm text-foreground/80 leading-relaxed mb-4">
