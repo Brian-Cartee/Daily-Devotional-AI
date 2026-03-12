@@ -542,23 +542,6 @@ export default function Devotional() {
                 </span>
               </div>
 
-              {/* AI Art button — top right */}
-              <div className="absolute top-4 right-4 z-10">
-                <button
-                  data-testid="button-generate-verse-art"
-                  onClick={() => verseArtMutation.mutate()}
-                  disabled={verseArtMutation.isPending}
-                  title={verseArtUrl ? "Regenerate AI Verse Art" : "Generate AI Verse Art"}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-md border border-white/20 bg-white/10 hover:bg-white/20 transition-all disabled:opacity-60"
-                >
-                  {verseArtMutation.isPending
-                    ? <Loader2 className="w-3 h-3 text-white animate-spin" />
-                    : <Wand2 className="w-3 h-3 text-white/85" />}
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/75">
-                    {verseArtUrl ? "Regen Art" : "AI Art"}
-                  </span>
-                </button>
-              </div>
 
               {/* Verse + reference */}
               <div className="relative z-10 py-14 max-w-lg">
@@ -590,7 +573,7 @@ export default function Devotional() {
 
             {/* ── Action bar ─────────────────────────────────── */}
             <div className="bg-card border-t border-border/20">
-              <div className="grid grid-cols-3 divide-x divide-border/30 px-0">
+              <div className="grid grid-cols-4 divide-x divide-border/30 px-0">
                 <div className="flex justify-center py-3.5">
                   <ListenButton
                     text={`${verse.text} — ${verse.reference}`}
@@ -616,6 +599,19 @@ export default function Devotional() {
                 >
                   {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
                   <span className="text-[11px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
+                </button>
+                <button
+                  data-testid="button-generate-verse-art"
+                  onClick={() => verseArtMutation.mutate()}
+                  disabled={verseArtMutation.isPending}
+                  className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                >
+                  {verseArtMutation.isPending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Wand2 className={`w-4 h-4 ${verseArtUrl ? "text-primary" : ""}`} />}
+                  <span className="text-[11px] font-semibold leading-none">
+                    {verseArtMutation.isPending ? "Painting…" : verseArtUrl ? "AI Art ✓" : "AI Art"}
+                  </span>
                 </button>
               </div>
 
