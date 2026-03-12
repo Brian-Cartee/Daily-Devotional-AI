@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown } from "lucide-react";
+import { createShareImage } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
@@ -54,6 +55,7 @@ export default function Devotional() {
   const [prayerError, setPrayerError] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
@@ -249,6 +251,26 @@ export default function Devotional() {
     }
   };
 
+  const handleShareImage = async () => {
+    if (!verse || sharingImage) return;
+    setSharingImage(true);
+    try {
+      const blob = await createShareImage(verse.text, verse.reference);
+      const file = new File([blob], "shepherds-path-devotional.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${verse.reference} — Shepherd's Path` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "shepherds-path-devotional.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch { }
+    setSharingImage(false);
+  };
+
   const buildShareText = () => {
     if (!verse) return "";
     return `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏\nshepherdspathAI.com`;
@@ -430,7 +452,7 @@ export default function Devotional() {
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="mt-5 pt-4 border-t border-border/25 grid grid-cols-2 divide-x divide-border/30">
+            <div className="mt-5 pt-4 border-t border-border/25 grid grid-cols-3 divide-x divide-border/30">
               <div className="flex justify-center">
                 <ListenButton
                   text={`${verse.text} — ${verse.reference}`}
@@ -438,6 +460,17 @@ export default function Devotional() {
                   vertical
                 />
               </div>
+              <button
+                data-testid="button-share-image"
+                onClick={handleShareImage}
+                disabled={sharingImage}
+                className="flex flex-col items-center gap-1.5 py-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+              >
+                {sharingImage
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <ImageDown className="w-4 h-4" />}
+                <span className="text-[11px] font-semibold leading-none">Save Image</span>
+              </button>
               <button
                 data-testid="button-share"
                 onClick={handleShare}

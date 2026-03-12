@@ -27,6 +27,7 @@ import DemoCreate from "@/pages/DemoCreate";
 import AboutPage from "@/pages/AboutPage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 function Router() {
   return (
@@ -59,6 +60,7 @@ function App() {
           <ScrollToTop />
           <Router />
           <DemoFloatingBar />
+          <InstallPrompt />
         </DemoProvider>
       </TooltipProvider>
     </QueryClientProvider>
