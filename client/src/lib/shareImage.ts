@@ -38,10 +38,41 @@ const PHOTO_POOL = [
   "https://images.unsplash.com/photo-1490750967868-88df5691cc35?w=1080&q=85&auto=format&fit=crop",
 ];
 
+// ── Hero pool — dramatic landscapes ONLY for the verse card background ───────
+// These are moody, atmospheric, high-contrast shots that look cinematic at
+// full-bleed. No babies, pets, or light florals — those belong in PHOTO_POOL
+// for the 1080×1080 shareable cards where they work beautifully at scale.
+const HERO_PHOTO_POOL = [
+  // Golden dawn light over mountains
+  "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop",
+  // Cathedral forest — God-rays through trees
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=85&auto=format&fit=crop",
+  // Still mountain lake at dusk
+  "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1080&q=85&auto=format&fit=crop",
+  // Ocean sunset — deep amber and violet
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&q=85&auto=format&fit=crop",
+  // Misty valley morning
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=85&auto=format&fit=crop",
+  // Autumn forest path — golden canopy
+  "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1080&q=85&auto=format&fit=crop",
+  // Starry night sky — Milky Way arc
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&q=85&auto=format&fit=crop",
+  // Sweeping green hills at golden hour
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=85&auto=format&fit=crop",
+  // Lighthouse on dramatic cliffs
+  "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1080&q=85&auto=format&fit=crop",
+  // Warm sunrise over a still meadow
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1080&q=85&auto=format&fit=crop",
+  // Twilight warmth — amber last light
+  "https://images.unsplash.com/photo-1418050327236-8de8ba25f5a1?w=1080&q=85&auto=format&fit=crop",
+  // Sun breaking through mountain peaks
+  "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1080&q=85&auto=format&fit=crop",
+];
+
 export function getDailyVersePhoto(): string {
   const startOfYear = new Date(new Date().getFullYear(), 0, 0).getTime();
   const dayOfYear = Math.floor((Date.now() - startOfYear) / 86_400_000);
-  return PHOTO_POOL[dayOfYear % PHOTO_POOL.length];
+  return HERO_PHOTO_POOL[dayOfYear % HERO_PHOTO_POOL.length];
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
