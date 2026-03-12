@@ -33,9 +33,10 @@ function getTodayIndex(): number {
 
 interface StreakWidgetProps {
   onAddName?: () => void;
+  variant?: "card" | "hero";
 }
 
-export function StreakWidget({ onAddName }: StreakWidgetProps) {
+export function StreakWidget({ onAddName, variant = "card" }: StreakWidgetProps) {
   const sessionId = getSessionId();
   const userName = getUserName();
 
@@ -59,6 +60,71 @@ export function StreakWidget({ onAddName }: StreakWidgetProps) {
     if (streak > 1) return `${streak} days in a row. Don't break the momentum.`;
     if (streak === 1 && visitedToday) return "Day one — well done for showing up.";
     return "Your walk starts with one step.";
+  }
+
+  if (variant === "hero") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="flex flex-col items-center gap-1.5 bg-black/30 backdrop-blur-sm border border-white/15 rounded-2xl px-2.5 py-3"
+        data-testid="streak-widget-hero"
+      >
+        {/* Streak badge */}
+        {streak > 0 ? (
+          <div className="flex items-center gap-1 mb-0.5">
+            {streak >= 7
+              ? <Flame className="w-3 h-3 text-amber-400" />
+              : <Zap className="w-3 h-3 text-white/80" />
+            }
+            <span className="text-[11px] font-bold text-white/90">{streak}d</span>
+          </div>
+        ) : (
+          <div className="w-1.5 h-1.5 rounded-full bg-white/20 mb-0.5" />
+        )}
+
+        {/* Thin divider */}
+        <div className="w-full h-px bg-white/10 mb-0.5" />
+
+        {/* Vertical day dots */}
+        {WEEK_LABELS.map((label, i) => {
+          const date = weekDates[i];
+          const visited = visitSet.has(date);
+          const isToday = i === todayIdx;
+          const isFuture = i > todayIdx;
+
+          return (
+            <div key={i} className="flex items-center gap-1.5 w-full justify-between" data-testid={`hero-day-${i}`}>
+              <span className={`text-[9px] font-bold uppercase leading-none w-3 text-center ${
+                isToday ? "text-white/90" : "text-white/30"
+              }`}>
+                {label}
+              </span>
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${
+                visited && isToday
+                  ? "bg-primary shadow-sm shadow-primary/50"
+                  : visited
+                  ? "bg-white/40"
+                  : isToday
+                  ? "border-2 border-white/60 bg-white/8"
+                  : isFuture
+                  ? "border border-white/10 bg-white/5"
+                  : "border border-white/15 bg-white/5"
+              }`}>
+                {visited && isToday ? (
+                  <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                ) : visited ? (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                ) : isToday ? (
+                  <div className="w-1 h-1 rounded-full bg-white/50" />
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </motion.div>
+    );
   }
 
   return (

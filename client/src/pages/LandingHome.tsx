@@ -211,17 +211,20 @@ export default function LandingHome() {
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-        {/* Share App button — top right of hero */}
-        <button
-          onClick={handleShareApp}
-          data-testid="btn-share-app"
-          className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/50 transition-all text-[12px] font-medium"
-        >
-          {shared
-            ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-            : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-6 h-6 object-contain" alt="" /></span> Share App</>
-          }
-        </button>
+        {/* Share App + vertical streak tracker — top right of hero */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+          <button
+            onClick={handleShareApp}
+            data-testid="btn-share-app"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/50 transition-all text-[12px] font-medium"
+          >
+            {shared
+              ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
+              : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-6 h-6 object-contain" alt="" /></span> Share App</>
+            }
+          </button>
+          <StreakWidget variant="hero" onAddName={() => setShowNamePrompt(true)} />
+        </div>
 
         {/* Hero text */}
         <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14">
@@ -256,8 +259,6 @@ export default function LandingHome() {
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ right: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
           <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
-        <StreakWidget onAddName={() => setShowNamePrompt(true)} />
-
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}

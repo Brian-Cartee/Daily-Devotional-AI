@@ -17,6 +17,7 @@ export interface Journey {
   pillText: string;
   badgeText?: string;
   badgeBg?: string;
+  image?: string;
   entries: GuidedChapter[];
 }
 
