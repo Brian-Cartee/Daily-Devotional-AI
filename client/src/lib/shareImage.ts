@@ -1,3 +1,67 @@
+// Curated pool of soul-connecting photos — nature, light, babies, pets, beauty
+const PHOTO_POOL = [
+  // Golden sunrise / dawn light
+  "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop",
+  // Forest with God-rays of light
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=85&auto=format&fit=crop",
+  // Mountain lake reflection
+  "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1080&q=85&auto=format&fit=crop",
+  // Peaceful field at sunrise
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1080&q=85&auto=format&fit=crop",
+  // Ocean sunset
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&q=85&auto=format&fit=crop",
+  // Cherry blossoms
+  "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1080&q=85&auto=format&fit=crop",
+  // Misty valley morning
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=85&auto=format&fit=crop",
+  // Wildflower meadow
+  "https://images.unsplash.com/photo-1490750967868-88df5691cc35?w=1080&q=85&auto=format&fit=crop",
+  // Autumn forest path
+  "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1080&q=85&auto=format&fit=crop",
+  // Baby's tiny hand
+  "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=85&auto=format&fit=crop",
+  // Baby sleeping peacefully
+  "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1080&q=85&auto=format&fit=crop",
+  // Golden retriever in sunlight
+  "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1080&q=85&auto=format&fit=crop",
+  // Dog looking up with love
+  "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=1080&q=85&auto=format&fit=crop",
+  // Cat in warm window light
+  "https://images.unsplash.com/photo-1518715308788-3005759c61d3?w=1080&q=85&auto=format&fit=crop",
+  // Lighthouse on cliff
+  "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1080&q=85&auto=format&fit=crop",
+  // Starry night sky
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&q=85&auto=format&fit=crop",
+  // Rolling green hills
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=85&auto=format&fit=crop",
+  // Hands cupping a tiny flower
+  "https://images.unsplash.com/photo-1490750967868-88df5691cc35?w=1080&q=85&auto=format&fit=crop",
+];
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Image load failed"));
+    img.src = src;
+  });
+}
+
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  canvasW: number,
+  canvasH: number
+) {
+  const scale = Math.max(canvasW / img.width, canvasH / img.height);
+  const w = img.width * scale;
+  const h = img.height * scale;
+  const x = (canvasW - w) / 2;
+  const y = (canvasH - h) / 2;
+  ctx.drawImage(img, x, y, w, h);
+}
+
 function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -23,296 +87,165 @@ function wrapText(
   return currentY;
 }
 
-function drawStars(ctx: CanvasRenderingContext2D, count: number, maxY: number, size = 1080) {
-  ctx.save();
-  for (let i = 0; i < count; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * maxY;
-    const r = Math.random() * 1.4 + 0.2;
-    const alpha = Math.random() * 0.6 + 0.2;
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawLightRays(ctx: CanvasRenderingContext2D, cx: number, cy: number, count: number, size = 1080) {
-  ctx.save();
-  ctx.globalAlpha = 0.045;
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2;
-    const grad = ctx.createLinearGradient(cx, cy, cx + Math.cos(angle) * size, cy + Math.sin(angle) * size);
-    grad.addColorStop(0, "#ffcc66");
-    grad.addColorStop(1, "rgba(255,200,80,0)");
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 36;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(angle) * size * 1.5, cy + Math.sin(angle) * size * 1.5);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawCrossWatermark(ctx: CanvasRenderingContext2D, x: number, y: number, h: number) {
-  ctx.save();
-  ctx.globalAlpha = 0.06;
-  ctx.fillStyle = "#ffffff";
-  const w = h * 0.38;
-  const armW = h * 0.14;
-  const armY = h * 0.3;
-  ctx.beginPath();
-  ctx.rect(x - armW / 2, y, armW, h);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.rect(x - w / 2, y + armY, w, armW);
-  ctx.fill();
-  ctx.restore();
-}
-
-function horizontalGlowLine(ctx: CanvasRenderingContext2D, y: number, color: string, size = 1080) {
+function horizontalGlowLine(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  color: string,
+  size = 1080
+) {
   const grad = ctx.createLinearGradient(0, 0, size, 0);
   grad.addColorStop(0, "rgba(0,0,0,0)");
-  grad.addColorStop(0.3, color);
-  grad.addColorStop(0.7, color);
+  grad.addColorStop(0.25, color);
+  grad.addColorStop(0.75, color);
   grad.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, y, size, 1.5);
 }
 
-export async function createShareImage(verseText: string, reference: string): Promise<Blob> {
+function drawFallbackGradient(
+  ctx: CanvasRenderingContext2D,
+  S: number,
+  palette: "dawn" | "midnight" | "ember"
+) {
+  const stops: [number, string][] =
+    palette === "dawn"
+      ? [[0, "#12043a"], [0.45, "#2d1460"], [0.75, "#6b2c10"], [1, "#1a0508"]]
+      : palette === "midnight"
+      ? [[0, "#04060e"], [0.5, "#080d1a"], [1, "#050814"]]
+      : [[0, "#1a0200"], [0.4, "#3d0c02"], [0.75, "#5c1a0a"], [1, "#0f0502"]];
+  const bg = ctx.createLinearGradient(0, 0, S * 0.6, S);
+  stops.forEach(([s, c]) => bg.addColorStop(s, c));
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+
+  // warm glow
+  const glow = ctx.createRadialGradient(S / 2, S * 0.75, 0, S / 2, S * 0.75, S * 0.6);
+  glow.addColorStop(
+    0,
+    palette === "midnight"
+      ? "rgba(80,30,180,0.28)"
+      : palette === "ember"
+      ? "rgba(220,100,10,0.3)"
+      : "rgba(255,145,30,0.35)"
+  );
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+}
+
+export async function createShareImage(
+  verseText: string,
+  reference: string
+): Promise<Blob> {
   const S = 1080;
   const canvas = document.createElement("canvas");
   canvas.width = S;
   canvas.height = S;
   const ctx = canvas.getContext("2d")!;
 
-  const themes = ["dawn", "midnight", "ember"] as const;
-  const theme = themes[Math.floor(Math.random() * themes.length)];
+  // Pick a random photo
+  const photoUrl = PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
 
-  if (theme === "dawn") {
-    // ── Background ──────────────────────────────────────────────
-    const bg = ctx.createLinearGradient(0, 0, S * 0.6, S);
-    bg.addColorStop(0, "#12043a");
-    bg.addColorStop(0.45, "#2d1460");
-    bg.addColorStop(0.75, "#6b2c10");
-    bg.addColorStop(1, "#1a0508");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, S, S);
+  // Color palette for text/accents (cycles with photo index)
+  const palettes = ["warm", "cool", "gold"] as const;
+  const palette = palettes[Math.floor(Math.random() * palettes.length)];
 
-    // Sunrise glow (bottom)
-    const sunGlow = ctx.createRadialGradient(S / 2, S * 0.78, 0, S / 2, S * 0.78, S * 0.65);
-    sunGlow.addColorStop(0, "rgba(255, 145, 30, 0.42)");
-    sunGlow.addColorStop(0.4, "rgba(210, 80, 10, 0.18)");
-    sunGlow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = sunGlow;
-    ctx.fillRect(0, 0, S, S);
+  const accentColor =
+    palette === "cool"
+      ? "rgba(160,140,255,0.75)"
+      : palette === "gold"
+      ? "rgba(255,200,80,0.75)"
+      : "rgba(255,165,80,0.75)";
 
-    // Crown glow (top)
-    const topGlow = ctx.createRadialGradient(S / 2, 0, 0, S / 2, 0, S * 0.45);
-    topGlow.addColorStop(0, "rgba(100, 50, 200, 0.22)");
-    topGlow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = topGlow;
-    ctx.fillRect(0, 0, S, S);
+  const refColor =
+    palette === "cool" ? "#d0c4ff" : palette === "gold" ? "#ffe099" : "#ffcc88";
 
-    drawLightRays(ctx, S / 2, S * 0.78, 18);
-    drawStars(ctx, 80, S * 0.55);
-    drawCrossWatermark(ctx, S * 0.85, S * 0.62, S * 0.22);
-
-    // Brand header
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,0.38)";
-    ctx.font = "600 26px 'Georgia', serif";
-    ctx.fillText("SHEPHERD'S PATH", S / 2, 100);
-    horizontalGlowLine(ctx, 120, "rgba(255,183,77,0.5)");
-
-    // Quote marks (decorative)
-    ctx.font = "italic 180px Georgia, serif";
-    ctx.fillStyle = "rgba(255,183,77,0.08)";
-    ctx.textAlign = "left";
-    ctx.fillText("\u201C", 48, 320);
-    ctx.textAlign = "right";
-    ctx.fillText("\u201D", S - 48, S - 200);
-
-    // Verse text
-    const maxChars = 230;
-    const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
-    ctx.shadowColor = "rgba(0,0,0,0.55)";
-    ctx.shadowBlur = 24;
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,0.96)";
-    const fontSize = short.length < 100 ? 58 : short.length < 160 ? 50 : 43;
-    ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-    const finalVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, 220, 930, fontSize * 1.48);
-    ctx.shadowBlur = 0;
-
-    // Gold divider
-    horizontalGlowLine(ctx, finalVerseY + 44, "rgba(255,183,77,0.65)");
-
-    // Reference
-    ctx.fillStyle = "#ffcc66";
-    ctx.font = "bold 38px 'Georgia', serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 100);
-
-    // Footer
-    horizontalGlowLine(ctx, S - 68, "rgba(255,183,77,0.2)");
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
-    ctx.font = "24px 'Georgia', serif";
-    ctx.fillText("shepherdspathai.com", S / 2, S - 36);
-
-  } else if (theme === "midnight") {
-    // ── Background ──────────────────────────────────────────────
-    const bg = ctx.createLinearGradient(0, 0, S, S);
-    bg.addColorStop(0, "#04060e");
-    bg.addColorStop(0.5, "#080d1a");
-    bg.addColorStop(1, "#050814");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, S, S);
-
-    // Aurora glow (top left)
-    const aurora = ctx.createRadialGradient(S * 0.15, S * 0.1, 0, S * 0.15, S * 0.1, S * 0.6);
-    aurora.addColorStop(0, "rgba(80, 30, 180, 0.28)");
-    aurora.addColorStop(0.5, "rgba(40, 10, 100, 0.12)");
-    aurora.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = aurora;
-    ctx.fillRect(0, 0, S, S);
-
-    // Warm glow (bottom right)
-    const warmGlow = ctx.createRadialGradient(S * 0.85, S * 0.9, 0, S * 0.85, S * 0.9, S * 0.5);
-    warmGlow.addColorStop(0, "rgba(180, 80, 20, 0.2)");
-    warmGlow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = warmGlow;
-    ctx.fillRect(0, 0, S, S);
-
-    drawStars(ctx, 140, S * 0.7, S);
-    // Bright star clusters
-    for (let i = 0; i < 8; i++) {
-      const sx = Math.random() * S;
-      const sy = Math.random() * S * 0.5;
-      ctx.save();
-      ctx.globalAlpha = 0.8;
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-      // Glow around bright star
-      const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 8);
-      sg.addColorStop(0, "rgba(255,255,255,0.3)");
-      sg.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = sg;
-      ctx.fillRect(sx - 8, sy - 8, 16, 16);
-      ctx.restore();
-    }
-
-    drawCrossWatermark(ctx, S * 0.88, S * 0.2, S * 0.25);
-
-    // Brand header
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(160,140,220,0.5)";
-    ctx.font = "600 26px 'Georgia', serif";
-    ctx.fillText("SHEPHERD'S PATH", S / 2, 100);
-    horizontalGlowLine(ctx, 122, "rgba(140,100,255,0.4)");
-
-    // Decorative large quote marks
-    ctx.font = "italic 200px Georgia, serif";
-    ctx.fillStyle = "rgba(140,100,255,0.07)";
-    ctx.textAlign = "left";
-    ctx.fillText("\u201C", 40, 340);
-
-    // Verse text
-    const maxChars = 230;
-    const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
-    ctx.shadowColor = "rgba(80,40,180,0.6)";
-    ctx.shadowBlur = 30;
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#f0eaff";
-    const fontSize = short.length < 100 ? 58 : short.length < 160 ? 50 : 43;
-    ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-    const finalVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, 220, 930, fontSize * 1.48);
-    ctx.shadowBlur = 0;
-
-    // Divider
-    horizontalGlowLine(ctx, finalVerseY + 44, "rgba(140,100,255,0.55)");
-
-    // Reference
-    ctx.fillStyle = "#c4b0ff";
-    ctx.font = "bold 38px 'Georgia', serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 100);
-
-    // Footer
-    horizontalGlowLine(ctx, S - 68, "rgba(140,100,255,0.18)");
-    ctx.fillStyle = "rgba(180,160,255,0.22)";
-    ctx.font = "24px 'Georgia', serif";
-    ctx.fillText("shepherdspathai.com", S / 2, S - 36);
-
-  } else {
-    // ember theme ─────────────────────────────────────────────
-    const bg = ctx.createLinearGradient(0, 0, S, S);
-    bg.addColorStop(0, "#1a0200");
-    bg.addColorStop(0.4, "#3d0c02");
-    bg.addColorStop(0.75, "#5c1a0a");
-    bg.addColorStop(1, "#0f0502");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, S, S);
-
-    // Ember glow (center)
-    const emberGlow = ctx.createRadialGradient(S / 2, S * 0.55, 0, S / 2, S * 0.55, S * 0.6);
-    emberGlow.addColorStop(0, "rgba(220, 100, 10, 0.32)");
-    emberGlow.addColorStop(0.4, "rgba(160, 50, 5, 0.14)");
-    emberGlow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = emberGlow;
-    ctx.fillRect(0, 0, S, S);
-
-    drawLightRays(ctx, S / 2, S / 2, 12);
-    drawStars(ctx, 50, S * 0.4);
-    drawCrossWatermark(ctx, S * 0.84, S * 0.64, S * 0.2);
-
-    // Brand header
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,200,120,0.4)";
-    ctx.font = "600 26px 'Georgia', serif";
-    ctx.fillText("SHEPHERD'S PATH", S / 2, 100);
-    horizontalGlowLine(ctx, 122, "rgba(255,140,50,0.5)");
-
-    // Decorative quote marks
-    ctx.font = "italic 200px Georgia, serif";
-    ctx.fillStyle = "rgba(220,80,10,0.08)";
-    ctx.textAlign = "left";
-    ctx.fillText("\u201C", 40, 340);
-
-    // Verse text
-    const maxChars = 230;
-    const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
-    ctx.shadowColor = "rgba(180,60,0,0.5)";
-    ctx.shadowBlur = 28;
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#fff5e8";
-    const fontSize = short.length < 100 ? 58 : short.length < 160 ? 50 : 43;
-    ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-    const finalVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, 220, 930, fontSize * 1.48);
-    ctx.shadowBlur = 0;
-
-    // Divider
-    horizontalGlowLine(ctx, finalVerseY + 44, "rgba(255,140,50,0.6)");
-
-    // Reference
-    ctx.fillStyle = "#ffb866";
-    ctx.font = "bold 38px 'Georgia', serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 100);
-
-    // Footer
-    horizontalGlowLine(ctx, S - 68, "rgba(255,140,50,0.2)");
-    ctx.fillStyle = "rgba(255,200,100,0.22)";
-    ctx.font = "24px 'Georgia', serif";
-    ctx.fillText("shepherdspathai.com", S / 2, S - 36);
+  // ── Draw photo background ──────────────────────────────────
+  try {
+    const img = await loadImage(photoUrl);
+    drawImageCover(ctx, img, S, S);
+  } catch {
+    // Fallback to gradient if photo fails
+    const fb = ["dawn", "midnight", "ember"] as const;
+    drawFallbackGradient(ctx, S, fb[Math.floor(Math.random() * fb.length)]);
   }
+
+  // ── Dark veil overlay (3-zone) ────────────────────────────
+  // Top zone — for brand header
+  const topVeil = ctx.createLinearGradient(0, 0, 0, S * 0.3);
+  topVeil.addColorStop(0, "rgba(0,0,0,0.72)");
+  topVeil.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = topVeil;
+  ctx.fillRect(0, 0, S, S);
+
+  // Middle zone — light wash so photo shows through but text reads
+  ctx.fillStyle = "rgba(0,0,0,0.30)";
+  ctx.fillRect(0, 0, S, S);
+
+  // Bottom zone — for reference and footer
+  const bottomVeil = ctx.createLinearGradient(0, S * 0.62, 0, S);
+  bottomVeil.addColorStop(0, "rgba(0,0,0,0)");
+  bottomVeil.addColorStop(1, "rgba(0,0,0,0.80)");
+  ctx.fillStyle = bottomVeil;
+  ctx.fillRect(0, 0, S, S);
+
+  // ── Brand header ──────────────────────────────────────────
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.52)";
+  ctx.font = "600 25px 'Georgia', serif";
+  ctx.fillText("SHEPHERD'S PATH", S / 2, 96);
+  horizontalGlowLine(ctx, 115, accentColor);
+
+  // ── Large decorative opening quote ───────────────────────
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "italic 220px Georgia, serif";
+  ctx.textAlign = "left";
+  ctx.fillText("\u201C", 36, 350);
+  ctx.restore();
+
+  // ── Verse text ────────────────────────────────────────────
+  const maxChars = 230;
+  const short =
+    verseText.length > maxChars
+      ? verseText.substring(0, maxChars - 1) + "\u2026"
+      : verseText;
+
+  const fontSize = short.length < 90 ? 60 : short.length < 150 ? 52 : 44;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  ctx.shadowColor = "rgba(0,0,0,0.7)";
+  ctx.shadowBlur = 28;
+
+  const finalVerseY = wrapText(
+    ctx,
+    `\u201C${short}\u201D`,
+    S / 2,
+    210,
+    920,
+    fontSize * 1.52
+  );
+  ctx.shadowBlur = 0;
+
+  // ── Accent divider ────────────────────────────────────────
+  horizontalGlowLine(ctx, finalVerseY + 46, accentColor);
+
+  // ── Reference ─────────────────────────────────────────────
+  ctx.fillStyle = refColor;
+  ctx.font = "bold 38px 'Georgia', serif";
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = 16;
+  ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 102);
+  ctx.shadowBlur = 0;
+
+  // ── Footer ────────────────────────────────────────────────
+  horizontalGlowLine(ctx, S - 70, "rgba(255,255,255,0.18)");
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.font = "22px 'Georgia', serif";
+  ctx.fillText("shepherdspathai.com", S / 2, S - 38);
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob!), "image/png");
