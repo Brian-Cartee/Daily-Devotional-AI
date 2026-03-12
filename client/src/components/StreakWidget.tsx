@@ -5,16 +5,9 @@ import { Link } from "wouter";
 import { getSessionId } from "@/lib/session";
 import { getUserName } from "@/lib/userName";
 
-const WEEK_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+export const WEEK_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
-function getTimeGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-function getCurrentWeekDates(): string[] {
+export function getCurrentWeekDates(): string[] {
   const today = new Date();
   const day = today.getDay();
   const monday = new Date(today);
@@ -26,9 +19,16 @@ function getCurrentWeekDates(): string[] {
   });
 }
 
-function getTodayIndex(): number {
+export function getTodayIndex(): number {
   const day = new Date().getDay();
   return day === 0 ? 6 : day - 1;
+}
+
+function getTimeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 interface StreakWidgetProps {

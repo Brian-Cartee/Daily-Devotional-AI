@@ -5,12 +5,12 @@ import logoLarge from "@assets/S_P_LOGO_(1024_x_1024_px)_1773100548775.png";
 
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, CalendarCheck } from "lucide-react";
+import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, Flame } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
 import { hasBeenPrompted } from "@/lib/userName";
-import { StreakWidget } from "@/components/StreakWidget";
+import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 
@@ -72,13 +72,12 @@ function DevotionalCard() {
     staleTime: 60_000,
   });
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const weekDates = getCurrentWeekDates();
+  const todayIdx = getTodayIndex();
   const visitDates: string[] = data?.visitDates ?? [];
-  const visitedToday = visitDates.includes(todayStr);
+  const visitSet = new Set(visitDates);
+  const visitedToday = visitSet.has(weekDates[todayIdx]);
   const streak = data?.currentStreak ?? 0;
-
-  const sortedDates = [...visitDates].sort((a, b) => b.localeCompare(a));
-  const recentCompleted = sortedDates.filter(d => d !== todayStr).slice(0, 3);
 
   return (
     <Link href="/devotional">
@@ -95,19 +94,49 @@ function DevotionalCard() {
         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 pointer-events-none" />
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
-        <img
-          src={logoWhite}
-          alt=""
-          aria-hidden="true"
-          className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"
-          style={{ filter: "invert(1)" }}
-        />
+        {/* Vertical week tracker — top right */}
+        <div className="absolute top-4 right-4 z-10 flex flex-col items-center gap-1.5">
+          {streak > 0 && (
+            <div className="flex items-center gap-0.5 mb-0.5">
+              {streak >= 7
+                ? <Flame className="w-3 h-3 text-amber-500" />
+                : <span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />
+              }
+              <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400">{streak}d</span>
+            </div>
+          )}
+          <div className="w-full h-px bg-teal-900/10 mb-0.5" />
+          {WEEK_LABELS.map((label, i) => {
+            const date = weekDates[i];
+            const visited = visitSet.has(date);
+            const isToday = i === todayIdx;
+            const isFuture = i > todayIdx;
+            return (
+              <div key={i} className="flex items-center gap-1.5 justify-between w-full">
+                <span className={`text-[9px] font-bold uppercase leading-none w-3 text-center ${isToday ? "text-teal-600 dark:text-teal-400" : "text-muted-foreground/30"}`}>
+                  {label}
+                </span>
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${
+                  visited && isToday ? "bg-teal-500 shadow-sm shadow-teal-400/40"
+                  : visited ? "bg-teal-200/70 dark:bg-teal-800/50"
+                  : isToday ? "border-2 border-teal-400/70"
+                  : isFuture ? "border border-muted-foreground/10"
+                  : "border border-muted-foreground/15"
+                }`}>
+                  {visited && isToday && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                  {visited && !isToday && <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />}
+                  {isToday && !visited && <div className="w-1 h-1 rounded-full bg-teal-400/60" />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        <div className="relative z-10 flex items-start gap-4 mb-4">
+        <div className="relative z-10 flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-teal-100 to-emerald-50 shadow-sm shadow-teal-200/60">
             <Sun className="w-5 h-5 text-teal-500" />
           </div>
-          <div className="flex-1 min-w-0 py-0.5 pr-14">
+          <div className="flex-1 min-w-0 py-0.5 pr-16">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600">
                 Daily
@@ -130,34 +159,6 @@ function DevotionalCard() {
             </div>
           </div>
         </div>
-
-        {recentCompleted.length > 0 && (
-          <div className="relative z-10 border-t border-teal-900/8 pt-3 mt-1">
-            <div className="flex items-center gap-1.5 mb-2">
-              <CalendarCheck className="w-3.5 h-3.5 text-teal-500/70" />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Recent completions</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {recentCompleted.map((date) => (
-                <div
-                  key={date}
-                  className="flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-2.5 py-1 rounded-full"
-                  data-testid={`completed-day-${date}`}
-                >
-                  <Check className="w-3 h-3 shrink-0" strokeWidth={3} />
-                  {formatVisitDate(date)}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {streak > 1 && (
-          <div className="relative z-10 mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-400" />
-            {streak}-day streak · keep going
-          </div>
-        )}
       </div>
     </Link>
   );
@@ -220,8 +221,8 @@ export default function LandingHome() {
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-        {/* Share App + vertical streak tracker — top right of hero */}
-        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+        {/* Share App — top right of hero */}
+        <div className="absolute top-4 right-4 z-20">
           <button
             onClick={handleShareApp}
             data-testid="btn-share-app"
@@ -232,7 +233,6 @@ export default function LandingHome() {
               : <><span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ boxShadow: "0 0 0 1.5px #f59e0b, 0 0 6px rgba(245,158,11,0.5)" }}><img src={logoSmall} className="w-6 h-6 object-contain" alt="" /></span> Share App</>
             }
           </button>
-          <StreakWidget variant="hero" onAddName={() => setShowNamePrompt(true)} />
         </div>
 
         {/* Hero text */}
