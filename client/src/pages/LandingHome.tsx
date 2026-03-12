@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, MessageCircle, Flame } from "lucide-react";
+import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -240,14 +240,14 @@ export default function LandingHome() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         {/* Brand mark + Share App — top right of hero */}
-        <div className="absolute top-4 right-4 z-20 flex flex-col items-center gap-2">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 flex flex-col items-center gap-2">
           {/* Watermark logo — brand stamp, not a button */}
           <img
             src={logoSmall}
             alt=""
             aria-hidden="true"
-            className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain pointer-events-none select-none drop-shadow-md"
-            style={{ opacity: 0.32, filter: "drop-shadow(0 1px 8px rgba(0,0,0,0.4))" }}
+            className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain pointer-events-none select-none"
+            style={{ opacity: 0.48, filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.5))" }}
           />
           {/* Share button — clean, no logo */}
           <button
@@ -257,7 +257,7 @@ export default function LandingHome() {
           >
             {shared
               ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
-              : <><MessageCircle className="w-3.5 h-3.5 opacity-80" /> Share App</>
+              : <><Share2 className="w-3.5 h-3.5 opacity-80" /> Share App</>
             }
           </button>
         </div>
