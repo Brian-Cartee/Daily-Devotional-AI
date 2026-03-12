@@ -1210,7 +1210,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-teal-500",
     pillBg: "bg-teal-500/10",
     pillText: "text-teal-600",
-    image: "https://images.unsplash.com/photo-1527430253228-e93688616381?w=800&q=70&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=70&auto=format&fit=crop",
     entries: JESUS_PATH,
   },
   {
