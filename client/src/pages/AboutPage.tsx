@@ -136,7 +136,7 @@ export default function AboutPage() {
         <motion.div {...fadeUp(0)} className="text-center py-10">
           <div className="flex justify-center mb-5">
             <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-              <img src={logoMark} alt="Shepherd's Path" className="w-10 h-10 object-contain" />
+              <img src={logoMark} alt="Shepherd's Path" className="w-13 h-13 object-contain" style={{ width: 52, height: 52 }} />
             </div>
           </div>
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
