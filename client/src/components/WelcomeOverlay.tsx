@@ -136,7 +136,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
 
           {/* Scripture First — full-width trust statement */}
           <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3">
-            <span className="text-lg shrink-0">📜</span>
+            <span className="text-lg shrink-0">✝️</span>
             <div>
               <p className="text-[13px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
               <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
@@ -151,9 +151,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               { icon: "🌅", title: "Daily Devotional", desc: "Scripture, reflection & prayer" },
               { icon: "🧭", title: "Bible Journey", desc: "30-day guided transformation" },
               { icon: "📖", title: "Read the Bible", desc: "Every chapter with AI insight" },
-              { icon: "✍️", title: "Prayer Journal", desc: "Prayers, reflections & verses" },
+              { icon: "🙏", title: "Prayer Journal", desc: "Prayers, reflections & verses" },
               { icon: "🔥", title: "Daily Streak", desc: "Track your faithfulness" },
-              { icon: "📚", title: "Bible Study", desc: "Deep AI-guided study tools" },
+              { icon: "💡", title: "Bible Study", desc: "Deep AI-guided study tools" },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-2 bg-muted/30 rounded-xl px-3 py-2.5">
                 <span className="text-sm mt-0.5 shrink-0">{f.icon}</span>
