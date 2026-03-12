@@ -465,16 +465,24 @@ export default function Devotional() {
             <div
               className="relative flex flex-col items-center justify-center px-8 text-center select-none"
               style={{
-                backgroundImage: `url(${getDailyVersePhoto()})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
                 minHeight: verse.text.length > 200 ? "440px" : verse.text.length > 100 ? "400px" : "360px",
               }}
             >
-              {/* 3-zone veil — dark top/bottom, photo shows through the middle */}
+              {/* Photo layer — separate so we can filter it without affecting text */}
               <div
                 className="absolute inset-0"
-                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.10) 32%, rgba(0,0,0,0.10) 68%, rgba(0,0,0,0.72) 100%)" }}
+                style={{
+                  backgroundImage: `url(${getDailyVersePhoto()})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  filter: "brightness(0.72) saturate(1.2)",
+                }}
+              />
+
+              {/* 3-zone veil — additional darkening at top/bottom for pill + reference */}
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.0) 30%, rgba(0,0,0,0.0) 70%, rgba(0,0,0,0.60) 100%)" }}
               />
 
               {/* Ghost decorative quote mark */}
