@@ -96,7 +96,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                 }
                 <div className="flex items-center gap-1.5">
                   {!loading && !playing && !started && (
-                    <span className="text-xl leading-none">👂</span>
+                    <span className="text-2xl leading-none">👂</span>
                   )}
                   <span className="text-[13px] font-semibold text-foreground">
                     {loading ? "Preparing…" : playing ? "Playing welcome…" : started ? "Welcome message" : "Hear a personal welcome"}
