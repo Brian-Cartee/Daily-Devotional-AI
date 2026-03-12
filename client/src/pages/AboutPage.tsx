@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   Sun, Compass, BookOpen, Search, NotebookPen, Heart,
   MessageCircle, Flame, Trophy, ShieldCheck, Church,
-  Sparkles, ArrowRight, Users
+  Sparkles, ArrowRight, Users, Share2, Check
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 
@@ -107,6 +108,24 @@ const COMMITMENTS = [
 ];
 
 export default function AboutPage() {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = "https://daily-devotional-ai.replit.app/about";
+    const shareData = {
+      title: "Shepherd's Path — Your AI Spiritual Companion",
+      text: "A daily faith app for Scripture, prayer, and reflection. Bible-first. Free to start.",
+      url,
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#fdf8f0]">
       <NavBar />
@@ -123,9 +142,17 @@ export default function AboutPage() {
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
             Your AI Spiritual Companion
           </h1>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
+          <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto mb-5">
             Shepherd's Path is a daily faith app built to walk alongside you through Scripture, prayer, and reflection — not just deliver content at you.
           </p>
+          <button
+            data-testid="btn-share-about"
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10 transition-all"
+          >
+            {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            {copied ? "Link copied!" : "Share this page"}
+          </button>
         </motion.div>
 
         {/* Bible-First Banner */}
