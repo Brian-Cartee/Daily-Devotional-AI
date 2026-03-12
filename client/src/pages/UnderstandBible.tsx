@@ -349,7 +349,7 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
             className="flex flex-wrap gap-2 justify-center mb-5"
           >
             <button
-              onClick={() => setActiveTheme(null)}
+              onClick={() => { setActiveTheme(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${activeTheme === null ? "bg-primary text-primary-foreground" : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"}`}
             >
               All
@@ -357,7 +357,7 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
             {themes.map((theme) => (
               <button
                 key={theme}
-                onClick={() => setActiveTheme(activeTheme === theme ? null : theme)}
+                onClick={() => { setActiveTheme(activeTheme === theme ? null : theme); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${activeTheme === theme ? "bg-primary text-primary-foreground" : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"}`}
               >
                 {theme}
@@ -395,8 +395,8 @@ export default function UnderstandBible() {
     }
   }, [selectedJourney?.id]);
 
-  const handleSelect = (journey: Journey) => navigate(`/understand?j=${journey.id}`);
-  const handleBack = () => navigate("/understand");
+  const handleSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); navigate(`/understand?j=${journey.id}`); };
+  const handleBack = () => { window.scrollTo({ top: 0, behavior: "instant" }); navigate("/understand"); };
 
   return (
     <>
