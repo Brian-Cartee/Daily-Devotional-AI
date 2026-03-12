@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
-  BookMarked, ArrowLeft, MapPin,
+  BookMarked, ArrowLeft, MapPin, Presentation,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
@@ -310,8 +310,23 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
                   {journey.badgeText}
                 </span>
               )}
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
-              <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
+                  <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
+                </div>
+                <a
+                  href={`/present?j=${journey.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="btn-present-journey"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[12px] font-semibold backdrop-blur-sm transition-all"
+                  title="Open in Presentation Mode"
+                >
+                  <Presentation className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Present</span>
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>

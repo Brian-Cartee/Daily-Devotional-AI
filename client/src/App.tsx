@@ -15,6 +15,7 @@ import RefundPage from "@/pages/RefundPage";
 import PricingPage from "@/pages/PricingPage";
 import PrayPage from "@/pages/PrayPage";
 import SmsPage from "@/pages/SmsPage";
+import PresentMode from "@/pages/PresentMode";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/pricing" component={PricingPage} />
       <Route path="/pray" component={PrayPage} />
       <Route path="/sms" component={SmsPage} />
+      <Route path="/present" component={PresentMode} />
       <Route component={NotFound} />
     </Switch>
   );
