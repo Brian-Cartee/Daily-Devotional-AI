@@ -95,7 +95,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   : <VolumeX className="w-4 h-4 text-muted-foreground" />
                 }
                 <span className="text-[13px] font-semibold text-foreground">
-                  {loading ? "Preparing…" : playing ? "Playing welcome…" : started ? "Welcome message" : "Hear a personal welcome"}
+                  {loading ? "Preparing…" : playing ? "Playing welcome…" : started ? "Welcome message" : "👂 Hear a personal welcome"}
                 </span>
               </div>
               <button
