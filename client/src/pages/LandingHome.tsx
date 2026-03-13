@@ -681,15 +681,17 @@ export default function LandingHome() {
           <p className="text-xs text-muted-foreground">
             Faith-rooted · AI-powered · Built for daily life
           </p>
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <Link href="/pricing" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-pricing-footer">
-              Plans & Pricing
-            </Link>
-            <span>·</span>
-            <Link href="/about" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
-              About the App
-            </Link>
-            <span>·</span>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Link href="/pricing" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-pricing-footer">
+                Plans & Pricing
+              </Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/about" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
+                About the App
+              </Link>
+            </div>
+            <span aria-hidden="true" className="hidden sm:inline">·</span>
             <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
               support@shepherdspathai.com
             </a>
