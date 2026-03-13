@@ -25,6 +25,7 @@ import SmsPage from "@/pages/SmsPage";
 import PresentMode from "@/pages/PresentMode";
 import DemoCreate from "@/pages/DemoCreate";
 import AboutPage from "@/pages/AboutPage";
+import PrivacyPage from "@/pages/PrivacyPage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/present" component={PresentMode} />
       <Route path="/demo" component={DemoCreate} />
       <Route path="/about" component={AboutPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route component={NotFound} />
     </Switch>
   );

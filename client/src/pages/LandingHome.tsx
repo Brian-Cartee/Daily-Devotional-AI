@@ -642,12 +642,19 @@ export default function LandingHome() {
               <Link href="/about" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
                 About the App
               </Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/privacy" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-privacy-footer">
+                Privacy Policy
+              </Link>
             </div>
             <span aria-hidden="true" className="hidden sm:inline">·</span>
             <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
               support@shepherdspathai.com
             </a>
           </div>
+          <p className="text-[11px] text-muted-foreground/50 mt-1">
+            © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
+          </p>
         </motion.div>
       </div>
     </div>
