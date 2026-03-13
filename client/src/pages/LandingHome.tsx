@@ -678,8 +678,12 @@ export default function LandingHome() {
           transition={{ delay: 0.7 }}
           className="text-center mt-8 space-y-2"
         >
-          <p className="text-xs text-muted-foreground">
-            Faith-rooted · Scripture-grounded · Built for daily life
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            <span className="whitespace-nowrap">Faith-rooted</span>
+            {" · "}
+            <span className="whitespace-nowrap">Scripture-grounded</span>
+            {" · "}
+            <span className="whitespace-nowrap">Built for daily life</span>
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-3 sm:gap-4">
