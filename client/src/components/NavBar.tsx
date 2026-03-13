@@ -12,7 +12,7 @@ const logoSmall = "/logo-mark-white.png";
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
   { href: "/understand", label: "Journey",    icon: Compass },
-  { href: "/read",       label: "Read",       icon: BookOpen },
+  { href: "/read",       label: "Bible",      icon: BookOpen },
   { href: "/study",      label: "Study",      icon: Search },
   { href: "/journal",    label: "Journal",    icon: NotebookPen },
 ];
@@ -21,7 +21,7 @@ const BOTTOM_NAV_ITEMS = [
   { href: "/",           label: "Home",       icon: Home,        bookmark: null },
   { href: "/devotional", label: "Devotional", icon: Sun,         bookmark: "devotional" as BookmarkSection },
   { href: "/understand", label: "Journey",    icon: Compass,     bookmark: "journey" as BookmarkSection },
-  { href: "/read",       label: "Read",       icon: BookOpen,    bookmark: "read" as BookmarkSection },
+  { href: "/read",       label: "Bible",      icon: BookOpen,    bookmark: "read" as BookmarkSection },
   { href: "/study",      label: "Study",      icon: Search,      bookmark: "study" as BookmarkSection },
   { href: "/journal",    label: "Journal",    icon: NotebookPen, bookmark: "journal" as BookmarkSection },
 ];
