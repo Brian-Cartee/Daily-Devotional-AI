@@ -542,7 +542,7 @@ export default function LandingHome() {
               },
               {
                 quote: "I text a verse request most mornings while I'm still in bed. First thing — before the news, before email. That shift matters.",
-                name: "Martin",
+                name: "Renee",
                 detail: "Text PRAY subscriber",
               },
               {
