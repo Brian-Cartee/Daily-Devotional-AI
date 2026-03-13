@@ -536,18 +536,18 @@ export default function LandingHome() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
               {
-                quote: "I've tried Bible apps before, but this one actually meets me where I am. The daily devotional feels personal, not generic.",
-                name: "Sarah M.",
-                detail: "Daily user, 6 weeks",
+                quote: "I open Shepherd's Path before I even make coffee. The morning devotional sets a completely different tone for my day.",
+                name: "Ann",
+                detail: "Daily devotional",
               },
               {
-                quote: "Texting my prayer requests and receiving Scripture back in seconds has become part of my morning. Simple and powerful.",
-                name: "James T.",
+                quote: "I text a verse request most mornings while I'm still in bed. First thing — before the news, before email. That shift matters.",
+                name: "Martin",
                 detail: "Text PRAY subscriber",
               },
               {
-                quote: "The Bible journeys helped me read passages I'd avoided for years. It's like having a patient pastor available anytime.",
-                name: "Carol W.",
+                quote: "I've been a Christian for 30 years, but these Bible journeys are showing me things I never noticed. The context is remarkable.",
+                name: "Cindy",
                 detail: "Journey: Life of Jesus",
               },
             ].map(({ quote, name, detail }) => (
