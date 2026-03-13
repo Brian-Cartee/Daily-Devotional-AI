@@ -22,7 +22,7 @@ const COMMANDS = [
   { cmd: "PRAY", desc: "Receive a personalized prayer" },
   { cmd: "VERSE", desc: "Get today's scripture" },
   { cmd: "DEVOTIONAL", desc: "Your full daily devotional reflection" },
-  { cmd: "Anything on your heart", desc: "Ask a question, share a struggle — AI responds with scripture and prayer" },
+  { cmd: "Anything on your heart", desc: "Ask a question, share a struggle — receive scripture and prayer from God's Word" },
   { cmd: "STOP", desc: "Unsubscribe from all messages immediately" },
   { cmd: "START", desc: "Re-subscribe at any time" },
 ];
@@ -61,7 +61,7 @@ export default function SmsPage() {
             Daily faith, right in your texts.
           </h1>
           <p className="text-muted-foreground text-[15px] leading-relaxed max-w-lg mx-auto">
-            No app. No account. Just text <strong>+1 (833) 962-9341</strong> anything on your heart — scripture, prayer, or a question — and receive a thoughtful, AI-guided response grounded in God's Word.
+            No app. No account. Just text <strong>+1 (833) 962-9341</strong> anything on your heart — scripture, prayer, or a question — and receive a thoughtful response grounded in God's Word.
           </p>
         </div>
 

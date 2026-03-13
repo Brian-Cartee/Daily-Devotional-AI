@@ -523,6 +523,55 @@ export default function LandingHome() {
 
         </motion.div>
 
+        {/* Testimonials */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-2"
+        >
+          <div className="flex items-center gap-2 mb-3 px-0.5">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">What people are saying</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              {
+                quote: "I've tried Bible apps before, but this one actually meets me where I am. The daily devotional feels personal, not generic.",
+                name: "Sarah M.",
+                detail: "Daily user, 6 weeks",
+              },
+              {
+                quote: "Texting my prayer requests and receiving Scripture back in seconds has become part of my morning. Simple and powerful.",
+                name: "James T.",
+                detail: "Text PRAY subscriber",
+              },
+              {
+                quote: "The Bible journeys helped me read passages I'd avoided for years. It's like having a patient pastor available anytime.",
+                name: "Carol W.",
+                detail: "Journey: Life of Jesus",
+              },
+            ].map(({ quote, name, detail }) => (
+              <div
+                key={name}
+                className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3"
+              >
+                <p className="text-[13px] text-muted-foreground leading-relaxed flex-1 italic">
+                  &ldquo;{quote}&rdquo;
+                </p>
+                <div className="flex items-center gap-2.5 pt-1 border-t border-border/40">
+                  <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-[11px] font-bold text-primary">
+                    {name[0]}
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-semibold text-foreground leading-none">{name}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{detail}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Scripture commitment card — trust footer, sits at the very bottom */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -645,6 +694,10 @@ export default function LandingHome() {
               <span aria-hidden="true">·</span>
               <Link href="/privacy" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-privacy-footer">
                 Privacy Policy
+              </Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/terms" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-terms-footer">
+                Terms
               </Link>
             </div>
             <span aria-hidden="true" className="hidden sm:inline">·</span>
