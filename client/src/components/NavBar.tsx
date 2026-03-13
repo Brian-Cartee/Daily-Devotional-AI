@@ -34,6 +34,8 @@ const NAV_BOOKMARK_MAP: Record<string, BookmarkSection> = {
   "/journal":    "journal",
 };
 
+const BOOKMARK_DOT_SECTIONS = new Set<BookmarkSection>(["journey", "read"]);
+
 function useBookmarkedSections() {
   const [bookmarked, setBookmarked] = useState<Set<BookmarkSection>>(() => {
     const sections: BookmarkSection[] = ["read", "study", "journey", "devotional", "journal"];
@@ -82,7 +84,7 @@ export function NavBar() {
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
               const active = location === href || location.startsWith(href + "/");
               const bm = NAV_BOOKMARK_MAP[href];
-              const hasPlace = bm && bookmarked.has(bm) && !active;
+              const hasPlace = bm && BOOKMARK_DOT_SECTIONS.has(bm) && bookmarked.has(bm) && !active;
               return (
                 <Link
                   key={href}
@@ -192,7 +194,7 @@ export function NavBar() {
             const active = href === "/"
               ? location === "/"
               : location === href || location.startsWith(href + "/");
-            const hasPlace = bookmark && bookmarked.has(bookmark) && !active;
+            const hasPlace = bookmark && BOOKMARK_DOT_SECTIONS.has(bookmark) && bookmarked.has(bookmark) && !active;
             return (
               <Link
                 key={href}
