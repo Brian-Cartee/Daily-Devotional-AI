@@ -307,14 +307,16 @@ export default function Devotional() {
     setSharingImage(false);
   };
 
+  const APP_URL = "https://daily-devotional-ai.replit.app";
+
   const buildShareText = () => {
     if (!verse) return "";
-    return `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏\nshepherdspathAI.com`;
+    return `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏\n${APP_URL}`;
   };
 
   const shareOnX = () => {
     const text = encodeURIComponent(buildShareText());
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank", "noopener,width=600,height=450");
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(APP_URL)}`, "_blank", "noopener,width=600,height=450");
   };
 
   const shareOnFacebook = () => {
@@ -334,7 +336,7 @@ export default function Devotional() {
 
   const shareOnTelegram = () => {
     const text = encodeURIComponent(buildShareText());
-    window.open(`https://t.me/share/url?url=https://shepherdspathAI.com&text=${text}`, "_blank", "noopener");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${text}`, "_blank", "noopener");
   };
 
   if (isVerseLoading) {
