@@ -679,7 +679,7 @@ export default function LandingHome() {
           className="text-center mt-8 space-y-2"
         >
           <p className="text-xs text-muted-foreground">
-            Faith-rooted · AI-powered · Built for daily life
+            Faith-rooted · Scripture-grounded · Built for daily life
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-3 sm:gap-4">
