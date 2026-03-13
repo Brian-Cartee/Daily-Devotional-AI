@@ -21,11 +21,11 @@ export default function PrayPage() {
         <span
           style={{
             fontFamily: "var(--font-decorative)",
-            fontWeight: 300,
-            fontSize: "0.85rem",
+            fontWeight: 400,
+            fontSize: "0.9rem",
             letterSpacing: "0.38em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.38)",
+            color: "rgba(255,255,255,0.72)",
           }}
         >
           Shepherd&rsquo;s Path
@@ -38,19 +38,19 @@ export default function PrayPage() {
         {/* Headline */}
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-px w-8 bg-amber-400/40" />
+            <div className="h-px w-8 bg-amber-400/60" />
             <span
               style={{
                 fontFamily: "var(--font-decorative)",
                 fontStyle: "italic",
-                fontSize: "0.9rem",
+                fontSize: "1rem",
                 letterSpacing: "0.06em",
-                color: "rgba(251,191,36,0.7)",
+                color: "rgba(251,191,36,0.92)",
               }}
             >
               Your daily walk with Jesus
             </span>
-            <div className="h-px w-8 bg-amber-400/40" />
+            <div className="h-px w-8 bg-amber-400/60" />
           </div>
 
           <h1
