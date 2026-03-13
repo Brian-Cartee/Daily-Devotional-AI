@@ -319,7 +319,7 @@ export default function Devotional() {
 
   const shareOnFacebook = () => {
     const text = encodeURIComponent(buildShareText());
-    window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=https://shepherdspathAI.com`, "_blank", "noopener,width=600,height=450");
+    window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=https://daily-devotional-ai.replit.app`, "_blank", "noopener,width=600,height=450");
   };
 
   const shareOnWhatsApp = () => {
