@@ -22,6 +22,9 @@ import { getUserName } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
+import { StaffIcon } from "@/components/StaffIcon";
+import { saveSnippet } from "@/lib/snippets";
+import { useToast } from "@/hooks/use-toast";
 
 function usePassageText(apiRef: string, enabled: boolean) {
   const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
@@ -36,6 +39,9 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [snippetSaved, setSnippetSaved] = useState(false);
+  const [snippetSaving, setSnippetSaving] = useState(false);
+  const { toast } = useToast();
 
   const textQuery = usePassageText(chapter.apiRef, open);
 
@@ -92,6 +98,27 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     setIsAiLoading(false);
   };
 
+  const handleSaveSnippet = async () => {
+    if (snippetSaved || snippetSaving) return;
+    setSnippetSaving(true);
+    try {
+      const text = textQuery.data?.text
+        ? textQuery.data.text.replace(/\[\d+\]/g, "").trim().slice(0, 400)
+        : chapter.summary;
+      await saveSnippet({
+        text,
+        reference: chapter.reference,
+        source: chapter.title,
+      });
+      setSnippetSaved(true);
+      toast({ description: "Saved to your path ✦" });
+    } catch {
+      toast({ description: "Could not save. Please try again.", variant: "destructive" });
+    } finally {
+      setSnippetSaving(false);
+    }
+  };
+
   return (
     <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-2xl overflow-hidden">
       <button
@@ -145,6 +172,23 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                 <Button size="sm" variant="ghost" className="rounded-full text-muted-foreground" onClick={() => { setAiMode("chat"); setChatMessages([]); }} disabled={isAiLoading}>
                   Ask a question
                 </Button>
+                <button
+                  onClick={handleSaveSnippet}
+                  disabled={snippetSaving}
+                  data-testid={`btn-save-snippet-${chapter.id}`}
+                  aria-label="Save to your path"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    snippetSaved
+                      ? "text-primary bg-primary/10 border-primary/30"
+                      : "text-muted-foreground border-border hover:text-primary hover:border-primary/30 hover:bg-primary/8"
+                  } disabled:opacity-50`}
+                >
+                  {snippetSaving
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <StaffIcon className="w-3.5 h-3.5" saved={snippetSaved} />
+                  }
+                  {snippetSaved ? "Saved" : "Save"}
+                </button>
               </div>
               {isAiLoading && !aiContent && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-4 h-4 animate-spin" /> Reflecting on {chapter.reference}...</div>

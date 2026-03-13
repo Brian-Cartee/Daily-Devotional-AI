@@ -17,6 +17,9 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
+import { StaffIcon } from "@/components/StaffIcon";
+import { saveSnippet } from "@/lib/snippets";
+import { useToast } from "@/hooks/use-toast";
 
 type AIPanel = "explain" | "context" | "apply" | "crossref" | "chat" | null;
 
@@ -74,6 +77,9 @@ export default function ReadBible() {
   const [showTransMenu, setShowTransMenu] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [resumeDismissed, setResumeDismissed] = useState(false);
+  const [savedSnippets, setSavedSnippets] = useState<Set<string>>(new Set());
+  const [isSavingSnippet, setIsSavingSnippet] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (selectedBook) {
@@ -115,6 +121,28 @@ export default function ReadBible() {
 
   const changeFontSize = (delta: number) => {
     setFontSize((prev) => Math.max(70, Math.min(160, prev + delta)));
+  };
+
+  const handleSaveSnippet = async () => {
+    if (!selectedBook || !chapterText.data || isSavingSnippet) return;
+    const key = `${selectedBook}-${selectedChapter}-${translation}`;
+    if (savedSnippets.has(key)) return;
+    setIsSavingSnippet(true);
+    try {
+      const verseText = chapterText.data.text.replace(/\[\d+\]/g, "").trim().slice(0, 400);
+      const transLabel = TRANSLATIONS.find(t => t.code === translation)?.full ?? translation.toUpperCase();
+      await saveSnippet({
+        text: verseText,
+        reference: `${selectedBook} ${selectedChapter}`,
+        source: transLabel,
+      });
+      setSavedSnippets((prev) => new Set(prev).add(key));
+      toast({ description: "Saved to your path ✦" });
+    } catch {
+      toast({ description: "Could not save. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSavingSnippet(false);
+    }
   };
 
   const handleAI = async (type: Exclude<AIPanel, "chat" | null>) => {
@@ -356,7 +384,28 @@ export default function ReadBible() {
                         <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-1">{selectedBook}</p>
                         <div className="flex items-center justify-between">
                           <h2 className="reading-chapter-title text-foreground">Chapter {selectedChapter}</h2>
-                          <ListenButton text={chapterText.data!.text.replace(/\[\d+\]/g, "")} label="Listen" size="md" />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={handleSaveSnippet}
+                              disabled={isSavingSnippet}
+                              data-testid="btn-save-snippet"
+                              aria-label="Save to your path"
+                              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`)
+                                  ? "text-primary bg-primary/10 border border-primary/30"
+                                  : "text-muted-foreground hover:text-primary hover:bg-primary/8 border border-transparent hover:border-primary/20"
+                              } disabled:opacity-50`}
+                            >
+                              {isSavingSnippet
+                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                : <StaffIcon className="w-3.5 h-3.5" saved={savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`)} />
+                              }
+                              <span className="hidden sm:inline">
+                                {savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`) ? "Saved" : "Save"}
+                              </span>
+                            </button>
+                            <ListenButton text={chapterText.data!.text.replace(/\[\d+\]/g, "")} label="Listen" size="md" />
+                          </div>
                         </div>
                         <div className="h-px bg-border mt-4" />
                       </div>
