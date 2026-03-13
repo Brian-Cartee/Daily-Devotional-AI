@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus, Plus, Check } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus, Plus, Check, Heart } from "lucide-react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
@@ -17,7 +17,6 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
-import { StaffIcon } from "@/components/StaffIcon";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
 
@@ -398,7 +397,7 @@ export default function ReadBible() {
                             >
                               {isSavingSnippet
                                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                : <StaffIcon className="w-3.5 h-3.5" saved={savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`)} />
+                                : <Heart className={`w-3.5 h-3.5 transition-all ${savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`) ? "fill-current" : ""}`} />
                               }
                               <span className="hidden sm:inline">
                                 {savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`) ? "Saved" : "Save"}

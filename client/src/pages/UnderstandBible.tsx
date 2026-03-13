@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
-  BookMarked, ArrowLeft, MapPin, Presentation,
+  BookMarked, ArrowLeft, MapPin, Presentation, Heart,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
@@ -22,7 +22,6 @@ import { getUserName } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
-import { StaffIcon } from "@/components/StaffIcon";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
 
@@ -185,7 +184,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                 >
                   {snippetSaving
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <StaffIcon className="w-3.5 h-3.5" saved={snippetSaved} />
+                    : <Heart className={`w-3.5 h-3.5 transition-all ${snippetSaved ? "fill-current" : ""}`} />
                   }
                   {snippetSaved ? "Saved" : "Save"}
                 </button>
