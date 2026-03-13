@@ -117,7 +117,7 @@ export default function PrayPage() {
           </p>
         </div>
 
-        {/* Three quiet proof points */}
+        {/* Two quiet proof points */}
         <div className="flex flex-col gap-3 w-full max-w-xs">
           {[
             {
@@ -126,11 +126,7 @@ export default function PrayPage() {
             },
             {
               icon: <MessageSquare size={16} strokeWidth={2} />,
-              text: "AI-guided prayer and reflection",
-            },
-            {
-              icon: <Users size={16} strokeWidth={2} />,
-              text: "Real people praying with you",
+              text: "Guided prayer and reflection for your moment",
             },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-3">
