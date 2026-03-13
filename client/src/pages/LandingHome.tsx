@@ -537,7 +537,7 @@ export default function LandingHome() {
             {[
               {
                 quote: "I open Shepherd's Path before I even make coffee. The morning devotional sets a completely different tone for my day.",
-                name: "Ann",
+                name: "Eric",
                 detail: "Daily devotional",
               },
               {
