@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -200,10 +200,11 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   );
 }
 
-function JourneyHub({ onSelect }: { onSelect: (journey: Journey) => void }) {
+function JourneyHub({ onSelect, resumeBar }: { onSelect: (journey: Journey) => void; resumeBar?: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
+        {resumeBar}
         <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
           <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
@@ -408,20 +409,24 @@ export default function UnderstandBible() {
           </motion.div>
         ) : (
           <motion.div key="hub" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.25 }}>
-            <AnimatePresence>
-              {!resumeDismissed && (() => {
-                const bm = getBookmark("journey");
-                return bm ? (
-                  <ResumeBar
-                    key="journey-resume"
-                    label={bm.label}
-                    onResume={() => { navigate(`/understand?j=${bm.journeyId}`); setResumeDismissed(true); }}
-                    onDismiss={() => setResumeDismissed(true)}
-                  />
-                ) : null;
-              })()}
-            </AnimatePresence>
-            <JourneyHub onSelect={handleSelect} />
+            <JourneyHub
+              onSelect={handleSelect}
+              resumeBar={
+                <AnimatePresence>
+                  {!resumeDismissed && (() => {
+                    const bm = getBookmark("journey");
+                    return bm ? (
+                      <ResumeBar
+                        key="journey-resume"
+                        label={bm.label}
+                        onResume={() => { navigate(`/understand?j=${bm.journeyId}`); setResumeDismissed(true); }}
+                        onDismiss={() => setResumeDismissed(true)}
+                      />
+                    ) : null;
+                  })()}
+                </AnimatePresence>
+              }
+            />
           </motion.div>
         )}
       </AnimatePresence>
