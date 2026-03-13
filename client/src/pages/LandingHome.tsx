@@ -162,7 +162,7 @@ function HeroAIPrompt() {
           <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Ask AI</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Seek Guidance</span>
         </div>
 
         {/* Input */}

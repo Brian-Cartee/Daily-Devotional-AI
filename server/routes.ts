@@ -577,7 +577,10 @@ What you never do:
 
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
     if (detectCrisis(lastUserMsg)) {
-      return res.json({ content: CRISIS_RESPONSE });
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.write(CRISIS_RESPONSE);
+      res.end();
+      return;
     }
 
     const langInstruction: Record<string, string> = {
@@ -594,13 +597,7 @@ What you never do:
       : "";
     const passageRelationshipNote = buildRelationshipNote(passageDaysWithApp, passageEntryCount);
 
-    try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
+    const systemPrompt =
 `You are a deeply thoughtful Bible companion helping someone study ${passageRef}. The passage they are reading:
 
 ${passageText}
@@ -621,18 +618,20 @@ What you never do:
 — Give bulleted lists as your primary response.
 — Tell people what they "should" believe or do.
 — Pad the response with things that don't serve the question.
-— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In any prayers you write, capitalize You, Your when addressing God directly.${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`,
-          },
+— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In any prayers you write, capitalize You, Your when addressing God directly.${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`;
+
+    try {
+      await streamCompletion(
+        [
+          { role: "system", content: systemPrompt },
           ...messages.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
         ],
-        max_tokens: 600,
-        temperature: 0.7,
-      });
-      const content = completion.choices[0]?.message?.content ?? "I couldn't generate a response.";
-      res.json({ content });
+        res,
+        { maxTokens: 600, temperature: 0.7 }
+      );
     } catch (err) {
       console.error("Passage AI error:", err);
-      res.status(500).json({ message: "AI generation failed" });
+      if (!res.headersSent) res.status(500).json({ message: "AI generation failed" });
     }
   });
 

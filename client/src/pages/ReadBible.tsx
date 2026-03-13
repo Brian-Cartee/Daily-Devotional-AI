@@ -4,8 +4,7 @@ import { BookOpen, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus, Plus, Ch
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { BIBLE_BOOKS } from "@/data/bibleBooks";
@@ -41,19 +40,47 @@ function useChapterText(bookName: string, chapter: number, translation: string) 
   });
 }
 
-function usePassageAI() {
-  return useMutation({
-    mutationFn: (data: { passageRef: string; passageText: string; messages: Array<{ role: string; content: string }>; lang?: string }) =>
-      apiRequest("POST", "/api/chat/passage", { ...data, sessionId: getSessionId(), daysWithApp: getRelationshipAge() }).then((r) => r.json()),
-  });
-}
-
 const AI_PROMPTS: Record<string, string> = {
   explain: "Explain this chapter in simple, clear language as if talking to someone new to the Bible. Keep it to 3-4 paragraphs.",
   context: "Provide historical and cultural context for this chapter. Who wrote it, when, why, and what was happening at the time? 2-3 paragraphs.",
   apply: "Give 3 specific, practical ways a person today can apply the teachings of this chapter to their daily life.",
   crossref: "List 4-5 other Bible passages that connect to the themes of this chapter, and briefly explain each connection.",
 };
+
+const PASTORAL_BUTTONS = [
+  { key: "explain",  label: "Help me understand this" },
+  { key: "context",  label: "What was happening in this time?" },
+  { key: "apply",    label: "What does this mean for my life?" },
+  { key: "crossref", label: "Where else does Scripture speak to this?" },
+];
+
+async function streamPassageResponse(
+  passageRef: string,
+  passageText: string,
+  messages: Array<{ role: string; content: string }>,
+  onChunk: (text: string) => void
+) {
+  const response = await fetch("/api/chat/passage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      passageRef,
+      passageText,
+      messages,
+      lang: getStoredLang(),
+      sessionId: getSessionId(),
+      daysWithApp: getRelationshipAge(),
+    }),
+  });
+  if (!response.body) throw new Error("No response body");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk(decoder.decode(value, { stream: true }));
+  }
+}
 
 export default function ReadBible() {
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
@@ -78,6 +105,7 @@ export default function ReadBible() {
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [savedSnippets, setSavedSnippets] = useState<Set<string>>(new Set());
   const [isSavingSnippet, setIsSavingSnippet] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -96,7 +124,6 @@ export default function ReadBible() {
 
   const book = BIBLE_BOOKS.find((b) => b.name === selectedBook);
   const chapterText = useChapterText(selectedBook ?? "", selectedChapter, translation);
-  const passageAI = usePassageAI();
 
   useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
 
@@ -145,36 +172,47 @@ export default function ReadBible() {
   };
 
   const handleAI = async (type: Exclude<AIPanel, "chat" | null>) => {
-    if (!chapterText.data) return;
+    if (!chapterText.data || isAiLoading) return;
     if (!canUseAi()) { setShowUpgrade(true); return; }
     recordAiUsage();
     setActivePanel(type);
     setAiResult("");
-    const lang = getStoredLang();
-    const res = await passageAI.mutateAsync({
-      passageRef: `${selectedBook} ${selectedChapter}`,
-      passageText: chapterText.data.text,
-      messages: [{ role: "user", content: AI_PROMPTS[type] }],
-      lang,
-    });
-    setAiResult(capitalizeDivinePronouns(res.content));
+    setIsAiLoading(true);
+    try {
+      let full = "";
+      await streamPassageResponse(
+        `${selectedBook} ${selectedChapter}`,
+        chapterText.data.text,
+        [{ role: "user", content: AI_PROMPTS[type] }],
+        (chunk) => { full += chunk; setAiResult(capitalizeDivinePronouns(full)); }
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const sendChat = async () => {
-    if (!chatInput.trim() || !chapterText.data) return;
+    if (!chatInput.trim() || !chapterText.data || isAiLoading) return;
     if (!canUseAi()) { setShowUpgrade(true); return; }
     recordAiUsage();
     const newMessages = [...chatMessages, { role: "user", content: chatInput }];
-    setChatMessages(newMessages);
+    setChatMessages([...newMessages, { role: "assistant", content: "" }]);
     setChatInput("");
-    const lang = getStoredLang();
-    const res = await passageAI.mutateAsync({
-      passageRef: `${selectedBook} ${selectedChapter}`,
-      passageText: chapterText.data.text,
-      messages: newMessages,
-      lang,
-    });
-    setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(res.content) }]);
+    setIsAiLoading(true);
+    try {
+      let full = "";
+      await streamPassageResponse(
+        `${selectedBook} ${selectedChapter}`,
+        chapterText.data.text,
+        newMessages,
+        (chunk) => {
+          full += chunk;
+          setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(full) }]);
+        }
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const OT = BIBLE_BOOKS.filter((b) => b.testament === "OT");
@@ -446,19 +484,14 @@ export default function ReadBible() {
                   <div className="p-4 sticky top-14">
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-semibold text-foreground">AI Assistance</span>
+                      <span className="text-sm font-semibold text-foreground">Pastoral Insight</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-4">
-                      {[
-                        { key: "explain", label: "Explain simply" },
-                        { key: "context", label: "Historical context" },
-                        { key: "apply", label: "Life application" },
-                        { key: "crossref", label: "Cross-references" },
-                      ].map(({ key, label }) => (
+                      {PASTORAL_BUTTONS.map(({ key, label }) => (
                         <button
                           key={key}
                           onClick={() => handleAI(key as "explain" | "context" | "apply" | "crossref")}
-                          disabled={passageAI.isPending}
+                          disabled={isAiLoading}
                           data-testid={`btn-ai-${key}`}
                           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                             activePanel === key
@@ -470,7 +503,7 @@ export default function ReadBible() {
                         </button>
                       ))}
                       <button
-                        onClick={() => { setActivePanel("chat"); setAiResult(""); }}
+                        onClick={() => { setActivePanel("chat"); setAiResult(""); setChatMessages([]); }}
                         data-testid="btn-ai-chat"
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                           activePanel === "chat"
@@ -478,22 +511,28 @@ export default function ReadBible() {
                             : "bg-white/60 dark:bg-slate-700/60 text-muted-foreground hover:text-foreground border-white/30 dark:border-slate-600/40"
                         }`}
                       >
-                        Ask a question
+                        Bring a question
                       </button>
                     </div>
 
                     <AnimatePresence mode="wait">
-                      {passageAI.isPending && activePanel !== "chat" && (
-                        <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-                          <Loader2 className="w-4 h-4 animate-spin" />Thinking...
+                      {isAiLoading && activePanel !== "chat" && (
+                        <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                          {aiResult ? (
+                            <div className="bg-white/60 dark:bg-slate-700/50 rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2 max-h-80 overflow-y-auto">
+                              {aiResult.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground/70 italic py-4">Reflecting on {selectedBook} {selectedChapter}...</p>
+                          )}
                         </motion.div>
                       )}
-                      {aiResult && activePanel && activePanel !== "chat" && !passageAI.isPending && (
+                      {aiResult && activePanel && activePanel !== "chat" && !isAiLoading && (
                         <motion.div key={activePanel} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-white/60 dark:bg-slate-700/50 rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2 max-h-80 overflow-y-auto">
                           {aiResult.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
                           <div className="pt-2 border-t border-white/20">
                             <ShareButton
-                              title={`${selectedBook} ${selectedChapter} — Bible Study`}
+                              title={`${selectedBook} ${selectedChapter} — Pastoral Insight`}
                               text={aiResult}
                             />
                           </div>
@@ -501,37 +540,35 @@ export default function ReadBible() {
                       )}
                       {activePanel === "chat" && (
                         <motion.div key="chat" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-2">
-                          <div className="bg-white/50 dark:bg-slate-700/40 rounded-xl p-3 max-h-60 overflow-y-auto space-y-2">
+                          <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
                             {chatMessages.length === 0 && (
-                              <p className="text-xs text-muted-foreground text-center py-3">Ask anything about {selectedBook} {selectedChapter}</p>
+                              <p className="text-xs text-muted-foreground/70 italic text-center py-4">What's on your heart about {selectedBook} {selectedChapter}?</p>
                             )}
-                            {chatMessages.map((m, i) => (
-                              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                                <div className={`max-w-[90%] px-3 py-2 rounded-xl text-xs leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-white/80 dark:bg-slate-600/80 text-slate-700 dark:text-slate-200"}`}>
-                                  {m.content}
+                            {chatMessages.map((m, i) =>
+                              m.role === "user" ? (
+                                <p key={i} className="text-[11px] text-muted-foreground/70 italic">"{m.content}"</p>
+                              ) : (
+                                <div key={i} className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-1.5 pb-3 mb-1 border-b border-border/20 last:border-0">
+                                  {m.content
+                                    ? m.content.split("\n").map((p, j) => p.trim() ? <p key={j}>{p}</p> : null)
+                                    : <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse rounded-sm" />
+                                  }
                                 </div>
-                              </div>
-                            ))}
-                            {passageAI.isPending && (
-                              <div className="flex justify-start">
-                                <div className="bg-white/60 dark:bg-slate-600/60 px-3 py-2 rounded-xl">
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
-                                </div>
-                              </div>
+                              )
                             )}
                             <div ref={chatBottomRef} />
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 pt-1">
                             <input
                               value={chatInput}
                               onChange={(e) => setChatInput(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()}
-                              placeholder="Ask a question..."
+                              placeholder="What's on your heart about this passage?"
                               className="flex-1 bg-white/60 dark:bg-slate-700/60 border border-white/30 dark:border-slate-600/40 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
-                              disabled={passageAI.isPending}
+                              disabled={isAiLoading}
                               data-testid="input-chat"
                             />
-                            <Button size="sm" onClick={sendChat} disabled={!chatInput.trim() || passageAI.isPending} className="rounded-xl text-xs px-3" data-testid="btn-chat-send">Send</Button>
+                            <Button size="sm" onClick={sendChat} disabled={!chatInput.trim() || isAiLoading} className="rounded-xl text-xs px-3" data-testid="btn-chat-send">Send</Button>
                           </div>
                         </motion.div>
                       )}

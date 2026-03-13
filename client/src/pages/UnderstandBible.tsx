@@ -77,20 +77,40 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   };
 
   const sendChat = async () => {
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || isAiLoading) return;
     if (!canUseAi()) { setShowUpgrade(true); return; }
     recordAiUsage();
     const newMessages = [...chatMessages, { role: "user", content: chatInput }];
-    setChatMessages(newMessages);
+    setChatMessages([...newMessages, { role: "assistant", content: "" }]);
     setChatInput("");
     setIsAiLoading(true);
     const passageText = textQuery.data?.text ?? chapter.summary;
     const lang = getStoredLang();
     const userName = getUserName() ?? undefined;
     try {
-      const res = await apiRequest("POST", "/api/chat/passage", { passageRef: chapter.reference, passageText, lang, userName, sessionId: getSessionId(), daysWithApp: getRelationshipAge(), messages: newMessages });
-      const data = await res.json();
-      setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(data.content) }]);
+      const response = await fetch("/api/chat/passage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passageRef: chapter.reference,
+          passageText,
+          lang,
+          userName,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          messages: newMessages,
+        }),
+      });
+      if (!response.body) throw new Error("No response body");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        setChatMessages([...newMessages, { role: "assistant", content: capitalizeDivinePronouns(full) }]);
+      }
     } catch {
       setChatMessages([...newMessages, { role: "assistant", content: "Sorry, I couldn't respond. Please try again." }]);
     }
@@ -214,19 +234,25 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
               )}
               {aiMode === "chat" && (
                 <div className="space-y-3">
-                  <div className="bg-white/40 dark:bg-slate-700/30 rounded-xl p-3 max-h-52 overflow-y-auto space-y-2">
-                    {chatMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Ask anything about {chapter.reference}</p>}
-                    {chatMessages.map((m, i) => (
-                      <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-white/60 dark:bg-slate-600/60 text-slate-700 dark:text-slate-200"}`}>
-                          {m.content}
+                  <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
+                    {chatMessages.length === 0 && (
+                      <p className="text-sm text-muted-foreground/70 italic text-center py-4">What's on your heart about {chapter.reference}?</p>
+                    )}
+                    {chatMessages.map((m, i) =>
+                      m.role === "user" ? (
+                        <p key={i} className="text-xs text-muted-foreground/70 italic">"{m.content}"</p>
+                      ) : (
+                        <div key={i} className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-1.5 pb-3 mb-1 border-b border-white/20 last:border-0">
+                          {m.content
+                            ? m.content.split("\n").map((p, j) => p.trim() ? <p key={j}>{p}</p> : null)
+                            : <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse rounded-sm" />
+                          }
                         </div>
-                      </div>
-                    ))}
-                    {isAiLoading && <div className="flex justify-start"><div className="bg-white/60 dark:bg-slate-600/60 px-3 py-2 rounded-xl"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div></div>}
+                      )
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()} placeholder="Ask a question..." className="flex-1 bg-white/60 dark:bg-slate-700/60 border border-white/30 dark:border-slate-600/40 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" disabled={isAiLoading} />
+                    <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()} placeholder="What's on your heart about this passage?" className="flex-1 bg-white/60 dark:bg-slate-700/60 border border-white/30 dark:border-slate-600/40 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" disabled={isAiLoading} />
                     <Button size="sm" onClick={sendChat} disabled={!chatInput.trim() || isAiLoading} className="rounded-xl">Send</Button>
                   </div>
                 </div>
