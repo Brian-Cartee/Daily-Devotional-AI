@@ -928,8 +928,8 @@ export default function Journal() {
                 <MessageCircle className="w-4.5 h-4.5 text-rose-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-rose-700 dark:text-rose-400 leading-snug">Not near your phone? Just text PRAY</p>
-                <p className="text-[11px] text-rose-500/80 dark:text-rose-500/60 leading-snug mt-0.5">Text anything on your heart to +1 (833) 962-9341 — scripture & prayer come straight back.</p>
+                <p className="text-[13px] font-semibold text-rose-700 dark:text-rose-400 leading-snug">Prefer to pray by text?</p>
+                <p className="text-[11px] text-rose-500/80 dark:text-rose-500/60 leading-snug mt-0.5">Text PRAY to +1 (833) 962-9341 — scripture & prayer come straight back.</p>
               </div>
             </a>
           )}
