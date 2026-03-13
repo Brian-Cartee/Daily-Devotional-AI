@@ -58,6 +58,14 @@ const FEATURES = [
     desc: "Bring what you're carrying and receive a scripture, a reflection, and a prayer shaped specifically for your moment.",
   },
   {
+    icon: MessageCircle,
+    color: "text-teal-500",
+    bg: "bg-teal-50",
+    border: "border-teal-100",
+    title: "Text PRAY from Anywhere",
+    desc: "No app required. Text anything on your heart to +1 (833) 962-9341 and receive scripture and prayer straight to your phone.",
+  },
+  {
     icon: NotebookPen,
     color: "text-emerald-500",
     bg: "bg-emerald-50",
@@ -80,14 +88,6 @@ const FEATURES = [
     border: "border-yellow-100",
     title: "Meaningful Achievements",
     desc: "Milestones like your first devotional, 7-day streaks, and deep study moments are marked with meaning, not just badges.",
-  },
-  {
-    icon: MessageCircle,
-    color: "text-teal-500",
-    bg: "bg-teal-50",
-    border: "border-teal-100",
-    title: "Text PRAY from Anywhere",
-    desc: "No app required. Text anything on your heart to +1 (833) 962-9341 and receive scripture and prayer straight to your phone.",
   },
   {
     icon: Users,
