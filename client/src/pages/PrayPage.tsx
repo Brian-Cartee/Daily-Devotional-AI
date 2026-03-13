@@ -160,20 +160,43 @@ export default function PrayPage() {
 
       </div>
 
-      {/* Footer link — quiet, not competing */}
-      <div className="w-full flex justify-center pb-2">
-        <Link
-          href="/"
-          data-testid="link-explore-app"
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "0.8rem",
-            color: "rgba(255,255,255,0.28)",
-            letterSpacing: "0.02em",
-            textDecoration: "none",
-          }}
-        >
-          Explore the full app at ShepherdPathAI.com &rsaquo;
+      {/* Invitation card — warm bridge to the full app */}
+      <div className="w-full max-w-sm pb-4">
+        <Link href="/" data-testid="link-explore-full-app">
+          <div
+            className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-start gap-3 group transition-all hover:bg-white/10"
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+              style={{ background: "rgba(255,255,255,0.08)" }}
+            >
+              <BookOpen size={17} strokeWidth={2} style={{ color: "rgba(251,191,36,0.8)" }} />
+            </div>
+            <div className="flex-1">
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.85)",
+                  marginBottom: "2px",
+                }}
+              >
+                There's more waiting for you
+              </p>
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.42)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Daily devotionals, Bible journeys, and a prayer journal — all in Shepherd's Path.
+              </p>
+            </div>
+            <Users size={14} strokeWidth={2} style={{ color: "rgba(255,255,255,0.25)", marginTop: "4px", flexShrink: 0 }} />
+          </div>
         </Link>
       </div>
     </div>

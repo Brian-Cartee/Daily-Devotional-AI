@@ -23,7 +23,7 @@ const FEATURES = [
     bg: "bg-amber-50",
     border: "border-amber-100",
     title: "Daily Devotional",
-    desc: "Each morning brings a fresh scripture, a personal reflection prompt, and an AI-guided meditation tailored to where you are spiritually.",
+    desc: "Each morning brings a fresh scripture, a personal reflection prompt, and a guided meditation tailored to where you are spiritually.",
   },
   {
     icon: Compass,
@@ -39,14 +39,14 @@ const FEATURES = [
     bg: "bg-violet-50",
     border: "border-violet-100",
     title: "Read the Bible",
-    desc: "The full Bible (KJV, WEB, and ASV) with AI available on every chapter for context, historical background, and personal reflection.",
+    desc: "The full Bible (KJV, WEB, and ASV) with pastoral insight available on every chapter for context, historical background, and personal reflection.",
   },
   {
     icon: Search,
     color: "text-blue-500",
     bg: "bg-blue-50",
     border: "border-blue-100",
-    title: "AI Bible Study",
+    title: "Deep Bible Study",
     desc: "Go deep on any passage with guided study tools that surface meaning, application, and connection across all of Scripture.",
   },
   {
@@ -113,7 +113,7 @@ export default function AboutPage() {
   const handleShare = async () => {
     const url = "https://daily-devotional-ai.replit.app/about";
     const shareData = {
-      title: "Shepherd's Path — Your AI Spiritual Companion",
+      title: "Shepherd's Path — Your Daily Companion in Faith",
       text: "A daily faith app for Scripture, prayer, and reflection. Bible-first. Free to start.",
       url,
     };
@@ -140,7 +140,7 @@ export default function AboutPage() {
             </div>
           </div>
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
-            Your AI Spiritual Companion
+            Your Daily Companion in Faith
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto mb-5">
             Shepherd's Path is a daily faith app built to walk alongside you through Scripture, prayer, and reflection — not just deliver content at you.

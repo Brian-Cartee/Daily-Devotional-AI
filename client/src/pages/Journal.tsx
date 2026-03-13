@@ -54,11 +54,11 @@ interface TranscriptResult {
 
 type TabType = "prayer" | "reflection" | "verse" | "note";
 
-const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string }[] = [
-  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your saved prayers will appear here." },
-  { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "Your saved reflections will appear here." },
-  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "Verses you save will appear here." },
-  { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "Your sermon notes will appear here." },
+const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string; emptyHint: string }[] = [
+  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.", emptyHint: "After praying, save your prayer to keep a record of what God is doing in your life." },
+  { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "No reflections saved yet.", emptyHint: "Open a devotional or Bible journey and save a reflection when something speaks to you." },
+  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.", emptyHint: "While reading the Bible, tap the heart icon on any chapter to save it here." },
+  { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "Your sermon notes will appear here.", emptyHint: "Use the recorder or notepad above to capture what God speaks through the message." },
 ];
 
 function formatDate(dateStr: string) {
@@ -983,7 +983,7 @@ export default function Journal() {
               </div>
               <p className="text-sm font-medium text-muted-foreground max-w-[220px]">{activeTabConfig.emptyText}</p>
               <p className="text-xs text-muted-foreground/60 mt-2 max-w-[240px]">
-                Use the save buttons on the Devotional or Study pages to add entries.
+                {activeTabConfig.emptyHint}
               </p>
             </motion.div>
           ) : (

@@ -464,7 +464,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/25 text-white/90 text-[10px] font-bold uppercase tracking-widest mb-1.5">
             <Sparkles className="w-2.5 h-2.5" />
-            AI-Powered
+            Scripture Study
           </div>
           <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Quick Bible Study</h2>
           <p className="text-white/70 text-[12px] mt-1">Any topic, passage, or question — studied in seconds.</p>
