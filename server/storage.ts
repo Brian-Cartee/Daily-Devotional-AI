@@ -324,7 +324,7 @@ export class DatabaseStorage implements IStorage {
     await db.insert(referrals).values({ referralCode: code, referredSessionId }).onConflictDoNothing();
     const now = new Date();
     const currentExpiry = referrer.proExpiresAt && referrer.proExpiresAt > now ? referrer.proExpiresAt : now;
-    const newExpiry = new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const newExpiry = new Date(currentExpiry.getTime() + 14 * 24 * 60 * 60 * 1000);
     await db.update(referralCodes)
       .set({ referralCount: sqlExpr`${referralCodes.referralCount} + 1`, proExpiresAt: newExpiry })
       .where(eq(referralCodes.code, code));

@@ -71,10 +71,10 @@ export function ShareInviteCard() {
         </div>
         <div>
           <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
-            Invite a friend — earn 7 free Pro days
+            Invite a friend — earn 14 free Pro days
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Every friend who joins through your link adds 7 days of Pro to your account. No limits.
+            Every friend who joins through your link adds 14 days of Pro to your account. No limits.
           </p>
         </div>
       </div>
