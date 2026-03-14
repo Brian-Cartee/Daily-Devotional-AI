@@ -142,8 +142,11 @@ export default function AboutPage() {
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
             Your Daily Companion in Faith
           </h1>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto mb-5">
+          <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
             Shepherd's Path is a daily faith app built to walk alongside you through Scripture, prayer, and reflection — not just deliver content at you.
+          </p>
+          <p className="text-[13px] text-primary/70 italic font-medium mb-5">
+            "Open your Bible. We'll open the conversation."
           </p>
           <button
             data-testid="btn-share-about"

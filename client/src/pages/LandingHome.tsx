@@ -705,6 +705,9 @@ export default function LandingHome() {
               support@shepherdspathai.com
             </a>
           </div>
+          <p className="text-[12px] text-muted-foreground/60 italic mt-2">
+            "Open your Bible. We'll open the conversation."
+          </p>
           <p className="text-[11px] text-muted-foreground/50 mt-1">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
           </p>
