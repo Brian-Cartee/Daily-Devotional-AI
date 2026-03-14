@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode } from "@shared/schema";
 import { eq, and, desc, isNull, isNotNull, lt, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -36,6 +36,10 @@ export interface IStorage {
   markFollowUpSent(requestId: number): Promise<void>;
   getVerseArt(verseDate: string): Promise<VerseArt | undefined>;
   saveVerseArt(verseDate: string, verseReference: string, imageUrl: string): Promise<VerseArt>;
+  getOrCreateReferralCode(sessionId: string): Promise<ReferralCode>;
+  recordReferral(code: string, referredSessionId: string): Promise<{ success: boolean; referrerSessionId: string | null }>;
+  getReferralStats(sessionId: string): Promise<{ code: string; referralCount: number; proExpiresAt: Date | null } | null>;
+  hasReferralPro(sessionId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -296,6 +300,47 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({ target: verseArt.verseDate, set: { imageUrl, verseReference } })
       .returning();
     return row;
+  }
+
+  async getOrCreateReferralCode(sessionId: string): Promise<ReferralCode> {
+    const [existing] = await db.select().from(referralCodes).where(eq(referralCodes.sessionId, sessionId));
+    if (existing) return existing;
+    const code = sessionId.replace(/-/g, "").slice(0, 8).toUpperCase();
+    const uniqueCode = `SP${code}`;
+    const [created] = await db
+      .insert(referralCodes)
+      .values({ sessionId, code: uniqueCode })
+      .onConflictDoUpdate({ target: referralCodes.sessionId, set: { sessionId } })
+      .returning();
+    return created;
+  }
+
+  async recordReferral(code: string, referredSessionId: string): Promise<{ success: boolean; referrerSessionId: string | null }> {
+    const [referrer] = await db.select().from(referralCodes).where(eq(referralCodes.code, code));
+    if (!referrer) return { success: false, referrerSessionId: null };
+    if (referrer.sessionId === referredSessionId) return { success: false, referrerSessionId: null };
+    const [alreadyReferred] = await db.select().from(referrals).where(eq(referrals.referredSessionId, referredSessionId));
+    if (alreadyReferred) return { success: false, referrerSessionId: referrer.sessionId };
+    await db.insert(referrals).values({ referralCode: code, referredSessionId }).onConflictDoNothing();
+    const now = new Date();
+    const currentExpiry = referrer.proExpiresAt && referrer.proExpiresAt > now ? referrer.proExpiresAt : now;
+    const newExpiry = new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000);
+    await db.update(referralCodes)
+      .set({ referralCount: sqlExpr`${referralCodes.referralCount} + 1`, proExpiresAt: newExpiry })
+      .where(eq(referralCodes.code, code));
+    return { success: true, referrerSessionId: referrer.sessionId };
+  }
+
+  async getReferralStats(sessionId: string): Promise<{ code: string; referralCount: number; proExpiresAt: Date | null } | null> {
+    const [row] = await db.select().from(referralCodes).where(eq(referralCodes.sessionId, sessionId));
+    if (!row) return null;
+    return { code: row.code, referralCount: row.referralCount, proExpiresAt: row.proExpiresAt };
+  }
+
+  async hasReferralPro(sessionId: string): Promise<boolean> {
+    const [row] = await db.select().from(referralCodes).where(eq(referralCodes.sessionId, sessionId));
+    if (!row || !row.proExpiresAt) return false;
+    return row.proExpiresAt > new Date();
   }
 }
 

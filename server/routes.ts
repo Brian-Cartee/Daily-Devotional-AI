@@ -974,6 +974,46 @@ What you never do:
     }
   });
 
+  app.get("/api/referral/my-code", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const referral = await storage.getOrCreateReferralCode(sessionId);
+      const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+      const shareUrl = `${appUrl}?ref=${referral.code}`;
+      res.json({
+        code: referral.code,
+        shareUrl,
+        referralCount: referral.referralCount,
+        proExpiresAt: referral.proExpiresAt,
+      });
+    } catch (err) {
+      res.status(500).json({ message: "Could not get referral code" });
+    }
+  });
+
+  app.post("/api/referral/record", async (req, res) => {
+    const { code, referredSessionId } = req.body as { code: string; referredSessionId: string };
+    if (!code || !referredSessionId) return res.status(400).json({ message: "code and referredSessionId required" });
+    try {
+      const result = await storage.recordReferral(code.toUpperCase(), referredSessionId);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ message: "Could not record referral" });
+    }
+  });
+
+  app.get("/api/referral/check-pro", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const hasPro = await storage.hasReferralPro(sessionId);
+      res.json({ hasReferralPro: hasPro });
+    } catch (err) {
+      res.status(500).json({ message: "Could not check referral pro" });
+    }
+  });
+
   app.post("/api/stripe/request-refund", async (req, res) => {
     const { email } = req.body as { email: string };
     if (!email) return res.status(400).json({ message: "Email required" });

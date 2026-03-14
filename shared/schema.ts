@@ -162,6 +162,26 @@ export const prayerAmens = pgTable("prayer_amens", {
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
+export const referralCodes = pgTable("referral_codes", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull().unique(),
+  code: text("code").notNull().unique(),
+  referralCount: integer("referral_count").default(0).notNull(),
+  proExpiresAt: timestamp("pro_expires_at"),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+
+export const referrals = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  referralCode: text("referral_code").notNull(),
+  referredSessionId: text("referred_session_id").notNull().unique(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+
 // One AI-generated image per verse date, shared across all users (cached)
 export const verseArt = pgTable("verse_art", {
   id: serial("id").primaryKey(),

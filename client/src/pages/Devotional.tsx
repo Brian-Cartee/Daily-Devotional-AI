@@ -27,6 +27,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
 import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, type Achievement } from "@/lib/achievements";
 import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
+import { ShareInviteCard } from "@/components/ShareInviteCard";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -839,6 +840,11 @@ export default function Devotional() {
               </div>
             </button>
           </div>
+
+          {/* Share & Invite */}
+          {(reflectionContent || prayerContent) && (
+            <ShareInviteCard />
+          )}
 
           {/* AI Chat */}
           <AnimatePresence>
