@@ -65,6 +65,8 @@ export default function Devotional() {
   const [savedVerse, setSavedVerse] = useState(false);
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number; visitDates?: string[] } | null>(null);
   const pendingStreakAchievementRef = useRef<Achievement | null>(null);
+  const reflectionAbortRef = useRef<AbortController | null>(null);
+  const prayerAbortRef = useRef<AbortController | null>(null);
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [gratitudePrayer, setGratitudePrayer] = useState("");
   const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
@@ -170,7 +172,17 @@ export default function Devotional() {
     }
   }, [verse]);
 
+  useEffect(() => {
+    return () => {
+      reflectionAbortRef.current?.abort();
+      prayerAbortRef.current?.abort();
+    };
+  }, []);
+
   const generateReflection = async (verseId: number, lang: string, userName?: string) => {
+    reflectionAbortRef.current?.abort();
+    const controller = new AbortController();
+    reflectionAbortRef.current = controller;
     setReflectionLoading(true);
     setReflectionContent("");
     setReflectionError(false);
@@ -178,15 +190,20 @@ export default function Devotional() {
       const result = await streamAI("/api/ai/generate", {
         verseId, type: "reflection", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
-      }, (text) => setReflectionContent(capitalizeDivinePronouns(text)));
-      setReflectionContent(capitalizeDivinePronouns(result));
-    } catch {
-      setReflectionError(true);
+      }, (text) => setReflectionContent(capitalizeDivinePronouns(text)), controller.signal);
+      if (!controller.signal.aborted) {
+        setReflectionContent(capitalizeDivinePronouns(result));
+      }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") setReflectionError(true);
     }
-    setReflectionLoading(false);
+    if (!controller.signal.aborted) setReflectionLoading(false);
   };
 
   const generatePrayer = async (verseId: number, lang: string, userName?: string) => {
+    prayerAbortRef.current?.abort();
+    const controller = new AbortController();
+    prayerAbortRef.current = controller;
     setPrayerLoading(true);
     setPrayerContent("");
     setPrayerError(false);
@@ -194,12 +211,14 @@ export default function Devotional() {
       const result = await streamAI("/api/ai/generate", {
         verseId, type: "prayer", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
-      }, (text) => setPrayerContent(capitalizeDivinePronouns(text)));
-      setPrayerContent(capitalizeDivinePronouns(result));
-    } catch {
-      setPrayerError(true);
+      }, (text) => setPrayerContent(capitalizeDivinePronouns(text)), controller.signal);
+      if (!controller.signal.aborted) {
+        setPrayerContent(capitalizeDivinePronouns(result));
+      }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") setPrayerError(true);
     }
-    setPrayerLoading(false);
+    if (!controller.signal.aborted) setPrayerLoading(false);
   };
 
   const handleGratitudePrayer = async () => {
