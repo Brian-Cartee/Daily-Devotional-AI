@@ -432,7 +432,8 @@ export default function LandingHome() {
               <div className="h-px w-10 bg-white/40" />
             </div>
             <p className="text-white/90 max-w-xs drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
-              Your daily walk with Jesus.
+              Your daily walk with Jesus.{" "}
+              <span className="text-amber-300/70 not-italic" style={{ fontSize: "0.65em", letterSpacing: "0.25em" }}>✝ ✝</span>
             </p>
             {demo?.config.isDemo && (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
