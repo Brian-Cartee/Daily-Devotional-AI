@@ -369,7 +369,7 @@ export default function Devotional() {
     );
   }
 
-  const dateStr = new Date(verse.date + "T12:00:00").toLocaleDateString("en-US", {
+  const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "short", month: "short", day: "numeric"
   });
 
