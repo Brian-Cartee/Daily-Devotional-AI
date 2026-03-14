@@ -292,7 +292,7 @@ export default function Devotional() {
     if (!verse || sharingImage) return;
     setSharingImage(true);
     try {
-      const blob = await createShareImage(verse.text, verse.reference);
+      const blob = await createShareImage(verse.text, verse.reference, verseArtUrl);
       const file = new File([blob], "shepherds-path-devotional.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: `${verse.reference} — Shepherd's Path` });

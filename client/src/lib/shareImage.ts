@@ -329,7 +329,8 @@ export async function createAchievementShareImage(achievement: {
 
 export async function createShareImage(
   verseText: string,
-  reference: string
+  reference: string,
+  verseArtUrl?: string | null
 ): Promise<Blob> {
   const S = 1080;
   const canvas = document.createElement("canvas");
@@ -337,10 +338,7 @@ export async function createShareImage(
   canvas.height = S;
   const ctx = canvas.getContext("2d")!;
 
-  // Pick a random photo
-  const photoUrl = PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
-
-  // Color palette for text/accents (cycles with photo index)
+  // Color palette for text/accents
   const palettes = ["warm", "cool", "gold"] as const;
   const palette = palettes[Math.floor(Math.random() * palettes.length)];
 
@@ -354,14 +352,26 @@ export async function createShareImage(
   const refColor =
     palette === "cool" ? "#d0c4ff" : palette === "gold" ? "#ffe099" : "#ffcc88";
 
-  // ── Draw photo background ──────────────────────────────────
+  // ── Draw background — prefer AI verse art, fall back to photo pool ─────────
+  const backgroundUrl = verseArtUrl || PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
   try {
-    const img = await loadImage(photoUrl);
+    const img = await loadImage(backgroundUrl);
     drawImageCover(ctx, img, S, S);
   } catch {
-    // Fallback to gradient if photo fails
-    const fb = ["dawn", "midnight", "ember"] as const;
-    drawFallbackGradient(ctx, S, fb[Math.floor(Math.random() * fb.length)]);
+    try {
+      // If verse art failed, try a random pool photo
+      if (verseArtUrl) {
+        const fallbackUrl = PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
+        const fallbackImg = await loadImage(fallbackUrl);
+        drawImageCover(ctx, fallbackImg, S, S);
+      } else {
+        const fb = ["dawn", "midnight", "ember"] as const;
+        drawFallbackGradient(ctx, S, fb[Math.floor(Math.random() * fb.length)]);
+      }
+    } catch {
+      const fb = ["dawn", "midnight", "ember"] as const;
+      drawFallbackGradient(ctx, S, fb[Math.floor(Math.random() * fb.length)]);
+    }
   }
 
   // ── Dark veil overlay (3-zone) ────────────────────────────
@@ -383,12 +393,52 @@ export async function createShareImage(
   ctx.fillStyle = bottomVeil;
   ctx.fillRect(0, 0, S, S);
 
-  // ── Brand header ──────────────────────────────────────────
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255,255,255,0.52)";
-  ctx.font = "600 25px 'Georgia', serif";
-  ctx.fillText("SHEPHERD'S PATH", S / 2, 96);
-  horizontalGlowLine(ctx, 115, accentColor);
+  // ── Brand header — logo mark + name ──────────────────────
+  const LOGO_SIZE = 64;
+  const LOGO_X = 48;
+  const LOGO_Y = 48;
+  const TEXT_X = LOGO_X + LOGO_SIZE + 18;
+  const TEXT_Y_NAME = LOGO_Y + 28;
+  const TEXT_Y_TAG = LOGO_Y + 54;
+
+  let logoDrawn = false;
+  try {
+    const logo = await loadImage("/logo-mark-white.png");
+    ctx.save();
+    ctx.globalAlpha = 0.88;
+    ctx.drawImage(logo, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+    ctx.restore();
+    logoDrawn = true;
+  } catch {
+    try {
+      const logo2 = await loadImage("/sp-logo-mark.png");
+      ctx.save();
+      ctx.globalAlpha = 0.88;
+      ctx.drawImage(logo2, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+      ctx.restore();
+      logoDrawn = true;
+    } catch { logoDrawn = false; }
+  }
+
+  if (logoDrawn) {
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "bold 28px 'Georgia', serif";
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 10;
+    ctx.fillText("Shepherd's Path", TEXT_X, TEXT_Y_NAME);
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.font = "18px 'Georgia', serif";
+    ctx.fillText("Open your Bible. We'll open the conversation.", TEXT_X, TEXT_Y_TAG);
+    ctx.shadowBlur = 0;
+    horizontalGlowLine(ctx, LOGO_Y + LOGO_SIZE + 24, accentColor);
+  } else {
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,255,255,0.52)";
+    ctx.font = "600 25px 'Georgia', serif";
+    ctx.fillText("SHEPHERD'S PATH", S / 2, 96);
+    horizontalGlowLine(ctx, 115, accentColor);
+  }
 
   // ── Large decorative opening quote ───────────────────────
   ctx.save();
