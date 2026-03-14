@@ -35,8 +35,8 @@ export default function SmsPage() {
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg,#5b21b6,#2e1065)" }}>
-                <img src={logoSmall} className="w-6 h-6 object-contain rounded-md" alt="" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+                <img src="/sp-logo-mark.png" className="w-full h-full object-cover" alt="" />
               </div>
               <span className="font-bold text-foreground text-[15px]">Shepherd's Path</span>
             </div>

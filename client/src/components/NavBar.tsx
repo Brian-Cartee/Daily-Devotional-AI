@@ -70,8 +70,8 @@ export function NavBar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-105 shrink-0 overflow-hidden">
-              <img src={logoSmall} alt="Shepherd's Path" className="w-6 h-6 object-contain rounded-md" />
+            <div className="w-7 h-7 rounded-lg transition-transform group-hover:scale-105 shrink-0 overflow-hidden">
+              <img src="/sp-logo-mark.png" alt="Shepherd's Path" className="w-full h-full object-cover" />
             </div>
             <div className="hidden sm:flex flex-col leading-none select-none">
               <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>
