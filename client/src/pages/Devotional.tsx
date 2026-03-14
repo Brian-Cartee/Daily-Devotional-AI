@@ -80,6 +80,8 @@ export default function Devotional() {
   const [streakForTip, setStreakForTip] = useState(0);
   const [verseArtUrl, setVerseArtUrl] = useState<string | null>(null);
   const [showAiArt, setShowAiArt] = useState(true);
+  const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
+  const [friendShareDone, setFriendShareDone] = useState(false);
   const { toast } = useToast();
 
   // Check if today's verse art has already been generated (cached on server)
@@ -304,6 +306,25 @@ export default function Devotional() {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const handleSendToFriend = async () => {
+    if (!verse) return;
+    const reflectionSnippet = reflectionContent
+      ? "\n\n" + reflectionContent.split("\n").filter(p => p.trim())[0]
+      : "";
+    const text = `I was thinking of you while reading today's verse.\n\n"${verse.text}"\n— ${verse.reference}${reflectionSnippet}\n\nRead yours at shepherdspathai.com`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "I thought of you today", text });
+        setFriendShareDone(true);
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(text);
+        setFriendShareDone(true);
+      } catch {}
     }
   };
 
@@ -690,6 +711,43 @@ export default function Devotional() {
                       <ShareButton title={`Reflection — ${verse.reference}`} text={reflectionContent} className="text-[12px] font-semibold" />
                       <ListenButton text={reflectionContent} label="Listen" />
                     </div>
+                  )}
+                  {!reflectionLoading && reflectionContent && !friendPromptDismissed && (
+                    <motion.div
+                      key="friend-prompt"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.2, duration: 0.7, ease: "easeOut" }}
+                      className="mt-5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3.5 flex items-start gap-3"
+                    >
+                      <Heart className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {friendShareDone ? (
+                          <p className="text-[13px] text-primary font-medium">Sent. That meant something. 🙏</p>
+                        ) : (
+                          <>
+                            <p className="text-[13px] text-foreground/80 leading-snug">
+                              Did someone come to mind while reading this?
+                            </p>
+                            <button
+                              data-testid="button-send-to-friend"
+                              onClick={handleSendToFriend}
+                              className="mt-2 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                            >
+                              Send it to them →
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        data-testid="button-dismiss-friend-prompt"
+                        onClick={() => setFriendPromptDismissed(true)}
+                        className="text-muted-foreground/40 hover:text-muted-foreground transition-colors text-lg leading-none mt-0.5 flex-shrink-0"
+                        aria-label="Dismiss"
+                      >
+                        ×
+                      </button>
+                    </motion.div>
                   )}
                 </motion.div>
               )}
