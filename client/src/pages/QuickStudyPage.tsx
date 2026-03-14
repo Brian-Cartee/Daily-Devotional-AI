@@ -109,8 +109,8 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
             : `Write a heartfelt prayer based on the themes of ${passage.reference} — ${passage.title}. Keep it personal, warm, and about 3 sentences.`,
         }],
       });
-      const data = await res.json();
-      setAiContent(data.content);
+      const text = await res.text();
+      setAiContent(text);
     } catch {
       setAiContent("Sorry, we couldn't generate a response right now. Please try again.");
     }
@@ -371,8 +371,8 @@ export default function QuickStudyPage() {
 Keep it warm, accessible, and grounded in Scripture.`,
         }],
       });
-      const data = await res.json();
-      setStudy(data.content ?? "");
+      const text = await res.text();
+      setStudy(text ?? "");
     } catch {
       setStudy("Sorry, we couldn't generate a study right now. Please try again.");
     }
