@@ -1007,8 +1007,10 @@ What you never do:
     const sessionId = req.query.sessionId as string;
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
     try {
-      const hasPro = await storage.hasReferralPro(sessionId);
-      res.json({ hasReferralPro: hasPro });
+      const stats = await storage.getReferralStats(sessionId);
+      const now = new Date();
+      const hasReferralPro = !!stats?.proExpiresAt && stats.proExpiresAt > now;
+      res.json({ hasReferralPro, expiresAt: stats?.proExpiresAt ?? null });
     } catch (err) {
       res.status(500).json({ message: "Could not check referral pro" });
     }

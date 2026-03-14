@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSessionId } from "@/lib/session";
+import { checkReferralProStatus } from "@/lib/proStatus";
 import NotFound from "@/pages/not-found";
 import LandingHome from "@/pages/LandingHome";
 import Devotional from "@/pages/Devotional";
@@ -34,18 +35,20 @@ function ScrollToTop() {
 
 function ReferralCapture() {
   useEffect(() => {
+    const sessionId = getSessionId();
+    checkReferralProStatus(sessionId).catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (!ref) return;
     const alreadyRecorded = localStorage.getItem("sp_referral_recorded");
     if (alreadyRecorded) return;
-    const sessionId = getSessionId();
     fetch("/api/referral/record", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: ref, referredSessionId: sessionId }),
     }).then(() => {
       localStorage.setItem("sp_referral_recorded", "1");
+      checkReferralProStatus(sessionId).catch(() => {});
     }).catch(() => {});
   }, []);
   return null;
