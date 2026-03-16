@@ -542,7 +542,7 @@ export default function Devotional() {
             <div
               className="relative flex flex-col items-center justify-center px-8 text-center select-none"
               style={{
-                minHeight: verse.text.length > 200 ? "440px" : verse.text.length > 100 ? "400px" : "360px",
+                minHeight: verse.text.length > 200 ? "500px" : verse.text.length > 100 ? "460px" : "420px",
               }}
             >
               {/* Photo layer — separate so we can filter it without affecting text */}
@@ -592,7 +592,7 @@ export default function Devotional() {
                 <blockquote
                   className="verse-text text-white text-balance leading-relaxed mb-6"
                   style={{
-                    fontSize: verse.text.length > 180 ? "1.45rem" : verse.text.length > 100 ? "1.72rem" : "2.1rem",
+                    fontSize: verse.text.length > 180 ? "1.75rem" : verse.text.length > 100 ? "2.1rem" : "2.6rem",
                     textShadow: "0 2px 22px rgba(0,0,0,0.80)",
                     fontStyle: "italic",
                   }}
