@@ -423,12 +423,12 @@ export default function LandingHome() {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="flex flex-col items-start leading-none mb-3 select-none">
-              <span className="text-white/80 mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 300, fontSize: "clamp(1.1rem, 4vw, 1.5rem)", letterSpacing: "0.28em", textTransform: "uppercase", textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}>Shepherd's</span>
+              <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
               <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
             <div className="flex items-center justify-start gap-3 mb-3">
               <div className="h-px w-10 bg-white/40" />
-              <span className="text-amber-300/80 text-[15px]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.4)" }}>✝</span>
+              <span className="text-white/75 text-[15px]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>✝</span>
               <div className="h-px w-10 bg-white/40" />
             </div>
             <p className="text-white/90 max-w-xs drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
