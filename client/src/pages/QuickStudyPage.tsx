@@ -4,6 +4,7 @@ import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { apiRequest } from "@/lib/queryClient";
+import { streamAI } from "@/lib/streamAI";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { getUserName } from "@/lib/userName";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -396,15 +397,17 @@ Keep it warm, accessible, and grounded in Scripture.`,
     setStoryResult("");
     setSavedStory(false);
     try {
-      const res = await apiRequest("POST", "/api/chat/passage", {
-        passageRef: "story-finder",
-        passageText: desc,
-        userName: getUserName() ?? undefined,
-        sessionId: getSessionId(),
-        daysWithApp: getRelationshipAge(),
-        messages: [{
-          role: "user",
-          content: `A user is trying to find a Bible story or passage they remember. They described it as:
+      const result = await streamAI(
+        "/api/chat/passage",
+        {
+          passageRef: "story-finder",
+          passageText: desc,
+          userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          messages: [{
+            role: "user",
+            content: `A user is trying to find a Bible story or passage they remember. They described it as:
 
 "${desc}"
 
@@ -417,10 +420,11 @@ Your job is to identify the scripture(s) that best match this description. For e
 Provide 1–3 matches. If you are confident it is one specific passage, give only that one. If the description is ambiguous, list up to 3 possibilities and briefly note which is the most likely fit.
 
 Be warm, clear, and helpful. End with an encouraging sentence inviting them to read the full passage.`,
-        }],
-      });
-      const data = await res.json();
-      setStoryResult(data.content ?? "");
+          }],
+        },
+        (text) => setStoryResult(text),
+      );
+      setStoryResult(result);
     } catch {
       setStoryResult("Sorry, we couldn't search right now. Please try again.");
     }
