@@ -114,7 +114,7 @@ function QuickAccess() {
     >
       <div className="flex items-center gap-2 mb-2 px-0.5">
         <Bookmark className="w-3.5 h-3.5 text-primary/50" />
-        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">Quick Access</span>
+        <span className="text-[13px] font-bold uppercase tracking-widest text-muted-foreground/60">Quick Access</span>
       </div>
       <div className="grid grid-cols-3 gap-2.5">
         {QUICK_LINKS.map(({ href, icon: Icon, label, accent, iconBg, iconColor, border, testid }) => (
@@ -127,7 +127,7 @@ function QuickAccess() {
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg} shadow-sm`}>
                 <Icon className={`w-[18px] h-[18px] ${iconColor}`} />
               </div>
-              <span className="text-[12px] font-semibold text-foreground leading-tight">{label}</span>
+              <span className="text-[14px] font-semibold text-foreground leading-tight">{label}</span>
             </div>
           </Link>
         ))}
@@ -275,7 +275,7 @@ function DevotionalCard() {
             <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
               Daily Devotional
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
               Each day brings a new scripture, a personal reflection, and an AI-guided moment to hear from God — grounded in the actual passage, shaped for your real life. Open it, sit with it, let it speak.
             </p>
             <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
@@ -508,7 +508,7 @@ export default function LandingHome() {
                     <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
                       {title}
                     </h2>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-[15px] text-muted-foreground leading-relaxed">
                       {description}
                     </p>
                     <div className={`flex items-center gap-1.5 mt-3.5 text-sm font-semibold ${iconColor} group-hover:gap-2.5 transition-all`}>
