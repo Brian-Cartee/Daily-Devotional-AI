@@ -428,7 +428,7 @@ export default function LandingHome() {
             </div>
             <div className="flex items-center justify-start gap-3 mb-3">
               <div className="h-px w-10 bg-white/40" />
-              <span className="text-white/75 text-[15px]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>✝</span>
+              <span className="text-white/60 text-[11px]">✦</span>
               <div className="h-px w-10 bg-white/40" />
             </div>
             <p className="text-white/90 max-w-xs drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
