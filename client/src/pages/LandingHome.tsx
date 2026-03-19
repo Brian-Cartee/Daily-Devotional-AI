@@ -65,12 +65,6 @@ function formatVisitDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-const AI_CHIPS = [
-  { label: "Today's devotional", icon: Sun, href: "/devotional", cls: "text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 border-teal-300/40" },
-  { label: "Start a journey", icon: Compass, href: "/understand", cls: "text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-300/40" },
-  { label: "Study a passage", icon: BookOpen, href: "/study", cls: "text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border-amber-300/40" },
-];
-
 
 function HeroAIPrompt() {
   const [query, setQuery] = useState("");
@@ -100,8 +94,8 @@ function HeroAIPrompt() {
           <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Seek Guidance</span>
         </div>
 
-        {/* Input */}
-        <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+        {/* Section 1 — open question */}
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -119,22 +113,14 @@ function HeroAIPrompt() {
           </button>
         </form>
 
-        {/* Chips */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {AI_CHIPS.map(chip => (
-            <Link key={chip.label} href={chip.href}>
-              <button
-                data-testid={`hero-chip-${chip.label.replace(/\s+/g, "-").toLowerCase()}`}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all ${chip.cls}`}
-              >
-                <chip.icon className="w-3 h-3" />
-                {chip.label}
-              </button>
-            </Link>
-          ))}
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-3">
+          <div className="flex-1 h-px bg-border/50" />
+          <span className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-widest">or</span>
+          <div className="flex-1 h-px bg-border/50" />
         </div>
 
-        {/* Life Season Feature Banner */}
+        {/* Section 2 — life season */}
         <Link href="/understand">
           <div
             data-testid="banner-life-season"
