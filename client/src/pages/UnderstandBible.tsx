@@ -269,7 +269,30 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   );
 }
 
-function JourneyHub({ onSelect, resumeBar }: { onSelect: (journey: Journey) => void; resumeBar?: React.ReactNode }) {
+function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (journey: Journey) => void; onLifeSeasonSelect: (journey: Journey) => void; resumeBar?: React.ReactNode }) {
+  const [lifePhase, setLifePhase] = useState<"idle" | "input" | "loading">("idle");
+  const [lifeSituation, setLifeSituation] = useState("");
+  const [lifeError, setLifeError] = useState<string | null>(null);
+
+  const handleGenerateLifeJourney = async () => {
+    if (!lifeSituation.trim()) return;
+    setLifePhase("loading");
+    setLifeError(null);
+    try {
+      const res = await fetch("/api/journey/life-season", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation: lifeSituation.trim() }),
+      });
+      if (!res.ok) throw new Error("Generation failed");
+      const journey = await res.json();
+      onLifeSeasonSelect(journey as Journey);
+    } catch {
+      setLifeError("Something went wrong. Please try again.");
+      setLifePhase("input");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
@@ -291,6 +314,79 @@ function JourneyHub({ onSelect, resumeBar }: { onSelect: (journey: Journey) => v
             <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">Guided reading plans through the heart of Scripture</p>
           </motion.div>
         </div>
+
+        {/* Life Season Journey */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-7"
+        >
+          <div className="flex items-center gap-2 mb-3 px-0.5">
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Life Season</span>
+            <div className="flex-1 h-px bg-border/60" />
+          </div>
+
+          {lifePhase === "idle" ? (
+            <button
+              data-testid="btn-life-season-start"
+              onClick={() => setLifePhase("input")}
+              className="w-full text-left rounded-2xl relative overflow-hidden border border-violet-200/60 dark:border-violet-800/40 bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-indigo-500/5 pointer-events-none" />
+              <div className="relative z-10 flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-5 h-5 text-violet-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded-full">Personalized</span>
+                  </div>
+                  <h2 className="text-[17px] font-bold text-foreground leading-tight">Navigate a Life Season</h2>
+                  <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1.5">AI-crafted · 7 passages</p>
+                  <p className="text-sm text-muted-foreground leading-snug">Tell us what you're walking through. We'll build a 7-day Bible journey written just for you.</p>
+                </div>
+                <ChevronDown className="w-5 h-5 text-violet-400 flex-shrink-0 mt-1 -rotate-90" />
+              </div>
+            </button>
+          ) : (
+            <div className="rounded-2xl border border-violet-200/60 dark:border-violet-800/40 bg-card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                <p className="text-[13px] font-semibold text-foreground">What are you walking through right now?</p>
+              </div>
+              <textarea
+                value={lifeSituation}
+                onChange={e => setLifeSituation(e.target.value)}
+                placeholder="e.g. I just lost my job… I'm going through a divorce… caring for a sick parent… struggling with doubt…"
+                className="w-full text-[13px] leading-relaxed rounded-xl border border-border bg-background px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400/30 min-h-[80px] mb-3"
+                disabled={lifePhase === "loading"}
+              />
+              {lifeError && <p className="text-[12px] text-rose-500 mb-2">{lifeError}</p>}
+              <div className="flex gap-2">
+                <button
+                  data-testid="btn-life-season-generate"
+                  onClick={handleGenerateLifeJourney}
+                  disabled={lifePhase === "loading" || !lifeSituation.trim()}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold disabled:opacity-50 transition-all hover:opacity-90"
+                >
+                  {lifePhase === "loading" ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Building your journey…</>
+                  ) : (
+                    <>Build my journey →</>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setLifePhase("idle"); setLifeSituation(""); setLifeError(null); }}
+                  disabled={lifePhase === "loading"}
+                  className="px-3 py-2 rounded-xl text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </motion.div>
 
         {(() => {
           const categories = Array.from(new Set(ALL_JOURNEYS.map(j => j.category)));
@@ -395,17 +491,19 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
                   <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
                 </div>
-                <a
-                  href={`/present?j=${journey.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="btn-present-journey"
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[12px] font-semibold backdrop-blur-sm transition-all"
-                  title="Open in Presentation Mode"
-                >
-                  <Presentation className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Present</span>
-                </a>
+                {!journey.id.startsWith("life-season") && (
+                  <a
+                    href={`/present?j=${journey.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="btn-present-journey"
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[12px] font-semibold backdrop-blur-sm transition-all"
+                    title="Open in Presentation Mode"
+                  >
+                    <Presentation className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Present</span>
+                  </a>
+                )}
               </div>
             </div>
           </motion.div>
@@ -457,7 +555,10 @@ export default function UnderstandBible() {
   const params = new URLSearchParams(search);
   const journeyId = params.get("j");
   const selectedJourney = journeyId ? (ALL_JOURNEYS.find(j => j.id === journeyId) ?? null) : null;
+  const [lifeSeasonJourney, setLifeSeasonJourney] = useState<Journey | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
+
+  const activeJourney = selectedJourney ?? lifeSeasonJourney;
 
   useEffect(() => {
     if (selectedJourney) {
@@ -466,20 +567,22 @@ export default function UnderstandBible() {
   }, [selectedJourney?.id]);
 
   const handleSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); navigate(`/understand?j=${journey.id}`); };
-  const handleBack = () => { window.scrollTo({ top: 0, behavior: "instant" }); navigate("/understand"); };
+  const handleLifeSeasonSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); setLifeSeasonJourney(journey); };
+  const handleBack = () => { window.scrollTo({ top: 0, behavior: "instant" }); if (lifeSeasonJourney) { setLifeSeasonJourney(null); } else { navigate("/understand"); } };
 
   return (
     <>
       <NavBar />
       <AnimatePresence mode="wait">
-        {selectedJourney ? (
-          <motion.div key={selectedJourney.id} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
-            <JourneyDetail journey={selectedJourney} onBack={handleBack} />
+        {activeJourney ? (
+          <motion.div key={activeJourney.id} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
+            <JourneyDetail journey={activeJourney} onBack={handleBack} />
           </motion.div>
         ) : (
           <motion.div key="hub" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.25 }}>
             <JourneyHub
               onSelect={handleSelect}
+              onLifeSeasonSelect={handleLifeSeasonSelect}
               resumeBar={
                 <AnimatePresence>
                   {!resumeDismissed && (() => {

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2 } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2, Star } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -82,6 +82,10 @@ export default function Devotional() {
   const [showAiArt, setShowAiArt] = useState(true);
   const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
   const [friendShareDone, setFriendShareDone] = useState(false);
+  const [forTwoContent, setForTwoContent] = useState("");
+  const [forTwoLoading, setForTwoLoading] = useState(false);
+  const [verseInMemory, setVerseInMemory] = useState(false);
+  const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Check if today's verse art has already been generated (cached on server)
@@ -115,6 +119,66 @@ export default function Devotional() {
     },
     onError: () => toast({ description: "Could not generate art. Please try again.", variant: "destructive" }),
   });
+
+  // Memory verse — check if today's verse is already saved
+  useQuery({
+    queryKey: ["/api/memory-verses", verseDate],
+    queryFn: async () => {
+      if (!verseDate || !verse) return [];
+      const res = await fetch(`/api/memory-verses?sessionId=${getSessionId()}`);
+      const rows: { id: number; reference: string }[] = await res.json();
+      const match = rows.find(r => r.reference === verse.reference);
+      if (match) { setVerseInMemory(true); setMemoryVerseId(match.id); }
+      return rows;
+    },
+    enabled: !!verseDate && !!verse,
+    staleTime: Infinity,
+  });
+
+  const handleToggleMemory = async () => {
+    if (!verse) return;
+    if (verseInMemory && memoryVerseId) {
+      await fetch(`/api/memory-verses/${memoryVerseId}?sessionId=${getSessionId()}`, { method: "DELETE" });
+      setVerseInMemory(false);
+      setMemoryVerseId(null);
+      toast({ description: "Removed from memory verses." });
+    } else {
+      const today = new Date().toISOString().split("T")[0];
+      const res = await fetch("/api/memory-verses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: getSessionId(), reference: verse.reference, text: verse.text, savedAt: today }),
+      });
+      if (res.ok) {
+        const row = await res.json();
+        setVerseInMemory(true);
+        setMemoryVerseId(row.id);
+        toast({ description: "Verse saved to Memory. Find it in your Journal." });
+      }
+    }
+  };
+
+  const handleForTwo = async () => {
+    if (!verse || forTwoLoading) return;
+    setForTwoLoading(true);
+    try {
+      const res = await fetch("/api/devotional/for-two", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verseReference: verse.reference,
+          verseText: verse.text,
+          reflection: reflectionContent,
+          lang: getStoredLang(),
+        }),
+      });
+      const data = await res.json();
+      setForTwoContent(data.content ?? "");
+    } catch {
+      toast({ description: "Could not generate companion reflection. Please try again.", variant: "destructive" });
+    }
+    setForTwoLoading(false);
+  };
 
   // Show thank-you toast if returning from tip checkout
   useEffect(() => {
@@ -683,6 +747,15 @@ export default function Devotional() {
                 <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all">
                   <SiTelegram className="w-3.5 h-3.5" />
                 </button>
+                <div className="w-px h-4 bg-border/40 mx-1" />
+                <button
+                  data-testid="button-remember-verse"
+                  onClick={handleToggleMemory}
+                  title={verseInMemory ? "Remove from memory" : "Commit to memory"}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${verseInMemory ? "text-amber-500 bg-amber-50 dark:bg-amber-950/40" : "text-muted-foreground/50 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40"}`}
+                >
+                  <Star className={`w-3.5 h-3.5 ${verseInMemory ? "fill-amber-500" : ""}`} />
+                </button>
               </div>
             </div>
           </div>
@@ -729,13 +802,34 @@ export default function Devotional() {
                             <p className="text-[13px] text-foreground/80 leading-snug">
                               Did someone come to mind while reading this?
                             </p>
-                            <button
-                              data-testid="button-send-to-friend"
-                              onClick={handleSendToFriend}
-                              className="mt-2 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
-                            >
-                              Send it to them →
-                            </button>
+                            <div className="flex items-center gap-4 mt-2 flex-wrap">
+                              <button
+                                data-testid="button-send-to-friend"
+                                onClick={handleSendToFriend}
+                                className="text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                              >
+                                Send it to them →
+                              </button>
+                              {!forTwoContent && (
+                                <button
+                                  data-testid="button-reflect-together"
+                                  onClick={handleForTwo}
+                                  disabled={forTwoLoading}
+                                  className="text-[12px] font-semibold text-primary/60 hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                >
+                                  {forTwoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                  Reflect together ↗
+                                </button>
+                              )}
+                            </div>
+                            {forTwoContent && (
+                              <div className="mt-3 pt-3 border-t border-primary/10 space-y-2">
+                                {forTwoContent.split("\n").filter(p => p.trim()).map((para, i) => (
+                                  <p key={i} className="text-[12.5px] text-foreground/75 leading-relaxed">{para}</p>
+                                ))}
+                                <ShareButton title={`Reflect Together — ${verse?.reference}`} text={forTwoContent} className="text-[11px] font-semibold mt-1" />
+                              </div>
+                            )}
                           </>
                         )}
                       </div>

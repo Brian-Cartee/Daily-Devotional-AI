@@ -192,3 +192,23 @@ export const verseArt = pgTable("verse_art", {
 });
 
 export type VerseArt = typeof verseArt.$inferSelect;
+
+export const memoryVerses = pgTable("memory_verses", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  reference: text("reference").notNull(),
+  text: text("text").notNull(),
+  savedAt: text("saved_at").notNull(),
+  reviewCount: integer("review_count").default(0).notNull(),
+  lastReviewedAt: text("last_reviewed_at"),
+});
+
+export const insertMemoryVerseSchema = createInsertSchema(memoryVerses).omit({ id: true }).extend({
+  sessionId: z.string().min(1),
+  reference: z.string().min(1),
+  text: z.string().min(1),
+  savedAt: z.string().min(1),
+});
+
+export type MemoryVerse = typeof memoryVerses.$inferSelect;
+export type InsertMemoryVerse = z.infer<typeof insertMemoryVerseSchema>;

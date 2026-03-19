@@ -794,6 +794,169 @@ What you never do:
     }
   });
 
+  // ── Scripture Memory Routes ─────────────────────────────────────────────────
+
+  app.get("/api/memory-verses", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const rows = await storage.getMemoryVerses(sessionId);
+      res.json(rows);
+    } catch {
+      res.status(500).json({ message: "Failed to load memory verses" });
+    }
+  });
+
+  app.post("/api/memory-verses", async (req, res) => {
+    const { insertMemoryVerseSchema } = await import("@shared/schema");
+    const parsed = insertMemoryVerseSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+    try {
+      const row = await storage.saveMemoryVerse(parsed.data);
+      res.status(201).json(row);
+    } catch {
+      res.status(500).json({ message: "Failed to save memory verse" });
+    }
+  });
+
+  app.delete("/api/memory-verses/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
+    try {
+      await storage.deleteMemoryVerse(id, sessionId);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to delete memory verse" });
+    }
+  });
+
+  app.patch("/api/memory-verses/:id/review", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { sessionId } = req.body;
+    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
+    try {
+      await storage.recordMemoryReview(id, sessionId);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ message: "Failed to record review" });
+    }
+  });
+
+  // ── Life Season Journey ──────────────────────────────────────────────────────
+
+  app.post("/api/journey/life-season", async (req, res) => {
+    const { situation } = req.body as { situation?: string };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    try {
+      const openai = new OpenAI();
+      const prompt = `A person is going through the following situation: "${situation.trim()}"
+
+Create a 7-chapter personal Bible journey tailored to exactly what they are facing. Return ONLY valid JSON in this exact format:
+{
+  "title": "Short journey title (5 words max)",
+  "subtitle": "Descriptive subtitle",
+  "description": "2-sentence description of what this journey will do for the person",
+  "chapters": [
+    {
+      "theme": "One-word theme",
+      "title": "Chapter title",
+      "reference": "Book Chapter:Verses",
+      "apiRef": "book chapter (lowercase, e.g. 'psalm 46' or 'john 14')",
+      "summary": "2-3 sentences describing what this passage says and means",
+      "whyItMatters": "2 sentences explaining exactly why THIS person in THIS situation needs this passage"
+    }
+  ]
+}
+
+Rules:
+- Choose real Bible passages that speak directly to their situation
+- Progress meaningfully: lament → comfort → strength → action → hope
+- apiRef must be just book + chapter number, lowercase (e.g. "isaiah 40" not "isaiah 40:1-8")
+- Make whyItMatters feel personally written for them, not generic
+- Return ONLY the JSON object, no markdown, no explanation`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.8,
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(raw);
+
+      const journey = {
+        id: `life-season-${Date.now()}`,
+        title: parsed.title ?? "Your Personal Journey",
+        subtitle: parsed.subtitle ?? "A journey crafted for this season",
+        description: parsed.description ?? "",
+        length: (parsed.chapters ?? []).length,
+        category: "Life Season",
+        colorFrom: "from-violet-500/10",
+        colorTo: "to-indigo-500/10",
+        borderColor: "border-violet-200/60",
+        iconColor: "text-violet-600",
+        pillBg: "bg-violet-100",
+        pillText: "text-violet-700",
+        entries: (parsed.chapters ?? []).map((ch: Record<string, string>, i: number) => ({
+          id: `life-season-ch-${i + 1}`,
+          order: i + 1,
+          theme: ch.theme ?? "Reflection",
+          title: ch.title ?? `Day ${i + 1}`,
+          reference: ch.reference ?? "",
+          apiRef: ch.apiRef ?? ch.reference ?? "",
+          summary: ch.summary ?? "",
+          whyItMatters: ch.whyItMatters ?? "",
+        })),
+      };
+
+      res.json(journey);
+    } catch (err) {
+      console.error("life-season error:", err);
+      res.status(500).json({ message: "Failed to generate journey" });
+    }
+  });
+
+  // ── Devotional for Two ───────────────────────────────────────────────────────
+
+  app.post("/api/devotional/for-two", async (req, res) => {
+    const { verseReference, verseText, reflection, lang } = req.body as {
+      verseReference?: string; verseText?: string; reflection?: string; lang?: string;
+    };
+    if (!verseReference || !verseText) return res.status(400).json({ message: "verseReference and verseText required" });
+    try {
+      const openai = new OpenAI();
+      const reflectionContext = reflection
+        ? `The devotional reflection for today is: "${reflection.substring(0, 600)}"`
+        : "";
+
+      const prompt = `You are a warm pastoral guide helping two people — a couple, close friends, or accountability partners — reflect on today's verse together.
+
+Today's verse: ${verseReference} — "${verseText}"
+${reflectionContext}
+
+Write a brief "reflect together" companion piece with this structure:
+1. One sentence of context (why reflecting on this together matters)
+2. Two or three genuine discussion questions — the kind that lead to real conversation, not surface answers. Questions should be specific to this verse, not generic.
+3. One closing thought or prayer prompt.
+
+Keep it warm, unhurried, and under 200 words total. Write in ${lang === "es" ? "Spanish" : lang === "fr" ? "French" : lang === "pt" ? "Portuguese" : "English"}.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.75,
+      });
+
+      const content = completion.choices[0]?.message?.content ?? "";
+      res.json({ content });
+    } catch (err) {
+      console.error("for-two error:", err);
+      res.status(500).json({ message: "Failed to generate companion reflection" });
+    }
+  });
+
   // ── Verse Art (AI-generated image, cached per day) ───────────────────────────
 
   // Verse art local cache directory — serves self-hosted images (OpenAI URLs expire in ~1hr)

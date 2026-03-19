@@ -17,7 +17,7 @@ import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import type { JournalEntry } from "@shared/schema";
+import type { JournalEntry, MemoryVerse } from "@shared/schema";
 
 const SERMON_USAGE_KEY = "sp_sermon_recordings";
 
@@ -52,13 +52,14 @@ interface TranscriptResult {
   application: string;
 }
 
-type TabType = "prayer" | "reflection" | "verse" | "note";
+type TabType = "prayer" | "reflection" | "verse" | "note" | "memory";
 
 const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string; emptyHint: string }[] = [
   { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.", emptyHint: "After praying, save your prayer to keep a record of what God is doing in your life." },
   { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "No reflections saved yet.", emptyHint: "Open a devotional or Bible journey and save a reflection when something speaks to you." },
   { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.", emptyHint: "While reading the Bible, tap the heart icon on any chapter to save it here." },
   { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "Your sermon notes will appear here.", emptyHint: "Use the recorder or notepad above to capture what God speaks through the message." },
+  { key: "memory",      label: "Memory",       icon: Star,       emptyText: "No memory verses yet.", emptyHint: "While reading today's devotional, tap the star icon to commit a verse to memory." },
 ];
 
 function formatDate(dateStr: string) {
@@ -783,6 +784,160 @@ function SermonNoteForm({ onSave }: { onSave: () => void }) {
   );
 }
 
+function MemoryVerseCard({ verse, onDelete, onReview }: { verse: MemoryVerse; onDelete: () => void; onReview: () => void }) {
+  const [mode, setMode] = useState<"idle" | "recall" | "revealed">("idle");
+  const [attempt, setAttempt] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const isDue = !verse.lastReviewedAt ||
+    new Date(today).getTime() - new Date(verse.lastReviewedAt).getTime() > 7 * 86400000;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="bg-card border border-border/60 rounded-2xl p-4 shadow-sm"
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[14px] font-bold text-foreground">{verse.reference}</span>
+          {isDue && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+              Due for review
+            </span>
+          )}
+          {verse.reviewCount > 0 && (
+            <span className="text-[10px] text-muted-foreground/60">
+              Reviewed {verse.reviewCount}×
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onDelete}
+          className="text-muted-foreground/30 hover:text-rose-400 transition-colors flex-shrink-0"
+          title="Remove from memory"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {mode === "idle" && (
+        <div>
+          <p className="text-[13px] text-muted-foreground leading-relaxed mb-3 line-clamp-2 italic">
+            "{verse.text.length > 80 ? verse.text.slice(0, 80) + "…" : verse.text}"
+          </p>
+          <button
+            onClick={() => setMode("recall")}
+            className="text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            {verse.reviewCount === 0 ? "Start learning →" : "Practice recall →"}
+          </button>
+        </div>
+      )}
+
+      {mode === "recall" && (
+        <div className="space-y-3">
+          <p className="text-[12px] text-muted-foreground italic">Type this verse from memory:</p>
+          <textarea
+            value={attempt}
+            onChange={e => setAttempt(e.target.value)}
+            placeholder="Begin typing the verse…"
+            className="w-full text-[13px] leading-relaxed rounded-xl border border-border bg-background px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[70px]"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setMode("revealed"); onReview(); }}
+              className="text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              Reveal verse
+            </button>
+            <button
+              onClick={() => { setMode("idle"); setAttempt(""); }}
+              className="text-[12px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === "revealed" && (
+        <div className="space-y-3">
+          {attempt.trim() && (
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-1">Your attempt</p>
+              <p className="text-[13px] text-foreground/70 leading-relaxed italic">"{attempt}"</p>
+            </div>
+          )}
+          <div className="rounded-lg bg-primary/5 border border-primary/15 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-primary/50 mb-1">Actual verse</p>
+            <p className="text-[13px] text-foreground leading-relaxed">"{verse.text}"</p>
+            <p className="text-[11px] text-primary/60 font-semibold mt-1">— {verse.reference}</p>
+          </div>
+          <button
+            onClick={() => { setMode("idle"); setAttempt(""); }}
+            className="text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            Practice again next time →
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function MemoryTab({ verses, isLoading, onDelete, onReview }: { verses: MemoryVerse[]; isLoading: boolean; onDelete: (id: number) => void; onReview: (id: number) => void }) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <Loader2 className="w-5 h-5 animate-spin text-primary/40" />
+        <p className="text-sm text-muted-foreground">Loading memory verses…</p>
+      </div>
+    );
+  }
+
+  if (verses.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center py-20 text-center"
+      >
+        <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center mb-4">
+          <Star className="w-6 h-6 text-amber-400/60" />
+        </div>
+        <p className="text-sm font-medium text-muted-foreground max-w-[220px]">No memory verses yet.</p>
+        <p className="text-xs text-muted-foreground/60 mt-2 max-w-[240px]">
+          While reading today's devotional, tap the ☆ star to commit a verse to memory.
+        </p>
+      </motion.div>
+    );
+  }
+
+  const due = verses.filter(v => !v.lastReviewedAt || new Date().getTime() - new Date(v.lastReviewedAt).getTime() > 7 * 86400000);
+
+  return (
+    <div className="space-y-3">
+      {due.length > 0 && (
+        <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-1">
+          <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+          {due.length} verse{due.length !== 1 ? "s" : ""} ready to practice
+        </div>
+      )}
+      <AnimatePresence mode="popLayout">
+        {verses.map(v => (
+          <MemoryVerseCard
+            key={v.id}
+            verse={v}
+            onDelete={() => onDelete(v.id)}
+            onReview={() => onReview(v.id)}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function Journal() {
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const bm = getBookmark("journal");
@@ -818,6 +973,34 @@ export default function Journal() {
       if (!res.ok) throw new Error("Failed to delete entry");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] }),
+  });
+
+  const { data: memoryVerses = [], isLoading: memoryLoading } = useQuery<MemoryVerse[]>({
+    queryKey: ["/api/memory-verses", sessionId],
+    queryFn: async () => {
+      const res = await fetch(`/api/memory-verses?sessionId=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) throw new Error("Failed to load memory verses");
+      return res.json();
+    },
+    enabled: activeTab === "memory",
+  });
+
+  const deleteMemoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await fetch(`/api/memory-verses/${id}?sessionId=${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/memory-verses", sessionId] }),
+  });
+
+  const reviewMemoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await fetch(`/api/memory-verses/${id}/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/memory-verses", sessionId] }),
   });
 
   const filtered = entries.filter(e => e.type === activeTab);
@@ -956,6 +1139,13 @@ export default function Journal() {
                 </motion.div>
               )}
             </>
+          ) : activeTab === "memory" ? (
+            <MemoryTab
+              verses={memoryVerses}
+              isLoading={memoryLoading}
+              onDelete={(id) => deleteMemoryMutation.mutate(id)}
+              onReview={(id) => reviewMemoryMutation.mutate(id)}
+            />
           ) : filtered.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}

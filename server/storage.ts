@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse } from "@shared/schema";
 import { eq, and, desc, isNull, isNotNull, lt, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -40,6 +40,10 @@ export interface IStorage {
   recordReferral(code: string, referredSessionId: string): Promise<{ success: boolean; referrerSessionId: string | null }>;
   getReferralStats(sessionId: string): Promise<{ code: string; referralCount: number; proExpiresAt: Date | null } | null>;
   hasReferralPro(sessionId: string): Promise<boolean>;
+  getMemoryVerses(sessionId: string): Promise<MemoryVerse[]>;
+  saveMemoryVerse(data: InsertMemoryVerse): Promise<MemoryVerse>;
+  deleteMemoryVerse(id: number, sessionId: string): Promise<void>;
+  recordMemoryReview(id: number, sessionId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -341,6 +345,26 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db.select().from(referralCodes).where(eq(referralCodes.sessionId, sessionId));
     if (!row || !row.proExpiresAt) return false;
     return row.proExpiresAt > new Date();
+  }
+
+  async getMemoryVerses(sessionId: string): Promise<MemoryVerse[]> {
+    return db.select().from(memoryVerses).where(eq(memoryVerses.sessionId, sessionId)).orderBy(desc(memoryVerses.id));
+  }
+
+  async saveMemoryVerse(data: InsertMemoryVerse): Promise<MemoryVerse> {
+    const [row] = await db.insert(memoryVerses).values(data).returning();
+    return row;
+  }
+
+  async deleteMemoryVerse(id: number, sessionId: string): Promise<void> {
+    await db.delete(memoryVerses).where(and(eq(memoryVerses.id, id), eq(memoryVerses.sessionId, sessionId)));
+  }
+
+  async recordMemoryReview(id: number, sessionId: string): Promise<void> {
+    const today = new Date().toISOString().split("T")[0];
+    await db.update(memoryVerses)
+      .set({ reviewCount: sqlExpr`${memoryVerses.reviewCount} + 1`, lastReviewedAt: today })
+      .where(and(eq(memoryVerses.id, id), eq(memoryVerses.sessionId, sessionId)));
   }
 }
 
