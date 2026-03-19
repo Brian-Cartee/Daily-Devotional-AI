@@ -1001,7 +1001,7 @@ export default function Devotional() {
                     <Sparkles className="w-4.5 h-4.5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-foreground leading-tight">Ask AI About This Scripture</p>
+                    <p className="text-sm font-bold text-foreground leading-tight">Ask About This Scripture</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">History · context · cross-references · application</p>
                   </div>
                 </div>
