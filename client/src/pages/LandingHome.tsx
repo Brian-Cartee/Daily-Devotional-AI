@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, Heart, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -67,7 +67,6 @@ function formatVisitDate(dateStr: string): string {
 
 const AI_CHIPS = [
   { label: "Today's devotional", icon: Sun, href: "/devotional", cls: "text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 border-teal-300/40" },
-  { label: "Pray with me", icon: Heart, href: "/devotional", cls: "text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 border-rose-300/40" },
   { label: "Study a passage", icon: BookOpen, href: "/study", cls: "text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border-amber-300/40" },
   { label: "Start a journey", icon: Compass, href: "/understand", cls: "text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-300/40" },
 ];
