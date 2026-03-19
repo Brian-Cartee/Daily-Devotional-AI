@@ -75,10 +75,6 @@ const AI_CHIPS = [
 function HeroAIPrompt() {
   const [query, setQuery] = useState("");
   const [, navigate] = useLocation();
-  const { data: dailyVerse } = useQuery<{ reference: string; reflectionPrompt: string }>({
-    queryKey: ["/api/verses/daily"],
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -125,16 +121,6 @@ function HeroAIPrompt() {
 
         {/* Chips */}
         <div className="flex flex-wrap gap-2">
-          {dailyVerse?.reference && (
-            <button
-              data-testid="hero-chip-todays-verse"
-              onClick={() => navigate(`/study?q=${encodeURIComponent(`Help me understand ${dailyVerse.reference}`)}`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-            >
-              <BookOpen className="w-3 h-3" />
-              Today's verse: {dailyVerse.reference}
-            </button>
-          )}
           {AI_CHIPS.map(chip => (
             <Link key={chip.label} href={chip.href}>
               <button
