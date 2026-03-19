@@ -67,7 +67,7 @@ function formatVisitDate(dateStr: string): string {
 
 const AI_CHIPS = [
   { label: "Today's devotional", icon: Sun, href: "/devotional", cls: "text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 border-teal-300/40" },
-  { label: "Pray with me", icon: Heart, href: "/pray", cls: "text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 border-rose-300/40" },
+  { label: "Pray with me", icon: Heart, href: "/devotional", cls: "text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 border-rose-300/40" },
   { label: "Study a passage", icon: BookOpen, href: "/study", cls: "text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 border-amber-300/40" },
   { label: "Start a journey", icon: Compass, href: "/understand", cls: "text-indigo-600 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-300/40" },
 ];
@@ -94,7 +94,7 @@ const QUICK_LINKS = [
     testid: "bookmark-journal",
   },
   {
-    href: "/pray",
+    href: "/devotional",
     icon: Heart,
     label: "Prayer",
     accent: "from-rose-400 to-pink-500",
@@ -118,7 +118,7 @@ function QuickAccess() {
       </div>
       <div className="grid grid-cols-3 gap-2.5">
         {QUICK_LINKS.map(({ href, icon: Icon, label, accent, iconBg, iconColor, border, testid }) => (
-          <Link key={href} href={href}>
+          <Link key={testid} href={href}>
             <div
               data-testid={testid}
               className={`group relative rounded-2xl border ${border} bg-card p-3.5 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col items-center gap-2.5 text-center`}
@@ -200,7 +200,7 @@ function HeroAIPrompt() {
             </button>
           )}
           {AI_CHIPS.map(chip => (
-            <Link key={chip.href} href={chip.href}>
+            <Link key={chip.label} href={chip.href}>
               <button
                 data-testid={`hero-chip-${chip.label.replace(/\s+/g, "-").toLowerCase()}`}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all ${chip.cls}`}
@@ -542,9 +542,9 @@ export default function LandingHome() {
                 detail: "Daily devotional",
               },
               {
-                quote: "I text a verse request most mornings while I'm still in bed. First thing — before the news, before email. That shift matters.",
+                quote: "I open the devotional most mornings while I'm still in bed. First thing — before the news, before email. That shift matters.",
                 name: "Renee",
-                detail: "Text PRAY subscriber",
+                detail: "Daily devotional",
               },
               {
                 quote: "I've been a Christian for 30 years, but these Bible journeys are showing me things I never noticed. The context is remarkable.",

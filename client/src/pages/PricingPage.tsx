@@ -60,7 +60,7 @@ const WHITE_LABEL_TIERS = [
     features: [
       "Your logo, name & brand colors",
       "Custom domain (yourchurch.com)",
-      "Your own SMS prayer number",
+      "Custom devotional paths & branding",
       "All devotional & Bible features",
       "Up to 200 active users",
       "Email support",
@@ -108,7 +108,7 @@ const WHITE_LABEL_TIERS = [
 const WHITE_LABEL_WHAT_YOU_GET = [
   { icon: Paintbrush, text: "Your logo, colors & app name — completely unbranded" },
   { icon: Globe, text: "Deployed to your own domain in days, not months" },
-  { icon: Phone, text: "Your own SMS prayer number for your congregation" },
+  { icon: Phone, text: "Congregation analytics and engagement dashboard" },
   { icon: MessageSquare, text: "Custom devotional paths tied to your sermon series" },
   { icon: Users, text: "All features: devotionals, journeys, Bible, journaling, prayer" },
   { icon: ShieldCheck, text: "Isolated deployment — your congregation's data stays yours" },

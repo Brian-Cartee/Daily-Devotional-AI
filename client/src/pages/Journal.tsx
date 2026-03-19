@@ -917,22 +917,6 @@ export default function Journal() {
         {/* Content */}
         <main className="max-w-xl mx-auto px-5 py-6 pb-24">
 
-          {/* Text PRAY callout — shown only on the Prayers tab */}
-          {activeTab === "prayer" && (
-            <a
-              href="sms:+18339629341?body=PRAY"
-              data-testid="banner-text-pray"
-              className="flex items-center gap-3 rounded-2xl border border-rose-200/60 bg-rose-50/60 dark:bg-rose-950/20 dark:border-rose-900/30 px-4 py-3 mb-5 group transition-all hover:shadow-md hover:-translate-y-0.5"
-            >
-              <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-4.5 h-4.5 text-rose-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-rose-700 dark:text-rose-400 leading-snug">Prefer to pray by text?</p>
-                <p className="text-[11px] text-rose-500/80 dark:text-rose-500/60 leading-snug mt-0.5">Text PRAY to +1 (833) 962-9341 — scripture & prayer come straight back.</p>
-              </div>
-            </a>
-          )}
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
