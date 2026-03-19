@@ -120,7 +120,7 @@ function HeroAIPrompt() {
         </form>
 
         {/* Chips */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-3">
           {AI_CHIPS.map(chip => (
             <Link key={chip.label} href={chip.href}>
               <button
@@ -133,6 +133,23 @@ function HeroAIPrompt() {
             </Link>
           ))}
         </div>
+
+        {/* Life Season Feature Banner */}
+        <Link href="/understand">
+          <div
+            data-testid="banner-life-season"
+            className="group flex items-center gap-3 rounded-xl border border-amber-300/40 bg-gradient-to-r from-amber-500/8 to-orange-500/5 px-4 py-3 cursor-pointer hover:from-amber-500/15 hover:to-orange-500/10 hover:border-amber-400/50 transition-all"
+          >
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-foreground leading-tight">Going through something specific?</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Tell us what season you're in — we'll build a Bible journey around it.</p>
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 text-amber-600/60 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+          </div>
+        </Link>
       </div>
     </motion.div>
   );
