@@ -7,6 +7,7 @@ export interface Journey {
   title: string;
   subtitle: string;
   description: string;
+  pastoralIntro?: string;
   length: number;
   category: string;
   colorFrom: string;

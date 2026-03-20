@@ -79,7 +79,7 @@ function HeroAIPrompt() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    navigate(`/understand?situation=${encodeURIComponent(query.trim())}`);
+    navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
   };
 
   return (
@@ -98,7 +98,7 @@ function HeroAIPrompt() {
           <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Seek Guidance</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Seek Spiritual Guidance</span>
         </div>
 
         {/* Section 1 — open question */}

@@ -324,6 +324,16 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
     const situation = params.get("situation");
     if (situation) {
       setLifeSituation(situation);
+      // Use pre-generated journey from GuidancePage if available
+      const cached = sessionStorage.getItem("sp-guidance-journey");
+      if (cached) {
+        try {
+          const j = JSON.parse(cached);
+          sessionStorage.removeItem("sp-guidance-journey");
+          onLifeSeasonSelect(j as Journey);
+          return;
+        } catch { /* fall through to fetch */ }
+      }
       setLifePhase("loading");
       fetch("/api/journey/life-season", {
         method: "POST",
@@ -593,6 +603,26 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
                 {theme}
               </button>
             ))}
+          </motion.div>
+        )}
+
+        {journey.pastoralIntro && journey.id.startsWith("life-season") && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.35 }}
+            className="bg-violet-50/70 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 rounded-2xl px-5 py-4 mb-5"
+          >
+            <div className="flex items-start gap-3">
+              <img
+                src="/sp-logo-mark.png"
+                alt="Shepherd's Path"
+                className="w-7 h-7 flex-shrink-0 opacity-70 mt-0.5"
+              />
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed" data-testid="text-pastoral-intro">
+                {journey.pastoralIntro}
+              </p>
+            </div>
           </motion.div>
         )}
 

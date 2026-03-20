@@ -21,6 +21,7 @@ import DemoCreate from "@/pages/DemoCreate";
 import AboutPage from "@/pages/AboutPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
+import GuidancePage from "@/pages/GuidancePage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -56,6 +57,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingHome} />
+      <Route path="/guidance" component={GuidancePage} />
       <Route path="/devotional" component={Devotional} />
       <Route path="/understand" component={UnderstandBible} />
       <Route path="/read" component={ReadBible} />
