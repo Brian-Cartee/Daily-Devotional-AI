@@ -204,3 +204,75 @@ id = "RcUevMAEOPRPJrq4udqPy"
 uri = "file://client/public/tablet-10in-screenshots/tablet10-journal.png"
 type = "image"
 title = "10\" Tablet 6 — Prayer Journal"
+
+[[outputs]]
+id = "zee6SsNiZ8WoyriRw43PA"
+uri = "file://client/public/chromebook-screenshots/chromebook-home.png"
+type = "image"
+title = "Chromebook 1 — Home"
+
+[[outputs]]
+id = "wlkDEAZFmUkok_GVzS8Wo"
+uri = "file://client/public/chromebook-screenshots/chromebook-devotional.png"
+type = "image"
+title = "Chromebook 2 — Devotional"
+
+[[outputs]]
+id = "gWUM_F72pGqAMiAG6cOhy"
+uri = "file://client/public/chromebook-screenshots/chromebook-journey.png"
+type = "image"
+title = "Chromebook 3 — Bible Journey"
+
+[[outputs]]
+id = "Ky9-XmOEAD7qKmlMmVn0X"
+uri = "file://client/public/chromebook-screenshots/chromebook-bible.png"
+type = "image"
+title = "Chromebook 4 — Read the Bible"
+
+[[outputs]]
+id = "ZEq7gIn0lQX-Z69P2_uQo"
+uri = "file://client/public/chromebook-screenshots/chromebook-study.png"
+type = "image"
+title = "Chromebook 5 — Scripture Study"
+
+[[outputs]]
+id = "-wMOA4eBXl-rdZqcsryWx"
+uri = "file://client/public/chromebook-screenshots/chromebook-journal.png"
+type = "image"
+title = "Chromebook 6 — Prayer Journal"
+
+[[outputs]]
+id = "s-w61EFSkX7KTtLQhRvXg"
+uri = "file://client/public/androidxr-screenshots/xr-home.png"
+type = "image"
+title = "Android XR 1 — Home"
+
+[[outputs]]
+id = "WvGMsSV_k6fsWSJGjbMO8"
+uri = "file://client/public/androidxr-screenshots/xr-devotional.png"
+type = "image"
+title = "Android XR 2 — Devotional"
+
+[[outputs]]
+id = "7KhLEIJOX7f5rx8AG8jJU"
+uri = "file://client/public/androidxr-screenshots/xr-journey.png"
+type = "image"
+title = "Android XR 3 — Bible Journey"
+
+[[outputs]]
+id = "BH-GFCvqjp_-iDbGJ09Qp"
+uri = "file://client/public/androidxr-screenshots/xr-bible.png"
+type = "image"
+title = "Android XR 4 — Read the Bible"
+
+[[outputs]]
+id = "5Ga9rGNWCi9D1Z3pv_5NX"
+uri = "file://client/public/androidxr-screenshots/xr-study.png"
+type = "image"
+title = "Android XR 5 — Scripture Study"
+
+[[outputs]]
+id = "K2q2sEZC9SW6kW8W76o4M"
+uri = "file://client/public/androidxr-screenshots/xr-journal.png"
+type = "image"
+title = "Android XR 6 — Prayer Journal"
