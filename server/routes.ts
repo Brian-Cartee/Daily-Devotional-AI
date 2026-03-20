@@ -1738,6 +1738,71 @@ ${historyNote}`;
     }
   });
 
+  // Digital Asset Links — required for Android TWA
+  app.get("/.well-known/assetlinks.json", (_req, res) => {
+    const packageName = process.env.ANDROID_PACKAGE_NAME || "com.shepherdspath.app";
+    const sha256 = process.env.ANDROID_SHA256_CERT || "REPLACE_WITH_YOUR_SHA256_CERT_FINGERPRINT";
+    res.json([{
+      relation: ["delegate_permission/common.handle_all_urls"],
+      target: {
+        namespace: "android_app",
+        package_name: packageName,
+        sha256_cert_fingerprints: [sha256],
+      },
+    }]);
+  });
+
+  // Google Play Billing verification
+  app.post("/api/payments/play-billing/verify", async (req, res) => {
+    const { purchaseToken, productId } = req.body;
+    if (!purchaseToken || !productId) {
+      return res.status(400).json({ success: false, error: "Missing purchaseToken or productId" });
+    }
+
+    // TODO: Verify with Google Play Developer API using service account credentials
+    // Steps:
+    // 1. Set GOOGLE_SERVICE_ACCOUNT_JSON environment variable with your service account key
+    // 2. npm install googleapis
+    // 3. Use google.auth.GoogleAuth + androidpublisher API to verify the purchase token
+    // 4. Check acknowledgement status and grant Pro
+    //
+    // For now, log the token and return success for testing:
+    console.log("[Play Billing] Purchase token received:", purchaseToken, "for product:", productId);
+
+    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (!serviceAccountJson) {
+      console.warn("[Play Billing] GOOGLE_SERVICE_ACCOUNT_JSON not set — skipping server verification");
+      return res.json({ success: true, note: "Server verification pending — grant Pro manually" });
+    }
+
+    try {
+      const { google } = await import("googleapis");
+      const credentials = JSON.parse(serviceAccountJson);
+      const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+      });
+      const androidPublisher = google.androidpublisher({ version: "v3", auth });
+      const bundleId = process.env.ANDROID_PACKAGE_NAME || "com.shepherdspath.app";
+
+      const purchase = await androidPublisher.purchases.subscriptions.get({
+        packageName: bundleId,
+        subscriptionId: productId,
+        token: purchaseToken,
+      });
+
+      const isValid = purchase.data.paymentState === 1 || purchase.data.paymentState === 2;
+      if (isValid) {
+        return res.json({ success: true });
+      } else {
+        return res.status(402).json({ success: false, error: "Purchase not valid" });
+      }
+    } catch (err) {
+      console.error("[Play Billing] Verification error:", err);
+      return res.status(500).json({ success: false, error: "Verification failed" });
+    }
+  });
+
   return httpServer;
 }
 

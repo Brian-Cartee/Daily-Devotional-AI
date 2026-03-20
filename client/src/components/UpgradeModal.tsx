@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
+import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ChevronDown, ChevronUp, ShieldCheck, Smartphone } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
 import { checkProWithServer, markProVerified } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
+import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
+import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
 
 const PRO_FEATURES = [
   "Unlimited AI responses every day",
@@ -17,6 +19,11 @@ const PRO_FEATURES = [
   "Streak protection — never lose your streak",
   "Weekly AI-powered spiritual summary email",
 ];
+
+const PLAY_SKUS = {
+  monthly: "monthly_pro",
+  annual: "annual_pro",
+};
 
 interface UpgradeModalProps {
   onClose: () => void;
@@ -31,6 +38,9 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
   const [showActivate, setShowActivate] = useState(false);
   const [activateEmail, setActivateEmail] = useState("");
   const [activating, setActivating] = useState(false);
+  const [playPrices, setPlayPrices] = useState<{ monthly?: string; annual?: string }>({});
+
+  const platform = getPaymentPlatform();
 
   const resetTime = (() => {
     const now = new Date();
@@ -43,7 +53,20 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
     return `${mins} minutes`;
   })();
 
-  const handleCheckout = async () => {
+  useEffect(() => {
+    if (platform === "play") {
+      getPlayProducts(Object.values(PLAY_SKUS)).then(products => {
+        const prices: { monthly?: string; annual?: string } = {};
+        for (const p of products) {
+          if (p.itemId === PLAY_SKUS.monthly) prices.monthly = p.price;
+          if (p.itemId === PLAY_SKUS.annual) prices.annual = p.price;
+        }
+        setPlayPrices(prices);
+      });
+    }
+  }, [platform]);
+
+  const handleStripeCheckout = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
@@ -63,6 +86,33 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
       setLoading(false);
     }
   };
+
+  const handlePlayCheckout = async () => {
+    setLoading(true);
+    try {
+      const sku = plan === "annual" ? PLAY_SKUS.annual : PLAY_SKUS.monthly;
+      const result = await purchasePlayProduct(sku);
+      if (!result) {
+        toast({ title: "Purchase cancelled", description: "No purchase was completed.", variant: "destructive" });
+        return;
+      }
+      const verified = await verifyPlayPurchase(result.purchaseToken, result.productId);
+      if (verified) {
+        markProVerified();
+        toast({ title: "Pro Activated!", description: "Welcome to Shepherd's Path Pro." });
+        onProActivated?.();
+        onClose();
+      } else {
+        toast({ title: "Verification failed", description: "Please contact support@shepherdspathai.com with your receipt.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckout = platform === "play" ? handlePlayCheckout : handleStripeCheckout;
 
   const handleActivatePro = async () => {
     if (!activateEmail.includes("@")) {
@@ -84,6 +134,16 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
       });
     }
   };
+
+  const priceDisplay = platform === "play"
+    ? {
+        annual: playPrices.annual ?? "$44.99/year",
+        monthly: playPrices.monthly ?? "$5.99/month",
+      }
+    : {
+        annual: "$44.99/year",
+        monthly: "$5.99/month",
+      };
 
   return (
     <AnimatePresence>
@@ -135,6 +195,24 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
 
           {/* Pull-up card */}
           <div className="-mt-6 bg-background rounded-t-3xl px-7 pt-7 pb-6 space-y-4">
+
+            {/* iOS standalone notice */}
+            {platform === "ios" && (
+              <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3">
+                <Smartphone className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  To subscribe on iOS, please visit{" "}
+                  <a
+                    href="https://daily-devotional-ai.replit.app/pricing"
+                    className="font-semibold text-blue-600 dark:text-blue-400 underline"
+                  >
+                    shepherdspathai.com
+                  </a>
+                  {" "}in Safari to complete your purchase.
+                </p>
+              </div>
+            )}
+
             {/* Feature list */}
             <div className="space-y-2.5">
               {PRO_FEATURES.map((f) => (
@@ -147,82 +225,96 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
               ))}
             </div>
 
-            {/* Plan toggle */}
-            <div className="flex rounded-xl border border-border overflow-hidden text-sm font-semibold">
-              <button
-                data-testid="btn-plan-annual"
-                onClick={() => setPlan("annual")}
-                className={`flex-1 py-2.5 text-center transition-colors relative ${
-                  plan === "annual"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                Annual
-                {plan === "annual" && (
-                  <span className="ml-1.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded px-1">
-                    SAVE 37%
-                  </span>
-                )}
-              </button>
-              <button
-                data-testid="btn-plan-monthly"
-                onClick={() => setPlan("monthly")}
-                className={`flex-1 py-2.5 text-center transition-colors ${
-                  plan === "monthly"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                Monthly
-              </button>
-            </div>
+            {platform !== "ios" && (
+              <>
+                {/* Plan toggle */}
+                <div className="flex rounded-xl border border-border overflow-hidden text-sm font-semibold">
+                  <button
+                    data-testid="btn-plan-annual"
+                    onClick={() => setPlan("annual")}
+                    className={`flex-1 py-2.5 text-center transition-colors relative ${
+                      plan === "annual"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Annual
+                    {plan === "annual" && (
+                      <span className="ml-1.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded px-1">
+                        SAVE 37%
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    data-testid="btn-plan-monthly"
+                    onClick={() => setPlan("monthly")}
+                    className={`flex-1 py-2.5 text-center transition-colors ${
+                      plan === "monthly"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                </div>
 
-            {/* Price display */}
-            <div className="text-center -mt-1">
-              {plan === "annual" ? (
-                <>
-                  <span className="text-2xl font-extrabold text-foreground">$44.99</span>
-                  <span className="text-sm text-muted-foreground">/year</span>
-                  <span className="ml-2 text-xs text-muted-foreground">($3.75/mo)</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-2xl font-extrabold text-foreground">$5.99</span>
-                  <span className="text-sm text-muted-foreground">/month</span>
-                </>
-              )}
-            </div>
+                {/* Price display */}
+                <div className="text-center -mt-1">
+                  {plan === "annual" ? (
+                    <>
+                      <span className="text-2xl font-extrabold text-foreground">
+                        {playPrices.annual ?? "$44.99"}
+                      </span>
+                      <span className="text-sm text-muted-foreground">{playPrices.annual ? "" : "/year"}</span>
+                      {!playPrices.annual && <span className="ml-2 text-xs text-muted-foreground">($3.75/mo)</span>}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-2xl font-extrabold text-foreground">
+                        {playPrices.monthly ?? "$5.99"}
+                      </span>
+                      <span className="text-sm text-muted-foreground">{playPrices.monthly ? "" : "/month"}</span>
+                    </>
+                  )}
+                </div>
 
-            {/* Checkout button */}
-            <Button
-              data-testid="btn-upgrade-pro"
-              className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
-              onClick={handleCheckout}
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4 mr-2" />
-              )}
-              {loading ? "Redirecting…" : "Upgrade to Pro"}
-            </Button>
-
-            {/* 30-day guarantee */}
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-              <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
-              <span>
-                30-day money-back guarantee ·{" "}
-                <button
-                  type="button"
-                  onClick={() => { onClose(); setLocation("/refund"); }}
-                  className="underline hover:text-foreground transition-colors"
+                {/* Checkout button */}
+                <Button
+                  data-testid="btn-upgrade-pro"
+                  className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+                  onClick={handleCheckout}
+                  disabled={loading}
                 >
-                  request a refund
-                </button>
-              </span>
-            </div>
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  {loading
+                    ? "Processing…"
+                    : platform === "play"
+                      ? "Subscribe via Google Play"
+                      : "Upgrade to Pro"
+                  }
+                </Button>
+
+                {platform !== "play" && (
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+                    <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                    <span>
+                      30-day money-back guarantee ·{" "}
+                      <button
+                        type="button"
+                        onClick={() => { onClose(); setLocation("/refund"); }}
+                        className="underline hover:text-foreground transition-colors"
+                      >
+                        request a refund
+                      </button>
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
 
             <p className="text-center text-[11px] text-muted-foreground/50 italic -mt-1">
               Joining thousands of believers walking the path daily

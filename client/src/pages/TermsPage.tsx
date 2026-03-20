@@ -50,7 +50,7 @@ export default function TermsPage() {
             },
             {
               heading: "Pro subscription",
-              body: "Shepherd's Path offers optional paid features through a Pro subscription. Subscriptions are billed monthly or annually. You may cancel at any time; cancellation takes effect at the end of your current billing period. Refund requests are handled on a case-by-case basis — reach us at support@shepherdspathai.com.",
+              body: "Shepherd's Path offers optional paid features through a Pro subscription, billed monthly or annually. Payment is processed through the platform you use to subscribe: Stripe (web), Google Play Billing (Android), or Apple App Store (iOS). You may cancel at any time through the platform you subscribed on; cancellation takes effect at the end of your current billing period. For web subscriptions, refund requests are handled on a case-by-case basis — reach us at support@shepherdspathai.com. For Android and iOS subscriptions, refunds are subject to Google Play and Apple App Store policies respectively.",
             },
             {
               heading: "Content and AI",

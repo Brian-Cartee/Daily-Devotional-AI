@@ -38,11 +38,15 @@ export default function PrivacyPage() {
           {[
             {
               heading: "What we collect",
-              body: "Shepherd's Path does not require an account to use. We use a session identifier stored in your browser to save your journal entries, streak data, and bookmarks locally. If you text our prayer line (+1 833-962-9341), your phone number and message are received by our SMS provider (Twilio) and used solely to send your scripture and prayer response. We do not store, sell, or share SMS content.",
+              body: "Shepherd's Path does not require an account to use. We use a session identifier stored in your browser to save your journal entries, streak data, and bookmarks locally. If you subscribe to Pro, we collect your email address and payment details through our payment processors (Stripe for web, Google Play Billing for Android, or Apple App Store for iOS). We do not store payment card numbers. If you text our prayer line (+1 833-962-9341), your phone number and message are received by our SMS provider (Twilio) and used solely to send your scripture and prayer response. We do not store, sell, or share SMS content.",
             },
             {
               heading: "AI-generated responses",
               body: "When you interact with the pastoral guidance, devotional, or study features, your input is sent to OpenAI to generate a response. We do not store the content of these conversations beyond your current session. OpenAI's own privacy policy governs how they handle data sent through their API.",
+            },
+            {
+              heading: "Payments and subscriptions",
+              body: "Pro subscriptions are processed by third-party payment providers depending on your platform: Stripe (web), Google Play Billing (Android app), or Apple App Store (iOS app). Each provider's privacy policy governs how your payment data is handled. We receive confirmation of your subscription status but never your full card details. You can manage or cancel subscriptions through the platform you used to subscribe.",
             },
             {
               heading: "Analytics and tracking",
