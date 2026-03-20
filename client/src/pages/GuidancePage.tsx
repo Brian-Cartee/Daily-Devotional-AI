@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { detectCrisis } from "@/lib/crisis";
+import { getUserName } from "@/lib/userName";
 import { type Journey } from "@/data/journeys";
 
 interface Message {
@@ -22,6 +23,7 @@ export default function GuidancePage() {
   const [responseComplete, setResponseComplete] = useState(false);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const userName = getUserName() ?? undefined;
 
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages }),
+        body: JSON.stringify({ situation, messages: conversationMessages, userName }),
       });
       if (!res.ok || !res.body) return;
       const reader = res.body.getReader();
@@ -271,6 +273,15 @@ export default function GuidancePage() {
                                 {ch.theme}
                               </span>
                             ))}
+                          </div>
+                        )}
+                        {journey.spotlightReason && journey.entries?.[journey.spotlightIndex ?? 0] && (
+                          <div className="mt-4 pt-3.5 border-t border-violet-200/50 dark:border-violet-700/30">
+                            <p className="text-[10px] font-bold text-violet-500 uppercase tracking-widest mb-1">Where we'd start you</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">
+                              <span className="font-semibold text-foreground">{journey.entries[journey.spotlightIndex ?? 0].title}</span>
+                              {" — "}{journey.spotlightReason}
+                            </p>
                           </div>
                         )}
                       </div>

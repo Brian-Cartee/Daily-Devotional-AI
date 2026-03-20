@@ -846,9 +846,10 @@ What you never do:
   // ── Guidance: first pastoral response to a shared situation (streaming) ────
 
   app.post("/api/guidance/response", async (req, res) => {
-    const { situation, messages } = req.body as {
+    const { situation, messages, userName } = req.body as {
       situation?: string;
       messages?: Array<{ role: "user" | "assistant"; content: string }>;
+      userName?: string;
     };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
 
@@ -858,22 +859,27 @@ What you never do:
       return res.end();
     }
 
+    const nameNote = userName
+      ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
+      : "";
+
+    const isFollowUp = messages && messages.length > 1;
+
     const systemMsg = `You are a warm, deeply compassionate pastoral guide at Shepherd's Path. Someone has just opened up about what they are going through.
 
 Your only job in this moment is to be genuinely present with them — not to fix, teach, or rush them to hope they haven't earned yet.
-
-Write 2–3 short paragraphs:
+${isFollowUp ? "This is a follow-up message in an ongoing conversation. Respond naturally to what they just said — don't re-introduce yourself or repeat your opening. Stay present with them." : `Write 2–3 short paragraphs:
 Paragraph 1: Acknowledge exactly what they shared. Name the pain. Don't soften it. Make them feel genuinely heard — say something real about what this must be like to carry.
 Paragraph 2: Let them know this is a meaningful place to bring that. Tell them what Shepherd's Path will walk alongside them through — sitting honestly with God in the pain, being met where they actually are, finding truth that holds, moving toward courage and hope at a pace they can bear.
-Paragraph 3 (optional, 1 sentence only): Something brief and true about Jesus as the healer — not preachy, not a sermon close. One honest sentence.
+Paragraph 3 (1 sentence only): Close with a warm bridge — tell them their personal scripture journey is waiting just below, crafted for exactly what they shared. Invite them to keep talking here first or step into it whenever they're ready. Make it feel like an open door, not a push.`}
 
 Rules:
 — Never open with "I" as the first word
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply
-— Under 170 words total
-— Do not end with a question`;
+— Under 190 words total
+— Do not end with a question${nameNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))
@@ -919,6 +925,8 @@ Build a 7-chapter personal Bible journey for exactly this situation. Return ONLY
   "subtitle": "A subtitle that speaks directly to what they are experiencing",
   "description": "2 sentences: what this journey will do for this person, speaking to their exact situation",
   "pastoralIntro": "A warm, personal opening message — 3 to 4 sentences spoken directly to this person. Sentence 1: Acknowledge what they shared and tell them they are in the right place (name their situation in your own words). Sentence 2: Tell them what this journey will walk them through — briefly name the emotional arc (not the chapter titles, but what they will experience: e.g. 'from lament and raw honesty, through God's presence in the pain, to truth that holds, courage, and hope'). Sentence 3: Something true and warm about Shepherd's Path's mission — that there is no healer like Jesus, and we are here to help them place their full trust in Him through this. Keep it to 3-4 sentences total. Speak like a warm pastor, not a wellness app. Do not use the phrase 'You are in the right place' literally — find your own words.",
+  "spotlightIndex": 0,
+  "spotlightReason": "One sentence explaining why THIS specific chapter is the best place for this person to begin — referencing their exact situation. Be specific, not generic.",
   "chapters": [
     {
       "theme": "One-word theme",
@@ -951,13 +959,18 @@ Rules:
       const raw = completion.choices[0]?.message?.content ?? "{}";
       const parsed = JSON.parse(raw);
 
+      const chapters = parsed.chapters ?? [];
+      const spotlightIdx = Math.min(Math.max(parseInt(parsed.spotlightIndex ?? "0") || 0, 0), chapters.length - 1);
+
       const journey = {
         id: `life-season-${Date.now()}`,
         title: parsed.title ?? "Your Personal Journey",
         subtitle: parsed.subtitle ?? "A journey crafted for this season",
         description: parsed.description ?? "",
         pastoralIntro: parsed.pastoralIntro ?? "",
-        length: (parsed.chapters ?? []).length,
+        spotlightIndex: spotlightIdx,
+        spotlightReason: parsed.spotlightReason ?? "",
+        length: chapters.length,
         category: "Life Season",
         colorFrom: "from-violet-500/10",
         colorTo: "to-indigo-500/10",
@@ -965,7 +978,7 @@ Rules:
         iconColor: "text-violet-600",
         pillBg: "bg-violet-100",
         pillText: "text-violet-700",
-        entries: (parsed.chapters ?? []).map((ch: Record<string, string>, i: number) => ({
+        entries: chapters.map((ch: Record<string, string>, i: number) => ({
           id: `life-season-ch-${i + 1}`,
           order: i + 1,
           theme: ch.theme ?? "Reflection",
