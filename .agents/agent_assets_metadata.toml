@@ -24,3 +24,51 @@ id = "uB0LJ3AiEP99sTDiRkMV1"
 uri = "file://client/public/app-icon.png"
 type = "image"
 title = "App Icon (512×512) — Play Store"
+
+[[outputs]]
+id = "rlyj6Np_h4FK_49PEgTz8"
+uri = "file://client/public/store-screenshots/screen-1.png"
+type = "image"
+title = "Screenshot 1"
+
+[[outputs]]
+id = "pWy45shzExEG0dWj8Mx1c"
+uri = "file://client/public/store-screenshots/screen-2.png"
+type = "image"
+title = "Screenshot 2"
+
+[[outputs]]
+id = "olV1yMATGAu0y4VBp4pgt"
+uri = "file://client/public/store-screenshots/screen-3.png"
+type = "image"
+title = "Screenshot 3"
+
+[[outputs]]
+id = "0V29YJHiIb9fM6yk9nXBq"
+uri = "file://client/public/store-screenshots/screen-4.png"
+type = "image"
+title = "Screenshot 4"
+
+[[outputs]]
+id = "sTZDQhAvr6Ie_XG28UM_y"
+uri = "file://client/public/store-screenshots/screen-5.png"
+type = "image"
+title = "Screenshot 5"
+
+[[outputs]]
+id = "mm5r4tl8JfvV3MsWYpY2Q"
+uri = "file://client/public/store-screenshots/screen-6.png"
+type = "image"
+title = "Screenshot 6"
+
+[[outputs]]
+id = "503HI2hCZXm6NxKrjVxPQ"
+uri = "file://client/public/store-screenshots/screen-7.png"
+type = "image"
+title = "Screenshot 7"
+
+[[outputs]]
+id = "zgIzNom6EBZL77mQ7bX-8"
+uri = "file://client/public/store-screenshots/screen-8.png"
+type = "image"
+title = "Screenshot 8"
