@@ -70,10 +70,34 @@ function HeroAIPrompt() {
   const [query, setQuery] = useState("");
   const [, navigate] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [placeholderVisible, setPlaceholderVisible] = useState(true);
+
+  const placeholders = [
+    "I'm going through a divorce and I don't know how to move forward…",
+    "I just lost someone I love and I'm struggling to find peace…",
+    "I'm battling anxiety and my faith feels weak right now…",
+    "My marriage is falling apart and I don't know where to turn…",
+    "I feel distant from God and I'm not sure why…",
+    "I'm facing a health diagnosis and I'm scared…",
+    "I lost my job and I'm not sure what God is doing…",
+    "I'm carrying grief that no one around me seems to understand…",
+  ];
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 600);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderVisible(false);
+      setTimeout(() => {
+        setPlaceholderIndex(i => (i + 1) % placeholders.length);
+        setPlaceholderVisible(true);
+      }, 400);
+    }, 3800);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -103,14 +127,23 @@ function HeroAIPrompt() {
 
         {/* Section 1 — open question */}
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            ref={inputRef}
-            placeholder="What's on your heart today?"
-            data-testid="hero-ai-input"
-            className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-          />
+          <div className="relative flex-1">
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              ref={inputRef}
+              data-testid="hero-ai-input"
+              className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2.5 text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+            />
+            {!query && (
+              <span
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-muted-foreground/45 pointer-events-none truncate pr-2 transition-opacity duration-300"
+                style={{ opacity: placeholderVisible ? 1 : 0 }}
+              >
+                {placeholders[placeholderIndex]}
+              </span>
+            )}
+          </div>
           <button
             type="submit"
             disabled={!query.trim()}
