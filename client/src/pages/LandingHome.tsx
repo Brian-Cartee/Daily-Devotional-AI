@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff } from "lucide-react";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -72,6 +72,9 @@ function HeroAIPrompt() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [placeholderVisible, setPlaceholderVisible] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   const placeholders = [
     "I'm going through a divorce and I don't know how to move forward…",
@@ -99,6 +102,35 @@ function HeroAIPrompt() {
     }, 3800);
     return () => clearInterval(interval);
   }, []);
+
+  const toggleVoice = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setQuery(transcript);
+      if (event.results[event.results.length - 1].isFinal) {
+        inputRef.current?.focus();
+      }
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,14 +166,32 @@ function HeroAIPrompt() {
               ref={inputRef}
               data-testid="hero-ai-input"
               className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2.5 text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+              style={{ paddingRight: hasSpeechSupport ? "2.5rem" : undefined }}
             />
             {!query && (
               <span
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-muted-foreground/45 pointer-events-none truncate pr-2 transition-opacity duration-300"
-                style={{ opacity: placeholderVisible ? 1 : 0 }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-muted-foreground/45 pointer-events-none truncate transition-opacity duration-300"
+                style={{ opacity: placeholderVisible ? 1 : 0, right: hasSpeechSupport ? "2.5rem" : "0.5rem" }}
               >
                 {placeholders[placeholderIndex]}
               </span>
+            )}
+            {hasSpeechSupport && (
+              <button
+                type="button"
+                onClick={toggleVoice}
+                data-testid="button-voice-input"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+                style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+              >
+                {isListening
+                  ? <MicOff className="w-4 h-4" />
+                  : <Mic className="w-4 h-4 opacity-50 hover:opacity-80" />
+                }
+                {isListening && (
+                  <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />
+                )}
+              </button>
             )}
           </div>
           <button
