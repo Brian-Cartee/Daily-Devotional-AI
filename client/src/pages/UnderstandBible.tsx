@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
-  BookMarked, ArrowLeft, MapPin, Presentation, Heart,
+  BookMarked, ArrowLeft, MapPin, Presentation, Heart, ImageDown, Check,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
@@ -21,6 +21,7 @@ import { getStoredLang } from "@/lib/language";
 import { getUserName } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
+import { createShareImage } from "@/lib/shareImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,8 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [snippetSaved, setSnippetSaved] = useState(false);
   const [snippetSaving, setSnippetSaving] = useState(false);
+  const [sharingCard, setSharingCard] = useState(false);
+  const [cardDone, setCardDone] = useState(false);
   const { toast } = useToast();
 
   const textQuery = usePassageText(chapter.apiRef, open);
@@ -138,6 +141,32 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     }
   };
 
+  const handleShareCard = async () => {
+    if (sharingCard || !textQuery.data) return;
+    setSharingCard(true);
+    try {
+      const verseText = textQuery.data.text.replace(/\[\d+\]/g, "").trim();
+      const blob = await createShareImage(verseText, chapter.reference, null);
+      const file = new File([blob], `shepherd-path-${chapter.reference.replace(/\s/g, "-")}.png`, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${chapter.reference} — Shepherd's Path` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({ description: "Scripture card saved!" });
+      }
+      setCardDone(true);
+      setTimeout(() => setCardDone(false), 2500);
+    } catch {
+      toast({ description: "Couldn't create card. Try again.", variant: "destructive" });
+    }
+    setSharingCard(false);
+  };
+
   return (
     <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-2xl overflow-hidden">
       <button
@@ -176,7 +205,19 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                 <div className="bg-white/40 dark:bg-slate-700/30 rounded-xl p-4 max-h-56 overflow-y-auto">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{chapter.reference}</span>
-                    <ListenButton text={textQuery.data.text} label="Listen" className="text-[11px]" />
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleShareCard}
+                        disabled={sharingCard}
+                        data-testid={`btn-card-${chapter.id}`}
+                        title="Save as scripture card"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-40"
+                      >
+                        {sharingCard ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : cardDone ? <Check className="w-3.5 h-3.5 text-green-500" /> : <ImageDown className="w-3.5 h-3.5" />}
+                        {sharingCard ? "Creating…" : cardDone ? "Done!" : "Card"}
+                      </button>
+                      <ListenButton text={textQuery.data.text} label="Listen" className="text-[11px]" />
+                    </div>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{textQuery.data.text}</p>
                 </div>

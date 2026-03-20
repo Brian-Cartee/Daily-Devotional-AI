@@ -850,37 +850,53 @@ What you never do:
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     try {
       const openai = new OpenAI();
-      const prompt = `A person is going through the following situation: "${situation.trim()}"
+      const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
 
-Create a 7-chapter personal Bible journey tailored to exactly what they are facing. Return ONLY valid JSON in this exact format:
+Your journeys are specific, honest, emotionally real, and scripturally grounded. You never rush past someone's pain to get to hope. You let the journey breathe — beginning in honest acknowledgment or lament before moving toward comfort, then courage, then hope.
+
+What you never do:
+— Use spiritual clichés: "trust the process," "His timing is perfect," "let go and let God," "finding peace in uncertainty," "God has a plan."
+— Soften the title. If someone's marriage is ending, the title names that — it doesn't call it "navigating life's transitions."
+— Give whyItMatters that could work for any situation. Every sentence must be specific to exactly what this person shared.
+— Skip the hard parts. Start in the real emotional place they are in. Lament is biblical. Confusion is biblical. Anger at God is biblical.
+— Choose generic comfort passages when raw, honest ones exist. Psalm 88 over Psalm 23 when someone is in the pit, not the valley.
+
+The journey arc must feel like a real emotional progression: honest acknowledgment of pain → God meeting them there → truth that holds → strength for the next step → forward movement and hope. Not a shortcut to resolution.`;
+
+      const userPrompt = `A person shared this about what they are going through: "${situation.trim()}"
+
+Build a 7-chapter personal Bible journey for exactly this situation. Return ONLY valid JSON:
 {
-  "title": "Short journey title (5 words max)",
-  "subtitle": "Descriptive subtitle",
-  "description": "2-sentence description of what this journey will do for the person",
+  "title": "A title that names their specific pain honestly (5 words max — do not soften it)",
+  "subtitle": "A subtitle that speaks directly to what they are experiencing",
+  "description": "2 sentences: what this journey will do for this person, speaking to their exact situation",
   "chapters": [
     {
       "theme": "One-word theme",
-      "title": "Chapter title",
+      "title": "Chapter title that speaks to where they are emotionally at this point in the journey",
       "reference": "Book Chapter:Verses",
       "apiRef": "book chapter (lowercase, e.g. 'psalm 46' or 'john 14')",
-      "summary": "2-3 sentences describing what this passage says and means",
-      "whyItMatters": "2 sentences explaining exactly why THIS person in THIS situation needs this passage"
+      "summary": "2-3 sentences: what this passage says AND how it speaks to someone in exactly their situation",
+      "whyItMatters": "2 sentences written directly to this person, referencing their specific situation — not generic. Echo back what they shared."
     }
   ]
 }
 
 Rules:
-- Choose real Bible passages that speak directly to their situation
-- Progress meaningfully: lament → comfort → strength → action → hope
+- Choose passages that actually speak to their pain — including lament psalms, Job, Lamentations if appropriate
+- Arc: honest lament or acknowledgment → God present in the pain → truth that holds → strength → forward movement → hope
 - apiRef must be just book + chapter number, lowercase (e.g. "isaiah 40" not "isaiah 40:1-8")
-- Make whyItMatters feel personally written for them, not generic
+- whyItMatters must reference their actual words and situation — if they said "divorce," use that word
 - Return ONLY the JSON object, no markdown, no explanation`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
         response_format: { type: "json_object" },
-        temperature: 0.8,
+        temperature: 0.85,
       });
 
       const raw = completion.choices[0]?.message?.content ?? "{}";
@@ -931,22 +947,37 @@ Rules:
         ? `The devotional reflection for today is: "${reflection.substring(0, 600)}"`
         : "";
 
-      const prompt = `You are a warm pastoral guide helping two people — a couple, close friends, or accountability partners — reflect on today's verse together.
+      const forTwoSystem = `You are a pastoral guide helping two people go deeper in faith together — a married couple, close friends, or accountability partners. You understand that real spiritual conversation between two people is rare and valuable. Your job is to open a door to it, not hand them a worksheet.
 
-Today's verse: ${verseReference} — "${verseText}"
+What makes a great shared reflection:
+— Questions that require genuine vulnerability, not just knowledge of the verse
+— Questions that invite someone to share where they actually are, not where they think they should be
+— A closing that draws the two people toward each other and toward God — not just individual application
+— Warmth that feels like a wise friend sitting with them, not a curriculum
+
+What you never do:
+— Ask surface questions ("What does this verse mean to you?")
+— Use spiritual clichés or filler language
+— Give so much structure it feels like homework
+— Open with hollow phrases ("Great verse for today!")`;
+
+      const forTwoPrompt = `Today's verse: ${verseReference} — "${verseText}"
 ${reflectionContext}
 
-Write a brief "reflect together" companion piece with this structure:
-1. One sentence of context (why reflecting on this together matters)
-2. Two or three genuine discussion questions — the kind that lead to real conversation, not surface answers. Questions should be specific to this verse, not generic.
-3. One closing thought or prayer prompt.
+Write a brief "reflect together" companion piece for two people to share. Structure:
+1. One sentence — not explaining the verse, but naming why this particular scripture matters when two people sit with it together
+2. Two or three discussion questions that require honesty and vulnerability — specific to this verse, not generic. At least one should invite someone to share something personal they might not say otherwise.
+3. A closing thought or short prayer they can pray together — specific to this verse and this moment.
 
-Keep it warm, unhurried, and under 200 words total. Write in ${lang === "es" ? "Spanish" : lang === "fr" ? "French" : lang === "pt" ? "Portuguese" : "English"}.`;
+Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : lang === "fr" ? "French" : lang === "pt" ? "Portuguese" : "English"}.`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.75,
+        messages: [
+          { role: "system", content: forTwoSystem },
+          { role: "user", content: forTwoPrompt },
+        ],
+        temperature: 0.8,
       });
 
       const content = completion.choices[0]?.message?.content ?? "";
