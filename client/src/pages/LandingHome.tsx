@@ -358,10 +358,20 @@ export default function LandingHome() {
     } catch { }
   };
 
+  const focusHeroInput = () => {
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="hero-ai-input"]');
+      input?.scrollIntoView({ behavior: "smooth", block: "center" });
+      input?.focus();
+    }, 600);
+  };
+
   const handleDismissWelcome = () => {
     dismissWelcome();
     if (!hasBeenPrompted()) {
       setTimeout(() => setShowNamePrompt(true), 400);
+    } else {
+      focusHeroInput();
     }
   };
 
@@ -371,7 +381,7 @@ export default function LandingHome() {
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       <AnimatePresence>
-        {showNamePrompt && <NamePrompt onDone={() => setShowNamePrompt(false)} />}
+        {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); focusHeroInput(); }} />}
       </AnimatePresence>
 
       {/* Hero section */}
