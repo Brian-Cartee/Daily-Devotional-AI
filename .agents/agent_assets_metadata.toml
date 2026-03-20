@@ -72,3 +72,27 @@ id = "zgIzNom6EBZL77mQ7bX-8"
 uri = "file://client/public/store-screenshots/screen-8.png"
 type = "image"
 title = "Screenshot 8"
+
+[[outputs]]
+id = "BWTlkI7z8JRlucGKHZyc-"
+uri = "file://client/public/tablet-screenshots/tablet-1.png"
+type = "image"
+title = "Tablet Screenshot 1"
+
+[[outputs]]
+id = "W5i5IO-lZMKXgVMS-gRva"
+uri = "file://client/public/tablet-screenshots/tablet-2.png"
+type = "image"
+title = "Tablet Screenshot 2"
+
+[[outputs]]
+id = "QE9okEnoJbpxVxxpkwYNf"
+uri = "file://client/public/tablet-screenshots/tablet-3.png"
+type = "image"
+title = "Tablet Screenshot 3"
+
+[[outputs]]
+id = "-VUUzs_mm1DFuIL5ltTUj"
+uri = "file://client/public/tablet-screenshots/tablet-4.png"
+type = "image"
+title = "Tablet Screenshot 4"
