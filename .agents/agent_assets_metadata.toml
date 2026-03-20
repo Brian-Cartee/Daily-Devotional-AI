@@ -96,3 +96,75 @@ id = "-VUUzs_mm1DFuIL5ltTUj"
 uri = "file://client/public/tablet-screenshots/tablet-4.png"
 type = "image"
 title = "Tablet Screenshot 4"
+
+[[outputs]]
+id = "-fV8I1xguI6pjoB2gXTH7"
+uri = "file://client/public/store-screenshots/screen-1-home.png"
+type = "image"
+title = "Phone 1 — Home"
+
+[[outputs]]
+id = "qYmQqm-jpRwE7tU0IK3pD"
+uri = "file://client/public/store-screenshots/screen-2-devotional.png"
+type = "image"
+title = "Phone 2 — Devotional"
+
+[[outputs]]
+id = "JCp3Ebu503-1tkLc8VwmZ"
+uri = "file://client/public/store-screenshots/screen-3-journey.png"
+type = "image"
+title = "Phone 3 — Bible Journey"
+
+[[outputs]]
+id = "NsqQFpFaWZC1_PcVMOyvD"
+uri = "file://client/public/store-screenshots/screen-4-bible.png"
+type = "image"
+title = "Phone 4 — Read the Bible"
+
+[[outputs]]
+id = "LDVWxSQQLfQzmq7uQhmWX"
+uri = "file://client/public/store-screenshots/screen-5-study.png"
+type = "image"
+title = "Phone 5 — Scripture Study"
+
+[[outputs]]
+id = "bv1UaLfc6f1dELYEjxdrc"
+uri = "file://client/public/store-screenshots/screen-6-journal.png"
+type = "image"
+title = "Phone 6 — Prayer Journal"
+
+[[outputs]]
+id = "8LGnTgvAujLFbXBShSdtD"
+uri = "file://client/public/tablet-screenshots/tablet-home.png"
+type = "image"
+title = "Tablet 1 — Home"
+
+[[outputs]]
+id = "yTPD-uiHlnRezKS8wxY-N"
+uri = "file://client/public/tablet-screenshots/tablet-devotional.png"
+type = "image"
+title = "Tablet 2 — Devotional"
+
+[[outputs]]
+id = "L-81T3K4uSPL8kOBOuBlw"
+uri = "file://client/public/tablet-screenshots/tablet-journey.png"
+type = "image"
+title = "Tablet 3 — Bible Journey"
+
+[[outputs]]
+id = "zkwOnJg3f0UBAWX1wd3d0"
+uri = "file://client/public/tablet-screenshots/tablet-bible.png"
+type = "image"
+title = "Tablet 4 — Read the Bible"
+
+[[outputs]]
+id = "-vFY0L9hXp966zMvoEayN"
+uri = "file://client/public/tablet-screenshots/tablet-study.png"
+type = "image"
+title = "Tablet 5 — Scripture Study"
+
+[[outputs]]
+id = "JCDyckpXttpuy-4Ag-L8L"
+uri = "file://client/public/tablet-screenshots/tablet-journal.png"
+type = "image"
+title = "Tablet 6 — Prayer Journal"
