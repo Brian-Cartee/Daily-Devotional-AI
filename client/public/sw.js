@@ -1,7 +1,72 @@
-const CACHE = "shepherd-path-v1";
+const CACHE = "shepherd-path-v2";
+const STATIC_CACHE = "shepherd-path-static-v2";
 
-self.addEventListener("install", () => { self.skipWaiting(); });
-self.addEventListener("activate", (e) => { e.waitUntil(clients.claim()); });
+const APP_SHELL = [
+  "/",
+  "/manifest.json",
+  "/favicon.png",
+  "/app-icon.png",
+  "/logo-mark-white.png",
+  "/hero-landing.png",
+];
+
+self.addEventListener("install", (e) => {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL).catch(() => {}))
+  );
+});
+
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE && k !== STATIC_CACHE)
+          .map((k) => caches.delete(k))
+      )
+    ).then(() => clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (e) => {
+  const { request } = e;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests and cross-origin
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // Skip API requests — always go to network
+  if (url.pathname.startsWith("/api/")) return;
+
+  // Navigation requests — network first, fall back to cached index
+  if (request.mode === "navigate") {
+    e.respondWith(
+      fetch(request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put(request, clone));
+          return res;
+        })
+        .catch(() => caches.match("/") || caches.match(request))
+    );
+    return;
+  }
+
+  // Static assets — cache first
+  e.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((res) => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+        }
+        return res;
+      });
+    })
+  );
+});
 
 self.addEventListener("push", (e) => {
   const data = e.data?.json() ?? {
@@ -13,7 +78,7 @@ self.addEventListener("push", (e) => {
 
   const options = {
     body: data.body,
-    icon: "/favicon.png",
+    icon: "/app-icon.png",
     badge: "/favicon.png",
     tag: data.tag || "devotional",
     requireInteraction: false,

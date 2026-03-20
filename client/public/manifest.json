@@ -1,24 +1,42 @@
 {
   "name": "Shepherd's Path",
   "short_name": "Shepherd's Path",
-  "description": "Daily devotionals, guided Bible paths, and AI-powered prayer.",
-  "start_url": "/devotional",
+  "description": "Tell us what you're going through — get scripture and pastoral guidance that speaks directly to your situation. Personal. Instant. Biblical.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#3b1f7a",
   "theme_color": "#3b1f7a",
   "orientation": "portrait-primary",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["lifestyle", "education", "health"],
   "icons": [
     {
       "src": "/app-icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/app-icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/hero-landing.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Shepherd's Path — Scripture for what you're going through"
     }
   ],
   "shortcuts": [
@@ -27,6 +45,13 @@
       "short_name": "Devotional",
       "description": "Open today's daily devotional",
       "url": "/devotional",
+      "icons": [{ "src": "/app-icon.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Seek Guidance",
+      "short_name": "Guidance",
+      "description": "Get scripture for what you're going through",
+      "url": "/",
       "icons": [{ "src": "/app-icon.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
