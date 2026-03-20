@@ -12,3 +12,15 @@ id = "XeYF8blZPQrjm-8dnYarB"
 uri = "file://docs/white-label-pitch.md"
 type = "text"
 title = "Shepherd's Path — White-Label Partnership Pitch"
+
+[[outputs]]
+id = "A7ncsT6Qm-Uz4FS5ALWD2"
+uri = "file://client/public/feature-graphic.png"
+type = "image"
+title = "Feature Graphic (1024×500) — Play Store"
+
+[[outputs]]
+id = "uB0LJ3AiEP99sTDiRkMV1"
+uri = "file://client/public/app-icon.png"
+type = "image"
+title = "App Icon (512×512) — Play Store"
