@@ -168,3 +168,39 @@ id = "JCDyckpXttpuy-4Ag-L8L"
 uri = "file://client/public/tablet-screenshots/tablet-journal.png"
 type = "image"
 title = "Tablet 6 — Prayer Journal"
+
+[[outputs]]
+id = "5j3AluuUVFcuMpG-vIg_J"
+uri = "file://client/public/tablet-10in-screenshots/tablet10-home.png"
+type = "image"
+title = "10\" Tablet 1 — Home"
+
+[[outputs]]
+id = "Oxte2yBd6WTmeL9FiQbGr"
+uri = "file://client/public/tablet-10in-screenshots/tablet10-devotional.png"
+type = "image"
+title = "10\" Tablet 2 — Devotional"
+
+[[outputs]]
+id = "yNEbU7-64P9nl9i0Nz4r8"
+uri = "file://client/public/tablet-10in-screenshots/tablet10-journey.png"
+type = "image"
+title = "10\" Tablet 3 — Bible Journey"
+
+[[outputs]]
+id = "RuXtLbJfYfpXcPFM-VYuE"
+uri = "file://client/public/tablet-10in-screenshots/tablet10-bible.png"
+type = "image"
+title = "10\" Tablet 4 — Read the Bible"
+
+[[outputs]]
+id = "epAdmC0aecWTvt3jadcrr"
+uri = "file://client/public/tablet-10in-screenshots/tablet10-study.png"
+type = "image"
+title = "10\" Tablet 5 — Scripture Study"
+
+[[outputs]]
+id = "RcUevMAEOPRPJrq4udqPy"
+uri = "file://client/public/tablet-10in-screenshots/tablet10-journal.png"
+type = "image"
+title = "10\" Tablet 6 — Prayer Journal"
