@@ -270,9 +270,30 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
 }
 
 function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (journey: Journey) => void; onLifeSeasonSelect: (journey: Journey) => void; resumeBar?: React.ReactNode }) {
+  const search = useSearch();
   const [lifePhase, setLifePhase] = useState<"idle" | "input" | "loading">("idle");
-  const [lifeSituation, setLifeSituation] = useState("");
+  const [lifeSituation, setLifeSituation] = useState(() => {
+    const params = new URLSearchParams(search);
+    return params.get("situation") ?? "";
+  });
   const [lifeError, setLifeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const situation = params.get("situation");
+    if (situation) {
+      setLifeSituation(situation);
+      setLifePhase("loading");
+      fetch("/api/journey/life-season", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation: situation.trim() }),
+      })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(journey => onLifeSeasonSelect(journey as Journey))
+        .catch(() => { setLifeError("Something went wrong. Please try again."); setLifePhase("input"); });
+    }
+  }, []);
 
   const handleGenerateLifeJourney = async () => {
     if (!lifeSituation.trim()) return;

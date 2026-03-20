@@ -79,7 +79,7 @@ function HeroAIPrompt() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    navigate(`/study?q=${encodeURIComponent(query.trim())}`);
+    navigate(`/understand?situation=${encodeURIComponent(query.trim())}`);
   };
 
   return (
