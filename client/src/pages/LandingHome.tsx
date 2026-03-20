@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles } from "lucide-react";
@@ -69,6 +69,13 @@ function formatVisitDate(dateStr: string): string {
 function HeroAIPrompt() {
   const [query, setQuery] = useState("");
   const [, navigate] = useLocation();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -99,6 +106,7 @@ function HeroAIPrompt() {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
+            ref={inputRef}
             placeholder="What's on your heart today?"
             data-testid="hero-ai-input"
             className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
