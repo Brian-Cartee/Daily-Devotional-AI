@@ -150,8 +150,8 @@ function HeroAIPrompt() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative rounded-2xl border border-primary/20 overflow-hidden mb-1 shadow-lg shadow-primary/8"
-      style={{ background: "linear-gradient(135deg, hsl(258 42% 32% / 0.07) 0%, hsl(258 38% 58% / 0.05) 50%, hsl(38 80% 60% / 0.04) 100%)" }}
+      className="relative rounded-2xl border border-primary/30 overflow-hidden mb-1 shadow-lg shadow-primary/10"
+      style={{ background: "linear-gradient(135deg, hsl(258 42% 32% / 0.13) 0%, hsl(258 38% 58% / 0.09) 55%, hsl(38 80% 60% / 0.06) 100%)" }}
     >
       {/* Top accent bar */}
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40 rounded-t-2xl" />
