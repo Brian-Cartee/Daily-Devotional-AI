@@ -69,7 +69,7 @@ function formatVisitDate(dateStr: string): string {
 function HeroAIPrompt() {
   const [query, setQuery] = useState("");
   const [, navigate] = useLocation();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [placeholderVisible, setPlaceholderVisible] = useState(true);
   const [isListening, setIsListening] = useState(false);
@@ -138,6 +138,13 @@ function HeroAIPrompt() {
     navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (query.trim()) navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -158,50 +165,57 @@ function HeroAIPrompt() {
         </div>
 
         {/* Section 1 — open question */}
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <input
+        <form onSubmit={handleSubmit}>
+          <div className="relative rounded-xl border border-border/50 bg-muted/50 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all overflow-hidden">
+            {/* Textarea */}
+            <textarea
               value={query}
               onChange={e => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
               ref={inputRef}
               data-testid="hero-ai-input"
-              className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2.5 text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-              style={{ paddingRight: hasSpeechSupport ? "2.5rem" : undefined }}
+              rows={3}
+              className="w-full bg-transparent px-4 pt-3 pb-2 text-[14px] text-foreground outline-none resize-none leading-relaxed"
             />
+            {/* Animated placeholder overlay */}
             {!query && (
               <span
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-muted-foreground/45 pointer-events-none truncate transition-opacity duration-300"
-                style={{ opacity: placeholderVisible ? 1 : 0, right: hasSpeechSupport ? "2.5rem" : "0.5rem" }}
+                className="absolute left-4 top-3 text-[14px] text-muted-foreground/45 pointer-events-none leading-relaxed transition-opacity duration-300"
+                style={{ opacity: placeholderVisible ? 1 : 0, right: "0.75rem" }}
               >
                 {placeholders[placeholderIndex]}
               </span>
             )}
-            {hasSpeechSupport && (
+            {/* Bottom toolbar */}
+            <div className="flex items-center justify-between px-2 pb-2">
+              {hasSpeechSupport ? (
+                <button
+                  type="button"
+                  onClick={toggleVoice}
+                  data-testid="button-voice-input"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
+                  style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                >
+                  {isListening
+                    ? <MicOff className="w-4 h-4" />
+                    : <Mic className="w-4 h-4 opacity-50 hover:opacity-80" />
+                  }
+                  {isListening && (
+                    <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />
+                  )}
+                </button>
+              ) : <span />}
               <button
-                type="button"
-                onClick={toggleVoice}
-                data-testid="button-voice-input"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg transition-all"
-                style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                type="submit"
+                disabled={!query.trim()}
+                data-testid="hero-ai-submit"
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary text-white disabled:opacity-25 hover:bg-primary/90 transition-all shadow-sm shadow-primary/30"
               >
-                {isListening
-                  ? <MicOff className="w-4 h-4" />
-                  : <Mic className="w-4 h-4 opacity-50 hover:opacity-80" />
-                }
-                {isListening && (
-                  <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />
-                )}
+                <ArrowRight className="w-4 h-4" />
               </button>
-            )}
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={!query.trim()}
-            data-testid="hero-ai-submit"
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-white disabled:opacity-25 hover:bg-primary/90 transition-all flex-shrink-0 shadow-sm shadow-primary/30"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <p className="text-[11px] text-muted-foreground/40 mt-1.5 px-1">Enter to send · Shift+Enter for new line</p>
         </form>
 
       </div>
