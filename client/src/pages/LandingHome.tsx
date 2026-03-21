@@ -150,7 +150,8 @@ function HeroAIPrompt() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative rounded-2xl border border-violet-300 dark:border-violet-700/60 overflow-hidden mb-1 shadow-lg shadow-violet-300/50 dark:shadow-violet-900/30 bg-violet-100 dark:bg-violet-950/40"
+      className="relative rounded-2xl overflow-hidden mb-1 shadow-lg"
+      style={{ background: "hsl(258 45% 88%)", border: "1px solid hsl(258 40% 78%)", boxShadow: "0 4px 24px hsl(258 45% 70% / 0.25)" }}
     >
       {/* Top accent bar */}
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40 rounded-t-2xl" />
@@ -166,7 +167,7 @@ function HeroAIPrompt() {
 
         {/* Section 1 — open question */}
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-xl border border-violet-200 dark:border-violet-700/50 bg-violet-50 dark:bg-violet-950/30 focus-within:ring-2 focus-within:ring-violet-400/40 focus-within:border-violet-300 dark:focus-within:border-violet-600 transition-all overflow-hidden">
+          <div className="relative rounded-xl transition-all overflow-hidden" style={{ background: "hsl(258 40% 93%)", border: "1px solid hsl(258 35% 82%)" }}>
             {/* Textarea */}
             <textarea
               value={query}
