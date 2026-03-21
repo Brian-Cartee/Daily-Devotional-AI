@@ -6,6 +6,7 @@ import { NavBar } from "@/components/NavBar";
 import { detectCrisis } from "@/lib/crisis";
 import { getUserName } from "@/lib/userName";
 import { type Journey } from "@/data/journeys";
+import { ShareInviteCard } from "@/components/ShareInviteCard";
 
 interface Message {
   role: "user" | "assistant";
@@ -291,6 +292,19 @@ export default function GuidancePage() {
                     </div>
                   </button>
                 ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Share nudge — appears once the response is complete */}
+          <AnimatePresence>
+            {responseComplete && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <ShareInviteCard />
               </motion.div>
             )}
           </AnimatePresence>

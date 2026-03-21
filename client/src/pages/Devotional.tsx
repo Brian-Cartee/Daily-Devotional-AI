@@ -1012,10 +1012,8 @@ export default function Devotional() {
             </button>
           </div>
 
-          {/* Share & Invite */}
-          {(reflectionContent || prayerContent) && (
-            <ShareInviteCard />
-          )}
+          {/* Share & Invite — always visible once verse loads */}
+          <ShareInviteCard />
 
           {/* AI Chat */}
           <AnimatePresence>
