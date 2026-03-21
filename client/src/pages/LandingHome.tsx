@@ -703,28 +703,35 @@ export default function LandingHome() {
             {" · "}
             <span className="whitespace-nowrap">Built for daily life</span>
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Link href="/pricing" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-pricing-footer">
+          <div className="flex flex-col items-center gap-1.5 text-xs text-muted-foreground">
+            {/* Row 1 */}
+            <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1">
+              <Link href="/pricing" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-pricing-footer">
                 Plans & Pricing
               </Link>
-              <span aria-hidden="true">·</span>
-              <Link href="/about" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
+              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+              <Link href="/about" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
                 About the App
               </Link>
-              <span aria-hidden="true">·</span>
-              <Link href="/privacy" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-privacy-footer">
+              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+              <Link href="/privacy" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-privacy-footer">
                 Privacy Policy
               </Link>
-              <span aria-hidden="true">·</span>
-              <Link href="/terms" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-terms-footer">
+              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+              <Link href="/terms" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-terms-footer">
                 Terms
               </Link>
-              <span aria-hidden="true">·</span>
+            </div>
+            {/* Row 2 */}
+            <div className="flex items-center justify-center gap-x-3">
+              <a href="mailto:support@shepherdspathai.com" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
+                support@shepherdspathai.com
+              </a>
+              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
               <button
                 onClick={handleShareApp}
                 data-testid="btn-share-app-footer"
-                className="flex items-center gap-1 hover:text-foreground transition-colors underline underline-offset-2"
+                className="whitespace-nowrap flex items-center gap-1 hover:text-foreground transition-colors underline underline-offset-2"
               >
                 {shared
                   ? <><Check className="w-3 h-3 text-green-500" /> Copied!</>
@@ -732,10 +739,6 @@ export default function LandingHome() {
                 }
               </button>
             </div>
-            <span aria-hidden="true" className="hidden sm:inline">·</span>
-            <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
-              support@shepherdspathai.com
-            </a>
           </div>
           <p className="text-[12px] text-muted-foreground/60 italic mt-2">
             "Open your Bible. We'll open the conversation."
