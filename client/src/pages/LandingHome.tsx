@@ -150,23 +150,24 @@ function HeroAIPrompt() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative rounded-2xl border border-primary/15 bg-card shadow-lg shadow-primary/5 overflow-hidden mb-1"
+      className="relative rounded-2xl border border-primary/20 overflow-hidden mb-1 shadow-lg shadow-primary/8"
+      style={{ background: "linear-gradient(135deg, hsl(258 42% 32% / 0.07) 0%, hsl(258 38% 58% / 0.05) 50%, hsl(38 80% 60% / 0.04) 100%)" }}
     >
-      {/* Subtle top gradient accent */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/40 via-violet-400/40 to-primary/20 rounded-t-2xl" />
+      {/* Top accent bar */}
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40 rounded-t-2xl" />
 
       <div className="px-5 pt-5 pb-4">
         {/* Label row */}
         <div className="flex items-center gap-2 mb-3.5">
-          <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">Seek Spiritual Guidance</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-primary/80">Seek Spiritual Guidance</span>
         </div>
 
         {/* Section 1 — open question */}
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-xl border border-border/50 bg-muted/50 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all overflow-hidden">
+          <div className="relative rounded-xl border border-primary/15 bg-white/60 dark:bg-black/20 focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary/35 transition-all overflow-hidden">
             {/* Textarea */}
             <textarea
               value={query}
