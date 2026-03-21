@@ -150,12 +150,12 @@ function HeroAIPrompt() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative rounded-2xl border border-violet-200 dark:border-violet-800/50 overflow-hidden mb-1 shadow-lg shadow-violet-200/40 dark:shadow-violet-900/20 bg-violet-50 dark:bg-violet-950/30"
+      className="relative rounded-2xl border border-violet-300 dark:border-violet-700/60 overflow-hidden mb-1 shadow-lg shadow-violet-300/50 dark:shadow-violet-900/30 bg-violet-100 dark:bg-violet-950/40"
     >
       {/* Top accent bar */}
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40 rounded-t-2xl" />
 
-      <div className="px-5 pt-5 pb-4">
+      <div className="px-5 pt-5 pb-5">
         {/* Label row */}
         <div className="flex items-center gap-2 mb-3.5">
           <div className="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center">
