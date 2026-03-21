@@ -166,7 +166,7 @@ function HeroAIPrompt() {
 
         {/* Section 1 — open question */}
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-xl border border-violet-200/70 dark:border-violet-700/40 bg-white dark:bg-black/30 focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:border-violet-300 dark:focus-within:border-violet-600 transition-all overflow-hidden">
+          <div className="relative rounded-xl border border-violet-200 dark:border-violet-700/50 bg-violet-50 dark:bg-violet-950/30 focus-within:ring-2 focus-within:ring-violet-400/40 focus-within:border-violet-300 dark:focus-within:border-violet-600 transition-all overflow-hidden">
             {/* Textarea */}
             <textarea
               value={query}
