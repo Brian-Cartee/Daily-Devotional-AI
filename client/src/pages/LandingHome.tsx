@@ -534,16 +534,35 @@ export default function LandingHome() {
           <div className="flex items-center gap-2 mb-3 px-0.5">
             <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">What people are saying</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+          {/* Featured spiritual guidance testimonial */}
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-primary/30 bg-gradient-to-br from-primary/10 via-violet-500/8 to-amber-500/5">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40" />
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary">Spiritual Guidance</span>
+                <span className="text-[10px] text-muted-foreground/50 font-medium">Featured</span>
+              </div>
+              <p className="text-[15px] text-foreground/90 leading-relaxed italic font-medium mb-4">
+                &ldquo;I was in the middle of the hardest season of my life and didn't know where to turn. I typed out what I was feeling and within seconds I had scripture that felt like it was written exactly for my situation. It wasn't generic — it was pastoral. I cried. I'm not embarrassed to say that.&rdquo;
+              </p>
+              <div className="flex items-center gap-2.5 pt-3 border-t border-primary/15">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-[12px] font-bold text-primary">
+                  M
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-foreground leading-none">Marcus</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">Spiritual Guidance</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
               {
                 quote: "I open Shepherd's Path before I even make coffee. The morning devotional sets a completely different tone for my day.",
                 name: "Eric",
-                detail: "Daily devotional",
-              },
-              {
-                quote: "I open the devotional most mornings while I'm still in bed. First thing — before the news, before email. That shift matters.",
-                name: "Renee",
                 detail: "Daily devotional",
               },
               {

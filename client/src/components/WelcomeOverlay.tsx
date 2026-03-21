@@ -133,25 +133,25 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </div>
 
           {/* Core value prop — replaces feature grid */}
-          <div className="rounded-2xl border border-violet-200/60 dark:border-violet-800/40 bg-violet-50/60 dark:bg-violet-950/20 px-5 py-4 space-y-3">
+          <div className="rounded-2xl border border-primary/30 bg-primary/8 dark:bg-primary/12 px-5 py-4 space-y-3">
             <p className="text-[13px] font-bold text-foreground leading-snug">Here's how it works</p>
             <div className="flex items-start gap-3">
               <span className="text-xl shrink-0">💬</span>
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
+              <p className="text-[13px] text-foreground/80 leading-relaxed">
                 <span className="font-semibold text-foreground">Tell us what you're going through.</span>{" "}
                 Grief, anxiety, a hard relationship, a question about God — anything on your heart.
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xl shrink-0">📖</span>
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
+              <p className="text-[13px] text-foreground/80 leading-relaxed">
                 <span className="font-semibold text-foreground">We'll find scripture for it</span>{" "}
                 and give you a personalized pastoral response — grounded in God's Word, made for your moment.
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xl shrink-0">🧭</span>
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
+              <p className="text-[13px] text-foreground/80 leading-relaxed">
                 <span className="font-semibold text-foreground">Then walk a journey.</span>{" "}
                 We'll build you a personalized Bible journey around exactly what you shared.
               </p>
