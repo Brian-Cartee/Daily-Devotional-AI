@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ImageIcon } from "lucide-react";
+import { Loader2, ImageIcon, X, Image } from "lucide-react";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -9,11 +9,14 @@ interface DailyArt {
   reflection: string;
 }
 
+const HIDDEN_KEY = "sp-daily-art-hidden";
+
 export function DailyArtCard() {
   const [art, setArt] = useState<DailyArt | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hidden, setHidden] = useState(() => localStorage.getItem(HIDDEN_KEY) === "true");
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -41,7 +44,37 @@ export function DailyArtCard() {
       .catch(() => setLoading(false));
   }, []);
 
+  const hide = () => {
+    setHidden(true);
+    localStorage.setItem(HIDDEN_KEY, "true");
+  };
+
+  const show = () => {
+    setHidden(false);
+    localStorage.removeItem(HIDDEN_KEY);
+  };
+
   if (!loading && (!art || !art.imageUrl)) return null;
+
+  // Collapsed state — subtle restore chip
+  if (hidden) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full flex justify-end px-4 py-1.5"
+      >
+        <button
+          onClick={show}
+          data-testid="button-daily-art-show"
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+        >
+          <Image className="w-3 h-3" />
+          <span>Show today&rsquo;s image</span>
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -87,11 +120,9 @@ export function DailyArtCard() {
             />
           )}
 
-          {/* Gradient overlays — top for label, bottom for scripture */}
+          {/* Gradient overlays */}
           {imageLoaded && (
-            <>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30" />
-            </>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30" />
           )}
 
           {/* Top-left label */}
@@ -101,6 +132,18 @@ export function DailyArtCard() {
                 Today&rsquo;s Image
               </span>
             </div>
+          )}
+
+          {/* Hide button — top right */}
+          {imageLoaded && (
+            <button
+              onClick={e => { e.stopPropagation(); hide(); }}
+              data-testid="button-daily-art-hide"
+              aria-label="Hide today's image"
+              className="absolute top-2.5 right-3 w-7 h-7 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+            >
+              <X className="w-3.5 h-3.5 text-white/80" />
+            </button>
           )}
 
           {/* Bottom scripture */}
@@ -131,7 +174,7 @@ export function DailyArtCard() {
         </div>
       </button>
 
-      {/* Reflection panel — slides below, full width */}
+      {/* Reflection panel */}
       <AnimatePresence>
         {expanded && art && (
           <motion.div
