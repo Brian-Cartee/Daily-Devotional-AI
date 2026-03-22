@@ -897,6 +897,112 @@ Rules:
     }
   });
 
+  // ── Daily Art Image ───────────────────────────────────────────────────────────
+
+  const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");
+  if (!fs.existsSync(DAILY_ART_DIR)) fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
+
+  const ART_THEMES = [
+    "A breathtaking mountain peak at golden sunrise, divine rays of light breaking through storm clouds above, misty valleys below, cinematic and awe-inspiring",
+    "An ancient cathedral forest with towering trees, shafts of golden light streaming through the canopy, moss-covered ground, peaceful and sacred",
+    "A vast ocean at dawn, massive waves with golden light on the water, dramatic clouds, powerful and serene",
+    "A desert landscape at night under a breathtaking Milky Way, silhouetted dunes, shooting stars, profound stillness",
+    "Rolling green hills in spring with wildflowers, a winding path disappearing into golden light on the horizon, hopeful and beautiful",
+    "A lone ancient olive tree on a hillside at dusk, warm amber light, vast landscape behind it, timeless and still",
+    "A frozen waterfall with ice formations catching morning light, mist rising, winter forest surroundings, majestic",
+    "Autumn forest with fiery red and gold canopy, a shaft of light illuminating a mossy stone path, peaceful",
+    "A storm clearing over a mountain lake, rainbow emerging, still water reflecting dramatic clouds, renewal",
+    "High Alpine meadow at sunset, golden hour light on wildflowers, snow-capped peaks behind, vast and open",
+    "A lighthouse on dramatic cliffs at stormy sea, golden light in the window, powerful waves below, steadfast",
+    "Misty morning valley with a river winding through green fields, soft golden light, peaceful and still",
+    "Ancient stone archway looking out to a vast sea at sunset, warm amber light, timeless and wonder-filled",
+    "Northern lights over a snow-covered pine forest, vivid greens and purples in the sky, profound and mysterious",
+    "A sun-drenched lavender field stretching to the horizon, a single cypress tree, dramatic clouds above, peaceful",
+    "Rocky coastline at golden hour, tide pools reflecting sky, warm amber light on ancient boulders, still and beautiful",
+    "A single candle flame in darkness with its warm light glowing on an open book, intimate and sacred",
+    "A bird's eye view of a river winding through an autumn forest, aerial, stunning colors, golden light",
+    "An old stone bridge over a rushing mountain stream, autumn colors, golden afternoon light, timeless",
+    "Dramatic sea cliffs at sunrise with golden light on crashing waves, powerful and majestic",
+    "A lone figure standing on a hilltop at sunset, silhouetted against an enormous golden sky, contemplative",
+    "Cherry blossom trees in full bloom with petals falling in golden light, renewal and beauty",
+    "Sunset over a calm lake with a wooden dock, perfect reflection in the water, peaceful and still",
+    "Snow-covered mountains reflected in a perfectly still alpine lake, crisp winter morning, pristine beauty",
+    "A vast wheat field at sunset with dramatic storm clouds breaking to golden light, harvest and hope",
+    "Ancient ruins overgrown with vines at golden hour, nature reclaiming, peaceful and timeless",
+    "A shepherd and flock silhouetted against a dramatic sunset sky on rolling hills, pastoral and sacred",
+    "A waterfall cascading into a crystal pool in a tropical forest, light filtering through mist, Eden-like",
+    "The Milky Way reflected in a still mountain lake, complete stillness, infinite beauty",
+    "A lone tree on a cliff edge over the sea at golden hour, wind in its branches, steadfast and beautiful",
+  ];
+
+  app.get("/api/daily-art", async (req, res) => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
+      const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
+
+      // Return cached if already generated today
+      if (fs.existsSync(imgFile) && fs.existsSync(metaFile)) {
+        const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
+        return res.json({ imageUrl: `/daily-art/${today}.jpg`, ...meta });
+      }
+
+      const openai = new OpenAI();
+
+      // Pick theme for today based on date seed
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+      const theme = ART_THEMES[dayOfYear % ART_THEMES.length];
+
+      // Generate companion scripture/message via AI
+      const msgRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.7,
+        max_tokens: 120,
+        messages: [
+          {
+            role: "system",
+            content: "You pair a Bible scripture with a beautiful nature scene. Return ONLY valid JSON: { \"scripture\": \"exact scripture text (short, 10-20 words)\", \"reference\": \"Book Chapter:Verse\", \"reflection\": \"One sentence — a brief, quiet reflection on how this scene echoes this truth. Poetic, not preachy. Under 18 words.\" }"
+          },
+          {
+            role: "user",
+            content: `The daily art image theme is: "${theme}". Choose the single most fitting Bible verse for this scene and write a brief reflection.`
+          }
+        ]
+      });
+
+      let scriptureData = { scripture: "The heavens declare the glory of God.", reference: "Psalm 19:1", reflection: "Creation speaks what words cannot." };
+      try {
+        const raw = msgRes.choices[0].message.content?.trim() ?? "{}";
+        scriptureData = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      } catch { /* use defaults */ }
+
+      // Generate image with DALL-E 3
+      const imageRes = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: `${theme}. Ultra-high quality, photorealistic, 4K, cinematic lighting. No text, no watermarks, no people. Pure landscape photography style.`,
+        n: 1,
+        size: "1792x1024",
+        quality: "standard",
+        response_format: "url",
+      });
+
+      const imageUrl = imageRes.data[0].url;
+      if (!imageUrl) return res.json({ imageUrl: null, ...scriptureData });
+
+      // Download and save the image
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) return res.json({ imageUrl: null, ...scriptureData });
+      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+      fs.writeFileSync(imgFile, imgBuffer);
+      fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
+
+      res.json({ imageUrl: `/daily-art/${today}.jpg`, ...scriptureData });
+    } catch (err) {
+      console.error("daily art error:", err);
+      res.json({ imageUrl: null, scripture: "The heavens declare the glory of God.", reference: "Psalm 19:1", reflection: "Creation speaks what words cannot." });
+    }
+  });
+
   // ── Guidance: YouTube sermon/video recommendations ───────────────────────────
 
   app.post("/api/guidance/videos", async (req, res) => {
