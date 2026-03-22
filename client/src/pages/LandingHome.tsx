@@ -453,6 +453,34 @@ export default function LandingHome() {
         </div>
       </div>
 
+      {/* Ambient grass — blurred hero image bleeds into side margins on wide screens */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none absolute inset-x-0 bottom-0"
+        style={{ top: "calc(56vh - 60px)", zIndex: 1 }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "url('/hero-landing.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center 60%",
+            filter: "blur(22px)",
+            opacity: 0.14,
+            transform: "scale(1.06)",
+          }}
+        />
+        {/* Fade at very top so it merges smoothly with the hero */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 18%)",
+          }}
+        />
+      </div>
+
       {/* Section cards */}
       <div className="max-w-xl md:max-w-4xl mx-auto px-5 pb-20 relative z-10 -mt-16 sm:-mt-20">
 
