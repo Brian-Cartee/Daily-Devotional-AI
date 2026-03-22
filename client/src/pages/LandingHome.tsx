@@ -424,7 +424,7 @@ export default function LandingHome() {
         </div>
 
         {/* Hero text */}
-        <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14">
+        <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14 pb-14 sm:pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -454,7 +454,7 @@ export default function LandingHome() {
       </div>
 
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-5 pb-20 relative z-10">
+      <div className="max-w-xl md:max-w-4xl mx-auto px-5 pb-20 relative z-10 -mt-16 sm:-mt-20">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
