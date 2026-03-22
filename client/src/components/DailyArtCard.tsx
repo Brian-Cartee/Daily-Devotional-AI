@@ -125,9 +125,12 @@ export function DailyArtCard() {
             />
           )}
 
-          {/* Subtle top vignette only — no heavy bottom gradient */}
+          {/* Vignette + bottom fade to page background — eliminates seam line */}
           {imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
+          )}
+          {imageLoaded && (
+            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
           )}
 
           {/* Top-left label — clean, single line */}

@@ -466,9 +466,9 @@ export default function LandingHome() {
             backgroundImage: "url('/hero-landing.png')",
             backgroundSize: "cover",
             backgroundPosition: "center 60%",
-            filter: "blur(22px)",
-            opacity: 0.14,
-            transform: "scale(1.06)",
+            filter: "blur(10px)",
+            opacity: 0.22,
+            transform: "scale(1.04)",
           }}
         />
         {/* Fade at very top so it merges smoothly with the hero */}
@@ -532,9 +532,9 @@ export default function LandingHome() {
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
-                  <div className="flex-1 min-w-0 py-0.5 pr-8 sm:pr-14">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass}`}>
+                  <div className="flex-1 min-w-0 py-0.5">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                      <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass} whitespace-nowrap`}>
                         {pillText}
                       </span>
                     </div>
@@ -592,7 +592,7 @@ export default function LandingHome() {
           </div>
 
           {/* Second spiritual guidance testimonial */}
-          <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/25 bg-gradient-to-br from-amber-500/8 via-primary/6 to-violet-500/5">
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/40 bg-card" style={{ background: "linear-gradient(135deg, hsl(38 38% 95%) 0%, hsl(38 60% 93%) 50%, hsl(258 42% 97%) 100%)" }}>
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/50 via-primary/40 to-violet-400/30" />
             <div className="px-5 py-4">
               <div className="flex items-center gap-2 mb-3">
