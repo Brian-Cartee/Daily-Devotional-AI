@@ -143,6 +143,17 @@ export async function registerRoutes(
   // Start the daily email scheduler
   scheduleDailyEmails().catch(console.error);
 
+  // ── Health check ──────────────────────────────────────────────────────────
+  app.get("/api/health", async (_req, res) => {
+    try {
+      await import("./db").then(({ pool }) => pool.query("SELECT 1"));
+      res.json({ status: "ok", ts: new Date().toISOString() });
+    } catch (err) {
+      console.error("[health] DB check failed:", err);
+      res.status(503).json({ status: "degraded", ts: new Date().toISOString() });
+    }
+  });
+
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
     try {
@@ -308,9 +319,14 @@ ${transcription.text.slice(0, 8000)}`,
 
   // Get current push settings for a session
   app.get("/api/push/settings/:sessionId", async (req, res) => {
-    const sub = await storage.getPushSubscription(req.params.sessionId);
-    if (!sub) return res.status(404).json({ message: "not found" });
-    res.json(sub);
+    try {
+      const sub = await storage.getPushSubscription(req.params.sessionId);
+      if (!sub) return res.status(404).json({ message: "not found" });
+      res.json(sub);
+    } catch (err) {
+      console.error("[push] get settings error:", err);
+      res.status(500).json({ message: "Could not load push settings" });
+    }
   });
 
   // Update push notification settings
@@ -322,14 +338,24 @@ ${transcription.text.slice(0, 8000)}`,
       middayEnabled?: boolean; streakReminder?: boolean; weeklySummary?: boolean;
     };
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
-    await storage.updatePushSettings(sessionId, settings);
-    res.json({ ok: true });
+    try {
+      await storage.updatePushSettings(sessionId, settings);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[push] update settings error:", err);
+      res.status(500).json({ message: "Could not update push settings" });
+    }
   });
 
-  // Unsubscribe
+  // Unsubscribe push
   app.delete("/api/push/subscribe/:sessionId", async (req, res) => {
-    await storage.deletePushSubscription(req.params.sessionId);
-    res.json({ ok: true });
+    try {
+      await storage.deletePushSubscription(req.params.sessionId);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[push] delete subscription error:", err);
+      res.status(500).json({ message: "Could not remove push subscription" });
+    }
   });
 
   // Start push scheduler (email scheduler started separately)
@@ -733,8 +759,13 @@ What you never do:
     if (!email || typeof email !== "string") {
       return res.status(400).json({ message: "Email is required." });
     }
-    await storage.deactivateSubscriber(decodeURIComponent(email));
-    res.status(200).json({ message: "You've been unsubscribed successfully." });
+    try {
+      await storage.deactivateSubscriber(decodeURIComponent(email));
+      res.status(200).json({ message: "You've been unsubscribed successfully." });
+    } catch (err) {
+      console.error("[unsubscribe] error:", err);
+      res.status(500).json({ message: "Could not process unsubscribe. Please try again." });
+    }
   });
 
   // Manually trigger daily email send (for testing)
@@ -1288,7 +1319,6 @@ Rules:
     };
     if (!verseReference || !verseText) return res.status(400).json({ message: "verseReference and verseText required" });
     try {
-      const openai = new OpenAI();
       const reflectionContext = reflection
         ? `The devotional reflection for today is: "${reflection.substring(0, 600)}"`
         : "";
@@ -1797,6 +1827,7 @@ ${historyNote}`;
     }
     next();
   }, async (req, res) => {
+  try {
     const from = (req.body.From as string | undefined)?.trim();
     const rawBody = (req.body.Body as string | undefined)?.trim() ?? "";
     const cmd = rawBody.toUpperCase().trim();
@@ -2017,8 +2048,12 @@ ${historyNote}`;
       res.type("text/xml").send(smsXml(aiText));
     } catch (err) {
       console.error("[SMS webhook error]", err);
-      res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
+      if (!res.headersSent) res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
     }
+  } catch (err) {
+    console.error("[SMS webhook unhandled error]", err);
+    if (!res.headersSent) res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
+  }
   });
 
   // Digital Asset Links — required for Android TWA

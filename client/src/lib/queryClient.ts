@@ -48,7 +48,16 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Never retry on 4xx errors (bad request, not found, rate limited)
+        const status = typeof error?.message === "string"
+          ? parseInt(error.message.split(":")[0], 10)
+          : 0;
+        if (status >= 400 && status < 500) return false;
+        // Retry once on transient network/server errors
+        return failureCount < 1;
+      },
+      retryDelay: 1500,
     },
     mutations: {
       retry: false,
