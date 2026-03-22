@@ -466,6 +466,9 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
+          {/* Daily Art — daily ritual opener, first thing after the hero */}
+          <DailyArtCard />
+
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
 
@@ -525,9 +528,6 @@ export default function LandingHome() {
           </div>
 
         </motion.div>
-
-        {/* Daily Art Image */}
-        <DailyArtCard />
 
         {/* Testimonials */}
         <motion.div
