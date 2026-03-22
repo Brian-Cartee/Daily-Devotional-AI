@@ -26,7 +26,6 @@ export function DailyArtCard() {
         setLoading(false);
         return;
       }
-      // Stale/failed cache — remove and retry
       sessionStorage.removeItem(cacheKey);
     }
 
@@ -34,7 +33,6 @@ export function DailyArtCard() {
       .then(r => r.json())
       .then((data: DailyArt) => {
         setArt(data);
-        // Only cache successful responses that have a real image
         if (data.imageUrl) {
           sessionStorage.setItem(cacheKey, JSON.stringify(data));
         }
@@ -47,25 +45,21 @@ export function DailyArtCard() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-      className="mt-3"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8, delay: 0.15 }}
+      className="w-full"
     >
-      <div className="flex items-center gap-2 mb-2 px-0.5">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">
-          Today&rsquo;s Image
-        </span>
-      </div>
-
       <button
         onClick={() => setExpanded(e => !e)}
         data-testid="button-daily-art"
-        className="w-full text-left rounded-2xl overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-all group focus:outline-none"
-        aria-label="View today's daily art"
+        className="w-full text-left relative overflow-hidden focus:outline-none group"
+        aria-label="View today's daily art and reflection"
       >
-        {/* Image */}
+        {/* Full-bleed image */}
         <div className="relative w-full bg-muted" style={{ aspectRatio: "16/7" }}>
+
+          {/* Loading state */}
           <AnimatePresence>
             {loading && (
               <motion.div
@@ -79,6 +73,7 @@ export function DailyArtCard() {
             )}
           </AnimatePresence>
 
+          {/* The image */}
           {art?.imageUrl && (
             <motion.img
               src={art.imageUrl}
@@ -86,64 +81,75 @@ export function DailyArtCard() {
               onLoad={() => setImageLoaded(true)}
               initial={{ opacity: 0 }}
               animate={{ opacity: imageLoaded ? 1 : 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 1 }}
               className="w-full h-full object-cover"
               data-testid="img-daily-art"
             />
           )}
 
-          {/* Gradient overlay */}
-          {art?.imageUrl && imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          {/* Gradient overlays — top for label, bottom for scripture */}
+          {imageLoaded && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30" />
+            </>
           )}
 
-          {/* Scripture overlay at bottom of image */}
+          {/* Top-left label */}
+          {imageLoaded && (
+            <div className="absolute top-3 left-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                Today&rsquo;s Image
+              </span>
+            </div>
+          )}
+
+          {/* Bottom scripture */}
           {art && imageLoaded && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-6"
+              transition={{ delay: 0.5, duration: 0.7 }}
+              className="absolute bottom-0 left-0 right-0 px-5 pb-4 pt-8"
             >
-              <p className="text-white font-medium text-sm leading-snug drop-shadow-lg line-clamp-2 italic">
+              <p className="text-white font-medium text-[15px] leading-snug drop-shadow-lg italic max-w-2xl">
                 &ldquo;{art.scripture}&rdquo;
               </p>
-              <p className="text-white/70 text-[11px] font-semibold mt-0.5 drop-shadow">
+              <p className="text-white/65 text-[12px] font-semibold mt-1 drop-shadow">
                 — {art.reference}
               </p>
             </motion.div>
           )}
 
-          {/* Expand hint */}
-          {art?.imageUrl && imageLoaded && (
-            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-medium">
-                {expanded ? "Less" : "More"}
-              </div>
+          {/* Tap hint */}
+          {imageLoaded && (
+            <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-white/50 text-[10px] font-medium">
+                {expanded ? "close" : "reflection ↓"}
+              </span>
             </div>
           )}
         </div>
-
-        {/* Expanded reflection */}
-        <AnimatePresence>
-          {expanded && art && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-card px-4 py-3 border-t border-border/40 flex items-start gap-3">
-                <ImageIcon className="w-3.5 h-3.5 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
-                <p className="text-[13px] text-muted-foreground leading-relaxed italic">
-                  {art.reflection}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </button>
+
+      {/* Reflection panel — slides below, full width */}
+      <AnimatePresence>
+        {expanded && art && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-primary/5 border-b border-primary/10 px-5 py-3 flex items-start gap-3">
+              <ImageIcon className="w-3.5 h-3.5 text-primary/40 mt-0.5 flex-shrink-0" />
+              <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+                {art.reflection}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

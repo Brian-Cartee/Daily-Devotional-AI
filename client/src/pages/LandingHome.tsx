@@ -450,8 +450,11 @@ export default function LandingHome() {
         </div>
       </div>
 
+      {/* Daily Art — full bleed between hero and section cards */}
+      <DailyArtCard />
+
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-5 -mt-6 pb-20 relative z-10">
+      <div className="max-w-xl md:max-w-4xl mx-auto px-5 pb-20 relative z-10">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
@@ -466,9 +469,6 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
-          {/* Daily Art — daily ritual opener, first thing after the hero */}
-          <DailyArtCard />
-
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
 
