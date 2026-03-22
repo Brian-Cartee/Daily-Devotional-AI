@@ -265,6 +265,14 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
+          {/* Bridge text — connects the response to the journey + videos below */}
+          {responseComplete && (
+            <p className="text-sm text-muted-foreground/75 italic leading-relaxed mb-6 -mt-2">
+              The scripture journey below was shaped around everything you've just shared — take your time with it.
+              Curated sermons and teachings are also waiting further down as additional support, whenever you feel led to go deeper.
+            </p>
+          )}
+
           {/* Journey card */}
           <AnimatePresence>
             {(journeyLoading || journey) && (
@@ -309,7 +317,10 @@ export default function GuidancePage() {
                         )}
                         {journey.spotlightReason && journey.entries?.[journey.spotlightIndex ?? 0] && (
                           <div className="mt-4 pt-3.5 border-t border-violet-200/50 dark:border-violet-700/30">
-                            <p className="text-[10px] font-bold text-violet-500 uppercase tracking-widest mb-1">Where we'd start you</p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-[10px] font-bold text-violet-500 uppercase tracking-widest">Where we'd start you</p>
+                              <span className="text-[10px] text-violet-400/80 font-medium italic">· highest relevance</span>
+                            </div>
                             <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">
                               <span className="font-semibold text-foreground">{journey.entries[journey.spotlightIndex ?? 0].title}</span>
                               {" — "}{journey.spotlightReason}
