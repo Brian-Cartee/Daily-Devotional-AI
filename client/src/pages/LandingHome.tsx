@@ -465,9 +465,9 @@ export default function LandingHome() {
             inset: 0,
             backgroundImage: "url('/hero-landing.png')",
             backgroundSize: "cover",
-            backgroundPosition: "center 60%",
-            filter: "blur(8px)",
-            opacity: 0.28,
+            backgroundPosition: "center 18%",
+            filter: "blur(6px)",
+            opacity: 0.32,
             transform: "scale(1.04)",
           }}
         />
