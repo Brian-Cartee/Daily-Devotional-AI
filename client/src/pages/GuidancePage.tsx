@@ -6,6 +6,7 @@ import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { detectCrisis } from "@/lib/crisis";
 import { getUserName } from "@/lib/userName";
+import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 
@@ -52,8 +53,13 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages, userName }),
+        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId() }),
       });
+      if (res.status === 429) {
+        setStreamingText("You've sent a lot of requests recently. Please wait a few minutes and try again.");
+        setResponseComplete(true);
+        return;
+      }
       if (!res.ok || !res.body) return;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -85,7 +91,7 @@ export default function GuidancePage() {
     fetch("/api/journey/life-season", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim() }),
+      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId() }),
     })
       .then(r => r.json())
       .then((j: Journey) => {
@@ -105,7 +111,7 @@ export default function GuidancePage() {
     fetch("/api/guidance/videos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim() }),
+      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId() }),
     })
       .then(r => r.json())
       .then((data: { videos: VideoResult[] }) => {

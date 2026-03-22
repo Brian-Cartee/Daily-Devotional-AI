@@ -21,6 +21,8 @@ import { scheduleDailySms } from "./smsScheduler";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
 // In-memory TTS cache — key: "voice::text_hash", value: Buffer of mp3 bytes
+// Capped to prevent unbounded memory growth
+const MAX_TTS_CACHE = 120;
 const ttsCache = new Map<string, Buffer>();
 function ttsCacheKey(text: string, voice: string) {
   let hash = 0;
@@ -54,6 +56,11 @@ async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
     model: "tts-1", voice: voice as any, input: text.slice(0, 4096), speed: 0.92,
   });
   const buffer = Buffer.from(await mp3.arrayBuffer());
+  // Evict oldest entry when cache is full
+  if (ttsCache.size >= MAX_TTS_CACHE) {
+    const firstKey = ttsCache.keys().next().value;
+    if (firstKey) ttsCache.delete(firstKey);
+  }
   ttsCache.set(cacheKey, buffer);
   writeDiskCache(cacheKey, buffer);
   return buffer;
@@ -68,6 +75,29 @@ const openai = new OpenAI({
 const openaiTTS = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// ── Per-session rate limiter ──────────────────────────────────────────────────
+// Prevents a single user from hammering expensive AI endpoints
+const rateLimitStore = new Map<string, number[]>();
+function isRateLimited(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const timestamps = (rateLimitStore.get(key) ?? []).filter(t => now - t < windowMs);
+  if (timestamps.length >= maxRequests) {
+    rateLimitStore.set(key, timestamps);
+    return true;
+  }
+  rateLimitStore.set(key, [...timestamps, now]);
+  return false;
+}
+// Prune the rate limit store every hour to prevent memory growth
+setInterval(() => {
+  const cutoff = Date.now() - 3_600_000;
+  for (const [key, timestamps] of rateLimitStore) {
+    const recent = timestamps.filter(t => t > cutoff);
+    if (recent.length === 0) rateLimitStore.delete(key);
+    else rateLimitStore.set(key, recent);
+  }
+}, 3_600_000);
 
 async function syncTodayVerseFromSheet(): Promise<void> {
   try {
@@ -115,20 +145,25 @@ export async function registerRoutes(
 
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
-    const today = (req.query.date as string) || new Date().toISOString().split("T")[0];
-    let verse = await storage.getVerseByDate(today);
+    try {
+      const today = (req.query.date as string) || new Date().toISOString().split("T")[0];
+      let verse = await storage.getVerseByDate(today);
 
-    // If not cached yet, try syncing on-demand
-    if (!verse) {
-      await syncTodayVerseFromSheet();
-      verse = await storage.getVerseByDate(today);
+      // If not cached yet, try syncing on-demand
+      if (!verse) {
+        await syncTodayVerseFromSheet();
+        verse = await storage.getVerseByDate(today);
+      }
+
+      if (!verse) {
+        return res.status(404).json({ message: "No verse found for today." });
+      }
+
+      res.json(verse);
+    } catch (err) {
+      console.error("getDaily verse error:", err);
+      res.status(500).json({ message: "Could not load today's verse." });
     }
-
-    if (!verse) {
-      return res.status(404).json({ message: "No verse found for today." });
-    }
-
-    res.json(verse);
   });
 
   // Debug endpoint: inspect raw sheet rows to confirm column mapping
@@ -348,24 +383,34 @@ I'm here whenever you're ready to continue your walk.`;
   async function streamCompletion(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
     res: import("express").Response,
-    options: { model?: string; maxTokens?: number; temperature?: number } = {}
+    options: { model?: string; maxTokens?: number; temperature?: number; req?: import("express").Request } = {}
   ) {
-    const { model = "gpt-4o-mini", maxTokens, temperature } = options;
+    const { model = "gpt-4o-mini", maxTokens, temperature, req: request } = options;
+    const controller = new AbortController();
+    if (request) {
+      request.on("close", () => controller.abort());
+    }
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("X-Accel-Buffering", "no");
-    const stream = await openai.chat.completions.create({
-      model,
-      messages,
-      stream: true,
-      ...(maxTokens ? { max_tokens: maxTokens } : {}),
-      ...(temperature !== undefined ? { temperature } : {}),
-    });
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || "";
-      if (content) res.write(content);
+    try {
+      const stream = await openai.chat.completions.create({
+        model,
+        messages,
+        stream: true,
+        ...(maxTokens ? { max_tokens: maxTokens } : {}),
+        ...(temperature !== undefined ? { temperature } : {}),
+      }, { signal: controller.signal });
+      for await (const chunk of stream) {
+        if (controller.signal.aborted) break;
+        const content = chunk.choices[0]?.delta?.content || "";
+        if (content) res.write(content);
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError" || controller.signal.aborted) return;
+      throw err;
     }
-    res.end();
+    if (!res.writableEnded) res.end();
   }
 
   function buildRelationshipNote(daysWithApp: number, entryCount: number): string {
@@ -852,6 +897,11 @@ What you never do:
       userName?: string;
     };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
+    const sessionId = (req.body as any).sessionId as string | undefined;
+    if (sessionId && isRateLimited(`guidance:${sessionId}`, 20, 3_600_000)) {
+      return res.status(429).json({ message: "Too many requests — please wait a moment before trying again." });
+    }
 
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -889,7 +939,7 @@ Rules:
       await streamCompletion(
         [{ role: "system", content: systemMsg }, ...conversationHistory],
         res,
-        { temperature: 0.82, maxTokens: 280 }
+        { temperature: 0.82, maxTokens: 280, req }
       );
     } catch (err) {
       console.error("guidance response error:", err);
@@ -1008,13 +1058,16 @@ Rules:
   app.post("/api/guidance/videos", async (req, res) => {
     const { situation } = req.body as { situation?: string };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
+    const sessionIdVid = (req.body as any).sessionId as string | undefined;
+    if (sessionIdVid && isRateLimited(`videos:${sessionIdVid}`, 20, 3_600_000)) {
+      return res.json({ videos: [] });
+    }
 
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
     if (!YOUTUBE_API_KEY) return res.json({ videos: [] });
 
     try {
-      const openai = new OpenAI();
-
       // Step 1: Generate 2 targeted YouTube search queries
       const queryGenResponse = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -1128,8 +1181,12 @@ Rules:
   app.post("/api/journey/life-season", async (req, res) => {
     const { situation } = req.body as { situation?: string };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
+    const sessionIdJourney = (req.body as any).sessionId as string | undefined;
+    if (sessionIdJourney && isRateLimited(`journey:${sessionIdJourney}`, 10, 3_600_000)) {
+      return res.status(429).json({ message: "Too many requests — please wait before generating another journey." });
+    }
     try {
-      const openai = new OpenAI();
       const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
 
 Your journeys are specific, honest, emotionally real, and scripturally grounded. You never rush past someone's pain to get to hope. You let the journey breathe — beginning in honest acknowledgment or lament before moving toward comfort, then courage, then hope.

@@ -25,6 +25,7 @@ import GuidancePage from "@/pages/GuidancePage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -79,18 +80,20 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <DemoProvider>
-          <Toaster />
-          <ScrollToTop />
-          <ReferralCapture />
-          <Router />
-          <DemoFloatingBar />
-          <InstallPrompt />
-        </DemoProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <DemoProvider>
+            <Toaster />
+            <ScrollToTop />
+            <ReferralCapture />
+            <Router />
+            <DemoFloatingBar />
+            <InstallPrompt />
+          </DemoProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
