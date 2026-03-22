@@ -9,12 +9,9 @@ interface DailyArt {
   reflection: string;
 }
 
-// Hidden state lives in sessionStorage — resets automatically on every new visit/tab
-// Also clears any legacy localStorage keys that may have stuck the card hidden permanently
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
 function isHiddenThisSession(): boolean {
-  // Clean up legacy localStorage keys so they can never block the card again
   localStorage.removeItem("sp-daily-art-hidden");
   localStorage.removeItem("sp-daily-art-hidden-date");
   return sessionStorage.getItem(SESSION_HIDDEN_KEY) === "true";
@@ -65,7 +62,6 @@ export function DailyArtCard() {
 
   if (!loading && (!art || !art.imageUrl)) return null;
 
-  // Collapsed state — subtle restore chip
   if (hidden) {
     return (
       <motion.div
@@ -129,26 +125,24 @@ export function DailyArtCard() {
             />
           )}
 
-          {/* Gradient overlays */}
+          {/* Subtle top vignette only — no heavy bottom gradient */}
           {imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20" />
           )}
 
-          {/* Top-left label */}
+          {/* Top-left label — clean, single line */}
           {imageLoaded && (
             <div className="absolute top-3 left-4">
-              <div className="flex items-baseline gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-white/90 drop-shadow-md">
-                  Pause &amp; Behold
-                </span>
-                <span className="text-[11px] text-white/55 italic drop-shadow" style={{ letterSpacing: "0.03em" }}>
-                  · your daily beauty
-                </span>
-              </div>
+              <span
+                className="text-white/75 italic drop-shadow"
+                style={{ fontSize: "11px", letterSpacing: "0.04em" }}
+              >
+                your daily beauty
+              </span>
             </div>
           )}
 
-          {/* Hide button — top right */}
+          {/* Hide button — top right, appears on hover/focus */}
           {imageLoaded && (
             <button
               onClick={e => { e.stopPropagation(); hide(); }}
@@ -160,35 +154,18 @@ export function DailyArtCard() {
             </button>
           )}
 
-          {/* Bottom scripture */}
-          {art && imageLoaded && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.7 }}
-              className="absolute bottom-0 left-0 right-0 px-5 pb-4 pt-8"
-            >
-              <p className="text-white font-medium text-[15px] leading-snug drop-shadow-lg italic max-w-2xl">
-                &ldquo;{art.scripture}&rdquo;
-              </p>
-              <p className="text-white/65 text-[12px] font-semibold mt-1 drop-shadow">
-                — {art.reference}
-              </p>
-            </motion.div>
-          )}
-
-          {/* Tap hint */}
+          {/* Tap hint — bottom right, hover only */}
           {imageLoaded && (
             <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
               <span className="text-white/50 text-[10px] font-medium">
-                {expanded ? "close" : "reflection ↓"}
+                {expanded ? "close" : "scripture & reflection ↓"}
               </span>
             </div>
           )}
         </div>
       </button>
 
-      {/* Reflection panel */}
+      {/* Reflection panel — scripture + reflection together */}
       <AnimatePresence>
         {expanded && art && (
           <motion.div
@@ -198,11 +175,21 @@ export function DailyArtCard() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="bg-primary/5 border-b border-primary/10 px-5 py-3 flex items-start gap-3">
-              <ImageIcon className="w-3.5 h-3.5 text-primary/40 mt-0.5 flex-shrink-0" />
-              <p className="text-[13px] text-muted-foreground leading-relaxed italic">
-                {art.reflection}
-              </p>
+            <div className="bg-primary/5 border-b border-primary/10 px-5 py-4 flex flex-col gap-3">
+              <div>
+                <p className="text-[15px] text-foreground/90 leading-snug italic font-medium">
+                  &ldquo;{art.scripture}&rdquo;
+                </p>
+                <p className="text-[12px] text-muted-foreground/70 font-semibold mt-1">
+                  — {art.reference}
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5 pt-2 border-t border-primary/10">
+                <ImageIcon className="w-3.5 h-3.5 text-primary/40 mt-0.5 flex-shrink-0" />
+                <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+                  {art.reflection}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}
