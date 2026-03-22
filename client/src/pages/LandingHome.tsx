@@ -584,7 +584,7 @@ export default function LandingHome() {
           </div>
 
           {/* Second spiritual guidance testimonial */}
-          <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/40 bg-card" style={{ background: "linear-gradient(135deg, hsl(38 38% 95%) 0%, hsl(38 60% 93%) 50%, hsl(258 42% 97%) 100%)" }}>
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/30 bg-gradient-to-br from-amber-500/10 via-primary/6 to-violet-500/5 backdrop-blur-sm">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/50 via-primary/40 to-violet-400/30" />
             <div className="px-5 py-4">
               <div className="flex items-center gap-2 mb-3">
@@ -620,7 +620,7 @@ export default function LandingHome() {
             ].map(({ quote, name, detail }) => (
               <div
                 key={name}
-                className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3"
+                className="rounded-2xl border border-white/40 bg-white/30 backdrop-blur-sm p-4 flex flex-col gap-3"
               >
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1 italic">
                   &ldquo;{quote}&rdquo;
@@ -644,7 +644,7 @@ export default function LandingHome() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="relative mt-5 rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden"
+          className="relative mt-5 rounded-2xl border border-primary/20 bg-primary/8 backdrop-blur-sm overflow-hidden"
           data-testid="commitment-card"
         >
           <img
