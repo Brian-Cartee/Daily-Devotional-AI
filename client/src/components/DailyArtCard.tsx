@@ -20,16 +20,24 @@ export function DailyArtCard() {
     const cacheKey = `sp-daily-art-${today}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
-      setArt(JSON.parse(cached));
-      setLoading(false);
-      return;
+      const parsed: DailyArt = JSON.parse(cached);
+      if (parsed.imageUrl) {
+        setArt(parsed);
+        setLoading(false);
+        return;
+      }
+      // Stale/failed cache — remove and retry
+      sessionStorage.removeItem(cacheKey);
     }
 
     fetch("/api/daily-art")
       .then(r => r.json())
       .then((data: DailyArt) => {
         setArt(data);
-        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        // Only cache successful responses that have a real image
+        if (data.imageUrl) {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
