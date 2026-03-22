@@ -150,10 +150,9 @@ export default function GuidancePage() {
   };
 
   const assistantMessages = messages.filter(m => m.role === "assistant");
-  const userFollowUps = messages.filter((m, i) => m.role === "user" && i > 0);
 
-  // Interlace the conversation after the first assistant message
-  const conversationThread = messages.slice(1); // skip the initial user message
+  // Skip initial user message AND first AI response — only follow-up exchanges go here
+  const conversationThread = messages.slice(2);
 
   return (
     <>
@@ -183,19 +182,22 @@ export default function GuidancePage() {
             </motion.p>
           )}
 
-          {/* First pastoral response */}
+          {/* First pastoral response — stays here permanently once it arrives */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            {(streamingText || (assistantMessages.length > 0 && !conversationThread.length)) && (
+            {((streamingText && !isSending) || assistantMessages.length > 0) && (
               <div className="text-[17px] leading-relaxed text-foreground space-y-4" data-testid="text-guidance-response">
-                {(streamingText || (assistantMessages[0]?.content ?? "")).split("\n\n").map((para, i) =>
+                {(isSending
+                  ? (assistantMessages[0]?.content ?? "")
+                  : (streamingText || (assistantMessages[0]?.content ?? ""))
+                ).split("\n\n").map((para, i) =>
                   para.trim() ? <p key={i}>{para}</p> : null
                 )}
-                {!responseComplete && (
+                {!responseComplete && !isSending && (
                   <span className="inline-block w-1.5 h-5 bg-primary/60 rounded-sm animate-pulse ml-0.5 align-middle" />
                 )}
               </div>

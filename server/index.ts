@@ -4,8 +4,13 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 
 
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", (err: any) => {
   console.error("[process] Uncaught exception:", err);
+  // Non-recoverable errors must exit so the process manager can restart cleanly
+  if (err?.code === "EADDRINUSE") {
+    console.error("[process] Port already in use — exiting so workflow can restart cleanly");
+    process.exit(1);
+  }
 });
 
 process.on("unhandledRejection", (reason) => {
