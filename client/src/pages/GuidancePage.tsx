@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Play } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { detectCrisis } from "@/lib/crisis";
 import { getUserName } from "@/lib/userName";
 import { type Journey } from "@/data/journeys";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
+
+interface VideoResult {
+  videoId: string;
+  title: string;
+  channelTitle: string;
+  thumbnail: string;
+  url: string;
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -28,6 +36,9 @@ export default function GuidancePage() {
 
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(true);
+
+  const [videos, setVideos] = useState<VideoResult[]>([]);
+  const [videosLoading, setVideosLoading] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -81,6 +92,19 @@ export default function GuidancePage() {
         setJourneyLoading(false);
       })
       .catch(() => setJourneyLoading(false));
+
+    // Fetch relevant sermon/video recommendations in the background
+    fetch("/api/guidance/videos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ situation: situation.trim() }),
+    })
+      .then(r => r.json())
+      .then((data: { videos: VideoResult[] }) => {
+        setVideos(data.videos ?? []);
+        setVideosLoading(false);
+      })
+      .catch(() => setVideosLoading(false));
   }, []);
 
   useEffect(() => {
@@ -292,6 +316,63 @@ export default function GuidancePage() {
                     </div>
                   </button>
                 ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Watch & Listen — sermon/video recommendations */}
+          <AnimatePresence>
+            {responseComplete && (videosLoading || videos.length > 0) && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="mt-8"
+              >
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
+                  Watch &amp; Listen
+                </p>
+
+                {videosLoading ? (
+                  <div className="rounded-2xl bg-card border border-border p-4">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
+                      <span className="text-sm">Finding relevant sermons…</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {videos.map((video) => (
+                      <a
+                        key={video.videoId}
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={`link-video-${video.videoId}`}
+                        className="flex items-start gap-3 rounded-2xl bg-card border border-border p-3 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                      >
+                        <div className="relative flex-shrink-0 w-24 rounded-xl overflow-hidden aspect-video bg-muted">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                            <div className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                              <Play className="w-3 h-3 text-primary fill-primary ml-0.5" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                            {video.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">{video.channelTitle}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
