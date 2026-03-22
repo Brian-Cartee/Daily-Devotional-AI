@@ -95,7 +95,7 @@ export function DailyArtCard() {
         aria-label="View today's daily art and reflection"
       >
         {/* Full-bleed image */}
-        <div className="relative w-full bg-muted" style={{ aspectRatio: "16/7" }}>
+        <div className="relative w-full bg-background" style={{ aspectRatio: "16/7" }}>
 
           {/* Loading state */}
           <AnimatePresence>
@@ -125,12 +125,9 @@ export function DailyArtCard() {
             />
           )}
 
-          {/* Vignette + bottom fade to page background — eliminates seam line */}
+          {/* Subtle vignette only */}
           {imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
-          )}
-          {imageLoaded && (
-            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
           )}
 
           {/* Top-left label — clean, single line */}

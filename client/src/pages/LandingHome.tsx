@@ -457,7 +457,7 @@ export default function LandingHome() {
       <div
         aria-hidden="true"
         className="pointer-events-none select-none absolute inset-x-0 bottom-0"
-        style={{ top: "calc(56vh - 60px)", zIndex: 1 }}
+        style={{ top: "56vh", zIndex: 1 }}
       >
         <div
           style={{
@@ -466,17 +466,9 @@ export default function LandingHome() {
             backgroundImage: "url('/hero-landing.png')",
             backgroundSize: "cover",
             backgroundPosition: "center 60%",
-            filter: "blur(10px)",
-            opacity: 0.22,
+            filter: "blur(8px)",
+            opacity: 0.28,
             transform: "scale(1.04)",
-          }}
-        />
-        {/* Fade at very top so it merges smoothly with the hero */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 18%)",
           }}
         />
       </div>
