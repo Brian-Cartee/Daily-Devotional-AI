@@ -137,9 +137,14 @@ export function DailyArtCard() {
           {/* Top-left label */}
           {imageLoaded && (
             <div className="absolute top-3 left-4">
-              <span className="text-[13px] font-bold uppercase tracking-widest text-white/90 drop-shadow-md">
-                Pause &amp; Behold
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-white/90 drop-shadow-md">
+                  Pause &amp; Behold
+                </span>
+                <span className="text-[11px] text-white/55 italic drop-shadow" style={{ letterSpacing: "0.03em" }}>
+                  · your daily beauty
+                </span>
+              </div>
             </div>
           )}
 
