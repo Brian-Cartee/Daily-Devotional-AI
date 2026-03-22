@@ -128,8 +128,8 @@ export function DailyArtCard() {
           {/* Top-left label */}
           {imageLoaded && (
             <div className="absolute top-3 left-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                Today&rsquo;s Image
+              <span className="text-[13px] font-semibold tracking-wide text-white/75 drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic" }}>
+                Pause &amp; Behold
               </span>
             </div>
           )}
