@@ -7,6 +7,7 @@ import {
   Sparkles, ArrowRight, Users, Share2, Check
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
+import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 
 const logoMark = "/logo-mark-white.png";
 
@@ -135,9 +136,7 @@ export default function AboutPage() {
         {/* Hero */}
         <motion.div {...fadeUp(0)} className="text-center py-10">
           <div className="flex justify-center mb-5">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-primary/30">
-              <img src="/sp-logo-mark.png" alt="Shepherd's Path" className="w-full h-full object-cover" />
-            </div>
+            <ShepherdCrookMark className="w-16 h-16 shadow-lg shadow-primary/30" rounded="rounded-2xl" />
           </div>
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
             Your Daily Companion in Faith

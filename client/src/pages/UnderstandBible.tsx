@@ -6,6 +6,7 @@ import {
   BookMarked, ArrowLeft, MapPin, Presentation, Heart, ImageDown, Check,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { NavBar } from "@/components/NavBar";
@@ -614,11 +615,7 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
             className="bg-violet-50/70 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 rounded-2xl px-5 py-4 mb-5"
           >
             <div className="flex items-start gap-3">
-              <img
-                src="/sp-logo-mark.png"
-                alt="Shepherd's Path"
-                className="w-7 h-7 flex-shrink-0 opacity-70 mt-0.5"
-              />
+              <ShepherdCrookMark className="w-7 h-7 flex-shrink-0 opacity-70 mt-0.5" />
               <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed" data-testid="text-pastoral-intro">
                 {journey.pastoralIntro}
               </p>

@@ -3,6 +3,7 @@ import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Play } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
+import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { detectCrisis } from "@/lib/crisis";
 import { getUserName } from "@/lib/userName";
 import { type Journey } from "@/data/journeys";
@@ -160,7 +161,7 @@ export default function GuidancePage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-2 mb-6"
           >
-            <img src="/sp-logo-mark.png" alt="Shepherd's Path" className="w-6 h-6 opacity-80" />
+            <ShepherdCrookMark className="w-6 h-6 opacity-80" />
             <span className="text-xs font-bold text-primary uppercase tracking-widest">Shepherd's Path</span>
           </motion.div>
 

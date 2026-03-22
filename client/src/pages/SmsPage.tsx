@@ -1,4 +1,5 @@
 import { MessageCircle, ArrowRight, BookOpen, Heart, Bell, ShieldCheck } from "lucide-react";
+import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { Link } from "wouter";
 
 const logoSmall = "/logo-mark-white.png";
@@ -35,9 +36,7 @@ export default function SmsPage() {
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
-              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
-                <img src="/sp-logo-mark.png" className="w-full h-full object-cover" alt="" />
-              </div>
+              <ShepherdCrookMark className="w-8 h-8" />
               <span className="font-bold text-foreground text-[15px]">Shepherd's Path</span>
             </div>
           </Link>
