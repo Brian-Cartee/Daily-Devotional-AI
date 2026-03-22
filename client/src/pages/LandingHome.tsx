@@ -563,6 +563,28 @@ export default function LandingHome() {
             </div>
           </div>
 
+          {/* Second spiritual guidance testimonial */}
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/25 bg-gradient-to-br from-amber-500/8 via-primary/6 to-violet-500/5">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/50 via-primary/40 to-violet-400/30" />
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary">Spiritual Guidance</span>
+              </div>
+              <p className="text-[15px] text-foreground/90 leading-relaxed italic font-medium mb-4">
+                &ldquo;I typed three sentences about my marriage falling apart. What came back wasn't a list of verses or a church pamphlet — it sat with me in the pain first. It was honest and real and it felt like it was written for me specifically. No other app has ever done that.&rdquo;
+              </p>
+              <div className="flex items-center gap-2.5 pt-3 border-t border-amber-400/15">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-[12px] font-bold text-amber-700 dark:text-amber-400">
+                  R
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-foreground leading-none">Rachel</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">Spiritual Guidance</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
               {

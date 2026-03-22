@@ -9,12 +9,15 @@ interface DailyArt {
   reflection: string;
 }
 
-const HIDDEN_KEY = "sp-daily-art-hidden";
-const HIDDEN_DATE_KEY = "sp-daily-art-hidden-date";
+// Hidden state lives in sessionStorage — resets automatically on every new visit/tab
+// Also clears any legacy localStorage keys that may have stuck the card hidden permanently
+const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
-function isHiddenToday(): boolean {
-  const today = new Date().toISOString().split("T")[0];
-  return localStorage.getItem(HIDDEN_KEY) === "true" && localStorage.getItem(HIDDEN_DATE_KEY) === today;
+function isHiddenThisSession(): boolean {
+  // Clean up legacy localStorage keys so they can never block the card again
+  localStorage.removeItem("sp-daily-art-hidden");
+  localStorage.removeItem("sp-daily-art-hidden-date");
+  return sessionStorage.getItem(SESSION_HIDDEN_KEY) === "true";
 }
 
 export function DailyArtCard() {
@@ -22,7 +25,7 @@ export function DailyArtCard() {
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [hidden, setHidden] = useState(() => isHiddenToday());
+  const [hidden, setHidden] = useState(() => isHiddenThisSession());
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -51,16 +54,13 @@ export function DailyArtCard() {
   }, []);
 
   const hide = () => {
-    const today = new Date().toISOString().split("T")[0];
     setHidden(true);
-    localStorage.setItem(HIDDEN_KEY, "true");
-    localStorage.setItem(HIDDEN_DATE_KEY, today);
+    sessionStorage.setItem(SESSION_HIDDEN_KEY, "true");
   };
 
   const show = () => {
     setHidden(false);
-    localStorage.removeItem(HIDDEN_KEY);
-    localStorage.removeItem(HIDDEN_DATE_KEY);
+    sessionStorage.removeItem(SESSION_HIDDEN_KEY);
   };
 
   if (!loading && (!art || !art.imageUrl)) return null;
