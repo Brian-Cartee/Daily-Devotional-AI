@@ -10,13 +10,19 @@ interface DailyArt {
 }
 
 const HIDDEN_KEY = "sp-daily-art-hidden";
+const HIDDEN_DATE_KEY = "sp-daily-art-hidden-date";
+
+function isHiddenToday(): boolean {
+  const today = new Date().toISOString().split("T")[0];
+  return localStorage.getItem(HIDDEN_KEY) === "true" && localStorage.getItem(HIDDEN_DATE_KEY) === today;
+}
 
 export function DailyArtCard() {
   const [art, setArt] = useState<DailyArt | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [hidden, setHidden] = useState(() => localStorage.getItem(HIDDEN_KEY) === "true");
+  const [hidden, setHidden] = useState(() => isHiddenToday());
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -45,13 +51,16 @@ export function DailyArtCard() {
   }, []);
 
   const hide = () => {
+    const today = new Date().toISOString().split("T")[0];
     setHidden(true);
     localStorage.setItem(HIDDEN_KEY, "true");
+    localStorage.setItem(HIDDEN_DATE_KEY, today);
   };
 
   const show = () => {
     setHidden(false);
     localStorage.removeItem(HIDDEN_KEY);
+    localStorage.removeItem(HIDDEN_DATE_KEY);
   };
 
   if (!loading && (!art || !art.imageUrl)) return null;

@@ -38,7 +38,8 @@ export default function GuidancePage() {
   const [journeyLoading, setJourneyLoading] = useState(true);
 
   const [videos, setVideos] = useState<VideoResult[]>([]);
-  const [videosLoading, setVideosLoading] = useState(true);
+  const [videosLoading, setVideosLoading] = useState(false);
+  const [videosFetched, setVideosFetched] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -93,7 +94,13 @@ export default function GuidancePage() {
       })
       .catch(() => setJourneyLoading(false));
 
-    // Fetch relevant sermon/video recommendations in the background
+  }, []);
+
+  // Fetch sermon videos once the pastoral response finishes streaming
+  useEffect(() => {
+    if (!responseComplete || videosFetched || !situation.trim()) return;
+    setVideosFetched(true);
+    setVideosLoading(true);
     fetch("/api/guidance/videos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -105,7 +112,7 @@ export default function GuidancePage() {
         setVideosLoading(false);
       })
       .catch(() => setVideosLoading(false));
-  }, []);
+  }, [responseComplete]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -324,9 +331,10 @@ export default function GuidancePage() {
           <AnimatePresence>
             {responseComplete && (videosLoading || videos.length > 0) && (
               <motion.div
+                key="videos-section"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={{ duration: 0.4 }}
                 className="mt-8"
               >
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
@@ -378,17 +386,7 @@ export default function GuidancePage() {
           </AnimatePresence>
 
           {/* Share nudge — appears once the response is complete */}
-          <AnimatePresence>
-            {responseComplete && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <ShareInviteCard />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {responseComplete && <ShareInviteCard />}
 
           <div ref={bottomRef} />
         </div>
