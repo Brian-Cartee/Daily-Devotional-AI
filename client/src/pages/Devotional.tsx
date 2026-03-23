@@ -645,18 +645,12 @@ export default function Devotional() {
             >
               {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
               <img
-                src={(showAiArt && verseArtUrl) ? verseArtUrl : getDailyVersePhoto()}
+                src={(showAiArt && verseArtUrl) ? verseArtUrl : "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop"}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{
                   filter: (showAiArt && verseArtUrl) ? "brightness(0.6) saturate(1.1)" : "brightness(0.82) saturate(1.1)",
-                }}
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.includes("photo-1470252649378")) {
-                    target.src = "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop";
-                  }
                 }}
               />
 
