@@ -643,13 +643,13 @@ export default function Devotional() {
                 minHeight: verse.text.length > 200 ? "500px" : verse.text.length > 100 ? "460px" : "420px",
               }}
             >
-              {/* Photo layer — separate so we can filter it without affecting text */}
-              <div
-                className="absolute inset-0 transition-all duration-1000"
+              {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
+              <img
+                src={(showAiArt && verseArtUrl) ? verseArtUrl : getDailyVersePhoto()}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover transition-all duration-1000"
                 style={{
-                  backgroundImage: `url(${(showAiArt && verseArtUrl) ? verseArtUrl : getDailyVersePhoto()})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
                   filter: (showAiArt && verseArtUrl) ? "brightness(0.55) saturate(1.2)" : "brightness(0.50) saturate(1.3)",
                 }}
               />
