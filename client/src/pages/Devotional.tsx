@@ -652,6 +652,12 @@ export default function Devotional() {
                 style={{
                   filter: (showAiArt && verseArtUrl) ? "brightness(0.55) saturate(1.2)" : "brightness(0.65) saturate(1.2)",
                 }}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.includes("photo-1470252649378")) {
+                    target.src = "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop";
+                  }
+                }}
               />
 
               {/* Consistent dark overlay — lighter so the dawn photo's beauty shows */}
