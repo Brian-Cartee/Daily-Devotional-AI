@@ -101,6 +101,18 @@ export function getDailyVersePhoto(): string {
   return pool[dayOfYear % pool.length];
 }
 
+// Returns a different photo from the same dramatic pool for the page hero banner
+// offset by 7 so it never duplicates the verse card photo
+export function getDevotionalHeroPhoto(): string {
+  const daysWithApp: number = getRelationshipAge();
+  const pool = daysWithApp >= 90
+    ? [...PRIMARY_HERO_POOL, ...EXTENDED_HERO_POOL]
+    : PRIMARY_HERO_POOL;
+  const startOfYear = new Date(new Date().getFullYear(), 0, 0).getTime();
+  const dayOfYear = Math.floor((Date.now() - startOfYear) / 86_400_000);
+  return pool[(dayOfYear + 7) % pool.length];
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

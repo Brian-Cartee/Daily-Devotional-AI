@@ -19,7 +19,7 @@ import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getUserName } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
-import { getHeroImage } from "@/lib/heroImage";
+import { getDevotionalHeroPhoto } from "@/lib/shareImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { Link } from "wouter";
@@ -519,7 +519,7 @@ export default function Devotional() {
       {/* Hero */}
       <div className="relative h-[40vh] min-h-[260px] max-h-[400px] overflow-hidden pt-14">
         <img
-          src={getHeroImage("devotional")}
+          src={getDevotionalHeroPhoto()}
           alt="Morning devotional"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
