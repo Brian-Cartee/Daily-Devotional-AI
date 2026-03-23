@@ -860,20 +860,20 @@ export default function LandingHome() {
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
 
           {/* Links */}
-          <div className="flex flex-col items-center gap-2.5 text-sm text-muted-foreground">
+          <div className="flex flex-col items-center gap-2.5 text-sm text-foreground/70">
             <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5">
               <Link href="/pricing" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-pricing-footer">
                 Plans & Pricing
               </Link>
-              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <span aria-hidden="true" className="text-foreground/25">·</span>
               <Link href="/about" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-about-footer">
                 About
               </Link>
-              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <span aria-hidden="true" className="text-foreground/25">·</span>
               <Link href="/privacy" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-privacy-footer">
                 Privacy Policy
               </Link>
-              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <span aria-hidden="true" className="text-foreground/25">·</span>
               <Link href="/terms" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-terms-footer">
                 Terms
               </Link>
@@ -882,7 +882,7 @@ export default function LandingHome() {
               <a href="mailto:support@shepherdspathai.com" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-support-footer">
                 support@shepherdspathai.com
               </a>
-              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <span aria-hidden="true" className="text-foreground/25">·</span>
               <button
                 onClick={handleShareApp}
                 data-testid="btn-share-app-footer"
@@ -896,7 +896,7 @@ export default function LandingHome() {
             </div>
           </div>
 
-          <p className="text-[13px] text-muted-foreground/60 text-center mt-4">
+          <p className="text-[13px] text-foreground/50 text-center mt-4">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
           </p>
         </motion.div>
