@@ -565,7 +565,7 @@ export default function LandingHome() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-2"
+          className="mt-10"
         >
           {/* Section header */}
           <div className="flex flex-col items-center gap-2 mb-5 px-0.5">
