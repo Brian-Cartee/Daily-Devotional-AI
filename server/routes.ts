@@ -433,7 +433,10 @@ I'm here whenever you're ready to continue your walk.`;
         if (content) res.write(content);
       }
     } catch (err: any) {
-      if (err.name === "AbortError" || controller.signal.aborted) return;
+      if (err.name === "AbortError" || controller.signal.aborted) {
+        if (!res.writableEnded) res.end();
+        return;
+      }
       throw err;
     }
     if (!res.writableEnded) res.end();
