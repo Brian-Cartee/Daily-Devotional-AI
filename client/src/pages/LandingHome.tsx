@@ -799,7 +799,7 @@ export default function LandingHome() {
             <img
               src={logoWhite}
               alt="Shepherd's Path"
-              className="w-14 h-14 object-contain opacity-80"
+              className="w-20 h-20 object-contain opacity-80"
             />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Available Now</p>
