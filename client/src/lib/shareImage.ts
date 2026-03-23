@@ -1,3 +1,5 @@
+import { getRelationshipAge } from "./relationship";
+
 // Curated pool of soul-connecting photos — nature, light, babies, pets, beauty
 const PHOTO_POOL = [
   // Golden sunrise / dawn light
@@ -38,41 +40,65 @@ const PHOTO_POOL = [
   "https://images.unsplash.com/photo-1490750967868-88df5691cc35?w=1080&q=85&auto=format&fit=crop",
 ];
 
-// ── Hero pool — dramatic landscapes ONLY for the verse card background ───────
-// These are moody, atmospheric, high-contrast shots that look cinematic at
-// full-bleed. No babies, pets, or light florals — those belong in PHOTO_POOL
-// for the 1080×1080 shareable cards where they work beautifully at scale.
-const HERO_PHOTO_POOL = [
-  // Golden dawn light over mountains
+// ── Hero pool — PRIMARY (days 0–89) ──────────────────────────────────────────
+// Only the most dramatic, cinematic shots. Every photo must feel like a
+// "wow" moment — rich light, high contrast, deeply atmospheric. These are
+// what new and early users see every single day. No soft, plain, or muted
+// landscapes — those are reserved for the extended pool below.
+const PRIMARY_HERO_POOL = [
+  // Golden dawn light breaking over mountain horizon
   "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop",
-  // Cathedral forest — God-rays through trees
+  // Cathedral forest — God-rays pouring through ancient trees
   "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=85&auto=format&fit=crop",
-  // Still mountain lake at dusk
+  // Still mountain lake mirror reflection at dusk — electric sky
   "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1080&q=85&auto=format&fit=crop",
-  // Ocean sunset — deep amber and violet
+  // Ocean sunset — deep amber, rose, and violet
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&q=85&auto=format&fit=crop",
-  // Misty valley morning
-  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=85&auto=format&fit=crop",
-  // Autumn forest path — golden canopy
+  // Autumn forest path — blazing golden canopy overhead
   "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1080&q=85&auto=format&fit=crop",
-  // Starry night sky — Milky Way arc
+  // Milky Way arc over a dark mountain valley
   "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&q=85&auto=format&fit=crop",
-  // Sweeping green hills at golden hour
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=85&auto=format&fit=crop",
-  // Lighthouse on dramatic cliffs
+  // Lighthouse on dramatic sea cliffs with crashing surf
   "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1080&q=85&auto=format&fit=crop",
-  // Warm sunrise over a still meadow
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1080&q=85&auto=format&fit=crop",
-  // Twilight warmth — amber last light
+  // Twilight warmth — amber last light before dark
   "https://images.unsplash.com/photo-1418050327236-8de8ba25f5a1?w=1080&q=85&auto=format&fit=crop",
-  // Sun breaking through mountain peaks
+  // Sun breaking through mountain peaks in shafts of light
   "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1080&q=85&auto=format&fit=crop",
+  // Dramatic stormy seascape — power of the deep
+  "https://images.unsplash.com/photo-1519922639192-e73293ca430e?w=1080&q=85&auto=format&fit=crop",
+  // Jagged snow-capped mountain peaks — majestic scale
+  "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1080&q=85&auto=format&fit=crop",
+  // Mountain valley at blue-hour twilight — deep indigo sky
+  "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=1080&q=85&auto=format&fit=crop",
+  // Aurora borealis — curtains of green over snow
+  "https://images.unsplash.com/photo-1490718687940-3bc6c8b4a9b7?w=1080&q=85&auto=format&fit=crop",
+  // Powerful waterfall through ancient forest
+  "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=1080&q=85&auto=format&fit=crop",
+  // Forest interior — beams of golden light through tall pines
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1080&q=85&auto=format&fit=crop",
+];
+
+// ── Hero pool — EXTENDED (days 90+) ──────────────────────────────────────────
+// Softer, quieter landscapes — still beautiful, but more restful. Fine for
+// users who've been walking with the app for 3+ months and have deep familiarity
+// with the dramatic primary pool. Added into rotation after 90 days.
+const EXTENDED_HERO_POOL = [
+  // Misty valley morning — peaceful and still
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=85&auto=format&fit=crop",
+  // Sweeping green hills at golden hour — gentle and pastoral
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=85&auto=format&fit=crop",
+  // Warm sunrise over a still meadow — soft and hopeful
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1080&q=85&auto=format&fit=crop",
 ];
 
 export function getDailyVersePhoto(): string {
+  const daysWithApp: number = getRelationshipAge();
+  const pool = daysWithApp >= 90
+    ? [...PRIMARY_HERO_POOL, ...EXTENDED_HERO_POOL]
+    : PRIMARY_HERO_POOL;
   const startOfYear = new Date(new Date().getFullYear(), 0, 0).getTime();
   const dayOfYear = Math.floor((Date.now() - startOfYear) / 86_400_000);
-  return HERO_PHOTO_POOL[dayOfYear % HERO_PHOTO_POOL.length];
+  return pool[dayOfYear % pool.length];
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
