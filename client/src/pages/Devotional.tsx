@@ -638,9 +638,9 @@ export default function Devotional() {
 
             {/* ── Photo hero ─────────────────────────────────── */}
             <div
-              className="relative flex flex-col items-center justify-center px-8 text-center select-none"
+              className="relative flex flex-col items-center justify-center px-8 text-center select-none bg-stone-900"
               style={{
-                minHeight: verse.text.length > 200 ? "500px" : verse.text.length > 100 ? "460px" : "420px",
+                height: verse.text.length > 200 ? "500px" : verse.text.length > 100 ? "460px" : "420px",
               }}
             >
               {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
@@ -648,7 +648,7 @@ export default function Devotional() {
                 src={(showAiArt && verseArtUrl) ? verseArtUrl : getDailyVersePhoto()}
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover transition-all duration-1000"
+                className="absolute inset-0 w-full h-full object-cover"
                 style={{
                   filter: (showAiArt && verseArtUrl) ? "brightness(0.55) saturate(1.2)" : "brightness(0.65) saturate(1.2)",
                 }}
@@ -691,11 +691,12 @@ export default function Devotional() {
               {/* Verse + reference */}
               <div className="relative z-10 py-14 max-w-lg">
                 <blockquote
-                  className="verse-text text-white text-balance leading-relaxed mb-6"
+                  className="verse-text text-balance leading-relaxed mb-6"
                   style={{
                     fontSize: verse.text.length > 180 ? "1.75rem" : verse.text.length > 100 ? "2.1rem" : "2.6rem",
                     textShadow: "0 2px 22px rgba(0,0,0,0.80)",
                     fontStyle: "italic",
+                    color: "white",
                   }}
                 >
                   "{verse.text}"
