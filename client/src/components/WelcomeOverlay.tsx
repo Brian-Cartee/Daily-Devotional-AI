@@ -41,7 +41,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-5"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-5"
       style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
     >
       <motion.div
@@ -49,7 +49,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col"
+        className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden"
         style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
         {/* Header band */}
