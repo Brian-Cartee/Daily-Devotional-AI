@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 
-const WELCOME_SCRIPT = `Welcome. And we mean that — genuinely, from the bottom of our hearts — welcome.
+const WELCOME_SCRIPT = `Hey. I'm glad you're here.
 
-The fact that you are here right now means something. You chose this. And wherever you are in your faith — whether it feels solid or certain, whether it's been years or it's been a while — you are in exactly the right place.
+I don't know what today looks like for you. Maybe something's been sitting heavy and you finally decided to do something about it. Maybe you're just curious. Either way — you showed up. That matters more than you think.
 
-Maybe you're here because life is hard right now. A relationship. A loss. A question you can't shake. A season that doesn't make sense yet. You don't have to explain it perfectly.
+Here's what we do. You tell us what's actually going on. Your words. However they come out. And we find you scripture that speaks to exactly that — not a generic list, not a canned answer. Something that meets you where you are.
 
-Start by telling us what you're carrying. We'll find scripture for it — and walk through it with you.
+Then we walk through it with you.
 
-We are not here to entertain you. We are here to walk with you.
+I've seen this help people in some really hard places. Marriages hanging by a thread. Jobs lost. Grief that doesn't have a name yet. Faith that's getting harder to hold onto. This isn't for people who have it figured out.
 
-Let us begin.`;
+If you're carrying something right now — let's start there. Just tell us what it is.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
