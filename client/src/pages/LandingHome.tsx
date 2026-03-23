@@ -839,7 +839,7 @@ export default function LandingHome() {
           {/* Brand pills */}
           <div className="flex items-center justify-center flex-wrap gap-2 mb-4">
             {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
-              <span key={tag} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-primary/20 bg-primary/6 text-primary/70">
+              <span key={tag} className="text-[13px] font-semibold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/6 text-primary/80">
                 {tag}
               </span>
             ))}
@@ -849,8 +849,8 @@ export default function LandingHome() {
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
 
           {/* Links */}
-          <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1">
+          <div className="flex flex-col items-center gap-2.5 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5">
               <Link href="/pricing" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-pricing-footer">
                 Plans & Pricing
               </Link>
@@ -875,17 +875,17 @@ export default function LandingHome() {
               <button
                 onClick={handleShareApp}
                 data-testid="btn-share-app-footer"
-                className="whitespace-nowrap flex items-center gap-1 hover:text-foreground transition-colors"
+                className="whitespace-nowrap flex items-center gap-1.5 hover:text-foreground transition-colors"
               >
                 {shared
-                  ? <><Check className="w-3 h-3 text-green-500" /> Copied!</>
-                  : <><Share2 className="w-3 h-3" /> Share App</>
+                  ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copied!</>
+                  : <><Share2 className="w-3.5 h-3.5" /> Share App</>
                 }
               </button>
             </div>
           </div>
 
-          <p className="text-[11px] text-muted-foreground/45 text-center mt-4">
+          <p className="text-[13px] text-muted-foreground/60 text-center mt-4">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
           </p>
         </motion.div>
