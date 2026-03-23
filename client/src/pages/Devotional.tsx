@@ -74,6 +74,10 @@ export default function Devotional() {
   const [emailInput, setEmailInput] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [nudgeName, setNudgeName] = useState(() => getUserName() ?? "");
+  const [nudgeEmail, setNudgeEmail] = useState("");
+  const [nudgeLoading, setNudgeLoading] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(() => !!localStorage.getItem("sp_nudge_dismissed"));
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const [showTipPrompt, setShowTipPrompt] = useState(false);
@@ -349,6 +353,7 @@ export default function Devotional() {
       });
       if (res.ok || res.status === 409) {
         setEmailSubmitted(true);
+        localStorage.setItem("sp_nudge_dismissed", "1");
       } else {
         toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
       }
@@ -356,6 +361,35 @@ export default function Devotional() {
       toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
     }
     setEmailLoading(false);
+  };
+
+  const handleNudgeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nudgeEmail.trim()) return;
+    setNudgeLoading(true);
+    try {
+      const body: { email: string; name?: string } = { email: nudgeEmail.trim() };
+      if (nudgeName.trim()) body.name = nudgeName.trim();
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok || res.status === 409) {
+        setEmailSubmitted(true);
+        localStorage.setItem("sp_nudge_dismissed", "1");
+      } else {
+        toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+      }
+    } catch {
+      toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+    }
+    setNudgeLoading(false);
+  };
+
+  const handleNudgeDismiss = () => {
+    localStorage.setItem("sp_nudge_dismissed", "1");
+    setNudgeDismissed(true);
   };
 
   const handleShare = async () => {
@@ -852,6 +886,70 @@ export default function Devotional() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* ── Daily Email Nudge — appears after reflection, before prayer ── */}
+          <AnimatePresence>
+            {reflectionContent && !emailSubmitted && !nudgeDismissed && (
+              <motion.div
+                key="email-nudge"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ delay: 1.8, duration: 0.7, ease: "easeOut" }}
+                className="rounded-2xl overflow-hidden shadow-sm"
+                style={{ background: "linear-gradient(135deg, hsl(38 60% 96%) 0%, hsl(258 30% 96%) 100%)", border: "1px solid hsl(38 40% 85% / 0.8)" }}
+                data-testid="email-nudge-card"
+              >
+                <div className="px-6 pt-5 pb-2">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Daily Devotional</p>
+                  <p className="text-[17px] font-bold text-foreground leading-snug">Want us to bring this to you every morning?</p>
+                  <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+                    Scripture and a personal reflection — delivered to your inbox at 7 AM. Free, always.
+                  </p>
+                </div>
+
+                <form onSubmit={handleNudgeSubmit} className="px-6 pb-2 pt-4 space-y-2.5">
+                  <input
+                    type="text"
+                    value={nudgeName}
+                    onChange={e => setNudgeName(e.target.value)}
+                    placeholder="Your first name (optional)"
+                    data-testid="input-nudge-name"
+                    className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={nudgeEmail}
+                      onChange={e => setNudgeEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      required
+                      data-testid="input-nudge-email"
+                      className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={nudgeLoading || !nudgeEmail.trim()}
+                      data-testid="button-nudge-subscribe"
+                      className="rounded-xl px-4 font-bold shrink-0 text-sm"
+                    >
+                      {nudgeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Yes, send it"}
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="px-6 pb-4 pt-1 text-center">
+                  <button
+                    onClick={handleNudgeDismiss}
+                    data-testid="button-nudge-dismiss"
+                    className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* STEP 3: PRAYER */}
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
