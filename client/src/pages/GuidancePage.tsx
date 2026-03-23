@@ -23,6 +23,12 @@ interface Message {
   content: string;
 }
 
+function decodeHtml(html: string): string {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+}
+
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -366,9 +372,10 @@ export default function GuidancePage() {
                 transition={{ duration: 0.4 }}
                 className="mt-8"
               >
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-                  Watch &amp; Listen
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                  Teaching for Your Season
                 </p>
+                <p className="text-[12px] text-muted-foreground/60 mb-3">Curated sermons and teachings matched to what you shared</p>
 
                 {videosLoading ? (
                   <div className="rounded-2xl bg-card border border-border p-4">
@@ -402,9 +409,9 @@ export default function GuidancePage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                            {video.title}
+                            {decodeHtml(video.title)}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1 truncate">{video.channelTitle}</p>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">{decodeHtml(video.channelTitle)}</p>
                         </div>
                       </a>
                     ))}
