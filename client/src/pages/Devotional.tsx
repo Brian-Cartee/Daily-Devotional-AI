@@ -650,9 +650,12 @@ export default function Devotional() {
                   backgroundImage: `url(${(showAiArt && verseArtUrl) ? verseArtUrl : getDailyVersePhoto()})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  filter: (showAiArt && verseArtUrl) ? "brightness(0.78) saturate(1.1)" : "brightness(0.72) saturate(1.2)",
+                  filter: (showAiArt && verseArtUrl) ? "brightness(0.55) saturate(1.2)" : "brightness(0.50) saturate(1.3)",
                 }}
               />
+
+              {/* Consistent dark overlay so the full card is rich and the verse pops */}
+              <div className="absolute inset-0 bg-black/30" />
 
               {/* Loading shimmer while generating AI art */}
               {verseArtMutation.isPending && (
@@ -662,10 +665,10 @@ export default function Devotional() {
                 </div>
               )}
 
-              {/* 3-zone veil — additional darkening at top/bottom for pill + reference */}
+              {/* Edge veil — deeper darkening at top/bottom for pill + reference legibility */}
               <div
                 className="absolute inset-0"
-                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.0) 30%, rgba(0,0,0,0.0) 70%, rgba(0,0,0,0.60) 100%)" }}
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.10) 25%, rgba(0,0,0,0.10) 75%, rgba(0,0,0,0.55) 100%)" }}
               />
 
               {/* Ghost decorative quote mark */}
