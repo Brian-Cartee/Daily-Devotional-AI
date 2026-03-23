@@ -411,11 +411,7 @@ I'm here whenever you're ready to continue your walk.`;
     res: import("express").Response,
     options: { model?: string; maxTokens?: number; temperature?: number; req?: import("express").Request } = {}
   ) {
-    const { model = "gpt-4o-mini", maxTokens, temperature, req: request } = options;
-    const controller = new AbortController();
-    if (request) {
-      request.on("close", () => controller.abort());
-    }
+    const { model = "gpt-4o-mini", maxTokens, temperature } = options;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("X-Accel-Buffering", "no");
@@ -426,17 +422,12 @@ I'm here whenever you're ready to continue your walk.`;
         stream: true,
         ...(maxTokens ? { max_tokens: maxTokens } : {}),
         ...(temperature !== undefined ? { temperature } : {}),
-      }, { signal: controller.signal });
+      });
       for await (const chunk of stream) {
-        if (controller.signal.aborted) break;
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) res.write(content);
       }
     } catch (err: any) {
-      if (err.name === "AbortError" || controller.signal.aborted) {
-        if (!res.writableEnded) res.end();
-        return;
-      }
       throw err;
     }
     if (!res.writableEnded) res.end();
