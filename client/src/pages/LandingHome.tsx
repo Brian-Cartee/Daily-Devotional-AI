@@ -412,8 +412,8 @@ export default function LandingHome() {
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-        {/* Brand mark — top right of hero, clean watermark only */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20">
+        {/* Brand mark + Share — top right of hero */}
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col items-end gap-2">
           <img
             src={logoSmall}
             alt=""
@@ -421,6 +421,17 @@ export default function LandingHome() {
             className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain pointer-events-none select-none"
             style={{ opacity: 0.48, filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.5))" }}
           />
+          <button
+            onClick={handleShareApp}
+            data-testid="btn-share-hero"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white/85 text-[11px] font-semibold hover:bg-black/45 active:scale-95 transition-all"
+            style={{ letterSpacing: "0.04em" }}
+          >
+            {shared
+              ? <><Check className="w-3 h-3 text-green-400" /> Copied!</>
+              : <><Share2 className="w-3 h-3" /> Share</>
+            }
+          </button>
         </div>
 
         {/* Hero text */}

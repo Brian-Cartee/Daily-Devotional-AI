@@ -134,10 +134,10 @@ export function DailyArtCard() {
           {imageLoaded && (
             <div className="absolute top-3 left-4">
               <span
-                className="text-white/75 italic drop-shadow"
-                style={{ fontSize: "11px", letterSpacing: "0.04em" }}
+                className="text-white/90 font-semibold drop-shadow uppercase"
+                style={{ fontSize: "10px", letterSpacing: "0.16em" }}
               >
-                your daily beauty
+                Your Daily Beauty
               </span>
             </div>
           )}
