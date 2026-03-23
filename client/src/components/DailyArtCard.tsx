@@ -21,6 +21,7 @@ export function DailyArtCard() {
   const [art, setArt] = useState<DailyArt | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [hidden, setHidden] = useState(() => isHiddenThisSession());
 
@@ -60,7 +61,7 @@ export function DailyArtCard() {
     sessionStorage.removeItem(SESSION_HIDDEN_KEY);
   };
 
-  if (!loading && (!art || !art.imageUrl)) return null;
+  if (!loading && (!art || !art.imageUrl || imageError)) return null;
 
   if (hidden) {
     return (
@@ -95,18 +96,20 @@ export function DailyArtCard() {
         aria-label="View today's daily art and reflection"
       >
         {/* Full-bleed image */}
-        <div className="relative w-full bg-background" style={{ aspectRatio: "16/7" }}>
+        <div className="relative w-full bg-muted" style={{ aspectRatio: "16/7" }}>
 
-          {/* Loading state */}
+          {/* Loading state — shown while fetching OR while image is downloading */}
           <AnimatePresence>
-            {loading && (
+            {(loading || (art?.imageUrl && !imageLoaded)) && (
               <motion.div
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center bg-muted gap-2 text-muted-foreground"
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 flex items-center justify-center gap-2 text-muted-foreground"
+                style={{ background: "linear-gradient(135deg, hsl(38 28% 88%) 0%, hsl(258 20% 88%) 100%)" }}
               >
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-xs">Generating today&rsquo;s image…</span>
+                <span className="text-xs">{loading ? "Generating today's image…" : "Loading…"}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -117,6 +120,7 @@ export function DailyArtCard() {
               src={art.imageUrl}
               alt="Daily inspirational art"
               onLoad={() => setImageLoaded(true)}
+              onError={() => { setImageLoaded(false); setImageError(true); }}
               initial={{ opacity: 0 }}
               animate={{ opacity: imageLoaded ? 1 : 0 }}
               transition={{ duration: 1 }}
