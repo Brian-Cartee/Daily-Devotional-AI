@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 
-const WELCOME_SCRIPT = `Hey. I'm glad you're here.
+const WELCOME_SCRIPT = `Hey. I'm glad you found this.
 
-I don't know what today looks like for you. Maybe something's been sitting heavy and you finally decided to do something about it. Maybe you're just curious. Either way — you showed up. That matters more than you think.
+I don't know what today's been like for you. But you're here, and I think that means something's going on.
 
-Here's what we do. You tell us what's actually going on. Your words. However they come out. And we find you scripture that speaks to exactly that — not a generic list, not a canned answer. Something that meets you where you are.
+So here's what I want to ask — and I want the real answer, not the cleaned-up version. Not the version you'd give on a Sunday morning. What's actually going on with you right now?
 
-Then we walk through it with you.
+Because that's exactly what this is for. You tell us what's on your heart — your words, however they come out — and we'll find you scripture that speaks to the actual thing you're carrying. Not a verse of the day. Something that addresses what you're really dealing with.
 
-I've seen this help people in some really hard places. Marriages hanging by a thread. Jobs lost. Grief that doesn't have a name yet. Faith that's getting harder to hold onto. This isn't for people who have it figured out.
+I've seen this reach people in some genuinely dark places. Marriages falling apart. Faith that's gotten hard to hold onto. Grief that doesn't have a name yet. You don't need the right words.
 
-If you're carrying something right now — let's start there. Just tell us what it is.`;
+Just start somewhere. We'll go from there.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
