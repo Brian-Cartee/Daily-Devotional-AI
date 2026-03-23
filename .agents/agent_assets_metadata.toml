@@ -276,3 +276,9 @@ id = "K2q2sEZC9SW6kW8W76o4M"
 uri = "file://client/public/androidxr-screenshots/xr-journal.png"
 type = "image"
 title = "Android XR 6 — Prayer Journal"
+
+[[outputs]]
+id = "x9Egew0l0wVBEhmYggyxV"
+uri = "file://attached_assets/generated_images/shepherds_path_hero_bg.png"
+type = "image"
+title = "Shepherd's Path — Hero Background (Hill & Road)"
