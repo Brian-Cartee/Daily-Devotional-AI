@@ -650,7 +650,7 @@ export default function Devotional() {
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{
-                  filter: (showAiArt && verseArtUrl) ? "brightness(0.55) saturate(1.2)" : "brightness(0.65) saturate(1.2)",
+                  filter: (showAiArt && verseArtUrl) ? "brightness(0.6) saturate(1.1)" : "brightness(0.82) saturate(1.1)",
                 }}
                 onError={(e) => {
                   const target = e.currentTarget;
@@ -660,8 +660,8 @@ export default function Devotional() {
                 }}
               />
 
-              {/* Consistent dark overlay — lighter so the dawn photo's beauty shows */}
-              <div className="absolute inset-0 bg-black/20" />
+              {/* Gradient overlay — bottom darkened for text legibility, top stays bright */}
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.35) 100%)" }} />
 
               {/* Loading shimmer while generating AI art */}
               {verseArtMutation.isPending && (
