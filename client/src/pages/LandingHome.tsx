@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -556,17 +556,31 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-2"
         >
-          <div className="flex items-center gap-2 mb-3 px-0.5">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">What people are saying</span>
+          {/* Section header */}
+          <div className="flex flex-col items-center gap-2 mb-5 px-0.5">
+            <div className="flex items-center gap-3 w-full">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
+              <div className="flex items-center gap-1.5 shrink-0">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
+            </div>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-foreground/50">What people are saying</p>
           </div>
 
           {/* Featured spiritual guidance testimonial */}
           <div className="relative rounded-2xl overflow-hidden mb-3 border border-primary/30 bg-gradient-to-br from-primary/10 via-violet-500/8 to-amber-500/5">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40" />
             <div className="px-5 py-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center justify-between gap-2 mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary">Spiritual Guidance</span>
-                <span className="text-[10px] text-muted-foreground/50 font-medium">Featured</span>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
               </div>
               <p className="text-[15px] text-foreground/90 leading-relaxed italic font-medium mb-4">
                 &ldquo;I was in the middle of the hardest season of my life and didn't know where to turn. I typed out what I was feeling and within seconds I had scripture that felt like it was written exactly for my situation. It wasn't generic — it was pastoral. I cried. I'm not embarrassed to say that.&rdquo;
@@ -587,8 +601,13 @@ export default function LandingHome() {
           <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/30 bg-gradient-to-br from-amber-500/10 via-primary/6 to-violet-500/5 backdrop-blur-sm">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/50 via-primary/40 to-violet-400/30" />
             <div className="px-5 py-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center justify-between gap-2 mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary">Spiritual Guidance</span>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
               </div>
               <p className="text-[15px] text-foreground/90 leading-relaxed italic font-medium mb-4">
                 &ldquo;I typed three sentences about my marriage falling apart. What came back wasn't a list of verses or a church pamphlet — it sat with me in the pain first. It was honest and real and it felt like it was written for me specifically. No other app has ever done that.&rdquo;
@@ -611,22 +630,42 @@ export default function LandingHome() {
                 quote: "I open Shepherd's Path before I even make coffee. The morning devotional sets a completely different tone for my day.",
                 name: "Eric",
                 detail: "Daily devotional",
+                accentFrom: "from-sky-400/50",
+                accentTo: "to-primary/30",
+                borderColor: "border-sky-400/25",
+                bgClass: "bg-gradient-to-br from-sky-500/8 via-primary/5 to-violet-500/4",
+                avatarBg: "bg-sky-500/15",
+                avatarColor: "text-sky-700 dark:text-sky-400",
               },
               {
                 quote: "I've been a Christian for 30 years, but these Bible journeys are showing me things I never noticed. The context is remarkable.",
                 name: "Cindy",
                 detail: "Journey: Life of Jesus",
+                accentFrom: "from-violet-400/50",
+                accentTo: "to-amber-400/30",
+                borderColor: "border-violet-400/25",
+                bgClass: "bg-gradient-to-br from-violet-500/8 via-primary/5 to-amber-500/4",
+                avatarBg: "bg-violet-500/15",
+                avatarColor: "text-violet-700 dark:text-violet-400",
               },
-            ].map(({ quote, name, detail }) => (
+            ].map(({ quote, name, detail, accentFrom, accentTo, borderColor, bgClass, avatarBg, avatarColor }) => (
               <div
                 key={name}
-                className="rounded-2xl border border-white/40 bg-white/30 backdrop-blur-sm p-4 flex flex-col gap-3"
+                className={`relative rounded-2xl border ${borderColor} ${bgClass} backdrop-blur-sm p-4 flex flex-col gap-3 overflow-hidden`}
               >
-                <p className="text-[13px] text-muted-foreground leading-relaxed flex-1 italic">
+                <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${accentFrom} ${accentTo}`} />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[13px] text-foreground/80 leading-relaxed flex-1 italic">
                   &ldquo;{quote}&rdquo;
                 </p>
-                <div className="flex items-center gap-2.5 pt-1 border-t border-border/40">
-                  <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-[11px] font-bold text-primary">
+                <div className="flex items-center gap-2.5 pt-1 border-t border-border/30">
+                  <div className={`w-7 h-7 rounded-full ${avatarBg} flex items-center justify-center text-[11px] font-bold ${avatarColor}`}>
                     {name[0]}
                   </div>
                   <div>
@@ -736,48 +775,107 @@ export default function LandingHome() {
           </AnimatePresence>
         </motion.div>
 
+        {/* Closing CTA band */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.55 }}
+          className="relative mt-6 rounded-2xl overflow-hidden border border-primary/25 bg-gradient-to-br from-primary/12 via-violet-500/8 to-amber-500/6 backdrop-blur-sm"
+        >
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/50 via-violet-400/40 to-amber-400/35" />
+          <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+          <div className="px-5 py-6 flex flex-col items-center text-center gap-4">
+            <img
+              src={logoWhite}
+              alt="Shepherd's Path"
+              className="w-14 h-14 object-contain opacity-80"
+            />
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Available Now</p>
+              <p className="text-[20px] font-bold text-foreground leading-tight">Start your journey today.</p>
+              <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+                A wise pastor, available every morning — grounded in Scripture, shaped for your life.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <a
+                href="https://apps.apple.com/us/app/shepherds-path/id6744949609"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="btn-appstore-cta"
+                className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl bg-foreground text-background font-semibold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+                App Store
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="btn-googleplay-cta"
+                className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[14px] hover:bg-primary/15 active:scale-[0.98] transition-all"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
+                  <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
+                </svg>
+                Google Play
+              </a>
+            </div>
+            <p className="text-[11px] text-muted-foreground/50 italic">
+              "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Footer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="text-center mt-8 space-y-2"
+          className="mt-8 pb-2"
         >
-          <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            <span className="whitespace-nowrap">Faith-rooted</span>
-            {" · "}
-            <span className="whitespace-nowrap">Scripture-grounded</span>
-            {" · "}
-            <span className="whitespace-nowrap">Built for daily life</span>
-          </p>
-          <div className="flex flex-col items-center gap-1.5 text-xs text-muted-foreground">
-            {/* Row 1 */}
-            <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1">
-              <Link href="/pricing" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-pricing-footer">
+          {/* Brand pills */}
+          <div className="flex items-center justify-center flex-wrap gap-2 mb-4">
+            {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
+              <span key={tag} className="text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-primary/20 bg-primary/6 text-primary/70">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
+
+          {/* Links */}
+          <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1">
+              <Link href="/pricing" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-pricing-footer">
                 Plans & Pricing
               </Link>
-              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
-              <Link href="/about" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-about-footer">
-                About the App
+              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <Link href="/about" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-about-footer">
+                About
               </Link>
-              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
-              <Link href="/privacy" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-privacy-footer">
+              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <Link href="/privacy" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-privacy-footer">
                 Privacy Policy
               </Link>
-              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
-              <Link href="/terms" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-terms-footer">
+              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
+              <Link href="/terms" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-terms-footer">
                 Terms
               </Link>
             </div>
-            {/* Row 2 */}
-            <div className="flex items-center justify-center gap-x-3">
-              <a href="mailto:support@shepherdspathai.com" className="whitespace-nowrap hover:text-foreground transition-colors underline underline-offset-2" data-testid="link-support-footer">
+            <div className="flex items-center justify-center gap-x-4">
+              <a href="mailto:support@shepherdspathai.com" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-support-footer">
                 support@shepherdspathai.com
               </a>
-              <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+              <span aria-hidden="true" className="text-muted-foreground/30">·</span>
               <button
                 onClick={handleShareApp}
                 data-testid="btn-share-app-footer"
-                className="whitespace-nowrap flex items-center gap-1 hover:text-foreground transition-colors underline underline-offset-2"
+                className="whitespace-nowrap flex items-center gap-1 hover:text-foreground transition-colors"
               >
                 {shared
                   ? <><Check className="w-3 h-3 text-green-500" /> Copied!</>
@@ -786,10 +884,8 @@ export default function LandingHome() {
               </button>
             </div>
           </div>
-          <p className="text-[12px] text-muted-foreground/60 italic mt-2">
-            "Open your Bible. We'll open the conversation."
-          </p>
-          <p className="text-[11px] text-muted-foreground/50 mt-1">
+
+          <p className="text-[11px] text-muted-foreground/45 text-center mt-4">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
           </p>
         </motion.div>
