@@ -847,10 +847,10 @@ export default function LandingHome() {
           transition={{ delay: 0.7 }}
           className="mt-8 pb-2"
         >
-          {/* Brand pills */}
-          <div className="flex items-center justify-center flex-wrap gap-2 mb-4">
+          {/* Brand pills — smaller so 2 fit per row on mobile */}
+          <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-2 mb-4">
             {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
-              <span key={tag} className="text-[13px] font-semibold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/6 text-primary/80">
+              <span key={tag} className="text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border border-primary/20 bg-primary/6 text-primary/80">
                 {tag}
               </span>
             ))}
@@ -859,41 +859,37 @@ export default function LandingHome() {
           {/* Divider */}
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
 
-          {/* Links */}
-          <div className="flex flex-col items-center gap-2.5 text-sm text-foreground/70">
-            <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5">
-              <Link href="/pricing" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-pricing-footer">
-                Plans & Pricing
-              </Link>
-              <span aria-hidden="true" className="text-foreground/25">·</span>
-              <Link href="/about" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-about-footer">
-                About
-              </Link>
-              <span aria-hidden="true" className="text-foreground/25">·</span>
-              <Link href="/privacy" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-privacy-footer">
-                Privacy Policy
-              </Link>
-              <span aria-hidden="true" className="text-foreground/25">·</span>
-              <Link href="/terms" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-terms-footer">
-                Terms
-              </Link>
-            </div>
-            <div className="flex items-center justify-center gap-x-4">
-              <a href="mailto:support@shepherdspathai.com" className="whitespace-nowrap hover:text-foreground transition-colors" data-testid="link-support-footer">
-                support@shepherdspathai.com
-              </a>
-              <span aria-hidden="true" className="text-foreground/25">·</span>
-              <button
-                onClick={handleShareApp}
-                data-testid="btn-share-app-footer"
-                className="whitespace-nowrap flex items-center gap-1.5 hover:text-foreground transition-colors"
-              >
-                {shared
-                  ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copied!</>
-                  : <><Share2 className="w-3.5 h-3.5" /> Share App</>
-                }
-              </button>
-            </div>
+          {/* Links — 2×2 grid, no orphan separators */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-foreground/70 text-center mb-2.5 px-4">
+            <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="link-pricing-footer">
+              Plans & Pricing
+            </Link>
+            <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about-footer">
+              About
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy-footer">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
+              Terms
+            </Link>
+          </div>
+
+          {/* Email + Share — stacked to avoid overflow */}
+          <div className="flex flex-col items-center gap-1.5 text-sm text-foreground/70">
+            <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
+              support@shepherdspathai.com
+            </a>
+            <button
+              onClick={handleShareApp}
+              data-testid="btn-share-app-footer"
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+            >
+              {shared
+                ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copied!</>
+                : <><Share2 className="w-3.5 h-3.5" /> Share App</>
+              }
+            </button>
           </div>
 
           <p className="text-[13px] text-foreground/50 text-center mt-4">
