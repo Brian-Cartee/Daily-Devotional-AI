@@ -60,7 +60,11 @@ export default function GuidancePage() {
         setResponseComplete(true);
         return;
       }
-      if (!res.ok || !res.body) return;
+      if (!res.ok || !res.body) {
+        setStreamingText("Something went wrong reaching our servers. Please go back and try again, or check your connection.");
+        setResponseComplete(true);
+        return;
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
@@ -71,11 +75,16 @@ export default function GuidancePage() {
         accumulated += chunk;
         setStreamingText(accumulated);
       }
+      if (!accumulated.trim()) {
+        setStreamingText("We weren't able to generate a response right now. Please try again in a moment.");
+        setResponseComplete(true);
+        return;
+      }
       setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
       setStreamingText("");
       setResponseComplete(true);
     } catch {
-      setStreamingText("Something went wrong. Please try again.");
+      setStreamingText("Something went wrong. Please check your connection and try again.");
       setResponseComplete(true);
     }
   };
@@ -368,7 +377,7 @@ export default function GuidancePage() {
                       <span className="text-sm">Finding relevant sermons…</span>
                     </div>
                   </div>
-                ) : (
+                ) : videos.length === 0 ? null : (
                   <div className="space-y-3">
                     {videos.map((video) => (
                       <a
