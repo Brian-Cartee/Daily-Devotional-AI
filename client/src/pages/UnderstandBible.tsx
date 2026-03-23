@@ -529,7 +529,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
   );
 }
 
-function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => void }) {
+function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journey: Journey; onBack: () => void; backLabel?: string }) {
   const themes = Array.from(new Set(journey.entries.map((e) => e.theme)));
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
@@ -551,7 +551,7 @@ function JourneyDetail({ journey, onBack }: { journey: Journey; onBack: () => vo
               data-testid="btn-journey-back"
               className="mt-4 self-start flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> All Journeys
+              <ArrowLeft className="w-4 h-4" /> {backLabel}
             </button>
             <div className="flex-1 flex flex-col justify-end">
               {journey.badgeText && (
@@ -643,6 +643,7 @@ export default function UnderstandBible() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const journeyId = params.get("j");
+  const situation = params.get("situation") ?? "";
   const selectedJourney = journeyId ? (ALL_JOURNEYS.find(j => j.id === journeyId) ?? null) : null;
   const [lifeSeasonJourney, setLifeSeasonJourney] = useState<Journey | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
@@ -657,7 +658,17 @@ export default function UnderstandBible() {
 
   const handleSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); navigate(`/understand?j=${journey.id}`); };
   const handleLifeSeasonSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); setLifeSeasonJourney(journey); };
-  const handleBack = () => { window.scrollTo({ top: 0, behavior: "instant" }); if (lifeSeasonJourney) { setLifeSeasonJourney(null); } else { navigate("/understand"); } };
+  const handleBack = () => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    if (lifeSeasonJourney && situation) {
+      navigate(`/guidance?situation=${encodeURIComponent(situation)}`);
+    } else if (lifeSeasonJourney) {
+      setLifeSeasonJourney(null);
+    } else {
+      navigate("/understand");
+    }
+  };
+  const backLabel = lifeSeasonJourney && situation ? "Your Teachings" : "All Journeys";
 
   return (
     <>
@@ -665,7 +676,7 @@ export default function UnderstandBible() {
       <AnimatePresence mode="wait">
         {activeJourney ? (
           <motion.div key={activeJourney.id} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
-            <JourneyDetail journey={activeJourney} onBack={handleBack} />
+            <JourneyDetail journey={activeJourney} onBack={handleBack} backLabel={backLabel} />
           </motion.div>
         ) : (
           <motion.div key="hub" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.25 }}>
