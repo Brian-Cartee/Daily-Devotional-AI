@@ -804,7 +804,7 @@ export default function LandingHome() {
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Available Now</p>
               <p className="text-[20px] font-bold text-foreground leading-tight">Start your journey today.</p>
-              <p className="text-[16px] text-muted-foreground mt-2 leading-relaxed">
+              <p className="text-[16px] text-foreground/75 mt-2 leading-relaxed">
                 A wise pastor, available every morning — grounded in Scripture, shaped for your life.
               </p>
             </div>
@@ -834,7 +834,7 @@ export default function LandingHome() {
                 Google Play
               </a>
             </div>
-            <p className="text-[14px] text-muted-foreground/65 italic">
+            <p className="text-[14px] text-foreground/60 italic">
               "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
             </p>
           </div>
