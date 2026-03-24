@@ -686,31 +686,32 @@ export default function LandingHome() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="relative mt-5 rounded-2xl border border-primary/20 bg-primary/8 backdrop-blur-sm overflow-hidden"
+          className="relative mt-5 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
           data-testid="commitment-card"
         >
+          {/* Bold top accent stripe */}
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
           <img
             src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800&q=80"
             alt=""
             aria-hidden="true"
             className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-            style={{ opacity: 0.09, filter: "saturate(0.7) brightness(0.95)" }}
+            style={{ opacity: 0.06, filter: "saturate(0.7) brightness(0.95)" }}
           />
-          <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.15] pointer-events-none select-none"  />
           <button
             onClick={() => setExpanded(v => !v)}
             data-testid="btn-commitment-toggle"
             className="w-full text-left px-5 py-4 flex items-center gap-3"
           >
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4.5 h-4.5 text-primary" />
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
+              <ShieldCheck className="w-4.5 h-4.5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-[13px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded px-1.5 py-0.5 leading-none">Read This</span>
+                <p className="text-[14px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-white bg-primary rounded px-1.5 py-0.5 leading-none">Read This</span>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">We mean every word. AI grounded in God's Word — always.</p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">We mean every word. AI grounded in God's Word — always.</p>
             </div>
             <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
