@@ -178,3 +178,29 @@ Pricing target: $5–9/mo (comparable to Hallow $8.99, Glorify $6.99).
 npm run dev       # Start dev server (port 5000)
 npm run db:push   # Sync schema to PostgreSQL
 ```
+
+## iOS App Store Submission — Status (as of March 24, 2026)
+
+**Apple credentials:**
+- Team ID: D5X4W5F62Y
+- Bundle ID: `com.shepherdspath.app`
+- Deployed URL: `daily-devotional-ai.replit.app`
+- Privacy policy: `daily-devotional-ai.replit.app/privacy`
+- Terms: `daily-devotional-ai.replit.app/terms`
+
+**App Store Connect listing:** Fully filled out — metadata, screenshots, in-app purchases (Annual Pro: `annual_pro`), contact (Brian Cartee / 4049889512 / briancartee@gmail.com).
+
+**App Review Information:** Uncheck "Sign-in required" (app has no login). Add note: "No account or sign-in is required. All features are accessible immediately. The app does not target mainland China."
+
+**BLOCKED ON: Build upload.** The Build section in App Store Connect is empty. Apple needs a compiled iOS binary (.ipa).
+
+**How to unblock (tomorrow's task):**
+The Android APK was built using Android Studio (Panda 2 version visible on Mac desktop) — almost certainly via Capacitor.
+1. Find the local Capacitor project folder on the Mac (same one used for Android build)
+2. Run: `npx cap add ios` (if ios folder doesn't exist yet)
+3. Run: `npx cap open ios` (opens Xcode)
+4. In Xcode: Product → Archive → Distribute App → App Store Connect → Upload
+5. Wait 10–30 min for Apple to process, then the build appears in App Store Connect
+6. Attach build to submission → Add for Review → Submit
+
+**Google Play:** Already in internal testing. 14-day clock started ~March 23. Production unlock ~April 6.
