@@ -1,5 +1,5 @@
-const CACHE = "shepherd-path-v3";
-const STATIC_CACHE = "shepherd-path-static-v3";
+const CACHE = "shepherd-path-v4";
+const STATIC_CACHE = "shepherd-path-static-v4";
 
 const APP_SHELL = [
   "/",
