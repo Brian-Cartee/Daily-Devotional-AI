@@ -78,6 +78,7 @@ export default function Devotional() {
   const [nudgeEmail, setNudgeEmail] = useState("");
   const [nudgeLoading, setNudgeLoading] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(() => !!localStorage.getItem("sp_nudge_dismissed"));
+  const [includeDailyArt, setIncludeDailyArt] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const [showTipPrompt, setShowTipPrompt] = useState(false);
@@ -349,7 +350,7 @@ export default function Devotional() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailInput.trim() }),
+        body: JSON.stringify({ email: emailInput.trim(), includeDailyArt }),
       });
       if (res.ok || res.status === 409) {
         setEmailSubmitted(true);
@@ -368,7 +369,7 @@ export default function Devotional() {
     if (!nudgeEmail.trim()) return;
     setNudgeLoading(true);
     try {
-      const body: { email: string; name?: string } = { email: nudgeEmail.trim() };
+      const body: { email: string; name?: string; includeDailyArt?: boolean } = { email: nudgeEmail.trim(), includeDailyArt };
       if (nudgeName.trim()) body.name = nudgeName.trim();
       const res = await fetch("/api/subscribe", {
         method: "POST",
@@ -940,6 +941,16 @@ export default function Devotional() {
                       {nudgeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Yes, send it"}
                     </Button>
                   </div>
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={includeDailyArt}
+                      onChange={e => setIncludeDailyArt(e.target.checked)}
+                      data-testid="checkbox-nudge-daily-art"
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                    />
+                    <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Daily Beauty image</span>
+                  </label>
                 </form>
 
                 <div className="px-6 pb-4 pt-1 text-center">
@@ -1161,25 +1172,37 @@ export default function Devotional() {
                     <p className="text-base font-semibold text-foreground">Get tomorrow's verse by email</p>
                     <p className="text-sm text-muted-foreground mt-1">Delivered every morning at 7 AM. Free.</p>
                   </div>
-                  <form onSubmit={handleEmailSubmit} className="flex gap-2.5 max-w-xs mx-auto">
-                    <input
-                      type="email"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="your@email.com"
-                      required
-                      data-testid="input-email-capture"
-                      className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 min-w-0"
-                    />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={emailLoading || !emailInput.trim()}
-                      data-testid="button-email-subscribe"
-                      className="rounded-xl px-4 font-semibold shrink-0"
-                    >
-                      {emailLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Subscribe"}
-                    </Button>
+                  <form onSubmit={handleEmailSubmit} className="space-y-2.5 max-w-xs mx-auto">
+                    <div className="flex gap-2.5">
+                      <input
+                        type="email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="your@email.com"
+                        required
+                        data-testid="input-email-capture"
+                        className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 min-w-0"
+                      />
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={emailLoading || !emailInput.trim()}
+                        data-testid="button-email-subscribe"
+                        className="rounded-xl px-4 font-semibold shrink-0"
+                      >
+                        {emailLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Subscribe"}
+                      </Button>
+                    </div>
+                    <label className="flex items-center justify-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={includeDailyArt}
+                        onChange={e => setIncludeDailyArt(e.target.checked)}
+                        data-testid="checkbox-email-daily-art"
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      />
+                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Daily Beauty image</span>
+                    </label>
                   </form>
                 </motion.div>
               )}

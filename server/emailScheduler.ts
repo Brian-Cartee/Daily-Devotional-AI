@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { getTodayVerseFromSheet } from "./googleSheets";
@@ -52,12 +54,28 @@ async function sendDailyEmailsToAllSubscribers() {
     const appUrl = process.env.APP_URL || "https://your-app.replit.app";
     const { client, fromEmail } = await getUncachableResendClient();
 
+    // Fetch today's daily art image URL (if generated)
+    let todayArtImageUrl: string | null = null;
+    try {
+      const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");
+      const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
+      if (fs.existsSync(metaFile)) {
+        const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
+        if (meta.imageUrl) {
+          todayArtImageUrl = `${appUrl}${meta.imageUrl}`;
+        }
+      }
+    } catch {
+      // Non-fatal — art just won't be included
+    }
+
     let sent = 0;
     let failed = 0;
 
     for (const subscriber of activeSubscribers) {
       try {
-        const html = buildDailyVerseEmailHtml({ ...verse, appUrl })
+        const artImageUrl = subscriber.includeDailyArt ? todayArtImageUrl : null;
+        const html = buildDailyVerseEmailHtml({ ...verse, appUrl, artImageUrl })
           .replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
 

@@ -20,7 +20,7 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 - **Database**: PostgreSQL (via Drizzle ORM)
 - **AI**: OpenAI GPT-4o-mini via Replit AI Integrations (no user API key required)
 - **Data source**: Google Sheets (live sync at startup via googleapis)
-- **Email**: Resend (daily email subscription system with welcome email + 7AM UTC scheduler)
+- **Email**: Resend (daily email subscription system with welcome email + 7AM UTC scheduler; optional Daily Beauty image for opted-in subscribers)
 - **Bible text**: bible-api.com (KJV, proxied via `/api/bible`)
 
 ## Page Routes

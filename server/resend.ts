@@ -52,6 +52,7 @@ export interface DailyVerseEmailData {
   encouragement: string;
   date: string;
   appUrl: string;
+  artImageUrl?: string | null;
 }
 
 export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
@@ -116,6 +117,23 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
               </table>
             </td>
           </tr>
+
+          ${data.artImageUrl ? `
+          <!-- Daily Art image -->
+          <tr>
+            <td style="padding-top:20px;">
+              <a href="${data.appUrl}" style="display:block;text-decoration:none;">
+                <img src="${data.artImageUrl}"
+                     alt="Today's Daily Beauty — ${data.reference}"
+                     width="560"
+                     style="width:100%;max-width:560px;border-radius:16px;display:block;border:0;" />
+              </a>
+              <p style="font-family:sans-serif;font-size:11px;color:#b5a898;text-align:center;margin:8px 0 0;letter-spacing:1px;text-transform:uppercase;">
+                Today&rsquo;s Daily Beauty &mdash; tap to open the app
+              </p>
+            </td>
+          </tr>
+          ` : ''}
 
           <!-- Footer -->
           <tr>

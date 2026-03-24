@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ImageIcon, X, Image } from "lucide-react";
+import { Loader2, ImageIcon, X, Image, Share2, Check } from "lucide-react";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -24,6 +24,21 @@ export function DailyArtCard() {
   const [imageError, setImageError] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [hidden, setHidden] = useState(() => isHiddenThisSession());
+  const [shared, setShared] = useState(false);
+
+  const handleShare = async () => {
+    if (!art) return;
+    const shareText = `"${art.scripture}" — ${art.reference}\n\nShepherd's Path`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Today's Daily Beauty", text: shareText, url: window.location.origin });
+      } else {
+        await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`);
+        setShared(true);
+        setTimeout(() => setShared(false), 2500);
+      }
+    } catch { }
+  };
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -190,9 +205,21 @@ export function DailyArtCard() {
               </div>
               <div className="flex items-start gap-2.5 pt-2 border-t border-primary/10">
                 <ImageIcon className="w-3.5 h-3.5 text-primary/40 mt-0.5 flex-shrink-0" />
-                <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+                <p className="text-[13px] text-muted-foreground leading-relaxed italic flex-1">
                   {art.reflection}
                 </p>
+              </div>
+              {/* Share button */}
+              <div className="pt-1 border-t border-primary/10 flex justify-end">
+                <button
+                  onClick={handleShare}
+                  data-testid="button-daily-art-share"
+                  className="flex items-center gap-1.5 text-[12px] font-semibold text-primary/70 hover:text-primary transition-colors px-3 py-1.5 rounded-full hover:bg-primary/8 active:scale-95"
+                >
+                  {shared
+                    ? <><Check className="w-3.5 h-3.5" /> Copied!</>
+                    : <><Share2 className="w-3.5 h-3.5" /> Share this image</>}
+                </button>
               </div>
             </div>
           </motion.div>
