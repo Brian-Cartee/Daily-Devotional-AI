@@ -798,7 +798,7 @@ export default function LandingHome() {
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Available Now</p>
               <p className="text-[20px] font-bold text-foreground leading-tight">Start your journey today.</p>
               <p className="text-[16px] text-foreground/75 mt-2 leading-relaxed">
-                A wise pastor, available every morning — grounded in Scripture, shaped for your life.
+                A faithful guide, available every morning — grounded in Scripture, shaped for your life.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
