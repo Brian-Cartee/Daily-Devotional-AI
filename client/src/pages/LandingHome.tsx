@@ -582,54 +582,54 @@ export default function LandingHome() {
           </div>
 
           {/* Featured spiritual guidance testimonial */}
-          <div className="relative rounded-2xl overflow-hidden mb-3 border border-primary/30 bg-gradient-to-br from-primary/10 via-violet-500/8 to-amber-500/5">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/60 via-violet-400/50 to-amber-400/40" />
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-border bg-card shadow-sm">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
             <div className="px-5 py-4">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary">Spiritual Guidance</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/12 text-primary">Spiritual Guidance</span>
                 <div className="flex items-center gap-0.5">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
               </div>
-              <p className="text-[15px] text-foreground/90 leading-relaxed italic font-medium mb-4">
+              <p className="text-[15px] text-foreground leading-relaxed italic font-medium mb-4">
                 &ldquo;I was in the middle of the hardest season of my life and didn't know where to turn. I typed out what I was feeling and within seconds I had scripture that felt like it was written exactly for my situation. It wasn't generic — it was pastoral. I cried. I'm not embarrassed to say that.&rdquo;
               </p>
-              <div className="flex items-center gap-2.5 pt-3 border-t border-primary/15">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-[12px] font-bold text-primary">
+              <div className="flex items-center gap-2.5 pt-3 border-t border-border">
+                <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-[12px] font-bold text-primary">
                   M
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-foreground leading-none">Marcus</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">Spiritual Guidance</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Spiritual Guidance</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Second spiritual guidance testimonial */}
-          <div className="relative rounded-2xl overflow-hidden mb-3 border border-amber-400/30 bg-gradient-to-br from-amber-500/10 via-primary/6 to-violet-500/5 backdrop-blur-sm">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/50 via-primary/40 to-violet-400/30" />
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-border bg-card shadow-sm">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-primary to-violet-500" />
             <div className="px-5 py-4">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary">Spiritual Guidance</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-400">Spiritual Guidance</span>
                 <div className="flex items-center gap-0.5">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
               </div>
-              <p className="text-[15px] text-foreground/90 leading-relaxed italic font-medium mb-4">
+              <p className="text-[15px] text-foreground leading-relaxed italic font-medium mb-4">
                 &ldquo;I typed three sentences about my marriage falling apart. What came back wasn't a list of verses or a church pamphlet — it sat with me in the pain first. It was honest and real and it felt like it was written for me specifically. No other app has ever done that.&rdquo;
               </p>
-              <div className="flex items-center gap-2.5 pt-3 border-t border-amber-400/15">
-                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-[12px] font-bold text-amber-700 dark:text-amber-400">
+              <div className="flex items-center gap-2.5 pt-3 border-t border-border">
+                <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center text-[12px] font-bold text-amber-700 dark:text-amber-400">
                   R
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-foreground leading-none">Rachel</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">Spiritual Guidance</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Spiritual Guidance</p>
                 </div>
               </div>
             </div>
@@ -641,10 +641,7 @@ export default function LandingHome() {
                 quote: "I open Shepherd's Path before I even make coffee. The morning devotional sets a completely different tone for my day.",
                 name: "Eric",
                 detail: "Daily devotional",
-                accentFrom: "from-sky-400/50",
-                accentTo: "to-primary/30",
-                borderColor: "border-sky-400/25",
-                bgClass: "bg-gradient-to-br from-sky-500/8 via-primary/5 to-violet-500/4",
+                accentClass: "from-sky-400 to-primary",
                 avatarBg: "bg-sky-500/15",
                 avatarColor: "text-sky-700 dark:text-sky-400",
               },
@@ -652,36 +649,31 @@ export default function LandingHome() {
                 quote: "I've been a Christian for 30 years, but these Bible journeys are showing me things I never noticed. The context is remarkable.",
                 name: "Cindy",
                 detail: "Journey: Life of Jesus",
-                accentFrom: "from-violet-400/50",
-                accentTo: "to-amber-400/30",
-                borderColor: "border-violet-400/25",
-                bgClass: "bg-gradient-to-br from-violet-500/8 via-primary/5 to-amber-500/4",
+                accentClass: "from-violet-500 to-amber-400",
                 avatarBg: "bg-violet-500/15",
                 avatarColor: "text-violet-700 dark:text-violet-400",
               },
-            ].map(({ quote, name, detail, accentFrom, accentTo, borderColor, bgClass, avatarBg, avatarColor }) => (
+            ].map(({ quote, name, detail, accentClass, avatarBg, avatarColor }) => (
               <div
                 key={name}
-                className={`relative rounded-2xl border ${borderColor} ${bgClass} backdrop-blur-sm p-4 flex flex-col gap-3 overflow-hidden`}
+                className="relative rounded-2xl border border-border bg-card shadow-sm p-4 flex flex-col gap-3 overflow-hidden"
               >
-                <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${accentFrom} ${accentTo}`} />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
+                <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accentClass}`} />
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                  ))}
                 </div>
-                <p className="text-[13px] text-foreground/80 leading-relaxed flex-1 italic">
+                <p className="text-[13px] text-foreground leading-relaxed flex-1 italic">
                   &ldquo;{quote}&rdquo;
                 </p>
-                <div className="flex items-center gap-2.5 pt-1 border-t border-border/30">
+                <div className="flex items-center gap-2.5 pt-1 border-t border-border">
                   <div className={`w-7 h-7 rounded-full ${avatarBg} flex items-center justify-center text-[11px] font-bold ${avatarColor}`}>
                     {name[0]}
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-foreground leading-none">{name}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{detail}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{detail}</p>
                   </div>
                 </div>
               </div>
