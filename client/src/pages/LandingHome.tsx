@@ -536,7 +536,7 @@ export default function LandingHome() {
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0 py-0.5">
-                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                    <div className="flex items-center justify-start gap-2 mb-1">
                       <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass} whitespace-nowrap`}>
                         {pillText}
                       </span>
