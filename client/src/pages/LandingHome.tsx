@@ -154,11 +154,11 @@ function HeroAIPrompt() {
       className="relative rounded-2xl overflow-hidden mb-1 shadow-lg shadow-primary/15 border border-primary/20"
     >
       {/* Colored header band */}
-      <div className="px-5 py-3 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(258 42% 32%), hsl(258 38% 42%))" }}>
+      <div className="px-5 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(258 42% 32%), hsl(258 38% 42%))" }}>
         <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-white/90" />
         </div>
-        <span className="text-[11px] font-bold uppercase tracking-widest text-white/90">Seek Spiritual Guidance</span>
+        <span className="text-[13px] font-semibold text-white/95" style={{ letterSpacing: "0.01em" }}>What are you carrying today?</span>
       </div>
 
       <div className="px-5 pt-4 pb-5 bg-card">
@@ -451,6 +451,31 @@ export default function LandingHome() {
               Scripture for what you're going through.{" "}
               <span className="text-amber-300/70 not-italic" style={{ fontSize: "0.65em" }}>✝</span>
             </p>
+
+            {/* Social proof — trust signal in first viewport */}
+            {!demo?.config.isDemo && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="mt-4 flex items-center gap-2"
+              >
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-3 h-3 fill-amber-400 text-amber-400" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
+                </div>
+                <span
+                  className="text-white/70 font-medium"
+                  style={{ fontSize: "11px", letterSpacing: "0.02em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+                >
+                  Trusted by believers worldwide
+                </span>
+              </motion.div>
+            )}
+
             {demo?.config.isDemo && (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
                 <span className="text-white/60 text-[10px] uppercase tracking-wider font-semibold">For</span>
