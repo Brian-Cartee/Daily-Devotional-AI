@@ -776,6 +776,9 @@ export default function LandingHome() {
           </AnimatePresence>
         </motion.div>
 
+        {/* Daily Art — between Scripture commitment and download CTA */}
+        <DailyArtCard />
+
         {/* Closing CTA band */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -829,9 +832,6 @@ export default function LandingHome() {
             </p>
           </div>
         </motion.div>
-
-        {/* Daily Art — peaceful closing moment before footer */}
-        <DailyArtCard />
 
         {/* Footer */}
         <motion.div
