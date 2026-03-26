@@ -1,8 +1,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, CheckCircle, Loader2, X } from "lucide-react";
+import { Mail, CheckCircle, Loader2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
+
+export function isEmailSubscribed(): boolean {
+  try {
+    return localStorage.getItem(EMAIL_SUBSCRIBED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markEmailSubscribed() {
+  try {
+    localStorage.setItem(EMAIL_SUBSCRIBED_KEY, "true");
+  } catch {}
+}
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -27,6 +43,7 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
       if (res.ok || res.status === 200) {
         setStatus("success");
         setMessage(data.message || "You're subscribed!");
+        markEmailSubscribed();
       } else {
         setStatus("error");
         setMessage(data.message || "Something went wrong. Please try again.");
@@ -111,6 +128,121 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
           </form>
         </>
       )}
+    </motion.div>
+  );
+}
+
+export function InlineEmailSignup() {
+  const [alreadySubscribed] = useState(() => isEmailSubscribed());
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok || res.status === 200) {
+        setStatus("success");
+        setMessage(data.message || "You're subscribed!");
+        markEmailSubscribed();
+      } else {
+        setStatus("error");
+        setMessage(data.message || "Something went wrong. Please try again.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("Could not subscribe. Please check your connection.");
+    }
+  };
+
+  if (alreadySubscribed || status === "success") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative rounded-2xl border border-green-500/20 bg-green-500/5 px-5 py-4 flex items-center gap-3"
+      >
+        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
+          <Check className="w-4 h-4 text-green-600 dark:text-green-400" strokeWidth={2.5} />
+        </div>
+        <div>
+          <p className="text-[13px] font-semibold text-foreground leading-tight">You're receiving daily Scripture by email</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">Each morning, a verse delivered to your inbox.</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="relative rounded-2xl border border-primary/20 bg-primary/4 overflow-hidden"
+    >
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
+      <div className="px-5 py-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Mail className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-foreground leading-tight">Get today's verse by email</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">A scripture delivered to your inbox each morning — free.</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <Input
+            data-testid="input-inline-subscribe-name"
+            type="text"
+            placeholder="Your first name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="text-sm rounded-xl bg-background"
+            disabled={status === "loading"}
+          />
+          <Input
+            data-testid="input-inline-subscribe-email"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="text-sm rounded-xl bg-background"
+            disabled={status === "loading"}
+          />
+          {status === "error" && (
+            <p className="text-xs text-destructive">{message}</p>
+          )}
+          <Button
+            data-testid="button-inline-subscribe-submit"
+            type="submit"
+            disabled={!email.trim() || status === "loading"}
+            className="w-full rounded-xl font-semibold text-sm"
+          >
+            {status === "loading" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Mail className="w-3.5 h-3.5 mr-1.5" />
+                Subscribe — it's free
+              </>
+            )}
+          </Button>
+        </form>
+      </div>
     </motion.div>
   );
 }

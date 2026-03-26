@@ -16,6 +16,7 @@ import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import { Button } from "@/components/ui/button";
+import { InlineEmailSignup } from "@/components/EmailSubscribe";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
@@ -524,6 +525,11 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
             </div>
           );
         })()}
+      </div>
+
+      {/* Email signup — shown at bottom, omitted if already subscribed */}
+      <div className="max-w-2xl mx-auto px-4 pb-8 mt-2">
+        <InlineEmailSignup />
       </div>
     </main>
   );
