@@ -506,9 +506,9 @@ export default function LandingHome() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
-                className="mt-2 flex items-center gap-2"
+                className="mt-2 flex items-start gap-2 max-w-[260px]"
               >
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-0.5 shrink-0 mt-[1px]">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-3 h-3 fill-amber-400 text-amber-400" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -516,7 +516,7 @@ export default function LandingHome() {
                   ))}
                 </div>
                 <span
-                  className="text-white/70 font-medium"
+                  className="text-white/70 font-medium leading-snug"
                   style={{ fontSize: "11px", letterSpacing: "0.02em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
                 >
                   For believers, seekers, and the searching heart
@@ -878,10 +878,10 @@ export default function LandingHome() {
               className="w-20 h-20 object-contain opacity-80"
             />
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Available Now</p>
-              <p className="text-[20px] font-bold text-foreground leading-tight">Start your journey today.</p>
-              <p className="text-[16px] text-foreground/75 mt-2 leading-relaxed">
-                A faithful guide, available every morning — grounded in Scripture, shaped for your life.
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Built for your phone</p>
+              <p className="text-[20px] font-bold text-foreground leading-tight">Scripture in your pocket, always.</p>
+              <p className="text-[15px] text-foreground/75 mt-2 leading-relaxed">
+                The moment something hits — grief, doubt, a hard conversation — open the app. Your guide is already there.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
@@ -910,6 +910,19 @@ export default function LandingHome() {
                 Google Play
               </a>
             </div>
+            {/* Website bonus — framed as a plus, not a fallback */}
+            <p className="text-[12px] text-foreground/50 text-center">
+              Prefer a full keyboard?{" "}
+              <a
+                href="https://daily-devotional-ai.replit.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary/70 hover:text-primary underline underline-offset-2 transition-colors"
+              >
+                Also available on the web
+              </a>{" "}
+              — the full experience, on any screen.
+            </p>
             <p className="text-[14px] text-foreground/60 italic">
               "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
             </p>
