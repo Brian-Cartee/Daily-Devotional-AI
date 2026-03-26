@@ -215,7 +215,6 @@ function HeroAIPrompt() {
               </button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground/40 mt-1.5 px-1">Enter to send · Shift+Enter for new line</p>
         </form>
 
       </div>
