@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -11,6 +11,7 @@ import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/St
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { useDemoMode } from "@/components/DemoProvider";
+import { getRemainingAi } from "@/lib/aiUsage";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -216,6 +217,24 @@ function HeroAIPrompt() {
             </div>
           </div>
         </form>
+
+        {/* Warm nudge — only when 1–3 responses remain, before the hard wall */}
+        {(() => {
+          const remaining = getRemainingAi();
+          if (remaining > 3 || remaining <= 0 || remaining === Infinity) return null;
+          return (
+            <Link href="/pricing">
+              <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 hover:bg-amber-500/12 transition-colors cursor-pointer group">
+                <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-[12px] text-amber-800 dark:text-amber-300 leading-snug flex-1">
+                  <span className="font-bold">{remaining} free {remaining === 1 ? "response" : "responses"} left today</span>
+                  <span className="text-amber-700/70 dark:text-amber-400/70"> — Pro gives you unlimited, every day.</span>
+                </p>
+                <ArrowRight className="w-3 h-3 text-amber-600/60 dark:text-amber-400/60 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </Link>
+          );
+        })()}
 
         {/* Situation chips — secondary helper, not the preferred path */}
         <div className="mt-3">

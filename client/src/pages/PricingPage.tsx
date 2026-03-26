@@ -142,7 +142,7 @@ const FAQ_ITEMS = [
 ];
 
 export default function PricingPage() {
-  const [plan, setPlan] = useState<"annual" | "monthly">("monthly");
+  const [plan, setPlan] = useState<"annual" | "monthly">("annual");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -335,8 +335,23 @@ export default function PricingPage() {
             <p className="text-[11px] text-muted-foreground text-center">
               {plan === "annual"
                 ? "Just $3.75/mo — less than a cup of coffee a month"
-                : "Less than $0.20/day — less than a cup of coffee a month"}
+                : "Less than $0.20/day — cancel anytime, no questions asked"}
             </p>
+
+            {/* Monthly reassurance — shown when annual is selected */}
+            {plan === "annual" && (
+              <p className="text-[11px] text-muted-foreground/55 text-center -mt-1">
+                Prefer month-to-month?{" "}
+                <button
+                  type="button"
+                  onClick={() => setPlan("monthly")}
+                  className="underline hover:text-muted-foreground transition-colors"
+                >
+                  Switch to $5.99/month
+                </button>{" "}
+                — cancel anytime.
+              </p>
+            )}
 
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />

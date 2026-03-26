@@ -323,9 +323,9 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
             <button
               data-testid="btn-upgrade-later"
               onClick={onClose}
-              className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+              className="w-full text-center text-sm text-muted-foreground/60 hover:text-muted-foreground transition-colors py-1"
             >
-              Come back tomorrow — resets in {resetTime}
+              Not right now
             </button>
 
             {/* Already have Pro */}
