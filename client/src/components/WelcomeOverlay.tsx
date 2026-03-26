@@ -63,7 +63,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
               <img
-                src="/app-icon.png"
+                src="/sh-profile-cross.png"
                 alt="Shepherd's Path logo"
                 style={{ width: 160, height: 160, objectFit: "cover", borderRadius: "34px", boxShadow: "0 6px 32px rgba(0,0,0,0.65)" }}
               />
