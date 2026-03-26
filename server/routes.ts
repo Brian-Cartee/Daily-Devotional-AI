@@ -748,6 +748,59 @@ What you never do:
     }
   });
 
+  // SMS subscribe — web opt-in for daily devotional texts
+  app.post("/api/sms/subscribe", async (req, res) => {
+    try {
+      const { phone } = req.body as { phone?: string };
+      if (!phone?.trim()) return res.status(400).json({ message: "Phone number is required." });
+
+      // Normalize to E.164 (+1XXXXXXXXXX for US numbers)
+      const digits = phone.replace(/\D/g, "");
+      let e164: string;
+      if (digits.length === 10) {
+        e164 = `+1${digits}`;
+      } else if (digits.length === 11 && digits.startsWith("1")) {
+        e164 = `+${digits}`;
+      } else {
+        return res.status(400).json({ message: "Please enter a valid US phone number." });
+      }
+
+      // Check if already enrolled
+      const existing = await storage.getSmsConversation(e164);
+      if (existing?.enrolledForDaily && !existing.optedOut) {
+        return res.status(409).json({ message: "This number is already signed up for daily texts." });
+      }
+
+      // Enroll them
+      await storage.upsertSmsConversation(e164, existing?.messages ?? [], existing?.exchangeCount ?? 0, existing?.ctaSent ?? false, {
+        enrolledForDaily: true,
+        optedOut: false,
+      });
+
+      // Send a welcome text
+      try {
+        const sid = process.env.TWILIO_ACCOUNT_SID;
+        const auth = process.env.TWILIO_AUTH_TOKEN;
+        const fromNum = process.env.TWILIO_PHONE_NUMBER;
+        if (sid && auth && fromNum) {
+          const client = twilio(sid, auth);
+          await client.messages.create({
+            body: `Welcome to Shepherd's Path! 🙏 Each morning you'll receive a scripture and devotional reflection by text — a quiet moment with God to start your day.\n\nReply VERSE for today's verse, DEVOTIONAL for today's reflection, or anything on your heart.\nReply STOP any time to unsubscribe.`,
+            from: fromNum,
+            to: e164,
+          });
+        }
+      } catch (smsErr) {
+        console.error("[sms/subscribe] Welcome text failed (non-fatal):", smsErr);
+      }
+
+      res.status(201).json({ message: "You're signed up! Look for your first text tomorrow morning." });
+    } catch (err) {
+      console.error("[sms/subscribe] error:", err);
+      res.status(500).json({ message: "Could not subscribe. Please try again." });
+    }
+  });
+
   // Unsubscribe
   app.get("/api/unsubscribe", async (req, res) => {
     const { email } = req.query;
