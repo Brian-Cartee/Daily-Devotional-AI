@@ -63,9 +63,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
               <img
-                src="/logo-mark-white.png"
+                src="/app-icon.png"
                 alt="Shepherd's Path logo"
-                style={{ width: 112, height: 112, objectFit: "contain", filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.6))" }}
+                style={{ width: 120, height: 120, objectFit: "cover", borderRadius: "26px", boxShadow: "0 4px 24px rgba(0,0,0,0.55)" }}
               />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">

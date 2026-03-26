@@ -465,11 +465,10 @@ export default function LandingHome() {
         {/* Brand mark + Share — top right of hero */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col items-end gap-2">
           <img
-            src={logoSmall}
-            alt=""
-            aria-hidden="true"
-            className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain pointer-events-none select-none"
-            style={{ opacity: 0.48, filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.5))" }}
+            src="/app-icon.png"
+            alt="Shepherd's Path"
+            className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-24 lg:h-24 pointer-events-none select-none"
+            style={{ borderRadius: "22%", boxShadow: "0 3px 16px rgba(0,0,0,0.45)" }}
           />
           <button
             onClick={handleShareApp}
