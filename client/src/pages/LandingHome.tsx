@@ -519,7 +519,7 @@ export default function LandingHome() {
                   className="text-white/70 font-medium"
                   style={{ fontSize: "11px", letterSpacing: "0.02em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
                 >
-                  Trusted by believers worldwide
+                  For believers, seekers, and the searching heart
                 </span>
               </motion.div>
             )}
