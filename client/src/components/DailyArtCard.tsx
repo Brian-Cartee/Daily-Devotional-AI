@@ -76,7 +76,33 @@ export function DailyArtCard() {
     sessionStorage.removeItem(SESSION_HIDDEN_KEY);
   };
 
-  if (!loading && (!art || !art.imageUrl || imageError)) return null;
+  // If loading is done and there's no image (generation failed or took too long),
+  // show a text-only scripture card so the section is never invisible.
+  if (!loading && (!art || !art.imageUrl || imageError)) {
+    if (!art) return null;
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="w-full px-5 py-5 bg-primary/4"
+      >
+        <div className="flex flex-col gap-2">
+          <p className="text-[15px] text-foreground/85 leading-snug italic font-medium">
+            &ldquo;{art.scripture}&rdquo;
+          </p>
+          <p className="text-[12px] text-muted-foreground/70 font-semibold">
+            — {art.reference}
+          </p>
+          {art.reflection && (
+            <p className="text-[13px] text-muted-foreground leading-relaxed italic mt-1">
+              {art.reflection}
+            </p>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   if (hidden) {
     return (

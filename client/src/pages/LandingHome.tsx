@@ -495,12 +495,7 @@ export default function LandingHome() {
               <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
               <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
-            <div className="flex items-center justify-start gap-3 mb-3">
-              <div className="h-px w-10 bg-white/40" />
-              <span className="text-white/60 text-[11px]">✦</span>
-              <div className="h-px w-10 bg-white/40" />
-            </div>
-            <p className="text-white/90 max-w-xs drop-shadow" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.4rem, 5vw, 1.8rem)", letterSpacing: "0.01em" }}>
+            <p className="text-white/90 max-w-xs drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.15rem, 4.2vw, 1.8rem)", letterSpacing: "0.01em" }}>
               Scripture for what you're going through.{" "}
               <span className="text-amber-300/70 not-italic" style={{ fontSize: "0.65em" }}>✝</span>
             </p>
@@ -511,7 +506,7 @@ export default function LandingHome() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
-                className="mt-4 flex items-center gap-2"
+                className="mt-2 flex items-center gap-2"
               >
                 <div className="flex items-center gap-0.5">
                   {[...Array(5)].map((_, i) => (
