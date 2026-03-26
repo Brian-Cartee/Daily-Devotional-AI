@@ -467,8 +467,8 @@ export default function LandingHome() {
           <img
             src="/app-icon.png"
             alt="Shepherd's Path"
-            className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-24 lg:h-24 pointer-events-none select-none"
-            style={{ borderRadius: "22%", boxShadow: "0 3px 16px rgba(0,0,0,0.45)" }}
+            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 pointer-events-none select-none"
+            style={{ borderRadius: "22%", boxShadow: "0 4px 20px rgba(0,0,0,0.55)" }}
           />
           <button
             onClick={handleShareApp}

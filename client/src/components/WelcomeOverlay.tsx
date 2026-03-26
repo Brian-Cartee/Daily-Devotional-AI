@@ -65,7 +65,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               <img
                 src="/app-icon.png"
                 alt="Shepherd's Path logo"
-                style={{ width: 120, height: 120, objectFit: "cover", borderRadius: "26px", boxShadow: "0 4px 24px rgba(0,0,0,0.55)" }}
+                style={{ width: 160, height: 160, objectFit: "cover", borderRadius: "34px", boxShadow: "0 6px 32px rgba(0,0,0,0.65)" }}
               />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
