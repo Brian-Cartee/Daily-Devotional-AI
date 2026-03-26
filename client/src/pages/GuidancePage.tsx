@@ -95,6 +95,13 @@ export default function GuidancePage() {
     }
   };
 
+  // Scroll to top immediately when page loads with a situation
+  useEffect(() => {
+    if (situation.trim()) {
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    }
+  }, []);
+
   useEffect(() => {
     if (!situation.trim()) return;
 
@@ -136,8 +143,11 @@ export default function GuidancePage() {
       .catch(() => setVideosLoading(false));
   }, [responseComplete]);
 
+  // Only auto-scroll during follow-up exchanges — not during the initial response
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 2) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [streamingText, messages, responseComplete]);
 
   const handleSend = async () => {

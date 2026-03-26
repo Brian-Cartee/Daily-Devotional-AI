@@ -172,14 +172,14 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         </div>
 
         {/* CTA footer */}
-        <div className="shrink-0 px-6 pb-6 pt-3 bg-background rounded-b-3xl border-t border-border/40 space-y-2">
+        <div className="shrink-0 px-4 pb-6 pt-3 bg-background rounded-b-3xl border-t border-border/40 space-y-2">
           <Button
             data-testid="btn-start-exploring"
             className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
             onClick={handleDismiss}
           >
-            Tell us what you're going through
-            <ArrowRight className="w-4 h-4 ml-2" />
+            Share what you're carrying today
+            <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
           </Button>
 
           <button
