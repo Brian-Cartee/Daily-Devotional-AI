@@ -2,6 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import path from "path";
 import fs from "fs";
+import { execSync } from "child_process";
 import { Readable } from "stream";
 import { storage } from "./storage";
 import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
@@ -1069,6 +1070,12 @@ Rules:
       if (!imgRes.ok) return res.json({ imageUrl: null, ...scriptureData });
       const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
       fs.writeFileSync(imgFile, imgBuffer);
+      // Compress to mobile-friendly size (900px wide, ~70KB)
+      try {
+        execSync(`magick "${imgFile}" -resize 900x -quality 78 -strip "${imgFile}"`, { timeout: 15000 });
+      } catch (compressErr) {
+        console.warn("Image compression failed, keeping original:", compressErr);
+      }
       fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
 
       res.json({ imageUrl: `/daily-art/${today}.jpg`, ...scriptureData });
