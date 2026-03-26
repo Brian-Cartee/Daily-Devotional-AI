@@ -398,9 +398,6 @@ export default function LandingHome() {
         {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); focusHeroInput(); }} />}
       </AnimatePresence>
 
-      {/* Daily Art — full-bleed opener, first thing eyes land on */}
-      <DailyArtCard />
-
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
@@ -832,6 +829,9 @@ export default function LandingHome() {
             </p>
           </div>
         </motion.div>
+
+        {/* Daily Art — peaceful closing moment before footer */}
+        <DailyArtCard />
 
         {/* Footer */}
         <motion.div
