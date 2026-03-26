@@ -217,6 +217,41 @@ function HeroAIPrompt() {
           </div>
         </form>
 
+        {/* Situation chips — secondary helper, not the preferred path */}
+        <div className="mt-3">
+          <p className="text-[11px] text-muted-foreground/45 mb-2 px-0.5">
+            Not sure where to start? Tap one to fill in a starting point — then make it your own.
+          </p>
+          <div
+            className="flex gap-2 overflow-x-auto pb-1"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {[
+              { label: "I'm grieving",         fill: "I'm grieving the loss of someone I love and I don't know how to process the pain…" },
+              { label: "Marriage struggles",    fill: "My marriage is struggling and I don't know where to turn…" },
+              { label: "Feeling distant from God", fill: "I feel distant from God lately and I'm not sure why…" },
+              { label: "Battling anxiety",      fill: "I'm battling anxiety and my faith feels weak right now…" },
+              { label: "Health challenge",      fill: "I'm facing a health challenge and I'm scared about what comes next…" },
+              { label: "Need direction",        fill: "I need direction for my life and I'm not sure which way to go…" },
+              { label: "Job or finances",       fill: "I'm going through financial difficulty and I'm stressed and worried…" },
+              { label: "Feeling lost",          fill: "I feel lost and I'm struggling to find my purpose right now…" },
+            ].map(({ label, fill }) => (
+              <button
+                key={label}
+                type="button"
+                data-testid={`chip-situation-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                onClick={() => {
+                  setQuery(fill);
+                  inputRef.current?.focus();
+                }}
+                className="shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-foreground/60 hover:bg-primary/10 hover:text-foreground/80 hover:border-primary/35 active:scale-95 transition-all"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </motion.div>
   );
