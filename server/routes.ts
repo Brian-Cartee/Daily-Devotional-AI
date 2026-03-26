@@ -2175,6 +2175,62 @@ ${historyNote}`;
     }
   });
 
+  // ── Admin endpoints ────────────────────────────────────────────────────────
+  function adminAuth(req: any, res: any): boolean {
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password) { res.status(503).json({ message: "Admin not configured." }); return false; }
+    const token = req.headers["x-admin-token"] as string | undefined;
+    if (token !== password) { res.status(401).json({ message: "Unauthorized." }); return false; }
+    return true;
+  }
+
+  app.post("/api/admin/auth", (req, res) => {
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password) return res.status(503).json({ message: "Admin not configured." });
+    const { token } = req.body as { token?: string };
+    if (token !== password) return res.status(401).json({ message: "Wrong password." });
+    res.json({ ok: true });
+  });
+
+  app.get("/api/admin/overview", async (req, res) => {
+    if (!adminAuth(req, res)) return;
+    try {
+      const emailSubscribers = await storage.getAllActiveSubscribers();
+      const smsSubscribers = await storage.getSmsOptedInNumbers();
+      const pushSubscriptions = await storage.getAllPushSubscriptions();
+
+      const emailList = emailSubscribers.map((s: any) => ({
+        id: s.id,
+        name: s.name || null,
+        email: s.email,
+        active: s.active,
+        createdAt: s.createdAt,
+        includeDailyArt: s.includeDailyArt,
+      }));
+
+      const smsList = smsSubscribers.map((s: any) => ({
+        phone: s.phone.replace(/(\+1)(\d{3})(\d{3})(\d{4})/, "$1 ($2) $3-$4"),
+        lastMessageAt: s.lastMessageAt,
+        exchangeCount: s.exchangeCount,
+        joinedPrayerNetwork: s.joinedPrayerNetwork,
+        createdAt: s.createdAt,
+      }));
+
+      res.json({
+        counts: {
+          emailSubscribers: emailList.length,
+          smsSubscribers: smsList.length,
+          pushSubscriptions: pushSubscriptions.length,
+        },
+        emailList,
+        smsList,
+      });
+    } catch (err) {
+      console.error("[admin] overview error:", err);
+      res.status(500).json({ message: "Failed to load data." });
+    }
+  });
+
   return httpServer;
 }
 
