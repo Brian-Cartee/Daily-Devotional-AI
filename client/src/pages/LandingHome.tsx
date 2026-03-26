@@ -175,12 +175,12 @@ function HeroAIPrompt() {
               ref={inputRef}
               data-testid="hero-ai-input"
               rows={3}
-              className="w-full bg-transparent px-4 pt-3 pb-2 text-[14px] text-foreground outline-none resize-none leading-relaxed"
+              className="w-full bg-transparent px-4 pt-3 pb-2 text-[15px] text-foreground outline-none resize-none leading-relaxed"
             />
             {/* Animated placeholder overlay */}
             {!query && (
               <span
-                className="absolute left-4 top-3 text-[14px] text-muted-foreground/45 pointer-events-none leading-relaxed transition-opacity duration-300"
+                className="absolute left-4 top-3 text-[15px] text-muted-foreground/65 pointer-events-none leading-relaxed transition-opacity duration-300"
                 style={{ opacity: placeholderVisible ? 1 : 0, right: "0.75rem" }}
               >
                 {placeholders[placeholderIndex]}
