@@ -495,9 +495,8 @@ export default function LandingHome() {
               <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
               <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
-            <p className="text-white/90 max-w-xs drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.15rem, 4.2vw, 1.8rem)", letterSpacing: "0.01em" }}>
-              Scripture for what you're going through.{" "}
-              <span className="text-amber-300/70 not-italic" style={{ fontSize: "0.65em" }}>✝</span>
+            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.15rem, 4.2vw, 1.8rem)", letterSpacing: "0.01em" }}>
+              Scripture for what you're going through.
             </p>
 
             {/* Social proof — trust signal in first viewport */}
@@ -506,16 +505,21 @@ export default function LandingHome() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
-                className="mt-2 flex items-center gap-2"
+                className="mt-3"
               >
-                <span className="text-amber-400 font-bold tracking-tight" style={{ fontSize: "13px", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>★ 5.0</span>
-                <span className="text-white/20" style={{ fontSize: "11px" }}>·</span>
-                <span
-                  className="text-white/70 font-medium"
-                  style={{ fontSize: "11px", letterSpacing: "0.02em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
+                  style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)" }}
                 >
-                  For believers, seekers &amp; the searching heart
-                </span>
+                  <span className="text-amber-400 font-bold whitespace-nowrap" style={{ fontSize: "12px", letterSpacing: "0.04em" }}>★★★★★</span>
+                  <span className="text-white/30" style={{ fontSize: "10px" }}>·</span>
+                  <span
+                    className="text-white/80 font-medium whitespace-nowrap"
+                    style={{ fontSize: "11px", letterSpacing: "0.02em" }}
+                  >
+                    For believers, seekers &amp; the searching heart
+                  </span>
+                </div>
               </motion.div>
             )}
 
