@@ -1,3 +1,4 @@
+import express from "express";
 import type { Express } from "express";
 import type { Server } from "http";
 import path from "path";
@@ -1030,6 +1031,9 @@ Rules:
 
   const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");
   if (!fs.existsSync(DAILY_ART_DIR)) fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
+
+  // Serve daily-art images explicitly so they work in both dev and production
+  app.use("/daily-art", express.static(DAILY_ART_DIR, { maxAge: "1d" }));
 
   const ART_THEMES = [
     "A breathtaking mountain peak at golden sunrise, divine rays of light breaking through storm clouds above, misty valleys below, cinematic and awe-inspiring",
