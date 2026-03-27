@@ -506,20 +506,15 @@ export default function LandingHome() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
-                className="mt-2 flex items-start gap-2 max-w-[260px]"
+                className="mt-2 flex items-center gap-2"
               >
-                <div className="flex items-center gap-0.5 shrink-0 mt-[1px]">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-3 h-3 fill-amber-400 text-amber-400" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  ))}
-                </div>
+                <span className="text-amber-400 font-bold tracking-tight" style={{ fontSize: "13px", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>★ 5.0</span>
+                <span className="text-white/20" style={{ fontSize: "11px" }}>·</span>
                 <span
-                  className="text-white/70 font-medium leading-snug"
+                  className="text-white/70 font-medium"
                   style={{ fontSize: "11px", letterSpacing: "0.02em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
                 >
-                  For believers, seekers, and the searching heart
+                  For believers, seekers &amp; the searching heart
                 </span>
               </motion.div>
             )}
