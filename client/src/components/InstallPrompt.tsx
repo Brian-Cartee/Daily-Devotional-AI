@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download } from "lucide-react";
+import { X, Share, Plus } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -17,27 +17,24 @@ export function InstallPrompt() {
   const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
-    // Don't show if already dismissed or installed
     if (localStorage.getItem(STORAGE_KEY)) return;
 
-    // Track visit count — show on 2nd visit+
     const visits = parseInt(localStorage.getItem(VISIT_KEY) ?? "0") + 1;
     localStorage.setItem(VISIT_KEY, String(visits));
     if (visits < 2) return;
 
-    // iOS detection (Safari doesn't fire beforeinstallprompt)
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isInStandaloneMode = (window.navigator as any).standalone === true;
     if (ios && !isInStandaloneMode) {
       setIsIOS(true);
-      setTimeout(() => setVisible(true), 3000);
+      setTimeout(() => setVisible(true), 3500);
       return;
     }
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setTimeout(() => setVisible(true), 3000);
+      setTimeout(() => setVisible(true), 3500);
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
@@ -60,47 +57,88 @@ export function InstallPrompt() {
     <AnimatePresence>
       {visible && !accepted && (
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
+          initial={{ y: 120, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed bottom-5 left-4 right-4 z-50 max-w-sm mx-auto"
+          exit={{ y: 120, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 280, damping: 28 }}
+          className="fixed bottom-0 left-0 right-0 z-50"
         >
-          <div className="bg-card border border-primary/20 rounded-2xl shadow-xl shadow-primary/10 px-5 py-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-              <img src="/logo-mark-white.png" alt="" className="w-6 h-6 object-contain" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-foreground leading-tight">Add to Home Screen</p>
-              {isIOS ? (
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                  Tap <span className="font-semibold">Share</span> then <span className="font-semibold">"Add to Home Screen"</span>
+          <div className="bg-background border-t border-border shadow-2xl shadow-black/30 rounded-t-3xl px-5 pt-5 pb-8 max-w-lg mx-auto">
+
+            {/* Dismiss */}
+            <button
+              data-testid="btn-dismiss-install"
+              onClick={dismiss}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header row */}
+            <div className="flex items-center gap-4 mb-4">
+              <img
+                src="/app-icon.png"
+                alt="Shepherd's Path"
+                className="w-16 h-16 rounded-2xl shadow-md flex-shrink-0"
+                style={{ boxShadow: "0 4px 16px rgba(82,32,167,0.35)" }}
+              />
+              <div>
+                <p className="text-[15px] font-extrabold text-foreground leading-tight">Shepherd's Path</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">
+                  {isIOS
+                    ? "Add to your Home Screen for quick access — just 2 taps"
+                    : "Install the app for fast, offline access anytime"}
                 </p>
-              ) : (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Open Shepherd's Path like a native app
-                </p>
-              )}
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {!isIOS && (
-                <button
-                  data-testid="btn-install-pwa"
-                  onClick={handleInstall}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-[12px] font-bold hover:bg-primary/90 transition-all"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Install
-                </button>
-              )}
+
+            {isIOS ? (
+              /* iOS — step-by-step instructions */
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 bg-primary/6 rounded-2xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-black text-[13px]">1</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <p className="text-[13px] font-semibold text-foreground">Tap</p>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border rounded-lg">
+                      <Share className="w-3.5 h-3.5 text-blue-500" />
+                      <span className="text-[11px] font-bold text-foreground">Share</span>
+                    </div>
+                    <p className="text-[13px] font-semibold text-foreground">in Safari</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-primary/6 rounded-2xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-black text-[13px]">2</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <p className="text-[13px] font-semibold text-foreground">Tap</p>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border rounded-lg">
+                      <Plus className="w-3.5 h-3.5 text-foreground" />
+                      <span className="text-[11px] font-bold text-foreground">Add to Home Screen</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-center text-[11px] text-muted-foreground pt-1">
+                  Opens like an app — no App Store needed
+                </p>
+              </div>
+            ) : (
+              /* Android / Chrome — one-tap install */
               <button
-                data-testid="btn-dismiss-install"
-                onClick={dismiss}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-all"
+                data-testid="btn-install-pwa"
+                onClick={handleInstall}
+                className="w-full py-4 rounded-2xl font-bold text-[15px] text-white bg-gradient-to-r from-primary to-violet-500 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg"
+                style={{ boxShadow: "0 4px 20px rgba(82,32,167,0.4)" }}
               >
-                <X className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
+                Add to Home Screen
               </button>
-            </div>
+            )}
           </div>
         </motion.div>
       )}
