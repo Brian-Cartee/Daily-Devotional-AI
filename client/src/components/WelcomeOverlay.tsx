@@ -175,7 +175,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         <div className="shrink-0 px-4 pb-6 pt-3 bg-background rounded-b-3xl border-t border-border/40 space-y-2">
           <Button
             data-testid="btn-start-exploring"
-            className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+            className="w-full rounded-2xl font-bold py-5 px-6 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
             onClick={handleDismiss}
           >
             Share what you're carrying today
