@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
-import { InlineEmailSignup, InlineSmsSignup } from "@/components/EmailSubscribe";
+import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -761,10 +761,9 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
 
         </div>
 
-        {/* Email + SMS signups — shown at bottom */}
-        <div className="max-w-2xl mx-auto mt-6 space-y-3">
-          <InlineEmailSignup />
-          <InlineSmsSignup />
+        {/* Subscribe — shown at bottom */}
+        <div className="max-w-2xl mx-auto mt-6">
+          <InlineSubscribeToggle />
         </div>
       </main>
 

@@ -79,6 +79,9 @@ export default function Devotional() {
   const [nudgeLoading, setNudgeLoading] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(() => !!localStorage.getItem("sp_nudge_dismissed"));
   const [includeDailyArt, setIncludeDailyArt] = useState(false);
+  const [nudgeTab, setNudgeTab] = useState<"email" | "sms">("email");
+  const [nudgePhone, setNudgePhone] = useState("");
+  const [nudgeSmsLoading, setNudgeSmsLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const [showTipPrompt, setShowTipPrompt] = useState(false);
@@ -386,6 +389,28 @@ export default function Devotional() {
       toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
     }
     setNudgeLoading(false);
+  };
+
+  const handleNudgeSmsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nudgePhone.trim()) return;
+    setNudgeSmsLoading(true);
+    try {
+      const res = await fetch("/api/sms/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: nudgePhone.trim() }),
+      });
+      if (res.ok || res.status === 201 || res.status === 200) {
+        setEmailSubmitted(true);
+        localStorage.setItem("sp_nudge_dismissed", "1");
+      } else {
+        toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+      }
+    } catch {
+      toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+    }
+    setNudgeSmsLoading(false);
   };
 
   const handleNudgeDismiss = () => {
@@ -910,49 +935,98 @@ export default function Devotional() {
                   <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Daily Devotional</p>
                   <p className="text-[17px] font-bold text-foreground leading-snug">Want us to bring this to you every morning?</p>
                   <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
-                    Scripture and a personal reflection — delivered to your inbox at 7 AM. Free, always.
+                    Scripture and a personal reflection — free, always.
                   </p>
                 </div>
 
-                <form onSubmit={handleNudgeSubmit} className="px-6 pb-2 pt-4 space-y-2.5">
-                  <input
-                    type="text"
-                    value={nudgeName}
-                    onChange={e => setNudgeName(e.target.value)}
-                    placeholder="Your first name (optional)"
-                    data-testid="input-nudge-name"
-                    className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
-                  />
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={nudgeEmail}
-                      onChange={e => setNudgeEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      required
-                      data-testid="input-nudge-email"
-                      className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
-                    />
-                    <Button
-                      type="submit"
-                      disabled={nudgeLoading || !nudgeEmail.trim()}
-                      data-testid="button-nudge-subscribe"
-                      className="rounded-xl px-4 font-bold shrink-0 text-sm"
+                {/* Tab toggle */}
+                <div className="px-6 pt-3 pb-1">
+                  <div className="flex gap-1 p-1 bg-black/5 dark:bg-white/10 rounded-xl">
+                    <button
+                      data-testid="nudge-tab-email"
+                      onClick={() => setNudgeTab("email")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                        nudgeTab === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      {nudgeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Yes, send it"}
-                    </Button>
+                      ✉ Email
+                    </button>
+                    <button
+                      data-testid="nudge-tab-sms"
+                      onClick={() => setNudgeTab("sms")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                        nudgeTab === "sms" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      💬 Text
+                    </button>
                   </div>
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+                </div>
+
+                {nudgeTab === "email" ? (
+                  <form onSubmit={handleNudgeSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
                     <input
-                      type="checkbox"
-                      checked={includeDailyArt}
-                      onChange={e => setIncludeDailyArt(e.target.checked)}
-                      data-testid="checkbox-nudge-daily-art"
-                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      type="text"
+                      value={nudgeName}
+                      onChange={e => setNudgeName(e.target.value)}
+                      placeholder="Your first name (optional)"
+                      data-testid="input-nudge-name"
+                      className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
                     />
-                    <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Daily Beauty image</span>
-                  </label>
-                </form>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={nudgeEmail}
+                        onChange={e => setNudgeEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        required
+                        data-testid="input-nudge-email"
+                        className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={nudgeLoading || !nudgeEmail.trim()}
+                        data-testid="button-nudge-subscribe"
+                        className="rounded-xl px-4 font-bold shrink-0 text-sm"
+                      >
+                        {nudgeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send it"}
+                      </Button>
+                    </div>
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={includeDailyArt}
+                        onChange={e => setIncludeDailyArt(e.target.checked)}
+                        data-testid="checkbox-nudge-daily-art"
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      />
+                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Daily Beauty image</span>
+                    </label>
+                  </form>
+                ) : (
+                  <form onSubmit={handleNudgeSmsSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        value={nudgePhone}
+                        onChange={e => setNudgePhone(e.target.value)}
+                        placeholder="(555) 000-0000"
+                        required
+                        data-testid="input-nudge-phone"
+                        className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={nudgeSmsLoading || !nudgePhone.trim()}
+                        data-testid="button-nudge-sms-subscribe"
+                        className="rounded-xl px-4 font-bold shrink-0 text-sm"
+                      >
+                        {nudgeSmsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send it"}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">US numbers only. Reply STOP any time to unsubscribe.</p>
+                  </form>
+                )}
 
                 <div className="px-6 pb-4 pt-1 text-center">
                   <button

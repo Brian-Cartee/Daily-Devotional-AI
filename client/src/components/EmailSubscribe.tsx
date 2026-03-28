@@ -247,6 +247,170 @@ export function InlineEmailSignup() {
   );
 }
 
+// ─── Combined Email + SMS Toggle ─────────────────────────────────────────────
+
+export function InlineSubscribeToggle() {
+  const [tab, setTab] = useState<"email" | "sms">("email");
+
+  const [emailSubscribed, setEmailSubscribed] = useState(() => isEmailSubscribed());
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailStatus, setEmailStatus] = useState<Status>("idle");
+  const [emailMsg, setEmailMsg] = useState("");
+
+  const [smsSubscribed, setSmsSubscribed] = useState(() => isSmsSubscribed());
+  const [phone, setPhone] = useState("");
+  const [smsStatus, setSmsStatus] = useState<Status>("idle");
+  const [smsMsg, setSmsMsg] = useState("");
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setEmailStatus("loading");
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (res.ok || res.status === 409) {
+        setEmailStatus("success");
+        setEmailMsg(data.message || "You're subscribed!");
+        markEmailSubscribed();
+        setEmailSubscribed(true);
+      } else {
+        setEmailStatus("error");
+        setEmailMsg(data.message || "Something went wrong.");
+      }
+    } catch {
+      setEmailStatus("error");
+      setEmailMsg("Could not subscribe. Please check your connection.");
+    }
+  };
+
+  const handleSmsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone.trim()) return;
+    setSmsStatus("loading");
+    try {
+      const res = await fetch("/api/sms/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok || res.status === 201) {
+        setSmsStatus("success");
+        setSmsMsg(data.message || "You're signed up!");
+        markSmsSubscribed();
+        setSmsSubscribed(true);
+      } else {
+        setSmsStatus("error");
+        setSmsMsg(data.message || "Something went wrong.");
+      }
+    } catch {
+      setSmsStatus("error");
+      setSmsMsg("Could not subscribe. Please check your connection.");
+    }
+  };
+
+  if (emailSubscribed && smsSubscribed) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+        className="relative rounded-2xl border border-green-500/20 bg-green-500/5 px-5 py-4 flex items-center gap-3"
+      >
+        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
+          <Check className="w-4 h-4 text-green-600 dark:text-green-400" strokeWidth={2.5} />
+        </div>
+        <div>
+          <p className="text-[13px] font-semibold text-foreground leading-tight">You're all set — by email and text</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">Daily Scripture coming to your inbox and phone each morning.</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  const thisTabDone = (tab === "email" && emailSubscribed) || (tab === "sms" && smsSubscribed);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+      className="relative rounded-2xl border border-primary/20 bg-primary/4 overflow-hidden"
+    >
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
+      <div className="px-5 pt-4 pb-4">
+        <div className="mb-3">
+          <p className="text-[13px] font-bold text-foreground leading-tight">Get today's verse delivered to you</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Scripture each morning — free, always.</p>
+        </div>
+
+        {/* Tab toggle */}
+        <div className="flex gap-1 p-1 bg-muted/60 rounded-xl mb-3">
+          <button
+            data-testid="toggle-email-tab"
+            onClick={() => setTab("email")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+              tab === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mail className="w-3 h-3" />
+            Email
+            {emailSubscribed && <Check className="w-3 h-3 text-green-500" />}
+          </button>
+          <button
+            data-testid="toggle-sms-tab"
+            onClick={() => setTab("sms")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+              tab === "sms" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageCircle className="w-3 h-3" />
+            Text
+            {smsSubscribed && <Check className="w-3 h-3 text-green-500" />}
+          </button>
+        </div>
+
+        {thisTabDone ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="flex items-center gap-2 bg-green-500/10 rounded-xl px-3 py-2.5"
+          >
+            <Check className="w-4 h-4 text-green-600 shrink-0" strokeWidth={2.5} />
+            <p className="text-[12px] font-semibold text-foreground">
+              {tab === "email" ? "You're receiving daily Scripture by email" : "You're receiving daily Scripture by text"}
+            </p>
+          </motion.div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {tab === "email" ? (
+              <motion.form key="email" initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={{ duration: 0.15 }}
+                onSubmit={handleEmailSubmit} className="space-y-2"
+              >
+                <Input data-testid="input-toggle-name" type="text" placeholder="Your first name (optional)" value={name} onChange={e => setName(e.target.value)} className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
+                <Input data-testid="input-toggle-email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
+                {emailStatus === "error" && <p className="text-xs text-destructive">{emailMsg}</p>}
+                <Button data-testid="button-toggle-email-submit" type="submit" disabled={!email.trim() || emailStatus === "loading"} className="w-full rounded-xl font-semibold text-sm">
+                  {emailStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-3.5 h-3.5 mr-1.5" />Subscribe — it's free</>}
+                </Button>
+              </motion.form>
+            ) : (
+              <motion.form key="sms" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: 0.15 }}
+                onSubmit={handleSmsSubmit} className="space-y-2"
+              >
+                <Input data-testid="input-toggle-phone" type="tel" placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={smsStatus === "loading"} />
+                {smsStatus === "error" && <p className="text-xs text-destructive">{smsMsg}</p>}
+                <Button data-testid="button-toggle-sms-submit" type="submit" disabled={!phone.trim() || smsStatus === "loading"} className="w-full rounded-xl font-semibold text-sm">
+                  {smsStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5 mr-1.5" />Text me daily Scripture — it's free</>}
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center">US numbers only. Reply STOP any time to unsubscribe.</p>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── SMS Signup ───────────────────────────────────────────────────────────────
 
 const SMS_SUBSCRIBED_KEY = "sp-sms-subscribed";
