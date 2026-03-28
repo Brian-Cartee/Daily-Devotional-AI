@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Volume2, VolumeX, Play, Square, ArrowRight, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronRight, Loader2, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
@@ -52,8 +52,8 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden"
         style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
-        {/* Header band */}
-        <div className="relative px-8 pt-6 pb-8 text-center overflow-hidden shrink-0 rounded-t-3xl" style={{ minHeight: 200 }}>
+        {/* Hero image band */}
+        <div className="relative px-8 pt-6 pb-8 text-center overflow-hidden shrink-0 rounded-t-3xl" style={{ minHeight: 190 }}>
           <img
             src="/hero-landing.png"
             alt=""
@@ -65,74 +65,101 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               <img
                 src="/cross-transparent.png"
                 alt="Shepherd's Path logo"
-                style={{ width: 160, height: 160, objectFit: "contain", filter: "drop-shadow(0 4px 18px rgba(0,0,0,0.7))" }}
+                style={{ width: 140, height: 140, objectFit: "contain", filter: "drop-shadow(0 4px 18px rgba(0,0,0,0.7))" }}
               />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
             </h1>
-            <p className="text-white/90 mt-1.5 leading-relaxed" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.15rem", letterSpacing: "0.01em" }}>
+            <p className="text-white/90 mt-1" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.1rem" }}>
               Scripture for what you're going through
             </p>
           </div>
         </div>
 
-        {/* Scrollable content */}
-        <div className="-mt-5 bg-background rounded-t-3xl px-6 pt-6 pb-3 space-y-4 overflow-y-auto flex-1">
-
-          {/* Audio player */}
-          <div className="bg-muted/40 border border-border/50 rounded-2xl px-5 py-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                {playing
-                  ? <Volume2 className="w-4 h-4 text-primary animate-pulse" />
-                  : <VolumeX className="w-4 h-4 text-muted-foreground" />
-                }
-                <div className="flex items-center gap-1.5">
-                  {!loading && !playing && !started && (
-                    <span className="text-2xl leading-none">👂</span>
-                  )}
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {loading ? "Preparing…" : playing ? "Playing welcome…" : started ? "Welcome message" : "Hear a personal welcome"}
-                  </span>
-                </div>
-              </div>
-              <button
-                data-testid="btn-toggle-audio"
-                onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
-                disabled={loading}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                  playing
-                    ? "bg-red-100 dark:bg-red-950/50 text-red-500 hover:bg-red-200"
-                    : "bg-primary/10 text-primary hover:bg-primary/20"
-                } disabled:opacity-50`}
+        {/* ── Audio player — always visible, outside scroll ── */}
+        <div className="shrink-0 px-4 pt-4 pb-2 bg-background">
+          <button
+            data-testid="btn-toggle-audio"
+            onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
+            disabled={loading}
+            className="w-full rounded-2xl border transition-all active:scale-[0.98] overflow-hidden disabled:opacity-60"
+            style={{
+              background: playing
+                ? "linear-gradient(135deg, #1a0a3a 0%, #2d1065 100%)"
+                : "linear-gradient(135deg, #f8f4ff 0%, #ede8ff 100%)",
+              borderColor: playing ? "rgba(130,80,255,0.4)" : "rgba(130,80,255,0.2)",
+            }}
+          >
+            <div className="flex items-center gap-4 px-5 py-3.5">
+              {/* Big play/stop icon */}
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 shadow-md"
+                style={{
+                  background: playing
+                    ? "rgba(255,255,255,0.12)"
+                    : "linear-gradient(135deg, #7c3aed, #a855f7)",
+                }}
               >
                 {loading
-                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ? <Loader2 className="w-5 h-5 text-primary animate-spin" />
                   : playing
-                    ? <Square className="w-3.5 h-3.5" />
-                    : <Play className="w-3.5 h-3.5 translate-x-[1px]" />
+                    ? <Square className="w-4 h-4 text-white" />
+                    : <Play className="w-5 h-5 text-white translate-x-[1px]" />
                 }
-              </button>
+              </div>
+
+              {/* Label + progress */}
+              <div className="flex-1 text-left min-w-0">
+                <p
+                  className="text-[13px] font-bold leading-tight"
+                  style={{ color: playing ? "rgba(255,255,255,0.95)" : "#3b1e8e" }}
+                >
+                  {loading ? "Preparing welcome…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a personal welcome  👂"}
+                </p>
+                <p
+                  className="text-[11px] mt-0.5 leading-none"
+                  style={{ color: playing ? "rgba(255,255,255,0.5)" : "#7c5cbf" }}
+                >
+                  {started && !loading ? "" : "~30 seconds · tap to play"}
+                </p>
+
+                {/* Progress bar */}
+                {started && (
+                  <div className="mt-2 w-full h-1 rounded-full overflow-hidden" style={{ background: playing ? "rgba(255,255,255,0.15)" : "rgba(124,60,237,0.15)" }}>
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: playing ? "rgba(255,255,255,0.7)" : "#7c3aed" }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Animated sound bars when playing */}
+              {playing && (
+                <div className="flex items-end gap-0.5 shrink-0 h-5">
+                  {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1 rounded-full bg-white/60"
+                      animate={{ scaleY: [h, 1, h * 0.7, 1, h] }}
+                      transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
+                      style={{ height: "100%", transformOrigin: "bottom" }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+          </button>
+        </div>
 
-            {started && (
-              <motion.div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-primary rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.div>
-            )}
+        {/* Scrollable content */}
+        <div className="bg-background px-5 pt-2 pb-3 space-y-3 overflow-y-auto flex-1">
 
-            <p className="text-[11px] text-muted-foreground leading-snug">
-              A personal welcome — about 30 seconds.
-            </p>
-          </div>
-
-          {/* Core value prop — replaces feature grid */}
+          {/* Core value prop */}
           <div className="rounded-2xl border border-primary/30 bg-primary/8 dark:bg-primary/12 px-5 py-4 space-y-3">
             <p className="text-[13px] font-bold text-foreground leading-snug">Here's how it works</p>
             <div className="flex items-start gap-3">
