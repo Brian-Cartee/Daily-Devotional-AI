@@ -20,6 +20,11 @@ import {
 } from "@/lib/faithRhythm";
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
+import {
+  GreetingHeader, ReturningUserCard, GratitudePromptCard,
+  TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard,
+} from "@/components/EngagementCards";
+import { setLastOpenDate } from "@/lib/engagementCards";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -111,6 +116,15 @@ function HeroAIPrompt() {
       }, 400);
     }, 3800);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    function handler(e: CustomEvent<{ text: string }>) {
+      setQuery(e.detail.text);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+    window.addEventListener("sp-fill-prompt", handler as EventListener);
+    return () => window.removeEventListener("sp-fill-prompt", handler as EventListener);
   }, []);
 
   const toggleVoice = () => {
@@ -459,6 +473,8 @@ export default function LandingHome() {
   const streak = streakData?.currentStreak ?? 0;
   const isPro = isProVerifiedLocally();
   const showProNudge = !!rhythm && streak >= 3 && !isPro && !proNudgeHidden && !demo?.config.isDemo;
+
+  useEffect(() => { setLastOpenDate(); }, []);
 
   const handleProNudgeDismiss = () => {
     dismissProNudge();
