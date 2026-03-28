@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import journalHero from "@assets/REV1001_S_P_(1400_x_600_px)-2_1773097642649.png";
@@ -54,12 +55,12 @@ interface TranscriptResult {
 
 type TabType = "prayer" | "reflection" | "verse" | "note" | "memory";
 
-const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string; emptyHint: string }[] = [
-  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.", emptyHint: "After praying, save your prayer to keep a record of what God is doing in your life." },
-  { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "No reflections saved yet.", emptyHint: "Open a devotional or Bible journey and save a reflection when something speaks to you." },
-  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.", emptyHint: "While reading the Bible, tap the heart icon on any chapter to save it here." },
-  { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "Your sermon notes will appear here.", emptyHint: "Use the recorder or notepad above to capture what God speaks through the message." },
-  { key: "memory",      label: "Memory",       icon: Star,       emptyText: "No memory verses yet.", emptyHint: "While reading today's devotional, tap the star icon to commit a verse to memory." },
+const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string; emptyHint: string; actionLabel?: string; actionPath?: string }[] = [
+  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.",     emptyHint: "Tap Pray in the bottom navigation, write or speak your prayer, then save it — it will appear here.",                          actionLabel: "Pray now",                 actionPath: "/pray" },
+  { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "No reflections saved yet.",           emptyHint: "While reading a devotional or Bible journey, tap Save Reflection when something speaks to your heart.",                     actionLabel: "Open today's devotional",  actionPath: "/devotional" },
+  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.",            emptyHint: "In the Bible section, tap the bookmark icon on any chapter — it saves the passage here for you to return to.",              actionLabel: "Browse the Bible",         actionPath: "/bible" },
+  { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "No sermon notes yet.",                emptyHint: "Use the record button above to capture a live sermon, or type notes in the notepad — both save here automatically.",      actionLabel: undefined,                  actionPath: undefined },
+  { key: "memory",      label: "Memory",       icon: Star,       emptyText: "No memory verses yet.",               emptyHint: "While reading today's devotional, tap the ☆ star next to a verse to commit it to memory — then practice it here.",        actionLabel: "Open today's devotional",  actionPath: "/devotional" },
 ];
 
 function formatDate(dateStr: string) {
@@ -901,15 +902,23 @@ function MemoryTab({ verses, isLoading, onDelete, onReview }: { verses: MemoryVe
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center py-20 text-center"
+        className="flex flex-col items-center justify-center py-16 text-center"
       >
         <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center mb-4">
           <Star className="w-6 h-6 text-amber-400/60" />
         </div>
-        <p className="text-sm font-medium text-muted-foreground max-w-[220px]">No memory verses yet.</p>
-        <p className="text-xs text-muted-foreground/60 mt-2 max-w-[240px]">
-          While reading today's devotional, tap the ☆ star to commit a verse to memory.
+        <p className="text-sm font-semibold text-foreground max-w-[220px]">No memory verses yet.</p>
+        <p className="text-[12px] text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
+          While reading today's devotional, tap the ☆ star next to a verse to commit it to memory — then come back here to practice it.
         </p>
+        <Link href="/devotional">
+          <button
+            data-testid="btn-empty-action-memory"
+            className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-sm"
+          >
+            Open today's devotional →
+          </button>
+        </Link>
       </motion.div>
     );
   }
@@ -1076,23 +1085,42 @@ export default function Journal() {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-0.5 pb-0 overflow-x-auto">
-              {TABS.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  data-testid={`tab-${key}`}
-                  onClick={() => setActiveTab(key)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-t-lg border-b-2 transition-all whitespace-nowrap ${
-                    activeTab === key
-                      ? "border-primary text-primary bg-primary/5"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              ))}
+            {/* Tabs — 2 rows so nothing clips on mobile */}
+            <div className="flex flex-col gap-0">
+              <div className="flex">
+                {TABS.slice(0, 3).map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    data-testid={`tab-${key}`}
+                    onClick={() => setActiveTab(key)}
+                    className={`flex-1 flex items-center justify-center gap-1 py-2 text-[11.5px] font-semibold border-b-2 transition-all ${
+                      activeTab === key
+                        ? "border-primary text-primary bg-primary/5"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="w-3 h-3 shrink-0" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex">
+                {TABS.slice(3).map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    data-testid={`tab-${key}`}
+                    onClick={() => setActiveTab(key)}
+                    className={`flex-1 flex items-center justify-center gap-1 py-2 text-[11.5px] font-semibold border-b-2 transition-all ${
+                      activeTab === key
+                        ? "border-primary text-primary bg-primary/5"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="w-3 h-3 shrink-0" />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -1100,6 +1128,40 @@ export default function Journal() {
         {/* Content */}
         <main className="max-w-xl mx-auto px-5 py-6 pb-24">
 
+          {/* First-time guide — shown only when there are zero entries across all tabs */}
+          {!isLoading && entries.length === 0 && activeTab !== "note" && activeTab !== "memory" && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-6 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-amber-50/60 dark:from-primary/10 dark:to-amber-950/20 overflow-hidden"
+            >
+              <div className="px-5 pt-4 pb-2">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Your Personal Journal</p>
+                <p className="text-[15px] font-bold text-foreground leading-snug">Everything you do in the app flows here</p>
+                <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">As you use Shepherd's Path, your journal fills automatically — nothing to set up.</p>
+              </div>
+              <div className="px-5 pb-4 pt-2 space-y-2">
+                {[
+                  { icon: HandIcon,  color: "text-violet-500 bg-violet-500/10", label: "Prayers",      desc: "Written or spoken in the Pray section" },
+                  { icon: Sparkles,  color: "text-amber-500 bg-amber-500/10",   label: "Reflections",  desc: "Saved while reading a devotional or journey" },
+                  { icon: BookOpen,  color: "text-blue-500 bg-blue-500/10",     label: "Scriptures",   desc: "Bookmarked chapters from the Bible section" },
+                  { icon: PenLine,   color: "text-green-600 bg-green-500/10",   label: "Sermon Notes", desc: "Recorded or typed during a message" },
+                  { icon: Star,      color: "text-yellow-500 bg-yellow-500/10", label: "Memory",       desc: "Verses starred for memorization" },
+                ].map(({ icon: Ic, color, label, desc }) => (
+                  <div key={label} className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
+                      <Ic className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-[12px] font-semibold text-foreground">{label} </span>
+                      <span className="text-[12px] text-muted-foreground">— {desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -1150,15 +1212,25 @@ export default function Journal() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-20 text-center"
+              className="flex flex-col items-center justify-center py-16 text-center"
             >
               <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                <activeTabConfig.icon className="w-6 h-6 text-muted-foreground/50" />
+                <activeTabConfig.icon className="w-6 h-6 text-muted-foreground/40" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground max-w-[220px]">{activeTabConfig.emptyText}</p>
-              <p className="text-xs text-muted-foreground/60 mt-2 max-w-[240px]">
+              <p className="text-sm font-semibold text-foreground max-w-[220px]">{activeTabConfig.emptyText}</p>
+              <p className="text-[12px] text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
                 {activeTabConfig.emptyHint}
               </p>
+              {activeTabConfig.actionLabel && activeTabConfig.actionPath && (
+                <Link href={activeTabConfig.actionPath}>
+                  <button
+                    data-testid={`btn-empty-action-${activeTabConfig.key}`}
+                    className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                  >
+                    {activeTabConfig.actionLabel} →
+                  </button>
+                </Link>
+              )}
             </motion.div>
           ) : (
             <AnimatePresence mode="popLayout">
