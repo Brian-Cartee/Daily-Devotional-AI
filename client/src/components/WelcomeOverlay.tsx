@@ -7,15 +7,17 @@ import { getUserVoice } from "@/lib/userName";
 
 const WELCOME_SCRIPT = `Hey. I'm glad you found this.
 
-I don't know what today's been like for you. But you're here, and I think that means something's going on.
+I don't know where you are right now. Maybe something's weighing on you — a relationship, a loss, a season that's hard to name. Or maybe things are actually okay, and you're just hungry to go deeper in your faith than you've been able to go on your own.
 
-So here's what I want to ask — and I want the real answer, not the cleaned-up version. Not the version you'd give on a Sunday morning. What's actually going on with you right now?
+Either place is exactly right for what this is.
 
-Because that's exactly what this is for. You tell us what's on your heart — your words, however they come out — and we'll find you scripture that speaks to the actual thing you're carrying. Not a verse of the day. Something that addresses what you're really dealing with.
+So here's what I want to ask — and I want the real answer, not the cleaned-up version. What's actually going on with you right now? What are you looking for from God?
 
-I've seen this reach people in some genuinely dark places. Marriages falling apart. Faith that's gotten hard to hold onto. Grief that doesn't have a name yet. You don't need the right words.
+Because that's what this is built for. You tell us what's on your heart — your words, however they come — and we'll find scripture that speaks to your actual life. Not a verse of the day. A personalized pastoral response. And when you're ready, a Bible journey we'll build just for you.
 
-Just start somewhere. We'll go from there.`;
+I've seen this walk people through some of the darkest places. Marriages on the edge. Faith that's gotten hard to hold onto. Grief with no name. I've also watched it help believers who thought they knew the Bible find things in it they'd never seen before.
+
+Wherever you are, there's more for you here. Start somewhere. We'll go from there.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
