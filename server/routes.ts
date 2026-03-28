@@ -147,13 +147,69 @@ export async function registerRoutes(
 
   // ── Health check ──────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
+    const services: Record<string, { ok: boolean; message: string }> = {};
+
+    // 1. Database — actual query
     try {
       await import("./db").then(({ pool }) => pool.query("SELECT 1"));
-      res.json({ status: "ok", ts: new Date().toISOString() });
-    } catch (err) {
+      services.database = { ok: true, message: "Connected" };
+    } catch (err: any) {
       console.error("[health] DB check failed:", err);
-      res.status(503).json({ status: "degraded", ts: new Date().toISOString() });
+      services.database = { ok: false, message: err?.message ?? "Query failed" };
     }
+
+    // 2. Today's verse cached in DB
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const verse = await storage.getVerseByDate(today);
+      services.dailyVerse = verse
+        ? { ok: true, message: "Today's verse available" }
+        : { ok: false, message: "No verse cached for today — check Google Sheets sync" };
+    } catch {
+      services.dailyVerse = { ok: false, message: "Could not query verse table" };
+    }
+
+    // 3. OpenAI
+    const hasOpenAI = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY);
+    services.openai = hasOpenAI
+      ? { ok: true, message: "API key configured" }
+      : { ok: false, message: "No API key found" };
+
+    // 4. Email — Resend (via Replit integration connector)
+    const hasResend = !!(process.env.REPLIT_CONNECTORS_HOSTNAME || process.env.RESEND_API_KEY);
+    services.email = hasResend
+      ? { ok: true, message: "Resend connected" }
+      : { ok: false, message: "Resend not connected" };
+
+    // 5. Push notifications — VAPID
+    const hasPush = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+    services.push = hasPush
+      ? { ok: true, message: "VAPID keys configured" }
+      : { ok: false, message: "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not set" };
+
+    // 6. SMS — Twilio
+    const hasTwilio = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER);
+    services.sms = hasTwilio
+      ? { ok: true, message: "Twilio configured" }
+      : { ok: false, message: "TWILIO_ACCOUNT_SID / AUTH_TOKEN / PHONE_NUMBER missing" };
+
+    // 7. Google Sheets — if today's verse loaded, sheets is working
+    services.googleSheets = services.dailyVerse?.ok
+      ? { ok: true, message: "Syncing successfully" }
+      : !!(process.env.GOOGLE_SERVICE_ACCOUNT_JSON)
+        ? { ok: true, message: "Service account configured" }
+        : { ok: false, message: "GOOGLE_SERVICE_ACCOUNT_JSON not set" };
+
+    const allOk = Object.values(services).every(s => s.ok);
+    const criticalOk = services.database?.ok && services.openai?.ok;
+    const overallStatus = allOk ? "ok" : criticalOk ? "degraded" : "down";
+
+    res.status(overallStatus === "down" ? 503 : 200).json({
+      status: overallStatus,
+      ts: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
+      services,
+    });
   });
 
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)

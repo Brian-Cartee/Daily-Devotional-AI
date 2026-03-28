@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mail, MessageCircle, Bell, Users, RefreshCw, LogOut, CheckCircle, XCircle, Shield } from "lucide-react";
+import { Mail, MessageCircle, Bell, Users, RefreshCw, LogOut, CheckCircle, XCircle, Shield, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -11,9 +11,44 @@ type EmailEntry = { id: number; name: string | null; email: string; active: bool
 type SmsEntry = { phone: string; lastMessageAt: string | null; exchangeCount: number; joinedPrayerNetwork: boolean; createdAt: string | null };
 type Overview = { counts: Counts; emailList: EmailEntry[]; smsList: SmsEntry[] };
 
+type ServiceStatus = { ok: boolean; message: string };
+type HealthData = {
+  status: "ok" | "degraded" | "down";
+  ts: string;
+  uptimeSeconds: number;
+  services: {
+    database: ServiceStatus;
+    dailyVerse: ServiceStatus;
+    openai: ServiceStatus;
+    email: ServiceStatus;
+    push: ServiceStatus;
+    sms: ServiceStatus;
+    googleSheets: ServiceStatus;
+  };
+};
+
+const SERVICE_LABELS: Record<string, string> = {
+  database: "Database",
+  dailyVerse: "Daily Verse",
+  openai: "AI (OpenAI)",
+  email: "Email (Resend)",
+  push: "Push Notifications",
+  sms: "SMS (Twilio)",
+  googleSheets: "Google Sheets",
+};
+
 function formatDate(d: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatUptime(seconds: number) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
 }
 
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
@@ -31,6 +66,110 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
         <p className="text-sm text-muted-foreground">{label}</p>
       </div>
     </motion.div>
+  );
+}
+
+function HealthTab() {
+  const [health, setHealth] = useState<HealthData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [error, setError] = useState("");
+
+  const fetchHealth = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/health");
+      setHealth(await res.json());
+      setLastChecked(new Date());
+    } catch {
+      setError("Could not reach health endpoint.");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchHealth(); }, []);
+
+  const statusColors = {
+    ok: "bg-green-500/10 text-green-700 dark:text-green-400",
+    degraded: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    down: "bg-red-500/10 text-red-700 dark:text-red-400",
+  };
+  const dotColors = { ok: "bg-green-500", degraded: "bg-amber-500", down: "bg-red-500" };
+  const statusLabels = {
+    ok: "All systems operational",
+    degraded: "Some services degraded",
+    down: "Critical issues detected",
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          {health && (
+            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${statusColors[health.status]}`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${dotColors[health.status]}`} />
+              {statusLabels[health.status]}
+            </span>
+          )}
+          {lastChecked && (
+            <p className="text-xs text-muted-foreground pl-1">
+              Checked at {lastChecked.toLocaleTimeString()}
+              {health && ` · Uptime ${formatUptime(health.uptimeSeconds)}`}
+            </p>
+          )}
+        </div>
+        <Button
+          data-testid="button-health-refresh"
+          variant="ghost"
+          size="sm"
+          onClick={fetchHealth}
+          disabled={loading}
+          className="rounded-xl"
+        >
+          <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+          {loading ? "Checking…" : "Re-check"}
+        </Button>
+      </div>
+
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {health && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl divide-y divide-border/50 overflow-hidden">
+          {Object.entries(health.services).map(([key, svc]) => (
+            <div key={key} data-testid={`health-row-${key}`} className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-3">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${svc.ok ? "bg-green-500" : "bg-red-500"}`} />
+                <span className="text-sm font-medium text-foreground">{SERVICE_LABELS[key] ?? key}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground text-right max-w-[200px]">{svc.message}</span>
+                {svc.ok
+                  ? <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  : <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      )}
+
+      {!health && !loading && !error && (
+        <div className="text-center py-10 text-muted-foreground text-sm">No data yet.</div>
+      )}
+
+      <div className="bg-muted/30 border border-border/50 rounded-xl px-5 py-4 text-xs text-muted-foreground space-y-1">
+        <p className="font-semibold text-foreground text-[13px] mb-2">External uptime monitoring</p>
+        <p>For 24/7 alerts, connect this URL to a free service like <strong>UptimeRobot</strong> or <strong>Better Uptime</strong>:</p>
+        <code className="block mt-2 bg-background border border-border rounded-lg px-3 py-2 text-[11px] font-mono break-all select-all">
+          https://daily-devotional-ai.replit.app/api/health
+        </code>
+        <p className="mt-2">Set it to ping every 5 minutes and alert you by email or SMS if status is not 200.</p>
+      </div>
+    </div>
   );
 }
 
@@ -109,7 +248,7 @@ export default function AdminPage() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"email" | "sms">("email");
+  const [activeTab, setActiveTab] = useState<"email" | "sms" | "health">("health");
 
   const fetchOverview = async (t: string) => {
     setLoading(true);
@@ -190,114 +329,131 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        {overview && (
-          <div className="space-y-4">
-            <div className="flex gap-2 border-b border-border/50">
-              <button
-                data-testid="tab-email"
-                onClick={() => setActiveTab("email")}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                  activeTab === "email"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Email ({overview.emailList.length})
-              </button>
-              <button
-                data-testid="tab-sms"
-                onClick={() => setActiveTab("sms")}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                  activeTab === "sms"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                SMS ({overview.smsList.length})
-              </button>
-            </div>
-
-            {/* Email table */}
-            {activeTab === "email" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl overflow-hidden">
-                {overview.emailList.length === 0 ? (
-                  <div className="px-6 py-10 text-center text-muted-foreground text-sm">No email subscribers yet.</div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/30">
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Joined</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Art</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {overview.emailList.map((s, i) => (
-                          <tr key={s.id} data-testid={`row-email-${s.id}`} className={`border-b border-border/50 last:border-0 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                            <td className="px-4 py-3 text-foreground">{s.name || <span className="text-muted-foreground italic">—</span>}</td>
-                            <td className="px-4 py-3 text-foreground font-mono text-xs">{s.email}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(s.createdAt)}</td>
-                            <td className="px-4 py-3">
-                              {s.includeDailyArt
-                                ? <CheckCircle className="w-4 h-4 text-green-500" />
-                                : <XCircle className="w-4 h-4 text-muted-foreground/40" />}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.active ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
-                                {s.active ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* SMS table */}
-            {activeTab === "sms" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl overflow-hidden">
-                {overview.smsList.length === 0 ? (
-                  <div className="px-6 py-10 text-center text-muted-foreground text-sm">No SMS subscribers yet.</div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/30">
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Phone</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Enrolled</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Last Message</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Exchanges</th>
-                          <th className="text-left px-4 py-3 font-medium text-muted-foreground">Prayer Network</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {overview.smsList.map((s, i) => (
-                          <tr key={s.phone} data-testid={`row-sms-${i}`} className={`border-b border-border/50 last:border-0 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                            <td className="px-4 py-3 text-foreground font-mono text-xs">{s.phone}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(s.createdAt)}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{formatDate(s.lastMessageAt)}</td>
-                            <td className="px-4 py-3 text-foreground">{s.exchangeCount}</td>
-                            <td className="px-4 py-3">
-                              {s.joinedPrayerNetwork
-                                ? <CheckCircle className="w-4 h-4 text-green-500" />
-                                : <XCircle className="w-4 h-4 text-muted-foreground/40" />}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </motion.div>
-            )}
+        <div className="space-y-4">
+          <div className="flex gap-2 border-b border-border/50">
+            <button
+              data-testid="tab-health"
+              onClick={() => setActiveTab("health")}
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                activeTab === "health"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              System Health
+            </button>
+            <button
+              data-testid="tab-email"
+              onClick={() => setActiveTab("email")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                activeTab === "email"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Email {overview ? `(${overview.emailList.length})` : ""}
+            </button>
+            <button
+              data-testid="tab-sms"
+              onClick={() => setActiveTab("sms")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                activeTab === "sms"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              SMS {overview ? `(${overview.smsList.length})` : ""}
+            </button>
           </div>
-        )}
+
+          {/* Health tab */}
+          {activeTab === "health" && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <HealthTab />
+            </motion.div>
+          )}
+
+          {/* Email table */}
+          {activeTab === "email" && overview && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl overflow-hidden">
+              {overview.emailList.length === 0 ? (
+                <div className="px-6 py-10 text-center text-muted-foreground text-sm">No email subscribers yet.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Joined</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Art</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {overview.emailList.map((s, i) => (
+                        <tr key={s.id} data-testid={`row-email-${s.id}`} className={`border-b border-border/50 last:border-0 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
+                          <td className="px-4 py-3 text-foreground">{s.name || <span className="text-muted-foreground italic">—</span>}</td>
+                          <td className="px-4 py-3 text-foreground font-mono text-xs">{s.email}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{formatDate(s.createdAt)}</td>
+                          <td className="px-4 py-3">
+                            {s.includeDailyArt
+                              ? <CheckCircle className="w-4 h-4 text-green-500" />
+                              : <XCircle className="w-4 h-4 text-muted-foreground/40" />}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.active ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+                              {s.active ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* SMS table */}
+          {activeTab === "sms" && overview && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-2xl overflow-hidden">
+              {overview.smsList.length === 0 ? (
+                <div className="px-6 py-10 text-center text-muted-foreground text-sm">No SMS subscribers yet.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Phone</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Enrolled</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Last Message</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Exchanges</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Prayer Network</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {overview.smsList.map((s, i) => (
+                        <tr key={s.phone} data-testid={`row-sms-${i}`} className={`border-b border-border/50 last:border-0 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
+                          <td className="px-4 py-3 text-foreground font-mono text-xs">{s.phone}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{formatDate(s.createdAt)}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{formatDate(s.lastMessageAt)}</td>
+                          <td className="px-4 py-3 text-foreground">{s.exchangeCount}</td>
+                          <td className="px-4 py-3">
+                            {s.joinedPrayerNetwork
+                              ? <CheckCircle className="w-4 h-4 text-green-500" />
+                              : <XCircle className="w-4 h-4 text-muted-foreground/40" />}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
 
         {loading && !overview && (
           <div className="text-center py-16 text-muted-foreground text-sm">Loading...</div>

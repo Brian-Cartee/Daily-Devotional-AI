@@ -30,6 +30,14 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "typecheck"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "health-check"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -38,6 +46,28 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "typecheck"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsc --noEmit"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "health-check"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "curl -sf http://localhost:5000/api/health | node -e \"const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log('Status:', d.status); process.exit(d.status === 'down' ? 1 : 0)\""
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 integrations = ["javascript_openai_ai_integrations:2.0.0", "google-sheet:1.0.0", "resend:1.0.0"]
