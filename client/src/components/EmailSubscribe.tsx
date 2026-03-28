@@ -399,7 +399,7 @@ export function InlineSubscribeToggle() {
                 <Input data-testid="input-toggle-phone" type="tel" placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={smsStatus === "loading"} />
                 {smsStatus === "error" && <p className="text-xs text-destructive">{smsMsg}</p>}
                 <Button data-testid="button-toggle-sms-submit" type="submit" disabled={!phone.trim() || smsStatus === "loading"} className="w-full rounded-xl font-semibold text-sm">
-                  {smsStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5 mr-1.5" />Text me daily Scripture — it's free</>}
+                  {smsStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageCircle className="w-3.5 h-3.5 mr-1.5" />Sign me up — it's free</>}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">US numbers only. Reply STOP any time to unsubscribe.</p>
               </motion.form>
@@ -524,7 +524,7 @@ export function InlineSmsSignup() {
             ) : (
               <>
                 <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
-                Text me daily Scripture — it's free
+                Sign me up — it's free
               </>
             )}
           </Button>
