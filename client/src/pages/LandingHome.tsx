@@ -19,6 +19,7 @@ import {
   FOCUS_LABELS, type FaithRhythm,
 } from "@/lib/faithRhythm";
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
+import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -226,21 +227,30 @@ function HeroAIPrompt() {
           </div>
         </form>
 
-        {/* Warm nudge — only when 1–3 responses remain, before the hard wall */}
+        {/* AI usage awareness — subtle counter mid-day, warm strip near the limit */}
         {(() => {
           const remaining = getRemainingAi();
-          if (remaining > 3 || remaining <= 0 || remaining === Infinity) return null;
+          if (remaining === Infinity || remaining <= 0) return null;
+          if (remaining <= 5) {
+            return (
+              <Link href="/pricing">
+                <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 hover:bg-amber-500/12 transition-colors cursor-pointer group">
+                  <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="text-[12px] text-amber-800 dark:text-amber-300 leading-snug flex-1">
+                    <span className="font-bold">{remaining} free {remaining === 1 ? "response" : "responses"} left today</span>
+                    <span className="text-amber-700/70 dark:text-amber-400/70"> — Pro gives you unlimited, every day.</span>
+                  </p>
+                  <ArrowRight className="w-3 h-3 text-amber-600/60 dark:text-amber-400/60 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+            );
+          }
           return (
-            <Link href="/pricing">
-              <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 hover:bg-amber-500/12 transition-colors cursor-pointer group">
-                <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                <p className="text-[12px] text-amber-800 dark:text-amber-300 leading-snug flex-1">
-                  <span className="font-bold">{remaining} free {remaining === 1 ? "response" : "responses"} left today</span>
-                  <span className="text-amber-700/70 dark:text-amber-400/70"> — Pro gives you unlimited, every day.</span>
-                </p>
-                <ArrowRight className="w-3 h-3 text-amber-600/60 dark:text-amber-400/60 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </Link>
+            <div className="mt-2 flex items-center justify-end gap-1 pr-0.5">
+              <span className="text-[11px] text-muted-foreground/40 font-medium">
+                {remaining} of 10 free responses remaining today
+              </span>
+            </div>
           );
         })()}
 
@@ -416,6 +426,7 @@ export default function LandingHome() {
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
+  const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
   const demo = useDemoMode();
 
@@ -443,6 +454,15 @@ export default function LandingHome() {
   const handleNudgeDismiss = () => {
     incrementRhythmDismissed();
     setRhythmDismissCount((c) => c + 1);
+  };
+
+  const streak = streakData?.currentStreak ?? 0;
+  const isPro = isProVerifiedLocally();
+  const showProNudge = !!rhythm && streak >= 3 && !isPro && !proNudgeHidden && !demo?.config.isDemo;
+
+  const handleProNudgeDismiss = () => {
+    dismissProNudge();
+    setProNudgeHidden(true);
   };
 
   const handleShareApp = async () => {
@@ -685,6 +705,77 @@ export default function LandingHome() {
               </div>
             );
           })()}
+
+          {/* Pro conversion nudge — shown at day 3+ streak, rhythm set, free user */}
+          {showProNudge && (
+            <div
+              data-testid="card-pro-nudge"
+              className="relative rounded-2xl overflow-hidden border border-amber-300/30 bg-card shadow-sm"
+            >
+              {/* Warm gradient top bar */}
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-400 opacity-70 rounded-l-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 via-orange-400/3 to-transparent pointer-events-none" />
+
+              <div className="relative z-10 px-5 pt-4 pb-4">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Flame className="w-4 h-4 text-amber-500" />
+                      <span className="text-[12px] font-bold uppercase tracking-widest text-amber-600/80">
+                        {streak}-Day Streak
+                      </span>
+                    </div>
+                    <h3 className="text-[16px] font-extrabold text-foreground leading-tight tracking-tight">
+                      You're building something real.
+                    </h3>
+                    <p className="text-[13px] text-muted-foreground leading-snug mt-0.5">
+                      Don't let anything interrupt it.
+                    </p>
+                  </div>
+                  <button
+                    data-testid="btn-pro-nudge-dismiss"
+                    onClick={handleProNudgeDismiss}
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    <span className="text-lg leading-none">×</span>
+                  </button>
+                </div>
+
+                {/* Feature bullets */}
+                <div className="flex flex-col gap-1.5 mb-4">
+                  {[
+                    "Unlimited AI guidance — no daily cap",
+                    "Streak protection — miss a day, keep your streak",
+                    "Full access to all devotional themes",
+                  ].map((point) => (
+                    <div key={point} className="flex items-start gap-2">
+                      <Check className="w-3.5 h-3.5 text-amber-500 mt-[2px] shrink-0" strokeWidth={3} />
+                      <span className="text-[13px] text-foreground/80 leading-snug">{point}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <Link href="/pricing">
+                  <div
+                    data-testid="btn-pro-nudge-cta"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[14px] font-bold shadow-sm shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    See what Pro gives you
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </Link>
+
+                <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+                  Starts at $3.99/month · Cancel anytime
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Daily Devotional — primary action */}
           <DevotionalCard />

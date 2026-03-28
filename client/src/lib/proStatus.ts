@@ -1,6 +1,15 @@
 const PRO_KEY = "sp_pro_email";
 const PRO_VERIFIED_KEY = "sp_pro_verified";
 const REFERRAL_PRO_KEY = "sp_referral_pro_until";
+const PRO_NUDGE_DISMISSED_KEY = "sp_pro_nudge_dismissed";
+
+export function isProNudgeDismissed(): boolean {
+  return localStorage.getItem(PRO_NUDGE_DISMISSED_KEY) === "true";
+}
+
+export function dismissProNudge(): void {
+  localStorage.setItem(PRO_NUDGE_DISMISSED_KEY, "true");
+}
 
 export function getProEmail(): string | null {
   return localStorage.getItem(PRO_KEY);
