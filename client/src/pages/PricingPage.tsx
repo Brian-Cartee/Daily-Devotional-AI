@@ -80,7 +80,7 @@ const WHITE_LABEL_TIERS = [
       "Everything in Starter, plus:",
       "Custom sermon series journeys",
       "Church calendar integration",
-      "Congregation analytics dashboard",
+      "Member activity reporting for leadership",
       "Up to 1,000 active users",
       "Priority support",
     ],
@@ -108,7 +108,7 @@ const WHITE_LABEL_TIERS = [
 const WHITE_LABEL_WHAT_YOU_GET = [
   { icon: Paintbrush, text: "Your logo, colors & app name — completely unbranded" },
   { icon: Globe, text: "Deployed to your own domain in days, not months" },
-  { icon: Phone, text: "Congregation analytics and engagement dashboard" },
+  { icon: Phone, text: "Member activity reporting for your leadership team" },
   { icon: MessageSquare, text: "Custom devotional paths tied to your sermon series" },
   { icon: Users, text: "All features: devotionals, journeys, Bible, journaling, prayer" },
   { icon: ShieldCheck, text: "Isolated deployment — your congregation's data stays yours" },
@@ -423,10 +423,10 @@ export default function PricingPage() {
           <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
             Launch a fully branded faith app for your congregation — your name, your logo, your domain. Powered by the same technology, delivered in days.
           </p>
-          {/* Social proof */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-700 dark:text-amber-400 text-[11px] font-semibold">
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-            Already trusted by churches across the US
+          {/* Available badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/8 border border-primary/20 text-primary text-[11px] font-semibold">
+            <Church className="w-3 h-3" />
+            Built for congregations of every size
           </div>
         </div>
 
