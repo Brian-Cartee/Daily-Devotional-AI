@@ -647,6 +647,12 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
+          {/* Time-aware greeting */}
+          <GreetingHeader />
+
+          {/* Returning-user grace card */}
+          <ReturningUserCard />
+
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
 
@@ -682,7 +688,10 @@ export default function LandingHome() {
                     <p className="text-[14px] text-foreground leading-relaxed italic mb-1.5">
                       "{verse.text}"
                     </p>
-                    <p className="text-[12px] font-bold text-primary/60">— {verse.ref}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-[12px] font-bold text-primary/60">— {verse.ref}</p>
+                      <ShareVerseButton verseText={verse.text} verseRef={verse.ref} />
+                    </div>
                   </div>
 
                   {/* Prayer + Journey — two columns */}
@@ -795,6 +804,18 @@ export default function LandingHome() {
 
           {/* Daily Devotional — primary action */}
           <DevotionalCard />
+
+          {/* Daily check-in */}
+          <CheckinCard />
+
+          {/* Rotating feature tip */}
+          <TipCard />
+
+          {/* Weekly gratitude prompt — saves to journal */}
+          <GratitudePromptCard sessionId={sessionId} />
+
+          {/* Sunday weekly summary */}
+          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
 
           {/* Rhythm nudge — shown after first action, before setup is done */}
           {showNudge && (
