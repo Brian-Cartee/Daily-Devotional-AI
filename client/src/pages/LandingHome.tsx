@@ -874,7 +874,7 @@ export default function LandingHome() {
             <img
               src={logoWhite}
               alt="Shepherd's Path"
-              className="w-20 h-20 object-contain opacity-80"
+              className="w-32 h-32 object-contain opacity-85"
             />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Built for your phone</p>
