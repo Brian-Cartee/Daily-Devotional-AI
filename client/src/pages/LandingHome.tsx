@@ -509,15 +509,15 @@ export default function LandingHome() {
               >
                 <div
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-                  style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)" }}
+                  style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)", maxWidth: "calc(100vw - 4rem)" }}
                 >
                   <span className="text-amber-400 font-bold whitespace-nowrap" style={{ fontSize: "12px", letterSpacing: "0.04em" }}>★★★★★</span>
-                  <span className="text-white/30" style={{ fontSize: "10px" }}>·</span>
+                  <span className="text-white/30 whitespace-nowrap" style={{ fontSize: "10px" }}>·</span>
                   <span
                     className="text-white/80 font-medium whitespace-nowrap"
                     style={{ fontSize: "11px", letterSpacing: "0.02em" }}
                   >
-                    For believers, seekers &amp; the searching heart
+                    For believers &amp; seekers
                   </span>
                 </div>
               </motion.div>
