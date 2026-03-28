@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   Sun, Compass, BookOpen, Search, NotebookPen, Heart,
-  MessageCircle, Flame, Trophy, ShieldCheck, Church,
+  Flame, Trophy, ShieldCheck, Church,
   Sparkles, ArrowRight, Users, Share2, Check
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
@@ -57,14 +57,6 @@ const FEATURES = [
     border: "border-rose-100",
     title: "Guided Prayer",
     desc: "Bring what you're carrying and receive a scripture, a reflection, and a prayer shaped specifically for your moment.",
-  },
-  {
-    icon: MessageCircle,
-    color: "text-teal-500",
-    bg: "bg-teal-50",
-    border: "border-teal-100",
-    title: "Text PRAY from Anywhere",
-    desc: "No app required. Text anything on your heart to +1 (833) 962-9341 and receive scripture and prayer straight to your phone.",
   },
   {
     icon: NotebookPen,
@@ -142,10 +134,10 @@ export default function AboutPage() {
             Your Daily Companion in Faith
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
-            Shepherd's Path is a daily faith app built to walk alongside you through Scripture, prayer, and reflection — not just deliver content at you.
+            Shepherd's Path is a daily faith companion — devotionals, guided Bible journeys, prayer, Scripture memorization, and a personal journal — all working together to help you grow in your walk with God.
           </p>
           <p className="text-[13px] text-primary/70 italic font-medium mb-5">
-            "Open your Bible. We'll open the conversation."
+            "A faithful guide available anytime — open your Bible. We'll open the conversation."
           </p>
           <button
             data-testid="btn-share-about"
