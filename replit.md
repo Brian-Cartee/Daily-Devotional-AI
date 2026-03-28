@@ -6,12 +6,13 @@ Tagline: **Walk the path. Follow the Word.**
 
 A faith-centered Bible companion with daily devotionals, guided scripture paths, full Bible reading, and a prayer journal. Designed for the 20–40 age range with a calm, sacred, premium aesthetic.
 
-## Four Core Experiences
+## Five Core Experiences
 
 1. **Daily Devotional** (`/devotional`) — 4-step spiritual loop: Today's Word → AI Reflection → AI Prayer → Thank Him (personalized gratitude closing prayer). Email capture at bottom. Streak tracking.
 2. **Bible Journey** (`/understand`) — 4 curated reading tracks (Psalms, Proverbs, Gospel, Wisdom) with daily-rotated passage + full 18-passage canonical guided path with AI tools
 3. **Read the Bible** (`/read`) — Full Bible chapter-by-chapter reading (KJV via bible-api.com) with AI assistance
 4. **Prayer Journal** (`/journal`) — Save prayers, reflections, and scriptures; organized in 3 tabs
+5. **Faith Rhythm Setup** — 3-question personalization flow (season → time → focus) that generates a "Your Rhythm Today" card on the home screen with a daily verse, prayer prompt, and recommended Bible journey. Stored in `localStorage` as `sp_faith_rhythm`. Nudge card shown after first meaningful action; dismissed gracefully up to 2 times.
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -12,6 +12,13 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { useDemoMode } from "@/components/DemoProvider";
 import { getRemainingAi } from "@/lib/aiUsage";
+import {
+  getRhythm, markFirstAction, hasFirstAction,
+  getRhythmDismissed, incrementRhythmDismissed,
+  getRecommendedJourneyId, getJourneyName, getDailyVerse, getPrayerPrompt,
+  FOCUS_LABELS, type FaithRhythm,
+} from "@/lib/faithRhythm";
+import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -137,6 +144,7 @@ function HeroAIPrompt() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+    markFirstAction();
     navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
   };
 
@@ -405,8 +413,37 @@ export default function LandingHome() {
   const [expanded, setExpanded] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [shared, setShared] = useState(false);
+  const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
+  const [showRhythmSetup, setShowRhythmSetup] = useState(false);
+  const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
   const demo = useDemoMode();
+
+  const sessionId = getSessionId();
+  const { data: streakData } = useQuery<{ currentStreak: number; visitDates: string[] }>({
+    queryKey: ["/api/streak", sessionId],
+    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  const hasAction = hasFirstAction() || (streakData?.visitDates?.length ?? 0) > 0;
+  const showNudge = !rhythm && hasAction && rhythmDismissCount < 2;
+
+  const handleRhythmDone = () => {
+    setRhythm(getRhythm());
+    setShowRhythmSetup(false);
+  };
+
+  const handleRhythmDismiss = () => {
+    incrementRhythmDismissed();
+    setRhythmDismissCount((c) => c + 1);
+    setShowRhythmSetup(false);
+  };
+
+  const handleNudgeDismiss = () => {
+    incrementRhythmDismissed();
+    setRhythmDismissCount((c) => c + 1);
+  };
 
   const handleShareApp = async () => {
     const shareData = {
@@ -449,6 +486,11 @@ export default function LandingHome() {
       </AnimatePresence>
       <AnimatePresence>
         {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); focusHeroInput(); }} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showRhythmSetup && (
+          <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
+        )}
       </AnimatePresence>
 
       {/* Hero section */}
@@ -572,8 +614,110 @@ export default function LandingHome() {
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
 
+          {/* Today's Rhythm card — shown once rhythm is set up */}
+          {rhythm && (() => {
+            const verse = getDailyVerse(rhythm.focus);
+            const prayer = getPrayerPrompt(rhythm.focus);
+            const journeyId = getRecommendedJourneyId(rhythm);
+            const journeyName = getJourneyName(journeyId);
+            const focusLabel = FOCUS_LABELS[rhythm.focus];
+            return (
+              <div className="relative rounded-2xl border border-primary/20 bg-card overflow-hidden shadow-sm">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-primary to-violet-500 opacity-70 rounded-l-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/4 via-violet-500/3 to-transparent pointer-events-none" />
+                <div className="relative z-10 px-5 pt-4 pb-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-primary/12 flex items-center justify-center">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <span className="text-[12px] font-bold uppercase tracking-widest text-primary/70">Your Rhythm Today</span>
+                    </div>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/8 text-primary border border-primary/15">
+                      Focused on {focusLabel}
+                    </span>
+                  </div>
+
+                  {/* Today's verse */}
+                  <div className="mb-3 px-3.5 py-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <p className="text-[13px] font-bold uppercase tracking-widest text-primary/50 mb-1.5">Today's Word</p>
+                    <p className="text-[14px] text-foreground leading-relaxed italic mb-1.5">
+                      "{verse.text}"
+                    </p>
+                    <p className="text-[12px] font-bold text-primary/60">— {verse.ref}</p>
+                  </div>
+
+                  {/* Prayer + Journey — two columns */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+                    <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <HandHeart className="w-3.5 h-3.5 text-primary/60" />
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bring to Prayer</p>
+                      </div>
+                      <p className="text-[12px] text-foreground/75 leading-snug italic">
+                        {prayer}
+                      </p>
+                    </div>
+                    <Link href={`/understand?j=${journeyId}`}>
+                      <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60 hover:border-primary/25 hover:bg-primary/4 transition-all cursor-pointer h-full group">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <BookMarked className="w-3.5 h-3.5 text-primary/60" />
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Your Journey</p>
+                        </div>
+                        <p className="text-[12px] text-foreground/75 leading-snug font-semibold group-hover:text-primary transition-colors">
+                          {journeyName} →
+                        </p>
+                      </div>
+                    </Link>
+                  </div>
+
+                  {/* Footer — adjust */}
+                  <button
+                    data-testid="btn-adjust-rhythm"
+                    onClick={() => setShowRhythmSetup(true)}
+                    className="text-[11px] text-muted-foreground hover:text-primary transition-colors font-medium"
+                  >
+                    Adjust my rhythm
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Daily Devotional — primary action */}
           <DevotionalCard />
+
+          {/* Rhythm nudge — shown after first action, before setup is done */}
+          {showNudge && (
+            <div className="relative rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-violet-500/3 px-5 py-4 flex items-start gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <SlidersHorizontal className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-foreground mb-0.5">Make Shepherd's Path yours</p>
+                <p className="text-[13px] text-muted-foreground leading-snug mb-2.5">
+                  Tell us where you are in your walk — 3 quick questions to personalize your daily verse, prayer, and Bible journey.
+                </p>
+                <button
+                  data-testid="btn-start-rhythm-setup"
+                  onClick={() => setShowRhythmSetup(true)}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-primary hover:text-primary/80 transition-colors"
+                >
+                  Set up my rhythm <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <button
+                data-testid="btn-nudge-dismiss"
+                onClick={handleNudgeDismiss}
+                className="w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0 mt-0.5"
+                aria-label="Dismiss"
+              >
+                <span className="text-lg leading-none">×</span>
+              </button>
+            </div>
+          )}
 
           {/* Bible Journeys + Read — core content, moved up */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
