@@ -129,7 +129,7 @@ export default function SalvationPage() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
+      <div className="max-w-lg mx-auto px-4 pt-20 pb-24">
 
         {/* Hero */}
         <motion.div {...fadeUp(0)} className="text-center mb-10">
