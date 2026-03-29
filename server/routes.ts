@@ -671,6 +671,40 @@ What you never do:
     }
   });
 
+  // Inline Bible term lookup — "Who is this person/place?"
+  app.post("/api/bible/lookup", async (req, res) => {
+    const { term, context } = req.body as { term?: string; context?: string };
+    if (!term || term.length < 2 || term.length > 60) {
+      return res.status(400).json({ message: "term required" });
+    }
+    try {
+      const openai = new OpenAI();
+      const contextNote = context ? ` The reader is currently in ${context}.` : "";
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        max_tokens: 180,
+        messages: [
+          {
+            role: "system",
+            content: `You are a warm, knowledgeable Bible companion — like a friend who has studied scripture for years and loves helping people understand it. When someone taps on a name or place in the Bible, give a brief, plain-language explanation. Return only valid JSON:\n{"type":"person"|"place"|"thing"|"concept","summary":"2-3 sentences, plain language, no jargon. Who/what is this, why do they matter, what should the reader know?"}`
+          },
+          {
+            role: "user",
+            content: `Who or what is "${term}" in the Bible?${contextNote} Keep it brief and personal.`
+          }
+        ]
+      });
+      const raw = response.choices[0].message.content?.trim() ?? "{}";
+      let parsed: { type?: string; summary?: string } = {};
+      try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch {}
+      res.json({ term, type: parsed.type ?? "person", summary: parsed.summary ?? "No information found." });
+    } catch (err) {
+      console.error("bible lookup error:", err);
+      res.status(500).json({ message: "Could not look up term" });
+    }
+  });
+
   // Bible chapter text proxy (uses bible-api.com)
   app.get("/api/bible", async (req, res) => {
     const ref = req.query.ref as string;

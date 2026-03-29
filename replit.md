@@ -31,8 +31,10 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 | `/` | LandingHome | Home screen with 3-card section links |
 | `/devotional` | Devotional | 4-step daily flow: Word → Reflection → Prayer → Thank Him + email capture |
 | `/understand` | UnderstandBible | 4 Bible tracks + 18 canonical guided passages with AI tools |
-| `/read` | ReadBible | Full Bible reading (Literata font, parsed verse numbers) |
+| `/read` | ReadBible | Full Bible reading (KJV) with inline proper noun lookup (tap any name/place for AI explanation) |
 | `/journal` | Journal | Prayer journal — My Prayers, My Reflections, Saved Scriptures |
+| `/salvation` | SalvationPage | "Beginning with Jesus" — full Gospel walkthrough, prayer of salvation, localStorage moment tracking, next-steps cards |
+| `/reading-plans` | ReadingPlansPage | Bible in a Year (365 days) and New Testament in 90 Days — full schedule generated programmatically, per-day completion tracking in localStorage |
 
 ## Key Components
 

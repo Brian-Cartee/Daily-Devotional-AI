@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -1138,6 +1138,33 @@ export default function LandingHome() {
           </div>
         </motion.div>
 
+        {/* Salvation entry card */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-5"
+        >
+          <Link href="/salvation">
+            <div
+              data-testid="card-salvation-entry"
+              className="relative rounded-2xl border border-rose-200/70 dark:border-rose-800/40 bg-gradient-to-br from-rose-50/80 to-amber-50/60 dark:from-rose-950/30 dark:to-amber-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
+            >
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-rose-500 via-amber-400 to-rose-400" />
+              <div className="px-5 py-4 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20">
+                  <Heart className="w-5 h-5 text-white fill-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-foreground leading-snug">Beginning with Jesus</p>
+                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">New to faith — or finding your way back? Start here.</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-rose-400 rotate-[-90deg] shrink-0" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
         {/* Scripture commitment card — trust footer, sits at the very bottom */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -1354,6 +1381,12 @@ export default function LandingHome() {
             </Link>
             <Link href="/store" className="hover:text-foreground transition-colors font-semibold text-primary/80" data-testid="link-store-footer">
               🛍️ Store
+            </Link>
+            <Link href="/reading-plans" className="hover:text-foreground transition-colors" data-testid="link-plans-footer">
+              Reading Plans
+            </Link>
+            <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-600/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
+              ✝ Beginning with Jesus
             </Link>
           </div>
 

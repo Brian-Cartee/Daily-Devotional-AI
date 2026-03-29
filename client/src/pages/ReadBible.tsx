@@ -453,6 +453,8 @@ export default function ReadBible() {
                           text={chapterText.data.text}
                           className="leading-[2]"
                           verseNumClassName="reading-verse-num"
+                          enableLookup={true}
+                          lookupContext={`${selectedBook} chapter ${selectedChapter}`}
                         />
                       </div>
 
