@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -15,6 +15,8 @@ const NAV_ITEMS = [
   { href: "/read",       label: "Bible",      icon: BookOpen },
   { href: "/study",      label: "Study",      icon: Search },
   { href: "/journal",    label: "Journal",    icon: NotebookPen },
+  { href: "/stories",    label: "Stories",    icon: Heart },
+  { href: "/store",      label: "Store",      icon: ShoppingBag },
 ];
 
 const BOTTOM_NAV_ITEMS = [

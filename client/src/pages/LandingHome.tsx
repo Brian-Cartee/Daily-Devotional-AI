@@ -1334,7 +1334,7 @@ export default function LandingHome() {
           {/* Divider */}
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
 
-          {/* Links — 2×2 grid, no orphan separators */}
+          {/* Links — 2-col grid */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-foreground/70 text-center mb-2.5 px-4">
             <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="link-pricing-footer">
               Plans & Pricing
@@ -1347,6 +1347,12 @@ export default function LandingHome() {
             </Link>
             <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
               Terms
+            </Link>
+            <Link href="/stories" className="hover:text-foreground transition-colors" data-testid="link-stories-footer">
+              Stories
+            </Link>
+            <Link href="/store" className="hover:text-foreground transition-colors font-semibold text-primary/80" data-testid="link-store-footer">
+              🛍️ Store
             </Link>
           </div>
 
