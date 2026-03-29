@@ -80,7 +80,7 @@ export default function GreatestGiftPage() {
 
   const copyCode = async () => {
     try {
-      await navigator.clipboard.writeText("GREATESTGIFT");
+      await navigator.clipboard.writeText("PATHGIFT");
       setCodeCopied(true);
       setTimeout(() => setCodeCopied(false), 2500);
     } catch {}
@@ -184,7 +184,7 @@ export default function GreatestGiftPage() {
               className="group relative inline-flex items-center gap-3 bg-white dark:bg-black/20 border border-amber-200/70 dark:border-amber-700/50 rounded-xl px-5 py-3 mb-3 hover:border-amber-400/70 transition-colors"
             >
               <span className="text-[20px] font-bold tracking-[0.12em] text-amber-600 dark:text-amber-400">
-                GREATESTGIFT
+                PATHGIFT
               </span>
               <span className={`text-[12px] font-bold transition-colors ${codeCopied ? "text-green-600" : "text-muted-foreground group-hover:text-foreground"}`}>
                 {codeCopied ? "✓ Copied!" : "Tap to copy"}
