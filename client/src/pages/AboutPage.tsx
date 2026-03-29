@@ -177,7 +177,7 @@ export default function AboutPage() {
           <Link href="/guidance">
             <div className="relative rounded-2xl overflow-hidden border border-primary/25 bg-gradient-to-br from-primary/8 via-violet-500/5 to-amber-500/5 p-5 cursor-pointer group hover:border-primary/40 transition-all">
               <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
-              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-2">Try it now</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-2">Our Signature Feature</p>
               <p className="text-[20px] font-bold text-foreground leading-snug mb-2">
                 What are you facing today?
               </p>
