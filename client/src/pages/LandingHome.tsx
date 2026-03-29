@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -1165,6 +1165,60 @@ export default function LandingHome() {
           </Link>
         </motion.div>
 
+        {/* Prayer Wall entry card */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.42 }}
+          className="mt-3"
+        >
+          <Link href="/prayer-wall">
+            <div
+              data-testid="card-prayer-wall-entry"
+              className="relative rounded-2xl border border-violet-200/70 dark:border-violet-800/40 bg-gradient-to-br from-violet-50/80 to-blue-50/60 dark:from-violet-950/30 dark:to-blue-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
+            >
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 to-rose-500" />
+              <div className="px-5 py-4 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center shrink-0 shadow-md shadow-violet-500/20">
+                  <HandHeart className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-foreground leading-snug">Prayer Wall</p>
+                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Share your heart. Believers are praying together here.</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-violet-400 rotate-[-90deg] shrink-0" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Greatest Gift promo card */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.44 }}
+          className="mt-3"
+        >
+          <Link href="/greatest-gift">
+            <div
+              data-testid="card-greatest-gift-entry"
+              className="relative rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
+            >
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-500 to-orange-500" />
+              <div className="px-5 py-4 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 shadow-md shadow-amber-500/25">
+                  <Gift className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-foreground leading-snug">The Greatest Gift 🎁</p>
+                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Give someone a year with God — PRO + a T-shirt bundle.</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-amber-400 rotate-[-90deg] shrink-0" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
         {/* Scripture commitment card — trust footer, sits at the very bottom */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -1387,6 +1441,12 @@ export default function LandingHome() {
             </Link>
             <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-600/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
               ✝ Beginning with Jesus
+            </Link>
+            <Link href="/prayer-wall" className="hover:text-foreground transition-colors" data-testid="link-prayer-wall-footer">
+              🙏 Prayer Wall
+            </Link>
+            <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
+              🎁 The Greatest Gift
             </Link>
           </div>
 

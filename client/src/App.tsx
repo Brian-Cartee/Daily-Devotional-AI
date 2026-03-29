@@ -27,6 +27,8 @@ import StoriesPage from "@/pages/StoriesPage";
 import StorePage from "@/pages/StorePage";
 import SalvationPage from "@/pages/SalvationPage";
 import ReadingPlansPage from "@/pages/ReadingPlansPage";
+import PrayerWallPage from "@/pages/PrayerWallPage";
+import GreatestGiftPage from "@/pages/GreatestGiftPage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -83,6 +85,8 @@ function Router() {
       <Route path="/store" component={StorePage} />
       <Route path="/salvation" component={SalvationPage} />
       <Route path="/reading-plans" component={ReadingPlansPage} />
+      <Route path="/prayer-wall" component={PrayerWallPage} />
+      <Route path="/greatest-gift" component={GreatestGiftPage} />
       <Route component={NotFound} />
     </Switch>
   );

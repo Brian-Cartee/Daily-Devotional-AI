@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry } from "@shared/schema";
 import { eq, and, desc, isNull, isNotNull, lt, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -44,6 +44,10 @@ export interface IStorage {
   saveMemoryVerse(data: InsertMemoryVerse): Promise<MemoryVerse>;
   deleteMemoryVerse(id: number, sessionId: string): Promise<void>;
   recordMemoryReview(id: number, sessionId: string): Promise<void>;
+  getPrayerWallEntries(): Promise<PrayerWallEntry[]>;
+  createPrayerWallEntry(data: InsertPrayerWallEntry): Promise<PrayerWallEntry>;
+  recordPrayerWallPray(requestId: number, sessionId: string): Promise<{ prayCount: number; alreadyPrayed: boolean }>;
+  hasPrayedFor(requestId: number, sessionId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -365,6 +369,36 @@ export class DatabaseStorage implements IStorage {
     await db.update(memoryVerses)
       .set({ reviewCount: sqlExpr`${memoryVerses.reviewCount} + 1`, lastReviewedAt: today })
       .where(and(eq(memoryVerses.id, id), eq(memoryVerses.sessionId, sessionId)));
+  }
+
+  async getPrayerWallEntries(): Promise<PrayerWallEntry[]> {
+    return db.select().from(prayerWall).orderBy(desc(prayerWall.createdAt)).limit(50);
+  }
+
+  async createPrayerWallEntry(data: InsertPrayerWallEntry): Promise<PrayerWallEntry> {
+    const [row] = await db.insert(prayerWall).values(data).returning();
+    return row;
+  }
+
+  async recordPrayerWallPray(requestId: number, sessionId: string): Promise<{ prayCount: number; alreadyPrayed: boolean }> {
+    const existing = await db.select().from(prayerWallPrays)
+      .where(and(eq(prayerWallPrays.requestId, requestId), eq(prayerWallPrays.sessionId, sessionId)));
+    if (existing.length > 0) {
+      const [entry] = await db.select().from(prayerWall).where(eq(prayerWall.id, requestId));
+      return { prayCount: entry?.prayCount ?? 0, alreadyPrayed: true };
+    }
+    await db.insert(prayerWallPrays).values({ requestId, sessionId });
+    const [updated] = await db.update(prayerWall)
+      .set({ prayCount: sqlExpr`${prayerWall.prayCount} + 1` })
+      .where(eq(prayerWall.id, requestId))
+      .returning();
+    return { prayCount: updated?.prayCount ?? 0, alreadyPrayed: false };
+  }
+
+  async hasPrayedFor(requestId: number, sessionId: string): Promise<boolean> {
+    const rows = await db.select().from(prayerWallPrays)
+      .where(and(eq(prayerWallPrays.requestId, requestId), eq(prayerWallPrays.sessionId, sessionId)));
+    return rows.length > 0;
   }
 }
 

@@ -214,3 +214,29 @@ export const insertMemoryVerseSchema = createInsertSchema(memoryVerses).omit({ i
 
 export type MemoryVerse = typeof memoryVerses.$inferSelect;
 export type InsertMemoryVerse = z.infer<typeof insertMemoryVerseSchema>;
+
+// App-based community prayer wall (web/mobile, sessionId-based, no phone required)
+export const prayerWall = pgTable("prayer_wall", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  displayName: text("display_name"), // null = "Anonymous Believer"
+  request: text("request").notNull(),
+  prayCount: integer("pray_count").default(0).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export const insertPrayerWallSchema = createInsertSchema(prayerWall).omit({ id: true, createdAt: true, prayCount: true }).extend({
+  sessionId: z.string().min(1),
+  request: z.string().min(10).max(280),
+  displayName: z.string().max(40).optional(),
+});
+
+export type PrayerWallEntry = typeof prayerWall.$inferSelect;
+export type InsertPrayerWallEntry = z.infer<typeof insertPrayerWallSchema>;
+
+export const prayerWallPrays = pgTable("prayer_wall_prays", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});

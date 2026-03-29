@@ -35,6 +35,8 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 | `/journal` | Journal | Prayer journal — My Prayers, My Reflections, Saved Scriptures |
 | `/salvation` | SalvationPage | "Beginning with Jesus" — full Gospel walkthrough, prayer of salvation, localStorage moment tracking, next-steps cards |
 | `/reading-plans` | ReadingPlansPage | Bible in a Year (365 days) and New Testament in 90 Days — full schedule generated programmatically, per-day completion tracking in localStorage |
+| `/prayer-wall` | PrayerWallPage | Community prayer wall — submit requests (10–280 chars, optional display name), tap "I'm praying" on others; session-based deduplication, 50 most recent entries |
+| `/greatest-gift` | GreatestGiftPage | Promo page: PRO membership + T-shirt bundle, countdown timer (21-day sale window in localStorage), gift code GREATESTGIFT (25% off), missionary framing |
 
 ## Key Components
 
@@ -158,9 +160,8 @@ AI system prompts instruct reading emotional tone and responding accordingly —
 
 ## Future Features (Not Yet Built)
 
-### "Pray for Me" — Community Prayer Wall
-Users submit anonymous prayer requests. Others tap 🙏 "I prayed for you." This turns the app into a community, not just a tool — and is a genuine virality driver.
-Implementation will require: prayer_requests table (anonymous or session-based), prayer_reactions table, a public feed UI, moderation/reporting.
+### Community Prayer Wall — LIVE at `/prayer-wall`
+Users submit prayer requests (10–280 chars, optional display name). Others tap 🙏 "I'm praying." Session-based deduplication prevents double-praying. Tables: `prayer_wall` (id, sessionId, displayName, request, prayCount, createdAt), `prayer_wall_prays` (id, requestId, sessionId, createdAt). API: GET/POST `/api/prayer-wall`, POST `/api/prayer-wall/:id/pray`. Entry card on home page and footer link added.
 
 ### User Accounts + Premium Tier
 Auth (Replit Auth or email/password), Stripe subscriptions, feature gating for unlimited AI.

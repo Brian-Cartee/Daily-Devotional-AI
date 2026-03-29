@@ -7,7 +7,7 @@ import { execSync } from "child_process";
 import { Readable } from "stream";
 import { storage } from "./storage";
 import { api, chatRequestSchema, type ChatMessage } from "@shared/routes";
-import { insertSubscriberSchema, insertJournalEntrySchema } from "@shared/schema";
+import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
 import multer from "multer";
@@ -974,6 +974,45 @@ What you never do:
   });
 
   // ── Journal Routes ──────────────────────────────────────────────────────────
+
+  // ── Community Prayer Wall ──────────────────────────────────────────────────
+  app.get("/api/prayer-wall", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    try {
+      const entries = await storage.getPrayerWallEntries();
+      // Attach whether current session has prayed for each entry
+      const withPrayed = await Promise.all(entries.map(async (e) => ({
+        ...e,
+        hasPrayed: sessionId ? await storage.hasPrayedFor(e.id, sessionId) : false,
+      })));
+      res.json(withPrayed);
+    } catch {
+      res.status(500).json({ message: "Failed to load prayer wall" });
+    }
+  });
+
+  app.post("/api/prayer-wall", async (req, res) => {
+    const parsed = insertPrayerWallSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid request", errors: parsed.error.flatten() });
+    try {
+      const entry = await storage.createPrayerWallEntry(parsed.data);
+      res.json(entry);
+    } catch {
+      res.status(500).json({ message: "Failed to submit prayer request" });
+    }
+  });
+
+  app.post("/api/prayer-wall/:id/pray", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const sessionId = req.body.sessionId as string;
+    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
+    try {
+      const result = await storage.recordPrayerWallPray(id, sessionId);
+      res.json(result);
+    } catch {
+      res.status(500).json({ message: "Failed to record prayer" });
+    }
+  });
 
   app.get("/api/journal", async (req, res) => {
     const sessionId = req.query.sessionId as string;
