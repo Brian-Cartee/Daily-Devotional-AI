@@ -3,6 +3,7 @@ import { useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, X, BookOpen, Lightbulb, Eye, EyeOff } from "lucide-react";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
+import { BiblePassageText } from "@/components/BiblePassageText";
 import { useQuery } from "@tanstack/react-query";
 
 function usePassageText(apiRef: string, enabled: boolean) {
@@ -224,9 +225,11 @@ export default function PresentMode() {
                   <p className="text-white/40 text-lg animate-pulse">Loading scripture…</p>
                 )}
                 {scriptureQuery.data && (
-                  <p className="text-lg sm:text-xl lg:text-2xl text-teal-100/90 leading-relaxed font-light whitespace-pre-line text-left">
-                    {scriptureQuery.data.text}
-                  </p>
+                  <BiblePassageText
+                    text={scriptureQuery.data.text}
+                    className="text-lg sm:text-xl lg:text-2xl text-teal-100/90 leading-relaxed font-light text-left"
+                    verseNumClassName="text-[0.6em] font-bold text-teal-300/60 mr-1 select-none"
+                  />
                 )}
               </div>
             )}

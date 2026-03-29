@@ -18,6 +18,7 @@ import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
+import { BiblePassageText } from "@/components/BiblePassageText";
 
 type AIPanel = "explain" | "context" | "apply" | "crossref" | "chat" | null;
 
@@ -448,20 +449,11 @@ export default function ReadBible() {
                       </div>
 
                       <div className="reading-text text-foreground/85" style={{ fontSize: `${fontSize}%` }}>
-                        {chapterText.data.text
-                          .split('\n')
-                          .filter(line => line.trim())
-                          .map((line, i) => {
-                            const match = line.match(/^\[(\d+)\] (.*)/);
-                            if (!match) return <span key={i}>{line} </span>;
-                            const [, num, text] = match;
-                            return (
-                              <span key={i}>
-                                <span className="reading-verse-num">{num}</span>
-                                {text}{' '}
-                              </span>
-                            );
-                          })}
+                        <BiblePassageText
+                          text={chapterText.data.text}
+                          className="leading-[2]"
+                          verseNumClassName="reading-verse-num"
+                        />
                       </div>
 
                       <div className="flex justify-between mt-14 pt-6 border-t border-border/40">

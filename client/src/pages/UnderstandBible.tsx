@@ -27,39 +27,13 @@ import { createShareImage } from "@/lib/shareImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
+import { BiblePassageText } from "@/components/BiblePassageText";
 
 function usePassageText(apiRef: string, enabled: boolean) {
   const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
   return useQuery<{ text: string; reference: string }>({ queryKey: [url], enabled });
 }
 
-function BiblePassageText({ text }: { text: string }) {
-  const parts = text.split(/(\[\d+\])/g);
-  const verses: Array<{ num: string | null; body: string }> = [];
-  let current: { num: string | null; body: string } = { num: null, body: "" };
-  for (const part of parts) {
-    if (/^\[\d+\]$/.test(part)) {
-      if (current.body.trim()) verses.push(current);
-      current = { num: part.replace(/\[|\]/g, ""), body: "" };
-    } else {
-      current.body += part;
-    }
-  }
-  if (current.body.trim()) verses.push(current);
-  return (
-    <div className="text-sm text-slate-700 dark:text-slate-200 leading-[1.9] space-y-1">
-      {verses.map((v, i) => (
-        <span key={i} className="inline">
-          {v.num && (
-            <sup className="text-[10px] font-bold text-primary/60 mr-0.5 select-none">{v.num}</sup>
-          )}
-          {v.body.replace(/\n+/g, " ").trim()}
-          {" "}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [open, setOpen] = useState(false);

@@ -17,6 +17,7 @@ import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
+import { BiblePassageText } from "@/components/BiblePassageText";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -187,7 +188,7 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
               {textQuery.data && (
                 <>
                   <div className="bg-white/50 rounded-xl p-4 max-h-60 overflow-y-auto">
-                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{textQuery.data.text}</p>
+                    <BiblePassageText text={textQuery.data.text} className="text-sm text-slate-600 dark:text-slate-300 leading-[1.9]" />
                   </div>
                   <SaveButton
                     onClick={handleSaveScripture}
@@ -293,7 +294,9 @@ function TrackPassageRow({ passage, index, trackId }: { passage: { reference: st
               {textQuery.isLoading && <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...</div>}
               {textQuery.data && (
                 <>
-                  <p className="text-sm text-slate-600 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-line">{textQuery.data.text}</p>
+                  <div className="max-h-48 overflow-y-auto">
+                    <BiblePassageText text={textQuery.data.text} className="text-sm text-slate-600 dark:text-slate-300 leading-[1.9]" />
+                  </div>
                   <SaveButton onClick={handleSave} saved={saved} label="Save scripture" />
                 </>
               )}
