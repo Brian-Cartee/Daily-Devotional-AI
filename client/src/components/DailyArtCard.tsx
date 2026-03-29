@@ -193,17 +193,6 @@ export function DailyArtCard() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
           )}
 
-          {/* Top-left label — clean, single line */}
-          {imageLoaded && (
-            <div className="absolute top-3 left-4">
-              <span
-                className="text-white font-semibold uppercase"
-                style={{ fontSize: "10px", letterSpacing: "0.16em", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.5)" }}
-              >
-                A Moment of Beauty
-              </span>
-            </div>
-          )}
 
           {/* Hide button — top right, appears on hover/focus */}
           {imageLoaded && (
