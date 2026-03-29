@@ -93,10 +93,11 @@ const FEATURES = [
 ];
 
 const COMMITMENTS = [
-  "Every AI response is grounded in the actual Bible passage being studied",
-  "Nothing is generated outside of God's Word — no AI speculation or reinterpretation",
-  "Shaped by the historic, orthodox Christian faith across centuries and traditions",
-  "We use AI to help you engage with Scripture — not to replace it",
+  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit — where the Holy Spirit is the living, active relationship with our Lord and Savior",
+  "Built to lead people to Christ using available technology — making it easier to immerse yourself in Scripture, ask honest questions, and grow without embarrassment",
+  "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word, no speculation or reinterpretation",
+  "Shaped by the historic, orthodox Christian faith — not cultural opinion",
+  "Designed to build real spiritual discipline: daily habits that draw you steadily closer to God",
   "Your word is a lamp to my feet and a light to my path. — Psalm 119:105",
 ];
 

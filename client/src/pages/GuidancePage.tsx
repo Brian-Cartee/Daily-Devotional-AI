@@ -352,17 +352,25 @@ export default function GuidancePage() {
             className="mb-8"
           >
             {((streamingText && !isSending) || assistantMessages.length > 0) && (
-              <div className="text-[17px] leading-relaxed text-foreground space-y-4" data-testid="text-guidance-response">
-                {(isSending
-                  ? (assistantMessages[0]?.content ?? "")
-                  : (streamingText || (assistantMessages[0]?.content ?? ""))
-                ).split("\n\n").map((para, i) =>
-                  para.trim() ? <p key={i}>{para}</p> : null
+              <>
+                <div className="text-[17px] leading-relaxed text-foreground space-y-4" data-testid="text-guidance-response">
+                  {(isSending
+                    ? (assistantMessages[0]?.content ?? "")
+                    : (streamingText || (assistantMessages[0]?.content ?? ""))
+                  ).split("\n\n").map((para, i) =>
+                    para.trim() ? <p key={i}>{para}</p> : null
+                  )}
+                  {!responseComplete && !isSending && (
+                    <span className="inline-block w-1.5 h-5 bg-primary/60 rounded-sm animate-pulse ml-0.5 align-middle" />
+                  )}
+                </div>
+                {responseComplete && (
+                  <p className="text-[11px] text-muted-foreground/60 mt-4 flex items-center gap-1.5">
+                    <span>✝</span>
+                    <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
+                  </p>
                 )}
-                {!responseComplete && !isSending && (
-                  <span className="inline-block w-1.5 h-5 bg-primary/60 rounded-sm animate-pulse ml-0.5 align-middle" />
-                )}
-              </div>
+              </>
             )}
           </motion.div>
 

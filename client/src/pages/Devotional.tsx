@@ -916,6 +916,12 @@ export default function Devotional() {
                       <ListenButton text={reflectionContent} label="Listen" />
                     </div>
                   )}
+                  {!reflectionLoading && (
+                    <p className="text-[11px] text-muted-foreground/50 mt-3 flex items-center gap-1.5">
+                      <span>✝</span>
+                      <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
+                    </p>
+                  )}
                   {!reflectionLoading && reflectionContent && !friendPromptDismissed && (
                     <motion.div
                       key="friend-prompt"

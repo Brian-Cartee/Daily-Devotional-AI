@@ -191,9 +191,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3">
             <span className="text-lg shrink-0">✝️</span>
             <div>
-              <p className="text-[13px] font-bold text-foreground leading-tight">Scripture-first, always</p>
+              <p className="text-[13px] font-bold text-foreground leading-tight">Built to lead people to Christ</p>
               <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                Every response is grounded in God's Word. We never reinterpret — we illuminate.
+                Rooted in Father, Son, and Holy Spirit. Every response is grounded in God's Word — never beside it. We remove the barriers. The Holy Spirit does the rest.
               </p>
             </div>
           </div>
