@@ -10,6 +10,7 @@ import { hasBeenPrompted } from "@/lib/userName";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 import { useDemoMode } from "@/components/DemoProvider";
 import { getRemainingAi } from "@/lib/aiUsage";
 import {
@@ -23,6 +24,7 @@ import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/li
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
   TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard,
+  FirstStepsCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 
@@ -655,6 +657,9 @@ export default function LandingHome() {
 
           {/* Returning-user grace card */}
           <ReturningUserCard />
+
+          {/* First Steps seeker card — shown to new users (days 1–7) */}
+          <FirstStepsCard daysWithApp={getRelationshipAge()} />
 
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />

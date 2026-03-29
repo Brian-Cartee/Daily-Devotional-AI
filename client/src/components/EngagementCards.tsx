@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check } from "lucide-react";
+import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -20,9 +20,12 @@ import {
   isSundaySummaryDismissed,
   dismissSundaySummary,
   getTimeGreeting,
+  shouldShowFirstStepsCard,
+  dismissFirstStepsCard,
   type CheckinEmotion,
 } from "@/lib/engagementCards";
 import { getUserName } from "@/lib/userName";
+import { Link } from "wouter";
 
 // ── Shared slide-in animation ─────────────────────────────────────────────────
 const fadeIn = {
@@ -405,6 +408,83 @@ export function SundaySummaryCard({ streak, visitCount }: SundaySummaryCardProps
           <p className="text-[11px] font-bold uppercase tracking-widest text-green-600/70 mb-1.5">A verse for the week ahead</p>
           <p className="text-[13px] italic text-foreground/80 leading-relaxed mb-1">"{sundayVerse.text}"</p>
           <p className="text-[11px] font-bold text-green-700/70 dark:text-green-400/70">— {sundayVerse.ref}</p>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ── 8. First Steps seeker card (days 1–7) ──────────────────────────────────────
+interface FirstStepsCardProps {
+  daysWithApp: number;
+}
+
+export function FirstStepsCard({ daysWithApp }: FirstStepsCardProps) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (shouldShowFirstStepsCard(daysWithApp)) setVisible(true);
+  }, [daysWithApp]);
+
+  function dismiss() {
+    dismissFirstStepsCard();
+    setVisible(false);
+  }
+
+  if (!visible) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        {...fadeIn}
+        data-testid="card-first-steps"
+        className="relative rounded-2xl border border-orange-200/70 dark:border-orange-800/40 bg-card overflow-hidden shadow-sm"
+      >
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-300" />
+        <button
+          onClick={dismiss}
+          data-testid="button-dismiss-first-steps"
+          aria-label="Dismiss"
+          className="absolute top-3 right-3 text-orange-400 hover:text-orange-600 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="px-5 pt-5 pb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+              <Compass className="w-3.5 h-3.5 text-orange-500" />
+            </div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+              A place to start
+            </p>
+          </div>
+
+          <p className="text-[15px] font-bold text-foreground leading-snug mb-1.5">
+            New to this? There's a journey built for exactly where you are.
+          </p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+            Seven passages. No church background required. Written for someone asking real questions — about whether God is real, whether it's too late, and what any of this actually means.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <Link href="/understand?j=first-steps" onClick={dismiss}>
+              <Button
+                size="sm"
+                data-testid="button-start-first-steps"
+                className="rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-[13px] px-5 shadow-sm"
+              >
+                Start First Steps
+              </Button>
+            </Link>
+            <button
+              onClick={dismiss}
+              className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-skip-first-steps"
+            >
+              I'm familiar with the Bible
+            </button>
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>

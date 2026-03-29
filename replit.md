@@ -9,7 +9,7 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 ## Five Core Experiences
 
 1. **Daily Devotional** (`/devotional`) — 4-step spiritual loop: Today's Word → AI Reflection → AI Prayer → Thank Him (personalized gratitude closing prayer). Email capture at bottom. Streak tracking.
-2. **Bible Journey** (`/understand`) — 4 curated reading tracks (Psalms, Proverbs, Gospel, Wisdom) with daily-rotated passage + full 18-passage canonical guided path with AI tools
+2. **Bible Journey** (`/understand`) — Curated reading journeys including **First Steps** (7 passages for seekers/new believers), Psalms, Foundation, Jesus, Sermon on the Mount, Lent; each with AI Reflection, Commentary, and in-app navigation. Journeys accessed via `?j=<journey-id>` URL param.
 3. **Read the Bible** (`/read`) — Full Bible chapter-by-chapter reading (KJV via bible-api.com) with AI assistance
 4. **Prayer Journal** (`/journal`) — Save prayers, reflections, and scriptures; organized in 3 tabs
 5. **Faith Rhythm Setup** — 3-question personalization flow (season → time → focus) that generates a "Your Rhythm Today" card on the home screen with a daily verse, prayer prompt, and recommended Bible journey. Stored in `localStorage` as `sp_faith_rhythm`. Nudge card shown after first meaningful action; dismissed gracefully up to 2 times.

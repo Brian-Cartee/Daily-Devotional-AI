@@ -147,6 +147,18 @@ export function dismissSundaySummary(): void {
   localStorage.setItem(getSundayKey(), "1");
 }
 
+// ── First Steps seeker card ────────────────────────────────────────────────────
+const FIRST_STEPS_CARD_KEY = "sp_first_steps_dismissed";
+
+export function shouldShowFirstStepsCard(daysWithApp: number): boolean {
+  if (daysWithApp > 7) return false;
+  return !localStorage.getItem(FIRST_STEPS_CARD_KEY);
+}
+
+export function dismissFirstStepsCard(): void {
+  localStorage.setItem(FIRST_STEPS_CARD_KEY, "1");
+}
+
 // ── Time-aware greeting ────────────────────────────────────────────────────────
 export function getTimeGreeting(): string {
   const h = new Date().getHours();
