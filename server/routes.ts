@@ -1951,6 +1951,119 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
     }
   });
 
+  // Support contact form
+  app.post("/api/support/contact", async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body as {
+        name?: string; email?: string; subject?: string; message?: string;
+      };
+      if (!name?.trim() || !email?.trim() || !message?.trim()) {
+        return res.status(400).json({ message: "Name, email, and message are required." });
+      }
+      if (!email.includes("@")) {
+        return res.status(400).json({ message: "Please provide a valid email address." });
+      }
+      if (message.trim().length < 10) {
+        return res.status(400).json({ message: "Message is too short." });
+      }
+
+      const subjectLine = subject?.trim() || "Support Request";
+      const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+
+      try {
+        const { client, fromEmail } = await getUncachableResendClient();
+
+        // Auto-reply to the user
+        await client.emails.send({
+          from: `Shepherd's Path Support <${fromEmail}>`,
+          to: email.trim(),
+          replyTo: "support@shepherdspathai.com",
+          subject: `We received your message — Shepherd's Path Support`,
+          html: `
+<div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:40px 32px;background:#fdf9f6;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <div style="display:inline-block;background:linear-gradient(135deg,#8b6f47,#c49a6c);border-radius:16px;padding:14px 18px;margin-bottom:16px;">
+      <span style="font-size:24px;">✝</span>
+    </div>
+    <h2 style="color:#3d3530;font-size:22px;margin:0 0 8px;">We received your message</h2>
+    <p style="color:#7a6a5a;font-size:15px;margin:0;">Thank you for reaching out, ${name.trim()}.</p>
+  </div>
+
+  <p style="color:#5c5248;line-height:1.75;font-size:15px;">We'll review your message and get back to you within <strong>1 business day</strong>. In the meantime, here are answers to the most common questions:</p>
+
+  <div style="background:#fff;border:1px solid #e8dfd6;border-radius:14px;padding:24px;margin:24px 0;">
+    <h3 style="color:#3d3530;font-size:14px;font-family:sans-serif;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 18px;border-bottom:1px solid #f0e8e0;padding-bottom:10px;">Frequently Asked Questions</h3>
+
+    <div style="margin-bottom:16px;">
+      <p style="color:#3d3530;font-size:14px;font-weight:bold;margin:0 0 4px;font-family:sans-serif;">I was charged but don't have PRO access.</p>
+      <p style="color:#7a6a5a;font-size:13px;margin:0;line-height:1.6;font-family:sans-serif;">Reply to this email with your receipt and we'll activate your account manually right away.</p>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <p style="color:#3d3530;font-size:14px;font-weight:bold;margin:0 0 4px;font-family:sans-serif;">How do I enter my discount code?</p>
+      <p style="color:#7a6a5a;font-size:13px;margin:0;line-height:1.6;font-family:sans-serif;">On the checkout screen, tap "Add promotion code" and enter PATHGIFT for 20% off an annual membership.</p>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <p style="color:#3d3530;font-size:14px;font-weight:bold;margin:0 0 4px;font-family:sans-serif;">How do I cancel my subscription?</p>
+      <p style="color:#7a6a5a;font-size:13px;margin:0;line-height:1.6;font-family:sans-serif;">iOS: Settings → Apple ID → Subscriptions. Android: Play Store → Subscriptions. Or reply here and we'll help.</p>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <p style="color:#3d3530;font-size:14px;font-weight:bold;margin:0 0 4px;font-family:sans-serif;">Can I use the app in Spanish?</p>
+      <p style="color:#7a6a5a;font-size:13px;margin:0;line-height:1.6;font-family:sans-serif;">Yes — tap the globe icon in the top navigation bar to switch to Español, Français, or Português.</p>
+    </div>
+
+    <div>
+      <p style="color:#3d3530;font-size:14px;font-weight:bold;margin:0 0 4px;font-family:sans-serif;">Is my journal and prayer data private?</p>
+      <p style="color:#7a6a5a;font-size:13px;margin:0;line-height:1.6;font-family:sans-serif;">Yes. Your entries are stored securely and never shared or sold. See our Privacy Policy for full details.</p>
+    </div>
+  </div>
+
+  <p style="color:#5c5248;line-height:1.75;font-size:14px;">If none of these answer your question, simply reply to this email and we'll take care of you personally.</p>
+
+  <div style="text-align:center;margin-top:32px;">
+    <a href="${appUrl}" style="background:linear-gradient(135deg,#8b6f47,#c49a6c);color:#fff;padding:13px 30px;border-radius:40px;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:bold;">Return to Shepherd's Path</a>
+  </div>
+
+  <p style="color:#a89880;font-size:12px;text-align:center;margin-top:32px;font-family:sans-serif;">"The Lord is near to all who call on Him." — Psalm 145:18</p>
+</div>`,
+          text: `Hi ${name.trim()},\n\nWe received your message and will get back to you within 1 business day.\n\nIn the meantime, here are answers to common questions:\n\n- I was charged but don't have PRO: Reply with your receipt and we'll activate your account right away.\n- Discount code: Enter PATHGIFT at checkout for 20% off annual.\n- Cancel subscription: iOS: Settings → Apple ID → Subscriptions. Android: Play Store → Subscriptions.\n- Language options: Tap the globe icon in the top nav to switch languages.\n- Privacy: Your data is private and never shared.\n\nIf you have more questions, just reply to this email.\n\n— Shepherd's Path Support\nsupport@shepherdspathai.com\n\n${appUrl}`,
+        });
+
+        // Notification to admin
+        await client.emails.send({
+          from: fromEmail,
+          to: "briancartee@gmail.com",
+          replyTo: email.trim(),
+          subject: `[Support] ${subjectLine} — from ${name.trim()}`,
+          html: `
+<div style="font-family:sans-serif;max-width:500px;margin:auto;padding:32px;background:#f8f8f8;">
+  <h2 style="color:#333;margin-bottom:4px;">New Support Request</h2>
+  <p style="color:#888;font-size:13px;margin-top:0;">Shepherd's Path</p>
+  <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+    <tr><td style="padding:8px 0;color:#888;font-size:13px;width:80px;">Name</td><td style="padding:8px 0;color:#333;font-size:14px;">${name.trim()}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;font-size:13px;">Email</td><td style="padding:8px 0;color:#333;font-size:14px;"><a href="mailto:${email.trim()}">${email.trim()}</a></td></tr>
+    <tr><td style="padding:8px 0;color:#888;font-size:13px;">Subject</td><td style="padding:8px 0;color:#333;font-size:14px;">${subjectLine}</td></tr>
+  </table>
+  <div style="margin-top:16px;background:#fff;border-left:3px solid #8b6f47;padding:16px;border-radius:0 8px 8px 0;">
+    <p style="color:#333;font-size:14px;line-height:1.7;margin:0;">${message.trim().replace(/\n/g, "<br>")}</p>
+  </div>
+  <p style="color:#aaa;font-size:12px;margin-top:24px;">Reply to this email to respond directly to ${name.trim()}.</p>
+</div>`,
+          text: `New support request from ${name.trim()} (${email.trim()})\n\nSubject: ${subjectLine}\n\n${message.trim()}`,
+        });
+      } catch (emailErr) {
+        console.error("[support] Email send failed:", emailErr);
+      }
+
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[support] Error:", err);
+      res.status(500).json({ message: "Could not send message. Please try again." });
+    }
+  });
+
   // Stripe webhook — must use raw body
   app.post("/api/stripe/webhook", async (req, res) => {
     const sig = req.headers["stripe-signature"] as string;

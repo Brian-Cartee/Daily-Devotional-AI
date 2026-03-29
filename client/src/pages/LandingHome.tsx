@@ -1452,9 +1452,9 @@ export default function LandingHome() {
 
           {/* Email + Share — stacked to avoid overflow */}
           <div className="flex flex-col items-center gap-1.5 text-sm text-foreground/70">
-            <a href="mailto:support@shepherdspathai.com" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
-              support@shepherdspathai.com
-            </a>
+            <Link href="/support" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
+              Contact Support
+            </Link>
             <button
               onClick={handleShareApp}
               data-testid="btn-share-app-footer"

@@ -29,6 +29,7 @@ import SalvationPage from "@/pages/SalvationPage";
 import ReadingPlansPage from "@/pages/ReadingPlansPage";
 import PrayerWallPage from "@/pages/PrayerWallPage";
 import GreatestGiftPage from "@/pages/GreatestGiftPage";
+import SupportPage from "@/pages/SupportPage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/reading-plans" component={ReadingPlansPage} />
       <Route path="/prayer-wall" component={PrayerWallPage} />
       <Route path="/greatest-gift" component={GreatestGiftPage} />
+      <Route path="/support" component={SupportPage} />
       <Route component={NotFound} />
     </Switch>
   );
