@@ -1084,6 +1084,44 @@ Rules:
     }
   });
 
+  // ── Guidance: Verse + Personal Prayer ─────────────────────────────────────────
+  app.post("/api/guidance/verse-and-prayer", async (req, res) => {
+    const { situation, userName, sessionId: sid } = req.body as {
+      situation?: string; userName?: string; sessionId?: string;
+    };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    if (sid && isRateLimited(`vp:${sid}`, 12, 3_600_000)) {
+      return res.status(429).json({ message: "Too many requests" });
+    }
+    try {
+      const nameNote = userName ? ` The person's name is ${userName}.` : "";
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 520,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a compassionate Christian pastor.${nameNote} Given what someone has shared, return a JSON object with two fields:
+
+"verse": an object with "reference" (book chapter:verse, e.g. "Psalm 34:18") and "text" (the full verse text from the ESV or NIV — 1–3 sentences max). Choose the single most fitting verse for this exact situation — not a cliché verse, but the one that speaks most directly to the pain or need described.
+
+"prayer": a personal prayer of 5–8 sentences. Write it in the FIRST PERSON as if the person themselves is praying — raw, honest, and specific to exactly what they shared. Do NOT write generic spiritual language. Make it sound like a real human talking to God about this specific thing. End with "Amen." Do not start with "Dear God" or "Heavenly Father" — start with just "God," or "Lord," or "Father," then go straight into the honest heart of the prayer.
+
+Return only valid JSON. No markdown. No extra keys.`,
+          },
+          { role: "user", content: situation.trim().slice(0, 1500) },
+        ],
+      });
+      const raw = completion.choices[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(raw);
+      res.json({ verse: parsed.verse ?? null, prayer: parsed.prayer ?? null });
+    } catch (err) {
+      console.error("verse-and-prayer error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Daily Art Image ───────────────────────────────────────────────────────────
 
   const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");

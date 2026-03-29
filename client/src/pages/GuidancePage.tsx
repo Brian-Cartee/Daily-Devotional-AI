@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Play } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Play, Volume2, VolumeX, BookMarked, CheckCheck } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { detectCrisis } from "@/lib/crisis";
@@ -9,6 +9,8 @@ import { getUserName } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
+import { useTTS } from "@/hooks/use-tts";
+import { apiRequest } from "@/lib/queryClient";
 
 interface VideoResult {
   videoId: string;
@@ -17,6 +19,12 @@ interface VideoResult {
   thumbnail: string;
   url: string;
 }
+
+interface VerseResult {
+  reference: string;
+  text: string;
+}
+
 
 interface Message {
   role: "user" | "assistant";
@@ -48,6 +56,13 @@ export default function GuidancePage() {
   const [videos, setVideos] = useState<VideoResult[]>([]);
   const [videosLoading, setVideosLoading] = useState(false);
   const [videosFetched, setVideosFetched] = useState(false);
+
+  const [verse, setVerse] = useState<VerseResult | null>(null);
+  const [prayer, setPrayer] = useState<string | null>(null);
+  const [vpLoading, setVpLoading] = useState(true);
+  const [prayerSaved, setPrayerSaved] = useState(false);
+
+  const tts = useTTS();
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -123,6 +138,20 @@ export default function GuidancePage() {
       })
       .catch(() => setJourneyLoading(false));
 
+    // Fetch verse + personal prayer in parallel
+    fetch("/api/guidance/verse-and-prayer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId(), userName }),
+    })
+      .then(r => r.json())
+      .then((data: { verse?: VerseResult; prayer?: string }) => {
+        if (data.verse) setVerse(data.verse);
+        if (data.prayer) setPrayer(data.prayer);
+        setVpLoading(false);
+      })
+      .catch(() => setVpLoading(false));
+
   }, []);
 
   // Fetch sermon videos once the pastoral response finishes streaming
@@ -174,6 +203,21 @@ export default function GuidancePage() {
     navigate(`/understand?situation=${encodeURIComponent(situation)}`);
   };
 
+  const savePrayerToJournal = async () => {
+    if (!prayer || prayerSaved) return;
+    try {
+      await apiRequest("POST", "/api/journal", {
+        sessionId: getSessionId(),
+        type: "prayer",
+        title: "A Prayer for My Moment",
+        content: prayer,
+      });
+      setPrayerSaved(true);
+    } catch {
+      // silently ignore
+    }
+  };
+
   const assistantMessages = messages.filter(m => m.role === "assistant");
 
   // Skip initial user message AND first AI response — only follow-up exchanges go here
@@ -206,6 +250,42 @@ export default function GuidancePage() {
               "{situation}"
             </motion.p>
           )}
+
+          {/* ── A Word For This Moment ── */}
+          <AnimatePresence>
+            {(vpLoading || verse) && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mb-10"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary/60 mb-3">
+                  A word for this moment
+                </p>
+                {vpLoading && !verse ? (
+                  <div className="rounded-2xl bg-primary/5 border border-primary/15 p-6 animate-pulse">
+                    <div className="h-4 bg-primary/10 rounded-full w-3/4 mb-3" />
+                    <div className="h-4 bg-primary/10 rounded-full w-full mb-2" />
+                    <div className="h-4 bg-primary/10 rounded-full w-5/6" />
+                  </div>
+                ) : verse ? (
+                  <div
+                    data-testid="card-guidance-verse"
+                    className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/8 via-violet-500/5 to-indigo-500/8 border border-primary/20 px-6 pt-6 pb-5"
+                  >
+                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
+                    <p className="text-[19px] leading-relaxed font-medium text-foreground italic mb-4">
+                      "{verse.text}"
+                    </p>
+                    <p className="text-[13px] font-bold text-primary/70 tracking-wide">
+                      — {verse.reference}
+                    </p>
+                  </div>
+                ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* First pastoral response — stays here permanently once it arrives */}
           <motion.div
@@ -294,6 +374,91 @@ export default function GuidancePage() {
                   >
                     {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── A Prayer Written For You ── */}
+          <AnimatePresence>
+            {responseComplete && (prayer || vpLoading) && (
+              <motion.div
+                key="prayer-card"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                data-testid="card-guidance-prayer"
+                className="relative rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 via-orange-50/50 to-background dark:from-amber-950/20 dark:via-orange-950/10 dark:to-background mb-8"
+              >
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
+                <div className="px-6 pt-5 pb-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <BookMarked className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                      A prayer for your moment
+                    </p>
+                  </div>
+
+                  {!prayer ? (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
+                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-5/6" />
+                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
+                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-4/5" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[15px] leading-relaxed text-foreground/90 italic mb-5">
+                        {prayer}
+                      </p>
+
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <button
+                          onClick={() => tts.toggle(prayer!, "nova")}
+                          disabled={tts.loading}
+                          data-testid="button-pray-aloud"
+                          className="flex items-center gap-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold px-4 py-2 transition-colors disabled:opacity-60 shadow-sm"
+                        >
+                          {tts.loading ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : tts.playing ? (
+                            <VolumeX className="w-3.5 h-3.5" />
+                          ) : (
+                            <Volume2 className="w-3.5 h-3.5" />
+                          )}
+                          {tts.playing ? "Stop" : "Pray This Aloud"}
+                        </button>
+
+                        <button
+                          onClick={savePrayerToJournal}
+                          disabled={prayerSaved}
+                          data-testid="button-save-prayer"
+                          className="flex items-center gap-1.5 text-[13px] font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors disabled:opacity-70"
+                        >
+                          {prayerSaved ? (
+                            <>
+                              <CheckCheck className="w-3.5 h-3.5" />
+                              Saved to Journal
+                            </>
+                          ) : (
+                            <>
+                              <BookMarked className="w-3.5 h-3.5" />
+                              Save to Journal
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {tts.playing && (
+                        <div className="mt-3 h-1 rounded-full bg-amber-200/60 dark:bg-amber-800/30 overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                            style={{ width: `${tts.progress}%` }}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}
