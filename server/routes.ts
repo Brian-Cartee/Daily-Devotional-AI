@@ -1166,9 +1166,15 @@ Rules:
       } catch { /* use defaults */ }
 
       // Generate image with DALL-E 3
+      // Thursday (4) and Sunday (0) use an artistic/painterly style; all other days are natural photography
+      const dayOfWeek = new Date().getDay();
+      const isArtisticDay = dayOfWeek === 0 || dayOfWeek === 4;
+      const stylePrompt = isArtisticDay
+        ? `${theme}. Cinematic oil painting style with expressive painterly brushstrokes, rich warm tones, atmospheric depth, spiritual mood. No text, no watermarks, no people. Pure nature only.`
+        : `${theme}. Ultra-high quality photorealistic landscape photography, shot on Canon 5D Mark IV, National Geographic quality, natural lighting, no digital artifacts, no HDR over-processing. No text, no watermarks, no people. Pure nature photography.`;
       const imageRes = await openai.images.generate({
         model: "dall-e-3",
-        prompt: `${theme}. Ultra-high quality, photorealistic, 4K, cinematic lighting. No text, no watermarks, no people. Pure landscape photography style.`,
+        prompt: stylePrompt,
         n: 1,
         size: "1792x1024",
         quality: "standard",

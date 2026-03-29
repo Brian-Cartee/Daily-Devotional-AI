@@ -28,15 +28,33 @@ export function DailyArtCard() {
 
   const handleShare = async () => {
     if (!art) return;
-    const shareText = `"${art.scripture}" — ${art.reference}\n\nShepherd's Path`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "Today's Daily Beauty", text: shareText, url: window.location.origin });
-      } else {
-        await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`);
-        setShared(true);
-        setTimeout(() => setShared(false), 2500);
+    const shareText = `"${art.scripture}" — ${art.reference}${art.reflection ? `\n\n${art.reflection}` : ""}\n\nvia Shepherd's Path`;
+
+    // Try to share the actual image file on mobile (Web Share API with files)
+    if (navigator.share && art.imageUrl) {
+      try {
+        const fullUrl = `${window.location.origin}${art.imageUrl}`;
+        const response = await fetch(fullUrl);
+        const blob = await response.blob();
+        const file = new File([blob], "moment-of-beauty.jpg", { type: "image/jpeg" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text: shareText });
+          return;
+        }
+        // File sharing not supported — share text + URL
+        await navigator.share({ title: "A Moment of Beauty", text: shareText, url: window.location.origin });
+        return;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return; // user cancelled
+        // Network or other error — fall through to clipboard
       }
+    }
+
+    // Clipboard fallback (desktop)
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`);
+      setShared(true);
+      setTimeout(() => setShared(false), 2500);
     } catch { }
   };
 
@@ -137,7 +155,7 @@ export function DailyArtCard() {
         aria-label="View today's daily art and reflection"
       >
         {/* Full-bleed image */}
-        <div className="relative w-full bg-muted" style={{ aspectRatio: "16/7" }}>
+        <div className="relative w-full bg-muted aspect-[16/9] sm:aspect-[16/7]">
 
           {/* Loading state — shown while fetching OR while image is downloading */}
           <AnimatePresence>
@@ -182,7 +200,7 @@ export function DailyArtCard() {
                 className="text-white font-semibold uppercase"
                 style={{ fontSize: "10px", letterSpacing: "0.16em", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.5)" }}
               >
-                Your Daily Beauty
+                A Moment of Beauty
               </span>
             </div>
           )}

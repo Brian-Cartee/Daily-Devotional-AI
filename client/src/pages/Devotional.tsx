@@ -1000,7 +1000,7 @@ export default function Devotional() {
                         data-testid="checkbox-nudge-daily-art"
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
-                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Daily Beauty image</span>
+                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Moment of Beauty image</span>
                     </label>
                   </form>
                 ) : (
@@ -1276,7 +1276,7 @@ export default function Devotional() {
                         data-testid="checkbox-email-daily-art"
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
-                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Daily Beauty image</span>
+                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Moment of Beauty image</span>
                     </label>
                   </form>
                 </motion.div>
