@@ -1187,7 +1187,7 @@ export default function LandingHome() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-bold text-foreground leading-snug">Your Iron Circle</p>
-                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Pray for, walk with, aspire toward — be intentional.</p>
+                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">"As iron sharpens iron…" — Prov. 27:17</p>
                 </div>
                 <ChevronDown className="w-4 h-4 text-indigo-400 rotate-[-90deg] shrink-0" />
               </div>

@@ -340,7 +340,7 @@ function RingSection({ ring, circle, onChange }: { ring: typeof RINGS[0]; circle
     <div className={`rounded-2xl border ${ring.border} ${ring.bg} overflow-hidden mb-5`}>
       <div className={`absolute inset-x-0 top-0 h-[3px] ${ring.accent}`} style={{ position: "relative" }} />
       <div className="px-5 pt-5 pb-4">
-        <div className="flex items-start justify-between gap-3 mb-1">
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2.5">
             <div className={`w-8 h-8 rounded-xl ${ring.pillBg} flex items-center justify-center shrink-0`}>
               <Icon className={`w-4 h-4 ${ring.color}`} />
@@ -354,9 +354,20 @@ function RingSection({ ring, circle, onChange }: { ring: typeof RINGS[0]; circle
             {people.length}/5
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground italic mt-2 mb-4">
-          "{ring.verse}" — {ring.verseRef}
-        </p>
+
+        {/* Scripture foundation — bold, unmissable */}
+        <div className="mb-4 rounded-xl bg-background/70 border border-current/10 px-4 py-3 relative overflow-hidden">
+          <span
+            className={`absolute left-2 top-1 text-5xl font-serif leading-none ${ring.color} opacity-15 select-none pointer-events-none`}
+            aria-hidden="true"
+          >"</span>
+          <p className={`text-[14px] font-bold leading-snug text-foreground/90 pl-4`}>
+            {ring.verse}
+          </p>
+          <p className={`text-[11px] font-bold uppercase tracking-widest mt-1.5 pl-4 ${ring.pillText}`}>
+            — {ring.verseRef}
+          </p>
+        </div>
 
         <div className="space-y-2 mb-3">
           <AnimatePresence mode="popLayout">
@@ -419,38 +430,54 @@ export default function IronCirclePage() {
       {/* Hero */}
       <div className="relative pt-14">
         <div
-          className="h-40 w-full flex flex-col items-center justify-end pb-7 text-center px-6"
+          className="w-full flex flex-col items-center justify-end pb-8 pt-8 text-center px-6"
           style={{ background: "linear-gradient(135deg, #4c1d95 0%, #7c3aed 40%, #a16207 100%)" }}
         >
-          <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-3 shadow-lg">
+          <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg">
             <Users className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-white text-xl font-extrabold tracking-tight leading-snug drop-shadow-md">
             Your Iron Circle
           </h1>
-          <p className="text-white/80 text-[12px] mt-1 italic">
-            You become who you walk with.
-          </p>
+          {/* Foundation verse — front and center */}
+          <div className="mt-4 max-w-xs mx-auto bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20">
+            <p className="text-white text-[14px] font-bold leading-snug drop-shadow-sm">
+              "As iron sharpens iron, so one person sharpens another."
+            </p>
+            <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mt-1.5">
+              Proverbs 27:17
+            </p>
+          </div>
         </div>
       </div>
 
       <main className="max-w-xl mx-auto px-5 py-6">
 
-        {/* Intro */}
+        {/* Intro — Scripture first */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-6 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"
+          className="mb-6 rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
         >
-          <p className="text-[14px] text-foreground/80 leading-relaxed">
-            This is one of the most important pages in this app. Most believers drift into their friend group by accident.
-            The Iron Circle is an invitation to be <em>intentional</em> — to name the people you're praying for, the ones you're walking with,
-            and the ones whose lives are calling you forward.
-          </p>
-          <p className="text-[13px] text-muted-foreground leading-relaxed mt-2">
-            Everything here is completely private. It never leaves your device.
-          </p>
+          <div className="bg-gradient-to-r from-primary/8 to-amber-500/5 border-b border-border/50 px-5 py-3">
+            <p className="text-[13px] font-bold text-foreground/85 leading-snug italic">
+              "Do not be deceived: Bad company corrupts good character."
+            </p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mt-1">
+              1 Corinthians 15:33
+            </p>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-[14px] text-foreground/80 leading-relaxed">
+              Most believers drift into their friend group by accident. God's Word is clear: proximity shapes formation.
+              The Iron Circle is an invitation to be <em>intentional</em> — to name the people you're interceding for,
+              the ones you're walking with, and the ones whose lives are calling you forward.
+            </p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed mt-2">
+              Everything here is completely private — it never leaves your device.
+            </p>
+          </div>
         </motion.div>
 
         {/* Weekly reflection question */}
