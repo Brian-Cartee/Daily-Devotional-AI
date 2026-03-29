@@ -95,7 +95,7 @@ export default function GreatestGiftPage() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <div className="max-w-lg mx-auto px-4 pt-6 pb-28">
+      <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
         {/* Hero */}
         <motion.div {...fadeUp(0)} className="text-center mb-8">
