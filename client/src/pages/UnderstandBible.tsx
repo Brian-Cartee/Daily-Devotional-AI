@@ -73,8 +73,8 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
             : `Write a heartfelt prayer based on the themes of ${chapter.reference} — ${chapter.title}. Keep it personal, warm, and about 3 sentences.`,
         }],
       });
-      const data = await res.json();
-      setAiContent(capitalizeDivinePronouns(data.content));
+      const text = await res.text();
+      setAiContent(capitalizeDivinePronouns(text));
     } catch {
       setAiContent("Sorry, we couldn't generate a response right now. Please try again.");
     }
