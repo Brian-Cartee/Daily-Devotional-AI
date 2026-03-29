@@ -12,7 +12,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { useDemoMode } from "@/components/DemoProvider";
-import { getRemainingAi } from "@/lib/aiUsage";
+import { getRemainingAi, canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { streamAI } from "@/lib/streamAI";
+import { getUserName } from "@/lib/userName";
 import {
   getRhythm, markFirstAction, hasFirstAction,
   getRhythmDismissed, incrementRhythmDismissed,
@@ -447,6 +449,41 @@ export default function LandingHome() {
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+
+  // Passage finder state
+  const [passageQuery, setPassageQuery] = useState("");
+  const [passageResult, setPassageResult] = useState("");
+  const [passageLoading, setPassageLoading] = useState(false);
+
+  const findPassage = async () => {
+    const desc = passageQuery.trim();
+    if (!desc || passageLoading) return;
+    if (!canUseAi()) return;
+    recordAiUsage();
+    setPassageLoading(true);
+    setPassageResult("");
+    try {
+      const result = await streamAI(
+        "/api/chat/passage",
+        {
+          passageRef: "story-finder",
+          passageText: desc,
+          userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          messages: [{
+            role: "user",
+            content: `A user is trying to find a Bible story, passage, or verse they remember. They described it as:\n\n"${desc}"\n\nYour job is to identify the scripture(s) that best match this description. For each match, provide:\n- **Story/Passage Name** (the common title)\n- **Reference** (e.g. John 6:1–14; also note parallel passages)\n- **Why it matches** (1 sentence)\n- **Key Verse** (the single most memorable line)\n\nProvide 1–3 matches. Be warm, clear, and helpful. End with an encouraging sentence.`,
+          }],
+        },
+        (text) => setPassageResult(text),
+      );
+      setPassageResult(result);
+    } catch {
+      setPassageResult("Sorry, we couldn't search right now. Please try again.");
+    }
+    setPassageLoading(false);
+  };
   const demo = useDemoMode();
 
   const sessionId = getSessionId();
@@ -1027,6 +1064,76 @@ export default function LandingHome() {
                 </div>
               </div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* ── Find a Passage ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.42 }}
+          className="relative mt-5 rounded-2xl overflow-hidden border border-violet-200/60 dark:border-violet-800/30 bg-gradient-to-br from-violet-50/80 to-background dark:from-violet-950/20 dark:to-background"
+          data-testid="card-passage-finder"
+        >
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 via-primary to-amber-400" />
+          <div className="px-5 pt-5 pb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">📖</span>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">Find a Passage</p>
+            </div>
+            <p className="text-[15px] font-bold text-foreground leading-snug mb-1">Story, verse, or just a memory</p>
+            <p className="text-[12px] text-muted-foreground mb-4">Describe what you half-remember — we'll find the scripture.</p>
+
+            {!passageResult ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={passageQuery}
+                  onChange={e => setPassageQuery(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && findPassage()}
+                  placeholder='e.g. "someone walks on water" or "peace verses" or John 3'
+                  disabled={passageLoading}
+                  data-testid="input-home-passage-finder"
+                  className="flex-1 bg-white dark:bg-background border border-violet-200/70 dark:border-violet-700/40 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:ring-2 focus:ring-violet-400/30 placeholder:text-muted-foreground/50 disabled:opacity-50"
+                />
+                <button
+                  onClick={findPassage}
+                  disabled={!passageQuery.trim() || passageLoading}
+                  data-testid="button-home-passage-find"
+                  className="shrink-0 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-2.5 transition-colors disabled:opacity-40 shadow-sm"
+                >
+                  {passageLoading
+                    ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                    : <BookOpen className="w-4 h-4" />
+                  }
+                </button>
+              </div>
+            ) : (
+              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-widest">Passage Found</span>
+                  <button
+                    onClick={() => { setPassageResult(""); setPassageQuery(""); }}
+                    data-testid="button-home-passage-reset"
+                    className="text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors underline"
+                  >
+                    Search again
+                  </button>
+                </div>
+                <div className="bg-white/70 dark:bg-background/60 rounded-xl p-4 border border-violet-200/40 dark:border-violet-700/30">
+                  <div className="text-[13.5px] text-foreground/80 leading-relaxed space-y-2">
+                    {passageResult.split("\n").map((line, i) => {
+                      if (!line.trim()) return null;
+                      const isBold = /^\*\*/.test(line.trim()) || /^#{1,3}\s/.test(line.trim());
+                      const clean = line.replace(/^\*\*|\*\*$/g, "").replace(/^#+\s/, "").replace(/\*\*(.*?)\*\*/g, "$1");
+                      return isBold
+                        ? <p key={i} className="font-bold text-foreground mt-3 first:mt-0">{clean}</p>
+                        : <p key={i}>{clean}</p>;
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </motion.div>
 

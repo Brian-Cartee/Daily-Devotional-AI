@@ -658,9 +658,9 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">🔍</span>
                     <div>
-                      <p className="text-sm font-bold text-foreground leading-tight">Find a Bible Story</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">Find a Passage</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                        Describe what you remember — we'll find the scripture
+                        Story, verse, or just a memory — we'll find it
                       </p>
                     </div>
                   </div>
@@ -688,14 +688,14 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                       <>
                         <div>
                           <p className="text-[12px] font-semibold text-violet-700 dark:text-violet-400 uppercase tracking-widest mb-2">
-                            Describe the story
+                            Story, verse, or memory
                           </p>
                           <textarea
                             ref={storyInputRef}
                             value={storyDescription}
                             onChange={(e) => setStoryDescription(e.target.value)}
                             data-testid="story-finder-input"
-                            placeholder={'e.g. "The story where someone walks on water" or "Jesus heals a blind man near a pool" or "the part where bread and fish fed thousands"'}
+                            placeholder={'e.g. "Someone walks on water", "all the peace verses", "Jesus near a pool", or John 3:16'}
                             rows={3}
                             className="w-full bg-white/70 dark:bg-background border border-violet-200/60 dark:border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-violet-400/30 resize-none placeholder:text-muted-foreground/60 leading-relaxed"
                           />

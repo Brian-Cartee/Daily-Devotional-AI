@@ -23,6 +23,7 @@ import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
 import AdminPage from "@/pages/AdminPage";
+import StoriesPage from "@/pages/StoriesPage";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/shepherd-admin" component={AdminPage} />
+      <Route path="/stories" component={StoriesPage} />
       <Route component={NotFound} />
     </Switch>
   );
