@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
 import { Link } from "wouter";
-import { Gift, Heart, Crown, Shirt, ArrowRight, Check, Clock } from "lucide-react";
+import { Gift, Heart, Crown, ArrowRight, Check, Clock, Shirt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Sale ends 21 days from app first-load (stored in localStorage)
 const SALE_KEY = "sp_gift_sale_end";
 
 function getSaleEnd(): Date {
@@ -29,39 +28,12 @@ function useCountdown(target: Date) {
   return { d, h, m, s, expired: remaining === 0 };
 }
 
-const INCLUDED = [
-  {
-    icon: Crown,
-    title: "Shepherd's Path PRO — 1 Year",
-    items: [
-      "Unlimited AI guidance, reflections & prayers",
-      "Full Bible journey access — every track",
-      "Daily Beauty art + morning devotionals",
-      "Community prayer wall access",
-      "No limits on any feature",
-    ],
-    color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-50/60 dark:bg-amber-950/20",
-    border: "border-amber-200/60 dark:border-amber-800/40",
-    accentFrom: "from-amber-500",
-    accentTo: "to-orange-500",
-  },
-  {
-    icon: Shirt,
-    title: "Shepherd's Path T-shirt",
-    items: [
-      "Premium soft-blend fabric",
-      "Faith-rooted design — share the message",
-      "Available in crew neck, hoodie & women's fit",
-      "Ships directly from our print partner",
-      "A reminder of the walk, every day you wear it",
-    ],
-    color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-50/60 dark:bg-blue-950/20",
-    border: "border-blue-200/60 dark:border-blue-800/40",
-    accentFrom: "from-blue-500",
-    accentTo: "to-violet-500",
-  },
+const PRO_FEATURES = [
+  "Unlimited AI guidance, reflections & prayers",
+  "Full Bible journey access — every track",
+  "Daily Beauty art + morning devotionals",
+  "Community prayer wall access",
+  "No limits on any feature",
 ];
 
 const GIFT_REASONS = [
@@ -112,7 +84,7 @@ export default function GreatestGiftPage() {
             The Greatest Gift
           </h1>
           <p className="text-[16px] text-muted-foreground leading-relaxed">
-            There is no greater gift than a daily walk with God. Give someone Shepherd's Path PRO for a year — plus a tee to wear the mission on their sleeve.
+            There is no greater gift than a daily walk with God. Give someone Shepherd's Path PRO — a full year of guidance, devotionals, and Scripture, unlocked.
           </p>
         </motion.div>
 
@@ -146,37 +118,33 @@ export default function GreatestGiftPage() {
             <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/60 to-transparent" />
           </div>
 
-          <div className="space-y-3">
-            {INCLUDED.map((item, i) => (
-              <div key={i} className={`rounded-2xl border overflow-hidden ${item.bg} ${item.border}`}>
-                <div className={`h-[3px] bg-gradient-to-r ${item.accentFrom} ${item.accentTo}`} />
-                <div className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-9 h-9 rounded-xl bg-white/60 dark:bg-black/20 flex items-center justify-center shrink-0`}>
-                      <item.icon className={`w-4.5 h-4.5 ${item.color}`} />
-                    </div>
-                    <p className="text-[15px] font-bold text-foreground leading-snug">{item.title}</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    {item.items.map((point) => (
-                      <div key={point} className="flex items-start gap-2">
-                        <Check className={`w-3.5 h-3.5 ${item.color} mt-0.5 shrink-0`} />
-                        <p className="text-[13px] text-foreground/70 leading-snug">{point}</p>
-                      </div>
-                    ))}
-                  </div>
+          <div className="rounded-2xl border border-amber-200/60 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-950/20 overflow-hidden">
+            <div className="h-[3px] bg-gradient-to-r from-amber-500 to-orange-500" />
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-white/60 dark:bg-black/20 flex items-center justify-center shrink-0">
+                  <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 </div>
+                <p className="text-[15px] font-bold text-foreground leading-snug">Shepherd's Path PRO — 1 Year</p>
               </div>
-            ))}
+              <div className="space-y-1.5">
+                {PRO_FEATURES.map((point) => (
+                  <div key={point} className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-[13px] text-foreground/70 leading-snug">{point}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
 
         {/* Gift code */}
         <motion.div {...fadeUp(0.15)} className="mb-7">
-          <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 p-5 text-center">
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-2xl" />
+          <div className="relative rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 p-5 text-center overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-500 to-orange-500" />
             <p className="text-[12px] font-bold uppercase tracking-widest text-amber-700/80 dark:text-amber-400/80 mb-2">
-              Use this code for PRO
+              Use this code at checkout
             </p>
             <button
               data-testid="btn-copy-gift-code"
@@ -191,12 +159,12 @@ export default function GreatestGiftPage() {
               </span>
             </button>
             <p className="text-[12px] text-amber-700/70 dark:text-amber-400/70">
-              Enter at checkout for 20% off a PRO annual membership
+              20% off a PRO annual membership — applied at checkout
             </p>
           </div>
         </motion.div>
 
-        {/* CTAs */}
+        {/* CTA */}
         <motion.div {...fadeUp(0.2)} className="space-y-3 mb-8">
           <Link href="/pricing">
             <Button
@@ -219,7 +187,7 @@ export default function GreatestGiftPage() {
               className="w-full rounded-2xl py-5 text-[15px] font-bold border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5"
             >
               <Shirt className="w-4 h-4 mr-2" />
-              Shop the T-shirt
+              Also available: Shepherd's Path T-shirt
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </a>
