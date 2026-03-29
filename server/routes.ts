@@ -1212,7 +1212,10 @@ Return only valid JSON. No markdown. No extra keys.`,
 
   app.get("/api/daily-art", async (req, res) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
+      // Use US Eastern Time (UTC-5) so new art rolls over at midnight ET
+      // — which lands 12am–3am across US timezones (low-traffic window)
+      const nowET = new Date(Date.now() - 5 * 60 * 60 * 1000);
+      const today = nowET.toISOString().split("T")[0];
       const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
       const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
 
@@ -1224,8 +1227,8 @@ Return only valid JSON. No markdown. No extra keys.`,
 
       const openai = new OpenAI();
 
-      // Pick theme for today based on date seed
-      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+      // Pick theme for today based on ET date seed
+      const dayOfYear = Math.floor((nowET.getTime() - new Date(nowET.getFullYear(), 0, 0).getTime()) / 86400000);
       const theme = ART_THEMES[dayOfYear % ART_THEMES.length];
 
       // Generate companion scripture/message via AI
