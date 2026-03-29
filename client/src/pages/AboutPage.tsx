@@ -172,6 +172,25 @@ export default function AboutPage() {
           </div>
         </motion.div>
 
+        {/* What are you facing today CTA */}
+        <motion.div {...fadeUp(0.12)} className="mb-8">
+          <Link href="/guidance">
+            <div className="relative rounded-2xl overflow-hidden border border-primary/25 bg-gradient-to-br from-primary/8 via-violet-500/5 to-amber-500/5 p-5 cursor-pointer group hover:border-primary/40 transition-all">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-2">Try it now</p>
+              <p className="text-[20px] font-bold text-foreground leading-snug mb-2">
+                What are you facing today?
+              </p>
+              <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+                Bring what's on your heart — a fear, a question, a struggle, or a praise — and receive scripture, reflection, and prayer shaped for your moment.
+              </p>
+              <div className="inline-flex items-center gap-2 text-[13px] font-bold text-primary group-hover:gap-3 transition-all">
+                Seek guidance <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
         {/* Features Grid */}
         <motion.div {...fadeUp(0.15)}>
           <div className="flex items-center gap-2 mb-4">
