@@ -146,7 +146,6 @@ export default function StoriesPage() {
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-2">Community</p>
             <h1 className="text-[26px] font-bold text-white leading-tight mb-1">Real Faith. Real Stories.</h1>
             <p className="text-[13px] text-white/75 max-w-xs leading-snug">
               What happens when scripture meets a real moment in someone's life.
