@@ -259,13 +259,16 @@ function HeroAIPrompt() {
               </Link>
             );
           }
-          return (
-            <div className="mt-2 flex items-center justify-end gap-1 pr-0.5">
-              <span className="text-[11px] text-muted-foreground/40 font-medium">
-                {remaining} of 10 free responses remaining today
-              </span>
-            </div>
-          );
+          if (remaining <= 7) {
+            return (
+              <div className="mt-2 flex items-center justify-end gap-1 pr-0.5">
+                <span className="text-[11px] text-muted-foreground/40 font-medium">
+                  {remaining} of 10 free responses remaining today
+                </span>
+              </div>
+            );
+          }
+          return null;
         })()}
 
         {/* Situation chips — secondary helper, not the preferred path */}
