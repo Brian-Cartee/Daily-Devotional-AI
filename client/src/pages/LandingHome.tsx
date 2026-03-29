@@ -1214,7 +1214,7 @@ export default function LandingHome() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-bold text-foreground leading-snug">The Greatest Gift 🎁</p>
-                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Give someone a year with God — PRO + a T-shirt bundle.</p>
+                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Give someone a year with God — the perfect faith gift.</p>
                 </div>
                 <ChevronDown className="w-4 h-4 text-amber-400 rotate-[-90deg] shrink-0" />
               </div>

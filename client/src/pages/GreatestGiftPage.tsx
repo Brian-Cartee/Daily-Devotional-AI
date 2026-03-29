@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
 import { Link } from "wouter";
-import { Gift, Heart, Crown, ArrowRight, Check, Clock, Shirt } from "lucide-react";
+import { Gift, Heart, Crown, ArrowRight, Check, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SALE_KEY = "sp_gift_sale_end";
@@ -176,21 +176,6 @@ export default function GreatestGiftPage() {
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
-          <a
-            href="https://my-store-10fb787.creator-spring.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="btn-gift-shirt"
-          >
-            <Button
-              variant="outline"
-              className="w-full rounded-2xl py-5 text-[15px] font-bold border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5"
-            >
-              <Shirt className="w-4 h-4 mr-2" />
-              Also available: Shepherd's Path T-shirt
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </a>
         </motion.div>
 
         {/* Who this is for */}
