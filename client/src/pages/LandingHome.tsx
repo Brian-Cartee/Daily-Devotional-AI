@@ -26,7 +26,7 @@ import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/li
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
   TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard,
-  FirstStepsCard,
+  FirstStepsCard, WeeklyReflectionCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 
@@ -795,7 +795,7 @@ export default function LandingHome() {
                     <div className="flex items-center gap-2 mb-1">
                       <Flame className="w-4 h-4 text-amber-500" />
                       <span className="text-[12px] font-bold uppercase tracking-widest text-amber-600/80">
-                        {streak}-Day Streak
+                        {streak} morning{streak !== 1 ? "s" : ""} with God
                       </span>
                     </div>
                     <h3 className="text-[16px] font-extrabold text-foreground leading-tight tracking-tight">
@@ -859,6 +859,9 @@ export default function LandingHome() {
 
           {/* Weekly gratitude prompt — saves to journal */}
           <GratitudePromptCard sessionId={sessionId} />
+
+          {/* Weekly deep reflection question */}
+          <WeeklyReflectionCard />
 
           {/* Sunday weekly summary */}
           <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />

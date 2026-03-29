@@ -1048,6 +1048,29 @@ What you never do:
     }
   });
 
+  // ── Journal Flashback ─────────────────────────────────────────────────────────
+  app.get("/api/journal/flashback", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      const now = Date.now();
+      const minAge = 25 * 24 * 60 * 60 * 1000;
+      const maxAge = 180 * 24 * 60 * 60 * 1000;
+      const past = entries.filter(e => {
+        const age = now - new Date(e.createdAt).getTime();
+        return age >= minAge && age <= maxAge &&
+          (e.type === "prayer" || e.type === "reflection") &&
+          e.content?.trim().length > 20;
+      });
+      if (past.length === 0) return res.json(null);
+      const pick = past[Math.floor(Math.random() * past.length)];
+      res.json(pick);
+    } catch {
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Spiritual Letter ─────────────────────────────────────────────────────────
   app.post("/api/journal/spiritual-letter", async (req, res) => {
     const { sessionId } = req.body as { sessionId?: string };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass } from "lucide-react";
+import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -486,6 +486,95 @@ export function FirstStepsCard({ daysWithApp }: FirstStepsCardProps) {
             </button>
           </div>
         </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ── 8. Weekly deep reflection question ────────────────────────────────────────
+
+const WEEKLY_QUESTIONS = [
+  "What's the one area of your life you haven't fully surrendered to God?",
+  "What fear has been louder than your faith this week?",
+  "Who in your life needs prayer you haven't offered yet?",
+  "What has God been quietly asking you to let go of?",
+  "Where have you seen His faithfulness in the past month?",
+  "What sin have you been excusing rather than confessing?",
+  "Is there someone you need to forgive?",
+  "What would you do differently if you truly believed God was in control?",
+  "When did you last feel closest to God — and what led you there?",
+  "What does loving your neighbor actually look like for you this week?",
+  "What blessing have you received that you haven't thanked Him for?",
+  "If you could ask God one honest question right now, what would it be?",
+];
+
+function getWeekOfYear(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.floor((now.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000));
+}
+
+const WEEKLY_Q_KEY = "sp_weekly_q_seen";
+
+function hasSeenWeeklyQuestion(): boolean {
+  try {
+    const raw = localStorage.getItem(WEEKLY_Q_KEY);
+    if (!raw) return false;
+    return JSON.parse(raw).week === getWeekOfYear();
+  } catch { return false; }
+}
+
+function markWeeklyQuestionSeen(): void {
+  try {
+    localStorage.setItem(WEEKLY_Q_KEY, JSON.stringify({ week: getWeekOfYear() }));
+  } catch { /* ignore */ }
+}
+
+export function WeeklyReflectionCard() {
+  const [visible, setVisible] = useState(false);
+  const question = WEEKLY_QUESTIONS[getWeekOfYear() % WEEKLY_QUESTIONS.length];
+
+  useEffect(() => {
+    if (!hasSeenWeeklyQuestion()) setVisible(true);
+  }, []);
+
+  function handleDismiss() {
+    markWeeklyQuestionSeen();
+    setVisible(false);
+  }
+
+  if (!visible) return null;
+  return (
+    <AnimatePresence>
+      <motion.div
+        {...fadeIn}
+        data-testid="card-weekly-reflection"
+        className="relative rounded-2xl border border-violet-200 dark:border-violet-800/50 bg-violet-50/60 dark:bg-violet-950/20 px-5 py-4 shadow-sm overflow-hidden"
+      >
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-400" />
+        <button
+          onClick={handleDismiss}
+          data-testid="button-dismiss-weekly-reflection"
+          aria-label="Dismiss"
+          className="absolute top-3 right-3 text-violet-400 hover:text-violet-600 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-2">
+          This week's reflection
+        </p>
+        <p className="text-[15px] font-bold text-foreground leading-snug mb-3 pr-6">
+          {question}
+        </p>
+        <Link href="/guidance">
+          <button
+            onClick={markWeeklyQuestionSeen}
+            data-testid="button-weekly-reflection-cta"
+            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+          >
+            Bring this to God <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </Link>
       </motion.div>
     </AnimatePresence>
   );

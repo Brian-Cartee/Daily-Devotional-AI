@@ -1021,6 +1021,19 @@ export default function Journal() {
   const [letterDismissed, setLetterDismissed] = useState(() => !!localStorage.getItem("sp_letter_dismissed"));
   const [letterGenerated, setLetterGenerated] = useState(false);
 
+  const [flashbackDismissed, setFlashbackDismissed] = useState(false);
+  const { data: flashbackEntry } = useQuery<{
+    id: number; type: string; title?: string; content: string; createdAt: string;
+  } | null>({
+    queryKey: ["/api/journal/flashback", sessionId],
+    queryFn: async () => {
+      const res = await fetch(`/api/journal/flashback?sessionId=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
   const generateLetter = async () => {
     setLetterLoading(true);
     try {
@@ -1218,6 +1231,51 @@ export default function Journal() {
                       ))}
                     </>
                   )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Looking Back — journal flashback from ~1–6 months ago ── */}
+          <AnimatePresence>
+            {!flashbackDismissed && flashbackEntry && (
+              <motion.div
+                key="flashback-card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.4 }}
+                data-testid="card-journal-flashback"
+                className="relative mb-6 rounded-2xl overflow-hidden border border-teal-200/60 dark:border-teal-800/40 bg-gradient-to-br from-teal-50/70 via-emerald-50/40 to-background dark:from-teal-950/20 dark:via-emerald-950/10 dark:to-background"
+              >
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400" />
+                <button
+                  onClick={() => setFlashbackDismissed(true)}
+                  className="absolute top-3 right-3 text-teal-400 hover:text-teal-600 transition-colors"
+                  aria-label="Dismiss"
+                  data-testid="button-dismiss-flashback"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="px-5 pt-5 pb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                      <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
+                      Looking back
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mb-2">
+                    {new Date(flashbackEntry.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    {flashbackEntry.type === "prayer" ? " · Prayer" : " · Reflection"}
+                  </p>
+                  {flashbackEntry.title && (
+                    <p className="text-[13px] font-bold text-foreground mb-1.5">{flashbackEntry.title}</p>
+                  )}
+                  <p className="text-[14px] leading-relaxed text-foreground/85 line-clamp-5">
+                    {flashbackEntry.content}
+                  </p>
                 </div>
               </motion.div>
             )}
