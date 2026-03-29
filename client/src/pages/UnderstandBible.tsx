@@ -33,6 +33,34 @@ function usePassageText(apiRef: string, enabled: boolean) {
   return useQuery<{ text: string; reference: string }>({ queryKey: [url], enabled });
 }
 
+function BiblePassageText({ text }: { text: string }) {
+  const parts = text.split(/(\[\d+\])/g);
+  const verses: Array<{ num: string | null; body: string }> = [];
+  let current: { num: string | null; body: string } = { num: null, body: "" };
+  for (const part of parts) {
+    if (/^\[\d+\]$/.test(part)) {
+      if (current.body.trim()) verses.push(current);
+      current = { num: part.replace(/\[|\]/g, ""), body: "" };
+    } else {
+      current.body += part;
+    }
+  }
+  if (current.body.trim()) verses.push(current);
+  return (
+    <div className="text-sm text-slate-700 dark:text-slate-200 leading-[1.9] space-y-1">
+      {verses.map((v, i) => (
+        <span key={i} className="inline">
+          {v.num && (
+            <sup className="text-[10px] font-bold text-primary/60 mr-0.5 select-none">{v.num}</sup>
+          )}
+          {v.body.replace(/\n+/g, " ").trim()}
+          {" "}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [open, setOpen] = useState(false);
   const [aiMode, setAiMode] = useState<"reflect" | "pray" | "chat" | null>(null);
@@ -221,7 +249,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                       <ListenButton text={textQuery.data.text} label="Listen" className="text-[11px]" />
                     </div>
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{textQuery.data.text}</p>
+                  <BiblePassageText text={textQuery.data.text} />
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
