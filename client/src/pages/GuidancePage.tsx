@@ -103,6 +103,10 @@ export default function GuidancePage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const responseRef = useRef<HTMLDivElement>(null);
+  const latestResponseRef = useRef<HTMLDivElement>(null);
+  const hasScrolledInitial = useRef(false);
+  const hasScrolledFollowUp = useRef(0);
 
   const streamResponse = async (conversationMessages: Message[]) => {
     setStreamingText("");
@@ -209,12 +213,25 @@ export default function GuidancePage() {
       .catch(() => setVideosLoading(false));
   }, [responseComplete]);
 
-  // Only auto-scroll during follow-up exchanges — not during the initial response
+  // Scroll initial response into view as soon as it starts streaming
   useEffect(() => {
-    if (messages.length > 2) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [streamingText, messages, responseComplete]);
+    if (!streamingText || isSending || hasScrolledInitial.current) return;
+    hasScrolledInitial.current = true;
+    setTimeout(() => {
+      responseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }, [streamingText, isSending]);
+
+  // Scroll follow-up response into view as soon as it starts streaming
+  useEffect(() => {
+    if (!isSending || !streamingText) return;
+    const followUpIndex = messages.filter(m => m.role === "user").length;
+    if (followUpIndex <= hasScrolledFollowUp.current) return;
+    hasScrolledFollowUp.current = followUpIndex;
+    setTimeout(() => {
+      latestResponseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }, [streamingText, isSending, messages]);
 
   const handleSend = async () => {
     const text = followUp.trim();
@@ -275,6 +292,9 @@ export default function GuidancePage() {
             <ShepherdCrookMark className="w-6 h-6 opacity-80" />
             <span className="text-xs font-bold text-primary uppercase tracking-widest">Shepherd's Path</span>
           </motion.div>
+
+          {/* Scroll anchor — initial response lands here */}
+          <div ref={responseRef} className="-mt-2" />
 
           {/* Their situation — subtle echo */}
           {situation && (
@@ -371,7 +391,7 @@ export default function GuidancePage() {
 
             {/* Streaming follow-up */}
             {isSending && streamingText && (
-              <motion.div key="streaming" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
+              <motion.div key="streaming" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6" ref={latestResponseRef}>
                 <div className="text-[16px] leading-relaxed text-foreground space-y-3">
                   {streamingText.split("\n\n").map((para, j) =>
                     para.trim() ? <p key={j}>{para}</p> : null
