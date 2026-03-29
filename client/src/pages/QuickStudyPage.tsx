@@ -501,34 +501,37 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-2xl px-6 py-6 shadow-sm mb-5"
+            className="relative bg-card dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/30 rounded-2xl overflow-hidden shadow-sm mb-5"
           >
+            {/* Signature top accent bar */}
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-300" />
+            <div className="px-6 pt-6 pb-6">
             {!submitted ? (
               <>
                 <form onSubmit={generate} className="flex gap-2.5 mb-5">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-600/60 dark:text-amber-400/60" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500/70 dark:text-amber-400/60 pointer-events-none" />
                     <input
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       placeholder='e.g. "anxiety", "Romans 8", "forgiveness"'
                       data-testid="quick-study-input"
-                      className="w-full bg-[#faf5ea] dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/40 rounded-xl pl-10 pr-4 py-3 text-sm text-amber-900 dark:text-amber-100 placeholder:text-amber-500/50 dark:placeholder:text-amber-400/40 outline-none focus:ring-2 focus:ring-amber-400/30"
+                      className="w-full bg-white dark:bg-amber-950/30 border border-amber-300/70 dark:border-amber-700/50 rounded-xl pl-10 pr-4 py-3 text-sm text-foreground dark:text-amber-100 placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/60 transition-all shadow-sm"
                     />
                   </div>
-                  <Button type="submit" disabled={!topic.trim()} className="rounded-xl font-semibold shrink-0 px-5" data-testid="quick-study-submit">
+                  <Button type="submit" disabled={!topic.trim()} className="rounded-xl font-semibold shrink-0 px-5 bg-amber-600 hover:bg-amber-700 text-white shadow-sm" data-testid="quick-study-submit">
                     Study
                   </Button>
                 </form>
                 <div>
-                  <p className="text-[11px] font-semibold text-amber-700/70 dark:text-amber-500/60 uppercase tracking-widest mb-2.5">Try one of these</p>
+                  <p className="text-[11px] font-bold text-amber-700/80 dark:text-amber-500/70 uppercase tracking-widest mb-3">Try one of these</p>
                   <div className="flex flex-wrap gap-2">
                     {SUGGESTIONS.map((s) => (
                       <button
                         key={s}
                         data-testid={`suggestion-${s}`}
                         onClick={() => { setTopic(s); generate(null, s); }}
-                        className="px-3 py-1.5 rounded-full bg-[#faf5ea] dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:text-amber-800 dark:hover:text-amber-300 border border-amber-200/60 dark:border-amber-700/40 text-[12px] font-medium text-amber-800/70 dark:text-amber-400/80 transition-colors"
+                        className="px-3.5 py-1.5 rounded-full bg-white dark:bg-amber-950/30 hover:bg-amber-50 dark:hover:bg-amber-900/40 border border-amber-300/60 dark:border-amber-700/40 text-[12px] font-semibold text-amber-900/80 dark:text-amber-300/90 hover:text-amber-900 hover:border-amber-400/70 transition-all active:scale-95 shadow-sm"
                       >
                         {s}
                       </button>
@@ -582,6 +585,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                 )}
               </AnimatePresence>
             )}
+            </div>
           </motion.div>
 
           {/* Divider */}
