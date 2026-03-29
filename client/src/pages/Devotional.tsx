@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2, Star } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2, Star, Headphones, Square } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -17,7 +17,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
-import { getUserName } from "@/lib/userName";
+import { getUserName, getUserVoice } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { getDevotionalHeroPhoto } from "@/lib/shareImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
@@ -72,6 +72,9 @@ export default function Devotional() {
   const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
   const [savedGratitude, setSavedGratitude] = useState(false);
   const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [listenSection, setListenSection] = useState<"verse" | "reflection" | "prayer" | null>(null);
+  const listenAudioRef = useRef<HTMLAudioElement | null>(null);
+  const listenCancelledRef = useRef(false);
   const [nudgeName, setNudgeName] = useState(() => getUserName() ?? "");
   const [nudgeEmail, setNudgeEmail] = useState("");
   const [nudgeLoading, setNudgeLoading] = useState(false);
@@ -392,6 +395,54 @@ export default function Devotional() {
   const handleNudgeDismiss = () => {
     localStorage.setItem("sp_nudge_dismissed", "1");
     setNudgeDismissed(true);
+  };
+
+  const stopFullListen = () => {
+    listenCancelledRef.current = true;
+    if (listenAudioRef.current) {
+      listenAudioRef.current.pause();
+      listenAudioRef.current = null;
+    }
+    setListenSection(null);
+  };
+
+  const startFullListen = async () => {
+    if (listenSection) { stopFullListen(); return; }
+    listenCancelledRef.current = false;
+
+    const cleanPrayer = prayerContent
+      .replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "")
+      .trim();
+
+    const sections: Array<{ key: "verse" | "reflection" | "prayer"; text: string }> = [];
+    if (verse) sections.push({ key: "verse", text: `${verse.text}. ${verse.reference}.` });
+    if (reflectionContent.trim()) sections.push({ key: "reflection", text: reflectionContent });
+    if (cleanPrayer.trim()) sections.push({ key: "prayer", text: cleanPrayer });
+    if (sections.length === 0) return;
+
+    for (const section of sections) {
+      if (listenCancelledRef.current) break;
+      setListenSection(section.key);
+      await new Promise<void>(async (resolve) => {
+        try {
+          const response = await fetch("/api/tts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: section.text.slice(0, 4096), voice: getUserVoice() }),
+          });
+          if (!response.ok || listenCancelledRef.current) { resolve(); return; }
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          listenAudioRef.current = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+          audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+          if (!listenCancelledRef.current) await audio.play();
+          else resolve();
+        } catch { resolve(); }
+      });
+    }
+    if (!listenCancelledRef.current) setListenSection(null);
   };
 
   const handleShare = async () => {
@@ -798,6 +849,45 @@ export default function Devotional() {
                   <Star className={`w-3.5 h-3.5 ${verseInMemory ? "fill-amber-500" : ""}`} />
                 </button>
               </div>
+
+              {/* ── Full Devotional Listen Mode ──────────────────── */}
+              {(reflectionContent || prayerContent) && (
+                <div className="mx-4 mb-4 mt-1 rounded-xl bg-gradient-to-r from-primary/8 to-violet-500/5 border border-primary/15 px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${listenSection ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                      <Headphones className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      {listenSection ? (
+                        <>
+                          <p className="text-[12px] font-bold text-primary leading-none">Now playing</p>
+                          <p className="text-[11px] text-muted-foreground capitalize mt-0.5 leading-none">{listenSection}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[13px] font-semibold text-foreground leading-none">Full devotional</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Verse · Reflection · Prayer</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={startFullListen}
+                    data-testid="button-full-devotional-listen"
+                    className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
+                      listenSection
+                        ? "bg-primary/20 text-primary hover:bg-primary/30"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                    }`}
+                  >
+                    {listenSection ? (
+                      <><Square className="w-3 h-3 fill-current" /> Stop</>
+                    ) : (
+                      <><Headphones className="w-3 h-3" /> Listen</>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

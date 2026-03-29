@@ -9,7 +9,7 @@ import {
   BookHeart, Sparkles, HandIcon, BookOpen, Trash2, Loader2,
   NotebookPen, PenLine, Plus, X, ChevronDown, Church, User, BookMarked, Calendar,
   Download, FileText, FileType2, Lock, Star, Check,
-  Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb, MessageCircle,
+  Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb, MessageCircle, Feather,
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -1015,6 +1015,27 @@ export default function Journal() {
   const filtered = entries.filter(e => e.type === activeTab);
   const activeTabConfig = TABS.find(t => t.key === activeTab)!;
 
+  const textEntryCount = entries.filter(e => e.type !== "note").length;
+  const [letter, setLetter] = useState<string | null>(null);
+  const [letterLoading, setLetterLoading] = useState(false);
+  const [letterDismissed, setLetterDismissed] = useState(() => !!localStorage.getItem("sp_letter_dismissed"));
+  const [letterGenerated, setLetterGenerated] = useState(false);
+
+  const generateLetter = async () => {
+    setLetterLoading(true);
+    try {
+      const res = await fetch("/api/journal/spiritual-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!res.ok) { setLetterLoading(false); return; }
+      const data = await res.json();
+      if (data.letter) { setLetter(data.letter); setLetterGenerated(true); }
+    } catch { }
+    setLetterLoading(false);
+  };
+
   return (
     <>
       <NavBar />
@@ -1127,6 +1148,80 @@ export default function Journal() {
 
         {/* Content */}
         <main className="max-w-xl mx-auto px-5 py-6 pb-24">
+
+          {/* ── Spiritual Letter — AI reflection on journal history ── */}
+          <AnimatePresence>
+            {!isLoading && textEntryCount >= 3 && !letterDismissed && (
+              <motion.div
+                key="spiritual-letter"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.4 }}
+                data-testid="card-spiritual-letter"
+                className="relative mb-6 rounded-2xl overflow-hidden border border-indigo-200/60 dark:border-indigo-800/40 bg-gradient-to-br from-indigo-50/80 via-violet-50/50 to-background dark:from-indigo-950/20 dark:via-violet-950/10 dark:to-background"
+              >
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-400" />
+                <button
+                  onClick={() => { localStorage.setItem("sp_letter_dismissed", "1"); setLetterDismissed(true); }}
+                  className="absolute top-3 right-3 text-indigo-400 hover:text-indigo-600 transition-colors"
+                  aria-label="Dismiss"
+                  data-testid="button-dismiss-spiritual-letter"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="px-5 pt-5 pb-5">
+                  {!letterGenerated ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                          <Feather className="w-3.5 h-3.5 text-indigo-500" />
+                        </div>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                          A reflection on your journey
+                        </p>
+                      </div>
+                      <p className="text-[15px] font-bold text-foreground leading-snug mb-1.5">
+                        {textEntryCount >= 10 ? "Something beautiful is taking shape." : "You've been writing. There's something to reflect on."}
+                      </p>
+                      <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+                        Based on your prayers and reflections, there's a short letter waiting — a reflection on what you seem to be learning, what God might be doing, and what you might not yet see in yourself.
+                      </p>
+                      <button
+                        onClick={generateLetter}
+                        disabled={letterLoading}
+                        data-testid="button-generate-spiritual-letter"
+                        className="flex items-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-semibold px-5 py-2 transition-colors disabled:opacity-70 shadow-sm"
+                      >
+                        {letterLoading ? (
+                          <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Reflecting…</>
+                        ) : (
+                          <><Feather className="w-3.5 h-3.5" /> Read my reflection</>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                          <Feather className="w-3.5 h-3.5 text-indigo-500" />
+                        </div>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                          Your reflection
+                        </p>
+                      </div>
+                      {letter?.split("\n\n").filter(p => p.trim()).map((para, i) => (
+                        <p key={i} className="text-[14px] leading-relaxed text-foreground/90 mb-3 last:mb-0">
+                          {para}
+                        </p>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* First-time guide — shown only when there are zero entries across all tabs */}
           {!isLoading && entries.length === 0 && activeTab !== "note" && activeTab !== "memory" && (

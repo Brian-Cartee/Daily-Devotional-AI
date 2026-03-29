@@ -975,6 +975,53 @@ What you never do:
     }
   });
 
+  // ── Spiritual Letter ─────────────────────────────────────────────────────────
+  app.post("/api/journal/spiritual-letter", async (req, res) => {
+    const { sessionId } = req.body as { sessionId?: string };
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    if (isRateLimited(`letter:${sessionId}`, 3, 3_600_000)) {
+      return res.status(429).json({ message: "Too many requests" });
+    }
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      const textEntries = entries.filter(e => e.type !== "note" && e.content?.trim());
+      if (textEntries.length < 3) return res.status(400).json({ message: "Not enough entries yet" });
+
+      const context = textEntries
+        .slice(0, 20)
+        .map(e => `[${e.type.toUpperCase()} — ${new Date(e.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}]\n${e.title ? e.title + ": " : ""}${e.content.slice(0, 350)}`)
+        .join("\n\n");
+
+      const dayRange = Math.max(1, Math.round(
+        (new Date(textEntries[0].createdAt).getTime() - new Date(textEntries[textEntries.length - 1].createdAt).getTime()) / 86400000
+      ));
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 650,
+        messages: [
+          {
+            role: "system",
+            content: `You are a wise, caring pastoral companion. You have been given someone's private journal entries — prayers, reflections, and thoughts — from the past ${dayRange} days. Write them a short personal letter (4–5 paragraphs) that:
+
+1. Opens by gently naming 1-2 recurring spiritual themes you noticed (e.g., "You keep coming back to fear of the future" or "There's a deep longing for peace running through what you've written")
+2. Reflects on what you notice God doing or what they seem to be learning — be specific to their actual words, not generic
+3. Offers one piece of gentle, earned encouragement — something they might not be able to see about themselves yet
+4. Closes with a single scripture verse that speaks to the whole arc of what they've shared, and a 1-sentence blessing
+
+Tone: Like a letter from a trusted spiritual director — honest, warm, specific. NOT preachy. NOT generic. Do NOT use their name (you don't know it). Start with "These past days..." or "Reading what you've written..." or similar. Do NOT start with "Dear friend" or "Hello." Keep it under 300 words total.`,
+          },
+          { role: "user", content: context },
+        ],
+      });
+      const letter = completion.choices[0]?.message?.content?.trim() ?? "";
+      res.json({ letter, entryCount: textEntries.length });
+    } catch (err) {
+      console.error("spiritual letter error:", err);
+      res.status(500).json({ message: "Failed to generate letter" });
+    }
+  });
+
   // ── Scripture Memory Routes ─────────────────────────────────────────────────
 
   app.get("/api/memory-verses", async (req, res) => {
