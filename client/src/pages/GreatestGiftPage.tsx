@@ -191,7 +191,7 @@ export default function GreatestGiftPage() {
               </span>
             </button>
             <p className="text-[12px] text-amber-700/70 dark:text-amber-400/70">
-              Enter at checkout for 25% off a PRO annual membership
+              Enter at checkout for 20% off a PRO annual membership
             </p>
           </div>
         </motion.div>
