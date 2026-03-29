@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Sun, Compass, BookOpen, Search, NotebookPen, Heart,
   Flame, Trophy, ShieldCheck, Church,
-  Sparkles, ArrowRight, Users, Share2, Check
+  Sparkles, ArrowRight, Users, Share2, Check, Play
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
@@ -284,6 +284,18 @@ export default function AboutPage() {
             </button>
           </Link>
           <p className="text-[12px] text-muted-foreground mt-3">Free · No account required · Bible-first</p>
+
+          <div className="mt-6 pt-6 border-t border-border/40">
+            <p className="text-[12px] text-muted-foreground mb-2">Want to hear the welcome message again?</p>
+            <a
+              href="/?intro"
+              data-testid="btn-replay-intro"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[13px] font-semibold text-foreground/70 hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all"
+            >
+              <Play className="w-3.5 h-3.5 text-primary" />
+              Replay the intro
+            </a>
+          </div>
         </motion.div>
 
       </main>
