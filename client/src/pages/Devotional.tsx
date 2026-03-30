@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2, Star, Headphones, Square } from "lucide-react";
+import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2, Star, Headphones, Square, ChevronDown } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -1407,33 +1407,45 @@ export default function Devotional() {
           )}
 
           {/* Actions */}
+          {/* AI Bible Scholar button — expands directly below */}
           <div className="pt-1">
             <button
               data-testid="button-ask-scripture"
               onClick={() => setChatOpen(v => !v)}
-              className="w-full rounded-2xl border border-primary/25 bg-primary/5 hover:bg-primary/10 transition-all px-5 py-4 text-left group"
+              className="w-full rounded-2xl border transition-all text-left group active:scale-[0.99]"
+              style={{
+                borderColor: chatOpen ? "rgba(124,58,237,0.4)" : "rgba(124,58,237,0.2)",
+                background: chatOpen
+                  ? "linear-gradient(135deg, #3b0f8e18 0%, #7c3aed12 100%)"
+                  : "linear-gradient(135deg, #f5f0ff 0%, #ede8ff 100%)",
+              }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4.5 h-4.5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-foreground leading-tight">Ask About This Scripture</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">History · context · cross-references · application</p>
-                  </div>
+              <div className="flex items-start gap-3 px-5 py-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm mt-0.5"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
+                >
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <MessageCircle className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-bold text-foreground leading-tight">Ask the AI Bible Scholar</p>
+                    <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">
+                      Try it
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                    Ask anything — original meaning, historical context, cross-references, or how this verse speaks to your life right now
+                  </p>
                 </div>
+                <ChevronDown
+                  className="w-4 h-4 text-primary/60 shrink-0 mt-1 transition-transform duration-300"
+                  style={{ transform: chatOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
               </div>
             </button>
           </div>
 
-          {/* Share & Invite — always visible once verse loads */}
-          <ShareInviteCard />
-
-          {/* AI Chat */}
+          {/* AI Chat — expands directly under the button */}
           <AnimatePresence>
             {chatOpen && (
               <motion.div
@@ -1450,6 +1462,9 @@ export default function Devotional() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Share & Invite — at the very bottom */}
+          <ShareInviteCard />
 
 
         </motion.div>
