@@ -15,10 +15,10 @@ import Journal from "@/pages/Journal";
 import QuickStudyPage from "@/pages/QuickStudyPage";
 import ProSuccess from "@/pages/ProSuccess";
 import RefundPage from "@/pages/RefundPage";
-import PricingPage from "@/pages/PricingPage";
+const PricingPage = lazy(() => import("@/pages/PricingPage"));
 import PresentMode from "@/pages/PresentMode";
 import DemoCreate from "@/pages/DemoCreate";
-import AboutPage from "@/pages/AboutPage";
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
@@ -75,11 +75,19 @@ function Router() {
       <Route path="/journal" component={Journal} />
       <Route path="/pro-success" component={ProSuccess} />
       <Route path="/refund" component={RefundPage} />
-      <Route path="/pricing" component={PricingPage} />
+      <Route path="/pricing">
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <PricingPage />
+        </Suspense>
+      </Route>
       
       <Route path="/present" component={PresentMode} />
       <Route path="/demo" component={DemoCreate} />
-      <Route path="/about" component={AboutPage} />
+      <Route path="/about">
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <AboutPage />
+        </Suspense>
+      </Route>
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/shepherd-admin" component={AdminPage} />
