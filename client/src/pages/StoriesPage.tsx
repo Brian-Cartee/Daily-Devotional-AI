@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Star, Send, Check, X, ChevronDown } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
@@ -117,6 +117,14 @@ export default function StoriesPage() {
   const [form, setForm] = useState<StoryFormData>({ name: "", category: "Spiritual Guidance", story: "" });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
+
+  const openShareForm = () => {
+    setShowForm(true);
+    setTimeout(() => {
+      shareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
 
   const filtered = activeCategory === "All"
     ? STORIES
@@ -221,6 +229,7 @@ export default function StoriesPage() {
 
           {/* Share your story CTA */}
           <motion.div
+            ref={shareRef}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
@@ -247,7 +256,7 @@ export default function StoriesPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      onClick={() => setShowForm(true)}
+                      onClick={openShareForm}
                       data-testid="button-share-story"
                       className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-semibold px-5 py-2.5 transition-colors shadow-sm"
                     >
@@ -351,6 +360,25 @@ export default function StoriesPage() {
 
         </main>
       </div>
+
+      {/* Floating share button — visible while scrolling, hides when form is open or submitted */}
+      <AnimatePresence>
+        {!showForm && !submitted && (
+          <motion.button
+            key="fab"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.3 }}
+            onClick={openShareForm}
+            data-testid="button-fab-share"
+            className="fixed bottom-24 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground text-[13px] font-semibold px-4 py-3 shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-95 transition-all sm:bottom-6"
+          >
+            <Heart className="w-3.5 h-3.5 fill-current" />
+            Share your story
+          </motion.button>
+        )}
+      </AnimatePresence>
     </>
   );
 }
