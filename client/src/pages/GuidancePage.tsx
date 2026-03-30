@@ -206,13 +206,11 @@ export default function GuidancePage() {
   }, [responseComplete]);
 
 
-  // Scroll initial response into view as soon as it starts streaming
+  // Mark initial scroll as done — keep user at top so scripture is visible first
   useEffect(() => {
     if (!streamingText || isSending || hasScrolledInitial.current) return;
     hasScrolledInitial.current = true;
-    setTimeout(() => {
-      responseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
+    // Do NOT scroll away from top — scripture verse should be the first thing they read
   }, [streamingText, isSending]);
 
   // Scroll follow-up response into view as soon as it starts streaming
