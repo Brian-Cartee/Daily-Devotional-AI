@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Play, Volume2, VolumeX, BookMarked, CheckCheck, Share2, Sparkles, Heart, Shield } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Share2, Sparkles, Heart, Shield } from "lucide-react";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
@@ -13,14 +13,6 @@ import { type Journey } from "@/data/journeys";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { useTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
-
-interface VideoResult {
-  videoId: string;
-  title: string;
-  channelTitle: string;
-  thumbnail: string;
-  url: string;
-}
 
 interface VerseResult {
   reference: string;
@@ -70,12 +62,6 @@ interface Message {
   content: string;
 }
 
-function decodeHtml(html: string): string {
-  const txt = document.createElement("textarea");
-  txt.innerHTML = html;
-  return txt.value;
-}
-
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -99,10 +85,6 @@ export default function GuidancePage() {
 
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(true);
-
-  const [videos, setVideos] = useState<VideoResult[]>([]);
-  const [videosLoading, setVideosLoading] = useState(false);
-  const [videosFetched, setVideosFetched] = useState(false);
 
   const [verse, setVerse] = useState<VerseResult | null>(null);
   const [prayer, setPrayer] = useState<string | null>(null);
@@ -222,23 +204,6 @@ export default function GuidancePage() {
     }).catch(() => {});
   }, [responseComplete]);
 
-  // Fetch sermon videos once the pastoral response finishes streaming
-  useEffect(() => {
-    if (!responseComplete || videosFetched || !situation.trim()) return;
-    setVideosFetched(true);
-    setVideosLoading(true);
-    fetch("/api/guidance/videos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId() }),
-    })
-      .then(r => r.json())
-      .then((data: { videos: VideoResult[] }) => {
-        setVideos(data.videos ?? []);
-        setVideosLoading(false);
-      })
-      .catch(() => setVideosLoading(false));
-  }, [responseComplete]);
 
   // Scroll initial response into view as soon as it starts streaming
   useEffect(() => {
@@ -627,11 +592,10 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {/* Bridge text — connects the response to the journey + videos below */}
+          {/* Bridge text — connects the response to the journey below */}
           {responseComplete && (
             <p className="text-sm text-muted-foreground/75 italic leading-relaxed mb-6 -mt-2">
               The scripture journey below was shaped around everything you've just shared — take your time with it.
-              Curated sermons and teachings are also waiting further down as additional support, whenever you feel led to go deeper.
             </p>
           )}
 
@@ -696,65 +660,6 @@ export default function GuidancePage() {
                     </div>
                   </button>
                 ) : null}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Watch & Listen — sermon/video recommendations */}
-          <AnimatePresence>
-            {responseComplete && (videosLoading || videos.length > 0) && (
-              <motion.div
-                key="videos-section"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="mt-8"
-              >
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                  Teaching for Your Season
-                </p>
-                <p className="text-[12px] text-muted-foreground/60 mb-3">Curated sermons and teachings matched to what you shared</p>
-
-                {videosLoading ? (
-                  <div className="rounded-2xl bg-card border border-border p-4">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary/60" />
-                      <span className="text-sm">Finding relevant sermons…</span>
-                    </div>
-                  </div>
-                ) : videos.length === 0 ? null : (
-                  <div className="space-y-3">
-                    {videos.map((video) => (
-                      <a
-                        key={video.videoId}
-                        href={video.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid={`link-video-${video.videoId}`}
-                        className="flex items-start gap-3 rounded-2xl bg-card border border-border p-3 hover:border-primary/30 hover:bg-primary/5 transition-all group"
-                      >
-                        <div className="relative flex-shrink-0 w-24 rounded-xl overflow-hidden aspect-video bg-muted">
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                            <div className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
-                              <Play className="w-3 h-3 text-primary fill-primary ml-0.5" />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                            {decodeHtml(video.title)}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1 truncate">{decodeHtml(video.channelTitle)}</p>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
