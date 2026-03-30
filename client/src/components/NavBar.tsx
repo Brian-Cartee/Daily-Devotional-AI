@@ -71,6 +71,12 @@ export function NavBar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
+            <img
+              src="/app-icon.png"
+              alt="Shepherd's Path"
+              className="w-8 h-8 rounded-xl object-cover shadow-sm select-none"
+              draggable={false}
+            />
             <div className="flex flex-col leading-none select-none">
               <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>
               <span className="text-[1.35rem] font-black tracking-tight text-foreground leading-none">PATH</span>
