@@ -65,7 +65,7 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit(
   id: true,
   createdAt: true,
 }).extend({
-  type: z.enum(["prayer", "reflection", "verse", "note"]),
+  type: z.enum(["prayer", "reflection", "verse", "note", "guidance_memory"]),
   sessionId: z.string().min(1),
   content: z.string().min(1),
   title: z.string().optional(),
@@ -239,4 +239,5 @@ export const prayerWallPrays = pgTable("prayer_wall_prays", {
   requestId: integer("request_id").notNull(),
   sessionId: text("session_id").notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+  remindAt: timestamp("remind_at"),
 });

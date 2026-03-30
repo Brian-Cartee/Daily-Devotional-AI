@@ -138,6 +138,32 @@ function msUntilNextMinute(targetHour: number, targetMinute: number = 0): number
   return next.getTime() - now.getTime();
 }
 
+export async function sendPrayerReminderNotifications() {
+  try {
+    const due = await storage.getDuePrayerReminders();
+    for (const reminder of due) {
+      try {
+        const subs = await storage.getAllPushSubscriptions();
+        const sub = subs.find(s => s.sessionId === reminder.sessionId);
+        if (sub) {
+          const snippet = reminder.request.length > 80 ? reminder.request.slice(0, 77) + "…" : reminder.request;
+          const name = reminder.displayName ?? "someone";
+          const ok = await sendToSubscription(sub, {
+            title: "A prayer you committed to 🙏",
+            body: `You said you'd pray for ${name}. "${snippet}" — they may still need it.`,
+            tag: `prayer-reminder-${reminder.requestId}`,
+            url: "/prayer-wall",
+          });
+          if (!ok) await storage.deletePushSubscription(reminder.sessionId);
+        }
+        await storage.clearPrayerReminder(reminder.requestId, reminder.sessionId);
+      } catch {}
+    }
+  } catch (err) {
+    console.error("[push] prayer reminder error:", err);
+  }
+}
+
 export function schedulePushNotifications() {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     console.log("[push] VAPID keys not configured, skipping push scheduler");
@@ -166,6 +192,16 @@ export function schedulePushNotifications() {
   scheduleHourly(17, sendMiddayNotifications, "midday push");     // 12 PM ET
   scheduleHourly(1,  sendEveningNotifications, "evening push");   // 8 PM ET
   scheduleHourly(2,  sendStreakReminders, "streak reminder");     // 9 PM ET
+
+  // Prayer wall reminders — check every hour for due reminders
+  const schedulePrayerReminders = () => {
+    setTimeout(async () => {
+      await sendPrayerReminderNotifications();
+      schedulePrayerReminders();
+    }, 60 * 60 * 1000);
+  };
+  sendPrayerReminderNotifications().catch(() => {});
+  schedulePrayerReminders();
 
   const scheduleSundaySummary = () => {
     const now = new Date();

@@ -205,6 +205,23 @@ export default function GuidancePage() {
 
   }, []);
 
+  // Save guidance memory silently when first response completes
+  useEffect(() => {
+    if (!responseComplete || !situation.trim() || situation.trim().length < 30) return;
+    const assistantMessages = messages.filter(m => m.role === "assistant");
+    const firstResponse = assistantMessages[0]?.content;
+    if (!firstResponse) return;
+    fetch("/api/guidance/save-memory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        situation: situation.trim(),
+        response: firstResponse,
+        sessionId: getSessionId(),
+      }),
+    }).catch(() => {});
+  }, [responseComplete]);
+
   // Fetch sermon videos once the pastoral response finishes streaming
   useEffect(() => {
     if (!responseComplete || videosFetched || !situation.trim()) return;

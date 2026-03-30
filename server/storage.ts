@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry } from "@shared/schema";
-import { eq, and, desc, isNull, isNotNull, lt, sql as sqlExpr } from "drizzle-orm";
+import { eq, and, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
@@ -48,6 +48,9 @@ export interface IStorage {
   createPrayerWallEntry(data: InsertPrayerWallEntry): Promise<PrayerWallEntry>;
   recordPrayerWallPray(requestId: number, sessionId: string): Promise<{ prayCount: number; alreadyPrayed: boolean }>;
   hasPrayedFor(requestId: number, sessionId: string): Promise<boolean>;
+  setReminderForPray(requestId: number, sessionId: string, remindAt: Date): Promise<void>;
+  getDuePrayerReminders(): Promise<Array<{ requestId: number; sessionId: string; request: string; displayName: string | null }>>;
+  clearPrayerReminder(requestId: number, sessionId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -399,6 +402,31 @@ export class DatabaseStorage implements IStorage {
     const rows = await db.select().from(prayerWallPrays)
       .where(and(eq(prayerWallPrays.requestId, requestId), eq(prayerWallPrays.sessionId, sessionId)));
     return rows.length > 0;
+  }
+
+  async setReminderForPray(requestId: number, sessionId: string, remindAt: Date): Promise<void> {
+    await db.update(prayerWallPrays)
+      .set({ remindAt })
+      .where(and(eq(prayerWallPrays.requestId, requestId), eq(prayerWallPrays.sessionId, sessionId)));
+  }
+
+  async getDuePrayerReminders(): Promise<Array<{ requestId: number; sessionId: string; request: string; displayName: string | null }>> {
+    const now = new Date();
+    return db.select({
+      requestId: prayerWallPrays.requestId,
+      sessionId: prayerWallPrays.sessionId,
+      request: prayerWall.request,
+      displayName: prayerWall.displayName,
+    })
+    .from(prayerWallPrays)
+    .innerJoin(prayerWall, eq(prayerWallPrays.requestId, prayerWall.id))
+    .where(and(isNotNull(prayerWallPrays.remindAt), lte(prayerWallPrays.remindAt, now)));
+  }
+
+  async clearPrayerReminder(requestId: number, sessionId: string): Promise<void> {
+    await db.update(prayerWallPrays)
+      .set({ remindAt: null })
+      .where(and(eq(prayerWallPrays.requestId, requestId), eq(prayerWallPrays.sessionId, sessionId)));
   }
 }
 

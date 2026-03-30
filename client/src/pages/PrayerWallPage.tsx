@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
-import { HandHeart, Send, Loader2, Clock, Users } from "lucide-react";
+import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface WallEntry {
@@ -37,6 +37,7 @@ export default function PrayerWallPage() {
   const [displayName, setDisplayName] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [prayedIds, setPrayedIds] = useState<Set<number>>(new Set());
+  const [remindedIds, setRemindedIds] = useState<Set<number>>(new Set());
 
   const { data: entries = [], isLoading } = useQuery<WallEntry[]>({
     queryKey: ["/api/prayer-wall", sessionId],
@@ -67,6 +68,17 @@ export default function PrayerWallPage() {
     onSuccess: (data: any, id: number) => {
       setPrayedIds(prev => new Set([...prev, id]));
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-wall"] });
+    },
+  });
+
+  const remindMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("POST", `/api/prayer-wall/${id}/remind`, { sessionId, hoursFromNow: 24 }),
+    onSuccess: (_data: any, id: number) => {
+      setRemindedIds(prev => new Set([...prev, id]));
+      toast({ description: "We'll remind you to pray for this again tomorrow. 🙏" });
+    },
+    onError: () => {
+      toast({ description: "Couldn't set the reminder. Enable notifications in settings first.", variant: "destructive" });
     },
   });
 
@@ -208,6 +220,7 @@ export default function PrayerWallPage() {
         <AnimatePresence>
           {entries.map((entry, i) => {
             const hasPrayed = entry.hasPrayed || prayedIds.has(entry.id);
+            const hasReminded = remindedIds.has(entry.id);
             return (
               <motion.div
                 key={entry.id}
@@ -259,6 +272,26 @@ export default function PrayerWallPage() {
                       </p>
                     )}
                   </div>
+
+                  {hasPrayed && (
+                    <div className="mt-2.5 pt-2.5 border-t border-border/50">
+                      <button
+                        data-testid={`btn-remind-${entry.id}`}
+                        onClick={() => !hasReminded && remindMutation.mutate(entry.id)}
+                        disabled={hasReminded || remindMutation.isPending}
+                        className={`flex items-center gap-1.5 text-[11px] font-semibold transition-all px-2.5 py-1.5 rounded-lg ${
+                          hasReminded
+                            ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                            : "text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/70 dark:hover:bg-amber-900/20"
+                        }`}
+                      >
+                        {hasReminded
+                          ? <><BellRing className="w-3.5 h-3.5" /> Reminder set for tomorrow</>
+                          : <><Bell className="w-3.5 h-3.5" /> Remind me to pray again tomorrow</>
+                        }
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

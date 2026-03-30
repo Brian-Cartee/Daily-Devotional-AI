@@ -454,13 +454,15 @@ I'm here whenever you're ready to continue your walk.`;
     try {
       const entries = await storage.getJournalEntries(sessionId);
       if (!entries || entries.length === 0) return { context: "", count: 0 };
-      const recent = entries.slice(0, 6);
-      const context = recent.map(e => {
-        const label = e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
-        const snippet = e.content.replace(/\n+/g, " ").slice(0, 200);
+      const memories = entries.filter(e => e.type === "guidance_memory").slice(0, 3);
+      const visible = entries.filter(e => e.type !== "guidance_memory").slice(0, 5);
+      const allContext = [...memories, ...visible];
+      const context = allContext.map(e => {
+        const label = e.type === "guidance_memory" ? "Previous conversation" : e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
+        const snippet = e.content.replace(/\n+/g, " ").slice(0, 220);
         return `[${label}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
       }).join("\n");
-      return { context, count: entries.length };
+      return { context, count: entries.filter(e => e.type !== "guidance_memory").length };
     } catch { return { context: "", count: 0 }; }
   }
 
@@ -490,6 +492,38 @@ I'm here whenever you're ready to continue your walk.`;
     }
     if (!res.writableEnded) res.end();
   }
+
+  // ── Seed prayer wall with 3 starter entries on first run ──────────────────
+  (async () => {
+    try {
+      const entries = await storage.getPrayerWallEntries();
+      const alreadySeeded = entries.some(e => e.sessionId === "sp-shepherd");
+      if (alreadySeeded) return;
+      const seeds = [
+        {
+          sessionId: "sp-shepherd",
+          displayName: "Maria",
+          request: "Please pray for my mom — she was just diagnosed with cancer. I'm scared and I keep reminding myself that God is still good, but I need help holding on to that right now.",
+        },
+        {
+          sessionId: "sp-shepherd",
+          displayName: "Anonymous Believer",
+          request: "Struggling with loneliness after moving to a new city. I'm trying to trust that God brought me here for a reason. Would appreciate prayers for community and peace.",
+        },
+        {
+          sessionId: "sp-shepherd",
+          displayName: "James",
+          request: "Job interview tomorrow for a position I really need. Praying for clarity and calm, and that God's will would be done. Thank you for standing with me.",
+        },
+      ];
+      for (const seed of seeds) {
+        await storage.createPrayerWallEntry(seed);
+      }
+      console.log("[seed] Prayer wall seeded with 3 starter entries");
+    } catch (err) {
+      console.error("[seed] Prayer wall seeding failed:", err);
+    }
+  })();
 
   function buildModeNote(mode: string): string {
     if (mode === "coach") {
@@ -1025,6 +1059,19 @@ What you never do:
     }
   });
 
+  app.post("/api/prayer-wall/:id/remind", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { sessionId, hoursFromNow = 24 } = req.body as { sessionId?: string; hoursFromNow?: number };
+    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
+    try {
+      const remindAt = new Date(Date.now() + Math.min(hoursFromNow, 168) * 60 * 60 * 1000);
+      await storage.setReminderForPray(id, sessionId, remindAt);
+      res.json({ ok: true, remindAt });
+    } catch {
+      res.status(500).json({ message: "Failed to set reminder" });
+    }
+  });
+
   app.get("/api/journal", async (req, res) => {
     const sessionId = req.query.sessionId as string;
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
@@ -1237,6 +1284,45 @@ Rules:
     } catch (err) {
       console.error("guidance response error:", err);
       if (!res.headersSent) res.status(500).json({ message: "Failed" });
+    }
+  });
+
+  // ── Guidance: save silent memory from a completed guidance session ──────────
+  app.post("/api/guidance/save-memory", async (req, res) => {
+    const { situation, response, sessionId } = req.body as {
+      situation?: string; response?: string; sessionId?: string;
+    };
+    if (!situation?.trim() || !response?.trim() || !sessionId) {
+      return res.status(400).json({ message: "missing fields" });
+    }
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 120,
+        messages: [
+          {
+            role: "system",
+            content: `You extract a brief spiritual memory note from a guidance conversation. Return 1-2 plain sentences summarizing: what is this person going through, and what matters most to them right now. This will be used in future sessions to personalize responses. Be specific, not generic. No fluff. No quotes. Just the essence of their situation and inner life.`,
+          },
+          {
+            role: "user",
+            content: `Their situation: "${situation.slice(0, 600)}"\n\nThe guidance they received began: "${response.slice(0, 400)}"`,
+          },
+        ],
+      });
+      const summary = completion.choices[0]?.message?.content?.trim();
+      if (summary && summary.length > 20) {
+        await storage.createJournalEntry({
+          sessionId,
+          type: "guidance_memory",
+          content: summary,
+          title: null,
+        });
+      }
+      res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error("[memory] save failed:", err);
+      res.status(500).json({ message: "failed" });
     }
   });
 
