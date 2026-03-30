@@ -35,9 +35,9 @@ export function getUserVoice(): string {
   try {
     const v = localStorage.getItem(VOICE_KEY);
     if (v === "onyx" || v === "shimmer") return v;
-    return "onyx";
+    return "shimmer";
   } catch {
-    return "onyx";
+    return "shimmer";
   }
 }
 
