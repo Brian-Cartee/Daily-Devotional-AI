@@ -6,7 +6,6 @@ import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guid
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
-import { detectCrisis } from "@/lib/crisis";
 import { getUserName } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
