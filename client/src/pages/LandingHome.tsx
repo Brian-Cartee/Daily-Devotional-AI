@@ -852,7 +852,7 @@ export default function LandingHome() {
                 </Link>
 
                 <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
-                  Starts at $3.99/month · Cancel anytime
+                  Starts at $3.75/month · Billed annually
                 </p>
               </div>
             </div>
