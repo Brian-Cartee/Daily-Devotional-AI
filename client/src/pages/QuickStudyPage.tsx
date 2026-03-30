@@ -89,6 +89,8 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedScripture, setSavedScripture] = useState(false);
+  const [aiReply, setAiReply] = useState("");
+  const [aiReplySaved, setAiReplySaved] = useState(false);
   const saveJournal = useJournalSave();
 
   const generateAI = async (type: "reflect" | "pray") => {
@@ -232,6 +234,37 @@ function TodaysTrackCard({ track, onClear }: { track: Track; onClear: () => void
                   <div className="text-sm text-slate-600 leading-relaxed space-y-3">
                     {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
                   </div>
+                  <div className="mt-3 pt-3 border-t border-white/40">
+                    <p className="text-[11px] font-semibold text-foreground/60 mb-1.5">How does this speak to you?</p>
+                    <textarea
+                      data-testid="textarea-track-ai-reply"
+                      value={aiReply}
+                      onChange={e => { setAiReply(e.target.value); setAiReplySaved(false); }}
+                      placeholder="Share a thought or response…"
+                      spellCheck
+                      rows={2}
+                      className="w-full resize-none rounded-lg border border-border/60 bg-white/60 px-2.5 py-1.5 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                    <div className="flex justify-end mt-1.5">
+                      {aiReplySaved ? (
+                        <span className="text-[11px] font-semibold text-primary flex items-center gap-1"><Check className="w-3 h-3" /> Saved</span>
+                      ) : (
+                        <button
+                          data-testid="btn-save-track-ai-reply"
+                          disabled={!aiReply.trim()}
+                          onClick={async () => {
+                            if (!aiReply.trim()) return;
+                            try {
+                              await fetch("/api/journal", { method: "POST", headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ sessionId: getSessionId(), verseRef: passage.reference, verseText: "", content: aiReply.trim(), type: "reflection" }) });
+                              setAiReplySaved(true);
+                            } catch { setAiReplySaved(true); }
+                          }}
+                          className="text-[11px] font-bold rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                        >Save to Journal</button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -323,6 +356,8 @@ export default function QuickStudyPage() {
   const [storyResult, setStoryResult] = useState("");
   const [storyLoading, setStoryLoading] = useState(false);
   const [savedStory, setSavedStory] = useState(false);
+  const [storyReply, setStoryReply] = useState("");
+  const [storyReplySaved, setStoryReplySaved] = useState(false);
   const storyInputRef = useRef<HTMLTextAreaElement>(null);
 
   const saveJournal = useJournalSave();
@@ -757,6 +792,37 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                             title="Bible Story Found — Shepherd's Path"
                             text={`${storyDescription}\n\n${storyResult}`}
                           />
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-violet-200/40">
+                          <p className="text-[11px] font-semibold text-foreground/60 mb-1.5">Your reflection</p>
+                          <textarea
+                            data-testid="textarea-story-reply"
+                            value={storyReply}
+                            onChange={e => { setStoryReply(e.target.value); setStoryReplySaved(false); }}
+                            placeholder="What struck you? How does this apply to your life right now?"
+                            spellCheck
+                            rows={3}
+                            className="w-full resize-none rounded-lg border border-border/60 bg-white/60 dark:bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                          />
+                          <div className="flex justify-end mt-1.5">
+                            {storyReplySaved ? (
+                              <span className="text-[11px] font-semibold text-primary flex items-center gap-1"><Check className="w-3 h-3" /> Saved to journal</span>
+                            ) : (
+                              <button
+                                data-testid="btn-save-story-reply"
+                                disabled={!storyReply.trim()}
+                                onClick={async () => {
+                                  if (!storyReply.trim()) return;
+                                  try {
+                                    await fetch("/api/journal", { method: "POST", headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ sessionId: getSessionId(), verseRef: "Story Finder", verseText: storyDescription, content: storyReply.trim(), type: "reflection" }) });
+                                    setStoryReplySaved(true);
+                                  } catch { setStoryReplySaved(true); }
+                                }}
+                                className="text-[11px] font-bold rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                              >Save to Journal</button>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     )}

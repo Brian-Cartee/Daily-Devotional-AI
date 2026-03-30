@@ -78,6 +78,8 @@ export default function Devotional() {
   const [listenReply, setListenReply] = useState("");
   const [listenReplySaved, setListenReplySaved] = useState(false);
   const listenReplyRef = useRef<HTMLTextAreaElement | null>(null);
+  const [reflectionReply, setReflectionReply] = useState("");
+  const [reflectionReplySaved, setReflectionReplySaved] = useState(false);
   const listenAudioRef = useRef<HTMLAudioElement | null>(null);
   const listenCancelledRef = useRef(false);
   const [nudgeName, setNudgeName] = useState(() => getUserName() ?? "");
@@ -1021,6 +1023,55 @@ export default function Devotional() {
                       <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                     </p>
                   )}
+
+                  {/* ── Reflection reply box ─────────────────────── */}
+                  {!reflectionLoading && reflectionContent && (
+                    <div className="mt-4 pt-4 border-t border-border/30">
+                      <p className="text-[12px] font-semibold text-foreground/70 mb-2 leading-none">How does this speak to you today?</p>
+                      <textarea
+                        data-testid="textarea-reflection-reply"
+                        value={reflectionReply}
+                        onChange={e => { setReflectionReply(e.target.value); setReflectionReplySaved(false); }}
+                        placeholder="Share a thought, feeling, or a simple word…"
+                        spellCheck
+                        rows={3}
+                        className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      <div className="flex justify-end mt-2">
+                        {reflectionReplySaved ? (
+                          <span className="text-[12px] font-semibold text-primary flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Saved to journal
+                          </span>
+                        ) : (
+                          <button
+                            data-testid="btn-save-reflection-reply"
+                            disabled={!reflectionReply.trim()}
+                            onClick={async () => {
+                              if (!reflectionReply.trim() || !verse) return;
+                              try {
+                                await fetch("/api/journal", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    sessionId: getSessionId(),
+                                    verseRef: verse.reference,
+                                    verseText: verse.text,
+                                    content: reflectionReply.trim(),
+                                    type: "reflection",
+                                  }),
+                                });
+                                setReflectionReplySaved(true);
+                              } catch { setReflectionReplySaved(true); }
+                            }}
+                            className="text-[12px] font-bold rounded-full bg-primary text-primary-foreground px-3 py-1 disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                          >
+                            Save to Journal
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {!reflectionLoading && reflectionContent && !friendPromptDismissed && (
                     <motion.div
                       key="friend-prompt"

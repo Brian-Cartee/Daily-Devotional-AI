@@ -47,6 +47,8 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [snippetSaving, setSnippetSaving] = useState(false);
   const [sharingCard, setSharingCard] = useState(false);
   const [cardDone, setCardDone] = useState(false);
+  const [aiReply, setAiReply] = useState("");
+  const [aiReplySaved, setAiReplySaved] = useState(false);
   const { toast } = useToast();
 
   const textQuery = usePassageText(chapter.apiRef, open);
@@ -274,6 +276,37 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                   </div>
                   <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">
                     {aiContent.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-white/30">
+                    <p className="text-[11px] font-semibold text-foreground/60 mb-1.5">How does this speak to you?</p>
+                    <textarea
+                      data-testid="textarea-bible-ai-reply"
+                      value={aiReply}
+                      onChange={e => { setAiReply(e.target.value); setAiReplySaved(false); }}
+                      placeholder="Share a thought, question, or response…"
+                      spellCheck
+                      rows={2}
+                      className="w-full resize-none rounded-lg border border-white/40 bg-white/60 dark:bg-slate-600/40 px-2.5 py-1.5 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                    <div className="flex justify-end mt-1.5">
+                      {aiReplySaved ? (
+                        <span className="text-[11px] font-semibold text-primary flex items-center gap-1"><Check className="w-3 h-3" /> Saved</span>
+                      ) : (
+                        <button
+                          data-testid="btn-save-bible-ai-reply"
+                          disabled={!aiReply.trim()}
+                          onClick={async () => {
+                            if (!aiReply.trim()) return;
+                            try {
+                              await fetch("/api/journal", { method: "POST", headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ sessionId: getSessionId(), verseRef: chapter.reference, verseText: "", content: aiReply.trim(), type: "reflection" }) });
+                              setAiReplySaved(true);
+                            } catch { setAiReplySaved(true); }
+                          }}
+                          className="text-[11px] font-bold rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                        >Save to Journal</button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
