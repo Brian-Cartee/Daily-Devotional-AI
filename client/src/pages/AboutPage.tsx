@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import {
   Sun, Compass, BookOpen, Search, NotebookPen, Heart,
   Flame, Trophy, ShieldCheck, Church,
-  Sparkles, ArrowRight, Users, Share2, Check, Play
+  Sparkles, ArrowRight, Users, Share2, Check, Play, HandHeart, Loader2
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
@@ -101,8 +101,32 @@ const COMMITMENTS = [
   "Your word is a lamp to my feet and a light to my path. — Psalm 119:105",
 ];
 
+const DONATION_AMOUNTS = [
+  { label: "$10", cents: 1000 },
+  { label: "$25", cents: 2500 },
+  { label: "$50", cents: 5000 },
+];
+
 export default function AboutPage() {
   const [copied, setCopied] = useState(false);
+  const [donating, setDonating] = useState<number | null>(null);
+  const search = useSearch();
+  const giftReceived = new URLSearchParams(search).get("gift") === "thank-you";
+
+  const handleDonate = async (cents: number) => {
+    setDonating(cents);
+    try {
+      const res = await fetch("/api/stripe/create-tip-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: cents }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      setDonating(null);
+    }
+  };
 
   const handleShare = async () => {
     const url = "https://daily-devotional-ai.replit.app/about";
@@ -266,6 +290,63 @@ export default function AboutPage() {
               <p className="text-[13px] text-muted-foreground leading-snug">
                 Pastors and ministry leaders can generate a customized branded preview in minutes — colors, church name, and a shareable link ready to send to your congregation.
               </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Support the Mission ── */}
+        <motion.div {...fadeUp(0.43)} className="mt-8">
+          <div className="relative rounded-2xl overflow-hidden p-6 text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #1e1b4b 40%, #0f172a 100%)", border: "1px solid rgba(99,102,241,0.2)" }}>
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
+            <div className="relative">
+              {giftReceived ? (
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
+                    <Heart className="w-6 h-6 text-rose-300 fill-rose-300" />
+                  </div>
+                  <p className="text-lg font-bold text-white mb-1">Thank you — truly.</p>
+                  <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
+                    Your gift helps keep Shepherd's Path free for someone who needs it most. That person may never know your name — but God does.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                      <HandHeart className="w-4 h-4 text-white/80" />
+                    </div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-white/50">Support the Mission</p>
+                  </div>
+
+                  <h3 className="text-[20px] font-extrabold text-white leading-snug mb-3">
+                    A movement, not just an app.
+                  </h3>
+                  <p className="text-[13px] text-white/70 leading-relaxed mb-3">
+                    Shepherd's Path exists for one reason: to be there for the person at 3am who has no pastor, no church, and nowhere to turn — and put a faithful, Bible-grounded guide in their pocket that meets them exactly where they are.
+                  </p>
+                  <p className="text-[13px] text-white/70 leading-relaxed mb-5">
+                    Every subscription helps keep the app free for someone who can't afford it. Every gift reaches one more person at their lowest moment. If this has meant something to you — consider being part of what makes it possible for someone else.
+                  </p>
+
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Give a one-time gift</p>
+                  <div className="flex gap-3 mb-4">
+                    {DONATION_AMOUNTS.map(({ label, cents }) => (
+                      <button
+                        key={cents}
+                        data-testid={`btn-donate-${label}`}
+                        onClick={() => handleDonate(cents)}
+                        disabled={donating !== null}
+                        className="flex-1 py-3 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                      >
+                        {donating === cents ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-white/35 text-center leading-relaxed">
+                    Secure checkout via Stripe · One-time · No account required
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

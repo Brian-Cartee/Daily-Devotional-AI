@@ -1791,8 +1791,8 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
             },
           },
         }],
-        success_url: `${origin}/devotional?tip=thank-you`,
-        cancel_url: `${origin}/devotional`,
+        success_url: `${origin}/about?gift=thank-you`,
+        cancel_url: `${origin}/about`,
       });
       res.json({ url: session.url });
     } catch (err: any) {
