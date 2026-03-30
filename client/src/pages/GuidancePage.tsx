@@ -93,6 +93,8 @@ export default function GuidancePage() {
   const [prayerSaved, setPrayerSaved] = useState(false);
 
   const tts = useTTS();
+  const ttsChain = useTTS();
+  const [chainSection, setChainSection] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -212,6 +214,37 @@ export default function GuidancePage() {
     hasScrolledInitial.current = true;
     // Do NOT scroll away from top — scripture verse should be the first thing they read
   }, [streamingText, isSending]);
+
+  // Silently preload prayer audio as soon as it arrives so "Pray This Aloud" plays instantly
+  useEffect(() => {
+    if (prayer && responseComplete) {
+      tts.preload(prayer, "nova");
+    }
+  }, [prayer, responseComplete]);
+
+  const startGuidanceListen = async () => {
+    if (ttsChain.playing || ttsChain.loading) {
+      ttsChain.stop();
+      setChainSection(null);
+      return;
+    }
+    if (!verse) return;
+    const firstResponse = messages.find(m => m.role === "assistant")?.content ?? streamingText;
+    if (!firstResponse) return;
+
+    const sections: Array<{ key: string; text: string; voice?: string }> = [
+      { key: "scripture", text: `${verse.text}. ${verse.reference}.` },
+      { key: "guidance", text: firstResponse },
+    ];
+    if (prayer) sections.push({ key: "prayer", text: prayer, voice: "nova" });
+
+    await ttsChain.playChain(
+      sections,
+      (_, key) => setChainSection(key ?? null),
+      () => setChainSection(null),
+    );
+    setChainSection(null);
+  };
 
   // Scroll follow-up response into view as soon as it starts streaming
   useEffect(() => {
@@ -430,6 +463,50 @@ export default function GuidancePage() {
                     <span>✝</span>
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                   </p>
+                )}
+                {responseComplete && verse && (
+                  <div className="mt-4 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/6 to-violet-500/4 px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${chainSection || ttsChain.loading ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                        {ttsChain.loading
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Volume2 className="w-4 h-4" />
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        {ttsChain.loading ? (
+                          <>
+                            <p className="text-[12px] font-bold text-primary leading-none">Preparing audio…</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Fetching next section in background</p>
+                          </>
+                        ) : chainSection ? (
+                          <>
+                            <p className="text-[12px] font-bold text-primary leading-none">Now playing</p>
+                            <p className="text-[11px] text-muted-foreground capitalize mt-0.5 leading-none">{chainSection}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-[13px] font-semibold text-foreground leading-none">Hear this guidance</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Scripture · Guidance{prayer ? " · Prayer" : ""}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={startGuidanceListen}
+                      data-testid="button-guidance-listen-chain"
+                      className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
+                        chainSection || ttsChain.loading
+                          ? "bg-primary/20 text-primary hover:bg-primary/30"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                      }`}
+                    >
+                      {ttsChain.loading || chainSection
+                        ? <><VolumeX className="w-3 h-3" /> Stop</>
+                        : <><Volume2 className="w-3 h-3" /> Listen</>
+                      }
+                    </button>
+                  </div>
                 )}
               </>
             )}
