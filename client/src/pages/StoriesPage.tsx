@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Star, Send, Check, X, ChevronDown } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
-import storiesHero from "@assets/REV1001_S_P_(1400_x_600_px)-2_1773097642649.png";
 
 const CATEGORIES = [
   "All",
@@ -147,10 +146,10 @@ export default function StoriesPage() {
         {/* Hero */}
         <div className="relative w-full overflow-hidden" style={{ height: 260 }}>
           <img
-            src={storiesHero}
+            src="/hero-study.png"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center 30%" }}
+            style={{ objectPosition: "center 40%" }}
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">

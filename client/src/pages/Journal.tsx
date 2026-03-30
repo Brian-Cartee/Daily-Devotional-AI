@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
-import journalHero from "@assets/REV1001_S_P_(1400_x_600_px)-2_1773097642649.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1058,7 +1057,7 @@ export default function Journal() {
         {/* Hero banner */}
         <div className="relative w-full overflow-hidden" style={{ height: 300 }}>
           <img
-            src={journalHero}
+            src="/journal-hero.png"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center center" }}
