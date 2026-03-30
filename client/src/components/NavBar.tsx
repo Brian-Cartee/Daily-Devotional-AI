@@ -70,7 +70,7 @@ export function NavBar() {
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0 mr-1">
+          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2 group shrink-0 mr-1">
             <img
               src="/app-icon.png"
               alt="Shepherd's Path"
