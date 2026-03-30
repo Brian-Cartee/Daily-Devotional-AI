@@ -74,12 +74,12 @@ export function NavBar() {
             <img
               src="/app-icon.png"
               alt="Shepherd's Path"
-              className="w-8 h-8 rounded-xl object-cover shadow-sm select-none"
+              className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 rounded-xl object-cover shadow-sm select-none"
               draggable={false}
             />
             <div className="flex flex-col leading-none select-none">
-              <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>
-              <span className="text-[1.35rem] font-black tracking-tight text-foreground leading-none">PATH</span>
+              <span className="text-[8px] min-[430px]:text-[9px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>
+              <span className="text-[1.35rem] min-[430px]:text-[1.55rem] font-black tracking-tight text-foreground leading-none">PATH</span>
             </div>
           </Link>
 
@@ -123,11 +123,11 @@ export function NavBar() {
                 onClick={() => { setEmailOpen((v) => !v); setNotifOpen(false); setLangOpen(false); }}
                 data-testid="button-subscribe-toggle"
                 aria-label="Subscribe to daily verse emails"
-                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                className={`w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg transition-all ${
                   emailOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 }`}
               >
-                <Mail className="w-3.5 h-3.5" />
+                <Mail className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
               </button>
               <AnimatePresence>
                 {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
@@ -139,11 +139,11 @@ export function NavBar() {
                 onClick={() => { setLangOpen((v) => !v); setEmailOpen(false); setNotifOpen(false); }}
                 data-testid="button-language-toggle"
                 aria-label="Change language"
-                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                className={`w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg transition-all ${
                   langOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 }`}
               >
-                <Globe className="w-3.5 h-3.5" />
+                <Globe className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
               </button>
               <AnimatePresence>
                 {langOpen && (
@@ -175,9 +175,9 @@ export function NavBar() {
                 onClick={() => { closeAll(); setNotifOpen(true); }}
                 data-testid="nav-notifications"
                 aria-label="Notification settings"
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
               >
-                <Bell className="w-3.5 h-3.5" />
+                <Bell className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
               </button>
               {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary animate-pulse pointer-events-none" />
@@ -208,15 +208,15 @@ export function NavBar() {
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all relative ${
+                <div className={`w-10 h-7 min-[430px]:w-12 min-[430px]:h-9 flex items-center justify-center rounded-xl transition-all relative ${
                   active ? "bg-primary/10" : ""
                 }`}>
-                  <Icon className={`transition-all ${active ? "w-5 h-5" : "w-[18px] h-[18px]"}`} />
+                  <Icon className={`transition-all ${active ? "w-5 h-5 min-[430px]:w-6 min-[430px]:h-6" : "w-[18px] h-[18px] min-[430px]:w-[22px] min-[430px]:h-[22px]"}`} />
                   {hasPlace && (
                     <span className="absolute top-0.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
                   )}
                 </div>
-                <span className={`text-[10px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] min-[430px]:text-[12px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
                   {label}
                 </span>
                 {active && <span className="w-3.5 h-0.5 rounded-full bg-amber-400/80 -mt-px" />}
