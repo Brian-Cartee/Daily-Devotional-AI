@@ -20,7 +20,7 @@ import { scheduleDailyEmails } from "./emailScheduler";
 import { schedulePushNotifications } from "./pushScheduler";
 import { scheduleDailySms } from "./smsScheduler";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
 
 // In-memory TTS cache — key: "voice::text_hash", value: Buffer of mp3 bytes
 // Capped to prevent unbounded memory growth
@@ -1316,7 +1316,7 @@ Rules:
           sessionId,
           type: "guidance_memory",
           content: summary,
-          title: null,
+          title: undefined,
         });
       }
       res.status(200).json({ ok: true });
@@ -1911,7 +1911,8 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
       });
 
       const invoice = invoices.data[0];
-      if (!invoice || !invoice.charge) {
+      const chargeId = invoice && ((invoice as any).charge || (invoice as any).payment_intent);
+      if (!invoice || !chargeId) {
         return res.status(400).json({
           eligible: false,
           reason: "no_charge",
@@ -1921,7 +1922,7 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
 
       // Issue the refund
       const refund = await stripe.refunds.create({
-        charge: invoice.charge as string,
+        charge: chargeId as string,
         reason: "requested_by_customer",
       });
 

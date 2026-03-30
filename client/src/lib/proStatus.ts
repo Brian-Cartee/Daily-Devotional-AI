@@ -24,8 +24,9 @@ export function clearProStatus(): void {
   localStorage.removeItem(PRO_VERIFIED_KEY);
 }
 
-export function markProVerified(email: string): void {
-  localStorage.setItem(PRO_KEY, email.toLowerCase());
+export function markProVerified(email?: string): void {
+  const resolved = email ?? getProEmail() ?? "play-verified";
+  localStorage.setItem(PRO_KEY, resolved.toLowerCase());
   localStorage.setItem(PRO_VERIFIED_KEY, "true");
 }
 
