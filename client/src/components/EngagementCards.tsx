@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight } from "lucide-react";
+import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight } from "lucide-react";
+import { getTodayFramework } from "@/lib/faithFramework";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -575,6 +576,78 @@ export function WeeklyReflectionCard() {
             Bring this to God <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </Link>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ── 7-Day Faith Framework — daily card ────────────────────────────────────────
+export function FrameworkDayCard() {
+  const day = getTodayFramework();
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        {...fadeIn}
+        data-testid="card-framework-day"
+        className={`relative rounded-2xl border overflow-hidden shadow-sm ${day.color.border} ${day.color.bg}`}
+      >
+        <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${day.color.gradient}`} />
+
+        <button
+          onClick={() => setDismissed(true)}
+          data-testid="button-dismiss-framework"
+          aria-label="Dismiss"
+          className={`absolute top-3 right-3 transition-colors ${day.color.text} opacity-60 hover:opacity-100`}
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="px-5 pt-4 pb-4 pr-10">
+          {/* Label row */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${day.color.text}`}>
+              7-Day Faith Framework
+            </span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${day.color.badge}`}>
+              {day.dayName}
+            </span>
+          </div>
+
+          {/* Day name */}
+          <h3 className="text-[19px] font-black text-foreground leading-tight tracking-tight mb-0.5">
+            {day.name}
+          </h3>
+          <p className={`text-[12px] font-bold uppercase tracking-widest mb-2 ${day.color.text}`}>
+            {day.theme}
+          </p>
+
+          {/* Description */}
+          <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
+            {day.description}
+          </p>
+
+          {/* Verse */}
+          <div className={`rounded-xl border px-3.5 py-3 mb-3 ${day.color.border} ${day.color.bg}`} style={{ background: "rgba(255,255,255,0.35)" }}>
+            <p className="text-[13px] italic text-foreground/80 leading-relaxed mb-1">
+              "{day.verse.text}"
+            </p>
+            <p className={`text-[11px] font-bold ${day.color.text}`}>— {day.verse.ref}</p>
+          </div>
+
+          {/* CTA */}
+          <Link href={day.actionRoute}>
+            <button
+              data-testid="button-framework-cta"
+              className={`inline-flex items-center gap-1.5 text-[13px] font-bold transition-colors ${day.color.text}`}
+            >
+              {day.actionLabel} <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </Link>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

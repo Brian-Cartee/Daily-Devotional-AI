@@ -25,7 +25,7 @@ import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
-  TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard,
+  TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
   FirstStepsCard, WeeklyReflectionCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
@@ -705,6 +705,9 @@ export default function LandingHome() {
 
           {/* First Steps seeker card — shown to new users (days 1–7) */}
           <FirstStepsCard daysWithApp={getRelationshipAge()} />
+
+          {/* 7-Day Faith Framework — daily focus card */}
+          <FrameworkDayCard />
 
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />

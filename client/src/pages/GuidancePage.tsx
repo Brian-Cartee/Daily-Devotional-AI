@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Play, Volume2, VolumeX, BookMarked, CheckCheck, Share2 } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Play, Volume2, VolumeX, BookMarked, CheckCheck, Share2, Sparkles } from "lucide-react";
+import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { detectCrisis } from "@/lib/crisis";
@@ -86,6 +87,7 @@ export default function GuidancePage() {
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const userName = getUserName() ?? undefined;
+  const framework = getTodayFramework();
 
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(true);
@@ -306,9 +308,27 @@ export default function GuidancePage() {
                   <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
                     Lay Your Burdens Down
                   </h1>
-                  <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md">
+                  <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
                     Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — you don't carry it alone. Share it here. A word from Scripture and a prayer written for this moment await.
                   </p>
+
+                  {/* Today's framework suggestion */}
+                  <div className="pt-4 border-t border-border/30">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/60 mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3" />
+                      Today — {framework.name}
+                    </p>
+                    <button
+                      onClick={() => navigate(`/guidance?situation=${encodeURIComponent(framework.guidanceHint)}`)}
+                      data-testid="button-framework-guidance-hint"
+                      className="group text-left w-full rounded-xl border border-primary/20 bg-primary/4 hover:bg-primary/8 hover:border-primary/35 px-4 py-3 transition-all"
+                    >
+                      <p className="text-[13px] text-foreground/70 leading-relaxed group-hover:text-foreground transition-colors italic">
+                        "{framework.guidanceHint}"
+                      </p>
+                      <p className="text-[11px] font-bold text-primary mt-2">Begin with this today →</p>
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

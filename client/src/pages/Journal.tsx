@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { getTodayFramework } from "@/lib/faithFramework";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -948,6 +949,9 @@ function MemoryTab({ verses, isLoading, onDelete, onReview }: { verses: MemoryVe
 }
 
 export default function Journal() {
+  const [, navigate] = useLocation();
+  const framework = getTodayFramework();
+  const [frameworkPromptDismissed, setFrameworkPromptDismissed] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const bm = getBookmark("journal");
     return (bm?.tab as TabType) ?? "prayer";
@@ -1161,6 +1165,46 @@ export default function Journal() {
 
         {/* Content */}
         <main className="max-w-xl mx-auto px-5 py-6 pb-24">
+
+          {/* ── 7-Day Framework: Today's Journal Prompt ── */}
+          <AnimatePresence>
+            {!frameworkPromptDismissed && (
+              <motion.div
+                key="framework-journal-prompt"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                data-testid="card-framework-journal-prompt"
+                className={`relative mb-5 rounded-2xl border overflow-hidden shadow-sm ${framework.color.border} ${framework.color.bg}`}
+              >
+                <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${framework.color.gradient}`} />
+                <button
+                  onClick={() => setFrameworkPromptDismissed(true)}
+                  aria-label="Dismiss"
+                  data-testid="button-dismiss-framework-journal"
+                  className={`absolute top-3 right-3 transition-colors opacity-60 hover:opacity-100 ${framework.color.text}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="px-5 pt-4 pb-4 pr-10">
+                  <p className={`text-[10px] font-black uppercase tracking-[0.18em] mb-1 ${framework.color.text}`}>
+                    Today's Reflection · {framework.name}
+                  </p>
+                  <p className="text-[15px] font-bold text-foreground leading-snug mb-3">
+                    {framework.journalPrompt}
+                  </p>
+                  <button
+                    onClick={() => navigate(`/guidance?situation=${encodeURIComponent(framework.journalPrompt)}`)}
+                    data-testid="button-framework-journal-cta"
+                    className={`inline-flex items-center gap-1.5 text-[12px] font-bold transition-colors ${framework.color.text}`}
+                  >
+                    Bring this to God <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── Spiritual Letter — AI reflection on journal history ── */}
           <AnimatePresence>
