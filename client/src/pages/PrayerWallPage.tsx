@@ -129,6 +129,8 @@ export default function PrayerWallPage() {
                     value={request}
                     onChange={e => setRequest(e.target.value)}
                     spellCheck
+                    autoCapitalize="sentences"
+                    autoCorrect="on"
                     maxLength={280}
                     rows={4}
                     placeholder="What would you like others to pray for? Share what's on your heart — you can be as specific or as general as you need..."
@@ -144,6 +146,10 @@ export default function PrayerWallPage() {
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
                     maxLength={40}
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    autoComplete="given-name"
+                    enterKeyHint="done"
                     placeholder="Your name (optional — leave blank to be Anonymous Believer)"
                     className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
                   />

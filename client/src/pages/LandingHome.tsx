@@ -201,6 +201,9 @@ function HeroAIPrompt() {
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               spellCheck
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              autoComplete="off"
               ref={inputRef}
               data-testid="hero-ai-input"
               rows={3}

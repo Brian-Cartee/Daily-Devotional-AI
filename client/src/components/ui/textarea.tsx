@@ -14,6 +14,8 @@ const Textarea = React.forwardRef<
       )}
       ref={ref}
       spellCheck
+      autoCapitalize="sentences"
+      autoCorrect="on"
       {...props}
     />
   )

@@ -185,6 +185,10 @@ function PersonCard({
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
                     data-testid={`input-edit-name-${person.id}`}
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    autoComplete="name"
+                    enterKeyHint="next"
                     className="w-full bg-background border border-border/60 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/25"
                     placeholder="Name"
                   />
@@ -192,6 +196,8 @@ function PersonCard({
                     value={editNote}
                     onChange={e => setEditNote(e.target.value)}
                     spellCheck
+                    autoCapitalize="sentences"
+                    autoCorrect="on"
                     data-testid={`input-edit-note-${person.id}`}
                     rows={2}
                     className="w-full bg-background border border-border/60 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 resize-none"
@@ -257,6 +263,10 @@ function AddPersonForm({ onAdd, onCancel, ring }: { onAdd: (name: string, note: 
         onChange={e => setName(e.target.value)}
         data-testid={`input-add-person-name-${ring}`}
         placeholder="Name"
+        autoCapitalize="words"
+        autoCorrect="off"
+        autoComplete="name"
+        enterKeyHint="next"
         className="w-full bg-background border border-border/60 rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/25"
         onKeyDown={e => { if (e.key === "Enter" && name.trim()) onAdd(name.trim(), note.trim()); }}
       />
@@ -264,6 +274,8 @@ function AddPersonForm({ onAdd, onCancel, ring }: { onAdd: (name: string, note: 
         value={note}
         onChange={e => setNote(e.target.value)}
         spellCheck
+        autoCapitalize="sentences"
+        autoCorrect="on"
         data-testid={`input-add-person-note-${ring}`}
         rows={2}
         placeholder={placeholder}

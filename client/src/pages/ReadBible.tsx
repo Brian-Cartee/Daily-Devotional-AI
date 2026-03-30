@@ -558,6 +558,9 @@ export default function ReadBible() {
                               onChange={(e) => setChatInput(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()}
                               placeholder="What's on your heart about this passage?"
+                              autoCapitalize="sentences"
+                              autoCorrect="on"
+                              enterKeyHint="send"
                               className="flex-1 bg-white/60 dark:bg-slate-700/60 border border-white/30 dark:border-slate-600/40 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                               disabled={isAiLoading}
                               data-testid="input-chat"

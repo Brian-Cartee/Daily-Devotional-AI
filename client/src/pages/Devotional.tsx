@@ -1203,6 +1203,12 @@ export default function Devotional() {
                         onChange={e => setNudgeEmail(e.target.value)}
                         placeholder="your@email.com"
                         required
+                        inputMode="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        autoComplete="email"
+                        enterKeyHint="done"
+                        spellCheck={false}
                         data-testid="input-nudge-email"
                         className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
                       />
