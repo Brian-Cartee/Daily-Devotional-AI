@@ -186,7 +186,7 @@ function HeroAIPrompt() {
         <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-white/90" />
         </div>
-        <span className="text-[13px] font-semibold text-white/95" style={{ letterSpacing: "0.01em" }}>What are you carrying today?</span>
+        <span className="text-[13px] font-semibold text-white/95" style={{ letterSpacing: "0.01em" }}>You don't walk this road alone.</span>
       </div>
 
       <div className="px-5 pt-4 pb-5 bg-card">
@@ -622,6 +622,9 @@ export default function LandingHome() {
             </div>
             <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.15rem, 4.2vw, 1.8rem)", letterSpacing: "0.01em" }}>
               Scripture for what you're going through.
+            </p>
+            <p className="text-white/70 drop-shadow mt-1" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(0.85rem, 3vw, 1.2rem)", letterSpacing: "0.01em" }}>
+              A faithful shepherd walks with you.
             </p>
 
             {/* Social proof — trust signal in first viewport */}

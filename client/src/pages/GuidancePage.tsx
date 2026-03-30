@@ -283,14 +283,35 @@ export default function GuidancePage() {
       <main className="min-h-screen bg-background pt-16 pb-32">
         <div className="max-w-2xl mx-auto px-4 py-8">
 
-          {/* Header — SP branding */}
+          {/* Header — pastoral welcome */}
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 mb-6"
+            className="mb-6"
           >
-            <ShepherdCrookMark className="w-6 h-6 opacity-80" />
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">Shepherd's Path</span>
+            <div className="flex items-center gap-2 mb-3">
+              <ShepherdCrookMark className="w-6 h-6 opacity-80" />
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">Seek Guidance</span>
+            </div>
+            <AnimatePresence>
+              {!responseComplete && !streamingText && (
+                <motion.div
+                  key="burden-intro"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
+                    Lay Your Burdens Down
+                  </h1>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md">
+                    Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — you don't carry it alone. Share it here. A word from Scripture and a prayer written for this moment await.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Scroll anchor — initial response lands here */}
