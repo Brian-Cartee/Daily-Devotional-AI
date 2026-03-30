@@ -278,6 +278,14 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
                   )}
                 </div>
 
+                {/* Subscription label */}
+                <div className="text-center -mt-1 mb-1">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Shepherd's Path Pro —{" "}
+                    {plan === "annual" ? "Annual Subscription" : "Monthly Subscription"}
+                  </span>
+                </div>
+
                 {/* Checkout button */}
                 <Button
                   data-testid="btn-upgrade-pro"
@@ -297,6 +305,14 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
                       : "Upgrade to Pro"
                   }
                 </Button>
+
+                {/* Auto-renewal disclosure */}
+                <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed -mt-1">
+                  {plan === "annual"
+                    ? "Shepherd's Path Pro – Annual · $44.99/year ($3.75/mo) · Auto-renews annually. Cancel anytime."
+                    : "Shepherd's Path Pro – Monthly · $5.99/month · Auto-renews monthly. Cancel anytime."
+                  }
+                </p>
 
                 {platform !== "play" && (
                   <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
@@ -327,6 +343,27 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
             >
               Not right now
             </button>
+
+            {/* Legal links — required by Apple */}
+            <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/50 -mt-1">
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-muted-foreground transition-colors"
+              >
+                Privacy Policy
+              </a>
+              <span>·</span>
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-muted-foreground transition-colors"
+              >
+                Terms of Use
+              </a>
+            </div>
 
             {/* Already have Pro */}
             <div className="border-t border-border pt-3">
