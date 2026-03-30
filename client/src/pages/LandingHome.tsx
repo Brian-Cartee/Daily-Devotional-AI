@@ -200,6 +200,7 @@ function HeroAIPrompt() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
+              spellCheck
               ref={inputRef}
               data-testid="hero-ai-input"
               rows={3}
@@ -1092,6 +1093,7 @@ export default function LandingHome() {
               <div className="flex gap-2">
                 <input
                   type="text"
+                  spellCheck
                   value={passageQuery}
                   onChange={e => setPassageQuery(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && findPassage()}

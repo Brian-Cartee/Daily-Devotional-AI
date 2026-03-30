@@ -154,6 +154,7 @@ export default function SupportPage() {
                   <input
                     data-testid="input-support-name"
                     type="text"
+                    spellCheck
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="First name"
@@ -178,6 +179,7 @@ export default function SupportPage() {
                 <input
                   data-testid="input-support-subject"
                   type="text"
+                  spellCheck
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   placeholder="Briefly describe your question"
@@ -191,6 +193,7 @@ export default function SupportPage() {
                   data-testid="input-support-message"
                   value={message}
                   onChange={e => setMessage(e.target.value)}
+                  spellCheck
                   rows={5}
                   placeholder="Tell us what's going on and we'll do our best to help..."
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"

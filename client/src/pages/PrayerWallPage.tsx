@@ -128,6 +128,7 @@ export default function PrayerWallPage() {
                     data-testid="input-prayer-request"
                     value={request}
                     onChange={e => setRequest(e.target.value)}
+                    spellCheck
                     maxLength={280}
                     rows={4}
                     placeholder="What would you like others to pray for? Share what's on your heart — you can be as specific or as general as you need..."

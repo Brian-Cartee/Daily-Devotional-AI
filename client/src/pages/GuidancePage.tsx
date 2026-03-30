@@ -424,6 +424,7 @@ export default function GuidancePage() {
                     ref={inputRef}
                     value={followUp}
                     onChange={e => setFollowUp(e.target.value)}
+                    spellCheck
                     onKeyDown={handleKeyDown}
                     placeholder="Share more, ask a question, or just talk…"
                     rows={2}

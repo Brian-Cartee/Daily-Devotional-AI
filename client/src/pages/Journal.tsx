@@ -771,7 +771,7 @@ function SermonNoteForm({ onSave }: { onSave: () => void }) {
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 block">Notes</label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Write your notes here — key points, quotes, questions, what stood out to you..." data-testid="textarea-sermon-notes" rows={8} className="w-full bg-background border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/25 resize-none leading-relaxed" />
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Write your notes here — key points, quotes, questions, what stood out to you..." spellCheck data-testid="textarea-sermon-notes" rows={8} className="w-full bg-background border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/25 resize-none leading-relaxed" />
             </div>
             <div className="flex justify-end pt-1">
               <Button onClick={() => saveMutation.mutate()} disabled={!canSave || saveMutation.isPending} data-testid="btn-save-sermon-note" className="rounded-xl px-6 font-semibold">
@@ -843,6 +843,7 @@ function MemoryVerseCard({ verse, onDelete, onReview }: { verse: MemoryVerse; on
             value={attempt}
             onChange={e => setAttempt(e.target.value)}
             placeholder="Begin typing the verse…"
+            spellCheck
             className="w-full text-[13px] leading-relaxed rounded-xl border border-border bg-background px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[70px]"
           />
           <div className="flex gap-2">

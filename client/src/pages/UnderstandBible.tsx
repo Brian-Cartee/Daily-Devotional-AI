@@ -435,6 +435,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
                 value={lifeSituation}
                 onChange={e => setLifeSituation(e.target.value)}
                 placeholder="e.g. I just lost my job… I'm going through a divorce… caring for a sick parent… struggling with doubt…"
+                spellCheck
                 className="w-full text-[13px] leading-relaxed rounded-xl border border-border bg-background px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400/30 min-h-[80px] mb-3"
                 disabled={lifePhase === "loading"}
               />

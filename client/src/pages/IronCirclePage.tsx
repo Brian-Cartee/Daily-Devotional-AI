@@ -191,6 +191,7 @@ function PersonCard({
                   <textarea
                     value={editNote}
                     onChange={e => setEditNote(e.target.value)}
+                    spellCheck
                     data-testid={`input-edit-note-${person.id}`}
                     rows={2}
                     className="w-full bg-background border border-border/60 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 resize-none"
@@ -262,6 +263,7 @@ function AddPersonForm({ onAdd, onCancel, ring }: { onAdd: (name: string, note: 
       <textarea
         value={note}
         onChange={e => setNote(e.target.value)}
+        spellCheck
         data-testid={`input-add-person-note-${ring}`}
         rows={2}
         placeholder={placeholder}

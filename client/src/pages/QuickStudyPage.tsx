@@ -694,6 +694,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                             ref={storyInputRef}
                             value={storyDescription}
                             onChange={(e) => setStoryDescription(e.target.value)}
+                            spellCheck
                             data-testid="story-finder-input"
                             placeholder={'e.g. "Someone walks on water", "all the peace verses", "Jesus near a pool", or John 3:16'}
                             rows={3}

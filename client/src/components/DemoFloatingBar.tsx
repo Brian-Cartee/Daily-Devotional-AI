@@ -55,6 +55,7 @@ export function DemoFloatingBar() {
                 <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Church Name</label>
                 <input
                   type="text"
+                  spellCheck
                   defaultValue={config.churchName}
                   onChange={e => setNameInput(e.target.value)}
                   onBlur={handleNameBlur}

@@ -154,6 +154,7 @@ export function NamePrompt({ onDone }: Props) {
 
                 <input
                   type="text"
+                  spellCheck
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleNameContinue()}

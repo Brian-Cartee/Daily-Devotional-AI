@@ -278,6 +278,7 @@ export default function StoriesPage() {
                         <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Your first name</label>
                         <input
                           type="text"
+                          spellCheck
                           value={form.name}
                           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                           placeholder="e.g. Sarah"
@@ -307,6 +308,7 @@ export default function StoriesPage() {
                           value={form.story}
                           onChange={e => setForm(f => ({ ...f, story: e.target.value }))}
                           placeholder="What happened? How did God show up? How did scripture meet your moment?"
+                          spellCheck
                           rows={5}
                           data-testid="textarea-story-content"
                           className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all resize-none leading-relaxed placeholder:text-muted-foreground/60"

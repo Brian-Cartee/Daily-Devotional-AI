@@ -942,6 +942,7 @@ export default function Devotional() {
                       value={listenReply}
                       onChange={e => setListenReply(e.target.value)}
                       placeholder="Share your thoughts, feelings, or a simple word…"
+                      spellCheck
                       rows={3}
                       className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
@@ -1137,6 +1138,7 @@ export default function Devotional() {
                   <form onSubmit={handleNudgeSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
                     <input
                       type="text"
+                      spellCheck
                       value={nudgeName}
                       onChange={e => setNudgeName(e.target.value)}
                       placeholder="Your first name (optional)"
@@ -1251,6 +1253,7 @@ export default function Devotional() {
               value={gratitudeInput}
               onChange={(e) => setGratitudeInput(e.target.value)}
               placeholder="My family, a quiet morning, a door that opened..."
+              spellCheck
               rows={3}
               data-testid="input-gratitude"
               className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/25 resize-none placeholder:text-muted-foreground/50 transition-shadow"

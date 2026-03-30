@@ -78,6 +78,7 @@ export default function DemoCreate() {
           </div>
           <input
             type="text"
+            spellCheck
             value={churchName}
             onChange={e => setChurchName(e.target.value)}
             placeholder="e.g. Grace Community Church"
