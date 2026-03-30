@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "AAjdHcgWpHtIym5XxaYOD"
+uri = "file://client/public/app-icon-new.png"
+type = "image"
+title = "generated_image"
 
 [[outputs]]
 id = "5eXKSYOD9ozG_qHKJmLBU"
