@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
 import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw } from "lucide-react";
@@ -91,52 +91,22 @@ function getDayPrayerPrompt(ring: "pray" | "walk" | "aspire", name: string): str
   return raw.replace(/{name}/g, name.split(" ")[0]);
 }
 
-// ── Ring config ────────────────────────────────────────────────────────────────
+// ── Ring config type ────────────────────────────────────────────────────────────
 
-const RINGS: { key: "pray" | "walk" | "aspire"; label: string; tagline: string; verse: string; verseRef: string; Icon: typeof Users; color: string; border: string; bg: string; accent: string; pillBg: string; pillText: string }[] = [
-  {
-    key: "pray",
-    label: "Pray For",
-    tagline: "People you intercede for — whether or not they know it.",
-    verse: "I urge, then, that petitions, prayers, intercession and thanksgiving be made for all people.",
-    verseRef: "1 Timothy 2:1",
-    Icon: Shield,
-    color: "text-violet-500",
-    border: "border-violet-200 dark:border-violet-800/50",
-    bg: "bg-violet-50/60 dark:bg-violet-950/20",
-    accent: "bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-400",
-    pillBg: "bg-violet-100 dark:bg-violet-900/40",
-    pillText: "text-violet-700 dark:text-violet-300",
-  },
-  {
-    key: "walk",
-    label: "Walk With",
-    tagline: "Your inner circle — people you actually do life with.",
-    verse: "Walk with the wise and become wise, for a companion of fools suffers harm.",
-    verseRef: "Proverbs 13:20",
-    Icon: Users,
-    color: "text-blue-500",
-    border: "border-blue-200 dark:border-blue-800/50",
-    bg: "bg-blue-50/60 dark:bg-blue-950/20",
-    accent: "bg-gradient-to-r from-blue-500 via-sky-500 to-blue-400",
-    pillBg: "bg-blue-100 dark:bg-blue-900/40",
-    pillText: "text-blue-700 dark:text-blue-300",
-  },
-  {
-    key: "aspire",
-    label: "Aspire Toward",
-    tagline: "People further ahead in faith whose lives call you upward.",
-    verse: "As iron sharpens iron, so one person sharpens another.",
-    verseRef: "Proverbs 27:17",
-    Icon: Star,
-    color: "text-amber-500",
-    border: "border-amber-200 dark:border-amber-800/50",
-    bg: "bg-amber-50/60 dark:bg-amber-950/20",
-    accent: "bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-400",
-    pillBg: "bg-amber-100 dark:bg-amber-900/40",
-    pillText: "text-amber-700 dark:text-amber-300",
-  },
-];
+interface RingConfig {
+  key: "pray" | "walk" | "aspire";
+  label: string;
+  tagline: string;
+  verse: string;
+  verseRef: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  border: string;
+  bg: string;
+  accent: string;
+  pillBg: string;
+  pillText: string;
+}
 
 // ── Person Card ────────────────────────────────────────────────────────────────
 
@@ -315,7 +285,7 @@ function AddPersonForm({ onAdd, onCancel, ring }: { onAdd: (name: string, note: 
 
 // ── Ring Section ───────────────────────────────────────────────────────────────
 
-function RingSection({ ring, circle, onChange }: { ring: typeof RINGS[0]; circle: CircleData; onChange: (updated: CircleData) => void }) {
+function RingSection({ ring, circle, onChange }: { ring: RingConfig; circle: CircleData; onChange: (updated: CircleData) => void }) {
   const [addOpen, setAddOpen] = useState(false);
   const people = circle[ring.key];
   const atMax = people.length >= 5;
@@ -413,6 +383,51 @@ function RingSection({ ring, circle, onChange }: { ring: typeof RINGS[0]; circle
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function IronCirclePage() {
+  const RINGS: RingConfig[] = [
+    {
+      key: "pray",
+      label: "Pray For",
+      tagline: "People you intercede for — whether or not they know it.",
+      verse: "I urge, then, that petitions, prayers, intercession and thanksgiving be made for all people.",
+      verseRef: "1 Timothy 2:1",
+      Icon: Shield,
+      color: "text-violet-500",
+      border: "border-violet-200 dark:border-violet-800/50",
+      bg: "bg-violet-50/60 dark:bg-violet-950/20",
+      accent: "bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-400",
+      pillBg: "bg-violet-100 dark:bg-violet-900/40",
+      pillText: "text-violet-700 dark:text-violet-300",
+    },
+    {
+      key: "walk",
+      label: "Walk With",
+      tagline: "Your inner circle — people you actually do life with.",
+      verse: "Walk with the wise and become wise, for a companion of fools suffers harm.",
+      verseRef: "Proverbs 13:20",
+      Icon: Users,
+      color: "text-blue-500",
+      border: "border-blue-200 dark:border-blue-800/50",
+      bg: "bg-blue-50/60 dark:bg-blue-950/20",
+      accent: "bg-gradient-to-r from-blue-500 via-sky-500 to-blue-400",
+      pillBg: "bg-blue-100 dark:bg-blue-900/40",
+      pillText: "text-blue-700 dark:text-blue-300",
+    },
+    {
+      key: "aspire",
+      label: "Aspire Toward",
+      tagline: "People further ahead in faith whose lives call you upward.",
+      verse: "As iron sharpens iron, so one person sharpens another.",
+      verseRef: "Proverbs 27:17",
+      Icon: Star,
+      color: "text-amber-500",
+      border: "border-amber-200 dark:border-amber-800/50",
+      bg: "bg-amber-50/60 dark:bg-amber-950/20",
+      accent: "bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-400",
+      pillBg: "bg-amber-100 dark:bg-amber-900/40",
+      pillText: "text-amber-700 dark:text-amber-300",
+    },
+  ];
+
   const [circle, setCircle] = useState<CircleData>(loadCircle);
   const weekQ = WEEK_Q_PROMPTS[getWeekPromptIndex()];
 
