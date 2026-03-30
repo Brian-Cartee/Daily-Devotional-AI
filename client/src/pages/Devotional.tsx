@@ -1028,21 +1028,41 @@ export default function Devotional() {
                   {!reflectionLoading && reflectionContent && (
                     <div className="mt-4 pt-4 border-t border-border/30">
                       <p className="text-[12px] font-semibold text-foreground/70 mb-2 leading-none">How does this speak to you today?</p>
-                      <textarea
-                        data-testid="textarea-reflection-reply"
-                        value={reflectionReply}
-                        onChange={e => { setReflectionReply(e.target.value); setReflectionReplySaved(false); }}
-                        placeholder="Share a thought, feeling, or a simple word…"
-                        spellCheck
-                        rows={3}
-                        className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                      <div className="flex justify-end mt-2">
-                        {reflectionReplySaved ? (
-                          <span className="text-[12px] font-semibold text-primary flex items-center gap-1">
-                            <Check className="w-3 h-3" /> Saved to journal
-                          </span>
-                        ) : (
+                      {reflectionReplySaved ? (
+                        <div className="flex items-center gap-2 py-2 text-primary">
+                          <Check className="w-4 h-4" />
+                          <span className="text-[13px] font-semibold">Saved to your journal</span>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <textarea
+                            data-testid="textarea-reflection-reply"
+                            value={reflectionReply}
+                            onChange={e => { setReflectionReply(e.target.value); setReflectionReplySaved(false); }}
+                            onKeyDown={async e => {
+                              if (e.key === "Enter" && !e.shiftKey && reflectionReply.trim() && verse) {
+                                e.preventDefault();
+                                try {
+                                  await fetch("/api/journal", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      sessionId: getSessionId(),
+                                      verseRef: verse.reference,
+                                      verseText: verse.text,
+                                      content: reflectionReply.trim(),
+                                      type: "reflection",
+                                    }),
+                                  });
+                                  setReflectionReplySaved(true);
+                                } catch { setReflectionReplySaved(true); }
+                              }
+                            }}
+                            placeholder="Share a thought, feeling, or a simple word…"
+                            spellCheck
+                            rows={3}
+                            className="w-full resize-none rounded-xl border border-border bg-background pl-3 pr-12 pt-3 pb-10 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          />
                           <button
                             data-testid="btn-save-reflection-reply"
                             disabled={!reflectionReply.trim()}
@@ -1063,12 +1083,19 @@ export default function Devotional() {
                                 setReflectionReplySaved(true);
                               } catch { setReflectionReplySaved(true); }
                             }}
-                            className="text-[12px] font-bold rounded-full bg-primary text-primary-foreground px-3 py-1 disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                            className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30"
+                            style={{ background: reflectionReply.trim() ? "linear-gradient(135deg, #7c3aed, #a855f7)" : undefined }}
+                            aria-label="Save to journal"
                           >
-                            Save to Journal
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke={reflectionReply.trim() ? "white" : "currentColor"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
+                            </svg>
                           </button>
-                        )}
-                      </div>
+                          <span className="absolute bottom-3 left-3 text-[10px] text-muted-foreground/40 pointer-events-none">
+                            Enter to save · Shift+Enter for new line
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
 
