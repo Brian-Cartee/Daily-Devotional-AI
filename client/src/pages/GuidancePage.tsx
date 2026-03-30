@@ -10,7 +10,6 @@ import { detectCrisis } from "@/lib/crisis";
 import { getUserName } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
-import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { useTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -669,8 +668,6 @@ export default function GuidancePage() {
             <ShareThisMomentButton verse={verse} prayer={prayer} />
           )}
 
-          {/* Share nudge — appears once the response is complete */}
-          {responseComplete && <ShareInviteCard />}
 
           <div ref={bottomRef} />
         </div>
