@@ -491,6 +491,13 @@ I'm here whenever you're ready to continue your walk.`;
     if (!res.writableEnded) res.end();
   }
 
+  function buildModeNote(mode: string): string {
+    if (mode === "coach") {
+      return `\n\nTone guidance: This person has intentionally chosen a direct, accountability-focused mode. They want to be called higher, not just comforted. Be warm but honest — challenge them gently where you see avoidance or room for growth. Speak like a faithful coach who believes they are capable of more than they are currently living. Do not soften difficult truths out of politeness, but never be harsh for its own sake. Root everything in grace and scripture. If you sense they are avoiding something, name it clearly but gently.\n\nCritical exception: If this person is expressing clear pain, grief, deep emotional distress, or crisis — set the coach tone aside completely and lead with pastoral presence. Accountability is for the comfortable. Compassion is for the hurting.`;
+    }
+    return "";
+  }
+
   function buildRelationshipNote(daysWithApp: number, entryCount: number): string {
     if (daysWithApp <= 3) {
       return `\n\nRelationship context: This person is new here — Day ${daysWithApp}. You are meeting them for the first time. Be genuinely welcoming, not performatively warm. Don't assume you know anything about them yet. Be the kind of presence that makes them feel safe enough to come back tomorrow.`;
@@ -526,6 +533,8 @@ I'm here whenever you're ready to continue your walk.`;
       const userName2: string = (req.body as any).userName || "";
       const sessionId2: string = (req.body as any).sessionId || "";
       const daysWithApp2: number = Number((req.body as any).daysWithApp) || 1;
+      const generateMode: string = (req.body as any).guidanceMode || "encouraging";
+      const generateModeNote = buildModeNote(generateMode);
       const nameNote2 = userName2 ? ` You are speaking with ${userName2}. Address them by name naturally once in your response.` : "";
       const { context: journalCtx2, count: journalCount2 } = await getJournalContext(sessionId2);
       const memoryNote2 = journalCtx2
@@ -551,7 +560,7 @@ What you never do:
 — Open with hollow affirmation ("What a beautiful verse!").
 — Rush to application. Sometimes a verse needs to land before it is acted on.
 — Repeat the verse text — they can already see it.
-— Capitalize pronouns (He, Him, His) only when they unmistakably refer to God, Jesus Christ, or the Holy Spirit. Never capitalize "you" or "your" when addressing the reader — those are always lowercase.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${langNote2}`;
+— Capitalize pronouns (He, Him, His) only when they unmistakably refer to God, Jesus Christ, or the Holy Spirit. Never capitalize "you" or "your" when addressing the reader — those are always lowercase.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
@@ -573,7 +582,7 @@ What you never do:
 
 Pronoun capitalization: When addressing God directly in prayer, capitalize You, Your, Yours, He, Him, His. When referring to the person praying, use lowercase (their, they, them).
 
-Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${relationshipNote2}${memoryNote2}${langNote2}`;
+Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${langNote2}`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
@@ -608,6 +617,8 @@ Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${rel
       const chatUserName: string = (req.body as any).userName || "";
       const chatSessionId: string = (req.body as any).sessionId || "";
       const chatDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
+      const chatMode: string = (req.body as any).guidanceMode || "encouraging";
+      const chatModeNote = buildModeNote(chatMode);
       const chatNameNote = chatUserName ? ` The user's name is ${chatUserName}. Use their name naturally when appropriate.` : "";
 
       if (detectCrisis(input.question)) {
@@ -641,7 +652,7 @@ What you never do:
 — Tell the person what they "should" or "need to" do.
 — Give bulleted lists as your primary response form.
 — Be preachy. Ever.
-— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In prayers you write, capitalize You, Your when addressing God directly.${chatNameNote}${chatRelationshipNote}${chatMemoryNote}`;
+— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In prayers you write, capitalize You, Your when addressing God directly.${chatNameNote}${chatRelationshipNote}${chatMemoryNote}${chatModeNote}`;
 
       const conversationHistory = input.messages.map((m: ChatMessage) => ({
         role: m.role as "user" | "assistant",
@@ -1178,6 +1189,8 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
     const sessionId = (req.body as any).sessionId as string | undefined;
+    const guidanceMode: string = (req.body as any).guidanceMode || "encouraging";
+    const modeNote = buildModeNote(guidanceMode);
     if (sessionId && isRateLimited(`guidance:${sessionId}`, 20, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait a moment before trying again." });
     }
@@ -1209,7 +1222,7 @@ Rules:
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply and isn't afraid of hard questions
-— Under 220 words total${nameNote}`;
+— Under 220 words total${nameNote}${modeNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))

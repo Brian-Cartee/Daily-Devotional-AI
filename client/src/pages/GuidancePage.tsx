@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Play, Volume2, VolumeX, BookMarked, CheckCheck, Share2, Sparkles } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Play, Volume2, VolumeX, BookMarked, CheckCheck, Share2, Sparkles, Heart, Shield } from "lucide-react";
+import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
@@ -89,6 +90,13 @@ export default function GuidancePage() {
   const userName = getUserName() ?? undefined;
   const framework = getTodayFramework();
 
+  const [guidanceMode, setGuidanceModeState] = useState<GuidanceMode>(() => getGuidanceMode());
+
+  const handleModeChange = (mode: GuidanceMode) => {
+    setGuidanceModeState(mode);
+    saveGuidanceMode(mode);
+  };
+
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(true);
 
@@ -117,7 +125,7 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId() }),
+        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId(), guidanceMode }),
       });
       if (res.status === 429) {
         setStreamingText("You've sent a lot of requests recently. Please wait a few minutes and try again.");
@@ -295,6 +303,35 @@ export default function GuidancePage() {
               <ShepherdCrookMark className="w-6 h-6 opacity-80" />
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Seek Guidance</span>
             </div>
+
+            {/* Guidance mode toggle */}
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                data-testid="btn-mode-encouraging"
+                onClick={() => handleModeChange("encouraging")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                  guidanceMode === "encouraging"
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                <Heart className="w-3 h-3" />
+                Gentle &amp; Encouraging
+              </button>
+              <button
+                data-testid="btn-mode-coach"
+                onClick={() => handleModeChange("coach")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                  guidanceMode === "coach"
+                    ? "bg-foreground text-background border-foreground shadow-sm"
+                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                <Shield className="w-3 h-3" />
+                Direct &amp; Accountable
+              </button>
+            </div>
+
             <AnimatePresence>
               {!responseComplete && !streamingText && (
                 <motion.div
