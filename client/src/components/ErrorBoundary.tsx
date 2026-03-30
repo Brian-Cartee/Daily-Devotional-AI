@@ -7,16 +7,17 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  errorMessage: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMessage: "" };
   }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, errorMessage: error?.message ?? String(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -38,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
           <button
             onClick={() => {
-              this.setState({ hasError: false });
+              this.setState({ hasError: false, errorMessage: "" });
               window.location.reload();
             }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
@@ -46,6 +47,11 @@ export class ErrorBoundary extends Component<Props, State> {
             <RefreshCw className="w-4 h-4" />
             Refresh the app
           </button>
+          {this.state.errorMessage ? (
+            <p className="text-[11px] text-muted-foreground/50 max-w-xs break-all font-mono">
+              {this.state.errorMessage}
+            </p>
+          ) : null}
         </div>
       );
     }
