@@ -73,6 +73,11 @@ export default function Devotional() {
   const [savedGratitude, setSavedGratitude] = useState(false);
   const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [listenSection, setListenSection] = useState<"verse" | "reflection" | "prayer" | null>(null);
+  const [listenLoading, setListenLoading] = useState(false);
+  const [showListenReply, setShowListenReply] = useState(false);
+  const [listenReply, setListenReply] = useState("");
+  const [listenReplySaved, setListenReplySaved] = useState(false);
+  const listenReplyRef = useRef<HTMLTextAreaElement | null>(null);
   const listenAudioRef = useRef<HTMLAudioElement | null>(null);
   const listenCancelledRef = useRef(false);
   const [nudgeName, setNudgeName] = useState(() => getUserName() ?? "");
@@ -404,11 +409,15 @@ export default function Devotional() {
       listenAudioRef.current = null;
     }
     setListenSection(null);
+    setListenLoading(false);
   };
 
   const startFullListen = async () => {
-    if (listenSection) { stopFullListen(); return; }
+    if (listenSection || listenLoading) { stopFullListen(); return; }
     listenCancelledRef.current = false;
+    setShowListenReply(false);
+    setListenReplySaved(false);
+    setListenReply("");
 
     const cleanPrayer = prayerContent
       .replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "")
@@ -420,9 +429,11 @@ export default function Devotional() {
     if (cleanPrayer.trim()) sections.push({ key: "prayer", text: cleanPrayer });
     if (sections.length === 0) return;
 
+    let firstChunk = true;
     for (const section of sections) {
       if (listenCancelledRef.current) break;
       setListenSection(section.key);
+      if (firstChunk) setListenLoading(true);
       await new Promise<void>(async (resolve) => {
         try {
           const response = await fetch("/api/tts", {
@@ -430,19 +441,27 @@ export default function Devotional() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: section.text.slice(0, 4096), voice: getUserVoice() }),
           });
-          if (!response.ok || listenCancelledRef.current) { resolve(); return; }
+          if (!response.ok || listenCancelledRef.current) { setListenLoading(false); resolve(); return; }
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
           const audio = new Audio(url);
           listenAudioRef.current = audio;
+          setListenLoading(false);
+          firstChunk = false;
           audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
           audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
           if (!listenCancelledRef.current) await audio.play();
           else resolve();
-        } catch { resolve(); }
+        } catch { setListenLoading(false); resolve(); }
       });
+      firstChunk = false;
     }
-    if (!listenCancelledRef.current) setListenSection(null);
+    if (!listenCancelledRef.current) {
+      setListenSection(null);
+      setListenLoading(false);
+      setShowListenReply(true);
+      setTimeout(() => listenReplyRef.current?.focus(), 300);
+    }
   };
 
   const handleShare = async () => {
@@ -854,11 +873,23 @@ export default function Devotional() {
               {(reflectionContent || prayerContent) && (
                 <div className="mx-4 mb-4 mt-1 rounded-xl bg-gradient-to-r from-primary/8 to-violet-500/5 border border-primary/15 px-4 py-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${listenSection ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
-                      <Headphones className="w-4 h-4" />
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${listenSection || listenLoading ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                      {listenLoading
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Headphones className="w-4 h-4" />
+                      }
                     </div>
                     <div className="min-w-0">
-                      {listenSection ? (
+                      {listenLoading ? (
+                        <>
+                          <p className="text-[12px] font-bold text-primary leading-none">Preparing audio…</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
+                            <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
+                            <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
+                          </div>
+                        </>
+                      ) : listenSection ? (
                         <>
                           <p className="text-[12px] font-bold text-primary leading-none">Now playing</p>
                           <p className="text-[11px] text-muted-foreground capitalize mt-0.5 leading-none">{listenSection}</p>
@@ -875,12 +906,14 @@ export default function Devotional() {
                     onClick={startFullListen}
                     data-testid="button-full-devotional-listen"
                     className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
-                      listenSection
+                      listenSection || listenLoading
                         ? "bg-primary/20 text-primary hover:bg-primary/30"
                         : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                     }`}
                   >
-                    {listenSection ? (
+                    {listenLoading ? (
+                      <><Square className="w-3 h-3 fill-current" /> Stop</>
+                    ) : listenSection ? (
                       <><Square className="w-3 h-3 fill-current" /> Stop</>
                     ) : (
                       <><Headphones className="w-3 h-3" /> Listen</>
@@ -888,6 +921,71 @@ export default function Devotional() {
                   </button>
                 </div>
               )}
+
+              {/* ── Post-listen reply ─────────────────────────────── */}
+              <AnimatePresence>
+                {showListenReply && (
+                  <motion.div
+                    key="listen-reply"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    className="mx-4 mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 pt-3 pb-4"
+                  >
+                    <p className="text-[13px] font-semibold text-foreground mb-2 leading-snug">
+                      How does that speak to you today?
+                    </p>
+                    <textarea
+                      ref={listenReplyRef}
+                      data-testid="textarea-listen-reply"
+                      value={listenReply}
+                      onChange={e => setListenReply(e.target.value)}
+                      placeholder="Share your thoughts, feelings, or a simple word…"
+                      rows={3}
+                      className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <button
+                        onClick={() => setShowListenReply(false)}
+                        className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                      {listenReplySaved ? (
+                        <span className="text-[12px] font-semibold text-primary flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Saved to journal
+                        </span>
+                      ) : (
+                        <button
+                          data-testid="btn-save-listen-reply"
+                          disabled={!listenReply.trim()}
+                          onClick={async () => {
+                            if (!listenReply.trim() || !verse) return;
+                            try {
+                              await fetch("/api/journal", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  sessionId: getSessionId(),
+                                  verseRef: verse.reference,
+                                  verseText: verse.text,
+                                  content: listenReply.trim(),
+                                  type: "reflection",
+                                }),
+                              });
+                              setListenReplySaved(true);
+                            } catch { setListenReplySaved(true); }
+                          }}
+                          className="text-[12px] font-bold rounded-full bg-primary text-primary-foreground px-3 py-1 disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                        >
+                          Save to Journal
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
