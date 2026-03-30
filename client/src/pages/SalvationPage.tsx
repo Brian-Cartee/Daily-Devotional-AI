@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
 import { Link } from "wouter";
@@ -111,6 +111,17 @@ export default function SalvationPage() {
   const [showPrayer, setShowPrayer] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleStepClick = (i: number) => {
+    const opening = expandedStep !== i;
+    setExpandedStep(opening ? i : null);
+    if (opening) {
+      setTimeout(() => {
+        stepRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  };
 
   const handlePrayed = () => {
     const now = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -160,11 +171,12 @@ export default function SalvationPage() {
             {STEPS.map((step, i) => (
               <div
                 key={i}
+                ref={el => { stepRefs.current[i] = el; }}
                 className="rounded-2xl border border-border bg-card overflow-hidden"
               >
                 <button
                   data-testid={`btn-salvation-step-${i}`}
-                  onClick={() => setExpandedStep(expandedStep === i ? null : i)}
+                  onClick={() => handleStepClick(i)}
                   className="w-full text-left px-5 py-4 flex items-start gap-4"
                 >
                   <span className="text-[11px] font-bold text-primary/60 mt-0.5 w-6 shrink-0">{step.number}</span>
