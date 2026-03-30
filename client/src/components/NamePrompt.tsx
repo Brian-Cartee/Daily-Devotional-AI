@@ -106,8 +106,8 @@ export function NamePrompt({ onDone }: Props) {
   const firstName = name.trim().split(" ")[0];
 
   const voices: { id: VoiceId; label: string; description: string }[] = [
-    { id: "onyx", label: "Voice A", description: "Deep & warm" },
-    { id: "shimmer", label: "Voice B", description: "Smooth & elegant" },
+    { id: "shimmer", label: "Her Voice", description: "Smooth & natural" },
+    { id: "onyx", label: "His Voice", description: "Deep & warm" },
   ];
 
   return (
