@@ -11,6 +11,8 @@ import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { useTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
+import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface VerseResult {
   reference: string;
@@ -71,6 +73,7 @@ export default function GuidancePage() {
   const [responseComplete, setResponseComplete] = useState(false);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const userName = getUserName() ?? undefined;
   const framework = getTodayFramework();
 
@@ -226,6 +229,8 @@ export default function GuidancePage() {
   const handleSend = async () => {
     const text = followUp.trim();
     if (!text || isSending) return;
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
     setFollowUp("");
     setIsSending(true);
     const newUserMsg: Message = { role: "user", content: text };
@@ -501,6 +506,11 @@ export default function GuidancePage() {
                     {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
+                {(() => { const rem = getRemainingAi(); return rem <= 3 && rem > 0 ? (
+                  <p className="text-[11px] text-amber-600/80 dark:text-amber-400/70 text-right mt-1.5 pr-1">
+                    {rem} free {rem === 1 ? "response" : "responses"} left today — <button onClick={() => setShowUpgrade(true)} className="underline underline-offset-2">Go unlimited with Pro</button>
+                  </p>
+                ) : null; })()}
               </motion.div>
             )}
           </AnimatePresence>
@@ -671,6 +681,7 @@ export default function GuidancePage() {
           <div ref={bottomRef} />
         </div>
       </main>
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
     </>
   );
 }
