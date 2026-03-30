@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -861,6 +861,34 @@ export default function LandingHome() {
           {/* Daily Devotional — primary action */}
           <DevotionalCard />
 
+          {/* "Hear the Word" — Listen while you read feature spotlight */}
+          <div className="relative rounded-2xl overflow-hidden border border-sky-200/70 dark:border-sky-800/40 shadow-sm" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }}>
+            <div className="dark:hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }} />
+            <div className="dark:block hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 8%) 0%, hsl(172 60% 6%) 100%)" }} />
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
+            <div className="relative z-10 px-5 py-4 flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                <Volume2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400 mb-1">Hear the Word</p>
+                <h3 className="text-[16px] font-black text-foreground leading-tight tracking-tight mb-1.5">Listen while you read.</h3>
+                <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
+                  Scripture was always meant to be <em>heard</em>. If the Bible has ever felt hard to read, let it be spoken to you — and follow along at your own pace. Thousands of people experience God's Word this way for the first time.
+                </p>
+                <Link href="/understand">
+                  <button
+                    data-testid="btn-hear-word-cta"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 text-[12px] font-bold hover:bg-sky-200 dark:hover:bg-sky-900/70 transition-all"
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                    Try listening to scripture
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Daily check-in */}
           <CheckinCard />
 
@@ -1030,6 +1058,35 @@ export default function LandingHome() {
                 <div>
                   <p className="text-[13px] font-semibold text-foreground leading-none">Rachel</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Spiritual Guidance</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Listen & Read feature testimonial */}
+          <div className="relative rounded-2xl overflow-hidden mb-3 border border-border bg-card shadow-sm">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-sky-500/12 text-sky-700 dark:text-sky-400 flex items-center gap-1.5">
+                  <Volume2 className="w-3 h-3" /> Listen &amp; Read
+                </span>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+              </div>
+              <p className="text-[15px] text-foreground leading-relaxed italic font-medium mb-4">
+                &ldquo;Reading the Bible always tripped me up — I'd lose the meaning just trying to get through the words. Being able to listen and follow along at the same time changed everything. I'm finally actually absorbing scripture instead of just staring at it.&rdquo;
+              </p>
+              <div className="flex items-center gap-2.5 pt-3 border-t border-border">
+                <div className="w-8 h-8 rounded-full bg-sky-500/15 flex items-center justify-center text-[12px] font-bold text-sky-700 dark:text-sky-400">
+                  J
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-foreground leading-none">James</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Listen &amp; Read · Bible Journey</p>
                 </div>
               </div>
             </div>

@@ -107,7 +107,7 @@ const FRAMEWORK: FrameworkDay[] = [
     dayName: "Wednesday",
     name: "Wisdom Wednesday",
     theme: "Scripture & Understanding",
-    description: "Go deeper into God's Word. Let scripture do what only scripture can do.",
+    description: "Go deeper into God's Word. If reading the Bible feels hard — listen to it instead. Scripture was meant to be heard.",
     verse: {
       text: "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you.",
       ref: "James 1:5",
@@ -118,7 +118,7 @@ const FRAMEWORK: FrameworkDay[] = [
       "What scripture has been speaking to me lately? What is God trying to show me through His Word right now?",
     guidanceHint:
       "It's Wisdom Wednesday. I want to go deeper into scripture and understand what God is teaching me through His Word.",
-    actionLabel: "Explore scripture today",
+    actionLabel: "Listen to scripture today",
     actionRoute: "/understand",
     color: {
       accent: "hsl(190 70% 42%)",
