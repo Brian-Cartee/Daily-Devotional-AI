@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronRight, Loader2, Play, Square } from "lucide-react";
+import { ArrowRight, Loader2, Play, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
@@ -62,6 +62,17 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.62) 100%)" }} />
+
+          {/* Close button */}
+          <button
+            onClick={handleDismiss}
+            data-testid="btn-close-welcome"
+            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4 text-white/80" />
+          </button>
+
           <div className="relative z-10">
             <div className="flex justify-center mb-3">
               <img
@@ -79,8 +90,20 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </div>
         </div>
 
-        {/* ── Audio player — always visible, outside scroll ── */}
-        <div className="shrink-0 px-4 pt-4 pb-2 bg-background">
+        {/* Primary CTA — dominant, immediately visible */}
+        <div className="shrink-0 px-4 pt-5 pb-3 bg-background">
+          <Button
+            data-testid="btn-start-exploring"
+            className="w-full rounded-2xl font-bold py-5 px-8 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0 justify-center gap-2"
+            onClick={handleDismiss}
+          >
+            Share what you're carrying today
+            <ArrowRight className="w-4 h-4 shrink-0" />
+          </Button>
+        </div>
+
+        {/* Audio — optional gift, below the CTA */}
+        <div className="shrink-0 px-4 pb-4 bg-background">
           <button
             data-testid="btn-toggle-audio"
             onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
@@ -93,10 +116,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               borderColor: playing ? "rgba(130,80,255,0.4)" : "rgba(130,80,255,0.2)",
             }}
           >
-            <div className="flex items-center gap-4 px-5 py-3.5">
-              {/* Big play/stop icon */}
+            <div className="flex items-center gap-4 px-5 py-3">
               <div
-                className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 shadow-md"
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md"
                 style={{
                   background: playing
                     ? "rgba(255,255,255,0.12)"
@@ -104,29 +126,26 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                 }}
               >
                 {loading
-                  ? <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  ? <Loader2 className="w-4 h-4 text-primary animate-spin" />
                   : playing
-                    ? <Square className="w-4 h-4 text-white" />
-                    : <Play className="w-5 h-5 text-white translate-x-[1px]" />
+                    ? <Square className="w-3.5 h-3.5 text-white" />
+                    : <Play className="w-4 h-4 text-white translate-x-[1px]" />
                 }
               </div>
 
-              {/* Label + progress */}
               <div className="flex-1 text-left min-w-0">
                 <p
                   className="text-[13px] font-bold leading-tight"
                   style={{ color: playing ? "rgba(255,255,255,0.95)" : "#3b1e8e" }}
                 >
-                  {loading ? "Preparing welcome…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a personal welcome  👂"}
+                  {loading ? "Preparing welcome…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Or hear a personal welcome first  👂"}
                 </p>
                 <p
                   className="text-[11px] mt-0.5 leading-none"
                   style={{ color: playing ? "rgba(255,255,255,0.5)" : "#7c5cbf" }}
                 >
-                  {started && !loading ? "" : "~30 seconds · tap to play"}
+                  {started && !loading ? "" : "~30 seconds · optional"}
                 </p>
-
-                {/* Progress bar */}
                 {started && (
                   <div className="mt-2 w-full h-1 rounded-full overflow-hidden" style={{ background: playing ? "rgba(255,255,255,0.15)" : "rgba(124,60,237,0.15)" }}>
                     <motion.div
@@ -140,7 +159,6 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                 )}
               </div>
 
-              {/* Animated sound bars when playing */}
               {playing && (
                 <div className="flex items-end gap-0.5 shrink-0 h-5">
                   {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
@@ -158,11 +176,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </button>
         </div>
 
-        {/* Scrollable content */}
-        <div className="bg-background px-5 pt-2 pb-3 space-y-3 overflow-y-auto flex-1">
-
-          {/* Core value prop */}
-          <div className="rounded-2xl border border-primary/30 bg-primary/8 dark:bg-primary/12 px-5 py-4 space-y-3">
+        {/* Scrollable context — for the curious, not required for the hurting */}
+        <div className="bg-background px-5 pt-1 pb-5 space-y-3 overflow-y-auto flex-1 border-t border-border/30">
+          <div className="rounded-2xl border border-primary/30 bg-primary/8 dark:bg-primary/12 px-5 py-4 space-y-3 mt-3">
             <p className="text-[13px] font-bold text-foreground leading-snug">Here's how it works</p>
             <div className="flex items-start gap-3">
               <span className="text-xl shrink-0">💬</span>
@@ -187,7 +203,6 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             </div>
           </div>
 
-          {/* Scripture commitment */}
           <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3">
             <span className="text-lg shrink-0">✝️</span>
             <div>
@@ -197,29 +212,8 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               </p>
             </div>
           </div>
-
         </div>
 
-        {/* CTA footer */}
-        <div className="shrink-0 px-4 pb-6 pt-3 bg-background rounded-b-3xl border-t border-border/40 space-y-2">
-          <Button
-            data-testid="btn-start-exploring"
-            className="w-full rounded-2xl font-bold py-5 px-8 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0 justify-center gap-2"
-            onClick={handleDismiss}
-          >
-            Share what you're carrying today
-            <ArrowRight className="w-4 h-4 shrink-0" />
-          </Button>
-
-          <button
-            data-testid="btn-skip-welcome"
-            onClick={handleDismiss}
-            className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1 flex items-center justify-center gap-1"
-          >
-            Skip intro
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
       </motion.div>
     </motion.div>
   );
