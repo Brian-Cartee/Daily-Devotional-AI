@@ -16,10 +16,10 @@ export function ShepherdCrookMark({ className = "w-7 h-7", rounded = "rounded-lg
         className="w-[60%] h-[60%]"
       >
         {/* Long shaft + crook centered in the viewBox.
-            Shaft: x=5, y=26 → y=9 (17 units — clearly a staff)
-            Hook: curves over top right and back down, ending at (11,15)
-            Visual center: x≈11.5 vs viewBox center x=11 ✓               */}
-        <path d="M5 26 L5 9 Q5 2 11 2 Q18 2 18 8 Q18 15 11 15" />
+            Shaft: x=5, y=26 → y=7 (19 units — clearly a staff)
+            Hook: tight crook from y=7 up to y=2, curves to x=15, back down to y=11
+            Visual center: x≈10 vs viewBox center x=11 ✓                  */}
+        <path d="M5 26 L5 7 Q5 2 9.5 2 Q15 2 15 7 Q15 11 9.5 11" />
       </svg>
     </div>
   );
