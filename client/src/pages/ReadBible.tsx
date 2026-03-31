@@ -126,7 +126,7 @@ export default function ReadBible() {
   const book = BIBLE_BOOKS.find((b) => b.name === selectedBook);
   const chapterText = useChapterText(selectedBook ?? "", selectedChapter, translation);
 
-  useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
+  useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [chatMessages]);
 
   const handleBookSelect = (bookName: string) => {
     setSelectedBook(bookName);

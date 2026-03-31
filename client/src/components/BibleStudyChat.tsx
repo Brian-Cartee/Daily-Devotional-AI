@@ -37,14 +37,19 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
   const [inputValue, setInputValue] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const chatMutation = useChatWithVerse();
-  const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const newMsgRef = useRef<HTMLDivElement>(null);
+  const pendingScrollIdx = useRef<number | null>(null);
 
+  // Scroll to the start of the newest user message so the response reads downward
   useEffect(() => {
-    if (messages.length > 1) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (pendingScrollIdx.current !== null) {
+      setTimeout(() => {
+        newMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        pendingScrollIdx.current = null;
+      }, 60);
     }
-  }, [messages]);
+  }, [messages.length]);
 
   const sendMessage = async (question: string) => {
     if (!question.trim() || chatMutation.isPending) return;
@@ -53,6 +58,8 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
 
     const userMessage: ChatMessage = { role: "user", content: question.trim() };
     const historyBeforeThisQuestion = [...messages];
+    // Mark which index in slice(1) the new user message will occupy
+    pendingScrollIdx.current = messages.length - 1;
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
 
@@ -88,6 +95,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
         {messages.slice(1).map((msg, idx) => (
           <motion.div
             key={idx}
+            ref={idx === pendingScrollIdx.current ? newMsgRef : undefined}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -139,8 +147,6 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
           </div>
         </motion.div>
       )}
-
-      <div ref={bottomRef} />
 
       {/* Divider with label */}
       <div className="flex items-center gap-3 pt-2">
