@@ -251,15 +251,18 @@ export default function SalvationPage() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-3 bg-green-50 dark:bg-green-950/30 border border-green-200/60 dark:border-green-800/40 rounded-xl px-4 py-3"
+                        className="rounded-xl bg-gradient-to-br from-amber-50 to-rose-50 dark:from-amber-950/30 dark:to-rose-950/20 border border-amber-200/60 dark:border-amber-700/40 px-5 py-4 text-center"
                       >
-                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center shrink-0">
-                          <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-bold text-green-700 dark:text-green-400">You prayed this on {prayerMoment}</p>
-                          <p className="text-[12px] text-green-600/80 dark:text-green-500/80 mt-0.5">Welcome to the family. Heaven celebrated.</p>
-                        </div>
+                        <p className="text-[22px] mb-1">🎉</p>
+                        <p className="text-[15px] font-black text-amber-800 dark:text-amber-300 leading-tight mb-1">
+                          Hallelujah! You're part of God's eternal family!
+                        </p>
+                        <p className="text-[12px] text-amber-700/70 dark:text-amber-400/70 leading-relaxed mb-2">
+                          Your name is written in the Book of Life. You have eternal life — nothing and no one can take that from you.
+                        </p>
+                        <p className="text-[11px] text-muted-foreground/50 font-medium">
+                          Prayed on {prayerMoment}
+                        </p>
                       </motion.div>
                     ) : (
                       <Button
@@ -288,8 +291,9 @@ export default function SalvationPage() {
               transition={{ duration: 0.5 }}
               className="fixed top-20 left-4 right-4 max-w-sm mx-auto z-50 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 text-white px-5 py-4 shadow-xl text-center"
             >
-              <p className="text-[16px] font-bold leading-tight">Welcome to the family of God. 🙏</p>
-              <p className="text-[13px] mt-1 opacity-90">This moment is written in eternity.</p>
+              <p className="text-[22px] mb-1">🎉</p>
+              <p className="text-[17px] font-black leading-tight">You just got saved!</p>
+              <p className="text-[13px] mt-1 opacity-90 leading-snug">Heaven is celebrating right now.<br/>Welcome to the eternal family of God!</p>
             </motion.div>
           )}
         </AnimatePresence>
