@@ -1066,7 +1066,7 @@ export default function Journal() {
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center center" }}
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.72) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.75) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-7 text-center px-6">
             <h2 className="text-white text-lg font-extrabold tracking-tight leading-snug drop-shadow-md">
               Prayer Journal
