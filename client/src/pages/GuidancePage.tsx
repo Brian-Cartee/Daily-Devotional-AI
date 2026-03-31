@@ -349,7 +349,7 @@ export default function GuidancePage() {
             </div>
 
             <AnimatePresence>
-              {!responseComplete && !streamingText && (
+              {!responseComplete && !streamingText && !situation && (
                 <motion.div
                   key="burden-intro"
                   initial={{ opacity: 0, height: 0 }}
@@ -390,8 +390,8 @@ export default function GuidancePage() {
           {/* Scroll anchor — initial response lands here */}
           <div ref={responseRef} className="-mt-2" />
 
-          {/* Their situation — subtle echo */}
-          {situation && (
+          {/* Their situation — subtle echo, only once response is underway */}
+          {situation && (streamingText || responseComplete) && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
