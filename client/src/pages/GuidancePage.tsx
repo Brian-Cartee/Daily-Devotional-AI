@@ -157,6 +157,9 @@ export default function GuidancePage() {
   useEffect(() => {
     if (!situation.trim()) return;
 
+    if (!canUseAi()) { setShowUpgrade(true); return; }
+    recordAiUsage();
+
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
