@@ -84,7 +84,7 @@ function StatCard({ icon: Icon, label, value, sub, color }: { icon: any; label: 
   );
 }
 
-function MiniBarChart({ data, label, color }: { data: { day: string; count: number }[]; label: string; color: string }) {
+function MiniBarChart({ data, label, barColor }: { data: { day: string; count: number }[]; label: string; barColor: string }) {
   if (data.length === 0) {
     return (
       <div className="bg-card border border-border rounded-2xl p-5">
@@ -112,8 +112,11 @@ function MiniBarChart({ data, label, color }: { data: { day: string; count: numb
         {last14Days.map((d) => (
           <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group relative">
             <div
-              className={`w-full rounded-t-sm transition-all ${d.count > 0 ? color : "bg-muted/30"}`}
-              style={{ height: `${Math.max((d.count / maxCount) * 100, d.count > 0 ? 8 : 4)}%` }}
+              className="w-full rounded-t-sm transition-all"
+              style={{
+                height: `${Math.max((d.count / maxCount) * 100, d.count > 0 ? 8 : 4)}%`,
+                backgroundColor: d.count > 0 ? barColor : "rgba(0,0,0,0.08)",
+              }}
             />
             {d.count > 0 && (
               <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-foreground opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border rounded px-1">
@@ -173,8 +176,8 @@ function UsageTab({ token }: { token: string }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <MiniBarChart data={journalDaily} label="Journal entries — last 14 days" color="bg-blue-500" />
-        <MiniBarChart data={prayerDaily} label="Prayer wall posts — last 14 days" color="bg-violet-500" />
+        <MiniBarChart data={journalDaily} label="Journal entries — last 14 days" barColor="#3b82f6" />
+        <MiniBarChart data={prayerDaily} label="Prayer wall posts — last 14 days" barColor="#8b5cf6" />
       </div>
 
       {streakDist.length > 0 && (
