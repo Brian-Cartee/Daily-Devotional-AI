@@ -415,10 +415,15 @@ export default function GuidancePage() {
                   A word for this moment
                 </p>
                 {vpLoading && !verse ? (
-                  <div className="rounded-2xl bg-primary/5 border border-primary/15 p-6 animate-pulse">
-                    <div className="h-4 bg-primary/10 rounded-full w-3/4 mb-3" />
-                    <div className="h-4 bg-primary/10 rounded-full w-full mb-2" />
-                    <div className="h-4 bg-primary/10 rounded-full w-5/6" />
+                  <div className="rounded-2xl bg-primary/5 border border-primary/15 px-6 pt-6 pb-5">
+                    <p className="text-[19px] leading-relaxed font-medium text-foreground/45 italic mb-4">
+                      "Be still, and know that I am God."
+                    </p>
+                    <p className="text-[13px] font-bold text-primary/40 tracking-wide mb-3">— Psalm 46:10</p>
+                    <p className="text-[11px] text-muted-foreground/50 flex items-center gap-1.5">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Finding a word for your moment…
+                    </p>
                   </div>
                 ) : verse ? (
                   <div
@@ -695,10 +700,14 @@ export default function GuidancePage() {
                 </p>
 
                 {journeyLoading ? (
-                  <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 p-5">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
-                      <span className="text-sm">Crafting your scripture journey…</span>
+                  <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-5 pt-5 pb-4">
+                    <p className="text-[16px] leading-relaxed font-medium text-foreground/40 italic mb-2">
+                      "Your word is a lamp to my feet and a light to my path."
+                    </p>
+                    <p className="text-[12px] font-bold text-violet-400/70 mb-3">— Psalm 119:105</p>
+                    <div className="flex items-center gap-2 text-muted-foreground/50">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                      <span className="text-[11px]">Shaping your scripture journey…</span>
                     </div>
                   </div>
                 ) : journey ? (
