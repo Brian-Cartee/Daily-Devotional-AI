@@ -15,6 +15,7 @@ import { canUseAi, recordAiUsage, getRemainingAi, AI_FREE_LIMIT } from "@/lib/ai
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { getUserName } from "@/lib/userName";
 import { useChatWithVerse } from "@/hooks/use-verses";
+import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 
 interface BibleStudyChatProps {
   verseId: number;
@@ -146,6 +147,11 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
             <span className="text-sm text-muted-foreground">Thinking...</span>
           </div>
         </motion.div>
+      )}
+
+      {/* Curated resource — surfaces only after meaningful back-and-forth */}
+      {!chatMutation.isPending && (
+        <ResourceSuggestionCard messages={messages} />
       )}
 
       {/* Divider with label */}

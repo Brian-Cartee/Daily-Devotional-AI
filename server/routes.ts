@@ -2572,6 +2572,112 @@ ${historyNote}`;
     }
   });
 
+  // Curated resource suggestion — analyzes conversation depth and finds a specific video teaching
+  app.post("/api/resources/suggest", async (req, res) => {
+    try {
+      const { messages, topic } = req.body as {
+        messages: { role: string; content: string }[];
+        topic?: string;
+      };
+
+      if (!messages || messages.length < 4) {
+        return res.json({ shouldSuggest: false });
+      }
+
+      const userMessages = messages.filter((m) => m.role === "user");
+      const assistantMessages = messages.filter((m) => m.role === "assistant");
+      if (userMessages.length < 2 || assistantMessages.length < 2) {
+        return res.json({ shouldSuggest: false });
+      }
+
+      const conversationSummary = messages
+        .map((m) => `${m.role === "user" ? "Person" : "Guide"}: ${m.content}`)
+        .join("\n\n");
+
+      const analysisResponse = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You help determine if a curated video teaching would meaningfully help someone in a spiritual conversation. Respond with JSON only.
+
+Return: { "shouldSuggest": boolean, "searchQuery": string, "reason": string }
+
+Only return shouldSuggest: true when ALL of these are true:
+- The conversation shows deep engagement with a specific struggle, grief, theological difficulty, or life crisis
+- A specific teaching or sermon would genuinely extend the care being provided — not just repeat it
+- The topic is specific enough to find a highly relevant video (not "prayer" or "faith" — something like "forgiving an abusive parent" or "doubt after loss")
+
+If shouldSuggest is true, write a highly specific YouTube search query including "sermon" or "teaching" and specific topic keywords. Target established Christian teachers (e.g. Tim Keller, John Piper, Francis Chan, Christine Caine, Beth Moore).
+
+Never suggest for casual or generic conversations. When in doubt, return false.`,
+          },
+          {
+            role: "user",
+            content: `Conversation:\n\n${conversationSummary}\n\n${topic ? `Topic: ${topic}` : ""}\n\nShould we suggest a curated video teaching?`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 250,
+      });
+
+      const analysis = JSON.parse(
+        analysisResponse.choices[0].message.content || "{}"
+      );
+
+      if (!analysis.shouldSuggest || !analysis.searchQuery) {
+        return res.json({ shouldSuggest: false });
+      }
+
+      const ytKey = process.env.YOUTUBE_API_KEY;
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=5&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance`;
+
+      const ytRes = await fetch(searchUrl);
+      const ytData = (await ytRes.json()) as any;
+
+      if (!ytData.items || ytData.items.length === 0) {
+        return res.json({ shouldSuggest: false });
+      }
+
+      const video = ytData.items[0];
+      const videoId = video.id.videoId;
+      const snippet = video.snippet;
+
+      // Get video duration
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
+      const detailsRes = await fetch(detailsUrl);
+      const detailsData = (await detailsRes.json()) as any;
+
+      let duration = "";
+      if (detailsData.items?.[0]) {
+        const iso = detailsData.items[0].contentDetails.duration;
+        const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (match) {
+          const h = match[1] ? `${match[1]}:` : "";
+          const m = match[2] ? match[2].padStart(h ? 2 : 1, "0") : "0";
+          const s = match[3] ? match[3].padStart(2, "0") : "00";
+          duration = `${h}${m}:${s}`;
+        }
+      }
+
+      return res.json({
+        shouldSuggest: true,
+        video: {
+          id: videoId,
+          title: snippet.title,
+          channel: snippet.channelTitle,
+          thumbnail:
+            snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url,
+          duration,
+          reason: analysis.reason,
+        },
+      });
+    } catch (err) {
+      console.error("[resources/suggest] error:", err);
+      return res.json({ shouldSuggest: false });
+    }
+  });
+
   return httpServer;
 }
 

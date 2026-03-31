@@ -13,6 +13,7 @@ import { useTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 
 interface VerseResult {
   reference: string;
@@ -552,6 +553,11 @@ export default function GuidancePage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Curated resource — surfaces after deep back-and-forth */}
+          {responseComplete && !isSending && (
+            <ResourceSuggestionCard messages={messages} topic={situation} />
+          )}
 
           {/* Follow-up input */}
           <AnimatePresence>
