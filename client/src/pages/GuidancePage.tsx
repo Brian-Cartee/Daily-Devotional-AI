@@ -85,11 +85,11 @@ export default function GuidancePage() {
   };
 
   const [journey, setJourney] = useState<Journey | null>(null);
-  const [journeyLoading, setJourneyLoading] = useState(true);
+  const [journeyLoading, setJourneyLoading] = useState(() => !!situation.trim());
 
   const [verse, setVerse] = useState<VerseResult | null>(null);
   const [prayer, setPrayer] = useState<string | null>(null);
-  const [vpLoading, setVpLoading] = useState(true);
+  const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
   const [prayerSaved, setPrayerSaved] = useState(false);
 
   const tts = useTTS();
