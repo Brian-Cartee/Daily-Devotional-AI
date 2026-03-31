@@ -2592,6 +2592,41 @@ ${historyNote}`;
     }
   });
 
+  app.get("/api/admin/analytics", async (req, res) => {
+    if (!adminAuth(req, res)) return;
+    try {
+      const { pool } = await import("./db");
+
+      const [sessionsRes, activeRes, journalDailyRes, prayerDailyRes, proRes, streakDistRes, journalTotalRes] = await Promise.all([
+        pool.query(`SELECT COUNT(*) as total, AVG(current_streak)::numeric(4,1) as avg_streak, MAX(current_streak) as max_streak, MAX(longest_streak) as longest_ever FROM streaks`),
+        pool.query(`SELECT COUNT(*) as active_today FROM streaks WHERE last_visit_date = TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')`),
+        pool.query(`SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as day, COUNT(*)::int as count FROM journal_entries WHERE created_at > NOW() - INTERVAL '30 days' GROUP BY DATE(created_at) ORDER BY day`),
+        pool.query(`SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as day, COUNT(*)::int as count FROM prayer_wall WHERE created_at > NOW() - INTERVAL '30 days' GROUP BY DATE(created_at) ORDER BY day`),
+        pool.query(`SELECT COUNT(*)::int as total, COUNT(CASE WHEN status = 'active' THEN 1 END)::int as active FROM pro_subscribers`),
+        pool.query(`SELECT current_streak, COUNT(*)::int as sessions FROM streaks WHERE current_streak > 0 GROUP BY current_streak ORDER BY current_streak`),
+        pool.query(`SELECT COUNT(*)::int as total FROM journal_entries WHERE created_at > NOW() - INTERVAL '30 days'`),
+      ]);
+
+      res.json({
+        sessions: {
+          total: parseInt(sessionsRes.rows[0].total),
+          activeToday: parseInt(activeRes.rows[0].active_today),
+          avgStreak: parseFloat(sessionsRes.rows[0].avg_streak || "0"),
+          maxStreak: parseInt(sessionsRes.rows[0].max_streak || "0"),
+          longestEver: parseInt(sessionsRes.rows[0].longest_ever || "0"),
+        },
+        journalDaily: journalDailyRes.rows as { day: string; count: number }[],
+        prayerDaily: prayerDailyRes.rows as { day: string; count: number }[],
+        journalTotal30d: journalTotalRes.rows[0].total,
+        pro: proRes.rows[0] as { total: number; active: number },
+        streakDist: streakDistRes.rows as { current_streak: number; sessions: number }[],
+      });
+    } catch (err) {
+      console.error("[admin] analytics error:", err);
+      res.status(500).json({ message: "Failed to load analytics." });
+    }
+  });
+
   // Curated resource suggestion — analyzes conversation depth and finds a specific video teaching
   app.post("/api/resources/suggest", async (req, res) => {
     try {
