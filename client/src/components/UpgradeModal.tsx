@@ -18,6 +18,7 @@ const PRO_FEATURES = [
   "Multiple named prayer journals",
   "Streak protection — never lose your streak",
   "Weekly AI-powered spiritual summary email",
+  "Curated video teachings — surfaced by the AI when your conversation calls for deeper guidance",
 ];
 
 const PLAY_SKUS = {
