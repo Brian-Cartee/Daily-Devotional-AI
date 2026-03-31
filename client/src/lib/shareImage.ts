@@ -60,8 +60,8 @@ const PRIMARY_HERO_POOL = [
   "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&q=85&auto=format&fit=crop",
   // Lighthouse on dramatic sea cliffs with crashing surf
   "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1080&q=85&auto=format&fit=crop",
-  // Twilight warmth — amber last light before dark
-  "https://images.unsplash.com/photo-1418050327236-8de8ba25f5a1?w=1080&q=85&auto=format&fit=crop",
+  // Twilight warmth — sunlight through forest canopy
+  "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1080&q=85&auto=format&fit=crop",
   // Sun breaking through mountain peaks in shafts of light
   "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1080&q=85&auto=format&fit=crop",
   // Dramatic stormy seascape — power of the deep
@@ -70,8 +70,8 @@ const PRIMARY_HERO_POOL = [
   "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1080&q=85&auto=format&fit=crop",
   // Mountain valley at blue-hour twilight — deep indigo sky
   "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=1080&q=85&auto=format&fit=crop",
-  // Aurora borealis — curtains of green over snow
-  "https://images.unsplash.com/photo-1490718687940-3bc6c8b4a9b7?w=1080&q=85&auto=format&fit=crop",
+  // Aurora borealis — curtains of green over mountains
+  "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1080&q=85&auto=format&fit=crop",
   // Powerful waterfall through ancient forest
   "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=1080&q=85&auto=format&fit=crop",
   // Forest interior — beams of golden light through tall pines

@@ -568,6 +568,10 @@ export default function Devotional() {
           src={getDevotionalHeroPhoto()}
           alt="Morning devotional"
           className="absolute inset-0 w-full h-full object-cover object-center"
+          onError={e => {
+            (e.target as HTMLImageElement).src =
+              "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop";
+          }}
         />
         <div className="absolute inset-0 hero-overlay" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
