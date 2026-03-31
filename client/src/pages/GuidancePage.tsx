@@ -363,7 +363,7 @@ export default function GuidancePage() {
                     Lay Your Burdens Down
                   </h1>
                   <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
-                    Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — you don't carry it alone. Share it here. A word from Scripture and a prayer written for this moment await.
+                    Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now. A word from Scripture and a prayer written for your exact moment await.
                   </p>
 
                   {/* Today's framework suggestion */}
