@@ -2231,7 +2231,7 @@ ${historyNote}`;
     return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${safe}</Message></Response>`;
   }
 
-  const SMS_FREE_DAILY_LIMIT = 10;
+  const SMS_FREE_DAILY_LIMIT = 5;
 
   app.get("/api/sms/ping", (_req, res) => {
     res.json({ ok: true, message: "SMS webhook endpoint is reachable", ts: new Date().toISOString() });

@@ -66,7 +66,8 @@ A faith-centered Bible companion with daily devotionals, guided scripture paths,
 - **Webhook URL** (set in Stripe dashboard after deploy): `https://yourdomain/api/stripe/webhook`
 - **Pro subscriber table**: `pro_subscribers` in PostgreSQL (email, stripe_customer_id, stripe_subscription_id, plan, status)
 - **Frontend Pro check**: `client/src/lib/proStatus.ts` — `isProVerifiedLocally()`, `checkProWithServer()`, `markProVerified()`
-- **AI limit bypass**: Pro users skip the 10/day AI usage limit (checked in `aiUsage.ts`)
+- **AI limit bypass**: Pro users skip the daily AI usage limit (checked in `aiUsage.ts`)
+- **Free AI limit**: 5/day in-app (`client/src/lib/aiUsage.ts`) AND 5/day via SMS (`SMS_FREE_DAILY_LIMIT` in `server/routes.ts`) — both aligned as of April 2026
 - **Success page**: `/pro-success` — auto-retrieves customer email from Stripe session, marks Pro in localStorage
 - **"Already subscribed?" flow**: UpgradeModal has email input that calls `/api/stripe/check-pro` to activate Pro locally
 
