@@ -26,7 +26,7 @@ import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/li
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
   TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
-  FirstStepsCard, WeeklyReflectionCard,
+  FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 
@@ -701,6 +701,9 @@ export default function LandingHome() {
 
           {/* Returning-user grace card */}
           <ReturningUserCard />
+
+          {/* Notification nudge — shown once to users who haven't enabled reminders */}
+          <NotificationNudgeCard />
 
           {/* First Steps seeker card — shown to new users (days 1–7) */}
           <FirstStepsCard daysWithApp={getRelationshipAge()} />

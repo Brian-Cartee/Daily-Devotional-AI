@@ -182,16 +182,25 @@ export function NavBar() {
             </Link>
 
             <div className="relative">
-              <button
-                onClick={() => { closeAll(); setNotifOpen(true); }}
-                data-testid="nav-notifications"
-                aria-label="Notification settings"
-                className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
-              >
-                <Bell className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
-              </button>
-              {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary animate-pulse pointer-events-none" />
+              {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" ? (
+                <button
+                  onClick={() => { closeAll(); setNotifOpen(true); }}
+                  data-testid="nav-notifications"
+                  aria-label="Turn on reminders"
+                  className="flex items-center gap-1 pl-2 pr-2.5 h-8 min-[430px]:h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-all shrink-0 border border-amber-200 dark:border-amber-700/40"
+                >
+                  <Bell className="w-3.5 h-3.5 min-[430px]:w-4 min-[430px]:h-4 shrink-0" />
+                  <span className="text-[11px] font-bold leading-none hidden min-[380px]:inline">Reminders</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => { closeAll(); setNotifOpen(true); }}
+                  data-testid="nav-notifications"
+                  aria-label="Notification settings"
+                  className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                >
+                  <Bell className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
+                </button>
               )}
             </div>
 

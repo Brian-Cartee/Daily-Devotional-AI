@@ -726,6 +726,136 @@ export function FrameworkDayCard() {
   );
 }
 
+// ── NotificationNudgeCard — home screen card for users who haven't enabled notifs ──
+const NOTIF_NUDGE_KEY = "sp_notif_nudge_dismissed";
+
+export function NotificationNudgeCard() {
+  const { toast } = useToast();
+  const sessionId = getSessionId();
+  const [visible, setVisible] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "denied">("idle");
+  const [pushSupported, setPushSupported] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem(NOTIF_NUDGE_KEY)) return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") return;
+    setPushSupported("serviceWorker" in navigator);
+    setVisible(true);
+  }, []);
+
+  function dismiss() {
+    localStorage.setItem(NOTIF_NUDGE_KEY, "1");
+    setVisible(false);
+  }
+
+  async function handleEnable() {
+    if (!pushSupported) {
+      toast({ description: "Push notifications aren't supported in this browser. Try enabling email reminders instead." });
+      dismiss();
+      return;
+    }
+    setStatus("loading");
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setStatus("denied"); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const vapidRes = await fetch("/api/push/vapid-key");
+      const { publicKey } = await vapidRes.json();
+      const convertedKey = await urlBase64ToUint8Array(publicKey);
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
+      const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, subscription: subJson }),
+      });
+      localStorage.setItem(NOTIF_NUDGE_KEY, "1");
+      setStatus("done");
+    } catch {
+      setStatus("denied");
+    }
+  }
+
+  if (!visible) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        {...fadeIn}
+        data-testid="card-notif-nudge"
+        className="relative rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/70 dark:bg-amber-950/20 px-5 py-4 shadow-sm overflow-hidden"
+      >
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+
+        {status === "done" ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3 py-0.5"
+          >
+            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-foreground leading-snug">Reminders are on.</p>
+              <p className="text-[12px] text-foreground/60">We'll send your morning verse every day. 🙏</p>
+            </div>
+          </motion.div>
+        ) : status === "denied" ? (
+          <div className="pr-5">
+            <p className="text-[13px] font-bold text-foreground mb-1">Notifications are blocked in your browser.</p>
+            <p className="text-[12px] text-foreground/60 leading-relaxed">
+              Go to your browser settings → Notifications → allow Shepherd's Path. Or use the bell icon in the top-right corner anytime.
+            </p>
+            <button onClick={dismiss} className="text-[12px] text-amber-700 dark:text-amber-400 font-semibold mt-2 hover:opacity-70 transition-opacity">Got it</button>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700/40 flex items-center justify-center shrink-0 mt-0.5">
+              <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" style={{ width: 17, height: 17 }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-bold text-foreground leading-snug mb-0.5">Never miss a morning with God.</p>
+              <p className="text-[12px] text-foreground/60 leading-relaxed mb-3">
+                A daily verse and reflection, sent to your phone before the day starts. One tap to set it up.
+              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={handleEnable}
+                  disabled={status === "loading"}
+                  data-testid="button-notif-nudge-enable"
+                  className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-[12px] font-bold px-3.5 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+                >
+                  {status === "loading"
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Setting up…</>
+                    : <><Bell className="w-3.5 h-3.5" /> Turn on reminders</>
+                  }
+                </button>
+                <button
+                  onClick={dismiss}
+                  data-testid="button-notif-nudge-dismiss"
+                  className="text-[12px] text-foreground/40 hover:text-foreground/60 transition-colors"
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={dismiss}
+              data-testid="button-notif-nudge-x"
+              aria-label="Dismiss"
+              className="text-amber-400 hover:text-amber-600 transition-colors shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 // ── FirstDayCard — shown after Day 1 devotional to convert into Day 2 ──────────
 const FIRSTDAY_KEY = "sp_firstday_nudge_done";
 
@@ -733,7 +863,7 @@ async function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  return Uint8Array.from(Array.from(rawData).map((c) => c.charCodeAt(0)));
 }
 
 export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
