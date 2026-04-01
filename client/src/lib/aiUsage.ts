@@ -1,7 +1,7 @@
 import { isProVerifiedLocally } from "@/lib/proStatus";
 
 const AI_USAGE_KEY = "sp_ai_usage";
-export const AI_FREE_LIMIT = 3;
+export const AI_FREE_LIMIT = 5;
 
 interface AiUsageData {
   date: string;
