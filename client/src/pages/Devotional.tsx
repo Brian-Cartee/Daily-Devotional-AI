@@ -1297,6 +1297,15 @@ export default function Devotional() {
             )}
           </AnimatePresence>
 
+          {/* Reflection → Prayer connector — only shown after reflection loads */}
+          {reflectionContent && (
+            <div className="flex items-center gap-4 px-2">
+              <div className="h-px flex-1 bg-border/30" />
+              <span className="text-[11px] text-muted-foreground/45 italic tracking-wide select-none">carry it into prayer</span>
+              <div className="h-px flex-1 bg-border/30" />
+            </div>
+          )}
+
           {/* STEP 3: PRAYER */}
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={3} label="Prayer" />
@@ -1379,6 +1388,32 @@ export default function Devotional() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Devotional benediction — shown after prayer loads for all users */}
+          {prayerContent && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 0.3, ease: "easeOut" }}
+              className="text-center px-4 py-2"
+              data-testid="devotional-benediction"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-border/25" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
+                  {streak && streak.currentStreak > 1 ? `Day ${streak.currentStreak} complete` : "Day 1 complete"}
+                </span>
+                <div className="h-px flex-1 bg-border/25" />
+              </div>
+              <p className="text-[13px] text-muted-foreground/70 leading-relaxed italic">
+                {streak && streak.currentStreak >= 7
+                  ? "You've walked this path faithfully. The Word has been working in you longer than you know."
+                  : streak && streak.currentStreak >= 3
+                  ? "You came back again. That matters more than you realize. Come back tomorrow — the journey continues."
+                  : "You walked the path today. The Word does its work whether you feel it or not. Come back tomorrow."}
+              </p>
+            </motion.div>
+          )}
 
           {/* Save Today's Devotional — slim inline bar */}
           {(reflectionContent || prayerContent) && (
