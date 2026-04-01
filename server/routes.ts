@@ -2536,6 +2536,92 @@ ${historyNote}`;
     }
   });
 
+  // ── Bible Trivia ────────────────────────────────────────────────────────────
+
+  const TRIVIA_CATEGORIES: Record<string, string> = {
+    "old-testament": "Old Testament",
+    "new-testament": "New Testament",
+    "life-of-jesus": "Life of Jesus",
+    "bible-characters": "Bible Characters",
+    "psalms-wisdom": "Psalms & Wisdom",
+    "books-authors": "Books & Authors",
+  };
+
+  const TRIVIA_PROMPTS: Record<string, string> = {
+    "old-testament": "Old Testament stories, events, people, and places (Genesis through Malachi)",
+    "new-testament": "New Testament events, letters, churches, and teachings (Acts through Revelation)",
+    "life-of-jesus": "The life, ministry, miracles, parables, crucifixion and resurrection of Jesus as recorded in the four Gospels",
+    "bible-characters": "Notable people of the Bible — their lives, roles, and key moments",
+    "psalms-wisdom": "Psalms, Proverbs, Ecclesiastes, and Job — their authors, themes, and key verses",
+    "books-authors": "The books of the Bible — who wrote them, when, and in what context",
+  };
+
+  app.get("/api/trivia/questions/:category", async (req, res) => {
+    const { category } = req.params;
+    if (!TRIVIA_CATEGORIES[category]) {
+      return res.status(400).json({ error: "Unknown category" });
+    }
+    try {
+      let allQuestions = await storage.getTriviaQuestions(category);
+      if (!allQuestions || allQuestions.length < 10) {
+        const prompt = TRIVIA_PROMPTS[category];
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `You are a Bible trivia question writer for a Christian faith app. Generate exactly 30 multiple choice trivia questions about ${prompt}. Rules: questions must be factual/narrative (who, what, where, when), 4 distinct answer options each, one clearly correct answer, include a brief friendly explanation (1-2 sentences) that teaches something, add a verse reference when applicable, mix easy and medium difficulty. Return ONLY a valid JSON array of 30 objects, no markdown, no commentary. Each object: {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"...","verseRef":"..."}`,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 4000,
+        });
+        const raw = completion.choices[0]?.message?.content?.trim() || "[]";
+        const parsed = JSON.parse(raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
+        allQuestions = parsed;
+        await storage.saveTriviaQuestions(category, allQuestions!);
+      }
+      const shuffled = [...allQuestions!].sort(() => Math.random() - 0.5);
+      const ten = shuffled.slice(0, 10);
+      res.json({ questions: ten, categoryLabel: TRIVIA_CATEGORIES[category] });
+    } catch (err) {
+      console.error("[Trivia] Question generation error:", err);
+      res.status(500).json({ error: "Could not load questions" });
+    }
+  });
+
+  app.post("/api/trivia/challenge", async (req, res) => {
+    const { challengerName, category, categoryLabel, score, total, questions } = req.body;
+    if (!category || score == null || !questions?.length) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    try {
+      const id = crypto.randomUUID();
+      const challenge = await storage.saveTriviaChallenge(id, {
+        challengerName: (challengerName || "A Friend").slice(0, 40),
+        category,
+        categoryLabel: categoryLabel || TRIVIA_CATEGORIES[category] || category,
+        score,
+        total: total || 10,
+        questions,
+      });
+      res.json({ challenge });
+    } catch (err) {
+      console.error("[Trivia] Save challenge error:", err);
+      res.status(500).json({ error: "Could not save challenge" });
+    }
+  });
+
+  app.get("/api/trivia/challenge/:id", async (req, res) => {
+    try {
+      const challenge = await storage.getTriviaChallenge(req.params.id);
+      if (!challenge) return res.status(404).json({ error: "Challenge not found" });
+      res.json({ challenge });
+    } catch (err) {
+      res.status(500).json({ error: "Could not load challenge" });
+    }
+  });
+
   // ── Admin endpoints ────────────────────────────────────────────────────────
   function adminAuth(req: any, res: any): boolean {
     const password = process.env.ADMIN_PASSWORD;

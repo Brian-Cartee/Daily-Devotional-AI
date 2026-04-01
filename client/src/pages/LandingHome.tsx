@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -1206,6 +1206,38 @@ export default function LandingHome() {
               </motion.div>
             )}
           </div>
+        </motion.div>
+
+        {/* ── Bible Challenge entry ─ viral growth driver ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.40 }}
+          className="mt-5"
+        >
+          <Link href="/trivia">
+            <div
+              data-testid="card-trivia-entry"
+              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-md"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-primary to-indigo-700" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_20%,rgba(255,255,255,0.10)_0%,transparent_60%)]" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-300/50 via-white/70 to-amber-300/50" />
+              <div className="px-5 py-4 flex items-center gap-4 relative">
+                <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                  <Trophy className="w-5 h-5 text-amber-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[15px] font-bold text-white leading-snug">Bible Challenge</p>
+                    <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-400/25 text-amber-200 border border-amber-300/30 rounded px-1.5 py-0.5 leading-none">New</span>
+                  </div>
+                  <p className="text-[12px] text-white/65 mt-0.5 leading-snug">Test your knowledge — then challenge a friend</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-white/60 rotate-[-90deg] shrink-0" />
+              </div>
+            </div>
+          </Link>
         </motion.div>
 
         {/* Iron Circle entry card */}

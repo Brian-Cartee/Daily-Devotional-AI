@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge } from "@shared/schema";
 import { eq, and, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -51,6 +51,10 @@ export interface IStorage {
   setReminderForPray(requestId: number, sessionId: string, remindAt: Date): Promise<void>;
   getDuePrayerReminders(): Promise<Array<{ requestId: number; sessionId: string; request: string; displayName: string | null }>>;
   clearPrayerReminder(requestId: number, sessionId: string): Promise<void>;
+  getTriviaQuestions(category: string): Promise<TriviaQuestion[] | null>;
+  saveTriviaQuestions(category: string, questions: TriviaQuestion[]): Promise<void>;
+  saveTriviaChallenge(id: string, data: { challengerName: string; category: string; categoryLabel: string; score: number; total: number; questions: TriviaQuestion[] }): Promise<TriviaChallenge>;
+  getTriviaChallenge(id: string): Promise<TriviaChallenge | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -427,6 +431,43 @@ export class DatabaseStorage implements IStorage {
     await db.update(prayerWallPrays)
       .set({ remindAt: null })
       .where(and(eq(prayerWallPrays.requestId, requestId), eq(prayerWallPrays.sessionId, sessionId)));
+  }
+
+  async getTriviaQuestions(category: string): Promise<TriviaQuestion[] | null> {
+    const [row] = await db.select().from(triviaQuestions).where(eq(triviaQuestions.category, category));
+    if (!row) return null;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (row.generatedAt < sevenDaysAgo) return null;
+    return row.questions as TriviaQuestion[];
+  }
+
+  async saveTriviaQuestions(category: string, questions: TriviaQuestion[]): Promise<void> {
+    const existing = await db.select({ id: triviaQuestions.id }).from(triviaQuestions).where(eq(triviaQuestions.category, category));
+    if (existing.length > 0) {
+      await db.update(triviaQuestions)
+        .set({ questions: questions as any, generatedAt: new Date() })
+        .where(eq(triviaQuestions.category, category));
+    } else {
+      await db.insert(triviaQuestions).values({ category, questions: questions as any });
+    }
+  }
+
+  async saveTriviaChallenge(id: string, data: { challengerName: string; category: string; categoryLabel: string; score: number; total: number; questions: TriviaQuestion[] }): Promise<TriviaChallenge> {
+    const [row] = await db.insert(triviaChallenges).values({
+      id,
+      challengerName: data.challengerName,
+      category: data.category,
+      categoryLabel: data.categoryLabel,
+      score: data.score,
+      total: data.total,
+      questions: data.questions as any,
+    }).returning();
+    return row;
+  }
+
+  async getTriviaChallenge(id: string): Promise<TriviaChallenge | undefined> {
+    const [row] = await db.select().from(triviaChallenges).where(eq(triviaChallenges.id, id));
+    return row;
   }
 }
 

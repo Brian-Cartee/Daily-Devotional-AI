@@ -241,3 +241,35 @@ export const prayerWallPrays = pgTable("prayer_wall_prays", {
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
   remindAt: timestamp("remind_at"),
 });
+
+// ── Bible Trivia ─────────────────────────────────────────────────────────────
+
+export type TriviaQuestion = {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  verseRef?: string;
+};
+
+export const triviaQuestions = pgTable("trivia_questions", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull().unique(),
+  questions: jsonb("questions").notNull().$type<TriviaQuestion[]>(),
+  generatedAt: timestamp("generated_at").default(sql`now()`).notNull(),
+});
+
+export type TriviaQuestionRow = typeof triviaQuestions.$inferSelect;
+
+export const triviaChallenges = pgTable("trivia_challenges", {
+  id: text("id").primaryKey(),
+  challengerName: text("challenger_name").notNull(),
+  category: text("category").notNull(),
+  categoryLabel: text("category_label").notNull(),
+  score: integer("score").notNull(),
+  total: integer("total").notNull(),
+  questions: jsonb("questions").notNull().$type<TriviaQuestion[]>(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type TriviaChallenge = typeof triviaChallenges.$inferSelect;

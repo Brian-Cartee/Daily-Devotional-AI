@@ -31,6 +31,7 @@ import PrayerWallPage from "@/pages/PrayerWallPage";
 import GreatestGiftPage from "@/pages/GreatestGiftPage";
 import SupportPage from "@/pages/SupportPage";
 import HowToUsePage from "@/pages/HowToUsePage";
+import TriviaPage from "@/pages/TriviaPage";
 const IronCirclePage = lazy(() => import("@/pages/IronCirclePage"));
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
@@ -100,6 +101,8 @@ function Router() {
       <Route path="/greatest-gift" component={GreatestGiftPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/how-to-use" component={HowToUsePage} />
+      <Route path="/trivia" component={TriviaPage} />
+      <Route path="/trivia/:id" component={TriviaPage} />
       <Route path="/iron-circle">
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <IronCirclePage />
