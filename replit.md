@@ -112,6 +112,8 @@ Spreadsheet ID: `1Zhg_rL3i-eIyBNWOpB8Vld0awv6e-l9UoG6lvY3r4jI`
 
 - **Fonts**: Plus Jakarta Sans (UI/headings), Instrument Serif italic (verse quotes), Literata (Bible reading)
 - **Colors**: Warm parchment background (`38 28% 96%`), deep indigo primary (`249 58% 40%`), amber-gold accent
+- **Brand purple (in-app)**: `#442f74` — used throughout the app UI
+- **App icon purple**: `#7A018D` — brighter, more vibrant; chosen April 2026 for better home screen visibility
 - **Hero overlays**: Deep dark gradient (52%→28%→72%) for sacred, cinematic feel
 - **Body texture**: Subtle SVG grain at 3% opacity for warmth
 - **Target feel**: Calm, sacred, premium — inspired by Hallow and Glorify
