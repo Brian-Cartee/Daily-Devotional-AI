@@ -29,6 +29,7 @@ import { AchievementModal } from "@/components/AchievementModal";
 import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, getBadge, type Achievement } from "@/lib/achievements";
 import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
+import { FirstDayCard } from "@/components/EngagementCards";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -1488,6 +1489,9 @@ export default function Devotional() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Day 1 → Day 2 hook — shown to first-day users after prayer loads */}
+          <FirstDayCard isFirstDay={streak?.currentStreak === 1 && !!prayerContent} />
 
           {/* Share & Invite — at the very bottom */}
           <ShareInviteCard />

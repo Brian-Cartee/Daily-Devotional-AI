@@ -70,15 +70,26 @@ async function sendMorningNotifications() {
   }
 }
 
+const MIDDAY_MESSAGES: { title: string; body: string }[] = [
+  { title: "A midday moment 🌿", body: "Five minutes with God in the middle of the day changes the whole rest of it." },
+  { title: "Pausing is not falling behind 🌿", body: "Step away for a few minutes. Your devotional is open and waiting for you." },
+  { title: "Midday breath 🌿", body: "Be still — even for five minutes. Today's verse is worth returning to." },
+  { title: "A quiet place in the middle 🌿", body: "The day is only half over. There's still time to walk with God through the rest of it." },
+  { title: "Shepherd's Path · midday 🌿", body: "You don't have to finish the day spiritually empty. Start with today's verse." },
+  { title: "The Word is still there 🌿", body: "Whatever the morning held — the path is still open. Come back for a few minutes." },
+  { title: "Halfway home 🌿", body: "The second half of the day is still ahead. Carry something good into it." },
+];
+
 async function sendMiddayNotifications() {
   const subs = await storage.getAllPushSubscriptions();
-  const hour = new Date().getUTCHours();
+  const dayOfWeek = new Date().getDay(); // 0 = Sunday
+  const { title, body } = MIDDAY_MESSAGES[dayOfWeek % MIDDAY_MESSAGES.length];
 
   for (const sub of subs) {
     if (!sub.middayEnabled) continue;
     const ok = await sendToSubscription(sub, {
-      title: "Midday check-in 🌿",
-      body: "Halfway through the day. Have you walked the path yet?",
+      title,
+      body,
       tag: "midday",
       url: "/devotional",
     });
@@ -86,9 +97,21 @@ async function sendMiddayNotifications() {
   }
 }
 
+const EVENING_MESSAGES: { title: string; body: string }[] = [
+  { title: "Before the day closes ✨", body: "A quiet moment with God before bed. Your devotional and prayer are still open." },
+  { title: "Evening reflection ✨", body: "The day is winding down. Bring it to God before you rest — 4 steps, 5 minutes." },
+  { title: "End well ✨", body: "What happened today deserves a few minutes with God. Your devotional is waiting." },
+  { title: "Night is near ✨", body: "Lay down whatever the day held. Start with today's verse and let it settle." },
+  { title: "A faithful close ✨", body: "Your evening prayer is one tap away. Let God have the last word today." },
+  { title: "Shepherd's Path · evening ✨", body: "Before sleep — five minutes in the Word. Everything else can wait." },
+  { title: "Rest begins here ✨", body: "Your devotional is a quiet place to end the day. Four steps. You have time." },
+];
+
 async function sendEveningNotifications() {
   const subs = await storage.getAllPushSubscriptions();
   const hour = new Date().getUTCHours();
+  const dayOfWeek = new Date().getDay();
+  const { title, body } = EVENING_MESSAGES[dayOfWeek % EVENING_MESSAGES.length];
 
   for (const sub of subs) {
     if (!sub.eveningEnabled) continue;
@@ -96,8 +119,8 @@ async function sendEveningNotifications() {
     if (h !== hour) continue;
 
     const ok = await sendToSubscription(sub, {
-      title: "Evening reflection ✨",
-      body: "The day is winding down. Your devotional is still waiting — 4 steps, 5 minutes.",
+      title,
+      body,
       tag: "evening",
       url: "/devotional",
     });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight } from "lucide-react";
+import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail } from "lucide-react";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,7 @@ import {
   type CheckinEmotion,
 } from "@/lib/engagementCards";
 import { getUserName } from "@/lib/userName";
+import { getSessionId } from "@/lib/session";
 import { Link } from "wouter";
 
 // ── Shared slide-in animation ─────────────────────────────────────────────────
@@ -720,6 +721,204 @@ export function FrameworkDayCard() {
             </button>
           </Link>
         </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ── FirstDayCard — shown after Day 1 devotional to convert into Day 2 ──────────
+const FIRSTDAY_KEY = "sp_firstday_nudge_done";
+
+async function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
+  const { toast } = useToast();
+  const sessionId = getSessionId();
+  const [visible, setVisible] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "denied" | "email">("idle");
+  const [email, setEmail] = useState("");
+  const [emailDone, setEmailDone] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
+
+  useEffect(() => {
+    if (!isFirstDay) return;
+    if (localStorage.getItem(FIRSTDAY_KEY)) return;
+    const alreadyGranted = "Notification" in window && Notification.permission === "granted";
+    if (alreadyGranted) return;
+    const supported = "Notification" in window && "serviceWorker" in navigator;
+    setPushSupported(supported);
+    setVisible(true);
+  }, [isFirstDay]);
+
+  function dismiss() {
+    localStorage.setItem(FIRSTDAY_KEY, "1");
+    setVisible(false);
+  }
+
+  async function handleEnable() {
+    localStorage.setItem(FIRSTDAY_KEY, "1");
+    if (!pushSupported) { setStatus("email"); return; }
+    setStatus("loading");
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setStatus("denied"); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const vapidRes = await fetch("/api/push/vapid-key");
+      const { publicKey } = await vapidRes.json();
+      const convertedKey = await urlBase64ToUint8Array(publicKey);
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
+      const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, subscription: subJson }),
+      });
+      setStatus("done");
+    } catch {
+      setStatus("denied");
+    }
+  }
+
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    try {
+      await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      setEmailDone(true);
+      toast({ description: "You'll get tomorrow's verse by email. 🙏" });
+    } catch {
+      toast({ description: "Could not subscribe. Try again.", variant: "destructive" });
+    }
+  }
+
+  if (!visible) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        {...fadeIn}
+        data-testid="card-first-day"
+        className="relative rounded-2xl border border-primary/20 bg-gradient-to-br from-violet-50/80 to-indigo-50/60 dark:from-violet-950/30 dark:to-indigo-950/20 px-5 py-5 shadow-sm overflow-hidden"
+      >
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-indigo-400" />
+
+        {status !== "done" && (
+          <button
+            onClick={dismiss}
+            data-testid="button-dismiss-firstday"
+            aria-label="Dismiss"
+            className="absolute top-3 right-3 text-primary/40 hover:text-primary/70 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
+        {status === "done" ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center text-center py-1 gap-2"
+          >
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+              <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-[15px] font-bold text-foreground">You're set for tomorrow.</p>
+            <p className="text-[13px] text-foreground/60 leading-relaxed">
+              We'll send you a gentle reminder before the day starts. See you on Day 2.
+            </p>
+            <button onClick={dismiss} className="text-[12px] text-primary font-semibold mt-1 hover:opacity-70 transition-opacity">
+              Done
+            </button>
+          </motion.div>
+        ) : status === "denied" ? (
+          <div>
+            <p className="text-[13px] font-bold text-foreground mb-1">Notifications are blocked.</p>
+            <p className="text-[12px] text-foreground/60 mb-3 leading-relaxed">
+              You can enable them in your browser settings, or subscribe by email instead.
+            </p>
+            <button
+              onClick={() => setStatus("email")}
+              className="inline-flex items-center gap-1.5 text-[12px] font-bold text-primary hover:opacity-70 transition-opacity"
+            >
+              <Mail className="w-3.5 h-3.5" /> Get tomorrow's verse by email
+            </button>
+          </div>
+        ) : status === "email" ? (
+          <div>
+            <p className="text-[13px] font-bold text-foreground mb-2.5">Get Day 2 in your inbox.</p>
+            {emailDone ? (
+              <div className="flex items-center gap-1.5 text-[13px] text-emerald-600 font-medium">
+                <Check className="w-4 h-4" /> Subscribed — see you tomorrow.
+              </div>
+            ) : (
+              <form onSubmit={handleEmailSubmit} className="flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  data-testid="firstday-email-input"
+                  className="flex-1 bg-white dark:bg-background border border-border rounded-xl px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
+                />
+                <Button type="submit" size="sm" disabled={!email.trim()} className="rounded-xl shrink-0 text-[12px]">
+                  Subscribe
+                </Button>
+              </form>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Bell className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+              </div>
+              <div>
+                <p className="text-[15px] font-bold text-foreground leading-snug">You started something today.</p>
+                <p className="text-[13px] text-foreground/65 leading-relaxed mt-1">
+                  Day 2 is where the habit begins. Can we send you a gentle reminder so you don't miss it?
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleEnable}
+              disabled={status === "loading"}
+              data-testid="button-firstday-enable"
+              className="w-full rounded-xl text-[13px] font-bold h-10 mb-2"
+            >
+              {status === "loading"
+                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Setting up…</>
+                : <><Bell className="w-4 h-4 mr-2" /> Yes, remind me tomorrow</>
+              }
+            </Button>
+
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => { localStorage.setItem(FIRSTDAY_KEY, "1"); setStatus("email"); }}
+                className="text-[11px] text-foreground/45 hover:text-primary transition-colors"
+              >
+                Prefer email instead
+              </button>
+              <button
+                onClick={dismiss}
+                data-testid="button-firstday-skip"
+                className="text-[11px] text-foreground/40 hover:text-foreground/60 transition-colors"
+              >
+                No thanks
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
