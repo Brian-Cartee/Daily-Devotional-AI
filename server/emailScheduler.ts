@@ -99,9 +99,10 @@ async function sendDailyEmailsToAllSubscribers() {
   }
 }
 
-// Schedule daily emails at 7:00 AM UTC each day
+// Schedule daily emails at 6:00 AM UTC = 2:00 AM EDT (EDT = UTC-4)
+// ⚠️ When DST ends in November (EST = UTC-5), change back to 7 to maintain 2 AM ET delivery
 export async function scheduleDailyEmails() {
-  const TARGET_HOUR_UTC = 7; // 7:00 AM UTC
+  const TARGET_HOUR_UTC = 6; // 6:00 AM UTC = 2:00 AM EDT
 
   const scheduleNext = () => {
     const delay = msUntilNextHour(TARGET_HOUR_UTC);
