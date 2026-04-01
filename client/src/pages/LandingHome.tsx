@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { useDemoMode } from "@/components/DemoProvider";
-import { getRemainingAi, canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { getRemainingAi, canUseAi, recordAiUsage, AI_FREE_LIMIT } from "@/lib/aiUsage";
 import { streamAI } from "@/lib/streamAI";
 import { getUserName } from "@/lib/userName";
 import {
@@ -271,7 +271,7 @@ function HeroAIPrompt() {
             return (
               <div className="mt-2 flex items-center justify-end gap-1 pr-0.5">
                 <span className="text-[11px] text-muted-foreground/40 font-medium">
-                  {remaining} of 10 free responses remaining today
+                  {remaining} of {AI_FREE_LIMIT} free responses remaining today
                 </span>
               </div>
             );

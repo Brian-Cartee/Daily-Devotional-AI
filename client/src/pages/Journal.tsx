@@ -56,9 +56,9 @@ interface TranscriptResult {
 type TabType = "prayer" | "reflection" | "verse" | "note" | "memory";
 
 const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string; emptyHint: string; actionLabel?: string; actionPath?: string }[] = [
-  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.",     emptyHint: "Tap Pray in the bottom navigation, write or speak your prayer, then save it — it will appear here.",                          actionLabel: "Pray now",                 actionPath: "/pray" },
+  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.",     emptyHint: "Open today's devotional or seek guidance — then tap Save Prayer to capture your prayer here.",                                  actionLabel: "Open today's devotional",  actionPath: "/devotional" },
   { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "No reflections saved yet.",           emptyHint: "While reading a devotional or Bible journey, tap Save Reflection when something speaks to your heart.",                     actionLabel: "Open today's devotional",  actionPath: "/devotional" },
-  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.",            emptyHint: "In the Bible section, tap the bookmark icon on any chapter — it saves the passage here for you to return to.",              actionLabel: "Browse the Bible",         actionPath: "/bible" },
+  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.",            emptyHint: "In the Bible section, tap the bookmark icon on any chapter — it saves the passage here for you to return to.",              actionLabel: "Browse the Bible",         actionPath: "/read" },
   { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "No sermon notes yet.",                emptyHint: "Use the record button above to capture a live sermon, or type notes in the notepad — both save here automatically.",      actionLabel: undefined,                  actionPath: undefined },
   { key: "memory",      label: "Memory",       icon: Star,       emptyText: "No memory verses yet.",               emptyHint: "While reading today's devotional, tap the ☆ star next to a verse to commit it to memory — then practice it here.",        actionLabel: "Open today's devotional",  actionPath: "/devotional" },
 ];
@@ -165,12 +165,12 @@ function PremiumModal({ onClose }: { onClose: () => void }) {
             <Button
               className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
               onClick={() => {
-                window.open("mailto:hello@shepherdspathAI.com?subject=Pro%20Waitlist", "_blank");
+                window.location.href = "/pricing";
                 onClose();
               }}
-              data-testid="btn-join-waitlist"
+              data-testid="btn-upgrade-pro"
             >
-              Join the Pro Waitlist
+              Unlock Pro
             </Button>
             <button
               onClick={onClose}
@@ -181,7 +181,7 @@ function PremiumModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <p className="text-center text-[10px] text-muted-foreground/60 pt-1">
-            Launching soon. No payment required to join waitlist.
+            $5.99/month or $44.99/year · Cancel anytime
           </p>
         </div>
       </motion.div>
