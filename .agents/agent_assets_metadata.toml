@@ -12,6 +12,24 @@ uri = "file://client/public/app-icon-bold.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "5uSMl3YWwWxMGqwvgS72z"
+uri = "file://client/public/app-icon-v1.png"
+type = "image"
+title = "app icon bold cross path v1"
+
+[[generated]]
+id = "AVQkTGbkIf1v-4Ts3laOW"
+uri = "file://client/public/app-icon-v2.png"
+type = "image"
+title = "app icon cross flows into path v2"
+
+[[generated]]
+id = "k2qOrxZLWENdIzurTwVE0"
+uri = "file://client/public/app-icon-v3.png"
+type = "image"
+title = "app icon dark cross road v3"
+
 [[outputs]]
 id = "5eXKSYOD9ozG_qHKJmLBU"
 uri = "file://SHEPHERDS_PATH_REFERENCE.md"
