@@ -20,10 +20,15 @@ const EXAMPLES = [
 ];
 
 const COMMANDS = [
-  { cmd: "PRAY", desc: "Receive a personalized prayer" },
+  { cmd: "Anything on your heart", desc: "Ask a question, share a struggle, or simply say how you're feeling — receive scripture and pastoral reflection grounded in God's Word" },
   { cmd: "VERSE", desc: "Get today's scripture" },
   { cmd: "DEVOTIONAL", desc: "Your full daily devotional reflection" },
-  { cmd: "Anything on your heart", desc: "Ask a question, share a struggle — receive scripture and prayer from God's Word" },
+  { cmd: "PRAY", desc: "Receive a personalized prayer written just for you" },
+  { cmd: "PRAY FOR [your need]", desc: "Share your prayer request to the prayer chain — others will pray with you" },
+  { cmd: "JOIN PRAYER", desc: "Join the prayer chain — receive others' requests and stand with them in prayer" },
+  { cmd: "AMEN-[number]", desc: "Pray alongside a specific request (e.g. AMEN-4) — they'll be notified someone prayed for them" },
+  { cmd: "LEAVE PRAYER", desc: "Leave the prayer chain (you'll still receive your daily devotional)" },
+  { cmd: "HELP", desc: "See all available commands and how many free messages you have left today" },
   { cmd: "STOP", desc: "Unsubscribe from all messages immediately" },
   { cmd: "START", desc: "Re-subscribe at any time" },
 ];

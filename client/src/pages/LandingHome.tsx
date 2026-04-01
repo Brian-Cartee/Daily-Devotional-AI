@@ -1003,6 +1003,40 @@ export default function LandingHome() {
           ))}
           </div>
 
+          {/* SMS Ministry Card */}
+          <Link href="/sms">
+            <div
+              data-testid="card-sms-ministry"
+              className="group relative rounded-2xl overflow-hidden border border-violet-200/60 dark:border-violet-800/40 bg-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-primary/5 pointer-events-none" />
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-violet-400 to-primary opacity-70 rounded-l-2xl" />
+              <div className="relative z-10 px-5 py-4 flex gap-4 items-start">
+                <div className="w-10 h-10 rounded-2xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                  <MessageCircle className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400 mb-1">SMS Ministry</p>
+                  <h3 className="text-[16px] font-black text-foreground leading-tight tracking-tight mb-1.5">Faith by text. No app needed.</h3>
+                  <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
+                    Text anything on your heart to our number — scripture, prayer, a struggle — and receive a pastoral reflection grounded in God's Word. Daily devotionals. Prayer chain. All by text.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {["VERSE", "PRAY", "DEVOTIONAL", "JOIN PRAYER", "Anything"].map(cmd => (
+                      <span key={cmd} className="text-[11px] font-bold bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-md font-mono">
+                        {cmd}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[13px] font-semibold text-violet-600 dark:text-violet-400 group-hover:gap-2.5 transition-all">
+                    See how it works
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+
         </motion.div>
 
         {/* Testimonials */}
