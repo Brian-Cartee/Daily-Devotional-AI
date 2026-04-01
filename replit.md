@@ -208,3 +208,12 @@ The Android APK was built using Android Studio (Panda 2 version visible on Mac d
 6. Attach build to submission → Add for Review → Submit
 
 **Google Play:** Already in internal testing. 14-day clock started ~March 23. Production unlock ~April 6.
+
+---
+
+## ⏳ Pending — Do After Apple/Google Approval
+
+**Update App Store & Google Play listing description** with the new pastoral copy written April 1, 2026.
+The full text is saved in our conversation. Key elements: 3am crisis mission, "it listens" positioning,
+Psalm 23 streak journey, grace-over-performance promise, closing line "Start with tomorrow morning. One devotional. That is enough."
+Also consider updating subtitle (30 chars) and keyword tags for search visibility at that time.
