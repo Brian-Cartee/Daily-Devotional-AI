@@ -311,3 +311,9 @@ id = "x9Egew0l0wVBEhmYggyxV"
 uri = "file://attached_assets/generated_images/shepherds_path_hero_bg.png"
 type = "image"
 title = "Shepherd's Path — Hero Background (Hill & Road)"
+
+[[outputs]]
+id = "kWe-o84ZexcIlVuWS0JGs"
+uri = "file://client/public/app-icon-v2.png"
+type = "image"
+title = "Shepherd's Path App Icon V2 — 1024×1024 (App Store Ready)"
