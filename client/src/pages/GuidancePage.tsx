@@ -81,8 +81,18 @@ export default function GuidancePage() {
   const [guidanceMode, setGuidanceModeState] = useState<GuidanceMode>(() => getGuidanceMode());
 
   const handleModeChange = (mode: GuidanceMode) => {
+    if (mode === guidanceMode) return;
     setGuidanceModeState(mode);
     saveGuidanceMode(mode);
+
+    // If a response is already showing and there's no follow-up thread yet,
+    // re-generate the initial response in the new tone immediately
+    const userMessages = messages.filter(m => m.role === "user");
+    if (responseComplete && situation.trim() && userMessages.length <= 1) {
+      const initialUserMsg: Message = { role: "user", content: situation };
+      setMessages([initialUserMsg]);
+      streamResponse([initialUserMsg], mode);
+    }
   };
 
   const [journey, setJourney] = useState<Journey | null>(null);
@@ -104,14 +114,14 @@ export default function GuidancePage() {
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
 
-  const streamResponse = async (conversationMessages: Message[]) => {
+  const streamResponse = async (conversationMessages: Message[], explicitMode?: GuidanceMode) => {
     setStreamingText("");
     setResponseComplete(false);
     try {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId(), guidanceMode }),
+        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId(), guidanceMode: explicitMode ?? guidanceMode }),
       });
       if (res.status === 429) {
         setStreamingText("You've sent a lot of requests recently. Please wait a few minutes and try again.");
@@ -351,6 +361,15 @@ export default function GuidancePage() {
                 Direct &amp; Accountable
               </button>
             </div>
+
+            {/* Context hint for what mode-switching does */}
+            {responseComplete && situation.trim() && (
+              <p className="text-[10px] text-muted-foreground/50 mb-4 -mt-2">
+                {messages.filter(m => m.role === "user").length > 1
+                  ? "Tone applies to your next message"
+                  : "Switching tone will refresh the guidance"}
+              </p>
+            )}
 
             <AnimatePresence>
               {!responseComplete && !streamingText && !situation && (
