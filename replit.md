@@ -214,6 +214,18 @@ The Android APK was built using Android Studio (Panda 2 version visible on Mac d
 
 ---
 
+## 🗓️ Scheduled Tasks
+
+**BY APRIL 15, 2026 — Xcode 26 Upgrade (ITMS-90725)**
+Apple requires all apps to be built with Xcode 26 (iOS 26 SDK) starting April 28, 2026.
+Current build used iOS 18.5 SDK — non-blocking for v1.1 submission but must be fixed before next upload.
+Fix: Update Xcode via Mac App Store → open project → Archive → upload new build. Zero code changes needed.
+
+**NOVEMBER — DST Adjustment**
+When Daylight Saving ends (EST = UTC-5), change the SMS scheduler hour from 12 → 13 in `server/smsScheduler.ts` to maintain 8 AM ET delivery.
+
+---
+
 ## ⏳ Pending — Do After Apple/Google Approval
 
 **Update App Store & Google Play listing description** with the new pastoral copy written April 1, 2026.
