@@ -438,11 +438,10 @@ function DevotionalCard() {
 }
 
 const COMMITMENT_POINTS = [
-  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit — where the Holy Spirit is the living, active relationship with our Lord and Savior",
-  "Built to lead people to Christ by removing every barrier between you and God's Word: the unfamiliar language, the hard questions, the fear of mispronouncing a name",
+  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit — trusting that the Holy Spirit is a living Person who opens Scripture to you as you read",
   "AI is here to illuminate the passage being studied — never to reinterpret, replace, or stand beside Scripture",
-  "Grounded in historic, orthodox Christian faith across centuries and traditions — not shaped by cultural opinion",
-  "Designed to build real spiritual discipline — daily habits that bring you closer to God, one faithful step at a time",
+  "Grounded in historic, orthodox Christian faith across centuries and traditions — the same faith passed down through every generation",
+  "Built for daily faithfulness — small habits that, over time, change everything",
 ];
 
 export default function LandingHome() {
@@ -1379,7 +1378,7 @@ export default function LandingHome() {
                   {/* Text content */}
                   <div className="px-5 pb-6 pt-4">
                     <p className="text-sm text-foreground/80 leading-relaxed mb-4">
-                      Shepherd's Path was built with one purpose: to lead people to Christ. We believe in Father, Son, and Holy Spirit — and that the Holy Spirit is not a doctrine but a living relationship with our Lord and Savior. This app exists to remove every obstacle between you and God's Word: the unfamiliar language, the hard questions, even the quiet embarrassment of not knowing how to pronounce a name. The Bible is our only source and standard. Technology is simply the path that brings you to it.
+                      Shepherd's Path was built with one purpose: to lead people to Christ. We believe in Father, Son, and Holy Spirit — and that the Holy Spirit is not an abstract doctrine but a living Person who walks with you, speaks through God's Word, and intercedes for you when you have no words left. This app exists to remove every obstacle between you and Scripture: the unfamiliar language, the hard questions, even the quiet embarrassment of not knowing how to pronounce a name. The Bible is our only source and standard. Technology is simply the path that brings you to it.
                     </p>
 
                     <div className="space-y-2.5 mb-5">
