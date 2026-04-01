@@ -1,14 +1,34 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getUserVoice } from "@/lib/userName";
 
+let _instanceCounter = 0;
+
+/**
+ * Fire-and-forget: warms the server-side TTS disk cache for a given text+voice
+ * so the FIRST listen is served from cache (near-instant) instead of calling OpenAI.
+ * Safe to call speculatively — server will deduplicate using its own cache key.
+ */
+export function prewarmTTS(text: string, voice?: string): void {
+  if (!text?.trim()) return;
+  fetch("/api/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text.slice(0, 4096), voice: voice ?? getUserVoice() }),
+  })
+    .then(r => r.blob())
+    .catch(() => {});
+}
+
 export function useTTS() {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
   const preloadingRef = useRef(false);
   const chainCancelRef = useRef(false);
+  const instanceId = useRef(`tts-${++_instanceCounter}`);
 
   const cleanup = useCallback(() => {
     chainCancelRef.current = true;
@@ -27,8 +47,31 @@ export function useTTS() {
     cleanup();
     setPlaying(false);
     setLoading(false);
+    setError(false);
     setProgress(0);
   }, [cleanup]);
+
+  // Global coordination: when any instance starts, all others stop immediately.
+  // This prevents multiple audio streams playing simultaneously across the app.
+  useEffect(() => {
+    const handle = (e: Event) => {
+      const id = (e as CustomEvent<{ id: string }>).detail?.id;
+      if (id && id !== instanceId.current) {
+        cleanup();
+        setPlaying(false);
+        setLoading(false);
+        setProgress(0);
+      }
+    };
+    window.addEventListener("sp-audio-start", handle);
+    return () => window.removeEventListener("sp-audio-start", handle);
+  }, [cleanup]);
+
+  const notifyStart = useCallback(() => {
+    window.dispatchEvent(
+      new CustomEvent("sp-audio-start", { detail: { id: instanceId.current } }),
+    );
+  }, []);
 
   const preload = useCallback(async (text: string, voice?: string) => {
     if (blobUrlRef.current || preloadingRef.current) return;
@@ -44,7 +87,7 @@ export function useTTS() {
       const blob = await response.blob();
       blobUrlRef.current = URL.createObjectURL(blob);
     } catch {
-      // silently ignore preload errors
+      // silently ignore — user can still tap Listen and it'll fetch fresh
     } finally {
       preloadingRef.current = false;
     }
@@ -52,7 +95,9 @@ export function useTTS() {
 
   const play = useCallback(async (text: string, voice?: string) => {
     const selectedVoice = voice ?? getUserVoice();
+    notifyStart();
 
+    // Fast path: use preloaded blob if available (sub-100ms start)
     if (blobUrlRef.current) {
       const url = blobUrlRef.current;
       blobUrlRef.current = null;
@@ -60,20 +105,23 @@ export function useTTS() {
       audioRef.current = audio;
       setLoading(false);
       setPlaying(true);
+      setError(false);
       setProgress(0);
       audio.ontimeupdate = () => {
         if (audio.duration) setProgress(Math.round((audio.currentTime / audio.duration) * 100));
       };
       audio.onended = () => { setPlaying(false); setProgress(100); URL.revokeObjectURL(url); };
-      audio.onerror = () => { setPlaying(false); };
-      await audio.play();
+      audio.onerror = () => { setPlaying(false); setError(true); };
+      await audio.play().catch(() => setError(true));
       return;
     }
 
+    // Slow path: fetch from server (disk cache if prewarmed, otherwise OpenAI)
     cleanup();
     chainCancelRef.current = false;
     setProgress(0);
     setLoading(true);
+    setError(false);
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
@@ -83,7 +131,6 @@ export function useTTS() {
       if (!response.ok) throw new Error("TTS failed");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      blobUrlRef.current = url;
       const audio = new Audio(url);
       audioRef.current = audio;
       audio.oncanplay = () => { setLoading(false); setPlaying(true); };
@@ -91,28 +138,31 @@ export function useTTS() {
         if (audio.duration) setProgress(Math.round((audio.currentTime / audio.duration) * 100));
       };
       audio.onended = () => {
-        setPlaying(false); setProgress(100);
-        if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null; }
+        setPlaying(false);
+        setProgress(100);
+        URL.revokeObjectURL(url);
       };
-      audio.onerror = () => { setPlaying(false); setLoading(false); };
-      await audio.play();
+      audio.onerror = () => { setPlaying(false); setLoading(false); setError(true); };
+      await audio.play().catch(() => { setLoading(false); setError(true); });
     } catch {
       setLoading(false);
       setPlaying(false);
+      setError(true);
     }
-  }, [cleanup]);
+  }, [cleanup, notifyStart]);
 
   const toggle = useCallback(
     (text: string, voice?: string) => {
       if (playing) { stop(); } else { play(text, voice); }
     },
-    [playing, play, stop]
+    [playing, play, stop],
   );
 
   /**
    * playChain — plays an ordered list of text sections with pipeline prefetching.
-   * While section N is playing, section N+1 is already being fetched in the
-   * background, so transitions between sections are seamless with no loading gap.
+   * While section N plays, section N+1 is fetched in the background so transitions
+   * are seamless. The server disk cache means subsequent plays of the same content
+   * are near-instant.
    */
   const playChain = useCallback(async (
     sections: Array<{ text: string; voice?: string; key?: string }>,
@@ -120,10 +170,12 @@ export function useTTS() {
     onComplete?: () => void,
   ) => {
     if (sections.length === 0) return;
+    notifyStart();
     cleanup();
     chainCancelRef.current = false;
     setProgress(0);
     setLoading(true);
+    setError(false);
 
     let prefetchedUrl: string | null = null;
 
@@ -157,7 +209,7 @@ export function useTTS() {
       setLoading(false);
       setPlaying(true);
 
-      // Pipeline: immediately start fetching next section in background while this one plays
+      // Pipeline: start fetching the next section while this one plays
       const nextSection = sections[i + 1];
       let prefetchPromise: Promise<string | null> | null = null;
       if (nextSection) {
@@ -172,7 +224,6 @@ export function useTTS() {
           .catch(() => null);
       }
 
-      // Play this section to completion
       const urlToPlay = blobUrl;
       const segStart = (i / sections.length) * 100;
       const segEnd = ((i + 1) / sections.length) * 100;
@@ -191,13 +242,11 @@ export function useTTS() {
         audio.play().catch(() => resolve());
       });
 
-      // Collect the prefetched next-section blob — it's ready or nearly ready now
       if (prefetchPromise) {
         prefetchedUrl = await prefetchPromise;
       }
     }
 
-    // Discard any unused prefetch
     if (prefetchedUrl) URL.revokeObjectURL(prefetchedUrl);
 
     setPlaying(false);
@@ -209,9 +258,9 @@ export function useTTS() {
     } else {
       setProgress(0);
     }
-  }, [cleanup]);
+  }, [cleanup, notifyStart]);
 
   useEffect(() => () => cleanup(), [cleanup]);
 
-  return { play, stop, toggle, preload, playChain, playing, loading, progress };
+  return { play, stop, toggle, preload, playChain, playing, loading, error, progress };
 }

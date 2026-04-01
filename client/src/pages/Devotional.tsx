@@ -19,7 +19,7 @@ import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
-import { useTTS } from "@/hooks/use-tts";
+import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { getDevotionalHeroPhoto } from "@/lib/shareImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -233,6 +233,8 @@ export default function Devotional() {
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         label: `Today's devotional · ${verse.reference}`,
       });
+      // Prewarm the verse TTS immediately so the Listen button is near-instant
+      prewarmTTS(`${verse.text} — ${verse.reference}`, getUserVoice());
       const lang = getStoredLang();
       const userName = getUserName() ?? undefined;
       generateReflection(verse.id, lang, userName);
@@ -273,7 +275,10 @@ export default function Devotional() {
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
       }, (text) => setReflectionContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
-        setReflectionContent(capitalizeDivinePronouns(result));
+        const finalText = capitalizeDivinePronouns(result);
+        setReflectionContent(finalText);
+        // Prewarm TTS cache so Listen is near-instant when user taps it
+        prewarmTTS(finalText, getUserVoice());
       }
     } catch (e: any) {
       if (e?.name !== "AbortError") setReflectionError(true);
@@ -294,7 +299,11 @@ export default function Devotional() {
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
       }, (text) => setPrayerContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
-        setPrayerContent(capitalizeDivinePronouns(result));
+        const finalPrayer = capitalizeDivinePronouns(result);
+        setPrayerContent(finalPrayer);
+        // Prewarm prayer with nova voice — matches the "Pray This Aloud" experience
+        const cleaned = finalPrayer.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
+        prewarmTTS(cleaned, "nova");
       }
     } catch (e: any) {
       if (e?.name !== "AbortError") setPrayerError(true);

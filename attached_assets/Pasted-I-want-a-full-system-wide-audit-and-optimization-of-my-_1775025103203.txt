@@ -1,0 +1,84 @@
+I want a full system-wide audit and optimization of my app focused on user experience, performance, and reliability.
+
+The goal is to create a “premium, polished, no-friction” experience that keeps users engaged and eliminates all confusion or broken flows.
+
+Your responsibilities:
+
+1. BUG DETECTION & ELIMINATION
+- Identify ALL bugs, edge cases, and inconsistent behaviors
+- Fix issues related to:
+  - Screens not scrolling properly
+  - UI elements not rendering
+  - Buttons not responding
+  - State inconsistencies
+- Ensure stability across all user flows
+
+2. PERFORMANCE OPTIMIZATION
+- Identify sources of lag, delay, or blocking
+- Optimize:
+  - API calls
+  - Rendering performance
+  - State updates
+- Ensure smooth, fast transitions between screens
+
+3. UX FLOW IMPROVEMENT
+- Review entire user journey:
+  - Entry → interaction → response → next action
+- Remove friction points
+- Ensure every screen has:
+  - Clear purpose
+  - Clear next step
+
+4. SCROLL + LAYOUT FIXES
+- Fix any screens that:
+  - Don’t scroll properly
+  - Cut off content
+  - Feel cramped or confusing
+- Ensure responsive design across devices
+
+5. CONSISTENCY AUDIT
+- Standardize:
+  - Button styles
+  - Spacing
+  - Typography
+  - Component behavior
+- Eliminate inconsistencies across screens
+
+6. FEEDBACK & INTERACTION DESIGN
+- Ensure every user action has immediate feedback:
+  - Button press states
+  - Loading indicators
+  - Transitions
+- No “dead taps” or silent delays
+
+7. ERROR HANDLING
+- Implement graceful error states everywhere
+- No crashes or confusing failures
+- Provide clear messaging and recovery options
+
+8. ENGAGEMENT OPTIMIZATION
+- Suggest improvements to:
+  - Keep users interacting longer
+  - Encourage next actions
+  - Reduce drop-off points
+
+9. CODE QUALITY
+- Refactor messy or redundant code
+- Improve structure and maintainability
+- Ensure scalability as the app grows
+
+10. FINAL EXPERIENCE STANDARD
+Evaluate the app against this standard:
+- No noticeable delays
+- No confusion at any step
+- No broken UI
+- Smooth, intuitive, and engaging
+
+Deliverables:
+- List of all issues found
+- Fixes implemented
+- Performance improvements made
+- UX recommendations for further enhancement
+
+Goal:
+The app should feel seamless, fast, and “wow”-level polished — something users trust immediately and want to keep using daily.

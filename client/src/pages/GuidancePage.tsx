@@ -6,10 +6,10 @@ import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guid
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
-import { getUserName } from "@/lib/userName";
+import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
-import { useTTS } from "@/hooks/use-tts";
+import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -229,12 +229,19 @@ export default function GuidancePage() {
     // Do NOT scroll away from top — scripture verse should be the first thing they read
   }, [streamingText, isSending]);
 
-  // Silently preload prayer audio as soon as it arrives so "Pray This Aloud" plays instantly
+  // Preload prayer blob into tts so "Pray This Aloud" plays instantly
   useEffect(() => {
     if (prayer && responseComplete) {
       tts.preload(prayer, "nova");
     }
   }, [prayer, responseComplete]);
+
+  // Prewarm guidance response TTS so the "Hear this guidance" chain starts fast
+  useEffect(() => {
+    if (!responseComplete) return;
+    const firstResponse = messages.find(m => m.role === "assistant")?.content;
+    if (firstResponse) prewarmTTS(firstResponse, getUserVoice());
+  }, [responseComplete]);
 
   const startGuidanceListen = async () => {
     if (ttsChain.playing || ttsChain.loading) {
