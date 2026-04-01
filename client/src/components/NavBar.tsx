@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -169,6 +169,17 @@ export function NavBar() {
                 )}
               </AnimatePresence>
             </div>
+
+            <Link
+              href="/how-to-use"
+              data-testid="nav-how-to-use"
+              aria-label="How to use Shepherd's Path"
+              className={`w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg transition-all ${
+                location === "/how-to-use" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
+            </Link>
 
             <div className="relative">
               <button
