@@ -705,8 +705,8 @@ export default function LandingHome() {
           {/* First Steps seeker card — shown to new users (days 1–7) */}
           <FirstStepsCard daysWithApp={getRelationshipAge()} />
 
-          {/* 7-Day Faith Framework — daily focus card */}
-          <FrameworkDayCard />
+          {/* Daily Devotional — primary action, first thing they should see */}
+          <DevotionalCard />
 
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
@@ -857,8 +857,8 @@ export default function LandingHome() {
             </div>
           )}
 
-          {/* Daily Devotional — primary action */}
-          <DevotionalCard />
+          {/* 7-Day Faith Framework — for engaged users, sits after core entry points */}
+          <FrameworkDayCard />
 
           {/* "Hear the Word" — Listen while you read feature spotlight */}
           <div className="relative rounded-2xl overflow-hidden border border-sky-200/70 dark:border-sky-800/40 shadow-sm" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }}>
