@@ -10,6 +10,7 @@ import {
   isReturningUser,
   isReturnCardDismissedToday,
   dismissReturnCard,
+  getDaysAway,
   hasGratitudeThisWeek,
   markGratitudeThisWeek,
   getNextTip,
@@ -52,12 +53,69 @@ export function GreetingHeader() {
 }
 
 // ── 2. Returning-user grace card ──────────────────────────────────────────────
+function getReturnContent(daysAway: number, name: string | null) {
+  const firstName = name ? `, ${name}` : "";
+
+  if (daysAway <= 2) {
+    return {
+      label: `Welcome back${firstName}`,
+      headline: "One day away — you're still here.",
+      body: "Missing a day doesn't erase the walk you've been on. Your devotional is open and waiting.",
+      gradient: "from-sky-400 via-blue-400 to-indigo-400",
+      border: "border-sky-200 dark:border-sky-800",
+      bg: "bg-sky-50 dark:bg-sky-950/40",
+      labelColor: "text-sky-600 dark:text-sky-400",
+      xColor: "text-sky-400 hover:text-sky-600",
+    };
+  }
+
+  if (daysAway <= 6) {
+    return {
+      label: `The path is still here${firstName}`,
+      headline: "A few days away — come back in.",
+      body: "The Good Shepherd doesn't walk away when you do. He leaves the ninety-nine to find the one. Today is a good day to return.",
+      gradient: "from-violet-400 via-primary to-indigo-400",
+      border: "border-violet-200 dark:border-violet-800",
+      bg: "bg-violet-50/60 dark:bg-violet-950/30",
+      labelColor: "text-primary dark:text-violet-400",
+      xColor: "text-violet-400 hover:text-violet-600",
+    };
+  }
+
+  if (daysAway <= 13) {
+    return {
+      label: "The Shepherd is watching the road",
+      headline: "A week away — welcome home.",
+      body: "Like the father who saw his son \"while he was still a great way off\" and ran to meet him — that's the heart of God toward you right now. Today's devotional is the first step back.",
+      gradient: "from-amber-400 via-orange-400 to-rose-400",
+      border: "border-amber-200 dark:border-amber-800",
+      bg: "bg-amber-50/60 dark:bg-amber-950/30",
+      labelColor: "text-amber-700 dark:text-amber-400",
+      xColor: "text-amber-400 hover:text-amber-600",
+    };
+  }
+
+  return {
+    label: "No matter how long — you're not too far",
+    headline: "Come back. The door is open.",
+    body: "Scripture doesn't have a \"too long\" clause. God's mercies are new every morning — including this one. Start with just five minutes today.",
+    gradient: "from-rose-400 via-primary to-violet-500",
+    border: "border-rose-200 dark:border-rose-800",
+    bg: "bg-rose-50/50 dark:bg-rose-950/20",
+    labelColor: "text-rose-700 dark:text-rose-400",
+    xColor: "text-rose-400 hover:text-rose-600",
+  };
+}
+
 export function ReturningUserCard() {
   const name = getUserName();
   const [visible, setVisible] = useState(false);
+  const [daysAway, setDaysAway] = useState(0);
 
   useEffect(() => {
-    if (isReturningUser() && !isReturnCardDismissedToday()) {
+    const days = getDaysAway();
+    if (days >= 2 && !isReturnCardDismissedToday()) {
+      setDaysAway(days);
       setVisible(true);
     }
   }, []);
@@ -68,28 +126,42 @@ export function ReturningUserCard() {
   }
 
   if (!visible) return null;
+
+  const content = getReturnContent(daysAway, name);
+
   return (
     <AnimatePresence>
       <motion.div
         {...fadeIn}
         data-testid="card-returning-user"
-        className="relative rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-5 py-4 shadow-sm overflow-hidden"
+        className={`relative rounded-2xl border ${content.border} ${content.bg} px-5 py-4 shadow-sm overflow-hidden`}
       >
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400" />
+        <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${content.gradient}`} />
         <button
           onClick={dismiss}
           data-testid="button-dismiss-returning"
           aria-label="Dismiss"
-          className="absolute top-3 right-3 text-sky-400 hover:text-sky-600 transition-colors"
+          className={`absolute top-3 right-3 transition-colors ${content.xColor}`}
         >
           <X className="w-4 h-4" />
         </button>
-        <p className="text-[13px] font-bold uppercase tracking-widest text-sky-600 dark:text-sky-400 mb-1">
-          Welcome back{name ? `, ${name}` : ""}
+        <p className={`text-[12px] font-bold uppercase tracking-widest mb-1.5 pr-6 ${content.labelColor}`}>
+          {content.label}
         </p>
-        <p className="text-[14px] text-foreground/80 leading-relaxed">
-          Sometimes life gets full — that's okay. Today is a good day to return.
+        <p className="text-[15px] font-bold text-foreground leading-snug mb-1">
+          {content.headline}
         </p>
+        <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
+          {content.body}
+        </p>
+        <Link href="/devotional" onClick={dismiss}>
+          <button
+            data-testid="button-returning-cta"
+            className={`inline-flex items-center gap-1.5 text-[12px] font-bold ${content.labelColor} hover:opacity-80 transition-opacity`}
+          >
+            Open today's devotional <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </Link>
       </motion.div>
     </AnimatePresence>
   );

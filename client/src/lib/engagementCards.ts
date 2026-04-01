@@ -14,15 +14,18 @@ export function setLastOpenDate(): void {
   localStorage.setItem(LAST_OPEN_KEY, today);
 }
 
-export function isReturningUser(): boolean {
+export function getDaysAway(): number {
   const last = getLastOpenDate();
-  if (!last) return false;
+  if (!last) return 0;
   const today = new Date().toISOString().split("T")[0];
-  if (last === today) return false;
-  const daysDiff = Math.floor(
+  if (last === today) return 0;
+  return Math.floor(
     (new Date(today).getTime() - new Date(last).getTime()) / 86_400_000
   );
-  return daysDiff >= 3;
+}
+
+export function isReturningUser(): boolean {
+  return getDaysAway() >= 2;
 }
 
 export function isReturnCardDismissedToday(): boolean {
