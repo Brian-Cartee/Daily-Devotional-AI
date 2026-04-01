@@ -12,6 +12,7 @@ import { type Journey } from "@/data/journeys";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { isLateNight } from "@/lib/nightMode";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 
@@ -121,7 +122,7 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId(), guidanceMode: explicitMode ?? guidanceMode }),
+        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId(), guidanceMode: explicitMode ?? guidanceMode, isLateNight: isLateNight() }),
       });
       if (res.status === 429) {
         setStreamingText("You've sent a lot of requests recently. Please wait a few minutes and try again.");

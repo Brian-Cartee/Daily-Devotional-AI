@@ -22,6 +22,7 @@ import { ListenButton } from "@/components/ListenButton";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { getDevotionalHeroPhoto } from "@/lib/shareImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { isLateNight } from "@/lib/nightMode";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { Link } from "wouter";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -274,6 +275,7 @@ export default function Devotional() {
       const result = await streamAI("/api/ai/generate", {
         verseId, type: "reflection", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
+        isLateNight: isLateNight(),
       }, (text) => setReflectionContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
         const finalText = capitalizeDivinePronouns(result);
@@ -298,6 +300,7 @@ export default function Devotional() {
       const result = await streamAI("/api/ai/generate", {
         verseId, type: "prayer", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
+        isLateNight: isLateNight(),
       }, (text) => setPrayerContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
         const finalPrayer = capitalizeDivinePronouns(result);

@@ -26,9 +26,10 @@ import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/li
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
   TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
-  FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard,
+  FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
+import { isLateNight } from "@/lib/nightMode";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -95,7 +96,7 @@ function HeroAIPrompt() {
   const recognitionRef = useRef<any>(null);
   const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
-  const placeholders = [
+  const dayPlaceholders = [
     "I'm going through a divorce and I don't know how to move forward…",
     "I just lost someone I love and I'm struggling to find peace…",
     "I'm battling anxiety and my faith feels weak right now…",
@@ -105,6 +106,15 @@ function HeroAIPrompt() {
     "I lost my job and I'm not sure what God is doing…",
     "I'm carrying grief that no one around me seems to understand…",
   ];
+  const nightPlaceholders = [
+    "I can't sleep — something is weighing on me tonight…",
+    "It's late and I feel completely alone right now…",
+    "I don't know how to pray, but I need something tonight…",
+    "Something is keeping me up and I don't know where else to go…",
+    "My mind won't stop — I'm looking for some peace…",
+    "I'm scared and it's late and I just need some comfort…",
+  ];
+  const placeholders = isLateNight() ? nightPlaceholders : dayPlaceholders;
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 600);
@@ -699,6 +709,9 @@ export default function LandingHome() {
           {/* Time-aware greeting */}
           <GreetingHeader />
 
+          {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
+          <LateNightBannerCard />
+
           {/* Returning-user grace card */}
           <ReturningUserCard />
 
@@ -863,39 +876,41 @@ export default function LandingHome() {
           {/* 7-Day Faith Framework — for engaged users, sits after core entry points */}
           <FrameworkDayCard />
 
-          {/* "Hear the Word" — Listen while you read feature spotlight */}
-          <div className="relative rounded-2xl overflow-hidden border border-sky-200/70 dark:border-sky-800/40 shadow-sm" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }}>
-            <div className="dark:hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }} />
-            <div className="dark:block hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 8%) 0%, hsl(172 60% 6%) 100%)" }} />
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
-            <div className="relative z-10 px-5 py-4 flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center shrink-0 mt-0.5">
-                <Volume2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400 mb-1">Hear the Word</p>
-                <h3 className="text-[16px] font-black text-foreground leading-tight tracking-tight mb-1.5">Listen while you read.</h3>
-                <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
-                  Scripture was always meant to be <em>heard</em>. If the Bible has ever felt hard to read, let it be spoken to you — and follow along at your own pace. Thousands of people experience God's Word this way for the first time.
-                </p>
-                <Link href="/understand">
-                  <button
-                    data-testid="btn-hear-word-cta"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 text-[12px] font-bold hover:bg-sky-200 dark:hover:bg-sky-900/70 transition-all"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    Try listening to scripture
-                  </button>
-                </Link>
+          {/* "Hear the Word" — Listen while you read feature spotlight. Hidden at night — not the moment for it. */}
+          {!isLateNight() && (
+            <div className="relative rounded-2xl overflow-hidden border border-sky-200/70 dark:border-sky-800/40 shadow-sm" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }}>
+              <div className="dark:hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }} />
+              <div className="dark:block hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 8%) 0%, hsl(172 60% 6%) 100%)" }} />
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
+              <div className="relative z-10 px-5 py-4 flex gap-4 items-start">
+                <div className="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                  <Volume2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400 mb-1">Hear the Word</p>
+                  <h3 className="text-[16px] font-black text-foreground leading-tight tracking-tight mb-1.5">Listen while you read.</h3>
+                  <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
+                    Scripture was always meant to be <em>heard</em>. If the Bible has ever felt hard to read, let it be spoken to you — and follow along at your own pace. Thousands of people experience God's Word this way for the first time.
+                  </p>
+                  <Link href="/understand">
+                    <button
+                      data-testid="btn-hear-word-cta"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 text-[12px] font-bold hover:bg-sky-200 dark:hover:bg-sky-900/70 transition-all"
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      Try listening to scripture
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Daily check-in */}
           <CheckinCard />
 
-          {/* Rotating feature tip */}
-          <TipCard />
+          {/* Rotating feature tip — hidden at night */}
+          {!isLateNight() && <TipCard />}
 
           {/* Weekly gratitude prompt — saves to journal */}
           <GratitudePromptCard sessionId={sessionId} />

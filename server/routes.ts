@@ -577,6 +577,14 @@ I'm here whenever you're ready to continue your walk.`;
       const relationshipNote2 = buildRelationshipNote(daysWithApp2, journalCount2);
       const probeNote = `\n\nApproximately 1 in 4 responses — when it feels genuinely earned, not formulaic — close with a single question. Not a prompt, not a challenge. A real question a caring friend would ask because they are genuinely curious about this person's life. Make it specific to this verse and this moment.`;
 
+      const isLateNight2: boolean = !!(req.body as any).isLateNight;
+      const lateNightReflectionNote = isLateNight2
+        ? `\n\nNight context: This person opened their devotional in the middle of the night. Let your reflection be a little quieter and more unhurried — like a lamp held steady in a dark room rather than a light switched on. They chose, at this late hour, to spend time in the Word. Honor the quiet act of that. Don't be bright or energizing. Simply be present with them in the stillness.`
+        : "";
+      const lateNightPrayerNote = isLateNight2
+        ? `\n\nNight context: This person is praying in the middle of the night. Let the prayer carry the intimacy of that — the honesty of someone who reached for God in the dark. It might carry exhaustion, searching, or quiet surrender. Let it sound like someone talking to God when the world is asleep and guards are down.`
+        : "";
+
       if (input.type === "reflection") {
         systemPrompt =
 `You are a deeply thoughtful spiritual companion — the kind of trusted friend who has walked with God for years and reads the Bible not as a textbook but as a living letter written to real people in real struggle and real joy.
@@ -600,7 +608,7 @@ When a verse carries the truth of God's love — His pursuit of people, His refu
 
 When a verse speaks to human worth, dignity, or being known — being formed, being named, being chosen — let it reach the person who may have spent years being told, by experience or by people, that they don't measure up. The most powerful thing a reflection can do is help someone see themselves the way God sees them, even for a moment.
 
-When a verse carries hope in the middle of darkness — not easy comfort, but the kind that has earned the right to speak — write it for the person who genuinely cannot see how things could be different. The steadiness of biblical hope is not pretending the darkness isn't real. It is knowing something the darkness doesn't.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${langNote2}`;
+When a verse carries hope in the middle of darkness — not easy comfort, but the kind that has earned the right to speak — write it for the person who genuinely cannot see how things could be different. The steadiness of biblical hope is not pretending the darkness isn't real. It is knowing something the darkness doesn't.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
@@ -624,7 +632,7 @@ Pronoun capitalization: When addressing God directly in prayer, capitalize You, 
 
 When the verse or the person's situation touches on loneliness, rejection, feeling worthless, forgotten, or beyond love's reach — let the prayer carry the full honest weight of God's unconditional love for this specific person. Not as a cliché. As a real truth spoken directly to God on their behalf — that they are known, that they are held, that nothing can separate them from a love that will not let them go.
 
-Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${langNote2}`;
+Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${langNote2}`;
         userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
@@ -1261,6 +1269,10 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       : "";
 
     const isFollowUp = messages && messages.length > 1;
+    const lateNight: boolean = !!(req.body as any).isLateNight;
+    const lateNightNote = lateNight
+      ? `\n\nNight context: It is the middle of the night and this person has opened Shepherd's Path at this late hour. Something brought them here when the world is asleep. This changes how you begin. Your first paragraph should feel like someone quietly sitting down beside them — not starting a lesson, not rushing to scripture or a path forward. Simply be fully present with the fact that it is late and they are here. Let your unhurried tone carry that weight without announcing it. Be slower. Be warmer. Hold presence before you hold scripture. If they are in pain, do not hurry them toward resolution.`
+      : "";
 
     const systemMsg = `You are a warm, deeply compassionate pastoral guide at Shepherd's Path. Someone has just opened up about what they are going through.
 
@@ -1289,7 +1301,7 @@ Rules:
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply and isn't afraid of hard questions
-— Under 220 words total${nameNote}${modeNote}`;
+— Under 220 words total${nameNote}${modeNote}${lateNightNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail } from "lucide-react";
+import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon } from "lucide-react";
+import { isLateNight, getNightTimeLabel, getNightGreeting } from "@/lib/nightMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,7 +43,16 @@ const fadeIn = {
 export function GreetingHeader() {
   const name = getUserName();
   const greeting = getTimeGreeting();
+  const lateNight = isLateNight();
   if (!name) return null;
+  if (lateNight) {
+    return (
+      <div data-testid="text-greeting-header" className="px-0.5 -mb-1">
+        <p className="text-[11px] font-semibold text-foreground/35 tabular-nums tracking-wide uppercase mb-0.5">{getNightTimeLabel()}</p>
+        <p className="text-[17px] font-bold text-foreground/75">{getNightGreeting(name)}</p>
+      </div>
+    );
+  }
   return (
     <p
       data-testid="text-greeting-header"
@@ -50,6 +60,62 @@ export function GreetingHeader() {
     >
       {greeting}, {name}.
     </p>
+  );
+}
+
+// ── 1b. Late-night presence banner ────────────────────────────────────────────
+export function LateNightBannerCard() {
+  const [dismissed, setDismissed] = useState(false);
+  if (!isLateNight() || dismissed) return null;
+  return (
+    <motion.div
+      {...fadeIn}
+      className="relative rounded-2xl overflow-hidden border border-indigo-950/60 dark:border-indigo-800/40 shadow-lg"
+      style={{ background: "linear-gradient(145deg, hsl(240 40% 10%) 0%, hsl(258 42% 15%) 60%, hsl(240 35% 8%) 100%)" }}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent 0%, hsl(258 42% 45%) 40%, hsl(220 60% 55%) 100%)" }} />
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Moon className="w-3.5 h-3.5 text-indigo-300/70" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300/70">Still with you · {getNightTimeLabel()}</p>
+          </div>
+          <button
+            onClick={() => setDismissed(true)}
+            data-testid="button-dismiss-night-banner"
+            className="text-white/20 hover:text-white/50 transition-colors p-1 -mr-1 -mt-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <h2 className="text-[19px] font-black text-white/90 leading-snug tracking-tight mb-2">
+          Whatever brought you here<br />at this hour — you're not alone.
+        </h2>
+        <p className="text-[13px] text-white/55 leading-relaxed mb-4">
+          This is a safe place to bring what you're carrying. You don't need to have it together to open this app. God meets people exactly where they are — including at {getNightTimeLabel()}.
+        </p>
+        <div className="flex gap-2.5">
+          <Link href="/devotional">
+            <button
+              data-testid="button-night-banner-devotional"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[12px] font-bold text-white/90 border border-white/15 hover:border-white/25 hover:bg-white/5 transition-all"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              Open devotional
+            </button>
+          </Link>
+          <Link href="/guidance">
+            <button
+              data-testid="button-night-banner-guidance"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600/50 hover:bg-indigo-600/70 text-[12px] font-bold text-white/90 border border-indigo-500/30 transition-all"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              Seek guidance
+            </button>
+          </Link>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -344,7 +410,7 @@ export function CheckinCard() {
           <SmilePlus className="w-3.5 h-3.5 text-rose-500" />
         </div>
         <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
-          How are you doing today, really?
+          {isLateNight() ? "What's on your heart tonight?" : "How are you doing today, really?"}
         </p>
       </div>
       <div className="flex gap-2">
