@@ -26,7 +26,7 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 import { Link } from "wouter";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
-import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, type Achievement } from "@/lib/achievements";
+import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, getBadge, type Achievement } from "@/lib/achievements";
 import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 
@@ -614,6 +614,20 @@ export default function Devotional() {
                     <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
                   )}
                 </div>
+                {/* Psalm 23 badge */}
+                {(() => {
+                  const badge = getBadge(streak.currentStreak);
+                  if (!badge) return null;
+                  return (
+                    <div
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/8 border border-primary/20"
+                      data-testid="streak-badge"
+                    >
+                      <span className="text-[10px] font-bold text-primary/70 tracking-wide">{badge.name}</span>
+                      <span className="text-[9px] text-muted-foreground/50">· {badge.verse}</span>
+                    </div>
+                  );
+                })()}
 
                 {/* Weekly dots */}
                 {(() => {

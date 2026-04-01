@@ -12,6 +12,18 @@ webpush.setVapidDetails(
 
 type NotifPayload = { title: string; body: string; tag?: string; url?: string };
 
+function getStreakBadgeName(streak: number): string | null {
+  if (streak >= 365) return "Dwelling";
+  if (streak >= 90)  return "Goodness & Mercy";
+  if (streak >= 60)  return "Anointed";
+  if (streak >= 30)  return "No Fear";
+  if (streak >= 21)  return "Righteous Paths";
+  if (streak >= 14)  return "Restored";
+  if (streak >= 7)   return "Still Waters";
+  if (streak >= 3)   return "Green Pastures";
+  return null;
+}
+
 async function sendToSubscription(sub: { endpoint: string; p256dh: string; auth: string }, payload: NotifPayload): Promise<boolean> {
   try {
     await webpush.sendNotification(
@@ -103,10 +115,13 @@ async function sendStreakReminders() {
       const [streak] = await db.select().from(streaks).where(eq(streaks.sessionId, sub.sessionId));
       if (streak && streak.lastVisitDate === today) continue;
 
+      const badgeName = streak ? getStreakBadgeName(streak.currentStreak) : null;
       const ok = await sendToSubscription(sub, {
         title: "Don't break your streak 🔥",
         body: streak && streak.currentStreak > 1
-          ? `You're on a ${streak.currentStreak}-day streak — don't let it end today!`
+          ? badgeName
+            ? `Day ${streak.currentStreak} · ${badgeName} — keep walking.`
+            : `You're on a ${streak.currentStreak}-day streak — don't let it end today!`
           : "Your devotional for today is still open. Come walk the path.",
         tag: "streak-reminder",
         url: "/devotional",

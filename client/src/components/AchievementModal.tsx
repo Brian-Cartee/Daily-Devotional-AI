@@ -18,7 +18,7 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
   const [sharing, setSharing] = useState(false);
   const showProNudge =
     !isProVerifiedLocally() &&
-    ["streak_7", "streak_14", "streak_30", "streak_100"].includes(achievement.id);
+    ["streak_7", "streak_14", "streak_21", "streak_30", "streak_60", "streak_100", "streak_365"].includes(achievement.id);
 
   const handleShare = async () => {
     if (sharing) return;

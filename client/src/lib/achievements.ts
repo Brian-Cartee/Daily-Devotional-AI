@@ -13,6 +13,32 @@ export interface Achievement {
   photoOverlay?: string;
 }
 
+export interface Badge {
+  name: string;
+  verse: string;
+  threshold: number;
+}
+
+export const PSALM23_BADGES: Badge[] = [
+  { name: "Green Pastures",   verse: "Psalm 23:2", threshold: 3   },
+  { name: "Still Waters",     verse: "Psalm 23:2", threshold: 7   },
+  { name: "Restored",         verse: "Psalm 23:3", threshold: 14  },
+  { name: "Righteous Paths",  verse: "Psalm 23:3", threshold: 21  },
+  { name: "No Fear",          verse: "Psalm 23:4", threshold: 30  },
+  { name: "Anointed",         verse: "Psalm 23:5", threshold: 60  },
+  { name: "Goodness & Mercy", verse: "Psalm 23:6", threshold: 90  },
+  { name: "Dwelling",         verse: "Psalm 23:6", threshold: 365 },
+];
+
+export function getBadge(streak: number): Badge | null {
+  if (streak < 3) return null;
+  let current: Badge | null = null;
+  for (const badge of PSALM23_BADGES) {
+    if (streak >= badge.threshold) current = badge;
+  }
+  return current;
+}
+
 export const ACHIEVEMENTS: Record<string, Achievement> = {
   devotional_first: {
     id: "devotional_first",
@@ -42,55 +68,117 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     photo: "https://images.unsplash.com/photo-1418050327236-8de8ba25f5a1?w=800&q=80",
     photoOverlay: "rgba(140,50,10,0.50)",
   },
+  streak_3: {
+    id: "streak_3",
+    emoji: "🌿",
+    title: "Green Pastures",
+    subtitle: "3-day streak · Psalm 23:2",
+    message:
+      "\"He makes me lie down in green pastures.\" Three days of choosing rest in God before the rush of the day. You are learning what it means to be led.",
+    voiceScript:
+      "Green Pastures. Three days. Psalm 23 says He makes you lie down in green pastures — and that word 'makes' is important. It means He provides the kind of rest you cannot give yourself. Three days of showing up is you learning to receive that. Keep going. The path gets quieter the further you walk it.",
+    colorFrom: "from-green-400",
+    colorTo: "to-emerald-500",
+    photo: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&q=80",
+    photoOverlay: "rgba(20,100,60,0.50)",
+  },
   streak_7: {
     id: "streak_7",
-    emoji: "🌟",
-    title: "One Week of Faithfulness",
-    subtitle: "7-day devotional streak",
+    emoji: "💧",
+    title: "Still Waters",
+    subtitle: "7-day streak · Psalm 23:2",
     message:
-      "Seven days in a row. At this point you should probably just accept that this is your life now. We think it's a great life to have.",
+      "\"He leads me beside still waters.\" Seven days of being led. You are not forcing this — you are being guided. That is the whole difference.",
     voiceScript:
-      "Seven days in a row. Seven. At this point, you should probably just accept that this is your life now — and honestly, we think that is a fantastic life to have. The disciples walked with Jesus daily for years. You are doing the same thing. Seven days is the beginning of a habit. A habit is the beginning of a life. Keep going.",
-    colorFrom: "from-yellow-400",
-    colorTo: "to-amber-500",
+      "Still Waters. Seven days. He leads you beside still waters — not turbulent ones, not impressive ones. Still ones. Quiet ones. The kind that restore something in you that noise keeps stealing. Seven days of choosing quiet with God is seven days of being genuinely led. You have made it to the waters. Stay close.",
+    colorFrom: "from-sky-400",
+    colorTo: "to-blue-500",
     photo: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-    photoOverlay: "rgba(130,80,0,0.48)",
+    photoOverlay: "rgba(10,60,130,0.48)",
   },
   streak_14: {
     id: "streak_14",
-    emoji: "⭐",
-    title: "Two Weeks Strong",
-    subtitle: "14-day devotional streak",
+    emoji: "✨",
+    title: "Restored",
+    subtitle: "14-day streak · Psalm 23:3",
     message:
-      "Fourteen mornings of choosing God over the snooze button. We're not sure the snooze button has noticed. But God definitely has.",
+      "\"He restores my soul.\" Two weeks. Something in you is being put back together — quietly, daily, without fanfare. That is what this is.",
     voiceScript:
-      "Two weeks. Fourteen mornings of choosing God over the snooze button. That is no small thing. Studies say habits form around 21 days — you are almost there. And between you and us, you are already a different person than when you started. We are not sure the snooze button has noticed. But God has. Every single morning. Keep going.",
-    colorFrom: "from-sky-400",
-    colorTo: "to-blue-500",
+      "Restored. Fourteen days. He restores my soul — not fixes it, not upgrades it. Restores it. Like something that was always meant to be whole. Two weeks of daily time with God is two weeks of that restoration work happening in you, whether you feel it yet or not. You are different than you were two weeks ago. Keep going.",
+    colorFrom: "from-violet-400",
+    colorTo: "to-purple-500",
+    photo: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80",
+    photoOverlay: "rgba(80,20,130,0.48)",
+  },
+  streak_21: {
+    id: "streak_21",
+    emoji: "🛤️",
+    title: "Righteous Paths",
+    subtitle: "21-day streak · Psalm 23:3",
+    message:
+      "\"He guides me in paths of righteousness.\" Three weeks. A habit has formed. The path you are walking is not accidental — you are being guided.",
+    voiceScript:
+      "Righteous Paths. Twenty-one days. That is not an accident — that is a habit. He guides you in paths of righteousness for His name's sake. Meaning: He has a reason for walking with you through this. It is not random. The path you are on was chosen for you, and you have been faithful enough to stay on it for three weeks. That matters more than you know.",
+    colorFrom: "from-amber-500",
+    colorTo: "to-yellow-400",
+    photo: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80",
+    photoOverlay: "rgba(120,80,10,0.48)",
   },
   streak_30: {
     id: "streak_30",
-    emoji: "🏆",
-    title: "One Month Walk",
-    subtitle: "30-day devotional streak",
+    emoji: "🏔️",
+    title: "No Fear",
+    subtitle: "30-day streak · Psalm 23:4",
     message:
-      "Thirty days. We believed in you from day one — but thirty days? That's impressive. Sin is losing ground. Peace is moving in. Don't stop now.",
+      "\"Even though I walk through the valley of the shadow of death, I will fear no evil.\" Thirty days. You have walked through some valleys to get here. You are still here.",
     voiceScript:
-      "Thirty days. One whole month. Okay — we have to be honest with you. We believed in you from day one. But thirty days? That is genuinely impressive. Something is shifting inside you, even if you cannot fully name it yet. Sin is losing ground. Peace is moving in. That is not an accident — that is what daily time with God does. Keep going. Do not stop now.",
-    colorFrom: "from-violet-500",
-    colorTo: "to-purple-600",
+      "No Fear. Thirty days. The valley of the shadow of death is not just a poetic phrase — it is a real place, and some of your thirty days were probably spent in it. But you kept walking. And the promise is not that the valley disappears. It is that you do not have to walk it alone. Thirty days of God walking beside you. That is everything.",
+    colorFrom: "from-slate-500",
+    colorTo: "to-zinc-700",
+    photo: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+    photoOverlay: "rgba(30,30,50,0.55)",
+  },
+  streak_60: {
+    id: "streak_60",
+    emoji: "🫒",
+    title: "Anointed",
+    subtitle: "60-day streak · Psalm 23:5",
+    message:
+      "\"You anoint my head with oil.\" Sixty days. You are known here. That anointing is God's way of saying: I see you. I have set you apart. You belong at this table.",
+    voiceScript:
+      "Anointed. Sixty days. You anoint my head with oil — in ancient times, that was an act of honor. Of recognition. Of being seen and set apart. Sixty days of daily faithfulness means God has been watching, every morning, every time you chose this over everything else pulling at you. You are anointed for whatever comes next. Do not forget that.",
+    colorFrom: "from-amber-600",
+    colorTo: "to-orange-700",
+    photo: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80",
+    photoOverlay: "rgba(120,60,0,0.52)",
   },
   streak_100: {
     id: "streak_100",
     emoji: "💎",
-    title: "Century of Grace",
-    subtitle: "100-day devotional streak",
+    title: "Goodness & Mercy",
+    subtitle: "100-day streak · Psalm 23:6",
     message:
-      "One hundred days. We need a moment. A hundred mornings choosing God before anything else. That is not normal. That is extraordinary.",
+      "\"Surely goodness and mercy shall follow me all the days of my life.\" One hundred days. Goodness and mercy are not ahead of you — they have been following you the whole time.",
     voiceScript:
-      "One hundred days. We need a moment. Okay — we are back. A hundred mornings where you chose God before your phone, before your coffee, before anything else. That is not normal. That is extraordinary. You have made the daily walk with Jesus part of who you are — and sin does not stand a chance against a life built on God's Word. Well done, good and faithful servant.",
+      "Goodness and Mercy. One hundred days. Surely — not maybe, not hopefully. Surely — goodness and mercy will follow you all the days of your life. A hundred mornings of opening this. A hundred days of being followed by something good, even when it was hard to see. That promise has been true every single one of those days. And it will be true tomorrow.",
     colorFrom: "from-rose-400",
     colorTo: "to-pink-600",
+    photo: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=800&q=80",
+    photoOverlay: "rgba(160,20,80,0.48)",
+  },
+  streak_365: {
+    id: "streak_365",
+    emoji: "🏠",
+    title: "Dwelling",
+    subtitle: "365-day streak · Psalm 23:6",
+    message:
+      "\"I will dwell in the house of the Lord forever.\" One year. Every day. You don't just visit here anymore. You live here.",
+    voiceScript:
+      "Dwelling. Three hundred and sixty-five days. I will dwell in the house of the Lord forever. You started this a year ago — maybe out of curiosity, maybe out of need, maybe out of desperation. And now, after every kind of day this year has given you, you are still here. You don't visit anymore. You live here. That is the most beautiful thing.",
+    colorFrom: "from-primary",
+    colorTo: "to-violet-600",
+    photo: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&q=80",
+    photoOverlay: "rgba(60,30,120,0.55)",
   },
 };
 
@@ -117,11 +205,15 @@ export function checkStreakAchievement(streak: number, isNewDay: boolean): Achie
   if (!isNewDay) return null;
 
   const milestones: Array<[number, string]> = [
-    [1, "streak_1"],
-    [7, "streak_7"],
-    [14, "streak_14"],
-    [30, "streak_30"],
+    [1,   "streak_1"],
+    [3,   "streak_3"],
+    [7,   "streak_7"],
+    [14,  "streak_14"],
+    [21,  "streak_21"],
+    [30,  "streak_30"],
+    [60,  "streak_60"],
     [100, "streak_100"],
+    [365, "streak_365"],
   ];
 
   for (const [days, id] of milestones) {
