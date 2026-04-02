@@ -1,7 +1,8 @@
 import { useLocation } from "wouter";
 import { Share2, ArrowDown, ChevronLeft, Heart, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
-import sunsetImg from "@assets/IMG_2653_1775134365945.PNG";
+
+const sunsetImg = "/daily-art/natural-sunset.jpg";
 
 const CALLING_CARDS = [
   {

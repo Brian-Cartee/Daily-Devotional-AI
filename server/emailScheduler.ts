@@ -79,10 +79,14 @@ async function sendDailyEmailsToAllSubscribers() {
           .replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
 
+        const displayFrom = fromEmail.includes('@') && !fromEmail.startsWith('"')
+          ? `Shepherd's Path <${fromEmail}>`
+          : fromEmail;
         await client.emails.send({
-          from: fromEmail,
+          from: displayFrom,
           to: subscriber.email,
-          subject: `Daily Verse: ${verse.reference}`,
+          replyTo: 'hello@shepherdspathai.com',
+          subject: `${verse.reference} — a word for your morning`,
           html,
           text,
         });

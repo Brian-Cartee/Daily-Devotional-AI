@@ -69,97 +69,129 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
+  const logoUrl = `${data.appUrl}/sp-cross-logo.png`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daily Verse — ${data.reference}</title>
+  <title>${data.reference} — Shepherd's Path</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f8f7f4;font-family:'Georgia',serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f7f4;padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+<body style="margin:0;padding:0;background-color:#f0ede8;font-family:'Georgia',serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0ede8;padding:24px 12px 40px;">
+  <tr>
+    <td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
 
-          <!-- Header -->
-          <tr>
-            <td style="text-align:center;padding-bottom:28px;">
-              <span style="display:inline-block;background-color:#e8e3d8;color:#7c6d5a;font-family:sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:6px 16px;border-radius:20px;">
-                Shepherd's Path
-              </span>
-              <p style="margin:12px 0 0;font-family:sans-serif;font-size:13px;color:#9e9085;letter-spacing:1px;text-transform:uppercase;">
-                ${formattedDate}
-              </p>
-            </td>
-          </tr>
+        <!-- HEADER — brand purple with logo -->
+        <tr>
+          <td style="background:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
+            <img src="${logoUrl}"
+                 alt="Shepherd's Path"
+                 width="56" height="56"
+                 style="display:inline-block;width:56px;height:56px;object-fit:contain;margin-bottom:14px;opacity:0.92;" />
+            <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
+              Shepherd&rsquo;s Path
+            </p>
+            <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.38);letter-spacing:1px;">
+              ${formattedDate}
+            </p>
+          </td>
+        </tr>
 
-          <!-- Verse card -->
-          <tr>
-            <td style="background-color:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #ede9e0;">
-              <p style="font-size:11px;font-family:sans-serif;color:#b5a898;text-transform:uppercase;letter-spacing:2px;margin:0 0 20px;">"</p>
-              <p style="font-size:22px;line-height:1.6;color:#3d3530;margin:0 0 24px;font-style:italic;">
-                ${data.text}
-              </p>
-              <p style="font-family:sans-serif;font-size:14px;font-weight:600;color:#8b6f47;margin:0 0 32px;letter-spacing:0.5px;">
-                — ${data.reference}
-              </p>
+        <!-- VERSE CARD -->
+        <tr>
+          <td style="background-color:#ffffff;padding:40px 36px 36px;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;">
 
-              <!-- Divider -->
-              <hr style="border:none;border-top:1px solid #ede9e0;margin:0 0 28px;" />
+            <!-- Big opening quote -->
+            <p style="margin:0 0 16px;font-size:48px;line-height:1;color:#c8b8e8;font-family:Georgia,serif;opacity:0.6;">&ldquo;</p>
 
-              <!-- Encouragement -->
-              <p style="font-family:sans-serif;font-size:15px;line-height:1.7;color:#5c5248;margin:0 0 32px;">
-                ${data.encouragement}
-              </p>
+            <!-- Scripture text -->
+            <p style="margin:0 0 24px;font-size:21px;line-height:1.65;color:#1e1530;font-style:italic;font-family:Georgia,serif;">
+              ${data.text}
+            </p>
 
-              <!-- CTA button -->
-              <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td align="center">
-                    <a href="${data.appUrl}"
-                       style="display:inline-block;background-color:#8b6f47;color:#ffffff;font-family:sans-serif;font-size:14px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:40px;letter-spacing:0.5px;">
-                      Reflect with AI &rarr;
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+            <!-- Reference -->
+            <p style="margin:0 0 28px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#7a018d;letter-spacing:1px;text-transform:uppercase;">
+              &mdash;&nbsp;${data.reference}
+            </p>
 
-          ${data.artImageUrl ? `
-          <!-- Daily Art image -->
-          <tr>
-            <td style="padding-top:20px;">
-              <a href="${data.appUrl}" style="display:block;text-decoration:none;">
-                <img src="${data.artImageUrl}"
-                     alt="Today's Daily Beauty — ${data.reference}"
-                     width="560"
-                     style="width:100%;max-width:560px;border-radius:16px;display:block;border:0;" />
-              </a>
-              <p style="font-family:sans-serif;font-size:11px;color:#b5a898;text-align:center;margin:8px 0 0;letter-spacing:1px;text-transform:uppercase;">
-                Today&rsquo;s Daily Beauty &mdash; tap to open the app
-              </p>
-            </td>
-          </tr>
-          ` : ''}
+            <!-- Accent line -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <tr>
+                <td style="height:2px;background:linear-gradient(90deg,#7a018d,#442f74,transparent);border-radius:2px;"></td>
+              </tr>
+            </table>
 
-          <!-- Footer -->
-          <tr>
-            <td style="text-align:center;padding-top:24px;">
-              <p style="font-family:sans-serif;font-size:12px;color:#b5a898;margin:0;">
-                You're receiving this because you subscribed to Shepherd's Path.
-              </p>
-              <p style="font-family:sans-serif;font-size:12px;color:#b5a898;margin:6px 0 0;">
-                <a href="${data.appUrl}/unsubscribe?email={{email}}" style="color:#b5a898;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
+            <!-- Encouragement -->
+            <p style="margin:0 0 36px;font-family:Arial,sans-serif;font-size:15px;line-height:1.75;color:#3d3048;">
+              ${data.encouragement}
+            </p>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+            <!-- CTA button -->
+            <table cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td align="center">
+                  <a href="${data.appUrl}"
+                     style="display:inline-block;background:linear-gradient(135deg,#7a018d,#442f74);color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:50px;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(122,1,141,0.3);">
+                    Open Shepherd&rsquo;s Path &rarr;
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        ${data.artImageUrl ? `
+        <!-- Daily art image -->
+        <tr>
+          <td style="border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;padding:0 0 0;">
+            <a href="${data.appUrl}" style="display:block;text-decoration:none;">
+              <img src="${data.artImageUrl}"
+                   alt="Today's Daily Beauty"
+                   width="560"
+                   style="width:100%;max-width:560px;display:block;border:0;" />
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color:#1e1530;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;padding:12px 24px;text-align:center;">
+            <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1.5px;text-transform:uppercase;">
+              A Moment of Beauty &mdash; tap to open
+            </p>
+          </td>
+        </tr>
+        ` : ''}
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="background-color:#2d1b5e;border-radius:0 0 20px 20px;padding:24px 32px;text-align:center;">
+            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">
+              You&rsquo;re receiving this because you subscribed to daily scripture from Shepherd&rsquo;s Path.
+            </p>
+            <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.3);">
+              <a href="${data.appUrl}/api/unsubscribe?email={{email}}" style="color:rgba(255,255,255,0.35);text-decoration:underline;">Unsubscribe</a>
+              &nbsp;&nbsp;·&nbsp;&nbsp;
+              <a href="${data.appUrl}" style="color:rgba(255,255,255,0.35);text-decoration:none;">shepherdspath.app</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Bottom breathing room -->
+        <tr>
+          <td style="padding-top:24px;text-align:center;">
+            <p style="margin:0;font-family:Georgia,serif;font-size:12px;color:#b5a898;font-style:italic;">
+              &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo; &mdash; Psalm 119:105
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
 }
@@ -175,8 +207,8 @@ export function buildDailyVerseEmailText(data: DailyVerseEmailData): string {
 
 ${data.encouragement}
 
-Open the app to reflect with AI: ${data.appUrl}
+Open Shepherd's Path: ${data.appUrl}
 
 ---
-To unsubscribe, visit: ${data.appUrl}/unsubscribe`;
+To unsubscribe: ${data.appUrl}/api/unsubscribe`;
 }
