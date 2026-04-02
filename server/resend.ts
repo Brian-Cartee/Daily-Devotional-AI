@@ -69,8 +69,6 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
-  const logoUrl = `${data.appUrl}/sp-cross-logo.png`;
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,14 +82,12 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
     <td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
 
-        <!-- HEADER — brand purple with logo -->
+        <!-- HEADER — brand purple with cross icon -->
         <tr>
-          <td style="background:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-            <img src="${logoUrl}"
-                 alt="Shepherd's Path"
-                 width="56" height="56"
-                 style="display:inline-block;width:56px;height:56px;object-fit:contain;margin-bottom:14px;opacity:0.92;" />
-            <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
+          <td style="background-color:#2d1b5e;background-image:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
+            <!-- Cross icon rendered as styled text — works in all email clients -->
+            <p style="margin:0 0 4px;font-size:36px;line-height:1;color:rgba(255,255,255,0.82);font-family:Georgia,serif;">&#10011;</p>
+            <p style="margin:10px 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
               Shepherd&rsquo;s Path
             </p>
             <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.38);letter-spacing:1px;">

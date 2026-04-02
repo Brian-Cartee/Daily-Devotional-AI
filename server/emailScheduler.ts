@@ -51,7 +51,9 @@ async function sendDailyEmailsToAllSubscribers() {
       return;
     }
 
-    const appUrl = process.env.APP_URL || "https://your-app.replit.app";
+    const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+    const appUrl = process.env.APP_URL
+      || (replitDomain ? `https://${replitDomain}` : "https://shepherdspath.app");
     const { client, fromEmail } = await getUncachableResendClient();
 
     // Fetch today's daily art image URL (if generated)
