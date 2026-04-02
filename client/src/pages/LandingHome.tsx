@@ -30,6 +30,7 @@ import {
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
+import { HomeEntryScreen, shouldShowHomeEntry } from "@/components/HomeEntryScreen";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -455,6 +456,7 @@ const COMMITMENT_POINTS = [
 ];
 
 export default function LandingHome() {
+  const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
   const [expanded, setExpanded] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [shared, setShared] = useState(false);
@@ -576,6 +578,7 @@ export default function LandingHome() {
       <AnimatePresence>
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
+      {showEntryScreen && <HomeEntryScreen onDismiss={() => setShowEntryScreen(false)} />}
       <AnimatePresence>
         {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); focusHeroInput(); }} />}
       </AnimatePresence>

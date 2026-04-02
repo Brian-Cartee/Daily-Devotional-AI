@@ -42,14 +42,16 @@ export function TheWhisper() {
         ))}
       </div>
 
-      <div className="relative z-10 flex flex-col items-center pt-16 px-6">
-        <div className="w-8 h-8 mb-2 opacity-60">
-          <svg viewBox="0 0 32 32" fill="none">
-            <rect x="13" y="2" width="6" height="28" rx="2" fill="white" opacity="0.9"/>
-            <rect x="4" y="10" width="24" height="6" rx="2" fill="white" opacity="0.9"/>
-          </svg>
+      <div className="relative z-10 flex flex-col items-center pt-12 px-6">
+        <div className="w-36 h-20 rounded-xl overflow-hidden mb-3 opacity-80"
+          style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }}>
+          <img
+            src="/__mockup/images/hero-landing.png"
+            alt="The Path"
+            className="w-full h-full object-cover object-center"
+          />
         </div>
-        <p className="text-white/40 text-xs tracking-[0.25em] uppercase font-light mt-1">Shepherd's Path</p>
+        <p className="text-white/40 text-xs tracking-[0.25em] uppercase font-light">Shepherd's Path</p>
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-8 -mt-16">
