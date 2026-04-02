@@ -407,3 +407,9 @@ id = "VZOtNPZasPJu0lQvbqFxg"
 uri = "file://client/public/app-store-screenshots/ss-10-jesus.png"
 type = "image"
 title = "10 — Beginning with Jesus"
+
+[[outputs]]
+id = "iYtXTaS3CMZkjql5ZvT6n"
+uri = "file://client/public/shepherds-path-screenshots.tar.gz"
+type = "unspecified"
+title = "All 9 App Store Screenshots"
