@@ -88,8 +88,8 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
             <!-- SP cross+path logo -->
             <img src="${data.appUrl}/sp-cross-logo.png"
                  alt="Shepherd's Path"
-                 width="60" height="60"
-                 style="display:block;margin:0 auto 10px;width:60px;height:60px;object-fit:contain;" />
+                 width="84" height="84"
+                 style="display:block;margin:0 auto 14px;width:84px;height:84px;object-fit:contain;" />
             <p style="margin:10px 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
               Shepherd&rsquo;s Path
             </p>
