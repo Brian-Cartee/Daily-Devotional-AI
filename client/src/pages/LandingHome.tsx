@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { isIOS } from "@/lib/platform";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, MessageCircle, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy } from "lucide-react";
@@ -1602,6 +1603,7 @@ export default function LandingHome() {
                 </svg>
                 App Store
               </a>
+              {!isIOS() && (
               <a
                 href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
                 target="_blank"
@@ -1614,6 +1616,7 @@ export default function LandingHome() {
                 </svg>
                 Google Play
               </a>
+              )}
             </div>
             {/* Website bonus — framed as a plus, not a fallback */}
             <p className="text-[12px] text-foreground/50 text-center">

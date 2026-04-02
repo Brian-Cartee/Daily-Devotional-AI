@@ -1927,6 +1927,44 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
     }
   });
 
+  app.post("/api/stripe/restore", async (req, res) => {
+    const { email } = req.body as { email: string };
+    if (!email) return res.status(400).json({ message: "Email required" });
+
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      const pro = await storage.getProSubscriberByEmail(normalizedEmail);
+      if (pro?.status === "active") {
+        res.json({ restored: true, plan: pro.plan });
+        return;
+      }
+      if (stripe) {
+        const customers = await stripe.customers.list({ email: normalizedEmail, limit: 5 });
+        for (const customer of customers.data) {
+          const subs = await stripe.subscriptions.list({ customer: customer.id, status: "active", limit: 3 });
+          if (subs.data.length > 0) {
+            const sub = subs.data[0];
+            const priceId = sub.items.data[0]?.price?.id ?? "";
+            const plan = priceId.includes("year") || priceId.includes("annual") ? "annual" : "monthly";
+            await storage.upsertProSubscriber({
+              email: normalizedEmail,
+              status: "active",
+              plan,
+              stripeCustomerId: customer.id,
+              stripeSubscriptionId: sub.id,
+            });
+            res.json({ restored: true, plan });
+            return;
+          }
+        }
+      }
+      res.json({ restored: false });
+    } catch (err: any) {
+      console.error("[restore] Error:", err?.message);
+      res.status(500).json({ message: "Restore failed" });
+    }
+  });
+
   app.get("/api/referral/my-code", async (req, res) => {
     const sessionId = req.query.sessionId as string;
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });

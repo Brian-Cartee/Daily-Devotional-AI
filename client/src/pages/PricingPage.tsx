@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Check, Zap, Loader2, ArrowLeft, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church } from "lucide-react";
+import { Check, Zap, Loader2, ArrowLeft, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { isIOS } from "@/lib/platform";
 
 const FREE_FEATURES = [
   { icon: Sun, text: `${AI_FREE_LIMIT} AI responses per day` },
@@ -321,51 +322,108 @@ export default function PricingPage() {
           </div>
 
           <div className="px-6 pb-6 space-y-2">
-            <Button
-              data-testid="btn-pricing-pro-cta"
-              className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
-              onClick={handleCheckout}
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
-              {loading ? "Redirecting…" : plan === "annual" ? "Get Pro — $44.99/yr" : "Get Pro — $5.99/mo"}
-            </Button>
-
-            {/* Trust anchor */}
-            <p className="text-[11px] text-muted-foreground text-center">
-              {plan === "annual"
-                ? "Just $3.75/mo — less than a cup of coffee a month"
-                : "Less than $0.20/day — cancel anytime, no questions asked"}
-            </p>
-
-            {/* Monthly reassurance — shown when annual is selected */}
-            {plan === "annual" && (
-              <p className="text-[11px] text-muted-foreground/55 text-center -mt-1">
-                Prefer month-to-month?{" "}
-                <button
-                  type="button"
-                  onClick={() => setPlan("monthly")}
-                  className="underline hover:text-muted-foreground transition-colors"
+            {isIOS() ? (
+              <>
+                <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3 mb-1">
+                  <Smartphone className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">
+                    To subscribe, visit{" "}
+                    <a
+                      href="https://shepherdspathai.com/pricing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-blue-600 dark:text-blue-400 underline"
+                    >
+                      shepherdspathai.com/pricing
+                    </a>
+                    {" "}in Safari, then sign back in here to unlock Pro.
+                  </p>
+                </div>
+                <Button
+                  data-testid="btn-pricing-pro-cta-ios"
+                  className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+                  onClick={() => window.open("https://shepherdspathai.com/pricing", "_blank")}
                 >
-                  Switch to $5.99/month
-                </button>{" "}
-                — cancel anytime.
-              </p>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Subscribe on the Web
+                </Button>
+                <Button
+                  data-testid="btn-pricing-restore-ios"
+                  variant="ghost"
+                  className="w-full rounded-2xl text-sm text-muted-foreground"
+                  onClick={async () => {
+                    const email = window.prompt("Enter your subscription email to restore access:");
+                    if (!email) return;
+                    try {
+                      const res = await fetch("/api/stripe/restore", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email }),
+                      });
+                      const data = await res.json();
+                      if (data.restored) {
+                        window.location.reload();
+                      } else {
+                        alert("No active subscription found for that email. Please subscribe at shepherdspathai.com/pricing.");
+                      }
+                    } catch {
+                      alert("Could not restore. Please try again.");
+                    }
+                  }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                  Restore Purchase
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  data-testid="btn-pricing-pro-cta"
+                  className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+                  onClick={handleCheckout}
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+                  {loading ? "Redirecting…" : plan === "annual" ? "Get Pro — $44.99/yr" : "Get Pro — $5.99/mo"}
+                </Button>
+
+                {/* Trust anchor */}
+                <p className="text-[11px] text-muted-foreground text-center">
+                  {plan === "annual"
+                    ? "Just $3.75/mo — less than a cup of coffee a month"
+                    : "Less than $0.20/day — cancel anytime, no questions asked"}
+                </p>
+
+                {/* Monthly reassurance — shown when annual is selected */}
+                {plan === "annual" && (
+                  <p className="text-[11px] text-muted-foreground/55 text-center -mt-1">
+                    Prefer month-to-month?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setPlan("monthly")}
+                      className="underline hover:text-muted-foreground transition-colors"
+                    >
+                      Switch to $5.99/month
+                    </button>{" "}
+                    — cancel anytime.
+                  </p>
+                )}
+
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                  <span>
+                    30-day money-back guarantee ·{" "}
+                    <button
+                      type="button"
+                      onClick={() => setLocation("/refund")}
+                      className="underline hover:text-foreground transition-colors"
+                    >
+                      request a refund
+                    </button>
+                  </span>
+                </div>
+              </>
             )}
-
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
-              <span>
-                30-day money-back guarantee ·{" "}
-                <button
-                  type="button"
-                  onClick={() => setLocation("/refund")}
-                  className="underline hover:text-foreground transition-colors"
-                >
-                  request a refund
-                </button>
-              </span>
-            </div>
           </div>
         </motion.div>
       </div>
@@ -396,6 +454,7 @@ export default function PricingPage() {
         </div>
       </motion.div>
 
+      {!isIOS() && (<>
       {/* ── Divider: Individual → Ministry ── */}
       <div className="max-w-2xl mx-auto px-5 pb-6">
         <div className="flex items-center gap-4">
@@ -512,6 +571,7 @@ export default function PricingPage() {
           <p className="text-[11px] text-muted-foreground mt-3">partnerships@shepherdspathai.com · Most churches are live within a week</p>
         </div>
       </motion.div>
+      </>)}
 
       {/* FAQ section */}
       <motion.div
