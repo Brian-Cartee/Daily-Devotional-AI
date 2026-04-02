@@ -353,3 +353,57 @@ id = "f70zfdzVibv35PfpQTzIv"
 uri = "file://attached_assets/stock_images/aurora-lake_3.jpg"
 type = "image"
 title = "aurora borealis northern lights over still lake reflection purple green dramatic night sky"
+
+[[outputs]]
+id = "ATGDFjjTSBJZoydca0x_l"
+uri = "file://client/public/app-store-screenshots/ss-02-welcome.png"
+type = "image"
+title = "02 — Begin your journey"
+
+[[outputs]]
+id = "6_mh97nlDR_ZRfDdxEhb3"
+uri = "file://client/public/app-store-screenshots/ss-03-home.png"
+type = "image"
+title = "03 — A gentle invitation"
+
+[[outputs]]
+id = "KUwmN5AWZ3-K9ynIB3lSb"
+uri = "file://client/public/app-store-screenshots/ss-04-devotional.png"
+type = "image"
+title = "04 — A new word every morning"
+
+[[outputs]]
+id = "7X58U1v8ZTmh2Krwf8vGs"
+uri = "file://client/public/app-store-screenshots/ss-05-guidance.png"
+type = "image"
+title = "05 — Share what's on your heart"
+
+[[outputs]]
+id = "rJlff9DV1jZfHPORIcE4-"
+uri = "file://client/public/app-store-screenshots/ss-06-journeys.png"
+type = "image"
+title = "06 — Guided paths through Scripture"
+
+[[outputs]]
+id = "nMUqh4KNIJUKOFJ2Myt_e"
+uri = "file://client/public/app-store-screenshots/ss-07-bible.png"
+type = "image"
+title = "07 — Every book. Every chapter."
+
+[[outputs]]
+id = "Gtw-J-yDJwMQzQw4O9kf5"
+uri = "file://client/public/app-store-screenshots/ss-08-prayer.png"
+type = "image"
+title = "08 — Pray with believers"
+
+[[outputs]]
+id = "wbiaQZAys7GySBlrzFxmQ"
+uri = "file://client/public/app-store-screenshots/ss-09-iron-circle.png"
+type = "image"
+title = "09 — Iron Circle"
+
+[[outputs]]
+id = "VZOtNPZasPJu0lQvbqFxg"
+uri = "file://client/public/app-store-screenshots/ss-10-jesus.png"
+type = "image"
+title = "10 — Beginning with Jesus"
