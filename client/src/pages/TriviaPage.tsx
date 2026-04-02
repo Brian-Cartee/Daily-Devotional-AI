@@ -3,13 +3,14 @@ import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy, Share2, RefreshCw, ChevronRight, BookOpen, ArrowLeft,
-  Copy, Check, Star, Users, Sparkles, BookMarked
+  Copy, Check, Star, Users, Sparkles, BookMarked, ImageIcon, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavBar } from "@/components/NavBar";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import type { TriviaQuestion } from "@shared/schema";
+import { createTriviaScoreCardImage } from "@/lib/shareImage";
 
 const CATEGORIES = [
   { id: "life-of-jesus",    label: "Life of Jesus",     emoji: "✝️", from: "from-rose-500",    to: "to-amber-500",   bg: "from-rose-50 to-amber-50",   border: "border-rose-200",   dark: "dark:from-rose-950/40 dark:to-amber-950/30 dark:border-rose-800/40" },
@@ -67,6 +68,8 @@ export default function TriviaPage() {
   const [challengeCtx, setChallengeCtx] = useState<ChallengeCtx | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
+  const [playCount, setPlayCount] = useState(0);
   const [playerName, setPlayerName] = useState(() =>
     typeof window !== "undefined" ? (localStorage.getItem("sp_display_name") || "") : ""
   );
@@ -96,8 +99,13 @@ export default function TriviaPage() {
     setCategory(cat);
     setPhase("loading");
     try {
-      const res = await fetch(`/api/trivia/questions/${cat.id}`);
-      const data = await res.json();
+      const [qRes, playRes] = await Promise.all([
+        fetch(`/api/trivia/questions/${cat.id}`),
+        fetch("/api/trivia/play", { method: "POST" }),
+      ]);
+      const data = await qRes.json();
+      const playData = await playRes.json().catch(() => ({ count: 0 }));
+      if (playData.count) setPlayCount(playData.count);
       if (!data.questions?.length) throw new Error("No questions");
       setQuestions(data.questions);
       setCurrentIdx(0);
@@ -169,15 +177,42 @@ export default function TriviaPage() {
   async function shareResult(score: number) {
     const url = shareUrl || window.location.href;
     const catLabel = category?.label || challengeCtx?.categoryLabel || "Bible";
-    const text = `I scored ${score}/${questions.length} on the ${catLabel} challenge on Shepherd's Path! Can you beat me? 📖`;
+    const catEmoji = category?.emoji
+      ?? (challengeCtx?.category ? (CATEGORIES.find(c => c.id === challengeCtx.category)?.emoji ?? "📖") : "📖");
+    const { label } = getScoreLabel(score, questions.length);
+    const resultVerse = getResultVerse(score);
+    const shareText = `I scored ${score}/${questions.length} on the ${catLabel} Bible Challenge! ${label} 📖 Can you beat me?`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Bible Challenge — Shepherd's Path", text, url });
+    setIsGeneratingCard(true);
+    let imageBlob: Blob | null = null;
+    try {
+      imageBlob = await createTriviaScoreCardImage({
+        score,
+        total: questions.length,
+        label,
+        categoryEmoji: catEmoji,
+        categoryLabel: catLabel,
+        verse: resultVerse.verse,
+        verseRef: resultVerse.ref,
+      });
+    } catch { imageBlob = null; }
+    setIsGeneratingCard(false);
+
+    try {
+      if (imageBlob && typeof navigator.canShare === "function") {
+        const file = new File([imageBlob], "bible-challenge.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text: shareText, url });
+          return;
+        }
+      }
+      if (navigator.share) {
+        await navigator.share({ title: "Bible Challenge — Shepherd's Path", text: shareText, url });
         return;
-      } catch { /* fallthrough to copy */ }
-    }
-    await navigator.clipboard.writeText(`${text}\n${url}`);
+      }
+    } catch { /* user cancelled — do nothing */ }
+
+    await navigator.clipboard.writeText(`${shareText}\n${url}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
     toast({ title: "Copied to clipboard!", description: "Paste it anywhere to share your challenge." });
@@ -412,15 +447,31 @@ export default function TriviaPage() {
                 </div>
               </div>
 
+              {/* Play count social proof */}
+              {playCount > 1 && (
+                <p className="text-center text-[12px] text-white/50 mb-3 flex items-center justify-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  {playCount.toLocaleString()} {playCount === 1 ? "person" : "people"} played today
+                </p>
+              )}
+
               {/* Share button — the viral hook */}
               <Button
                 onClick={() => shareResult(score)}
+                disabled={isGeneratingCard}
                 data-testid="btn-share-score"
-                className="w-full h-12 text-[15px] font-semibold rounded-xl mb-3 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90"
+                className="w-full h-12 text-[15px] font-semibold rounded-xl mb-1 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90"
               >
-                {copied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-                {copied ? "Link copied!" : "Challenge a Friend"}
+                {isGeneratingCard
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating your card…</>
+                  : copied
+                  ? <><Check className="w-4 h-4 mr-2" />Link copied!</>
+                  : <><ImageIcon className="w-4 h-4 mr-2" />Share My Score Card</>
+                }
               </Button>
+              <p className="text-center text-[11px] text-muted-foreground mb-3">
+                📸 Save the card → share to Instagram Stories, iMessage, WhatsApp
+              </p>
 
               <div className="grid grid-cols-2 gap-2.5 mb-5">
                 <Button

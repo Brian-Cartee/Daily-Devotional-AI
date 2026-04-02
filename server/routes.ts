@@ -2634,6 +2634,21 @@ ${historyNote}`;
     }
   });
 
+  // ── Trivia play counter (in-memory, daily) ────────────────────────────────
+  const triviaPlayCounts = new Map<string, number>();
+  function todayKey() { return new Date().toISOString().split("T")[0]; }
+
+  app.post("/api/trivia/play", (_req, res) => {
+    const k = todayKey();
+    const n = (triviaPlayCounts.get(k) ?? 0) + 1;
+    triviaPlayCounts.set(k, n);
+    res.json({ count: n });
+  });
+
+  app.get("/api/trivia/stats", (_req, res) => {
+    res.json({ count: triviaPlayCounts.get(todayKey()) ?? 0 });
+  });
+
   // ── Admin endpoints ────────────────────────────────────────────────────────
   function adminAuth(req: any, res: any): boolean {
     const password = process.env.ADMIN_PASSWORD;

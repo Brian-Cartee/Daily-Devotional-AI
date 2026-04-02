@@ -365,6 +365,137 @@ export async function createAchievementShareImage(achievement: {
   });
 }
 
+export async function createTriviaScoreCardImage(opts: {
+  score: number;
+  total: number;
+  label: string;
+  categoryEmoji: string;
+  categoryLabel: string;
+  verse: string;
+  verseRef: string;
+}): Promise<Blob> {
+  const S = 1080;
+  const canvas = document.createElement("canvas");
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext("2d")!;
+
+  // -- Background: brand purple gradient
+  const bg = ctx.createLinearGradient(0, 0, S * 0.65, S);
+  bg.addColorStop(0, "#5a3d96");
+  bg.addColorStop(0.45, "#3d2468");
+  bg.addColorStop(1, "#1a0d3e");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+
+  // -- Radial shimmer at top center
+  const radial = ctx.createRadialGradient(S / 2, 60, 0, S / 2, 60, 620);
+  radial.addColorStop(0, "rgba(255,255,255,0.11)");
+  radial.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = radial;
+  ctx.fillRect(0, 0, S, S);
+
+  // -- Golden top accent line
+  horizontalGlowLine(ctx, 0, "rgba(251,191,36,0.85)");
+  horizontalGlowLine(ctx, 2, "rgba(255,255,255,0.5)");
+
+  // -- Brand header
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.42)";
+  ctx.font = "600 27px Georgia, serif";
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 8;
+  ctx.fillText("SHEPHERD'S PATH", S / 2, 88);
+  ctx.shadowBlur = 0;
+  horizontalGlowLine(ctx, 106, "rgba(255,255,255,0.15)");
+
+  // -- Category badge (pill)
+  const catText = `${opts.categoryEmoji}  ${opts.categoryLabel.toUpperCase()}`;
+  ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, Arial, sans-serif";
+  const catW = ctx.measureText(catText).width + 56;
+  const catH = 58;
+  const catX = (S - catW) / 2;
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  drawRoundRect(ctx, catX, 132, catW, catH, catH / 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.2)";
+  ctx.lineWidth = 1;
+  drawRoundRect(ctx, catX, 132, catW, catH, catH / 2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,0.80)";
+  ctx.textAlign = "center";
+  ctx.fillText(catText, S / 2, 169);
+
+  // -- Score (big mixed-size)
+  const numStr = String(opts.score);
+  const denStr = `/${opts.total}`;
+
+  ctx.font = `bold 280px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  const numW = ctx.measureText(numStr).width;
+  ctx.font = `bold 120px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  const denW = ctx.measureText(denStr).width;
+
+  const scoreBlockW = numW + denW;
+  const scoreX = (S - scoreBlockW) / 2;
+
+  ctx.textAlign = "left";
+  ctx.font = `bold 280px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,1)";
+  ctx.shadowColor = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur = 30;
+  ctx.fillText(numStr, scoreX, 470);
+
+  ctx.font = `bold 120px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.38)";
+  ctx.fillText(denStr, scoreX + numW, 470);
+  ctx.shadowBlur = 0;
+
+  // -- Performance label
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#fbbf24";
+  ctx.font = `bold 58px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 16;
+  ctx.fillText(opts.label, S / 2, 558);
+  ctx.shadowBlur = 0;
+
+  // -- Divider
+  horizontalGlowLine(ctx, 594, "rgba(255,255,255,0.18)");
+
+  // -- Verse quote
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = `italic 38px Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 12;
+  const verseEndY = wrapText(ctx, `\u201C${opts.verse}\u201D`, S / 2, 664, 870, 58);
+  ctx.shadowBlur = 0;
+
+  // -- Verse reference
+  ctx.fillStyle = "rgba(255,255,255,0.42)";
+  ctx.font = `32px Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.fillText(`\u2014 ${opts.verseRef}`, S / 2, verseEndY + 52);
+
+  // -- Bottom CTA strip
+  const stripY = S - 110;
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  ctx.fillRect(0, stripY, S, 110);
+  horizontalGlowLine(ctx, stripY, "rgba(255,255,255,0.12)");
+
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  ctx.font = `bold 34px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillText("Can you beat my score?", S / 2, stripY + 46);
+  ctx.fillStyle = "rgba(255,255,255,0.42)";
+  ctx.font = `24px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  ctx.fillText("Shepherd's Path — free on the App Store", S / 2, stripY + 80);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob!), "image/png");
+  });
+}
+
 export async function createShareImage(
   verseText: string,
   reference: string,
