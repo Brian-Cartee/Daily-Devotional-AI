@@ -222,7 +222,15 @@ Current build used iOS 18.5 SDK — non-blocking for v1.1 submission but must be
 Fix: Update Xcode via Mac App Store → open project → Archive → upload new build. Zero code changes needed.
 
 **NOVEMBER — DST Adjustment**
-When Daylight Saving ends (EST = UTC-5), change the SMS scheduler hour from 12 → 13 in `server/smsScheduler.ts` to maintain 8 AM ET delivery.
+When Daylight Saving ends (PST = UTC-8), update both schedulers to maintain local delivery times:
+- `server/emailScheduler.ts`: change `TARGET_HOUR_UTC` from 12 → 13
+- `server/smsScheduler.ts`: change `msUntilNextHour(13)` → `msUntilNextHour(14)`
+
+---
+
+## 💡 Feature Backlog (revisit when user base grows)
+
+- **Personalized delivery times** — Let each subscriber choose their preferred email/SMS arrival time instead of the global fixed schedule. Would require: `preferred_hour` field on `subscribers` + `sms_conversations` tables, hourly scheduler loop that sends to matching subscribers, and a settings UI (or SMS reply command like "Reply TIME 8AM").
 
 ---
 
