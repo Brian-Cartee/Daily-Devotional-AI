@@ -581,7 +581,7 @@ export default function LandingHome() {
       </AnimatePresence>
       {showEntryScreen && <HomeEntryScreen onDismiss={() => setShowEntryScreen(false)} />}
       <AnimatePresence>
-        {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); focusHeroInput(); }} />}
+        {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); navigate("/guidance"); }} />}
       </AnimatePresence>
       <AnimatePresence>
         {showRhythmSetup && (
