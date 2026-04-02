@@ -1322,6 +1322,33 @@ export default function LandingHome() {
           </Link>
         </motion.div>
 
+        {/* Our Calling card */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.415 }}
+          className="mt-3"
+        >
+          <Link href="/calling">
+            <div
+              data-testid="card-calling-entry"
+              className="relative rounded-2xl border border-purple-200/70 dark:border-purple-800/40 bg-gradient-to-br from-purple-50/80 to-violet-50/60 dark:from-purple-950/30 dark:to-violet-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
+            >
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#7A018D] to-[#442f74]" />
+              <div className="px-5 py-4 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7A018D] to-[#442f74] flex items-center justify-center shrink-0 shadow-md shadow-purple-500/25">
+                  <Share2 className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-foreground leading-snug">Our Calling</p>
+                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Sharing is more than caring — it's our calling.</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-purple-400 rotate-[-90deg] shrink-0" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
         {/* Prayer Wall entry card */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}

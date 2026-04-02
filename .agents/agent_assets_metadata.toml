@@ -329,3 +329,9 @@ id = "FpcXNaprtZkXiI-EXxds-"
 uri = "file://client/public/cross-path.svg"
 type = "image"
 title = "Cross + Path — SVG (transparent, any size)"
+
+[[outputs]]
+id = "YBB40ean8jUDBs4WaTJPA"
+uri = "file://attached_assets/stock_images/natural-mountain-lake.jpg"
+type = "image"
+title = "peaceful mountain lake forest reflection sunrise"

@@ -1454,6 +1454,35 @@ Return only valid JSON. No markdown. No extra keys.`,
     "A lone tree on a cliff edge over the sea at golden hour, wind in its branches, steadfast and beautiful",
   ];
 
+  // Curated natural photos rotate in to keep the daily art grounded and real
+  // Schedule: each photo appears exactly 2x per week (~57% natural, ~43% AI)
+  const NATURAL_PHOTO_SCHEDULE: Record<number, { file: string; scripture: string; reference: string; reflection: string }> = {
+    0: { // Sunday
+      file: "natural-sunset.jpg",
+      scripture: "The heavens declare the glory of God; the skies proclaim the work of his hands.",
+      reference: "Psalm 19:1",
+      reflection: "When the sky blazes with color, creation is singing its Maker's name.",
+    },
+    2: { // Tuesday
+      file: "natural-mountain.jpg",
+      scripture: "He leads me beside quiet waters, he refreshes my soul.",
+      reference: "Psalm 23:2-3",
+      reflection: "In still water, the soul finds what it was always searching for.",
+    },
+    3: { // Wednesday
+      file: "natural-sunset.jpg",
+      scripture: "Be still, and know that I am God.",
+      reference: "Psalm 46:10",
+      reflection: "The burning sky asks nothing. Only that you stop, and witness.",
+    },
+    5: { // Friday
+      file: "natural-mountain.jpg",
+      scripture: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.",
+      reference: "Psalm 121:1-2",
+      reflection: "The mountains have always pointed upward. So does the soul, when it is still.",
+    },
+  };
+
   app.get("/api/daily-art", async (req, res) => {
     try {
       // Use US Eastern Time (UTC-5) so new art rolls over at midnight ET
@@ -1463,7 +1492,20 @@ Return only valid JSON. No markdown. No extra keys.`,
       const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
       const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
 
-      // Return cached if already generated today
+      // Check if today is a curated natural photo day
+      const dayOfWeekET = nowET.getDay();
+      const naturalPhoto = NATURAL_PHOTO_SCHEDULE[dayOfWeekET];
+      if (naturalPhoto) {
+        if (fs.existsSync(metaFile)) {
+          const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
+          return res.json({ imageUrl: `/daily-art/${naturalPhoto.file}`, ...meta });
+        }
+        const { file, ...scriptureData } = naturalPhoto;
+        fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
+        return res.json({ imageUrl: `/daily-art/${naturalPhoto.file}`, ...scriptureData });
+      }
+
+      // Return cached AI art if already generated today
       if (fs.existsSync(imgFile) && fs.existsSync(metaFile)) {
         const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
         return res.json({ imageUrl: `/daily-art/${today}.jpg`, ...meta });
