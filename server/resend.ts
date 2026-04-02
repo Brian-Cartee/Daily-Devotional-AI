@@ -4,6 +4,15 @@ import { Resend } from 'resend';
 let connectionSettings: any;
 
 async function getCredentials() {
+  // Try env var first — reliable across restarts and scheduler runs
+  if (process.env.RESEND_API_KEY) {
+    return {
+      apiKey: process.env.RESEND_API_KEY,
+      fromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+    };
+  }
+
+  // Fall back to Replit Connectors integration
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -11,8 +20,8 @@ async function getCredentials() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL
     : null;
 
-  if (!xReplitToken) {
-    throw new Error('X-Replit-Token not found for repl/depl');
+  if (!xReplitToken || !hostname) {
+    throw new Error('Resend not connected — set RESEND_API_KEY secret');
   }
 
   connectionSettings = await fetch(
@@ -28,7 +37,7 @@ async function getCredentials() {
     .then((data) => data.items?.[0]);
 
   if (!connectionSettings || !connectionSettings.settings.api_key) {
-    throw new Error('Resend not connected');
+    throw new Error('Resend not connected — set RESEND_API_KEY secret');
   }
 
   return {
