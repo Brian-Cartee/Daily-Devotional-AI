@@ -79,6 +79,9 @@ export default function GuidancePage() {
   const userName = getUserName() ?? undefined;
   const framework = getTodayFramework();
 
+  const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
+  useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
+
   const [guidanceMode, setGuidanceModeState] = useState<GuidanceMode>(() => getGuidanceMode());
 
   const handleModeChange = (mode: GuidanceMode) => {
@@ -389,12 +392,25 @@ export default function GuidancePage() {
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
-                    Lay Your Burdens Down
-                  </h1>
-                  <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
-                    Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now. A word from Scripture and a prayer written for your exact moment await.
-                  </p>
+                  {isFirstVisit ? (
+                    <>
+                      <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
+                        What's actually going on with you right now?
+                      </h1>
+                      <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
+                        The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is. A scripture for your exact moment and a prayer written just for you are waiting on the other side.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
+                        Lay Your Burdens Down
+                      </h1>
+                      <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
+                        Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now. A word from Scripture and a prayer written for your exact moment await.
+                      </p>
+                    </>
+                  )}
 
                   {/* Today's framework suggestion */}
                   <div className="pt-4 border-t border-border/30">

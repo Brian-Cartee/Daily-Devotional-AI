@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, Play, Square, X } from "lucide-react";
+import { ArrowRight, Loader2, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
@@ -24,10 +24,13 @@ interface WelcomeOverlayProps {
 }
 
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
-  const { toggle, stop, preload, playing, loading, progress } = useTTS();
+  const { play, stop, toggle, playing, loading, progress } = useTTS();
 
   useEffect(() => {
-    preload(WELCOME_SCRIPT, getUserVoice());
+    const timer = setTimeout(() => {
+      play(WELCOME_SCRIPT, getUserVoice());
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleDismiss = () => {
@@ -90,20 +93,8 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </div>
         </div>
 
-        {/* Primary CTA — dominant, immediately visible */}
-        <div className="shrink-0 px-4 pt-5 pb-3 bg-background">
-          <Button
-            data-testid="btn-start-exploring"
-            className="w-full rounded-2xl font-bold py-5 px-8 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0 justify-center gap-2"
-            onClick={handleDismiss}
-          >
-            Share what you're carrying today
-            <ArrowRight className="w-4 h-4 shrink-0" />
-          </Button>
-        </div>
-
-        {/* Audio — optional gift, below the CTA */}
-        <div className="shrink-0 px-4 pb-4 bg-background">
+        {/* Audio strip — auto-playing, prominent */}
+        <div className="shrink-0 px-4 pt-4 pb-3 bg-background">
           <button
             data-testid="btn-toggle-audio"
             onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
@@ -129,7 +120,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   ? <Loader2 className="w-4 h-4 text-primary animate-spin" />
                   : playing
                     ? <Square className="w-3.5 h-3.5 text-white" />
-                    : <Play className="w-4 h-4 text-white translate-x-[1px]" />
+                    : <span className="text-white text-[15px]">▶</span>
                 }
               </div>
 
@@ -138,13 +129,19 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   className="text-[13px] font-bold leading-tight"
                   style={{ color: playing ? "rgba(255,255,255,0.95)" : "#3b1e8e" }}
                 >
-                  {loading ? "Preparing welcome…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Or hear a personal welcome first  👂"}
+                  {loading
+                    ? "Preparing your welcome…"
+                    : playing
+                      ? "Playing — tap to stop"
+                      : started
+                        ? "Replay welcome message"
+                        : "Hear your welcome message"}
                 </p>
                 <p
                   className="text-[11px] mt-0.5 leading-none"
                   style={{ color: playing ? "rgba(255,255,255,0.5)" : "#7c5cbf" }}
                 >
-                  {started && !loading ? "" : "~30 seconds · optional"}
+                  {loading ? "Just a moment…" : started && !loading ? "" : "~30 seconds · plays automatically"}
                 </p>
                 {started && (
                   <div className="mt-2 w-full h-1 rounded-full overflow-hidden" style={{ background: playing ? "rgba(255,255,255,0.15)" : "rgba(124,60,237,0.15)" }}>
@@ -176,7 +173,19 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </button>
         </div>
 
-        {/* Scrollable context — for the curious, not required for the hurting */}
+        {/* Primary CTA */}
+        <div className="shrink-0 px-4 pb-4 bg-background">
+          <Button
+            data-testid="btn-start-exploring"
+            className="w-full rounded-2xl font-bold py-5 px-8 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0 justify-center gap-2"
+            onClick={handleDismiss}
+          >
+            Share what you're carrying today
+            <ArrowRight className="w-4 h-4 shrink-0" />
+          </Button>
+        </div>
+
+        {/* Scrollable context — for the curious */}
         <div className="bg-background px-5 pt-1 pb-5 space-y-3 overflow-y-auto flex-1 border-t border-border/30">
           <div className="rounded-2xl border border-primary/30 bg-primary/8 dark:bg-primary/12 px-5 py-4 space-y-3 mt-3">
             <p className="text-[13px] font-bold text-foreground leading-snug">Here's how it works</p>
