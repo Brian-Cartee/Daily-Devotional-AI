@@ -135,14 +135,14 @@ export function getPlanProgress(planId: string): Set<number> {
 export function markDayComplete(planId: string, day: number): Set<number> {
   const progress = getPlanProgress(planId);
   progress.add(day);
-  localStorage.setItem(`sp_rp_${planId}`, JSON.stringify([...progress]));
+  localStorage.setItem(`sp_rp_${planId}`, JSON.stringify(Array.from(progress)));
   return progress;
 }
 
 export function markDayIncomplete(planId: string, day: number): Set<number> {
   const progress = getPlanProgress(planId);
   progress.delete(day);
-  localStorage.setItem(`sp_rp_${planId}`, JSON.stringify([...progress]));
+  localStorage.setItem(`sp_rp_${planId}`, JSON.stringify(Array.from(progress)));
   return progress;
 }
 

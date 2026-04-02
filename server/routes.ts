@@ -94,8 +94,8 @@ function isRateLimited(key: string, maxRequests: number, windowMs: number): bool
 // Prune the rate limit store every hour to prevent memory growth
 setInterval(() => {
   const cutoff = Date.now() - 3_600_000;
-  for (const [key, timestamps] of rateLimitStore) {
-    const recent = timestamps.filter(t => t > cutoff);
+  for (const [key, timestamps] of Array.from(rateLimitStore)) {
+    const recent = timestamps.filter((t: number) => t > cutoff);
     if (recent.length === 0) rateLimitStore.delete(key);
     else rateLimitStore.set(key, recent);
   }
@@ -1561,7 +1561,7 @@ Return only valid JSON. No markdown. No extra keys.`,
         response_format: "url",
       });
 
-      const imageUrl = imageRes.data[0].url;
+      const imageUrl = imageRes.data?.[0]?.url;
       if (!imageUrl) return res.json({ imageUrl: null, ...scriptureData });
 
       // Download and save the image
@@ -1800,7 +1800,7 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
         style: "vivid",
       });
 
-      const tempUrl = response.data[0]?.url;
+      const tempUrl = response.data?.[0]?.url;
       if (!tempUrl) return res.status(500).json({ message: "No image returned" });
 
       // Download and save permanently — OpenAI URLs expire in ~1hr

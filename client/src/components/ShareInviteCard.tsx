@@ -79,11 +79,11 @@ export function ShareInviteCard() {
         </div>
       </div>
 
-      {data?.referralCount > 0 && (
+      {(data?.referralCount ?? 0) > 0 && (
         <div className="mb-3 flex items-center gap-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 rounded-lg px-3 py-2">
           <Users className="w-3.5 h-3.5 flex-shrink-0" />
           <span>
-            <strong>{data.referralCount}</strong> friend{data.referralCount !== 1 ? "s" : ""} joined
+            <strong>{data?.referralCount}</strong> friend{data?.referralCount !== 1 ? "s" : ""} joined
             {daysRemaining > 0 && (
               <> · <strong>{daysRemaining} days</strong> Pro remaining</>
             )}

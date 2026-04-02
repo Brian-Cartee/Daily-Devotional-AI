@@ -194,7 +194,7 @@ function getShownIds(): Set<string> {
 export function markAchievementSeen(id: string): void {
   const shown = getShownIds();
   shown.add(id);
-  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify([...shown]));
+  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(Array.from(shown)));
 }
 
 export function hasSeenAchievement(id: string): boolean {

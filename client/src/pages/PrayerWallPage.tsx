@@ -66,7 +66,7 @@ export default function PrayerWallPage() {
   const prayMutation = useMutation({
     mutationFn: (id: number) => apiRequest("POST", `/api/prayer-wall/${id}/pray`, { sessionId }),
     onSuccess: (data: any, id: number) => {
-      setPrayedIds(prev => new Set([...prev, id]));
+      setPrayedIds(prev => new Set(Array.from(prev).concat(id)));
       queryClient.invalidateQueries({ queryKey: ["/api/prayer-wall"] });
     },
   });
@@ -74,7 +74,7 @@ export default function PrayerWallPage() {
   const remindMutation = useMutation({
     mutationFn: (id: number) => apiRequest("POST", `/api/prayer-wall/${id}/remind`, { sessionId, hoursFromNow: 24 }),
     onSuccess: (_data: any, id: number) => {
-      setRemindedIds(prev => new Set([...prev, id]));
+      setRemindedIds(prev => new Set(Array.from(prev).concat(id)));
       toast({ description: "We'll remind you to pray for this again tomorrow. 🙏" });
     },
     onError: () => {
