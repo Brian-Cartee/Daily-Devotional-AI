@@ -132,6 +132,23 @@ async function syncTodayVerseFromSheet(): Promise<void> {
     console.log(`Synced today's verse from Google Sheet: ${sheetVerse.reference}`);
   } catch (err) {
     console.error("Error syncing verse from Google Sheet:", err);
+    // Google Sheets is unreachable — store the fallback verse so users aren't left stranded
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const existing = await storage.getVerseByDate(today);
+      if (!existing) {
+        await storage.createVerse({
+          reference: "Philippians 4:6-7",
+          text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
+          encouragement: "When you feel overwhelmed, remember that you don't have to carry the burden alone. Bring your worries to God, and He will replace your anxiety with His perfect peace.",
+          reflectionPrompt: "What worries can you surrender to God today?",
+          date: today,
+        });
+        console.log("[Verse] Stored fallback verse for today after Google Sheets error.");
+      }
+    } catch (fallbackErr) {
+      console.error("Could not store fallback verse:", fallbackErr);
+    }
   }
 }
 

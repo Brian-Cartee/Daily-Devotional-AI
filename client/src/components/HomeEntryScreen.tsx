@@ -130,7 +130,10 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
         <div className="w-10 h-px bg-white/15 mt-7" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center w-full px-8 pb-14">
+      <div
+        className="relative z-10 flex flex-col items-center w-full px-8"
+        style={{ paddingBottom: "max(56px, calc(40px + env(safe-area-inset-bottom, 0px)))" }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={showCta ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
@@ -201,10 +204,10 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col"
       style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
     >
-      <div className="flex items-center justify-between px-6 pt-12 pb-1">
+      <div className="shrink-0 flex items-center justify-between px-6 pt-12 pb-1">
         <div>
           <p className="text-white/35 text-xs tracking-widest uppercase">Shepherd's Path</p>
         </div>
@@ -213,7 +216,10 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
         </button>
       </div>
 
-      <div className="flex flex-col px-6 pt-3 pb-6">
+      <div
+        className="flex-1 flex flex-col px-6 pt-3 overflow-y-auto"
+        style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+      >
         <div className="mb-4">
           <h1
             className="text-white font-light leading-snug mb-1"
@@ -290,9 +296,9 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
     : "It's good to have you back. God hasn't stopped thinking about you. He's been waiting for this moment with you.";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ background: "#faf8f5" }}>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#faf8f5" }}>
       <div
-        className="px-6 pt-14 pb-6"
+        className="shrink-0 px-6 pt-14 pb-6"
         style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
       >
         <p className="text-white/40 text-xs tracking-widest uppercase mb-2">Shepherd's Path</p>
@@ -340,7 +346,10 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-end px-5 pb-12">
+      <div
+        className="flex-1 overflow-y-auto flex flex-col items-center justify-end px-5"
+        style={{ paddingBottom: "max(48px, calc(24px + env(safe-area-inset-bottom, 0px)))", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+      >
         <button
           onClick={onDismiss}
           className="w-full py-4 rounded-2xl text-white font-medium text-base"

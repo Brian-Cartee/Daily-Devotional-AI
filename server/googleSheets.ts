@@ -37,7 +37,7 @@ async function getAccessToken() {
 
   const accessToken =
     connectionSettings?.settings?.access_token ||
-    connectionSettings.settings?.oauth?.credentials?.access_token;
+    connectionSettings?.settings?.oauth?.credentials?.access_token;
 
   if (!connectionSettings || !accessToken) {
     throw new Error('Google Sheet not connected');
