@@ -32,7 +32,7 @@ import GreatestGiftPage from "@/pages/GreatestGiftPage";
 import SupportPage from "@/pages/SupportPage";
 import HowToUsePage from "@/pages/HowToUsePage";
 import TriviaPage from "@/pages/TriviaPage";
-import SmsPage from "@/pages/SmsPage";
+// import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
 const IronCirclePage = lazy(() => import("@/pages/IronCirclePage"));
 import { DemoProvider } from "@/components/DemoProvider";
@@ -105,7 +105,7 @@ function Router() {
       <Route path="/how-to-use" component={HowToUsePage} />
       <Route path="/trivia" component={TriviaPage} />
       <Route path="/trivia/:id" component={TriviaPage} />
-      <Route path="/sms" component={SmsPage} />
+      {/* <Route path="/sms" component={SmsPage} /> */}
       <Route path="/calling" component={CallingPage} />
       <Route path="/iron-circle">
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
