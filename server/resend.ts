@@ -90,11 +90,8 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
                  alt="Shepherd's Path"
                  width="84" height="84"
                  style="display:block;margin:0 auto 14px;width:84px;height:84px;object-fit:contain;" />
-            <p style="margin:10px 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
+            <p style="margin:10px 0 0;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
               Shepherd&rsquo;s Path
-            </p>
-            <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.38);letter-spacing:1px;">
-              ${formattedDate}
             </p>
           </td>
         </tr>
@@ -102,6 +99,9 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- VERSE CARD -->
         <tr>
           <td style="background-color:#ffffff;padding:40px 36px 36px;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;">
+
+            <!-- Date — always visible at top of card -->
+            <p style="margin:0 0 28px;font-family:Arial,sans-serif;font-size:12px;color:#9b8ea8;letter-spacing:1.5px;text-transform:uppercase;text-align:center;">${formattedDate}</p>
 
             <!-- Scripture text with inline curly quotes -->
             <p style="margin:0 0 24px;font-size:21px;line-height:1.65;color:#1e1530;font-style:italic;font-family:Georgia,serif;">
