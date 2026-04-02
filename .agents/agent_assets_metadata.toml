@@ -335,3 +335,21 @@ id = "YBB40ean8jUDBs4WaTJPA"
 uri = "file://attached_assets/stock_images/natural-mountain-lake.jpg"
 type = "image"
 title = "peaceful mountain lake forest reflection sunrise"
+
+[[outputs]]
+id = "Qj4KPQdjenUdXYqAnO1Rs"
+uri = "file://attached_assets/stock_images/aurora-lake_1.jpg"
+type = "image"
+title = "aurora borealis northern lights over still lake reflection purple green dramatic night sky"
+
+[[outputs]]
+id = "AaeppXhwVIY7JYUsZX6S_"
+uri = "file://attached_assets/stock_images/aurora-lake_2.jpg"
+type = "image"
+title = "aurora borealis northern lights over still lake reflection purple green dramatic night sky"
+
+[[outputs]]
+id = "f70zfdzVibv35PfpQTzIv"
+uri = "file://attached_assets/stock_images/aurora-lake_3.jpg"
+type = "image"
+title = "aurora borealis northern lights over still lake reflection purple green dramatic night sky"
