@@ -99,10 +99,10 @@ async function sendDailyEmailsToAllSubscribers() {
   }
 }
 
-// Schedule daily emails at 14:00 UTC = 7:00 AM PDT (PDT = UTC-7)
-// ⚠️ When DST ends in November (PST = UTC-8), change to 15 to maintain 7 AM PT delivery
+// Schedule daily emails at 12:00 UTC = 5:00 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
+// ⚠️ When DST ends in November (PST = UTC-8), change to 13 to maintain these local times
 export async function scheduleDailyEmails() {
-  const TARGET_HOUR_UTC = 14; // 14:00 UTC = 7:00 AM PDT
+  const TARGET_HOUR_UTC = 12; // 12:00 UTC = 5 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
 
   const scheduleNext = () => {
     const delay = msUntilNextHour(TARGET_HOUR_UTC);
