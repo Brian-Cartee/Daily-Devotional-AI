@@ -85,8 +85,8 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- HEADER — brand purple with cross icon -->
         <tr>
           <td style="background-color:#2d1b5e;background-image:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-            <!-- Cross icon rendered as styled text — works in all email clients -->
-            <p style="margin:0 0 4px;font-size:36px;line-height:1;color:rgba(255,255,255,0.82);font-family:Georgia,serif;">&#10011;</p>
+            <!-- Latin cross ✝ — rendered as text, works in all email clients -->
+            <p style="margin:0 0 4px;font-size:38px;line-height:1;color:rgba(255,255,255,0.82);font-family:Georgia,serif;">&#10013;</p>
             <p style="margin:10px 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
               Shepherd&rsquo;s Path
             </p>
@@ -100,12 +100,9 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <tr>
           <td style="background-color:#ffffff;padding:40px 36px 36px;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;">
 
-            <!-- Big opening quote -->
-            <p style="margin:0 0 16px;font-size:48px;line-height:1;color:#c8b8e8;font-family:Georgia,serif;opacity:0.6;">&ldquo;</p>
-
-            <!-- Scripture text -->
+            <!-- Scripture text with inline curly quotes -->
             <p style="margin:0 0 24px;font-size:21px;line-height:1.65;color:#1e1530;font-style:italic;font-family:Georgia,serif;">
-              ${data.text}
+              &ldquo;${data.text}&rdquo;
             </p>
 
             <!-- Reference -->
