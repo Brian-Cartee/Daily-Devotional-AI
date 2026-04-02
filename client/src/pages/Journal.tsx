@@ -1066,22 +1066,29 @@ export default function Journal() {
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center center" }}
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.75) 100%)" }} />
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-7 text-center px-6">
-            <h2 className="text-white text-lg font-extrabold tracking-tight leading-snug drop-shadow-md">
-              Prayer Journal
-            </h2>
-            <p
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.12) 40%, rgba(0,0,0,0.68) 100%)" }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">
+            <h2
               style={{
                 fontFamily: "var(--font-decorative)",
                 fontStyle: "italic",
-                fontWeight: 400,
-                fontSize: "1.15rem",
-                color: "rgba(255,255,255,0.92)",
-                textShadow: "0 1px 8px rgba(0,0,0,0.65)",
-                marginTop: "3px",
+                fontSize: "2.4rem",
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.97)",
+                textShadow: "0 2px 18px rgba(0,0,0,0.6)",
+                lineHeight: 1.1,
+                letterSpacing: "-0.01em",
               }}
             >
+              Prayer Journal
+            </h2>
+            <p style={{
+              fontSize: "0.9rem",
+              color: "rgba(255,255,255,0.7)",
+              marginTop: "8px",
+              textShadow: "0 1px 6px rgba(0,0,0,0.5)",
+              letterSpacing: "0.04em",
+            }}>
               A record of your walk with Jesus.
             </p>
           </div>
