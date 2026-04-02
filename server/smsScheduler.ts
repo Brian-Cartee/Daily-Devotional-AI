@@ -143,9 +143,9 @@ export function scheduleDailySms() {
   }
 
   const run = () => {
-    // 8:00 AM EDT = 12:00 UTC (EDT = UTC-4)
-    // ⚠️ When DST ends in November (EST = UTC-5), change back to 13 to maintain 8 AM ET delivery
-    const delay = msUntilNextHour(12);
+    // 8:00 AM PDT = 15:00 UTC (PDT = UTC-7)
+    // ⚠️ When DST ends in November (PST = UTC-8), change to 16 to maintain 8 AM PT delivery
+    const delay = msUntilNextHour(15);
     const nextRun = new Date(Date.now() + delay);
     console.log(`[sms] Next daily devotional SMS scheduled for: ${nextRun.toISOString()}`);
     setTimeout(async () => {
