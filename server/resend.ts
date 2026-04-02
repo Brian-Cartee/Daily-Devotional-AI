@@ -42,7 +42,7 @@ async function getCredentials() {
 
   return {
     apiKey: connectionSettings.settings.api_key as string,
-    fromEmail: (connectionSettings.settings.from_email as string) || 'onboarding@resend.dev',
+    fromEmail: process.env.RESEND_FROM_EMAIL || (connectionSettings.settings.from_email as string) || 'onboarding@resend.dev',
   };
 }
 
