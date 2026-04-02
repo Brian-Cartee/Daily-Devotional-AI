@@ -602,11 +602,11 @@ export default function LandingHome() {
         {/* Brand mark + Share — top right of hero */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col items-end gap-2">
           <img
-            src="/logo-mark-white.png"
+            src="/sp-cross-logo.png"
             alt=""
             aria-hidden="true"
             className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain pointer-events-none select-none"
-            style={{ opacity: 0.48, filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.5))" }}
+            style={{ opacity: 0.55, filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.6)) brightness(1.15)" }}
           />
           <button
             onClick={handleShareApp}
@@ -1525,10 +1525,14 @@ export default function LandingHome() {
               <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
 
               <div className="relative px-6 py-9 flex flex-col items-center text-center gap-3">
-                {/* Cross — simple, sacred */}
-                <div className="w-14 h-14 rounded-full bg-white/8 border border-white/15 flex items-center justify-center mb-1">
-                  <span className="text-amber-300 text-[28px] leading-none select-none" aria-hidden="true">✝</span>
-                </div>
+                {/* Brand cross — path leading home */}
+                <img
+                  src="/sp-cross-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="w-16 h-16 object-contain mb-1 select-none pointer-events-none"
+                  style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }}
+                />
 
                 {/* Eyebrow */}
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-rose-300/60">The Most Important Step</p>
@@ -1580,9 +1584,10 @@ export default function LandingHome() {
           <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
           <div className="px-5 py-6 flex flex-col items-center text-center gap-4">
             <img
-              src={logoWhite}
+              src="/sp-cross-logo.png"
               alt="Shepherd's Path"
-              className="w-32 h-32 object-contain opacity-85"
+              className="w-28 h-28 object-contain"
+              style={{ opacity: 0.92, filter: "brightness(1.05) drop-shadow(0 2px 16px rgba(122,1,141,0.25))" }}
             />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Built for your phone</p>
