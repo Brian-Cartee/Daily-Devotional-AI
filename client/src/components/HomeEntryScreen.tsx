@@ -204,7 +204,7 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
       className="fixed inset-0 z-50 flex flex-col overflow-hidden"
       style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
     >
-      <div className="flex items-center justify-between px-6 pt-14 pb-2">
+      <div className="flex items-center justify-between px-6 pt-12 pb-1">
         <div>
           <p className="text-white/35 text-xs tracking-widest uppercase">Shepherd's Path</p>
         </div>
@@ -213,23 +213,23 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
-        <div className="mb-7">
+      <div className="flex flex-col px-6 pt-3 pb-6">
+        <div className="mb-4">
           <h1
-            className="text-white font-light leading-snug mb-2"
-            style={{ fontFamily: "'Georgia', serif", fontSize: "1.7rem" }}
+            className="text-white font-light leading-snug mb-1"
+            style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem" }}
           >
             What's on your heart right now?
           </h1>
           <p className="text-white/40 text-sm">Your answer shapes your time with God today.</p>
         </div>
 
-        <div className="flex flex-col gap-3 flex-1">
+        <div className="flex flex-col gap-2">
           {HEART_EMOTIONS.map((e, i) => (
             <button
               key={e.label}
               onClick={() => setSelected(i)}
-              className="flex items-center gap-4 px-5 py-4 rounded-2xl text-left transition-all duration-200"
+              className="flex items-center gap-4 px-5 py-3 rounded-2xl text-left transition-all duration-200"
               style={{
                 background: selected === i ? `${e.color}28` : "rgba(255,255,255,0.07)",
                 border: `1px solid ${selected === i ? e.color + "70" : "rgba(255,255,255,0.1)"}`,
@@ -262,7 +262,7 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
         <button
           onClick={handleSubmit}
           disabled={selected === null}
-          className="mt-6 w-full py-4 rounded-2xl text-white font-medium text-base transition-all duration-200"
+          className="mt-3 w-full py-4 rounded-2xl text-white font-medium text-base transition-all duration-200"
           style={{
             background: selected !== null ? "linear-gradient(135deg, #7A018D, #442f74)" : "rgba(255,255,255,0.08)",
             opacity: selected !== null ? 1 : 0.5,
