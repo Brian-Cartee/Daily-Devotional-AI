@@ -85,8 +85,11 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- HEADER — brand purple with cross icon -->
         <tr>
           <td style="background-color:#2d1b5e;background-image:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-            <!-- Latin cross ✝ — rendered as text, works in all email clients -->
-            <p style="margin:0 0 4px;font-size:38px;line-height:1;color:rgba(255,255,255,0.82);font-family:Georgia,serif;">&#10013;</p>
+            <!-- SP cross+path logo -->
+            <img src="${data.appUrl}/sp-cross-logo.png"
+                 alt="Shepherd's Path"
+                 width="60" height="60"
+                 style="display:block;margin:0 auto 10px;width:60px;height:60px;object-fit:contain;" />
             <p style="margin:10px 0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
               Shepherd&rsquo;s Path
             </p>

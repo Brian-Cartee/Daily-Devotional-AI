@@ -997,7 +997,9 @@ What you never do:
         return res.status(200).json({ message: "No active subscribers.", sent: 0 });
       }
 
-      const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+      const appUrl = process.env.APP_URL
+        || (replitDomain ? `https://${replitDomain}` : `https://${req.headers.host}`);
       const { client, fromEmail } = await getUncachableResendClient();
 
       let sent = 0;
