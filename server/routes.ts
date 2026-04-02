@@ -1480,6 +1480,12 @@ Return only valid JSON. No markdown. No extra keys.`,
       reference: "Psalm 46:10",
       reflection: "The burning sky asks nothing. Only that you stop, and witness.",
     },
+    4: { // Thursday
+      file: "natural-aurora.jpg",
+      scripture: "The heavens declare the glory of God; the skies proclaim the work of his hands.",
+      reference: "Psalm 19:1",
+      reflection: "When the skies ignite with color, creation bows before its Maker in silent worship.",
+    },
     5: { // Friday
       file: "natural-mountain.jpg",
       scripture: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.",
