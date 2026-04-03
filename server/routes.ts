@@ -817,6 +817,9 @@ What you never do:
       res.end();
       return;
     }
+    if (passageSessionId && isRateLimited(`daily:${passageSessionId}`, 20, 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    }
 
     const langInstruction: Record<string, string> = {
       es: "Respond entirely in Spanish (Español).",
@@ -1279,6 +1282,9 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     if (sessionId && isRateLimited(`guidance:${sessionId}`, 20, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait a moment before trying again." });
     }
+    if (sessionId && isRateLimited(`daily:${sessionId}`, 20, 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    }
 
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -1388,6 +1394,9 @@ Rules:
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (sid && isRateLimited(`vp:${sid}`, 12, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests" });
+    }
+    if (sid && isRateLimited(`daily:${sid}`, 20, 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
     }
     try {
       const nameNote = userName ? ` The person's name is ${userName}.` : "";
@@ -1599,6 +1608,9 @@ Return only valid JSON. No markdown. No extra keys.`,
     const sessionIdJourney = (req.body as any).sessionId as string | undefined;
     if (sessionIdJourney && isRateLimited(`journey:${sessionIdJourney}`, 10, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait before generating another journey." });
+    }
+    if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, 20, 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
     }
     try {
       const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
