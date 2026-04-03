@@ -76,6 +76,7 @@ export default function GuidancePage() {
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
   const userName = getUserName() ?? undefined;
   const framework = getTodayFramework();
 
@@ -177,6 +178,7 @@ export default function GuidancePage() {
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
+    setTimeout(() => setIsReflecting(false), 1500);
 
     // Pre-generate journey in the background
     fetch("/api/journey/life-season", {
@@ -289,6 +291,8 @@ export default function GuidancePage() {
     recordAiUsage();
     setFollowUp("");
     setIsSending(true);
+    setIsReflecting(true);
+    setTimeout(() => setIsReflecting(false), 1500);
     const newUserMsg: Message = { role: "user", content: text };
     const updated = [...messages, newUserMsg];
     setMessages(updated);
@@ -439,17 +443,44 @@ export default function GuidancePage() {
           {/* Scroll anchor — initial response lands here */}
           <div ref={responseRef} className="-mt-2" />
 
-          {/* Their situation — subtle echo, only once response is underway */}
-          {situation && (streamingText || responseComplete) && (
-            <motion.p
+          {/* Their situation — subtle echo, shown from the moment reflection begins */}
+          {situation && (isReflecting || streamingText || responseComplete) && (
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-sm text-muted-foreground italic mb-8 border-l-2 border-primary/30 pl-3"
+              transition={{ delay: 0.2 }}
+              className="mb-7"
             >
-              "{situation}"
-            </motion.p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-1.5">You shared</p>
+              <p className="text-sm text-muted-foreground/65 italic border-l-2 border-primary/20 pl-3 leading-relaxed">
+                "{situation.length > 120 ? situation.slice(0, 117) + "…" : situation}"
+              </p>
+            </motion.div>
           )}
+
+          {/* Calm reflection state — shown for ~1.5s before response renders */}
+          <AnimatePresence>
+            {isReflecting && situation && (
+              <motion.div
+                key="reflecting"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-3 py-5 mb-4"
+              >
+                <div className="flex gap-1.5 items-center">
+                  {[0, 1, 2].map(i => (
+                    <span
+                      key={i}
+                      className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce"
+                      style={{ animationDelay: `${i * 0.18}s`, animationDuration: "1.2s" }}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground/60 italic">Sitting with what you've shared…</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* First pastoral response — stays here permanently once it arrives */}
           <motion.div
@@ -458,7 +489,7 @@ export default function GuidancePage() {
             transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            {((streamingText && !isSending) || assistantMessages.length > 0) && (
+            {((streamingText && !isSending && !isReflecting) || assistantMessages.length > 0) && (
               <>
                 <div className="text-[17px] leading-relaxed text-foreground space-y-4" data-testid="text-guidance-response">
                   {(isSending
@@ -590,7 +621,7 @@ export default function GuidancePage() {
             ))}
 
             {/* Streaming follow-up */}
-            {isSending && streamingText && (
+            {isSending && streamingText && !isReflecting && (
               <motion.div key="streaming" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6" ref={latestResponseRef}>
                 <div className="text-[16px] leading-relaxed text-foreground space-y-3">
                   {streamingText.split("\n\n").map((para, j) =>
