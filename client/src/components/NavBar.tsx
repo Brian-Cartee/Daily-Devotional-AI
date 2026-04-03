@@ -71,12 +71,14 @@ export function NavBar() {
 
           {/* Logo */}
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2 group shrink-0 mr-1">
-            <img
-              src="/app-icon.png"
-              alt="Shepherd's Path"
-              className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 rounded-xl object-cover shadow-sm select-none"
-              draggable={false}
-            />
+            <div className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 rounded-xl overflow-hidden shadow-sm shrink-0">
+              <img
+                src="/app-icon-new.png"
+                alt="Shepherd's Path"
+                className="w-full h-full object-cover select-none"
+                draggable={false}
+              />
+            </div>
             <div className="flex flex-col leading-none select-none">
               <span className="text-[8px] min-[430px]:text-[9px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>
               <span className="text-[1.35rem] min-[430px]:text-[1.55rem] font-black tracking-tight text-foreground leading-none">PATH</span>

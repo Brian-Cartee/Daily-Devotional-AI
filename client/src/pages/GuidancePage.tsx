@@ -421,7 +421,7 @@ export default function GuidancePage() {
                       Today — {framework.name}
                     </p>
                     <button
-                      onClick={() => navigate(`/guidance?situation=${encodeURIComponent(framework.guidanceHint)}`)}
+                      onClick={() => { window.location.href = `/guidance?situation=${encodeURIComponent(framework.guidanceHint)}`; }}
                       data-testid="button-framework-guidance-hint"
                       className="group text-left w-full rounded-xl border border-primary/20 bg-primary/4 hover:bg-primary/8 hover:border-primary/35 px-4 py-3 transition-all"
                     >
