@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { Share2, ArrowDown, ChevronLeft, Heart, BookOpen } from "lucide-react";
+import { Share2, ArrowDown, ChevronLeft, Heart, BookOpen, Loader2, Palette, Image } from "lucide-react";
 import { motion } from "framer-motion";
+import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
 
 const sunsetImg = "/daily-art/natural-sunset.jpg";
 
@@ -8,6 +10,7 @@ const CALLING_CARDS = [
   {
     id: 1,
     message: "Sharing is caring… but more than that — it's our calling.",
+    verseText: "Go and make disciples of all nations.",
     scripture: "Matthew 28:19",
     meaning: "We are called to go, to share truth and hope with the world.",
     shareText: "Sharing is caring… but more than that — it's our calling.\n\n\"Go and make disciples of all nations.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app",
@@ -15,6 +18,7 @@ const CALLING_CARDS = [
   {
     id: 2,
     message: "Care enough to share. Called enough to act.",
+    verseText: "Faith by itself, if it is not accompanied by action, is dead.",
     scripture: "James 2:17",
     meaning: "Faith without action is empty. Our care for others shows in what we do.",
     shareText: "Care enough to share. Called enough to act.\n\n\"Faith by itself, if it is not accompanied by action, is dead.\"\n— James 2:17\n\nShepherd's Path · shepherdspath.app",
@@ -22,6 +26,7 @@ const CALLING_CARDS = [
   {
     id: 3,
     message: "Sharing hope isn't optional — it's part of the calling.",
+    verseText: "Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.",
     scripture: "1 Peter 3:15",
     meaning: "Hope is meant to be shared. Always be ready to give a reason for the hope you carry.",
     shareText: "Sharing hope isn't optional — it's part of the calling.\n\n\"Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.\"\n— 1 Peter 3:15\n\nShepherd's Path · shepherdspath.app",
@@ -29,6 +34,7 @@ const CALLING_CARDS = [
   {
     id: 4,
     message: "We don't just share… we serve, we care, we answer the call.",
+    verseText: "Serve one another humbly in love.",
     scripture: "Galatians 5:13",
     meaning: "Sharing is an act of service. Use your freedom to serve one another in love.",
     shareText: "We don't just share… we serve, we care, we answer the call.\n\n\"Serve one another humbly in love.\"\n— Galatians 5:13\n\nShepherd's Path · shepherdspath.app",
@@ -36,6 +42,7 @@ const CALLING_CARDS = [
   {
     id: 5,
     message: "Share the Word. Answer the Call.",
+    verseText: "How can they believe in the one of whom they have not heard?",
     scripture: "Romans 10:14",
     meaning: "People need to hear. How can they believe if no one tells them?",
     shareText: "Share the Word. Answer the Call.\n\n\"How can they believe in the one of whom they have not heard?\"\n— Romans 10:14\n\nShepherd's Path · shepherdspath.app",
@@ -43,6 +50,7 @@ const CALLING_CARDS = [
   {
     id: 6,
     message: "What you share could change a life.",
+    verseText: "A generous person will prosper; whoever refreshes others will be refreshed.",
     scripture: "Proverbs 11:25",
     meaning: "A generous person prospers. Whoever refreshes others will themselves be refreshed.",
     shareText: "What you share could change a life.\n\n\"A generous person will prosper; whoever refreshes others will be refreshed.\"\n— Proverbs 11:25\n\nShepherd's Path · shepherdspath.app",
@@ -50,36 +58,82 @@ const CALLING_CARDS = [
   {
     id: 7,
     message: "Carry one another. Share what matters.",
+    verseText: "Carry each other's burdens, and in this way you will fulfill the law of Christ.",
     scripture: "Galatians 6:2",
     meaning: "We were never meant to walk this alone. Carry each other's burdens.",
     shareText: "Carry one another. Share what matters.\n\n\"Carry each other's burdens, and in this way you will fulfill the law of Christ.\"\n— Galatians 6:2\n\nShepherd's Path · shepherdspath.app",
   },
 ];
 
-function shareMessage(text: string) {
+type LoadingKey = `${number}-${"purple" | "art"}`;
+
+async function doImageShare(blob: Blob, title: string, fallbackText: string) {
+  const file = new File([blob], "shepherds-path.png", { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file], title });
+    return;
+  }
   if (navigator.share) {
-    navigator.share({ text }).catch(() => {});
+    await navigator.share({ text: fallbackText });
   } else {
-    navigator.clipboard?.writeText(text).catch(() => {});
+    navigator.clipboard?.writeText(fallbackText).catch(() => {});
   }
 }
 
 export default function CallingPage() {
   const [, setLocation] = useLocation();
+  const [loading, setLoading] = useState<LoadingKey | null>(null);
+  const [sharingScripture, setSharingScripture] = useState(false);
+
+  const handlePurpleShare = async (card: typeof CALLING_CARDS[0]) => {
+    const key: LoadingKey = `${card.id}-purple`;
+    if (loading) return;
+    setLoading(key);
+    try {
+      const blob = await createPurpleShareImage(card.verseText, card.scripture);
+      await doImageShare(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
+    } catch {
+      navigator.share?.({ text: card.shareText }).catch(() => {});
+    }
+    setLoading(null);
+  };
+
+  const handleArtShare = async (card: typeof CALLING_CARDS[0]) => {
+    const key: LoadingKey = `${card.id}-art`;
+    if (loading) return;
+    setLoading(key);
+    try {
+      const blob = await createShareImage(card.verseText, card.scripture, sunsetImg);
+      await doImageShare(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
+    } catch {
+      navigator.share?.({ text: card.shareText }).catch(() => {});
+    }
+    setLoading(null);
+  };
 
   const handleSendPrayer = () => {
     const text = "I prayed for you today. 🙏\n\nShepherd's Path · shepherdspath.app";
-    shareMessage(text);
+    navigator.share?.({ text }).catch(() => {});
   };
 
-  const handleShareScripture = () => {
-    const text = "\"Go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app";
-    shareMessage(text);
+  const handleShareScripture = async () => {
+    if (sharingScripture) return;
+    setSharingScripture(true);
+    try {
+      const blob = await createPurpleShareImage(
+        "Go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.",
+        "Matthew 28:19"
+      );
+      await doImageShare(blob, "Matthew 28:19 — Shepherd's Path", "\"Go and make disciples of all nations.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app");
+    } catch {
+      navigator.share?.({ text: "\"Go and make disciples of all nations.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app" }).catch(() => {});
+    }
+    setSharingScripture(false);
   };
 
   const handleShareApp = () => {
     const text = "This app has been meaningful to me and I thought of you.\n\nShepherd's Path — daily scripture, prayer, and guidance.\n\nshepherdspath.app";
-    shareMessage(text);
+    navigator.share?.({ text }).catch(() => {});
   };
 
   return (
@@ -95,7 +149,7 @@ export default function CallingPage() {
         <ChevronLeft className="w-5 h-5 text-white" />
       </button>
 
-      {/* HERO — full viewport with sunset image */}
+      {/* HERO */}
       <div className="relative w-full" style={{ height: "100svh", minHeight: 600 }}>
         <img
           src={sunsetImg}
@@ -103,7 +157,6 @@ export default function CallingPage() {
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{ filter: "brightness(0.82)" }}
         />
-        {/* Gradient overlays */}
         <div
           className="absolute inset-0"
           style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 35%, rgba(13,10,26,0.6) 70%, rgba(13,10,26,1) 100%)" }}
@@ -112,8 +165,6 @@ export default function CallingPage() {
           className="absolute inset-0"
           style={{ background: "linear-gradient(to top, rgba(0,0,0,0) 60%, rgba(0,0,0,0.3) 100%)" }}
         />
-
-        {/* Hero text */}
         <div className="absolute bottom-0 left-0 right-0 px-7 pb-16 text-center">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -155,7 +206,7 @@ export default function CallingPage() {
         </div>
       </div>
 
-      {/* INTRO SECTION */}
+      {/* INTRO */}
       <div className="px-7 py-12 text-center" style={{ background: "#0d0a1a" }}>
         <p className="text-white/35 text-xs tracking-[0.2em] uppercase mb-5">The Calling</p>
         <p
@@ -183,7 +234,6 @@ export default function CallingPage() {
             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
             data-testid={`card-calling-${card.id}`}
           >
-            {/* Card top — colored accent bar */}
             <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7A018D, #442f74)" }} />
 
             <div className="p-5">
@@ -196,15 +246,35 @@ export default function CallingPage() {
               <p className="text-white/40 text-xs tracking-wide mb-3">— {card.scripture}</p>
               <p className="text-white/55 text-sm leading-relaxed mb-4">{card.meaning}</p>
 
-              <button
-                onClick={() => shareMessage(card.shareText)}
-                className="flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl transition-all active:scale-95"
-                style={{ background: "linear-gradient(135deg, #7A018D22, #442f7422)", border: "1px solid rgba(122,1,141,0.3)", color: "rgba(200,160,220,0.9)" }}
-                data-testid={`button-calling-share-${card.id}`}
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Send this to someone
-              </button>
+              {/* Two share options */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handlePurpleShare(card)}
+                  disabled={loading !== null}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all active:scale-95 disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.25), rgba(68,47,116,0.25))", border: "1px solid rgba(122,1,141,0.35)", color: "rgba(200,150,220,0.9)" }}
+                  data-testid={`button-calling-share-purple-${card.id}`}
+                >
+                  {loading === `${card.id}-purple`
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Palette className="w-3 h-3" />
+                  }
+                  Purple
+                </button>
+                <button
+                  onClick={() => handleArtShare(card)}
+                  disabled={loading !== null}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all active:scale-95 disabled:opacity-50"
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.7)" }}
+                  data-testid={`button-calling-share-art-${card.id}`}
+                >
+                  {loading === `${card.id}-art`
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Image className="w-3 h-3" />
+                  }
+                  Art Image
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -249,11 +319,12 @@ export default function CallingPage() {
           </button>
           <button
             onClick={handleShareScripture}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-medium"
+            disabled={sharingScripture}
+            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-50"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)" }}
             data-testid="button-calling-share-scripture"
           >
-            <BookOpen className="w-4 h-4" />
+            {sharingScripture ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
             Share Scripture
           </button>
         </div>

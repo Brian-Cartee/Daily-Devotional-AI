@@ -457,6 +457,7 @@ const COMMITMENT_POINTS = [
 ];
 
 export default function LandingHome() {
+  const [, navigate] = useLocation();
   const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
   const [expanded, setExpanded] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);

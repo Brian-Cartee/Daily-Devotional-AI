@@ -664,3 +664,145 @@ export async function createShareImage(
     canvas.toBlob((blob) => resolve(blob!), "image/png");
   });
 }
+
+// ── Purple brand share card ───────────────────────────────────────────────────
+// Uses the app's exact dark-purple palette instead of a photo background.
+export async function createPurpleShareImage(
+  verseText: string,
+  reference: string
+): Promise<Blob> {
+  const S = 1080;
+  const canvas = document.createElement("canvas");
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext("2d")!;
+
+  // ── Background gradient — deep app purple ────────────────────────────────
+  const bg = ctx.createLinearGradient(0, 0, S * 0.7, S);
+  bg.addColorStop(0, "#0d0a1a");
+  bg.addColorStop(0.45, "#1a0f35");
+  bg.addColorStop(0.8, "#2a1255");
+  bg.addColorStop(1, "#0d0a1a");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+
+  // ── Radial violet glow (bottom-centre) ───────────────────────────────────
+  const glow = ctx.createRadialGradient(S / 2, S * 0.72, 0, S / 2, S * 0.72, S * 0.68);
+  glow.addColorStop(0, "rgba(122,1,141,0.38)");
+  glow.addColorStop(0.55, "rgba(68,47,116,0.18)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+
+  // Subtle top glow
+  const topGlow = ctx.createRadialGradient(S * 0.5, 0, 0, S * 0.5, 0, S * 0.55);
+  topGlow.addColorStop(0, "rgba(122,1,141,0.15)");
+  topGlow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(0, 0, S, S);
+
+  const accentColor = "rgba(180,120,255,0.7)";
+  const refColor = "#c8a0e0";
+
+  // ── Brand header ─────────────────────────────────────────────────────────
+  const LOGO_SIZE = 64;
+  const LOGO_X = 48;
+  const LOGO_Y = 48;
+  const TEXT_X = LOGO_X + LOGO_SIZE + 18;
+  const TEXT_Y_NAME = LOGO_Y + 28;
+  const TEXT_Y_TAG = LOGO_Y + 54;
+
+  let logoDrawn = false;
+  try {
+    const logo = await loadImage("/logo-mark-white.png");
+    ctx.save();
+    ctx.globalAlpha = 0.88;
+    ctx.drawImage(logo, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+    ctx.restore();
+    logoDrawn = true;
+  } catch {
+    try {
+      const logo2 = await loadImage("/sp-logo-mark.png");
+      ctx.save();
+      ctx.globalAlpha = 0.88;
+      ctx.drawImage(logo2, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+      ctx.restore();
+      logoDrawn = true;
+    } catch { logoDrawn = false; }
+  }
+
+  if (logoDrawn) {
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "bold 28px 'Georgia', serif";
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 10;
+    ctx.fillText("Shepherd's Path", TEXT_X, TEXT_Y_NAME);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.font = "18px 'Georgia', serif";
+    ctx.fillText("Open your Bible. We'll open the conversation.", TEXT_X, TEXT_Y_TAG);
+    ctx.shadowBlur = 0;
+    horizontalGlowLine(ctx, LOGO_Y + LOGO_SIZE + 24, accentColor);
+  } else {
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,255,255,0.52)";
+    ctx.font = "600 25px 'Georgia', serif";
+    ctx.fillText("SHEPHERD'S PATH", S / 2, 96);
+    horizontalGlowLine(ctx, 115, accentColor);
+  }
+
+  // ── Decorative opening quote ──────────────────────────────────────────────
+  ctx.save();
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = "#c8a0e0";
+  ctx.font = "italic 220px Georgia, serif";
+  ctx.textAlign = "left";
+  ctx.fillText("\u201C", 36, 350);
+  ctx.restore();
+
+  // ── Verse text ────────────────────────────────────────────────────────────
+  const maxChars = 230;
+  const short =
+    verseText.length > maxChars
+      ? verseText.substring(0, maxChars - 1) + "\u2026"
+      : verseText;
+
+  const fontSize = short.length < 90 ? 60 : short.length < 150 ? 52 : 44;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  ctx.shadowColor = "rgba(122,1,141,0.5)";
+  ctx.shadowBlur = 24;
+
+  const finalVerseY = wrapText(
+    ctx,
+    `\u201C${short}\u201D`,
+    S / 2,
+    210,
+    920,
+    fontSize * 1.52
+  );
+  ctx.shadowBlur = 0;
+
+  // ── Accent divider ────────────────────────────────────────────────────────
+  horizontalGlowLine(ctx, finalVerseY + 46, accentColor);
+
+  // ── Reference ─────────────────────────────────────────────────────────────
+  ctx.fillStyle = refColor;
+  ctx.font = "bold 38px 'Georgia', serif";
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 14;
+  ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 102);
+  ctx.shadowBlur = 0;
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  horizontalGlowLine(ctx, S - 70, "rgba(180,120,255,0.22)");
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.font = "22px 'Georgia', serif";
+  ctx.fillText("shepherdspathai.com", S / 2, S - 38);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob!), "image/png");
+  });
+}
