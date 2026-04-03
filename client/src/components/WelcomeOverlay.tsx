@@ -26,12 +26,8 @@ interface WelcomeOverlayProps {
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   const { play, stop, toggle, playing, loading, progress } = useTTS();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      play(WELCOME_SCRIPT, getUserVoice());
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  // No auto-play — browsers silently block audio without a direct user tap.
+  // The button below invites the tap instead.
 
   const handleDismiss = () => {
     stop();
@@ -93,7 +89,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </div>
         </div>
 
-        {/* Audio strip — auto-playing, prominent */}
+        {/* Audio strip — tap to play */}
         <div className="shrink-0 px-4 pt-4 pb-3 bg-background">
           <button
             data-testid="btn-toggle-audio"
@@ -105,6 +101,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                 ? "linear-gradient(135deg, #1a0a3a 0%, #2d1065 100%)"
                 : "linear-gradient(135deg, #f8f4ff 0%, #ede8ff 100%)",
               borderColor: playing ? "rgba(130,80,255,0.4)" : "rgba(130,80,255,0.2)",
+              boxShadow: (!playing && !loading && progress === 0)
+                ? "0 0 0 3px rgba(124,60,237,0.15), 0 0 0 6px rgba(124,60,237,0.07)"
+                : undefined,
             }}
           >
             <div className="flex items-center gap-4 px-5 py-3">
@@ -141,7 +140,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   className="text-[11px] mt-0.5 leading-none"
                   style={{ color: playing ? "rgba(255,255,255,0.5)" : "#7c5cbf" }}
                 >
-                  {loading ? "Just a moment…" : started && !loading ? "" : "~30 seconds · plays automatically"}
+                  {loading ? "Just a moment…" : started && !loading ? "" : "~30 seconds · tap to hear"}
                 </p>
                 {started && (
                   <div className="mt-2 w-full h-1 rounded-full overflow-hidden" style={{ background: playing ? "rgba(255,255,255,0.15)" : "rgba(124,60,237,0.15)" }}>
