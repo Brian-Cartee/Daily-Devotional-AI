@@ -18,7 +18,7 @@ import img5820 from "@assets/IMG_5820_1775236373461.png";
 
 const CANVAS_W = 1290;
 const CANVAS_H = 2796;
-const BAND_H = 310;
+const BAND_H = 370;
 const PURPLE = "#442f74";
 
 const SHOTS = [
@@ -71,9 +71,9 @@ function generateBlob(imgSrc: string, headline: string): Promise<Blob | null> {
       ctx.fillRect(0, 0, CANVAS_W, BAND_H);
 
       // Headline — bold italic, large, centered in band
-      const fontSize = 108;
-      const lineH = 128;
-      const padding = 90;
+      const fontSize = 130;
+      const lineH = 152;
+      const padding = 80;
       const maxW = CANVAS_W - padding * 2;
 
       ctx.font = `bold italic ${fontSize}px Georgia, 'Times New Roman', serif`;
