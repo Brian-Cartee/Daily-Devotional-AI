@@ -11,7 +11,7 @@ import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
-import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { canUseAi, recordAiUsage, getRemainingAi, getAiUsage } from "@/lib/aiUsage";
 import { isLateNight } from "@/lib/nightMode";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
@@ -651,35 +651,69 @@ export default function GuidancePage() {
                 transition={{ delay: 1.5 }}
                 className="mb-10"
               >
-                <div className="bg-card border border-border rounded-2xl p-3 flex items-end gap-2 shadow-sm">
-                  <textarea
-                    ref={inputRef}
-                    value={followUp}
-                    onChange={e => setFollowUp(e.target.value)}
-                    spellCheck
-                    autoCapitalize="sentences"
-                    autoCorrect="on"
-                    onKeyDown={handleKeyDown}
-                    placeholder="Share more, ask a question, or just talk…"
-                    rows={2}
-                    disabled={isSending}
-                    data-testid="input-guidance-followup"
-                    className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed py-1 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={!followUp.trim() || isSending}
-                    data-testid="button-guidance-send"
-                    className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                {canUseAi() ? (
+                  <>
+                    <div className="bg-card border border-border rounded-2xl p-3 flex items-end gap-2 shadow-sm">
+                      <textarea
+                        ref={inputRef}
+                        value={followUp}
+                        onChange={e => setFollowUp(e.target.value)}
+                        spellCheck
+                        autoCapitalize="sentences"
+                        autoCorrect="on"
+                        onKeyDown={handleKeyDown}
+                        placeholder="Share more, ask a question, or just talk…"
+                        rows={2}
+                        disabled={isSending}
+                        data-testid="input-guidance-followup"
+                        className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed py-1 disabled:opacity-50"
+                      />
+                      <button
+                        onClick={handleSend}
+                        disabled={!followUp.trim() || isSending}
+                        data-testid="button-guidance-send"
+                        className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {/* After 3rd use — subtle value reinforcement */}
+                    {getAiUsage().count === 3 && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-[12px] text-muted-foreground/70 text-center mt-2.5 px-2 leading-relaxed"
+                      >
+                        You've spent real time with this today.{" "}
+                        <span className="text-foreground/60">That's not nothing — that's the work.</span>
+                      </motion.p>
+                    )}
+                  </>
+                ) : (
+                  /* After 5th use — emotional + supportive send-off */
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="rounded-2xl border border-border bg-card px-6 py-5 text-center shadow-sm"
+                    data-testid="card-daily-limit"
                   >
-                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
-                {(() => { const rem = getRemainingAi(); return rem <= 3 && rem > 0 ? (
-                  <p className="text-[11px] text-amber-600/80 dark:text-amber-400/70 text-right mt-1.5 pr-1">
-                    {rem} free {rem === 1 ? "response" : "responses"} left today — <button onClick={() => setShowUpgrade(true)} className="underline underline-offset-2">Go unlimited with Pro</button>
-                  </p>
-                ) : null; })()}
+                    <p className="text-base font-semibold text-foreground mb-1">
+                      You've brought a lot to this today.
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                      Carry what you've received. Let it settle. Come back tomorrow — I'll be here.
+                    </p>
+                    <button
+                      onClick={() => setShowUpgrade(true)}
+                      data-testid="button-upgrade-from-limit"
+                      className="text-[13px] text-primary/80 hover:text-primary underline underline-offset-2 transition-colors"
+                    >
+                      Or go unlimited with Pro — anytime, as much as you need.
+                    </button>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
