@@ -2875,26 +2875,37 @@ ${historyNote}`;
         messages: [
           {
             role: "system",
-            content: `You help determine if a curated video teaching would meaningfully help someone in a spiritual conversation. Respond with JSON only.
+            content: `You are helping surface a single, deeply relevant sermon clip for someone in a real spiritual conversation. Respond with JSON only.
 
-Return: { "shouldSuggest": boolean, "searchQuery": string, "reason": string }
+Return:
+{
+  "shouldSuggest": boolean,
+  "searchQuery": string,
+  "preacher": string,
+  "momentTitle": string,
+  "leadIn": string
+}
 
 Only return shouldSuggest: true when ALL of these are true:
-- The conversation shows deep engagement with a specific struggle, grief, theological difficulty, or life crisis
-- A specific teaching or sermon would genuinely extend the care being provided — not just repeat it
-- The topic is specific enough to find a highly relevant video (not "prayer" or "faith" — something like "forgiving an abusive parent" or "doubt after loss")
+- The conversation shows genuine, sustained engagement with a specific struggle, grief, theological difficulty, or life crisis
+- A specific sermon moment would meaningfully extend what this person is experiencing — not just repeat it
+- The topic is concrete enough to find something highly relevant (not "faith" — something like "forgiving someone who hurt you deeply" or "losing hope after a tragedy")
 
-If shouldSuggest is true, write a highly specific YouTube search query including "sermon" or "teaching" and specific topic keywords. Target established Christian teachers (e.g. Tim Keller, John Piper, Francis Chan, Christine Caine, Beth Moore).
+If shouldSuggest is true:
+- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target trusted voices: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Christine Caine, Tony Evans, John Piper.
+- preacher: the specific teacher you are targeting (e.g. "Tim Keller")
+- momentTitle: a specific, compelling 4–8 word title for what this moment addresses (e.g. "On carrying grief no one can see")
+- leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a short moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
 
-Never suggest for casual or generic conversations. When in doubt, return false.`,
+When in doubt, return shouldSuggest: false. One wrong recommendation breaks trust permanently.`,
           },
           {
             role: "user",
-            content: `Conversation:\n\n${conversationSummary}\n\n${topic ? `Topic: ${topic}` : ""}\n\nShould we suggest a curated video teaching?`,
+            content: `Conversation:\n\n${conversationSummary}\n\n${topic ? `Topic: ${topic}` : ""}\n\nShould we surface a curated sermon moment?`,
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 250,
+        max_tokens: 400,
       });
 
       const analysis = JSON.parse(
@@ -2906,7 +2917,8 @@ Never suggest for casual or generic conversations. When in doubt, return false.`
       }
 
       const ytKey = process.env.YOUTUBE_API_KEY;
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=5&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance`;
+      // Prefer shorter videos (clips) — add videoDuration=short filter (under 4 min)
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=8&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=short`;
 
       const ytRes = await fetch(searchUrl);
       const ytData = (await ytRes.json()) as any;
@@ -2915,7 +2927,22 @@ Never suggest for casual or generic conversations. When in doubt, return false.`
         return res.json({ shouldSuggest: false });
       }
 
-      const video = ytData.items[0];
+      // Prefer videos from trusted ministry channels; fall back to first result
+      const trustedChannels = [
+        "gospel in life", "louie giglio", "passion city", "elevation church",
+        "life church", "village church", "desiring god", "francis chan",
+        "tony evans", "david platt", "crossroads", "hillsong", "beth moore",
+        "priscilla shirer", "christine caine", "craig groeschel",
+      ];
+      const ranked = [...ytData.items].sort((a: any, b: any) => {
+        const aName = (a.snippet?.channelTitle || "").toLowerCase();
+        const bName = (b.snippet?.channelTitle || "").toLowerCase();
+        const aMatch = trustedChannels.some(c => aName.includes(c)) ? 0 : 1;
+        const bMatch = trustedChannels.some(c => bName.includes(c)) ? 0 : 1;
+        return aMatch - bMatch;
+      });
+
+      const video = ranked[0];
       const videoId = video.id.videoId;
       const snippet = video.snippet;
 
@@ -2942,10 +2969,11 @@ Never suggest for casual or generic conversations. When in doubt, return false.`
           id: videoId,
           title: snippet.title,
           channel: snippet.channelTitle,
-          thumbnail:
-            snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url,
+          thumbnail: snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url,
           duration,
-          reason: analysis.reason,
+          leadIn: analysis.leadIn || "",
+          momentTitle: analysis.momentTitle || "",
+          preacher: analysis.preacher || snippet.channelTitle,
         },
       });
     } catch (err) {
