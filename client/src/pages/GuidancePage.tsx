@@ -64,6 +64,21 @@ interface Message {
   content: string;
 }
 
+function getEmpathyReflection(situation: string): string {
+  const s = situation.toLowerCase();
+  if (/marriage|spouse|husband|wife|partner|relationship/.test(s)) return "You're carrying something tender right now…";
+  if (/anxiet|fear|worry|worri|scared|panic|overwhelm/.test(s)) return "That weight you're feeling is real…";
+  if (/grief|loss|died|death|passed|mourn|missing/.test(s)) return "Grief has a way of silencing everything else…";
+  if (/alone|lonely|isolat|no one|nobody/.test(s)) return "That loneliness is one of the hardest things to carry…";
+  if (/depress|hopeless|meaningless|purpose|lost/.test(s)) return "You don't have to find the words for all of this…";
+  if (/job|work|career|money|financial|debt|provision/.test(s)) return "That kind of pressure touches everything…";
+  if (/child|kid|parent|family|son|daughter/.test(s)) return "Family carries a weight unlike anything else…";
+  if (/faith|doubt|believe|god|church|spiritual/.test(s)) return "Questions like these take real courage to bring…";
+  if (/angry|anger|rage|resentment|bitterness/.test(s)) return "Something in you is crying out to be heard…";
+  if (/sick|health|diagnos|illness|pain|medical/.test(s)) return "This is a hard season to be walking through…";
+  return "You're carrying a lot right now…";
+}
+
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -178,7 +193,7 @@ export default function GuidancePage() {
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
-    setTimeout(() => setIsReflecting(false), 1500);
+    setTimeout(() => setIsReflecting(false), 700);
 
     // Pre-generate journey in the background
     fetch("/api/journey/life-season", {
@@ -292,7 +307,7 @@ export default function GuidancePage() {
     setFollowUp("");
     setIsSending(true);
     setIsReflecting(true);
-    setTimeout(() => setIsReflecting(false), 1500);
+    setTimeout(() => setIsReflecting(false), 700);
     const newUserMsg: Message = { role: "user", content: text };
     const updated = [...messages, newUserMsg];
     setMessages(updated);
@@ -443,41 +458,30 @@ export default function GuidancePage() {
           {/* Scroll anchor — initial response lands here */}
           <div ref={responseRef} className="-mt-2" />
 
-          {/* Their situation — subtle echo, shown from the moment reflection begins */}
-          {situation && (isReflecting || streamingText || responseComplete) && (
-            <motion.div
+          {/* Empathetic echo — shown once response is underway, never repeats user's words */}
+          {situation && (streamingText || responseComplete) && (
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mb-7"
+              transition={{ delay: 0.15 }}
+              className="text-sm text-muted-foreground/70 italic mb-7 border-l-2 border-primary/20 pl-3 leading-relaxed"
             >
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 mb-1.5">You shared</p>
-              <p className="text-sm text-muted-foreground/65 italic border-l-2 border-primary/20 pl-3 leading-relaxed">
-                "{situation.length > 120 ? situation.slice(0, 117) + "…" : situation}"
-              </p>
-            </motion.div>
+              {getEmpathyReflection(situation)}
+            </motion.p>
           )}
 
-          {/* Calm reflection state — shown for ~1.5s before response renders */}
+          {/* Presence line — "I'm here with you" shown for ~700ms before streaming begins */}
           <AnimatePresence>
             {isReflecting && situation && (
               <motion.div
-                key="reflecting"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                key="presence"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center gap-3 py-5 mb-4"
+                transition={{ duration: 0.3 }}
+                className="py-4 mb-4"
               >
-                <div className="flex gap-1.5 items-center">
-                  {[0, 1, 2].map(i => (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce"
-                      style={{ animationDelay: `${i * 0.18}s`, animationDuration: "1.2s" }}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-muted-foreground/60 italic">Sitting with what you've shared…</span>
+                <p className="text-[15px] text-foreground/50 italic">I'm here with you in this…</p>
               </motion.div>
             )}
           </AnimatePresence>
