@@ -345,33 +345,35 @@ export default function GuidancePage() {
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Seek Guidance</span>
             </div>
 
-            {/* Guidance mode toggle */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
-                data-testid="btn-mode-encouraging"
-                onClick={() => handleModeChange("encouraging")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                  guidanceMode === "encouraging"
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                }`}
-              >
-                <Heart className="w-3 h-3" />
-                Gentle &amp; Encouraging
-              </button>
-              <button
-                data-testid="btn-mode-coach"
-                onClick={() => handleModeChange("coach")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                  guidanceMode === "coach"
-                    ? "bg-foreground text-background border-foreground shadow-sm"
-                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                }`}
-              >
-                <Shield className="w-3 h-3" />
-                Direct &amp; Accountable
-              </button>
-            </div>
+            {/* Guidance mode toggle — only shown once a response has completed */}
+            {responseComplete && (
+              <div className="flex items-center gap-2 mb-4">
+                <button
+                  data-testid="btn-mode-encouraging"
+                  onClick={() => handleModeChange("encouraging")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                    guidanceMode === "encouraging"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                  }`}
+                >
+                  <Heart className="w-3 h-3" />
+                  Gentle &amp; Encouraging
+                </button>
+                <button
+                  data-testid="btn-mode-coach"
+                  onClick={() => handleModeChange("coach")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                    guidanceMode === "coach"
+                      ? "bg-foreground text-background border-foreground shadow-sm"
+                      : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  <Shield className="w-3 h-3" />
+                  Direct &amp; Accountable
+                </button>
+              </div>
+            )}
 
             {/* Context hint for what mode-switching does */}
             {responseComplete && situation.trim() && (
@@ -611,7 +613,7 @@ export default function GuidancePage() {
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
+                transition={{ delay: 1.5 }}
                 className="mb-10"
               >
                 <div className="bg-card border border-border rounded-2xl p-3 flex items-end gap-2 shadow-sm">
