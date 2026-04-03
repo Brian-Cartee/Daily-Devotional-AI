@@ -437,7 +437,7 @@ ${transcription.text.slice(0, 8000)}`,
   schedulePushNotifications();
 
   // Start SMS daily devotional scheduler
-  scheduleDailySms();
+  scheduleDailySms().catch(console.error);
 
   // ── Spiritual memory + safety helpers ──────────────────────────────────────
 

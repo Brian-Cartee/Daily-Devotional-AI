@@ -1,6 +1,7 @@
 import twilio from "twilio";
 import { storage } from "./storage";
 import OpenAI from "openai";
+import { hasSmsSentToday, markSmsSentToday } from "./schedulerState";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -93,6 +94,7 @@ async function sendDailyDevotionalSms() {
   }
 
   console.log(`[sms] Daily devotional sent: ${sent} delivered, ${failed} failed`);
+  markSmsSentToday();
 }
 
 async function sendPrayerFollowUps() {
@@ -136,24 +138,49 @@ function msUntilNextHour(targetHour: number): number {
   return next.getTime() - now.getTime();
 }
 
-export function scheduleDailySms() {
+const SMS_TARGET_HOUR_UTC = 13; // 13:00 UTC = 6 AM PDT / 7 AM MDT / 8 AM CDT / 9 AM EDT
+// ⚠️ When DST ends in November (PST = UTC-8), change to 14 to maintain these local times
+const SMS_CATCHUP_WINDOW_HOURS = 8;
+
+function msUntilSmsHour(): number {
+  return msUntilNextHour(SMS_TARGET_HOUR_UTC);
+}
+
+function withinSmsCatchupWindow(): boolean {
+  const now = new Date();
+  const scheduledToday = new Date(now);
+  scheduledToday.setUTCHours(SMS_TARGET_HOUR_UTC, 0, 0, 0);
+  const hoursPast = (now.getTime() - scheduledToday.getTime()) / (1000 * 60 * 60);
+  return hoursPast >= 0 && hoursPast < SMS_CATCHUP_WINDOW_HOURS;
+}
+
+export async function scheduleDailySms() {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
     console.log("[sms] Twilio credentials not configured, skipping SMS scheduler");
     return;
   }
 
   const run = () => {
-    // 6:00 AM PDT = 13:00 UTC / 7 AM MDT / 8 AM CDT / 9 AM EDT
-    // ⚠️ When DST ends in November (PST = UTC-8), change to 14 to maintain these local times
-    const delay = msUntilNextHour(13);
+    const delay = msUntilSmsHour();
     const nextRun = new Date(Date.now() + delay);
     console.log(`[sms] Next daily devotional SMS scheduled for: ${nextRun.toISOString()}`);
     setTimeout(async () => {
-      await sendDailyDevotionalSms();
-      await sendPrayerFollowUps();
+      if (!hasSmsSentToday()) {
+        await sendDailyDevotionalSms();
+        await sendPrayerFollowUps();
+      } else {
+        console.log("[sms] Already sent today, skipping duplicate run.");
+      }
       run();
     }, delay);
   };
+
+  // Catch-up: if we restarted past the send time but within the window and haven't sent yet
+  if (withinSmsCatchupWindow() && !hasSmsSentToday()) {
+    console.log("[sms] Server restarted within catch-up window — sending now.");
+    await sendDailyDevotionalSms();
+    await sendPrayerFollowUps();
+  }
 
   run();
 }

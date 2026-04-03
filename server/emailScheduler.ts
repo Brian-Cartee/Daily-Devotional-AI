@@ -5,7 +5,12 @@ import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEma
 import { getTodayVerseFromSheet } from "./googleSheets";
 import { db } from "./db";
 import { verses } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { hasEmailSentToday, markEmailSentToday } from "./schedulerState";
+
+const TARGET_HOUR_UTC = 12; // 12:00 UTC = 5 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
+// ⚠️ When DST ends in November (PST = UTC-8), change to 13 to maintain these local times
+
+const CATCHUP_WINDOW_HOURS = 8; // Fire immediately if within 8 hours past scheduled time
 
 // How many ms until the next occurrence of targetHour:00 UTC
 function msUntilNextHour(targetHour: number): number {
@@ -16,7 +21,16 @@ function msUntilNextHour(targetHour: number): number {
   return next.getTime() - now.getTime();
 }
 
-async function sendDailyEmailsToAllSubscribers() {
+// Returns true if we're past today's scheduled time but within the catch-up window
+function withinCatchupWindow(): boolean {
+  const now = new Date();
+  const scheduledToday = new Date(now);
+  scheduledToday.setUTCHours(TARGET_HOUR_UTC, 0, 0, 0);
+  const hoursPast = (now.getTime() - scheduledToday.getTime()) / (1000 * 60 * 60);
+  return hoursPast >= 0 && hoursPast < CATCHUP_WINDOW_HOURS;
+}
+
+export async function sendDailyEmailsToAllSubscribers() {
   const today = new Date().toISOString().split("T")[0];
   console.log(`[email] Running daily email job for ${today}`);
 
@@ -48,6 +62,7 @@ async function sendDailyEmailsToAllSubscribers() {
     const activeSubscribers = await storage.getAllActiveSubscribers();
     if (activeSubscribers.length === 0) {
       console.log("[email] No active subscribers, nothing to send.");
+      markEmailSentToday();
       return;
     }
 
@@ -100,26 +115,35 @@ async function sendDailyEmailsToAllSubscribers() {
     }
 
     console.log(`[email] Done. Sent: ${sent}, Failed: ${failed}`);
+    markEmailSentToday();
   } catch (err) {
     console.error("[email] Daily email job error:", err);
   }
 }
 
-// Schedule daily emails at 12:00 UTC = 5:00 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
-// ⚠️ When DST ends in November (PST = UTC-8), change to 13 to maintain these local times
+// Schedule daily emails at TARGET_HOUR_UTC
+// On startup: if past scheduled time, not yet sent today, and within catch-up window → fire immediately
 export async function scheduleDailyEmails() {
-  const TARGET_HOUR_UTC = 12; // 12:00 UTC = 5 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
-
   const scheduleNext = () => {
     const delay = msUntilNextHour(TARGET_HOUR_UTC);
     const nextRun = new Date(Date.now() + delay);
     console.log(`[email] Next daily email scheduled for: ${nextRun.toISOString()}`);
 
     setTimeout(async () => {
-      await sendDailyEmailsToAllSubscribers();
-      scheduleNext(); // Schedule the next day
+      if (!hasEmailSentToday()) {
+        await sendDailyEmailsToAllSubscribers();
+      } else {
+        console.log("[email] Already sent today, skipping duplicate run.");
+      }
+      scheduleNext();
     }, delay);
   };
+
+  // Catch-up: if we restarted past the send time but within the window and haven't sent yet
+  if (withinCatchupWindow() && !hasEmailSentToday()) {
+    console.log("[email] Server restarted within catch-up window — sending now.");
+    await sendDailyEmailsToAllSubscribers();
+  }
 
   scheduleNext();
 }
