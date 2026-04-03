@@ -34,7 +34,7 @@ import HowToUsePage from "@/pages/HowToUsePage";
 import TriviaPage from "@/pages/TriviaPage";
 // import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
-import ScreenshotGenerator from "@/pages/ScreenshotGenerator";
+const ScreenshotGenerator = lazy(() => import("@/pages/ScreenshotGenerator"));
 const IronCirclePage = lazy(() => import("@/pages/IronCirclePage"));
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
@@ -108,7 +108,11 @@ function Router() {
       <Route path="/trivia/:id" component={TriviaPage} />
       {/* <Route path="/sms" component={SmsPage} /> */}
       <Route path="/calling" component={CallingPage} />
-      <Route path="/screenshot-gen" component={ScreenshotGenerator} />
+      <Route path="/screenshot-gen">
+        <Suspense fallback={<div className="min-h-screen bg-[#0d0a1a]" />}>
+          <ScreenshotGenerator />
+        </Suspense>
+      </Route>
       <Route path="/iron-circle">
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <IronCirclePage />
