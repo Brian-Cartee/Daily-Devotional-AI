@@ -449,47 +449,6 @@ export default function GuidancePage() {
             </motion.p>
           )}
 
-          {/* ── A Word For This Moment ── */}
-          <AnimatePresence>
-            {(vpLoading || verse) && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="mb-10"
-              >
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary/60 mb-3">
-                  A word for this moment
-                </p>
-                {vpLoading && !verse ? (
-                  <div className="rounded-2xl bg-primary/5 border border-primary/15 px-6 pt-6 pb-5">
-                    <p className="text-[19px] leading-relaxed font-medium text-foreground/45 italic mb-4">
-                      "Be still, and know that I am God."
-                    </p>
-                    <p className="text-[13px] font-bold text-primary/40 tracking-wide mb-3">— Psalm 46:10</p>
-                    <p className="text-[11px] text-muted-foreground/50 flex items-center gap-1.5">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Finding a word for your moment…
-                    </p>
-                  </div>
-                ) : verse ? (
-                  <div
-                    data-testid="card-guidance-verse"
-                    className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/8 via-violet-500/5 to-indigo-500/8 border border-primary/20 px-6 pt-6 pb-5"
-                  >
-                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
-                    <p className="text-[19px] leading-relaxed font-medium text-foreground italic mb-4">
-                      "{verse.text}"
-                    </p>
-                    <p className="text-[13px] font-bold text-primary/70 tracking-wide">
-                      — {verse.reference}
-                    </p>
-                  </div>
-                ) : null}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* First pastoral response — stays here permanently once it arrives */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -563,6 +522,47 @@ export default function GuidancePage() {
               </>
             )}
           </motion.div>
+
+          {/* ── A Word For This Moment ── */}
+          <AnimatePresence>
+            {(vpLoading || verse) && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mb-10"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary/60 mb-3">
+                  A word for this moment
+                </p>
+                {vpLoading && !verse ? (
+                  <div className="rounded-2xl bg-primary/5 border border-primary/15 px-6 pt-6 pb-5">
+                    <p className="text-[19px] leading-relaxed font-medium text-foreground/45 italic mb-4">
+                      "Be still, and know that I am God."
+                    </p>
+                    <p className="text-[13px] font-bold text-primary/40 tracking-wide mb-3">— Psalm 46:10</p>
+                    <p className="text-[11px] text-muted-foreground/50 flex items-center gap-1.5">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Finding a word for your moment…
+                    </p>
+                  </div>
+                ) : verse ? (
+                  <div
+                    data-testid="card-guidance-verse"
+                    className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/8 via-violet-500/5 to-indigo-500/8 border border-primary/20 px-6 pt-6 pb-5"
+                  >
+                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
+                    <p className="text-[19px] leading-relaxed font-medium text-foreground italic mb-4">
+                      "{verse.text}"
+                    </p>
+                    <p className="text-[13px] font-bold text-primary/70 tracking-wide">
+                      — {verse.reference}
+                    </p>
+                  </div>
+                ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Conversation thread (follow-ups) */}
           <AnimatePresence>
