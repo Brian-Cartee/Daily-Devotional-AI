@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -58,20 +58,33 @@ export function NavBar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [langOpen,  setLangOpen]  = useState(false);
+  const [moreOpen,  setMoreOpen]  = useState(false);
   const { lang, setLang } = useLanguage();
   const bookmarked = useBookmarkedSections();
+  const moreRef = useRef<HTMLDivElement>(null);
 
-  const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); };
+  const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); setMoreOpen(false); };
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [moreOpen]);
 
   return (
     <>
       {/* ── Top navigation bar ── */}
       <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
 
-          {/* Logo */}
-          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2 group shrink-0 mr-1">
-            <div className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 rounded-xl overflow-hidden shadow-sm shrink-0">
+          {/* Logo — icon only */}
+          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 mr-2" title="Shepherd's Path">
+            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
               <img
                 src="/app-icon-new.png"
                 alt="Shepherd's Path"
@@ -79,14 +92,10 @@ export function NavBar() {
                 draggable={false}
               />
             </div>
-            <div className="flex flex-col leading-none select-none">
-              <span className="text-[8px] min-[430px]:text-[9px] font-bold uppercase tracking-[0.18em] text-foreground/55 mb-[2px]">Shepherd's</span>
-              <span className="text-[1.35rem] min-[430px]:text-[1.55rem] font-black tracking-tight text-foreground leading-none">PATH</span>
-            </div>
           </Link>
 
-          {/* Nav items — desktop only (mobile uses bottom tab bar) */}
-          <div className="hidden sm:flex items-center gap-0 flex-1 min-w-0">
+          {/* Nav items — desktop only, icon + tooltip */}
+          <div className="hidden sm:flex items-center gap-0.5 flex-1 min-w-0">
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
               const active = location === href || location.startsWith(href + "/");
               const bm = NAV_BOOKMARK_MAP[href];
@@ -96,102 +105,130 @@ export function NavBar() {
                   key={href}
                   href={href}
                   data-testid={`nav-${label.toLowerCase()}`}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all whitespace-nowrap ${
+                  title={label}
+                  className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all group ${
                     active
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                   }`}
                 >
-                  <div className="relative">
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    {hasPlace && (
-                      <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
-                    )}
-                  </div>
-                  {label}
+                  <Icon className="w-[18px] h-[18px] shrink-0" />
+                  {hasPlace && (
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
+                  )}
+                  {/* Tooltip */}
+                  <span className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-foreground text-background text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                    {label}
+                  </span>
                 </Link>
               );
             })}
           </div>
 
-          {/* Spacer on mobile so utility icons sit at the right */}
+          {/* Spacer on mobile */}
           <div className="flex-1 sm:hidden" />
 
-          {/* Utility icons — Mail · Globe · Bell */}
-          <div className="flex items-center gap-0 shrink-0">
+          {/* Utility icons */}
+          <div className="flex items-center gap-0.5 shrink-0">
 
-            <div className="relative">
+            {/* ⋯ More menu — Mail, Language, Help */}
+            <div className="relative" ref={moreRef}>
               <button
-                onClick={() => { setEmailOpen((v) => !v); setNotifOpen(false); setLangOpen(false); }}
-                data-testid="button-subscribe-toggle"
-                aria-label="Subscribe to daily verse emails"
-                className={`w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg transition-all ${
-                  emailOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                onClick={() => { setMoreOpen((v) => !v); setNotifOpen(false); setEmailOpen(false); setLangOpen(false); }}
+                data-testid="button-more-menu"
+                aria-label="More options"
+                title="More"
+                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
+                  moreOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 }`}
               >
-                <Mail className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
+                <MoreHorizontal className="w-[18px] h-[18px]" />
               </button>
-              <AnimatePresence>
-                {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
-              </AnimatePresence>
-            </div>
 
-            <div className="relative">
-              <button
-                onClick={() => { setLangOpen((v) => !v); setEmailOpen(false); setNotifOpen(false); }}
-                data-testid="button-language-toggle"
-                aria-label="Change language"
-                className={`w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg transition-all ${
-                  langOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
-              </button>
               <AnimatePresence>
-                {langOpen && (
+                {moreOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: 6, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-10 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[150px]"
+                    className="absolute right-0 top-11 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[180px]"
                   >
-                    {LANGUAGES.map((l) => (
-                      <button
-                        key={l.code}
-                        data-testid={`lang-${l.code}`}
-                        onClick={() => { setLang(l.code as LangCode); setLangOpen(false); }}
-                        className="w-full flex items-center justify-between px-3.5 py-2 text-sm hover:bg-muted/70 transition-colors"
-                      >
-                        <span className="font-medium">{l.native}</span>
-                        {lang === l.code && <Check className="w-3.5 h-3.5 text-primary" />}
-                      </button>
-                    ))}
+                    {/* Email subscribe */}
+                    <button
+                      onClick={() => { setMoreOpen(false); setEmailOpen((v) => !v); }}
+                      data-testid="button-subscribe-toggle"
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">Daily Verse Email</span>
+                    </button>
+
+                    {/* Language submenu trigger */}
+                    <button
+                      onClick={() => { setMoreOpen(false); setLangOpen((v) => !v); }}
+                      data-testid="button-language-toggle"
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">Language</span>
+                    </button>
+
+                    {/* How to use */}
+                    <Link
+                      href="/how-to-use"
+                      data-testid="nav-how-to-use"
+                      onClick={() => setMoreOpen(false)}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">How to Use</span>
+                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            <Link
-              href="/how-to-use"
-              data-testid="nav-how-to-use"
-              aria-label="How to use Shepherd's Path"
-              className={`w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg transition-all ${
-                location === "/how-to-use" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-              }`}
-            >
-              <HelpCircle className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
-            </Link>
+            {/* Language picker — floats independently */}
+            <AnimatePresence>
+              {langOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-4 top-14 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px]"
+                >
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.code}
+                      data-testid={`lang-${l.code}`}
+                      onClick={() => { setLang(l.code as LangCode); setLangOpen(false); }}
+                      className="w-full flex items-center justify-between px-3.5 py-2 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <span className="font-medium">{l.native}</span>
+                      {lang === l.code && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
+            {/* Email panel */}
+            <AnimatePresence>
+              {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
+            </AnimatePresence>
+
+            {/* Bell / Reminders */}
             <div className="relative">
               {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" ? (
                 <button
                   onClick={() => { closeAll(); setNotifOpen(true); }}
                   data-testid="nav-notifications"
                   aria-label="Turn on reminders"
-                  className="flex items-center gap-1 pl-2 pr-2.5 h-8 min-[430px]:h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-all shrink-0 border border-amber-200 dark:border-amber-700/40"
+                  className="flex items-center gap-1 pl-2 pr-2.5 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-all shrink-0 border border-amber-200 dark:border-amber-700/40"
                 >
-                  <Bell className="w-3.5 h-3.5 min-[430px]:w-4 min-[430px]:h-4 shrink-0" />
+                  <Bell className="w-4 h-4 shrink-0" />
                   <span className="text-[11px] font-bold leading-none hidden min-[380px]:inline">Reminders</span>
                 </button>
               ) : (
@@ -199,9 +236,10 @@ export function NavBar() {
                   onClick={() => { closeAll(); setNotifOpen(true); }}
                   data-testid="nav-notifications"
                   aria-label="Notification settings"
-                  className="w-8 h-8 min-[430px]:w-10 min-[430px]:h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                  title="Reminders"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
                 >
-                  <Bell className="w-3.5 h-3.5 min-[430px]:w-[18px] min-[430px]:h-[18px]" />
+                  <Bell className="w-[18px] h-[18px]" />
                 </button>
               )}
             </div>
