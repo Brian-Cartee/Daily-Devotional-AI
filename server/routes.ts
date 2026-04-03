@@ -1398,6 +1398,9 @@ Rules:
     if (sid && isRateLimited(`daily:${sid}`, 20, 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
     }
+    if (detectCrisis(situation)) {
+      return res.json({ verse: "", prayer: CRISIS_RESPONSE });
+    }
     try {
       const nameNote = userName ? ` The person's name is ${userName}.` : "";
       const completion = await openai.chat.completions.create({
@@ -1611,6 +1614,11 @@ Return only valid JSON. No markdown. No extra keys.`,
     }
     if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, 20, 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    }
+    if (detectCrisis(situation)) {
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.write(CRISIS_RESPONSE);
+      return res.end();
     }
     try {
       const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
