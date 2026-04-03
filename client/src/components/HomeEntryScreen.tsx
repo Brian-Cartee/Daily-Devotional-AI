@@ -108,8 +108,8 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
 
       <div className="relative z-10 flex flex-col items-center pt-12">
         <div
-          className="w-36 h-20 rounded-xl overflow-hidden mb-3"
-          style={{ opacity: 0.82, boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }}
+          className="w-48 h-28 sm:w-72 sm:h-44 rounded-2xl overflow-hidden mb-3"
+          style={{ opacity: 0.88, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" }}
         >
           <img
             src="/hero-landing.png"
@@ -128,7 +128,7 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
           A word for today
         </p>
         <p
-          className="text-white text-center leading-relaxed mb-3"
+          className="text-white text-center leading-relaxed mb-3 sm:text-2xl"
           style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", minHeight: "5.5rem" }}
         >
           "{displayedText}
