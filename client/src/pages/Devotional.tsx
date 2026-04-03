@@ -338,8 +338,20 @@ export default function Devotional() {
           }],
         }),
       });
-      const data = await res.json();
-      const prayer = capitalizeDivinePronouns(data.content ?? "");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Server streams plain text — read chunks as they arrive
+      let rawPrayer = "";
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          rawPrayer += decoder.decode(value, { stream: true });
+          setGratitudePrayer(capitalizeDivinePronouns(rawPrayer));
+        }
+      }
+      const prayer = capitalizeDivinePronouns(rawPrayer);
       setGratitudePrayer(prayer);
 
       // Fire achievement after full devotional completion (Step 4 — Thank Him)
