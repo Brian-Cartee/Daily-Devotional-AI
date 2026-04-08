@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getSessionId } from "@/lib/session";
 
 const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
 
@@ -36,7 +37,7 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, sessionId: getSessionId() }),
         credentials: "include",
       });
       const data = await res.json();
@@ -147,7 +148,7 @@ export function InlineEmailSignup() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, sessionId: getSessionId() }),
         credentials: "include",
       });
       const data = await res.json();
@@ -271,7 +272,7 @@ export function InlineSubscribeToggle() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, sessionId: getSessionId() }),
       });
       const data = await res.json();
       if (res.ok || res.status === 409) {

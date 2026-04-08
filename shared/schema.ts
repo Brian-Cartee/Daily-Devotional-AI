@@ -35,6 +35,7 @@ export const subscribers = pgTable("subscribers", {
   subscribedAt: timestamp("subscribed_at").default(sql`now()`),
   active: boolean("active").default(true).notNull(),
   includeDailyArt: boolean("include_daily_art").default(false).notNull(),
+  sessionId: text("session_id"),
 });
 
 export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
@@ -45,6 +46,7 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
   email: z.string().email("Please enter a valid email address"),
   name: z.string().optional(),
   includeDailyArt: z.boolean().optional().default(false),
+  sessionId: z.string().optional(),
 });
 
 export type Subscriber = typeof subscribers.$inferSelect;

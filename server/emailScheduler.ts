@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import OpenAI from "openai";
 import { storage } from "./storage";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { getTodayVerseFromSheet } from "./googleSheets";
@@ -28,6 +29,48 @@ function withinCatchupWindow(): boolean {
   scheduledToday.setUTCHours(TARGET_HOUR_UTC, 0, 0, 0);
   const hoursPast = (now.getTime() - scheduledToday.getTime()) / (1000 * 60 * 60);
   return hoursPast >= 0 && hoursPast < CATCHUP_WINDOW_HOURS;
+}
+
+// Generate a personal follow-up paragraph if subscriber had a recent guidance session
+async function getPersonalFollowUp(
+  sessionId: string,
+  verseRef: string,
+  verseText: string,
+  name?: string | null
+): Promise<string | null> {
+  try {
+    const entries = await storage.getJournalEntries(sessionId);
+    const cutoff = Date.now() - 36 * 60 * 60 * 1000; // 36 hours ago
+    const recentMemories = entries.filter(
+      e => e.type === "guidance_memory" && new Date(e.createdAt).getTime() > cutoff
+    );
+    if (recentMemories.length === 0) return null;
+
+    const memorySnippet = recentMemories[0].content.slice(0, 300);
+    const nameClause = name ? ` The person's name is ${name}.` : "";
+
+    const openai = new OpenAI();
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 120,
+      messages: [
+        {
+          role: "system",
+          content: `You are a pastoral friend writing 2 warm sentences for someone's morning email.${nameClause} Yesterday they brought something to prayer or reflection. Today's verse is: "${verseText}" — ${verseRef}. Write 2 sentences that quietly connect today's verse to what they were carrying yesterday — not preachy, not summarizing, just the gentle sense that today's word arrived for a reason. Do not start with "I". No clichés. Sound like a friend who remembered.`,
+        },
+        {
+          role: "user",
+          content: `What they were carrying yesterday: ${memorySnippet}`,
+        },
+      ],
+    });
+
+    const text = completion.choices[0]?.message?.content?.trim();
+    return text && text.length > 20 ? text : null;
+  } catch (err) {
+    console.error("[email] Failed to generate personal follow-up:", err);
+    return null;
+  }
 }
 
 export async function sendDailyEmailsToAllSubscribers() {
@@ -65,7 +108,6 @@ export async function sendDailyEmailsToAllSubscribers() {
     const activeSubscribers = await storage.getAllActiveSubscribers();
     if (activeSubscribers.length === 0) {
       console.log("[email] No active subscribers, nothing to send.");
-      markEmailSentToday();
       return;
     }
 
@@ -95,7 +137,22 @@ export async function sendDailyEmailsToAllSubscribers() {
     for (const subscriber of activeSubscribers) {
       try {
         const artImageUrl = subscriber.includeDailyArt ? todayArtImageUrl : null;
-        const html = buildDailyVerseEmailHtml({ ...verse, appUrl, artImageUrl })
+
+        // Generate personal follow-up if this subscriber has a linked session with recent activity
+        let followUp: string | null = null;
+        if (subscriber.sessionId) {
+          followUp = await getPersonalFollowUp(
+            subscriber.sessionId,
+            verse.reference,
+            verse.text,
+            subscriber.name
+          );
+          if (followUp) {
+            console.log(`[email] Personal follow-up generated for ${subscriber.email}`);
+          }
+        }
+
+        const html = buildDailyVerseEmailHtml({ ...verse, appUrl, artImageUrl, followUp })
           .replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
 

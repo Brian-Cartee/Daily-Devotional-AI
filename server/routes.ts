@@ -883,10 +883,17 @@ What you never do:
       const existing = await storage.getSubscriberByEmail(input.email);
       if (existing) {
         if (existing.active) {
+          // Silently link sessionId if provided and not already set
+          if (input.sessionId && !existing.sessionId) {
+            await storage.updateSubscriberSession(input.email, input.sessionId);
+          }
           return res.status(409).json({ message: "This email is already subscribed." });
         }
         // Re-activate if previously unsubscribed
         await db_reactivate(input.email);
+        if (input.sessionId) {
+          await storage.updateSubscriberSession(input.email, input.sessionId);
+        }
         return res.status(200).json({ message: "Welcome back! Your subscription has been reactivated." });
       }
 
@@ -1280,6 +1287,7 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
     const sessionId = (req.body as any).sessionId as string | undefined;
     const guidanceMode: string = (req.body as any).guidanceMode || "encouraging";
+    const daysWithApp: number = Number((req.body as any).daysWithApp) || 1;
     const modeNote = buildModeNote(guidanceMode);
     if (sessionId && isRateLimited(`guidance:${sessionId}`, 20, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait a moment before trying again." });
@@ -1297,6 +1305,12 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     const nameNote = userName
       ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
       : "";
+
+    const { context: journalCtx, count: journalEntryCount } = await getJournalContext(sessionId || "");
+    const memoryNote = journalCtx
+      ? `\n\nWhat you already know about this person — from past conversations, prayers they've written, or journal entries. Use this to make your response feel like a continuation of a real relationship, not a first meeting. Reference past things only when it flows naturally and adds genuine warmth or depth. Never quote their entries back to them verbatim:\n${journalCtx}`
+      : "";
+    const relationshipNote = buildRelationshipNote(daysWithApp, journalEntryCount);
 
     const isFollowUp = messages && messages.length > 1;
     const lateNight: boolean = !!(req.body as any).isLateNight;
@@ -1333,7 +1347,7 @@ Rules:
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply and isn't afraid of hard questions
-— Under 220 words total${nameNote}${modeNote}${lateNightNote}`;
+— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${modeNote}${lateNightNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))

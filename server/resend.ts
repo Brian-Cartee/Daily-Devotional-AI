@@ -62,6 +62,7 @@ export interface DailyVerseEmailData {
   date: string;
   appUrl: string;
   artImageUrl?: string | null;
+  followUp?: string | null;
 }
 
 export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
@@ -124,6 +125,18 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
             <p style="margin:0 0 36px;font-family:Arial,sans-serif;font-size:15px;line-height:1.75;color:#3d3048;">
               ${data.encouragement}
             </p>
+
+            ${data.followUp ? `
+            <!-- Personal follow-up from yesterday's guidance session -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+              <tr>
+                <td style="padding:16px 20px;background:#f5f0fc;border-left:3px solid #7a018d;border-radius:0 8px 8px 0;">
+                  <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9b8ea8;">Still with you from yesterday</p>
+                  <p style="margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.75;color:#3d3048;font-style:italic;">${data.followUp}</p>
+                </td>
+              </tr>
+            </table>
+            ` : ''}
 
             <!-- CTA button -->
             <table cellpadding="0" cellspacing="0" width="100%">
