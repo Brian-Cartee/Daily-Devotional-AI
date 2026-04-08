@@ -85,8 +85,8 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- HEADER — brand purple with cross icon -->
         <tr>
           <td style="background-color:#2d1b5e;background-image:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-            <!-- SP cross+path logo -->
-            <img src="${data.appUrl}/sp-cross-logo.png"
+            <!-- SP cross+path logo — always served from production domain so it never breaks -->
+            <img src="https://shepherdspath.app/sp-cross-logo.png"
                  alt="Shepherd's Path"
                  width="84" height="84"
                  style="display:block;margin:0 auto 14px;width:84px;height:84px;object-fit:contain;" />
