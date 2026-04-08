@@ -34,6 +34,9 @@ export async function sendDailyEmailsToAllSubscribers() {
   const today = new Date().toISOString().split("T")[0];
   console.log(`[email] Running daily email job for ${today}`);
 
+  // Mark as sent immediately so a concurrent restart can't trigger a duplicate send
+  markEmailSentToday();
+
   try {
     // Ensure verse is synced from the sheet
     let verse = await storage.getVerseByDate(today);
@@ -115,7 +118,6 @@ export async function sendDailyEmailsToAllSubscribers() {
     }
 
     console.log(`[email] Done. Sent: ${sent}, Failed: ${failed}`);
-    markEmailSentToday();
   } catch (err) {
     console.error("[email] Daily email job error:", err);
   }
