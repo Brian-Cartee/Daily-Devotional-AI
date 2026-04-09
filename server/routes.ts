@@ -447,19 +447,44 @@ ${transcription.text.slice(0, 8000)}`,
     "not worth living", "hurt myself", "self-harm", "cut myself",
     "harm myself", "no reason to live", "better off dead",
     "want to kill myself", "thinking about suicide",
+    "don't want to be here anymore", "i want to disappear forever",
+    "tired of being alive", "tired of living", "can't go on anymore",
+    "nothing left to live for", "everyone would be better without me",
+    "don't see the point of living",
   ];
 
-  const CRISIS_RESPONSE = `I hear you, and what you're sharing matters deeply. You are not alone in this moment.
+  const ACUTE_PAIN_PHRASES = [
+    "just died", "passed away", "she died", "he died", "they died",
+    "died today", "died last night", "died this morning", "died this week",
+    "died yesterday", "just lost my", "lost my mom", "lost my dad",
+    "lost my wife", "lost my husband", "lost my son", "lost my daughter",
+    "lost my child", "lost my baby", "miscarriage", "stillborn",
+    "funeral", "just found out i have", "cancer diagnosis", "terminal diagnosis",
+    "just left me", "walked out on me", "walked out and", "left me today",
+    "heartbroken", "falling apart", "can't breathe", "can't stop crying",
+    "crying all day", "cried all night", "can't get out of bed",
+    "world fell apart", "world is falling apart", "complete breakdown",
+    "devastating news", "just happened today", "happened last night",
+  ];
 
-Please reach out right now to someone trained to help:
+  const CRISIS_RESPONSE = `What you just shared — that matters. And so do you.
 
-• 988 Suicide & Crisis Lifeline — call or text 988 (US, 24/7)
-• Crisis Text Line — text HOME to 741741
-• International resources — https://findahelpline.com
+Please reach out right now to someone whose whole purpose is to be with you in this:
 
-God loves you. Your life carries meaning and purpose that extends far beyond what you can see right now. Please connect with a crisis counselor — they are here for exactly this.
+• Call or text 988 — Suicide & Crisis Lifeline (US, 24/7, free)
+• Text HOME to 741741 — Crisis Text Line
+• Outside the US — findahelpline.com connects you to local help
 
-I'm here whenever you're ready to continue your walk.`;
+You don't have to carry this alone. The people at 988 have sat with others in exactly this darkness — they are not there to judge, only to help.
+
+God has not lost sight of you, even in this moment. Your life holds weight and meaning that extends beyond what you can feel right now. Please reach out.
+
+I'm here when you're ready to keep walking.`;
+
+  function isAcutePain(text: string): boolean {
+    const lower = text.toLowerCase();
+    return ACUTE_PAIN_PHRASES.some(p => lower.includes(p));
+  }
 
   function detectCrisis(text: string): boolean {
     const lower = text.toLowerCase();
@@ -481,6 +506,45 @@ I'm here whenever you're ready to continue your walk.`;
       }).join("\n");
       return { context, count: entries.filter(e => e.type !== "guidance_memory").length };
     } catch { return { context: "", count: 0 }; }
+  }
+
+  // Recent personal journal entries from the last 7 days (reflections, prayers, notes — not AI memories)
+  async function getRecentJournalEcho(sessionId: string): Promise<string> {
+    if (!sessionId) return "";
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      if (!entries || entries.length === 0) return "";
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const recent = entries
+        .filter(e =>
+          e.type !== "guidance_memory" &&
+          new Date(e.createdAt).getTime() > cutoff
+        )
+        .slice(0, 4);
+      if (recent.length === 0) return "";
+      const lines = recent.map(e => {
+        const dayLabel = (() => {
+          const diffDays = Math.floor((Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays === 0) return "today";
+          if (diffDays === 1) return "yesterday";
+          return `${diffDays} days ago`;
+        })();
+        const label = e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : "Note";
+        const snippet = e.content.replace(/\n+/g, " ").slice(0, 180);
+        return `[${label}, written ${dayLabel}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
+      }).join("\n");
+      return lines;
+    } catch { return ""; }
+  }
+
+  // Memory verses saved by this person
+  async function getMemoryVerseNote(sessionId: string): Promise<string> {
+    if (!sessionId) return "";
+    try {
+      const verses = await storage.getMemoryVerses(sessionId);
+      if (!verses || verses.length === 0) return "";
+      return verses.slice(0, 6).map(v => `${v.reference} — "${v.text.slice(0, 100)}"`).join("\n");
+    } catch { return ""; }
   }
 
   async function streamCompletion(
@@ -1302,18 +1366,46 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       return res.end();
     }
 
+    const isFollowUp = messages && messages.length > 1;
+    const lateNight: boolean = !!(req.body as any).isLateNight;
+
     const nameNote = userName
       ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
       : "";
 
-    const { context: journalCtx, count: journalEntryCount } = await getJournalContext(sessionId || "");
+    // Fetch journal context, recent journal echo, and memory verses in parallel
+    const [
+      { context: journalCtx, count: journalEntryCount },
+      recentEcho,
+      savedVerses,
+    ] = await Promise.all([
+      getJournalContext(sessionId || ""),
+      getRecentJournalEcho(sessionId || ""),
+      getMemoryVerseNote(sessionId || ""),
+    ]);
+
     const memoryNote = journalCtx
       ? `\n\nWhat you already know about this person — from past conversations, prayers they've written, or journal entries. Use this to make your response feel like a continuation of a real relationship, not a first meeting. Reference past things only when it flows naturally and adds genuine warmth or depth. Never quote their entries back to them verbatim:\n${journalCtx}`
       : "";
+
+    // #5 — Journal echo: recent personal writings from the last 7 days
+    const journalEchoNote = recentEcho
+      ? `\n\nThis person has written the following in their journal in the last few days. If what they're sharing now connects to something they wrote — even loosely — you may gently echo it. Something like "A few days ago you wrote about [X]. Is that still where you are?" Only do this once, only if the connection is genuine and specific. If it doesn't fit, ignore these entries entirely:\n${recentEcho}`
+      : "";
+
+    // #3 — Memory verse integration: verses they've saved to memorize
+    const memoryVerseNote = savedVerses
+      ? `\n\nThis person has saved these scriptures to memorize:\n${savedVerses}\n\nIf any of these feel directly relevant to what they're carrying right now — not forced, not generic — you may surface one naturally. Something like "You've been sitting with [reference] — I think that verse was waiting for a moment like this one." Only do this if the connection is real and the timing feels right. Never force it.`
+      : "";
+
+    // #2 — Acute pain mode: when someone is in raw, immediate grief or shock
+    const acutePainMode = !isFollowUp && isAcutePain(situation);
+    const acutePainNote = acutePainMode
+      ? `\n\nACUTE PAIN — PRESENCE ONLY: This person is in raw, immediate pain — grief, devastating news, shock, or profound loss. Your entire response is to be fully present with them in it. Do not offer scripture yet. Do not pivot toward hope or resolution. Do not end with a question. Simply sit with them in the weight of what they have just shared. Be slow. Be specific about what they said. Acknowledge not just the thought but where grief actually lives — the chest, the sleepless nights, the silence of a house. Your last sentence should be open and warm: something like "I'm here with you in this." Under 160 words. Nothing else.`
+      : "";
+
     const relationshipNote = buildRelationshipNote(daysWithApp, journalEntryCount);
 
-    const isFollowUp = messages && messages.length > 1;
-    const lateNight: boolean = !!(req.body as any).isLateNight;
     const lateNightNote = lateNight
       ? `\n\nNight context: It is the middle of the night and this person has opened Shepherd's Path at this late hour. Something brought them here when the world is asleep. This changes how you begin. Your first paragraph should feel like someone quietly sitting down beside them — not starting a lesson, not rushing to scripture or a path forward. Simply be fully present with the fact that it is late and they are here. Let your unhurried tone carry that weight without announcing it. Be slower. Be warmer. Hold presence before you hold scripture. If they are in pain, do not hurry them toward resolution.`
       : "";
@@ -1347,7 +1439,7 @@ Rules:
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply and isn't afraid of hard questions
-— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${modeNote}${lateNightNote}`;
+— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${modeNote}${lateNightNote}${acutePainNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))
