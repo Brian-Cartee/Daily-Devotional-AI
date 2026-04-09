@@ -135,6 +135,12 @@ export async function sendDailyEmailsToAllSubscribers() {
     let failed = 0;
 
     for (const subscriber of activeSubscribers) {
+      // Per-subscriber DB-level guard: skip if already sent today regardless of scheduler restarts
+      if (subscriber.lastEmailSentDate === today) {
+        console.log(`[email] Already sent to ${subscriber.email} today — skipping.`);
+        continue;
+      }
+
       try {
         const artImageUrl = subscriber.includeDailyArt ? todayArtImageUrl : null;
 
@@ -167,6 +173,9 @@ export async function sendDailyEmailsToAllSubscribers() {
           html,
           text,
         });
+
+        // Record the send date in the DB so a restart cannot trigger a duplicate
+        await storage.updateSubscriberLastEmailDate(subscriber.id, today);
         sent++;
       } catch (err) {
         console.error(`[email] Failed to send to ${subscriber.email}:`, err);

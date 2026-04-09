@@ -36,6 +36,7 @@ export const subscribers = pgTable("subscribers", {
   active: boolean("active").default(true).notNull(),
   includeDailyArt: boolean("include_daily_art").default(false).notNull(),
   sessionId: text("session_id"),
+  lastEmailSentDate: text("last_email_sent_date"),
 });
 
 export const insertSubscriberSchema = createInsertSchema(subscribers).omit({

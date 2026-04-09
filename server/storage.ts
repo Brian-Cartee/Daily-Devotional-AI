@@ -11,6 +11,7 @@ export interface IStorage {
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
   deactivateSubscriber(email: string): Promise<void>;
   updateSubscriberSession(email: string, sessionId: string): Promise<void>;
+  updateSubscriberLastEmailDate(id: number, date: string): Promise<void>;
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
@@ -97,6 +98,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateSubscriberSession(email: string, sessionId: string): Promise<void> {
     await db.update(subscribers).set({ sessionId }).where(eq(subscribers.email, email));
+  }
+
+  async updateSubscriberLastEmailDate(id: number, date: string): Promise<void> {
+    await db.update(subscribers).set({ lastEmailSentDate: date }).where(eq(subscribers.id, id));
   }
 
   async getJournalEntries(sessionId: string): Promise<JournalEntry[]> {
