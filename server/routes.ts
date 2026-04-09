@@ -3113,6 +3113,68 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
     }
   });
 
+  // Search YouTube for sermons by a specific preacher (admin only)
+  app.get("/api/admin/sermons/search", async (req, res) => {
+    const adminPw = req.headers["x-admin-password"] || req.query.adminPassword;
+    if (adminPw !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const preacher = (req.query.preacher as string || "").trim();
+    if (!preacher) return res.status(400).json({ error: "preacher query param required" });
+
+    try {
+      const ytKey = process.env.YOUTUBE_API_KEY;
+      const query = encodeURIComponent(`${preacher} sermon full`);
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&maxResults=12&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=viewCount&videoDuration=long`;
+      const ytRes = await fetch(url);
+      const ytData = (await ytRes.json()) as any;
+
+      if (!ytData.items) return res.json({ results: [] });
+
+      // Get durations
+      const ids = ytData.items.map((i: any) => i.id.videoId).join(",");
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=${ids}&key=${ytKey}`;
+      const detailsRes = await fetch(detailsUrl);
+      const detailsData = (await detailsRes.json()) as any;
+      const detailsMap: Record<string, any> = {};
+      for (const item of (detailsData.items || [])) {
+        detailsMap[item.id] = item;
+      }
+
+      const results = ytData.items.map((item: any) => {
+        const videoId = item.id.videoId;
+        const details = detailsMap[videoId];
+        let duration = "";
+        if (details?.contentDetails?.duration) {
+          const iso = details.contentDetails.duration;
+          const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (match) {
+            const h = match[1] ? `${match[1]}:` : "";
+            const m = match[2] ? match[2].padStart(h ? 2 : 1, "0") : "0";
+            const s = match[3] ? match[3].padStart(2, "0") : "00";
+            duration = `${h}${m}:${s}`;
+          }
+        }
+        const views = details?.statistics?.viewCount
+          ? parseInt(details.statistics.viewCount).toLocaleString()
+          : "";
+        return {
+          youtubeId: videoId,
+          title: item.snippet.title,
+          channel: item.snippet.channelTitle,
+          thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+          duration,
+          views,
+        };
+      });
+
+      return res.json({ results });
+    } catch (err) {
+      console.error("[admin/sermons/search] error:", err);
+      return res.status(500).json({ error: String(err) });
+    }
+  });
+
   return httpServer;
 }
 
