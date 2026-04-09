@@ -23,6 +23,7 @@ import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
 import AdminPage from "@/pages/AdminPage";
+import AdminSermonsPage from "@/pages/AdminSermonsPage";
 import StoriesPage from "@/pages/StoriesPage";
 import StorePage from "@/pages/StorePage";
 import SalvationPage from "@/pages/SalvationPage";
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/shepherd-admin" component={AdminPage} />
+      <Route path="/shepherd-admin/sermons" component={AdminSermonsPage} />
       <Route path="/stories" component={StoriesPage} />
       <Route path="/store" component={StorePage} />
       <Route path="/salvation" component={SalvationPage} />

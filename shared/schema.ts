@@ -275,3 +275,31 @@ export const triviaChallenges = pgTable("trivia_challenges", {
 });
 
 export type TriviaChallenge = typeof triviaChallenges.$inferSelect;
+
+// ─── Sermon Library ───────────────────────────────────────────────────────────
+
+export const sermonVideos = pgTable("sermon_videos", {
+  id: serial("id").primaryKey(),
+  youtubeId: text("youtube_id").notNull().unique(),
+  title: text("title").notNull(),
+  preacher: text("preacher").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  durationSeconds: integer("duration_seconds"),
+  processedAt: timestamp("processed_at").default(sql`now()`).notNull(),
+});
+
+export const sermonSegments = pgTable("sermon_segments", {
+  id: serial("id").primaryKey(),
+  youtubeId: text("youtube_id").notNull(),
+  preacher: text("preacher").notNull(),
+  startSeconds: integer("start_seconds").notNull(),
+  endSeconds: integer("end_seconds").notNull(),
+  summary: text("summary").notNull(),
+  quote: text("quote"),
+  emotionTags: text("emotion_tags").array().notNull(),
+  helpsWith: text("helps_with"),
+  momentTitle: text("moment_title"),
+});
+
+export type SermonVideo = typeof sermonVideos.$inferSelect;
+export type SermonSegment = typeof sermonSegments.$inferSelect;

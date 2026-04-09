@@ -13,6 +13,9 @@ interface VideoResource {
   leadIn: string;
   momentTitle: string;
   preacher: string;
+  startSeconds?: number;
+  startLabel?: string;
+  quote?: string | null;
 }
 
 interface ResourceSuggestionCardProps {
@@ -162,27 +165,32 @@ export function ResourceSuggestionCard({ messages, topic }: ResourceSuggestionCa
                 )}
               </div>
 
-              {/* Duration badge */}
-              {video.duration && (
+              {/* Duration / timestamp badge */}
+              {(video.startLabel || video.duration) && (
                 <span
                   className="absolute bottom-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
                   style={{ background: "rgba(0,0,0,0.75)", color: "rgba(255,255,255,0.9)" }}
                 >
-                  {video.duration}
+                  {video.startLabel ? `Starts at ${video.startLabel}` : video.duration}
                 </span>
               )}
             </div>
 
-            {/* Below thumbnail — title + preacher */}
+            {/* Below thumbnail — title + preacher + quote */}
             <div className="px-3 py-3" style={{ background: "rgba(0,0,0,0.4)" }}>
               {video.momentTitle && (
                 <p className="text-[13px] font-semibold leading-snug mb-1" style={{ color: "rgba(255,255,255,0.9)", fontFamily: "'Georgia', serif" }}>
                   {video.momentTitle}
                 </p>
               )}
-              <p className="text-[11px]" style={{ color: "rgba(180,120,255,0.75)" }}>
+              <p className="text-[11px] mb-1" style={{ color: "rgba(180,120,255,0.75)" }}>
                 {video.preacher || video.channel}
               </p>
+              {video.quote && (
+                <p className="text-[11px] leading-relaxed mt-2 pt-2 italic" style={{ color: "rgba(255,255,255,0.45)", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                  &ldquo;{video.quote}&rdquo;
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -225,7 +233,7 @@ export function ResourceSuggestionCard({ messages, topic }: ResourceSuggestionCa
               </div>
               <div className="relative" style={{ paddingBottom: "56.25%" }}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1`}
+                  src={`https://www.youtube.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1${video.startSeconds ? `&start=${video.startSeconds}` : ""}`}
                   className="absolute inset-0 w-full h-full"
                   allow="autoplay; encrypted-media; fullscreen"
                   allowFullScreen

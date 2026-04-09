@@ -2918,6 +2918,7 @@ ${historyNote}`;
 Return:
 {
   "shouldSuggest": boolean,
+  "emotionTags": string[],
   "searchQuery": string,
   "preacher": string,
   "momentTitle": string,
@@ -2930,10 +2931,11 @@ Only return shouldSuggest: true when ALL of these are true:
 - The topic is concrete enough to find something highly relevant (not "faith" — something like "forgiving someone who hurt you deeply" or "losing hope after a tragedy")
 
 If shouldSuggest is true:
+- emotionTags: array of 2–5 lowercase single-word emotion states from this list: grief, loss, anxiety, fear, hopelessness, depression, anger, loneliness, doubt, confusion, shame, guilt, identity, purpose, direction, hope, gratitude, forgiveness, marriage, prodigal, addiction, suffering, healing, trust, surrender, waiting, courage, failure, rejection, betrayal, comparison, envy, pride, control, worth, relationship
 - searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target trusted voices: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Christine Caine, Tony Evans, John Piper.
 - preacher: the specific teacher you are targeting (e.g. "Tim Keller")
 - momentTitle: a specific, compelling 4–8 word title for what this moment addresses (e.g. "On carrying grief no one can see")
-- leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a short moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
+- leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
 
 When in doubt, return shouldSuggest: false. One wrong recommendation breaks trust permanently.`,
           },
@@ -2943,19 +2945,73 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 400,
+        max_tokens: 500,
       });
 
       const analysis = JSON.parse(
         analysisResponse.choices[0].message.content || "{}"
       );
 
-      if (!analysis.shouldSuggest || !analysis.searchQuery) {
+      if (!analysis.shouldSuggest) {
+        return res.json({ shouldSuggest: false });
+      }
+
+      // ── STEP 1: Try to match from pre-processed sermon library ────────────
+      const { findMatchingSegments } = await import("./sermonIngestion");
+      const emotionTags: string[] = analysis.emotionTags || [];
+      const dbSegments = emotionTags.length > 0 ? await findMatchingSegments(emotionTags, 3) : [];
+
+      if (dbSegments.length > 0) {
+        const seg = dbSegments[0];
+        const segmentDurationSecs = seg.endSeconds - seg.startSeconds;
+        const m = Math.floor(segmentDurationSecs / 60);
+        const s = segmentDurationSecs % 60;
+        const duration = `${m}:${s.toString().padStart(2, "0")}`;
+        const startM = Math.floor(seg.startSeconds / 60);
+        const startS = seg.startSeconds % 60;
+        const startLabel = `${startM}:${startS.toString().padStart(2, "0")}`;
+
+        // Generate a personal leadIn for this specific segment
+        const leadInRes = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          max_tokens: 120,
+          messages: [
+            {
+              role: "system",
+              content: `Write 2 warm, personal sentences introducing a specific sermon moment to someone in the conversation below. The moment: "${seg.summary}". It helps someone who is: "${seg.helpsWith}". Begin with "There's a moment from ${seg.preacher}..." — feel like a pastoral friend who just found this specifically for them. Never say "video." Say "moment" or "message."`,
+            },
+            { role: "user", content: `Conversation:\n\n${conversationSummary}` },
+          ],
+        });
+        const personalLeadIn = leadInRes.choices[0]?.message?.content?.trim() || analysis.leadIn || "";
+
+        const thumbnailUrl = `https://img.youtube.com/vi/${seg.youtubeId}/hqdefault.jpg`;
+
+        return res.json({
+          shouldSuggest: true,
+          source: "library",
+          video: {
+            id: seg.youtubeId,
+            title: seg.momentTitle || seg.summary,
+            channel: seg.preacher,
+            thumbnail: thumbnailUrl,
+            duration,
+            startSeconds: seg.startSeconds,
+            startLabel,
+            leadIn: personalLeadIn,
+            momentTitle: seg.momentTitle || analysis.momentTitle || "",
+            preacher: seg.preacher,
+            quote: seg.quote || null,
+          },
+        });
+      }
+
+      // ── STEP 2: Fall back to YouTube search ───────────────────────────────
+      if (!analysis.searchQuery) {
         return res.json({ shouldSuggest: false });
       }
 
       const ytKey = process.env.YOUTUBE_API_KEY;
-      // Prefer shorter videos (clips) — add videoDuration=short filter (under 4 min)
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=8&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=short`;
 
       const ytRes = await fetch(searchUrl);
@@ -3003,6 +3059,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
 
       return res.json({
         shouldSuggest: true,
+        source: "youtube",
         video: {
           id: videoId,
           title: snippet.title,
@@ -3017,6 +3074,42 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
     } catch (err) {
       console.error("[resources/suggest] error:", err);
       return res.json({ shouldSuggest: false });
+    }
+  });
+
+  // ── Admin: Sermon ingestion ──────────────────────────────────────────────
+  app.post("/api/admin/sermons/ingest", async (req, res) => {
+    const adminPw = req.headers["x-admin-password"] || req.body.adminPassword;
+    if (adminPw !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    try {
+      const { youtubeId, title, preacher, thumbnailUrl } = req.body;
+      if (!youtubeId || !title || !preacher) {
+        return res.status(400).json({ error: "youtubeId, title, and preacher are required" });
+      }
+      const { ingestSermon } = await import("./sermonIngestion");
+      const result = await ingestSermon(youtubeId, title, preacher, thumbnailUrl);
+      return res.json(result);
+    } catch (err) {
+      console.error("[admin/sermons/ingest] error:", err);
+      return res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.get("/api/admin/sermons", async (req, res) => {
+    const adminPw = req.headers["x-admin-password"] || req.query.adminPassword;
+    if (adminPw !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    try {
+      const { db } = await import("./db");
+      const { sermonVideos, sermonSegments } = await import("@shared/schema");
+      const videos = await db.select().from(sermonVideos);
+      const segments = await db.select().from(sermonSegments);
+      return res.json({ videos, segments });
+    } catch (err) {
+      return res.status(500).json({ error: String(err) });
     }
   });
 
