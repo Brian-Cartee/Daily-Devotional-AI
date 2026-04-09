@@ -1,6 +1,25 @@
 import { useState } from "react";
 import { CheckCircle, XCircle, Loader2, BookOpen, Search, Plus, Library } from "lucide-react";
 
+const SUGGESTED_PREACHERS = [
+  "Phillip Anthony Mitchell",
+  "Tim Timberlake",
+  "Michael Todd",
+  "Mark Driscoll",
+  "John Gray",
+  "Jentezen Franklin",
+  "Tony Evans",
+  "Craig Groeschel",
+  "Steven Furtick",
+  "Robert Morris",
+  "Charles Stanley",
+  "Francis Chan",
+  "Tim Keller",
+  "Louie Giglio",
+  "David Platt",
+  "Matt Chandler",
+];
+
 const CURATED_SERMONS = [
   { youtubeId: "HBKJkRpFJgE", title: "Walking with God Through Pain and Suffering", preacher: "Tim Keller" },
   { youtubeId: "PZ5q00eKLq4", title: "The Prodigal God", preacher: "Tim Keller" },
@@ -55,6 +74,7 @@ export default function AdminSermonsPage() {
   const [queue, setQueue] = useState<QueuedSermon[]>([]);
   const [queueStatuses, setQueueStatuses] = useState<Record<string, SermonStatus>>({});
   const [preacherName, setPreacherName] = useState("");
+  const [lastSearched, setLastSearched] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,15 +122,17 @@ export default function AdminSermonsPage() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchPreacher.trim()) return;
+  const runSearch = async (name: string) => {
+    if (!name.trim()) return;
+    setSearchPreacher(name);
+    setLastSearched(name);
     setSearchLoading(true);
     setSearchError("");
     setSearchResults([]);
+    setPreacherName(name);
     try {
       const res = await fetch(
-        `/api/admin/sermons/search?preacher=${encodeURIComponent(searchPreacher)}&adminPassword=${encodeURIComponent(password)}`
+        `/api/admin/sermons/search?preacher=${encodeURIComponent(name)}&adminPassword=${encodeURIComponent(password)}`
       );
       const data = await res.json();
       if (data.error) { setSearchError(data.error); return; }
@@ -121,6 +143,11 @@ export default function AdminSermonsPage() {
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runSearch(searchPreacher);
   };
 
   const addToQueue = (result: SearchResult) => {
@@ -206,8 +233,30 @@ export default function AdminSermonsPage() {
         {activeTab === "search" && (
           <div>
             <p className="text-sm mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
-              Search by preacher name. Pick the sermons you want segmented, add them to the queue, then ingest all at once.
+              Tap a preacher to search their sermons. Pick what you want, queue it, ingest all at once.
             </p>
+
+            {/* Quick-tap preacher chips */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {SUGGESTED_PREACHERS.map(name => (
+                <button
+                  key={name}
+                  onClick={() => runSearch(name)}
+                  disabled={searchLoading}
+                  data-testid={`chip-preacher-${name.replace(/\s+/g, "-").toLowerCase()}`}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                  style={{
+                    background: lastSearched === name
+                      ? "linear-gradient(135deg, #7a018d, #442f74)"
+                      : "rgba(255,255,255,0.07)",
+                    color: lastSearched === name ? "white" : "rgba(255,255,255,0.6)",
+                    border: lastSearched === name ? "none" : "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
 
             <form onSubmit={handleSearch} className="flex gap-2 mb-3">
               <input
