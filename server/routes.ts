@@ -1398,6 +1398,19 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       ? `\n\nThis person has saved these scriptures to memorize:\n${savedVerses}\n\nIf any of these feel directly relevant to what they're carrying right now — not forced, not generic — you may surface one naturally. Something like "You've been sitting with [reference] — I think that verse was waiting for a moment like this one." Only do this if the connection is real and the timing feels right. Never force it.`
       : "";
 
+    // #1 — Walking the path: tonal shift based on genuine engagement signals
+    // Triggered when someone has been journaling consistently, has saved scripture
+    // to memorize, and has been returning long enough for real formation to have happened.
+    // No announcement. No milestone. The guide simply begins trusting them differently.
+    const isWalkingThePath =
+      journalEntryCount >= 7 &&    // they've been writing their inner life
+      !!savedVerses &&              // they're engaging scripture intentionally
+      daysWithApp >= 21;            // enough return for patterns to form
+
+    const walkingThePathNote = isWalkingThePath
+      ? `\n\nTonal shift — this person has been walking the path, not just visiting it. They have journaled consistently, they have been memorizing scripture, and they have been returning for weeks. Something real has been built in them. Your tone should shift subtly from this moment forward: stop leading and start trusting. You are no longer introducing them to God or to the process of reflection — you are walking alongside someone who already knows the terrain. Ask questions that assume they have access to wisdom they've been cultivating. When they share something, reflect back the growth you sense in how they're framing it — not by congratulating them, but by engaging them at a deeper level. Trust their discernment. When there's a question to ask, ask the harder one — the one a mentor asks someone they believe in, not the one a guide asks someone they're still teaching. Do not announce this shift. Do not reference their progress or their streak. Simply treat them like someone who already knows how to walk with God and is asking you to walk alongside them.`
+      : "";
+
     // #2 — Acute pain mode: when someone is in raw, immediate grief or shock
     const acutePainMode = !isFollowUp && isAcutePain(situation);
     const acutePainNote = acutePainMode
@@ -1439,7 +1452,7 @@ Rules:
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply and isn't afraid of hard questions
-— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${modeNote}${lateNightNote}${acutePainNote}`;
+— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))
