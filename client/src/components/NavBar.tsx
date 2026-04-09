@@ -86,7 +86,7 @@ export function NavBar() {
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 mr-2" title="Shepherd's Path">
             <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
               <img
-                src="/app-icon-new.png"
+                src="/sp-icon.png"
                 alt="Shepherd's Path"
                 className="w-full h-full object-cover select-none"
                 draggable={false}

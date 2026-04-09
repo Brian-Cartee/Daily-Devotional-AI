@@ -78,7 +78,7 @@ export function InstallPrompt() {
             {/* Header row */}
             <div className="flex items-center gap-4 mb-4">
               <img
-                src="/app-icon.png"
+                src="/sp-icon.png"
                 alt="Shepherd's Path"
                 className="w-16 h-16 rounded-2xl shadow-md flex-shrink-0"
                 style={{ boxShadow: "0 4px 16px rgba(82,32,167,0.35)" }}
