@@ -1061,8 +1061,15 @@ What you never do:
     }
   });
 
-  // Manually trigger daily email send (for testing)
+  // Manually trigger daily email send (admin only — requires ADMIN_PASSWORD)
   app.post("/api/admin/send-daily-email", async (req, res) => {
+    // Auth check
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const provided = req.headers["x-admin-password"] || req.body?.adminPassword;
+    if (!adminPassword || provided !== adminPassword) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
+
     try {
       const today = new Date().toISOString().split("T")[0];
       const verse = await storage.getVerseByDate(today);
@@ -1073,15 +1080,21 @@ What you never do:
         return res.status(200).json({ message: "No active subscribers.", sent: 0 });
       }
 
+      // Always use APP_URL or the canonical domain — never req.headers.host (causes broken logos)
       const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
       const appUrl = process.env.APP_URL
-        || (replitDomain ? `https://${replitDomain}` : `https://${req.headers.host}`);
+        || (replitDomain ? `https://${replitDomain}` : "https://shepherdspath.app");
       const { client, fromEmail } = await getUncachableResendClient();
 
       let sent = 0;
+      let skipped = 0;
       for (const subscriber of activeSubscribers) {
+        // Skip subscribers who already received today's email
+        if (subscriber.lastEmailSentDate === today) {
+          skipped++;
+          continue;
+        }
         try {
-          const unsubUrl = `${appUrl}/api/unsubscribe?email=${encodeURIComponent(subscriber.email)}`;
           const html = buildDailyVerseEmailHtml({ ...verse, appUrl }).replace("{{email}}", encodeURIComponent(subscriber.email));
           const text = buildDailyVerseEmailText({ ...verse, appUrl });
           const displayFrom = fromEmail.includes('@') && !fromEmail.startsWith('"')
@@ -1095,13 +1108,14 @@ What you never do:
             html,
             text,
           });
+          await storage.updateSubscriberLastEmailDate(subscriber.id, today);
           sent++;
         } catch (err) {
           console.error(`Failed to send to ${subscriber.email}:`, err);
         }
       }
 
-      res.status(200).json({ message: `Sent to ${sent} subscribers.`, sent });
+      res.status(200).json({ message: `Sent to ${sent} subscribers. Skipped ${skipped} (already received today).`, sent, skipped });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Failed to send emails." });
