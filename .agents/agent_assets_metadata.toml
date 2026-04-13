@@ -413,3 +413,9 @@ id = "iYtXTaS3CMZkjql5ZvT6n"
 uri = "file://client/public/shepherds-path-screenshots.tar.gz"
 type = "unspecified"
 title = "All 9 App Store Screenshots"
+
+[[outputs]]
+id = "1wWBVaC__RypD2-gFWcKh"
+uri = "file://attached_assets/Shepherds_Path_UX_Direction_Final.pdf"
+type = "pdf"
+title = "Shepherd's Path — UX Direction (Reviewed & Revised)"
