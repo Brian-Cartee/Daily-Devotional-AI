@@ -419,3 +419,9 @@ id = "1wWBVaC__RypD2-gFWcKh"
 uri = "file://attached_assets/Shepherds_Path_UX_Direction_Final.pdf"
 type = "pdf"
 title = "Shepherd's Path — UX Direction (Reviewed & Revised)"
+
+[[outputs]]
+id = "jV1tAW-NajxNd8dmV0F0b"
+uri = "file://attached_assets/Shepherds_Path_Hidden_AI_Intelligence.pdf"
+type = "pdf"
+title = "Shepherd's Path — Hidden AI Intelligence"
