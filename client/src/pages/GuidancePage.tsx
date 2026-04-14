@@ -5,7 +5,6 @@ import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, Chec
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
-import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
@@ -356,8 +355,16 @@ export default function GuidancePage() {
         <div className="relative pt-14 overflow-hidden bg-gradient-to-b from-[hsl(265_60%_8%)] to-background">
           <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-70" />
           <div className="max-w-2xl mx-auto px-5 pt-8 pb-7 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg shadow-primary/30 shrink-0">
-              <ShepherdCrookMark className="w-5 h-5 text-white opacity-90" />
+            <div
+              className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(145deg, #7c3aed 0%, #5b21b6 100%)" }}
+            >
+              <img
+                src="/sp-cross-logo.png"
+                alt=""
+                aria-hidden="true"
+                style={{ width: "82%", height: "82%", objectFit: "contain", objectPosition: "50% 35%" }}
+              />
             </div>
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-0.5">Seek Guidance</p>
@@ -376,11 +383,6 @@ export default function GuidancePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <div className="hidden">
-              <ShepherdCrookMark className="w-6 h-6 opacity-80" />
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Seek Guidance</span>
-            </div>
-
             {/* Guidance mode toggle — only shown once a response has completed */}
             {responseComplete && (
               <div className="flex items-center gap-2 mb-4">
