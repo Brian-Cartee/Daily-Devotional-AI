@@ -1232,6 +1232,104 @@ export default function LandingHome() {
             </div>
           </div>
 
+          {/* 6b ── Our Commitment to Scripture — leads into Come Home ──────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.45 }}
+            className="relative rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+            data-testid="commitment-card"
+          >
+            {/* Bold top accent stripe */}
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
+            <img
+              src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800&q=80"
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+              style={{ opacity: 0.06, filter: "saturate(0.7) brightness(0.95)" }}
+            />
+            <button
+              onClick={() => setExpanded(v => !v)}
+              data-testid="btn-commitment-toggle"
+              className="w-full text-left px-5 py-4 flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
+                <ShieldCheck className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-[14px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-white bg-primary rounded px-1.5 py-0.5 leading-none">Read This</span>
+                </div>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Built to lead people to Christ. Scripture is our only source — always.</p>
+              </div>
+              <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+              </motion.div>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {expanded && (
+                <motion.div
+                  key="commitment-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  {/* Bible photo — full-width banner on mobile */}
+                    <div className="relative h-36 overflow-hidden md:hidden border-t border-primary/10">
+                      <img
+                        src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&q=85"
+                        alt="Open Bible"
+                        className="w-full h-full object-cover object-center"
+                        style={{ filter: "brightness(0.88) saturate(0.82)" }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/85" />
+                    </div>
+
+                  <div className="border-t border-primary/10 md:grid md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px] md:gap-0 md:border-t-0">
+                    {/* Text content */}
+                    <div className="px-5 pb-6 pt-4">
+                      <p className="text-sm text-foreground/80 leading-relaxed mb-4">
+                        Shepherd's Path was built with one purpose: to lead people to Christ. We believe in Father, Son, and Holy Spirit — and that the Holy Spirit is not an abstract doctrine but a living Person who walks with you, speaks through God's Word, and intercedes for you when you have no words left. This app exists to remove every obstacle between you and Scripture: the unfamiliar language, the hard questions, even the quiet embarrassment of not knowing how to pronounce a name. The Bible is our only source and standard. Technology is simply the path that brings you to it.
+                      </p>
+
+                      <div className="space-y-2.5 mb-5">
+                        {COMMITMENT_POINTS.map((point) => (
+                          <div key={point} className="flex items-start gap-2.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
+                            <p className="text-sm text-foreground/75 leading-snug">{point}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-[13px] text-foreground/60 italic border-t border-primary/10 pt-4 leading-relaxed">
+                        "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+                      </p>
+                    </div>
+
+                    {/* Bible photo — desktop only */}
+                    <div className="hidden md:block relative overflow-hidden rounded-br-2xl">
+                      <img
+                        src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&q=85"
+                        alt="Open Bible"
+                        className="w-full h-full object-cover object-center"
+                        style={{ minHeight: "220px", filter: "brightness(0.92) saturate(0.85)" }}
+                      />
+                      {/* Left fade so photo blends into the text side */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/30 to-transparent" />
+                      {/* Subtle vignette */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
           {/* 7 ── Come Home — always present ─────────────────────────────── */}
           <Link href="/salvation">
             <div
@@ -1409,104 +1507,6 @@ export default function LandingHome() {
 
         {/* ══ EXPLORE: bottom sections ══ */}
         {activeTab === 'explore' && <>
-
-        {/* Scripture commitment card — trust footer */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
-          className="relative mt-5 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
-          data-testid="commitment-card"
-        >
-          {/* Bold top accent stripe */}
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
-          <img
-            src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800&q=80"
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-            style={{ opacity: 0.06, filter: "saturate(0.7) brightness(0.95)" }}
-          />
-          <button
-            onClick={() => setExpanded(v => !v)}
-            data-testid="btn-commitment-toggle"
-            className="w-full text-left px-5 py-4 flex items-center gap-3"
-          >
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
-              <ShieldCheck className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-[14px] font-bold text-foreground leading-tight">Our Commitment to Scripture</p>
-                <span className="text-[10px] font-bold uppercase tracking-wide text-white bg-primary rounded px-1.5 py-0.5 leading-none">Read This</span>
-              </div>
-              <p className="text-[12px] text-muted-foreground mt-0.5">Built to lead people to Christ. Scripture is our only source — always.</p>
-            </div>
-            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-            </motion.div>
-          </button>
-
-          <AnimatePresence initial={false}>
-            {expanded && (
-              <motion.div
-                key="commitment-body"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                {/* Bible photo — full-width banner on mobile */}
-                  <div className="relative h-36 overflow-hidden md:hidden border-t border-primary/10">
-                    <img
-                      src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&q=85"
-                      alt="Open Bible"
-                      className="w-full h-full object-cover object-center"
-                      style={{ filter: "brightness(0.88) saturate(0.82)" }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/85" />
-                  </div>
-
-                <div className="border-t border-primary/10 md:grid md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px] md:gap-0 md:border-t-0">
-                  {/* Text content */}
-                  <div className="px-5 pb-6 pt-4">
-                    <p className="text-sm text-foreground/80 leading-relaxed mb-4">
-                      Shepherd's Path was built with one purpose: to lead people to Christ. We believe in Father, Son, and Holy Spirit — and that the Holy Spirit is not an abstract doctrine but a living Person who walks with you, speaks through God's Word, and intercedes for you when you have no words left. This app exists to remove every obstacle between you and Scripture: the unfamiliar language, the hard questions, even the quiet embarrassment of not knowing how to pronounce a name. The Bible is our only source and standard. Technology is simply the path that brings you to it.
-                    </p>
-
-                    <div className="space-y-2.5 mb-5">
-                      {COMMITMENT_POINTS.map((point) => (
-                        <div key={point} className="flex items-start gap-2.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                          <p className="text-sm text-foreground/75 leading-snug">{point}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <p className="text-[13px] text-foreground/60 italic border-t border-primary/10 pt-4 leading-relaxed">
-                      "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
-                    </p>
-                  </div>
-
-                  {/* Bible photo — desktop only */}
-                  <div className="hidden md:block relative overflow-hidden rounded-br-2xl">
-                    <img
-                      src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&q=85"
-                      alt="Open Bible"
-                      className="w-full h-full object-cover object-center"
-                      style={{ minHeight: "220px", filter: "brightness(0.92) saturate(0.85)" }}
-                    />
-                    {/* Left fade so photo blends into the text side */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/30 to-transparent" />
-                    {/* Subtle vignette */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
 
         {/* Closing CTA band */}
         <motion.div
