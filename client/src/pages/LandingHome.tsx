@@ -23,7 +23,6 @@ import {
   FOCUS_LABELS, type FaithRhythm,
 } from "@/lib/faithRhythm";
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
-import { VoicesDrawer } from "@/components/VoicesDrawer";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
@@ -686,9 +685,6 @@ export default function LandingHome() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
-          {/* Voices — community testimony drawer */}
-          <VoicesDrawer />
-
           {/* Time-aware greeting */}
           <GreetingHeader />
 
