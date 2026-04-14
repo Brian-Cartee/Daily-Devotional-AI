@@ -46,33 +46,35 @@
   }
 
   .dark {
-    --background: 224 28% 9%;
-    --foreground: 38 20% 93%;
+    /* Shepherd's Path dark — deep sacred purple, like #0d0a1a */
+    --background: 251 45% 6%;
+    --foreground: 38 22% 93%;
 
-    --card: 224 25% 12%;
-    --card-foreground: 38 20% 93%;
+    --card: 258 42% 10%;
+    --card-foreground: 38 22% 93%;
 
-    --popover: 224 25% 12%;
-    --popover-foreground: 38 20% 93%;
+    --popover: 258 42% 10%;
+    --popover-foreground: 38 22% 93%;
 
-    --primary: 258 38% 58%;
+    /* Brand purple #442f74 — lightened for readability on dark */
+    --primary: 258 42% 64%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 37 90% 57%;
     --secondary-foreground: 224 28% 10%;
 
-    --muted: 224 25% 18%;
-    --muted-foreground: 220 12% 58%;
+    --muted: 258 35% 15%;
+    --muted-foreground: 258 15% 58%;
 
-    --accent: 224 25% 18%;
-    --accent-foreground: 38 20% 93%;
+    --accent: 258 35% 15%;
+    --accent-foreground: 38 22% 93%;
 
     --destructive: 0 62% 52%;
-    --destructive-foreground: 38 20% 93%;
+    --destructive-foreground: 38 22% 93%;
 
-    --border: 224 25% 20%;
-    --input: 224 25% 20%;
-    --ring: 258 38% 58%;
+    --border: 258 32% 19%;
+    --input: 258 32% 19%;
+    --ring: 258 42% 64%;
   }
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -19,12 +19,11 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_NAV_ITEMS = [
+  { href: "/",           label: "Home",       icon: Home,        bookmark: null },
   { href: "/devotional", label: "Devotional", icon: Sun,         bookmark: "devotional" as BookmarkSection },
   { href: "/understand", label: "Journey",    icon: Compass,     bookmark: "journey" as BookmarkSection },
   { href: "/read",       label: "Bible",      icon: BookOpen,    bookmark: "read" as BookmarkSection },
-  { href: "/study",      label: "Study",      icon: Search,      bookmark: "study" as BookmarkSection },
   { href: "/journal",    label: "Journal",    icon: NotebookPen, bookmark: "journal" as BookmarkSection },
-  { href: "/stories",    label: "Stories",    icon: Heart,       bookmark: null },
 ];
 
 const NAV_BOOKMARK_MAP: Record<string, BookmarkSection> = {

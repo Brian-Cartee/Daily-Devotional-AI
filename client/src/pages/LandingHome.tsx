@@ -719,11 +719,68 @@ export default function LandingHome() {
           {/* First Steps seeker card — shown to new users (days 1–7) */}
           <FirstStepsCard daysWithApp={getRelationshipAge()} />
 
+          {/* Emotion chips — quick-start guidance by feeling */}
+          {!isLateNight() && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 px-0.5">
+                How are you feeling today?
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                {[
+                  { label: "😟 Anxious",    query: "I'm feeling anxious and struggling to find peace" },
+                  { label: "💔 Grieving",   query: "I'm grieving and need God's comfort right now" },
+                  { label: "😔 Struggling", query: "I'm going through a really hard time and need guidance" },
+                  { label: "😕 Lost",       query: "I'm feeling lost in my faith and need direction" },
+                  { label: "🙏 Grateful",   query: "I'm feeling grateful and want to deepen that with God" },
+                  { label: "🕊️ Need peace", query: "I'm searching for peace in a difficult season" },
+                  { label: "❓ Doubting",   query: "I'm struggling with doubt and questions about my faith" },
+                ].map(({ label, query }) => (
+                  <button
+                    key={label}
+                    data-testid={`chip-emotion-${label.split(" ")[1]?.toLowerCase() ?? label}`}
+                    onClick={() => {
+                      markFirstAction();
+                      navigate(`/guidance?situation=${encodeURIComponent(query)}`);
+                    }}
+                    className="shrink-0 px-4 py-2 rounded-full border border-primary/25 bg-primary/8 text-[13px] font-semibold text-foreground/80 hover:bg-primary/18 hover:border-primary/45 active:scale-95 transition-all whitespace-nowrap"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Daily Devotional — primary action, first thing they should see */}
           <DevotionalCard />
 
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
+
+          {/* Come Home — the most important step */}
+          <Link href="/salvation">
+            <div
+              data-testid="card-come-home"
+              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
+              <div className="absolute inset-0 opacity-[0.04] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjEiLz48L3N2Zz4=')]" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
+              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
+              <div className="relative px-6 py-8 flex flex-col items-center text-center gap-2.5">
+                <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-14 h-14 object-contain mb-1 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-rose-300/60">The Most Important Step</p>
+                <h2 className="text-[28px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
+                <p className="text-[14px] text-white/70 leading-relaxed max-w-[280px]">New to faith, or finding your way back — the door has never been closed.</p>
+                <p className="text-[12px] text-amber-200/50 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
+                <div className="mt-2 flex items-center gap-2 px-7 py-3 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[14px] hover:bg-white/18 transition-colors">
+                  Begin this journey
+                  <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
+                </div>
+              </div>
+            </div>
+          </Link>
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {
@@ -1461,65 +1518,6 @@ export default function LandingHome() {
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
-
-        {/* Come Home — the most important step, given its own moment */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.5 }}
-          className="mt-8"
-        >
-          <Link href="/salvation">
-            <div
-              data-testid="card-come-home"
-              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
-            >
-              {/* Deep warm background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
-              {/* Radial glow from top center */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
-              {/* Subtle grain texture */}
-              <div className="absolute inset-0 opacity-[0.04] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjEiLz48L3N2Zz4=')]" />
-              {/* Top glow line */}
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
-              {/* Bottom glow line */}
-              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
-
-              <div className="relative px-6 py-9 flex flex-col items-center text-center gap-3">
-                {/* Brand cross — path leading home */}
-                <img
-                  src="/sp-cross-logo.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="w-16 h-16 object-contain mb-1 select-none pointer-events-none"
-                  style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }}
-                />
-
-                {/* Eyebrow */}
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-rose-300/60">The Most Important Step</p>
-
-                {/* Headline */}
-                <h2 className="text-[30px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
-
-                {/* Invitation */}
-                <p className="text-[15px] text-white/72 leading-relaxed max-w-[280px] mt-1">
-                  New to faith, or finding your way back — the door has never been closed.
-                </p>
-
-                {/* Scripture */}
-                <p className="text-[12px] text-amber-200/55 italic mt-1">
-                  "Behold, I stand at the door and knock." — Revelation 3:20
-                </p>
-
-                {/* CTA button */}
-                <div className="mt-3 flex items-center gap-2 px-7 py-3 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[14px] hover:bg-white/18 transition-colors">
-                  Begin this journey
-                  <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
-                </div>
-              </div>
-            </div>
-          </Link>
         </motion.div>
 
         {/* Soft divider before Daily Art */}
