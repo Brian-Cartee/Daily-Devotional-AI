@@ -63,6 +63,8 @@ export default function GuidancePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
+  const [heartInput, setHeartInput] = useState("");
+  const [heartListening, setHeartListening] = useState(false);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -307,6 +309,36 @@ export default function GuidancePage() {
     rec.start();
   };
 
+  const toggleHeartVoice = () => {
+    if (heartListening) { setHeartListening(false); return; }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.onresult = (e: any) => {
+      const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
+      setHeartInput(prev => (prev ? prev + " " + transcript : transcript));
+    };
+    rec.onend = () => setHeartListening(false);
+    rec.onerror = () => setHeartListening(false);
+    setHeartListening(true);
+    rec.start();
+  };
+
+  const handleHeartSubmit = () => {
+    const text = heartInput.trim();
+    if (!text) return;
+    window.location.href = `/guidance?situation=${encodeURIComponent(text)}`;
+  };
+
+  const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleHeartSubmit();
+    }
+  };
+
   const handleSend = async () => {
     const text = followUp.trim();
     if (!text || isSending) return;
@@ -452,35 +484,92 @@ export default function GuidancePage() {
               {!responseComplete && !streamingText && !situation && (
                 <motion.div
                   key="burden-intro"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mb-4">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mb-6">
                     {isFirstVisit
                       ? "The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is. Scripture and a prayer written just for you await."
                       : "Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now."}
                   </p>
 
-                  {/* Today's framework suggestion */}
-                  <div className="pt-4 border-t border-border/30">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3" />
-                      Today — {framework.name}
-                    </p>
-                    <button
-                      onClick={() => { window.location.href = `/guidance?situation=${encodeURIComponent(framework.guidanceHint)}`; }}
-                      data-testid="button-framework-guidance-hint"
-                      className="group text-left w-full rounded-xl border border-primary/20 bg-primary/4 hover:bg-primary/8 hover:border-primary/35 px-4 py-3 transition-all"
-                    >
-                      <p className="text-[13px] text-foreground/70 leading-relaxed group-hover:text-foreground transition-colors italic">
-                        "{framework.guidanceHint}"
-                      </p>
-                      <p className="text-[11px] font-bold text-primary mt-2">Begin with this today →</p>
-                    </button>
+                  {/* PRIMARY INPUT — type what's on your heart */}
+                  <div className="bg-background border-2 border-border/60 hover:border-primary/30 focus-within:border-primary/55 rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 shadow-lg transition-colors mb-6">
+                    <textarea
+                      value={heartInput}
+                      onChange={e => setHeartInput(e.target.value)}
+                      onKeyDown={handleHeartKeyDown}
+                      spellCheck
+                      autoCapitalize="sentences"
+                      autoCorrect="on"
+                      placeholder="What's on your heart right now?"
+                      rows={4}
+                      data-testid="input-guidance-heart"
+                      className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed"
+                    />
+                    <div className="flex items-center justify-between border-t border-border/30 pt-2.5">
+                      {hasSpeechSupport ? (
+                        <button
+                          type="button"
+                          onClick={toggleHeartVoice}
+                          data-testid="button-guidance-heart-voice"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all relative"
+                          style={{ color: heartListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                        >
+                          {heartListening ? (
+                            <>
+                              <MicOff className="w-4 h-4" />
+                              <span>Stop listening</span>
+                              <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/15" />
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="w-4 h-4 opacity-60" />
+                              <span className="opacity-60">Speak instead</span>
+                            </>
+                          )}
+                        </button>
+                      ) : <span />}
+                      <button
+                        onClick={handleHeartSubmit}
+                        disabled={!heartInput.trim()}
+                        data-testid="button-guidance-heart-submit"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white font-semibold text-[14px] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-amber-400/35"
+                      >
+                        Seek Guidance
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="flex-1 h-px bg-border/35" />
+                    <span className="text-[10px] font-semibold text-muted-foreground/45 uppercase tracking-[0.2em]">or begin with today</span>
+                    <div className="flex-1 h-px bg-border/35" />
+                  </div>
+
+                  {/* Today's framework — secondary option, styled as a real card-button */}
+                  <button
+                    onClick={() => { window.location.href = `/guidance?situation=${encodeURIComponent(framework.guidanceHint)}`; }}
+                    data-testid="button-framework-guidance-hint"
+                    className="group text-left w-full rounded-2xl border border-primary/25 bg-primary/5 hover:bg-primary/9 hover:border-primary/45 px-5 py-4 transition-all"
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70 mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3" />
+                      {framework.name}
+                    </p>
+                    <p className="text-[14px] text-foreground/75 leading-relaxed group-hover:text-foreground transition-colors italic mb-3">
+                      "{framework.guidanceHint}"
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-primary bg-primary/10 group-hover:bg-primary/18 px-3 py-1.5 rounded-lg transition-all">
+                      Begin with this today
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
