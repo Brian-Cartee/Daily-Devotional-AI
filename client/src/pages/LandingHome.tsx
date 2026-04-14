@@ -198,7 +198,7 @@ function HeroAIPrompt() {
         <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-white/90" />
         </div>
-        <span className="text-[13px] font-semibold text-white/95" style={{ letterSpacing: "0.01em" }}>You don't walk this road alone.</span>
+        <span className="text-[14px] font-bold text-white" style={{ letterSpacing: "0.01em" }}>Talk It Through</span>
       </div>
 
       <div className="px-5 pt-4 pb-5 bg-card">
@@ -394,7 +394,7 @@ function DevotionalCard() {
               Each day brings a new scripture, a personal reflection, and an AI-guided moment to hear from God — grounded in the actual passage, shaped for your real life. Open it, sit with it, let it speak.
             </p>
             <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
-              {visitedToday ? "Continue today's devotional" : "Open today's devotional"}
+              {visitedToday ? "Continue today's devotional" : "Sit with today's message"}
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
           </div>
@@ -635,36 +635,9 @@ export default function LandingHome() {
               <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
               <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
-            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.15rem, 4.2vw, 1.8rem)", letterSpacing: "0.01em" }}>
-              Scripture for what you're going through.
+            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.1rem, 4vw, 1.65rem)", letterSpacing: "0.01em" }}>
+              You don't have to walk this alone.
             </p>
-            <p className="text-white/70 drop-shadow mt-1" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(0.85rem, 3vw, 1.2rem)", letterSpacing: "0.01em" }}>
-              A faithful shepherd walks with you.
-            </p>
-
-            {/* Social proof — trust signal in first viewport */}
-            {!demo?.config.isDemo && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className="mt-3"
-              >
-                <div
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-                  style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)", maxWidth: "calc(100vw - 4rem)" }}
-                >
-                  <span className="text-amber-400 font-bold whitespace-nowrap" style={{ fontSize: "12px", letterSpacing: "0.04em" }}>★★★★★</span>
-                  <span className="text-white/30 whitespace-nowrap" style={{ fontSize: "10px" }}>·</span>
-                  <span
-                    className="text-white/80 font-medium whitespace-nowrap"
-                    style={{ fontSize: "11px", letterSpacing: "0.02em" }}
-                  >
-                    For believers &amp; seekers
-                  </span>
-                </div>
-              </motion.div>
-            )}
 
             {demo?.config.isDemo && (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
@@ -730,7 +703,7 @@ export default function LandingHome() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'today' ? 'Today' : 'Explore'}
+                {tab === 'today' ? 'For You' : 'Explore'}
               </button>
             ))}
           </div>
@@ -747,25 +720,24 @@ export default function LandingHome() {
           {/* Notification nudge — shown once to users who haven't enabled reminders */}
           <NotificationNudgeCard />
 
-          {/* First Steps seeker card — shown to new users (days 1–7) */}
-          <FirstStepsCard daysWithApp={getRelationshipAge()} />
+          {/* ── HERO: Talk It Through prompt — primary entry point ── */}
+          <HeroAIPrompt />
 
-          {/* Emotion grid — what are you going through right now? */}
+          {/* Emotion grid — quick-select if they can't find words */}
           {!isLateNight() && (
-            <div className="relative rounded-2xl border border-primary/20 bg-card overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/60 via-violet-500/60 to-primary/60" />
-              <div className="px-4 pt-4 pb-3">
-                <p className="text-[15px] font-bold text-foreground mb-0.5">What are you going through right now?</p>
-                <p className="text-[12px] text-muted-foreground mb-3">Select what resonates — we'll bring you scripture for it.</p>
-                <div className="grid grid-cols-2 gap-2">
+            <div className="relative rounded-2xl border border-primary/15 bg-card overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/40 via-violet-500/40 to-primary/40" />
+              <div className="px-4 pt-3.5 pb-3">
+                <p className="text-[13px] font-semibold text-muted-foreground mb-2.5">Or choose what fits right now:</p>
+                <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { icon: "😟", label: "Anxiety",      sub: "Feeling overwhelmed",    query: "I'm feeling anxious and overwhelmed and need God's peace" },
-                    { icon: "💔", label: "Grief",         sub: "Experiencing loss",      query: "I'm grieving a loss and need God's comfort right now" },
-                    { icon: "😔", label: "Loneliness",   sub: "Feeling isolated",       query: "I'm feeling deeply lonely and disconnected and need God's presence" },
-                    { icon: "😤", label: "Anger",         sub: "Feeling frustrated",     query: "I'm struggling with anger and frustration and need God's guidance" },
-                    { icon: "🤝", label: "Relationship",  sub: "Interpersonal struggles",query: "I'm struggling in an important relationship and need wisdom from God" },
-                    { icon: "✨", label: "Something else", sub: "Another situation",     query: "I'm going through something difficult and need scripture to guide me" },
-                  ].map(({ icon, label, sub, query }) => (
+                    { icon: "😟", label: "Anxiety",       query: "I'm feeling anxious and overwhelmed and need God's peace" },
+                    { icon: "💔", label: "Grief",          query: "I'm grieving a loss and need God's comfort right now" },
+                    { icon: "😔", label: "Loneliness",    query: "I'm feeling deeply lonely and disconnected and need God's presence" },
+                    { icon: "😤", label: "Anger",          query: "I'm struggling with anger and frustration and need God's guidance" },
+                    { icon: "🤝", label: "Relationship",   query: "I'm struggling in an important relationship and need wisdom from God" },
+                    { icon: "✨", label: "Something else", query: "I'm going through something difficult and need scripture to guide me" },
+                  ].map(({ icon, label, query }) => (
                     <button
                       key={label}
                       data-testid={`emotion-card-${label.toLowerCase().replace(/\s+/g, "-")}`}
@@ -773,11 +745,10 @@ export default function LandingHome() {
                         markFirstAction();
                         navigate(`/guidance?situation=${encodeURIComponent(query)}`);
                       }}
-                      className="flex flex-col items-start gap-1 px-3.5 py-3 rounded-xl border border-primary/15 bg-muted/40 hover:bg-primary/10 hover:border-primary/35 active:scale-[0.97] transition-all text-left group"
+                      className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border border-primary/10 bg-muted/30 hover:bg-primary/8 hover:border-primary/25 active:scale-[0.97] transition-all text-center group"
                     >
-                      <span className="text-xl leading-none">{icon}</span>
-                      <span className="text-[13px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{label}</span>
-                      <span className="text-[11px] text-muted-foreground leading-tight">{sub}</span>
+                      <span className="text-lg leading-none">{icon}</span>
+                      <span className="text-[11px] font-semibold text-foreground/70 leading-tight group-hover:text-primary transition-colors">{label}</span>
                     </button>
                   ))}
                 </div>
@@ -785,11 +756,11 @@ export default function LandingHome() {
             </div>
           )}
 
-          {/* Daily Devotional — primary action, first thing they should see */}
+          {/* Daily Devotional */}
           <DevotionalCard />
 
-          {/* AI Prompt — hero entry point */}
-          <HeroAIPrompt />
+          {/* First Steps seeker card — shown to new users (days 1–7) */}
+          <FirstStepsCard daysWithApp={getRelationshipAge()} />
 
 
           {/* Today's Rhythm card — shown once rhythm is set up */}

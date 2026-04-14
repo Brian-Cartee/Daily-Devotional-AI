@@ -578,52 +578,42 @@ export function FirstStepsCard({ daysWithApp }: FirstStepsCardProps) {
       <motion.div
         {...fadeIn}
         data-testid="card-first-steps"
-        className="relative rounded-2xl border border-orange-200/70 dark:border-orange-800/40 bg-card overflow-hidden shadow-sm"
+        className="relative rounded-2xl border border-border/60 bg-muted/30 overflow-hidden"
       >
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-300" />
         <button
           onClick={dismiss}
           data-testid="button-dismiss-first-steps"
           aria-label="Dismiss"
-          className="absolute top-3 right-3 text-orange-400 hover:text-orange-600 transition-colors"
+          className="absolute top-2.5 right-2.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
 
-        <div className="px-5 pt-5 pb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
-              <Compass className="w-3.5 h-3.5 text-orange-500" />
-            </div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
-              A place to start
-            </p>
+        <div className="px-4 pt-3.5 pb-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0">
+            <Compass className="w-4 h-4 text-orange-500" />
           </div>
-
-          <p className="text-[15px] font-bold text-foreground leading-snug mb-1.5">
-            New to this? There's a journey built for exactly where you are.
-          </p>
-          <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
-            Seven passages. No church background required. Written for someone asking real questions — about whether God is real, whether it's too late, and what any of this actually means.
-          </p>
-
-          <div className="flex items-center gap-3">
-            <Link href="/understand?j=first-steps" onClick={dismiss}>
-              <Button
-                size="sm"
-                data-testid="button-start-first-steps"
-                className="rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-[13px] px-5 shadow-sm"
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-foreground leading-snug">
+              New here? There's a journey built for you.
+            </p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <Link href="/understand?j=first-steps" onClick={dismiss}>
+                <button
+                  data-testid="button-start-first-steps"
+                  className="text-[12px] font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+                >
+                  Start First Steps →
+                </button>
+              </Link>
+              <button
+                onClick={dismiss}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-skip-first-steps"
               >
-                Start First Steps
-              </Button>
-            </Link>
-            <button
-              onClick={dismiss}
-              className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="button-skip-first-steps"
-            >
-              I'm familiar with the Bible
-            </button>
+                I'm familiar with the Bible
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>

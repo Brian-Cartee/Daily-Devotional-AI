@@ -1,0 +1,201 @@
+Objective:
+Shift the experience from content-first to connection-first. Reduce friction, simplify decisions, and create an immediate emotional connection.
+
+1. Section Title Update
+Change:
+
+
+Replace “Today” with “For You”
+
+
+Reason:
+
+
+More personal and aligned with the app’s purpose
+
+
+Removes task-based feeling
+
+
+
+2. Primary Interaction (Make This the Hero)
+Section Name:
+
+
+Replace “You don’t walk this road alone” with
+👉 “Talk It Through”
+
+
+Behavior:
+
+
+This becomes the primary focus on the screen
+
+
+Input box should be the most visually prominent element
+
+
+User should immediately understand: “This is where I start”
+
+
+
+3. Section Order (CRITICAL CHANGE)
+New Order (Top → Bottom):
+
+
+Talk It Through (Primary interaction)
+
+
+Quick Select Emotions Grid (Anxiety, Grief, etc.)
+
+
+Daily Devotional
+
+
+Supporting / secondary sections
+
+
+
+4. Eliminate Dual-Path Confusion
+Change:
+
+
+The input box is primary
+
+
+The emotion grid is secondary support
+
+
+Instruction:
+
+
+Reduce visual weight of emotion grid slightly
+
+
+Position it clearly below the input as a helper, not equal option
+
+
+
+5. Header Simplification
+Keep:
+
+
+Background image (road visual is strong)
+
+
+Simplify:
+
+
+Reduce text to:
+
+
+Title: Shepherd’s Path
+
+
+ONE supporting line only
+
+
+
+
+Replace supporting line with:
+👉 “You don’t have to walk this alone.”
+Reduce or remove:
+
+
+Star rating badge prominence
+
+
+Excess text
+
+
+
+6. Daily Devotional (Secondary Role)
+Keep placement BELOW interaction
+Change CTA text:
+
+
+Replace:
+
+
+“Open today’s devotional”
+
+
+
+
+With:
+👉 “Sit with today’s message”
+
+
+
+7. “A Place to Start” Card
+Behavior:
+
+
+Keep for new users only
+
+
+Reduce visual dominance
+
+
+Allow dismissal or auto-collapse after first interaction
+
+
+
+8. Share Button (No Major Change Yet)
+
+
+Keep current placement for now
+
+
+Do NOT emphasize yet
+
+
+Will be improved later in flow (post-response)
+
+
+
+9. Overall UX Principle
+
+
+One clear starting point: Talk It Through
+
+
+No confusion, no competing actions
+
+
+Every element should feel:
+
+
+Simple
+
+
+Calm
+
+
+Personal
+
+
+Immediate
+
+
+
+
+
+Expected Outcome
+
+
+Faster user engagement
+
+
+Reduced decision friction
+
+
+Stronger emotional connection on arrival
+
+
+Clear understanding of how to use the app instantly
+
+
+
+If you want next step after this gets implemented, I’ll help you:
+👉 turn the “Talk It Through” experience into something addictive (this is where retention explodes)
