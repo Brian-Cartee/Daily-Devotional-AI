@@ -15,6 +15,7 @@ import { isLateNight } from "@/lib/nightMode";
 import { getRelationshipAge } from "@/lib/relationship";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
+import { useToast } from "@/hooks/use-toast";
 
 interface VerseResult {
   reference: string;
@@ -55,6 +56,7 @@ export default function GuidancePage() {
   const params = new URLSearchParams(search);
   const situation = params.get("situation") ?? "";
   const [, navigate] = useLocation();
+  const { toast } = useToast();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
@@ -309,7 +311,7 @@ export default function GuidancePage() {
       });
       setPrayerSaved(true);
     } catch {
-      // silently ignore
+      toast({ title: "Couldn't save to journal", description: "Please try again.", variant: "destructive" });
     }
   };
 
@@ -447,7 +449,7 @@ export default function GuidancePage() {
 
             {/* Context hint for what mode-switching does */}
             {responseComplete && situation.trim() && (
-              <p className="text-[10px] text-muted-foreground/50 mb-4 -mt-2">
+              <p className="text-[10px] text-muted-foreground/65 mb-4 -mt-2">
                 {messages.filter(m => m.role === "user").length > 1
                   ? "Tone applies to your next message"
                   : "Switching tone will refresh the guidance"}
@@ -518,7 +520,7 @@ export default function GuidancePage() {
                 transition={{ duration: 0.3 }}
                 className="py-4 mb-4"
               >
-                <p className="text-[15px] text-foreground/50 italic">I'm here with you in this…</p>
+                <p className="text-[15px] text-foreground/70 italic">I'm here with you in this…</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -853,7 +855,7 @@ export default function GuidancePage() {
 
           {/* Bridge text — connects the response to the journey below */}
           {responseComplete && (
-            <p className="text-sm text-muted-foreground/75 italic leading-relaxed mb-6 -mt-2">
+            <p className="text-[13px] text-muted-foreground/85 leading-relaxed mb-6 -mt-2">
               The scripture journey below was shaped around everything you've just shared — take your time with it.
             </p>
           )}

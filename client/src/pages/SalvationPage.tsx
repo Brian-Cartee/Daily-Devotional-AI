@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
-import { Link } from "wouter";
-import { Heart, ChevronDown, ArrowRight, BookOpen, Compass, Sun, Check } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Heart, ChevronDown, ArrowRight, BookOpen, Compass, Sun, Check, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SALVATION_MOMENT_KEY = "sp_salvation_moment";
@@ -105,6 +105,7 @@ function VerseCard({ verse }: { verse: typeof VERSES[0] }) {
 }
 
 export default function SalvationPage() {
+  const [, navigate] = useLocation();
   const [prayerMoment, setPrayerMoment] = useState<string | null>(() =>
     localStorage.getItem(SALVATION_MOMENT_KEY)
   );
@@ -141,6 +142,16 @@ export default function SalvationPage() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-24">
+
+        {/* Back */}
+        <button
+          onClick={() => navigate("/")}
+          data-testid="button-back-salvation"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
 
         {/* Hero */}
         <motion.div {...fadeUp(0)} className="text-center mb-10">
@@ -179,7 +190,7 @@ export default function SalvationPage() {
                   onClick={() => handleStepClick(i)}
                   className="w-full text-left px-5 py-4 flex items-start gap-4"
                 >
-                  <span className="text-[11px] font-bold text-primary/60 mt-0.5 w-6 shrink-0">{step.number}</span>
+                  <span className="text-[11px] font-bold text-primary/85 mt-0.5 w-6 shrink-0">{step.number}</span>
                   <p className="flex-1 text-[15px] font-semibold text-foreground leading-snug">{step.title}</p>
                   <motion.div animate={{ rotate: expandedStep === i ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0 mt-0.5">
                     <ChevronDown className="w-4 h-4 text-muted-foreground" />
