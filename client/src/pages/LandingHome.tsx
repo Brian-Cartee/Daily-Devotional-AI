@@ -26,7 +26,7 @@ import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
-  TipCard, CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
+  CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
   FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
@@ -913,55 +913,88 @@ export default function LandingHome() {
           {/* ══ EXPLORE TAB ══ */}
           {activeTab === 'explore' && <>
 
-          {/* 7-Day Faith Framework — for engaged users, sits after core entry points */}
-          <FrameworkDayCard />
-
-          {/* "Hear the Word" — Listen while you read feature spotlight. Hidden at night — not the moment for it. */}
-          {!isLateNight() && (
-            <div className="relative rounded-2xl overflow-hidden border border-sky-200/70 dark:border-sky-800/40 shadow-sm" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }}>
-              <div className="dark:hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 97%) 0%, hsl(172 60% 96%) 100%)" }} />
-              <div className="dark:block hidden absolute inset-0 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(199 80% 8%) 0%, hsl(172 60% 6%) 100%)" }} />
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
-              <div className="relative z-10 px-5 py-4 flex gap-4 items-start">
-                <div className="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center shrink-0 mt-0.5">
-                  <Volume2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400 mb-1">Hear the Word</p>
-                  <h3 className="text-[16px] font-black text-foreground leading-tight tracking-tight mb-1.5">Listen while you read.</h3>
-                  <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
-                    Scripture was always meant to be <em>heard</em>. If the Bible has ever felt hard to read, let it be spoken to you — and follow along at your own pace. Thousands of people experience God's Word this way for the first time.
+          {/* 1 ── Your Next Step — dynamic hero ───────────────────────────── */}
+          <div
+            data-testid="card-your-next-step"
+            className="relative rounded-2xl overflow-hidden shadow-md"
+            style={{ background: "linear-gradient(135deg, hsl(258 42% 18%) 0%, hsl(258 38% 28%) 100%)" }}
+          >
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/50 via-violet-400 to-amber-400/60" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_80%_30%,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
+            <div className="relative px-5 pt-4 pb-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-2">Your Next Step</p>
+              {!rhythm ? (
+                <>
+                  <h3 className="text-[19px] font-bold text-white leading-snug tracking-tight mb-1.5">
+                    Make Shepherd's Path yours.
+                  </h3>
+                  <p className="text-[13px] text-white/60 leading-relaxed mb-4">
+                    3 quick questions — and every verse, prayer, and journey adapts to where you are in your walk.
                   </p>
-                  <Link href="/understand">
-                    <button
-                      data-testid="btn-hear-word-cta"
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 text-[12px] font-bold hover:bg-sky-200 dark:hover:bg-sky-900/70 transition-all"
-                    >
-                      <Play className="w-3 h-3 fill-current" />
-                      Try listening to scripture
-                    </button>
-                  </Link>
+                  <button
+                    data-testid="btn-next-step-rhythm"
+                    onClick={() => setShowRhythmSetup(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-[0.97] text-[13px] font-bold text-amber-950 transition-all shadow-md shadow-amber-500/25"
+                  >
+                    Personalize my path <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (() => {
+                const journeyId = getRecommendedJourneyId(rhythm);
+                const journeyName = getJourneyName(journeyId);
+                return (
+                  <>
+                    <h3 className="text-[19px] font-bold text-white leading-snug tracking-tight mb-1.5">
+                      Continue your journey.
+                    </h3>
+                    <p className="text-[13px] text-white/60 leading-relaxed mb-4">
+                      Pick up where you left off in <span className="text-white/85 font-semibold">{journeyName}</span> — your recommended path is ready.
+                    </p>
+                    <Link href={`/understand?j=${journeyId}`}>
+                      <button
+                        data-testid="btn-next-step-journey"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-[0.97] text-[13px] font-bold text-amber-950 transition-all shadow-md shadow-amber-500/25"
+                      >
+                        Open {journeyName} <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </Link>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* 2 ── Listen to Scripture ─────────────────────────────────────── */}
+          {!isLateNight() && (
+            <Link href="/understand">
+              <div
+                data-testid="btn-hear-word-cta"
+                className="relative rounded-2xl border border-sky-200/70 dark:border-sky-800/40 bg-card overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
+              >
+                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
+                <div className="px-5 py-3.5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center shrink-0">
+                    <Volume2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400 mb-0.5">Featured</p>
+                    <p className="text-[15px] font-bold text-foreground leading-tight">Listen to Scripture</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Hear God's Word spoken — follow along at your own pace</p>
+                  </div>
+                  <Play className="w-4 h-4 text-sky-500 fill-sky-500 shrink-0" />
                 </div>
               </div>
-            </div>
+            </Link>
           )}
 
-          {/* Daily check-in */}
+          {/* 3 ── Contextual engagement cards (supporting, below nav) ──────── */}
+          <FrameworkDayCard />
           <CheckinCard />
-
-          {/* Rotating feature tip — hidden at night */}
-          {!isLateNight() && <TipCard />}
-
-          {/* Weekly gratitude prompt — saves to journal */}
           <GratitudePromptCard sessionId={sessionId} />
-
-          {/* Weekly deep reflection question */}
           <WeeklyReflectionCard />
-
-          {/* Sunday weekly summary */}
           <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
 
-          {/* Rhythm nudge — shown after first action, before setup is done */}
+          {/* Rhythm nudge */}
           {showNudge && (
             <div className="relative rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-violet-500/3 px-5 py-4 flex items-start gap-3.5">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -991,102 +1024,223 @@ export default function LandingHome() {
             </div>
           )}
 
-          {/* Bible Journeys + Read — core content, moved up */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow, photo }) => (
-            <Link key={href} href={href}>
-              <div
-                data-testid={testid}
-                className={`group relative rounded-2xl border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
-              >
-                {photo && (
-                  <img
-                    src={photo}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none"
-                  />
-                )}
-                <div className={`absolute inset-0 ${imageBg} pointer-events-none`} />
-                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accentGradient} opacity-70 rounded-l-2xl`} />
-                <img
-                  src={logoWhite}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none"
-                  
-                />
-                <div className="relative z-10 flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
-                    <Icon className={`w-5 h-5 ${iconColor}`} />
+          {/* 4 ── GROW ────────────────────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-2.5 px-0.5">
+              <span className="text-[15px] leading-none">📖</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground/45">Grow</span>
+              <div className="flex-1 h-px bg-border/50" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              {sections.map(({ href, icon: Icon, pillText, title, description, cta, testid, imageBg, border, iconColor, pillClass, accentGradient, iconBg, iconShadow, photo }) => (
+                <Link key={href} href={href}>
+                  <div
+                    data-testid={testid}
+                    className={`group relative rounded-2xl border ${border} bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden h-full`}
+                  >
+                    {photo && (
+                      <img src={photo} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-[0.13] pointer-events-none select-none" />
+                    )}
+                    <div className={`absolute inset-0 ${imageBg} pointer-events-none`} />
+                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accentGradient} opacity-70 rounded-l-2xl`} />
+                    <img src={logoWhite} alt="" aria-hidden="true" className="absolute top-3 right-3 w-11 h-11 object-contain opacity-[0.18] pointer-events-none select-none" />
+                    <div className="relative z-10 flex items-start gap-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} shadow-sm ${iconShadow}`}>
+                        <Icon className={`w-5 h-5 ${iconColor}`} />
+                      </div>
+                      <div className="flex-1 min-w-0 py-0.5">
+                        <div className="flex items-center justify-start gap-2 mb-1">
+                          <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass} whitespace-nowrap`}>
+                            {pillText}
+                          </span>
+                        </div>
+                        <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">{title}</h2>
+                        <p className="text-[15px] text-muted-foreground leading-relaxed">{description}</p>
+                        <div className={`flex items-center gap-1.5 mt-3.5 text-sm font-semibold ${iconColor} group-hover:gap-2.5 transition-all`}>
+                          {cta}
+                          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0 py-0.5">
-                    <div className="flex items-center justify-start gap-2 mb-1">
-                      <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${pillClass} whitespace-nowrap`}>
-                        {pillText}
-                      </span>
+                </Link>
+              ))}
+            </div>
+            {/* Find a Passage — part of Grow */}
+            <div
+              className="relative rounded-2xl overflow-hidden border border-violet-200/60 dark:border-violet-800/30 bg-gradient-to-br from-violet-50/80 to-background dark:from-violet-950/20 dark:to-background"
+              data-testid="card-passage-finder"
+            >
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-violet-500 via-primary to-amber-400" />
+              <div className="px-5 pt-4 pb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-base">📖</span>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">Find a Passage</p>
+                </div>
+                <p className="text-[14px] font-bold text-foreground leading-snug mb-0.5">Story, verse, or just a memory</p>
+                <p className="text-[12px] text-muted-foreground mb-3">Describe what you half-remember — we'll find the scripture.</p>
+                {!passageResult ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      spellCheck
+                      value={passageQuery}
+                      onChange={e => setPassageQuery(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && findPassage()}
+                      placeholder='e.g. "someone walks on water" or "peace verses" or John 3'
+                      disabled={passageLoading}
+                      data-testid="input-home-passage-finder"
+                      className="flex-1 bg-white dark:bg-background border border-violet-200/70 dark:border-violet-700/40 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:ring-2 focus:ring-violet-400/30 placeholder:text-muted-foreground/50 disabled:opacity-50"
+                    />
+                    <button
+                      onClick={findPassage}
+                      disabled={!passageQuery.trim() || passageLoading}
+                      data-testid="button-home-passage-find"
+                      className="shrink-0 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-2.5 transition-colors disabled:opacity-40 shadow-sm"
+                    >
+                      {passageLoading
+                        ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                        : <BookOpen className="w-4 h-4" />
+                      }
+                    </button>
+                  </div>
+                ) : (
+                  <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-widest">Passage Found</span>
+                      <button
+                        onClick={() => { setPassageResult(""); setPassageQuery(""); }}
+                        data-testid="button-home-passage-reset"
+                        className="text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors underline"
+                      >
+                        Search again
+                      </button>
                     </div>
-                    <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
-                      {title}
-                    </h2>
-                    <p className="text-[15px] text-muted-foreground leading-relaxed">
-                      {description}
-                    </p>
-                    <div className={`flex items-center gap-1.5 mt-3.5 text-sm font-semibold ${iconColor} group-hover:gap-2.5 transition-all`}>
-                      {cta}
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                    <div className="bg-white/70 dark:bg-background/60 rounded-xl p-4 border border-violet-200/40 dark:border-violet-700/30">
+                      <div className="text-[13.5px] text-foreground/80 leading-relaxed space-y-2">
+                        {passageResult.split("\n").map((line, i) => {
+                          if (!line.trim()) return null;
+                          const isBold = /^\*\*/.test(line.trim()) || /^#{1,3}\s/.test(line.trim());
+                          const clean = line.replace(/^\*\*|\*\*$/g, "").replace(/^#+\s/, "").replace(/\*\*(.*?)\*\*/g, "$1");
+                          return isBold
+                            ? <p key={i} className="font-bold text-foreground mt-3 first:mt-0">{clean}</p>
+                            : <p key={i}>{clean}</p>;
+                        })}
+                      </div>
                     </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 5 ── WALK TOGETHER ───────────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-2.5 px-0.5">
+              <span className="text-[15px] leading-none">🤝</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground/45">Walk Together</span>
+              <div className="flex-1 h-px bg-border/50" />
+            </div>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/60">
+              <Link href="/prayer-wall">
+                <div data-testid="card-prayer-wall-entry" className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 active:scale-[0.99] transition-all cursor-pointer group">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center shrink-0 shadow-sm shadow-violet-500/20">
+                    <HandHeart className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-bold text-foreground leading-tight">Prayer Wall</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Share your heart. Believers are praying together.</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg] shrink-0 group-hover:text-foreground transition-colors" />
+                </div>
+              </Link>
+              <Link href="/iron-circle">
+                <div data-testid="card-iron-circle-entry" className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 active:scale-[0.99] transition-all cursor-pointer group">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/20">
+                    <Users className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-bold text-foreground leading-tight">Your Iron Circle</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">"As iron sharpens iron…" — Prov. 27:17</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg] shrink-0 group-hover:text-foreground transition-colors" />
+                </div>
+              </Link>
+              <Link href="/calling">
+                <div data-testid="card-calling-entry" className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 active:scale-[0.99] transition-all cursor-pointer group">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7A018D] to-[#442f74] flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/20">
+                    <Share2 className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-bold text-foreground leading-tight">Invite &amp; Share</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Sharing is more than caring — it's our calling.</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg] shrink-0 group-hover:text-foreground transition-colors" />
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* 6 ── ENGAGE ─────────────────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-2.5 px-0.5">
+              <span className="text-[15px] leading-none">🎯</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground/45">Engage</span>
+              <div className="flex-1 h-px bg-border/50" />
+            </div>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/60">
+              <Link href="/trivia">
+                <div data-testid="card-trivia-entry" className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 active:scale-[0.99] transition-all cursor-pointer group">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-sm shadow-violet-500/20">
+                    <Trophy className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-bold text-foreground leading-tight">Bible Challenge</p>
+                      <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-400/20 text-amber-600 dark:text-amber-300 border border-amber-300/30 rounded px-1.5 py-0.5 leading-none">New</span>
+                    </div>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Test your knowledge — then challenge a friend</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg] shrink-0 group-hover:text-foreground transition-colors" />
+                </div>
+              </Link>
+              <Link href="/greatest-gift">
+                <div data-testid="card-greatest-gift-entry" className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 active:scale-[0.99] transition-all cursor-pointer group">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/20">
+                    <Gift className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-bold text-foreground leading-tight">The Greatest Gift 🎁</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Give someone a year with God</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg] shrink-0 group-hover:text-foreground transition-colors" />
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* 7 ── Come Home — new/inactive users only ─────────────────────── */}
+          {getRelationshipAge() <= 14 && (
+            <Link href="/salvation">
+              <div
+                data-testid="card-come-home"
+                className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
+                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
+                <div className="relative px-6 py-7 flex flex-col items-center text-center gap-2">
+                  <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
+                  <h2 className="text-[24px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
+                  <p className="text-[13px] text-white/65 leading-relaxed max-w-[260px]">New to faith, or finding your way back — the door has never been closed.</p>
+                  <p className="text-[11px] text-amber-200/45 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
+                  <div className="mt-1 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[13px] hover:bg-white/18 transition-colors">
+                    Begin this journey <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
                   </div>
                 </div>
               </div>
             </Link>
-          ))}
-          </div>
-
-          {/* Come Home — invitation, not a pitch. Appears after core content. */}
-          <Link href="/salvation">
-            <div
-              data-testid="card-come-home"
-              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
-              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
-              <div className="relative px-6 py-8 flex flex-col items-center text-center gap-2.5">
-                <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-14 h-14 object-contain mb-1 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
-                <h2 className="text-[28px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
-                <p className="text-[14px] text-white/70 leading-relaxed max-w-[280px]">New to faith, or finding your way back — the door has never been closed.</p>
-                <p className="text-[12px] text-amber-200/50 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
-                <div className="mt-2 flex items-center gap-2 px-7 py-3 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[14px] hover:bg-white/18 transition-colors">
-                  Begin this journey
-                  <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          {/* Our Commitments — 2×2 grid of core values */}
-          <div>
-            <h2 className="text-[20px] font-extrabold text-foreground tracking-tight mb-3">Our Commitments</h2>
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                { icon: "📖", title: "Scripture First",    body: "Every word we share is guided by God's truth — not human opinion." },
-                { icon: "🤍", title: "Grace Space",        body: "Come as you are. There's no rush — only space to be met with grace." },
-                { icon: "🧭", title: "Truth Led",          body: "We use technology to guide you, but Scripture remains the foundation." },
-                { icon: "🌱", title: "Spiritual Growth",   body: "Everything here is designed to help you grow closer to Christ." },
-              ].map(({ icon, title, body }) => (
-                <div
-                  key={title}
-                  className="rounded-2xl border border-primary/15 bg-card px-4 py-4 flex flex-col gap-2"
-                >
-                  <span className="text-2xl leading-none">{icon}</span>
-                  <p className="text-[13px] font-bold text-foreground leading-tight">{title}</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug">{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           </>}
 
@@ -1242,221 +1396,10 @@ export default function LandingHome() {
           </div>
         </motion.div>}
 
-        {/* ══ EXPLORE: secondary sections ══ */}
+        {/* ══ EXPLORE: bottom sections ══ */}
         {activeTab === 'explore' && <>
 
-        {/* ── Find a Passage ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.42 }}
-          className="relative mt-5 rounded-2xl overflow-hidden border border-violet-200/60 dark:border-violet-800/30 bg-gradient-to-br from-violet-50/80 to-background dark:from-violet-950/20 dark:to-background"
-          data-testid="card-passage-finder"
-        >
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 via-primary to-amber-400" />
-          <div className="px-5 pt-5 pb-5">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">📖</span>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">Find a Passage</p>
-            </div>
-            <p className="text-[15px] font-bold text-foreground leading-snug mb-1">Story, verse, or just a memory</p>
-            <p className="text-[12px] text-muted-foreground mb-4">Describe what you half-remember — we'll find the scripture.</p>
-
-            {!passageResult ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  spellCheck
-                  value={passageQuery}
-                  onChange={e => setPassageQuery(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && findPassage()}
-                  placeholder='e.g. "someone walks on water" or "peace verses" or John 3'
-                  disabled={passageLoading}
-                  data-testid="input-home-passage-finder"
-                  className="flex-1 bg-white dark:bg-background border border-violet-200/70 dark:border-violet-700/40 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:ring-2 focus:ring-violet-400/30 placeholder:text-muted-foreground/50 disabled:opacity-50"
-                />
-                <button
-                  onClick={findPassage}
-                  disabled={!passageQuery.trim() || passageLoading}
-                  data-testid="button-home-passage-find"
-                  className="shrink-0 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-2.5 transition-colors disabled:opacity-40 shadow-sm"
-                >
-                  {passageLoading
-                    ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
-                    : <BookOpen className="w-4 h-4" />
-                  }
-                </button>
-              </div>
-            ) : (
-              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-widest">Passage Found</span>
-                  <button
-                    onClick={() => { setPassageResult(""); setPassageQuery(""); }}
-                    data-testid="button-home-passage-reset"
-                    className="text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors underline"
-                  >
-                    Search again
-                  </button>
-                </div>
-                <div className="bg-white/70 dark:bg-background/60 rounded-xl p-4 border border-violet-200/40 dark:border-violet-700/30">
-                  <div className="text-[13.5px] text-foreground/80 leading-relaxed space-y-2">
-                    {passageResult.split("\n").map((line, i) => {
-                      if (!line.trim()) return null;
-                      const isBold = /^\*\*/.test(line.trim()) || /^#{1,3}\s/.test(line.trim());
-                      const clean = line.replace(/^\*\*|\*\*$/g, "").replace(/^#+\s/, "").replace(/\*\*(.*?)\*\*/g, "$1");
-                      return isBold
-                        ? <p key={i} className="font-bold text-foreground mt-3 first:mt-0">{clean}</p>
-                        : <p key={i}>{clean}</p>;
-                    })}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* ── Bible Challenge entry ─ viral growth driver ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.40 }}
-          className="mt-5"
-        >
-          <Link href="/trivia">
-            <div
-              data-testid="card-trivia-entry"
-              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-md"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-primary to-indigo-700" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_20%,rgba(255,255,255,0.10)_0%,transparent_60%)]" />
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-300/50 via-white/70 to-amber-300/50" />
-              <div className="px-5 py-4 flex items-center gap-4 relative">
-                <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
-                  <Trophy className="w-5 h-5 text-amber-300" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[15px] font-bold text-white leading-snug">Bible Challenge</p>
-                    <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-400/25 text-amber-200 border border-amber-300/30 rounded px-1.5 py-0.5 leading-none">New</span>
-                  </div>
-                  <p className="text-[12px] text-white/65 mt-0.5 leading-snug">Test your knowledge — then challenge a friend</p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-white/60 rotate-[-90deg] shrink-0" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Iron Circle entry card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.41 }}
-          className="mt-3"
-        >
-          <Link href="/iron-circle">
-            <div
-              data-testid="card-iron-circle-entry"
-              className="relative rounded-2xl border border-indigo-200/70 dark:border-indigo-800/40 bg-gradient-to-br from-indigo-50/80 to-violet-50/60 dark:from-indigo-950/30 dark:to-violet-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
-            >
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 via-violet-500 to-amber-400" />
-              <div className="px-5 py-4 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/25">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-bold text-foreground leading-snug">Your Iron Circle</p>
-                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">"As iron sharpens iron…" — Prov. 27:17</p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-indigo-400 rotate-[-90deg] shrink-0" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Our Calling card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.415 }}
-          className="mt-3"
-        >
-          <Link href="/calling">
-            <div
-              data-testid="card-calling-entry"
-              className="relative rounded-2xl border border-purple-200/70 dark:border-purple-800/40 bg-gradient-to-br from-purple-50/80 to-violet-50/60 dark:from-purple-950/30 dark:to-violet-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
-            >
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#7A018D] to-[#442f74]" />
-              <div className="px-5 py-4 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7A018D] to-[#442f74] flex items-center justify-center shrink-0 shadow-md shadow-purple-500/25">
-                  <Share2 className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-bold text-foreground leading-snug">Our Calling</p>
-                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Sharing is more than caring — it's our calling.</p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-purple-400 rotate-[-90deg] shrink-0" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Prayer Wall entry card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.42 }}
-          className="mt-3"
-        >
-          <Link href="/prayer-wall">
-            <div
-              data-testid="card-prayer-wall-entry"
-              className="relative rounded-2xl border border-violet-200/70 dark:border-violet-800/40 bg-gradient-to-br from-violet-50/80 to-blue-50/60 dark:from-violet-950/30 dark:to-blue-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
-            >
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 to-rose-500" />
-              <div className="px-5 py-4 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center shrink-0 shadow-md shadow-violet-500/20">
-                  <HandHeart className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-bold text-foreground leading-snug">Prayer Wall</p>
-                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Share your heart. Believers are praying together here.</p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-violet-400 rotate-[-90deg] shrink-0" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Greatest Gift promo card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.44 }}
-          className="mt-3"
-        >
-          <Link href="/greatest-gift">
-            <div
-              data-testid="card-greatest-gift-entry"
-              className="relative rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-sm"
-            >
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-500 to-orange-500" />
-              <div className="px-5 py-4 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 shadow-md shadow-amber-500/25">
-                  <Gift className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-bold text-foreground leading-snug">The Greatest Gift 🎁</p>
-                  <p className="text-[12px] text-foreground/60 mt-0.5 leading-snug">Give someone a year with God — the perfect faith gift.</p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-amber-400 rotate-[-90deg] shrink-0" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Scripture commitment card — trust footer, sits at the very bottom */}
+        {/* Scripture commitment card — trust footer */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1557,7 +1500,7 @@ export default function LandingHome() {
         {/* Soft divider before Daily Art */}
         <div className="flex items-center gap-3 mt-10 px-0.5">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
-          <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">A Moment of Beauty</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Take a moment</p>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
         </div>
 

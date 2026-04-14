@@ -1,0 +1,276 @@
+hepherd’s Path – Explore Screen Redesign Prompt
+Objective:
+Redesign the Explore screen to feel guided, not overwhelming. Reduce decision fatigue, create clear hierarchy, and lead the user to their next step.
+
+1. Overall UX Principle
+
+
+The screen should NOT feel like a list of features
+
+
+It should feel like a guided journey
+
+
+Every section should answer:
+👉 “What should I do next?”
+
+
+
+2. Top Section – Primary Focus
+Replace current top content with:
+👉 “Your Next Step” (Dynamic Card)
+Behavior:
+
+
+This is the most prominent element on the screen
+
+
+Dynamically changes based on user activity
+
+
+Examples of content:
+
+
+Continue a journey
+
+
+Start a devotional
+
+
+Respond to something they previously shared
+
+
+Start a listening session
+
+
+Design:
+
+
+Largest card on screen
+
+
+Clear CTA button
+
+
+
+3. Core Navigation – Simplified Paths
+Replace multiple feature cards with 3 grouped sections:
+
+📖 Grow
+Includes:
+
+
+Bible
+
+
+Bible Journeys
+
+
+
+🙏 Connect
+Includes:
+
+
+Prayer Wall
+
+
+Iron Circle
+
+
+
+🎯 Engage
+Includes:
+
+
+Bible Challenge
+
+
+Invite / Share features
+
+
+
+Design Instructions:
+
+
+Each group should feel like a category, not individual cards
+
+
+Reduce total number of visible cards
+
+
+Make this section visually clean and scannable
+
+
+
+4. Listen Feature (Promote Higher)
+Change title:
+
+
+Replace “Listen while you read”
+👉 with “Listen to Scripture”
+
+
+Behavior:
+
+
+Move this section HIGHER on the screen (above or near core paths)
+
+
+Make it simple and fast to start
+
+
+Emphasize ease of use
+
+
+
+5. Combine Social Features
+Replace:
+
+
+Prayer Wall
+
+
+Iron Circle
+
+
+Share App
+
+
+With unified concept:
+👉 “Walk Together”
+Inside this section:
+
+
+Prayer Wall
+
+
+Iron Circle
+
+
+Invite / Share
+
+
+Goal:
+
+
+Make this feel like community, not separate tools
+
+
+
+6. Remove / Reposition Low-Value Sections
+❌ Remove or show only once:
+
+
+“Did You Know”
+
+
+
+❌ Move (do NOT show mid-feed):
+
+
+“Before You Go” → only show at end of session
+
+
+
+❌ Move to bottom:
+
+
+Testimonials / reviews
+
+
+
+7. “Come Home” Section
+Behavior:
+
+
+Show only for new or inactive users
+
+
+Otherwise hide or move lower
+
+
+
+8. “A Moment of Beauty” Section
+Keep but improve context
+Add heading:
+👉 “Take a moment”
+Goal:
+
+
+Make it feel intentional, not random
+
+
+
+9. Visual Hierarchy (CRITICAL)
+Implement:
+
+
+1 Large section:
+👉 “Your Next Step”
+
+
+3 Medium sections:
+👉 Grow / Connect / Engage
+
+
+Smaller supporting sections below
+
+
+
+Reduce:
+
+
+Number of cards on screen at once
+
+
+Visual competition between elements
+
+
+
+10. Final Structure (Top → Bottom)
+
+
+Your Next Step (Primary)
+
+
+Listen to Scripture
+
+
+Grow (Bible + Journeys)
+
+
+Connect (Walk Together)
+
+
+Engage (Challenge + Share)
+
+
+Moment / Reflection (Beauty section)
+
+
+Testimonials (Bottom only)
+
+
+
+Expected Outcome
+
+
+Clear starting point for users
+
+
+Reduced overwhelm
+
+
+Stronger engagement and retention
+
+
+More intuitive navigation
+
+
+Feels like guidance, not browsing
+
+
+
+If you want next phase after this:
+👉 I can map the exact retention + habit loop system
+(that’s what turns this into a daily-use product)
