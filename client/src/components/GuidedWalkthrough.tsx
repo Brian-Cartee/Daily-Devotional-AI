@@ -36,31 +36,31 @@ const STEPS = [
     id: "talk",
     title: "Talk It Through",
     subtitle: "Where everything begins",
-    script: `This is where everything begins. Whatever you're facing, whatever weighs on you — bring it here. There are no right words. Just yours. You don't need to have it together to start.`,
+    script: `This is where everything begins. Whatever you're carrying… whatever's been weighing on you… you can bring it here. You don't need the right words. You don't need to have it all figured out. Just start where you are. You don't have to carry this alone.`,
   },
   {
     id: "response",
     title: "How It Responds",
     subtitle: "Personal, not generic",
-    script: `When you share, we respond personally. You'll receive scripture chosen for your moment, a reflection written for exactly what you shared, and a prayer that's yours. Not copied from somewhere. Made for you.`,
+    script: `When you share, the response is built around you. You'll receive scripture that speaks to your moment… a reflection shaped by what you're going through… and a prayer you can step into. Not something generic. Something personal.`,
   },
   {
     id: "journey",
     title: "Your Bible Journey",
     subtitle: "Something ongoing, not one-time",
-    script: `After your guidance, we build something longer — a Bible journey created around what you brought. Scripture, reflection, and meaning across multiple days. You can walk it at your own pace.`,
+    script: `From there, something deeper begins. A Bible journey is created around what you shared… guiding you through scripture, reflection, and meaning over time. You can move at your own pace. One step at a time.`,
   },
   {
     id: "listen",
     title: "Listen to Everything",
     subtitle: "Let it come to you",
-    script: `Everything in this app can be listened to. Your guidance, your devotional, your prayer — all of it. Just tap the listen button. It's designed to feel like someone speaking directly to you.`,
+    script: `At any point, you can listen instead of read. Your guidance… your prayer… your journey… all of it can be heard. Just tap listen. And let it meet you where you are.`,
   },
   {
     id: "journal",
     title: "Your Journal",
     subtitle: "Keep what matters",
-    script: `As you go, save what matters. A prayer that moved you. A scripture you want to carry. Your journal is a record of where you've been and what God has been doing in your life.`,
+    script: `Along the way, you can keep what matters. A prayer that stayed with you… a verse you don't want to forget… a moment you want to come back to. Your journal becomes a record… of where you've been… and what God has been doing in your life.`,
   },
 ];
 
