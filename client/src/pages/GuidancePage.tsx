@@ -548,7 +548,7 @@ export default function GuidancePage() {
                   )}
                 </div>
                 {responseComplete && (
-                  <p className="text-[11px] text-muted-foreground/60 mt-4 flex items-center gap-1.5">
+                  <p className="text-[11px] text-muted-foreground/75 mt-4 flex items-center gap-1.5">
                     <span>✝</span>
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                   </p>
@@ -610,11 +610,11 @@ export default function GuidancePage() {
                 transition={{ duration: 0.5 }}
                 className="mb-10"
               >
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary/60 mb-3">
+                <p className="text-[12px] font-bold uppercase tracking-widest text-primary/90 mb-3">
                   A word for this moment
                 </p>
                 {vpLoading && !verse ? (
-                  <div className="rounded-2xl bg-primary/5 border border-primary/15 px-6 pt-6 pb-5">
+                  <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 pt-6 pb-5">
                     <p className="text-[19px] leading-relaxed font-medium text-foreground/45 italic mb-4">
                       "Be still, and know that I am God."
                     </p>
@@ -627,7 +627,7 @@ export default function GuidancePage() {
                 ) : verse ? (
                   <div
                     data-testid="card-guidance-verse"
-                    className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/8 via-violet-500/5 to-indigo-500/8 border border-primary/20 px-6 pt-6 pb-5"
+                    className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/12 via-violet-500/8 to-indigo-500/10 border border-primary/35 px-6 pt-6 pb-5"
                   >
                     <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
                     <p className="text-[19px] leading-relaxed font-medium text-foreground italic mb-4">
@@ -700,7 +700,8 @@ export default function GuidancePage() {
               >
                 {canUseAi() ? (
                   <>
-                    <div className="bg-card border border-border rounded-2xl p-3 flex items-end gap-2 shadow-sm">
+                    <p className="text-[11px] font-semibold text-foreground/50 uppercase tracking-[0.14em] mb-2 ml-1">Continue the conversation</p>
+                    <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 py-3 flex items-end gap-3 shadow-md transition-colors">
                       <textarea
                         ref={inputRef}
                         value={followUp}
@@ -713,15 +714,15 @@ export default function GuidancePage() {
                         rows={2}
                         disabled={isSending}
                         data-testid="input-guidance-followup"
-                        className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed py-1 disabled:opacity-50"
+                        className="flex-1 resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/70 outline-none leading-relaxed py-1 disabled:opacity-50"
                       />
                       <button
                         onClick={handleSend}
                         disabled={!followUp.trim() || isSending}
                         data-testid="button-guidance-send"
-                        className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm shadow-amber-500/30"
+                        className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
                       >
-                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                       </button>
                     </div>
                     {/* After 3rd use — subtle value reinforcement */}
