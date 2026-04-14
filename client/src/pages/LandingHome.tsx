@@ -6,6 +6,7 @@ import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Sh
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
+import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
 import { NamePrompt } from "@/components/NamePrompt";
 import { hasBeenPrompted } from "@/lib/userName";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
@@ -457,6 +458,7 @@ const COMMITMENT_POINTS = [
 
 export default function LandingHome() {
   const [, navigate] = useLocation();
+  const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
   const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
   const [expanded, setExpanded] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
@@ -586,6 +588,9 @@ export default function LandingHome() {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <AnimatePresence>
+        {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
+      </AnimatePresence>
       <AnimatePresence>
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
