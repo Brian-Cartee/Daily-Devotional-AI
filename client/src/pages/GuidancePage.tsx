@@ -437,8 +437,8 @@ export default function GuidancePage() {
                   onClick={() => handleModeChange("coach")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
                     guidanceMode === "coach"
-                      ? "bg-foreground text-background border-foreground shadow-sm"
-                      : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
                   }`}
                 >
                   <Shield className="w-3 h-3" />
@@ -449,7 +449,7 @@ export default function GuidancePage() {
 
             {/* Context hint for what mode-switching does */}
             {responseComplete && situation.trim() && (
-              <p className="text-[10px] text-muted-foreground/65 mb-4 -mt-2">
+              <p className="text-[12px] text-muted-foreground/80 mb-4 -mt-2">
                 {messages.filter(m => m.role === "user").length > 1
                   ? "Tone applies to your next message"
                   : "Switching tone will refresh the guidance"}

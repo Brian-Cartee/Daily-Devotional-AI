@@ -5,9 +5,10 @@ export type GuidanceMode = "encouraging" | "coach";
 export function getGuidanceMode(): GuidanceMode {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "encouraging") return "encouraging";
     if (stored === "coach") return "coach";
   } catch {}
-  return "encouraging";
+  return "coach";
 }
 
 export function saveGuidanceMode(mode: GuidanceMode): void {
