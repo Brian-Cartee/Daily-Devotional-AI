@@ -327,11 +327,11 @@ export default function GuidancePage() {
 
           {/* Background image — fades out once conversation is active */}
           <img
-            src="https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&q=85&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=85&auto=format&fit=crop"
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ filter: "brightness(0.32) saturate(0.75)" }}
+            style={{ filter: "brightness(0.45) saturate(1.1)" }}
           />
 
           {/* Depth gradient — bleeds photo into app background at bottom */}
@@ -371,7 +371,7 @@ export default function GuidancePage() {
                     textShadow: "0 2px 24px rgba(0,0,0,0.65)",
                   }}
                 >
-                  {isFirstVisit ? "What's on\nyour heart?" : "Lay Your\nBurdens Down"}
+                  {isFirstVisit ? "What's on\nyour heart?" : "You don't have\nto carry this alone"}
                 </h1>
                 <p
                   className="text-[13px] text-white/50 max-w-[260px] leading-relaxed"
@@ -399,7 +399,7 @@ export default function GuidancePage() {
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-0.5">Seek Guidance</p>
                   <h1 className="text-[20px] font-extrabold text-foreground leading-tight tracking-tight">
-                    {isFirstVisit ? "What's on your heart?" : "Lay Your Burdens Down"}
+                    {isFirstVisit ? "What's on your heart?" : "You don't have to carry this alone"}
                   </h1>
                 </div>
               </motion.div>
