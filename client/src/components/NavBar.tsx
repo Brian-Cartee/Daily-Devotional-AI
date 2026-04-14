@@ -256,7 +256,7 @@ export function NavBar() {
         className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/50"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex items-stretch h-16">
+        <div className="flex items-center justify-around h-16 px-1">
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon: Icon, bookmark }) => {
             const active = href === "/"
               ? location === "/"
@@ -267,22 +267,22 @@ export function NavBar() {
                 key={href}
                 href={href}
                 data-testid={`bottom-nav-${label.toLowerCase()}`}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all ${
-                  active ? "text-primary" : "text-muted-foreground"
-                }`}
+                className="flex flex-col items-center justify-center flex-1 h-full transition-all"
               >
-                <div className={`w-10 h-7 min-[430px]:w-12 min-[430px]:h-9 flex items-center justify-center rounded-xl transition-all relative ${
-                  active ? "bg-primary/10" : ""
-                }`}>
-                  <Icon className={`transition-all ${active ? "w-5 h-5 min-[430px]:w-6 min-[430px]:h-6" : "w-[18px] h-[18px] min-[430px]:w-[22px] min-[430px]:h-[22px]"}`} />
-                  {hasPlace && (
-                    <span className="absolute top-0.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
-                  )}
-                </div>
-                <span className={`text-[10px] min-[430px]:text-[12px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
-                  {label}
-                </span>
-                {active && <span className="w-3.5 h-0.5 rounded-full bg-amber-400/80 -mt-px" />}
+                {active ? (
+                  <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary shadow-sm shadow-primary/30">
+                    <Icon className="w-[17px] h-[17px] text-white shrink-0" />
+                    <span className="text-[12px] font-bold text-white leading-none">{label}</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-0.5 relative">
+                    <Icon className="w-[20px] h-[20px] text-muted-foreground" />
+                    <span className="text-[10px] font-semibold text-muted-foreground leading-none">{label}</span>
+                    {hasPlace && (
+                      <span className="absolute -top-0.5 right-0 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
+                    )}
+                  </div>
+                )}
               </Link>
             );
           })}

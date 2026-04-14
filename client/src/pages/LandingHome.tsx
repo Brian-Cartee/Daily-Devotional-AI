@@ -760,30 +760,6 @@ export default function LandingHome() {
           {/* AI Prompt — hero entry point */}
           <HeroAIPrompt />
 
-          {/* Come Home — the most important step */}
-          <Link href="/salvation">
-            <div
-              data-testid="card-come-home"
-              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
-              <div className="absolute inset-0 opacity-[0.04] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjEiLz48L3N2Zz4=')]" />
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
-              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
-              <div className="relative px-6 py-8 flex flex-col items-center text-center gap-2.5">
-                <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-14 h-14 object-contain mb-1 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-rose-300/60">The Most Important Step</p>
-                <h2 className="text-[28px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
-                <p className="text-[14px] text-white/70 leading-relaxed max-w-[280px]">New to faith, or finding your way back — the door has never been closed.</p>
-                <p className="text-[12px] text-amber-200/50 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
-                <div className="mt-2 flex items-center gap-2 px-7 py-3 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[14px] hover:bg-white/18 transition-colors">
-                  Begin this journey
-                  <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
-                </div>
-              </div>
-            </div>
-          </Link>
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {
@@ -1061,6 +1037,50 @@ export default function LandingHome() {
           ))}
           </div>
 
+          {/* Come Home — invitation, not a pitch. Appears after core content. */}
+          <Link href="/salvation">
+            <div
+              data-testid="card-come-home"
+              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
+              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
+              <div className="relative px-6 py-8 flex flex-col items-center text-center gap-2.5">
+                <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-14 h-14 object-contain mb-1 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
+                <h2 className="text-[28px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
+                <p className="text-[14px] text-white/70 leading-relaxed max-w-[280px]">New to faith, or finding your way back — the door has never been closed.</p>
+                <p className="text-[12px] text-amber-200/50 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
+                <div className="mt-2 flex items-center gap-2 px-7 py-3 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[14px] hover:bg-white/18 transition-colors">
+                  Begin this journey
+                  <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Our Commitments — 2×2 grid of core values */}
+          <div>
+            <h2 className="text-[20px] font-extrabold text-foreground tracking-tight mb-3">Our Commitments</h2>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                { icon: "📖", title: "Scripture First",    body: "Every word we share is guided by God's truth — not human opinion." },
+                { icon: "🤍", title: "Grace Space",        body: "Come as you are. There's no rush — only space to be met with grace." },
+                { icon: "🧭", title: "Truth Led",          body: "We use technology to guide you, but Scripture remains the foundation." },
+                { icon: "🌱", title: "Spiritual Growth",   body: "Everything here is designed to help you grow closer to Christ." },
+              ].map(({ icon, title, body }) => (
+                <div
+                  key={title}
+                  className="rounded-2xl border border-primary/15 bg-card px-4 py-4 flex flex-col gap-2"
+                >
+                  <span className="text-2xl leading-none">{icon}</span>
+                  <p className="text-[13px] font-bold text-foreground leading-tight">{title}</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
         </motion.div>
 
