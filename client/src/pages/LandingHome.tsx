@@ -1363,15 +1363,16 @@ export default function LandingHome() {
               data-testid="card-come-home"
               className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#1a1000] via-[#2c1e00] to-[#0e0900]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_60%_at_50%_0%,rgba(251,191,36,0.38)_0%,transparent_72%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_50%_100%,rgba(180,120,0,0.12)_0%,transparent_70%)]" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
               <div className="relative px-6 py-7 flex flex-col items-center text-center gap-2">
-                <img src="/sp-icon-nobg.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.1) drop-shadow(0 0 14px rgba(251,191,36,0.45))" }} />
-                <h2 className="text-[24px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
-                <p className="text-[13px] text-white/65 leading-relaxed max-w-[260px]">New to faith, or finding your way back — the door has never been closed.</p>
-                <p className="text-[11px] text-amber-200/45 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
-                <div className="mt-1 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[13px] hover:bg-white/18 transition-colors">
+                <img src="/sp-icon-nobg.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.15) sepia(0.3) saturate(1.4) drop-shadow(0 0 18px rgba(251,191,36,0.70))" }} />
+                <h2 className="text-[24px] font-bold leading-tight tracking-tight" style={{ color: "#fde68a" }}>Come Home</h2>
+                <p className="text-[13px] leading-relaxed max-w-[260px]" style={{ color: "rgba(253,230,138,0.65)" }}>New to faith, or finding your way back — the door has never been closed.</p>
+                <p className="text-[11px] italic" style={{ color: "rgba(253,211,77,0.60)" }}>"Behold, I stand at the door and knock." — Rev. 3:20</p>
+                <div className="mt-1 flex items-center gap-2 px-6 py-2.5 rounded-xl border font-semibold text-[13px] transition-colors" style={{ background: "rgba(251,191,36,0.14)", borderColor: "rgba(251,191,36,0.30)", color: "#fde68a" }}>
                   Begin this journey <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
                 </div>
               </div>
