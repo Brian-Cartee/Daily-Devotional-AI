@@ -5,8 +5,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
-import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing } from "lucide-react";
+import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface WallEntry {
   id: number;
@@ -32,6 +33,7 @@ export default function PrayerWallPage() {
   const sessionId = getSessionId();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const [request, setRequest] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -94,6 +96,16 @@ export default function PrayerWallPage() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
+
+        {/* Back */}
+        <button
+          onClick={() => navigate("/")}
+          data-testid="button-back-prayer-wall"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
 
         {/* Header */}
         <motion.div {...fadeUp(0)} className="mb-6">

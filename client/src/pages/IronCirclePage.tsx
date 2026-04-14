@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
-import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw } from "lucide-react";
+import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 const STORAGE_KEY = "sp_iron_circle";
 
@@ -451,6 +452,7 @@ export default function IronCirclePage() {
   }
 
   const totalPeople = circle.pray.length + circle.walk.length + circle.aspire.length;
+  const [, navigate] = useLocation();
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -459,9 +461,17 @@ export default function IronCirclePage() {
       {/* Hero */}
       <div className="relative pt-14">
         <div
-          className="w-full flex flex-col items-center justify-end pb-8 pt-8 text-center px-6"
+          className="w-full flex flex-col items-center justify-end pb-8 pt-8 text-center px-6 relative"
           style={{ background: "linear-gradient(135deg, #4c1d95 0%, #7c3aed 40%, #a16207 100%)" }}
         >
+          <button
+            onClick={() => navigate("/")}
+            data-testid="button-back-iron-circle"
+            className="absolute top-4 left-4 flex items-center gap-1 text-[13px] font-semibold text-white/70 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
           <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg">
             <Users className="w-6 h-6 text-white" />
           </div>

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
 import { Link } from "wouter";
-import { Gift, Heart, Crown, ArrowRight, Check, Clock } from "lucide-react";
+import { Gift, Heart, Crown, ArrowRight, Check, Clock, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
 const SALE_KEY = "sp_gift_sale_end";
@@ -46,6 +47,7 @@ const GIFT_REASONS = [
 ];
 
 export default function GreatestGiftPage() {
+  const [, navigate] = useLocation();
   const [saleEnd] = useState(() => getSaleEnd());
   const { d, h, m, s, expired } = useCountdown(saleEnd);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -68,6 +70,16 @@ export default function GreatestGiftPage() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
+
+        {/* Back */}
+        <button
+          onClick={() => navigate("/")}
+          data-testid="button-back-greatest-gift"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
 
         {/* Hero */}
         <motion.div {...fadeUp(0)} className="text-center mb-8">
