@@ -148,10 +148,13 @@ export function DailyArtCard() {
       transition={{ duration: 0.8, delay: 0.15 }}
       className="w-full"
     >
-      <button
+      <div
         onClick={() => setExpanded(e => !e)}
+        onKeyDown={e => (e.key === "Enter" || e.key === " ") && setExpanded(prev => !prev)}
+        role="button"
+        tabIndex={0}
         data-testid="button-daily-art"
-        className="w-full text-left relative overflow-hidden focus:outline-none group"
+        className="w-full text-left relative overflow-hidden focus:outline-none group cursor-pointer"
         aria-label="View today's daily art and reflection"
       >
         {/* Full-bleed image */}
@@ -215,7 +218,7 @@ export function DailyArtCard() {
             </div>
           )}
         </div>
-      </button>
+      </div>
 
       {/* Reflection panel — scripture + reflection together */}
       <AnimatePresence>

@@ -218,27 +218,18 @@ export function NavBar() {
 
             {/* Bell / Reminders */}
             <div className="relative">
-              {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" ? (
-                <button
-                  onClick={() => { closeAll(); setNotifOpen(true); }}
-                  data-testid="nav-notifications"
-                  aria-label="Turn on reminders"
-                  className="flex items-center gap-1 pl-2 pr-2.5 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-all shrink-0 border border-amber-200 dark:border-amber-700/40"
-                >
-                  <Bell className="w-4 h-4 shrink-0" />
-                  <span className="text-[11px] font-bold leading-none hidden min-[380px]:inline">Reminders</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => { closeAll(); setNotifOpen(true); }}
-                  data-testid="nav-notifications"
-                  aria-label="Notification settings"
-                  title="Reminders"
-                  className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
-                >
-                  <Bell className="w-[18px] h-[18px]" />
-                </button>
-              )}
+              <button
+                onClick={() => { closeAll(); setNotifOpen(true); }}
+                data-testid="nav-notifications"
+                aria-label="Reminders"
+                title="Reminders"
+                className="relative w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+              >
+                <Bell className="w-[18px] h-[18px]" />
+                {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                )}
+              </button>
             </div>
 
           </div>

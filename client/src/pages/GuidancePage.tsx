@@ -322,27 +322,89 @@ export default function GuidancePage() {
     <>
       <NavBar />
       <main className="min-h-screen bg-background pb-32">
-        {/* Gradient hero strip — Figma Phase 1 */}
-        <div className="relative pt-14 overflow-hidden bg-gradient-to-b from-[hsl(265_60%_8%)] to-background">
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-70" />
-          <div className="max-w-2xl mx-auto px-5 pt-8 pb-7 flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center shrink-0"
-            >
-              <img
-                src="/sp-icon.png"
-                alt=""
-                aria-hidden="true"
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
-              />
-            </div>
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-0.5">Seek Guidance</p>
-              <h1 className="text-[20px] font-extrabold text-foreground leading-tight tracking-tight">
-                {isFirstVisit ? "What's on your heart?" : "Lay Your Burdens Down"}
-              </h1>
-            </div>
-          </div>
+        {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
+        <div className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${!situation && !streamingText ? "min-h-[380px]" : ""}`}>
+
+          {/* Background image — fades out once conversation is active */}
+          <img
+            src="https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&q=85&auto=format&fit=crop"
+            alt=""
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
+            style={{ filter: "brightness(0.32) saturate(0.75)" }}
+          />
+
+          {/* Depth gradient — bleeds photo into app background at bottom */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(13,8,32,0.55) 55%, hsl(var(--background)) 100%)" }}
+          />
+
+          {/* Purple soul glow — matches welcome overlay interior */}
+          <div
+            className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
+            style={{ background: "radial-gradient(ellipse 85% 65% at 50% 45%, rgba(120,60,220,0.22) 0%, transparent 70%)" }}
+          />
+
+          {/* Bottom accent line */}
+          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-60 z-10" />
+
+          <AnimatePresence mode="wait">
+            {!situation && !streamingText ? (
+              /* ── EXPANDED: full invitation ── */
+              <motion.div
+                key="hero-expanded"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="relative z-10 flex flex-col items-center justify-center min-h-[330px] text-center px-6 pb-10"
+              >
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-5 select-none">
+                  Seek Guidance
+                </p>
+                <h1
+                  className="text-[2.5rem] leading-[1.18] text-white text-balance mb-4"
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontStyle: "italic",
+                    textShadow: "0 2px 24px rgba(0,0,0,0.65)",
+                  }}
+                >
+                  {isFirstVisit ? "What's on\nyour heart?" : "Lay Your\nBurdens Down"}
+                </h1>
+                <p
+                  className="text-[13px] text-white/50 max-w-[260px] leading-relaxed"
+                  style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
+                >
+                  {isFirstVisit
+                    ? "Bring it here exactly as it is."
+                    : "You are seen, known, and deeply loved."}
+                </p>
+              </motion.div>
+            ) : (
+              /* ── COMPACT: icon + heading strip ── */
+              <motion.div
+                key="hero-compact"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="relative z-10 max-w-2xl mx-auto px-5 pt-8 pb-7 flex items-center gap-3"
+                style={{ background: "linear-gradient(160deg, hsl(265 60% 8% / 0.9) 0%, transparent 100%)" }}
+              >
+                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center shrink-0">
+                  <img src="/sp-icon.png" alt="" aria-hidden="true" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-0.5">Seek Guidance</p>
+                  <h1 className="text-[20px] font-extrabold text-foreground leading-tight tracking-tight">
+                    {isFirstVisit ? "What's on your heart?" : "Lay Your Burdens Down"}
+                  </h1>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-8">
