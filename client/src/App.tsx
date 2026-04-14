@@ -14,6 +14,7 @@ import ReadBible from "@/pages/ReadBible";
 import Journal from "@/pages/Journal";
 import QuickStudyPage from "@/pages/QuickStudyPage";
 import ProSuccess from "@/pages/ProSuccess";
+import RestorePage from "@/pages/RestorePage";
 import RefundPage from "@/pages/RefundPage";
 const PricingPage = lazy(() => import("@/pages/PricingPage"));
 import PresentMode from "@/pages/PresentMode";
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/study" component={QuickStudyPage} />
       <Route path="/journal" component={Journal} />
       <Route path="/pro-success" component={ProSuccess} />
+      <Route path="/restore" component={RestorePage} />
       <Route path="/refund" component={RefundPage} />
       <Route path="/pricing">
         <Suspense fallback={<div className="min-h-screen bg-background" />}>

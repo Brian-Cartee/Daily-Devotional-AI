@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ChevronDown, ChevronUp, ShieldCheck, Smartphone } from "lucide-react";
+import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartphone } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
-import { checkProWithServer, markProVerified } from "@/lib/proStatus";
+import { markProVerified } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
 import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
 import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
@@ -36,9 +35,6 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
   const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<"monthly" | "annual">("annual");
   const [loading, setLoading] = useState(false);
-  const [showActivate, setShowActivate] = useState(false);
-  const [activateEmail, setActivateEmail] = useState("");
-  const [activating, setActivating] = useState(false);
   const [playPrices, setPlayPrices] = useState<{ monthly?: string; annual?: string }>({});
 
   const platform = getPaymentPlatform();
@@ -114,27 +110,6 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
   };
 
   const handleCheckout = platform === "play" ? handlePlayCheckout : handleStripeCheckout;
-
-  const handleActivatePro = async () => {
-    if (!activateEmail.includes("@")) {
-      toast({ title: "Invalid email", description: "Please enter a valid email address.", variant: "destructive" });
-      return;
-    }
-    setActivating(true);
-    const isPro = await checkProWithServer(activateEmail);
-    setActivating(false);
-    if (isPro) {
-      toast({ title: "Pro Activated!", description: "Welcome to Shepherd's Path Pro. Enjoy unlimited AI.", });
-      onProActivated?.();
-      onClose();
-    } else {
-      toast({
-        title: "No active subscription found",
-        description: "Make sure you use the same email you used to purchase. Contact support if you need help.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const priceDisplay = platform === "play"
     ? {
@@ -367,47 +342,15 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
             </div>
 
             {/* Already have Pro */}
-            <div className="border-t border-border pt-3">
-              <button
+            <div className="border-t border-border pt-3 text-center">
+              <a
+                href="/restore"
                 data-testid="btn-already-pro"
-                onClick={() => setShowActivate(v => !v)}
-                className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                Already subscribed?
-                {showActivate ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </button>
-
-              <AnimatePresence>
-                {showActivate && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-3 flex gap-2">
-                      <Input
-                        data-testid="input-pro-email"
-                        type="email"
-                        placeholder="Enter your Pro email"
-                        value={activateEmail}
-                        onChange={e => setActivateEmail(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleActivatePro()}
-                        className="text-sm h-9 rounded-xl"
-                      />
-                      <Button
-                        data-testid="btn-activate-pro"
-                        size="sm"
-                        onClick={handleActivatePro}
-                        disabled={activating}
-                        className="rounded-xl shrink-0 h-9 px-3"
-                      >
-                        {activating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Activate"}
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                <RefreshCw className="w-3 h-3" />
+                Already subscribed? Restore access
+              </a>
             </div>
           </div>
         </motion.div>

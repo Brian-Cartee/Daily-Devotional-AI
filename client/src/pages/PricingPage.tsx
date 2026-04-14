@@ -351,25 +351,7 @@ export default function PricingPage() {
                   data-testid="btn-pricing-restore-ios"
                   variant="ghost"
                   className="w-full rounded-2xl text-sm text-muted-foreground"
-                  onClick={async () => {
-                    const email = window.prompt("Enter your subscription email to restore access:");
-                    if (!email) return;
-                    try {
-                      const res = await fetch("/api/stripe/restore", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email }),
-                      });
-                      const data = await res.json();
-                      if (data.restored) {
-                        window.location.reload();
-                      } else {
-                        alert("No active subscription found for that email. Please subscribe at shepherdspathai.com/pricing.");
-                      }
-                    } catch {
-                      alert("Could not restore. Please try again.");
-                    }
-                  }}
+                  onClick={() => window.location.href = "/restore"}
                 >
                   <RefreshCw className="w-3.5 h-3.5 mr-2" />
                   Restore Purchase

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -180,6 +180,18 @@ export function NavBar() {
                     >
                       <HelpCircle className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">How to Use</span>
+                    </Link>
+
+                    {/* Restore Pro access */}
+                    <div className="mx-3 my-1 h-px bg-border/50" />
+                    <Link
+                      href="/restore"
+                      data-testid="nav-restore-pro"
+                      onClick={() => setMoreOpen(false)}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <Zap className="w-4 h-4 text-amber-500" />
+                      <span className="font-medium text-amber-600 dark:text-amber-400">Restore Pro Access</span>
                     </Link>
                   </motion.div>
                 )}
