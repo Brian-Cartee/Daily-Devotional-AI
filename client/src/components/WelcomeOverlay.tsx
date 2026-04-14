@@ -44,9 +44,19 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden"
+        className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden relative"
         style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
+        {/* Close button — on the card, not inside the clipped hero band */}
+        <button
+          onClick={handleDismiss}
+          data-testid="btn-close-welcome"
+          className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shadow-sm"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4 text-white" strokeWidth={2.5} />
+        </button>
+
         {/* Hero band — dark purple gradient with centered icon (matches Figma Onboarding 1) */}
         <div
           className="relative px-8 pt-7 pb-6 text-center overflow-hidden shrink-0 rounded-t-3xl"
@@ -57,16 +67,6 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             className="absolute inset-0 pointer-events-none"
             style={{ background: "radial-gradient(ellipse 70% 55% at 50% 40%, rgba(120,60,220,0.35) 0%, transparent 70%)" }}
           />
-
-          {/* Close button */}
-          <button
-            onClick={handleDismiss}
-            data-testid="btn-close-welcome"
-            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4 text-white/80" />
-          </button>
 
           <div className="relative z-10">
             {/* App icon — lighter purple box on dark purple background */}
