@@ -261,11 +261,11 @@ function HeroAIPrompt() {
           </div>
         </form>
 
-        {/* AI usage awareness — subtle counter mid-day, warm strip near the limit */}
+        {/* AI usage awareness — only surfaces after they've already felt the value */}
         {(() => {
           const remaining = getRemainingAi();
           if (remaining === Infinity || remaining <= 0) return null;
-          if (remaining <= 5) {
+          if (remaining <= 2) {
             return (
               <Link href="/pricing">
                 <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 hover:bg-amber-500/12 transition-colors cursor-pointer group">
@@ -279,7 +279,7 @@ function HeroAIPrompt() {
               </Link>
             );
           }
-          if (remaining <= 7) {
+          if (remaining === 3) {
             return (
               <div className="mt-2 flex items-center justify-end gap-1 pr-0.5">
                 <span className="text-[11px] text-muted-foreground/40 font-medium">

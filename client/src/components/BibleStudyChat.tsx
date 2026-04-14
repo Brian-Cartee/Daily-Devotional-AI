@@ -147,13 +147,16 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
         </div>
         {(() => {
           const remaining = getRemainingAi();
-          return remaining <= 3 ? (
-            <p className="text-xs text-center -mt-1">
-              <span className="text-amber-500 font-semibold">{remaining} free AI {remaining === 1 ? "response" : "responses"} left today</span>
-              {" · "}
-              <button onClick={() => setShowUpgrade(true)} className="text-primary underline underline-offset-2">Upgrade for unlimited</button>
-            </p>
-          ) : (
+          if (remaining <= 2 && remaining > 0) {
+            return (
+              <p className="text-xs text-center -mt-1">
+                <span className="text-amber-500 font-semibold">{remaining} free AI {remaining === 1 ? "response" : "responses"} left today</span>
+                {" · "}
+                <button onClick={() => setShowUpgrade(true)} className="text-primary underline underline-offset-2">Upgrade for unlimited</button>
+              </p>
+            );
+          }
+          return (
             <p className="text-[10px] text-muted-foreground/60 text-center -mt-1">
               Press Enter to send · Shift+Enter for new line
             </p>
