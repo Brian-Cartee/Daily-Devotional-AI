@@ -708,8 +708,9 @@ export default function LandingHome() {
             ))}
           </div>
 
-          {/* ══ TODAY TAB ══ */}
-          {activeTab === 'today' && <>
+          {/* ══ TAB CONTENT ══ */}
+          <AnimatePresence mode="wait" initial={false}>
+          {activeTab === 'today' && <motion.div key="today-tab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22, ease: "easeOut" }} className="flex flex-col gap-3">
 
           {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
           <LateNightBannerCard />
@@ -926,9 +927,9 @@ export default function LandingHome() {
             <DailyArtCard />
           </div>
 
-          </>}
+          </motion.div>}
           {/* ══ EXPLORE TAB ══ */}
-          {activeTab === 'explore' && <>
+          {activeTab === 'explore' && <motion.div key="explore-tab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22, ease: "easeOut" }} className="flex flex-col gap-3">
 
           {/* 1 ── Your Next Step — dynamic hero ───────────────────────────── */}
           <div
@@ -1351,7 +1352,8 @@ export default function LandingHome() {
             </div>
           </Link>
 
-          </>}
+          </motion.div>}
+          </AnimatePresence>
 
         </motion.div>
 
