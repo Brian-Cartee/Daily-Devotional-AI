@@ -1219,28 +1219,26 @@ export default function LandingHome() {
             </div>
           </div>
 
-          {/* 7 ── Come Home — new/inactive users only ─────────────────────── */}
-          {getRelationshipAge() <= 14 && (
-            <Link href="/salvation">
-              <div
-                data-testid="card-come-home"
-                className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
-                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
-                <div className="relative px-6 py-7 flex flex-col items-center text-center gap-2">
-                  <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
-                  <h2 className="text-[24px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
-                  <p className="text-[13px] text-white/65 leading-relaxed max-w-[260px]">New to faith, or finding your way back — the door has never been closed.</p>
-                  <p className="text-[11px] text-amber-200/45 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
-                  <div className="mt-1 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[13px] hover:bg-white/18 transition-colors">
-                    Begin this journey <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
-                  </div>
+          {/* 7 ── Come Home — always present ─────────────────────────────── */}
+          <Link href="/salvation">
+            <div
+              data-testid="card-come-home"
+              className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform shadow-xl"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-950 via-[#3a1a0e] to-amber-950" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
+              <div className="relative px-6 py-7 flex flex-col items-center text-center gap-2">
+                <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
+                <h2 className="text-[24px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
+                <p className="text-[13px] text-white/65 leading-relaxed max-w-[260px]">New to faith, or finding your way back — the door has never been closed.</p>
+                <p className="text-[11px] text-amber-200/45 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
+                <div className="mt-1 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/12 border border-white/20 text-white font-semibold text-[13px] hover:bg-white/18 transition-colors">
+                  Begin this journey <ChevronDown className="w-4 h-4 rotate-[-90deg] shrink-0" />
                 </div>
               </div>
-            </Link>
-          )}
+            </div>
+          </Link>
 
           </>}
 
