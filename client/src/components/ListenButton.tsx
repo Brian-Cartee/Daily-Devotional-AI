@@ -13,9 +13,9 @@ interface ListenButtonProps {
 function estimateDuration(text: string): string {
   const words = text.trim().split(/\s+/).length;
   const seconds = Math.round((words / 140) * 60);
-  if (seconds < 60) return `~${seconds} sec`;
+  if (seconds < 60) return `~${seconds}s`;
   const mins = Math.round(seconds / 60);
-  return `~${mins} min`;
+  return `~${mins}m`;
 }
 
 export function ListenButton({

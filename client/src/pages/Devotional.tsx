@@ -98,6 +98,7 @@ export default function Devotional() {
   const [showAiArt, setShowAiArt] = useState(true);
   const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
   const [friendShareDone, setFriendShareDone] = useState(false);
+  const [showShareRow, setShowShareRow] = useState(false);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
   const [verseInMemory, setVerseInMemory] = useState(false);
@@ -797,20 +798,20 @@ export default function Devotional() {
                   data-testid="button-share-image"
                   onClick={handleShareImage}
                   disabled={sharingImage}
-                  className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                  className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors disabled:opacity-50"
                 >
                   {sharingImage
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <ImageDown className="w-4 h-4" />}
-                  <span className="text-[11px] font-semibold leading-none">Save Image</span>
+                    ? <Loader2 className="w-5 h-5 animate-spin" />
+                    : <ImageDown className="w-5 h-5" />}
+                  <span className="text-[12px] font-semibold leading-none">Save Image</span>
                 </button>
                 <button
                   data-testid="button-share"
-                  onClick={handleShare}
-                  className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => { handleShare(); setShowShareRow(v => !v); }}
+                  className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors"
                 >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-                  <span className="text-[11px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
+                  {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className={`w-5 h-5 ${showShareRow ? "text-primary" : ""}`} />}
+                  <span className="text-[12px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
                 </button>
                 <button
                   data-testid="button-generate-verse-art"
@@ -822,45 +823,60 @@ export default function Devotional() {
                     }
                   }}
                   disabled={verseArtMutation.isPending}
-                  className="flex flex-col items-center gap-1.5 py-3.5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                  className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors disabled:opacity-50"
                 >
                   {verseArtMutation.isPending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Wand2 className={`w-4 h-4 ${verseArtUrl && showAiArt ? "text-primary" : ""}`} />}
-                  <span className="text-[11px] font-semibold leading-none">
+                    ? <Loader2 className="w-5 h-5 animate-spin" />
+                    : <Wand2 className={`w-5 h-5 ${verseArtUrl && showAiArt ? "text-primary" : ""}`} />}
+                  <span className="text-[12px] font-semibold leading-none">
                     {verseArtMutation.isPending ? "Painting…" : verseArtUrl ? (showAiArt ? "AI Art ✓" : "Original") : "AI Art"}
                   </span>
                 </button>
               </div>
 
-              {/* Social sharing row */}
-              <div className="px-4 pb-3.5 pt-0.5 border-t border-border/20 flex items-center justify-center gap-1.5">
-                <span className="text-[11px] text-muted-foreground/40 font-medium mr-1">Share</span>
-                <button data-testid="share-x" onClick={shareOnX} title="Share on X" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-all">
-                  <SiX className="w-3.5 h-3.5" />
-                </button>
-                <button data-testid="share-facebook" onClick={shareOnFacebook} title="Share on Facebook" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all">
-                  <SiFacebook className="w-3.5 h-3.5" />
-                </button>
-                <button data-testid="share-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all">
-                  <SiWhatsapp className="w-3.5 h-3.5" />
-                </button>
-                <button data-testid="share-truthsocial" onClick={shareOnTruthSocial} title="Share on Truth Social" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#7347CC] hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-all">
-                  <span className="text-[11px] font-black leading-none">T</span>
-                </button>
-                <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram" className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all">
-                  <SiTelegram className="w-3.5 h-3.5" />
-                </button>
-                <div className="w-px h-4 bg-border/40 mx-1" />
+              {/* Remember this verse — always visible */}
+              <div className="px-4 pb-2 pt-1 flex items-center justify-center border-t border-border/20">
                 <button
                   data-testid="button-remember-verse"
                   onClick={handleToggleMemory}
-                  title={verseInMemory ? "Remove from memory" : "Commit to memory"}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${verseInMemory ? "text-amber-500 bg-amber-50 dark:bg-amber-950/40" : "text-muted-foreground/50 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40"}`}
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all ${verseInMemory ? "text-amber-600 bg-amber-50 dark:bg-amber-950/40" : "text-muted-foreground/60 hover:text-amber-500 hover:bg-amber-50/60 dark:hover:bg-amber-950/30"}`}
                 >
-                  <Star className={`w-3.5 h-3.5 ${verseInMemory ? "fill-amber-500" : ""}`} />
+                  <Star className={`w-3.5 h-3.5 ${verseInMemory ? "fill-amber-500 text-amber-500" : ""}`} />
+                  {verseInMemory ? "Remembered" : "Remember this verse"}
                 </button>
               </div>
+
+              {/* Social sharing row — revealed when Share is tapped */}
+              <AnimatePresence>
+                {showShareRow && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-3.5 pt-2 border-t border-border/20 flex items-center justify-center gap-1.5">
+                      <span className="text-[11px] text-muted-foreground/40 font-medium mr-1">Also share to</span>
+                      <button data-testid="share-x" onClick={shareOnX} title="Share on X" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-all">
+                        <SiX className="w-4 h-4" />
+                      </button>
+                      <button data-testid="share-facebook" onClick={shareOnFacebook} title="Share on Facebook" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all">
+                        <SiFacebook className="w-4 h-4" />
+                      </button>
+                      <button data-testid="share-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all">
+                        <SiWhatsapp className="w-4 h-4" />
+                      </button>
+                      <button data-testid="share-truthsocial" onClick={shareOnTruthSocial} title="Share on Truth Social" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#7347CC] hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-all">
+                        <span className="text-[12px] font-black leading-none">T</span>
+                      </button>
+                      <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all">
+                        <SiTelegram className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* ── Full Devotional Listen Mode ──────────────────── */}
               {(reflectionContent || prayerContent) && (
