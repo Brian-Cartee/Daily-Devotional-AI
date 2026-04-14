@@ -437,3 +437,9 @@ id = "rLtRbSIWVJVxzKIsiZgC_"
 uri = "file://attached_assets/Shepherds_Path_AI_Agent_Strategy_Review.pdf"
 type = "pdf"
 title = "Shepherd's Path — AI Agent Strategy Review"
+
+[[outputs]]
+id = "iLOuu10CTMTiAGgi1NUJB"
+uri = "file://attached_assets/Shepherds_Path_Design_Brief_Round2.pdf"
+type = "pdf"
+title = "Shepherd's Path — Design Brief Supplement (Round 2)"
