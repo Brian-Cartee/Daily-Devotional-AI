@@ -231,8 +231,17 @@ export default function TriviaPage() {
         <AnimatePresence mode="wait">
           {phase === "select" && (
             <motion.div key="select" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <div className="text-center pt-4 pb-6">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-violet-600 shadow-lg mb-3">
+              <div className="flex items-center mb-2">
+                <button
+                  onClick={() => navigate("/")}
+                  data-testid="btn-trivia-back"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="text-center pt-2 pb-6">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/30 mb-3">
                   <Trophy className="w-7 h-7 text-white" />
                 </div>
                 <h1 className="text-[26px] font-bold text-foreground">Bible Challenge</h1>
