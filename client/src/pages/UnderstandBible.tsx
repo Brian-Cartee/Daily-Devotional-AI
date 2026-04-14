@@ -478,7 +478,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
                   data-testid="btn-life-season-generate"
                   onClick={handleGenerateLifeJourney}
                   disabled={lifePhase === "loading" || !lifeSituation.trim()}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold disabled:opacity-50 transition-all hover:opacity-90"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-[13px] font-semibold disabled:opacity-50 transition-all shadow-sm shadow-amber-500/25"
                 >
                   {lifePhase === "loading" ? (
                     <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Building your journey…</>

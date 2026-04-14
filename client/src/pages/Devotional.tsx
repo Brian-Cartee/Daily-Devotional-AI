@@ -897,9 +897,16 @@ export default function Devotional() {
                       }
                     </div>
                     <div className="min-w-0">
-                      {ttsListen.loading ? (
+                      {ttsListen.blocked ? (
                         <>
-                          <p className="text-[12px] font-bold text-primary leading-none">Preparing audio…</p>
+                          <p className="text-[12px] font-bold text-amber-500 leading-none">Tap to play</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Your device needs a tap first</p>
+                        </>
+                      ) : ttsListen.loading ? (
+                        <>
+                          <p className="text-[12px] font-bold text-primary leading-none">
+                            {ttsListen.loadingLong ? "Still on its way…" : "Preparing audio…"}
+                          </p>
                           <div className="flex items-center gap-1 mt-1">
                             <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
                             <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
@@ -920,15 +927,19 @@ export default function Devotional() {
                     </div>
                   </div>
                   <button
-                    onClick={startFullListen}
+                    onClick={ttsListen.blocked ? ttsListen.resumeAfterBlock : startFullListen}
                     data-testid="button-full-devotional-listen"
                     className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
-                      listenSection || ttsListen.loading
+                      ttsListen.blocked
+                        ? "bg-amber-500 text-white hover:bg-amber-400 shadow-sm"
+                        : listenSection || ttsListen.loading
                         ? "bg-primary/20 text-primary hover:bg-primary/30"
                         : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                     }`}
                   >
-                    {ttsListen.loading ? (
+                    {ttsListen.blocked ? (
+                      <><Headphones className="w-3 h-3" /> Tap to play</>
+                    ) : ttsListen.loading ? (
                       <><Square className="w-3 h-3 fill-current" /> Stop</>
                     ) : listenSection ? (
                       <><Square className="w-3 h-3 fill-current" /> Stop</>

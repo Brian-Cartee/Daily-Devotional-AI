@@ -3,6 +3,9 @@ import { getUserVoice } from "@/lib/userName";
 
 let _instanceCounter = 0;
 
+const TTS_FETCH_TIMEOUT_MS = 10_000;
+const TTS_SLOW_WARNING_MS = 3_000;
+
 /**
  * Fire-and-forget: warms the server-side TTS disk cache for a given text+voice
  * so the FIRST listen is served from cache (near-instant) instead of calling OpenAI.
@@ -19,19 +22,62 @@ export function prewarmTTS(text: string, voice?: string): void {
     .catch(() => {});
 }
 
+/** Fetch TTS audio with a hard 10-second timeout. Returns a blob URL or null. */
+async function fetchTTS(
+  text: string,
+  voice: string,
+  cancelRef: React.MutableRefObject<boolean>,
+): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TTS_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text.slice(0, 4096), voice }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok || cancelRef.current) return null;
+    const blob = await response.blob();
+    if (cancelRef.current) return null;
+    return URL.createObjectURL(blob);
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 export function useTTS() {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingLong, setLoadingLong] = useState(false); // true after 3s — "still on its way..."
   const [error, setError] = useState(false);
+  const [blocked, setBlocked] = useState(false);          // iOS autoplay blocked
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
   const preloadingRef = useRef(false);
   const chainCancelRef = useRef(false);
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const instanceId = useRef(`tts-${++_instanceCounter}`);
+
+  const clearSlowTimer = useCallback(() => {
+    if (slowTimerRef.current) {
+      clearTimeout(slowTimerRef.current);
+      slowTimerRef.current = null;
+    }
+    setLoadingLong(false);
+  }, []);
+
+  const startSlowTimer = useCallback(() => {
+    clearSlowTimer();
+    slowTimerRef.current = setTimeout(() => setLoadingLong(true), TTS_SLOW_WARNING_MS);
+  }, [clearSlowTimer]);
 
   const cleanup = useCallback(() => {
     chainCancelRef.current = true;
+    clearSlowTimer();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -41,18 +87,18 @@ export function useTTS() {
       URL.revokeObjectURL(blobUrlRef.current);
       blobUrlRef.current = null;
     }
-  }, []);
+  }, [clearSlowTimer]);
 
   const stop = useCallback(() => {
     cleanup();
     setPlaying(false);
     setLoading(false);
     setError(false);
+    setBlocked(false);
     setProgress(0);
   }, [cleanup]);
 
   // Global coordination: when any instance starts, all others stop immediately.
-  // This prevents multiple audio streams playing simultaneously across the app.
   useEffect(() => {
     const handle = (e: Event) => {
       const id = (e as CustomEvent<{ id: string }>).detail?.id;
@@ -60,6 +106,7 @@ export function useTTS() {
         cleanup();
         setPlaying(false);
         setLoading(false);
+        setBlocked(false);
         setProgress(0);
       }
     };
@@ -78,19 +125,51 @@ export function useTTS() {
     preloadingRef.current = true;
     const selectedVoice = voice ?? getUserVoice();
     try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: selectedVoice }),
-      });
-      if (!response.ok) return;
-      const blob = await response.blob();
-      blobUrlRef.current = URL.createObjectURL(blob);
+      const url = await fetchTTS(text, selectedVoice, chainCancelRef);
+      if (url) blobUrlRef.current = url;
     } catch {
       // silently ignore — user can still tap Listen and it'll fetch fresh
     } finally {
       preloadingRef.current = false;
     }
+  }, []);
+
+  /** Attempt to play an audio element, handling iOS autoplay block gracefully. */
+  const attemptPlay = useCallback(async (audio: HTMLAudioElement, blobUrl: string) => {
+    try {
+      await audio.play();
+      setBlocked(false);
+    } catch (err: unknown) {
+      const name = (err instanceof Error) ? err.name : "";
+      if (name === "NotAllowedError") {
+        // iOS / browser autoplay policy blocked playback — store the URL so
+        // the UI can show a "tap to play" button and resume.
+        blobUrlRef.current = blobUrl;
+        setBlocked(true);
+        setLoading(false);
+        setPlaying(false);
+      } else {
+        setError(true);
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  /** Resume playback after user taps "Tap to play" (iOS autoplay recovery). */
+  const resumeAfterBlock = useCallback(() => {
+    const url = blobUrlRef.current;
+    if (!url) return;
+    blobUrlRef.current = null;
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.ontimeupdate = () => {
+      if (audio.duration) setProgress(Math.round((audio.currentTime / audio.duration) * 100));
+    };
+    audio.onended = () => { setPlaying(false); setProgress(100); URL.revokeObjectURL(url); };
+    audio.onerror = () => { setPlaying(false); setError(true); };
+    audio.play()
+      .then(() => { setBlocked(false); setPlaying(true); })
+      .catch(() => setError(true));
   }, []);
 
   const play = useCallback(async (text: string, voice?: string) => {
@@ -106,13 +185,14 @@ export function useTTS() {
       setLoading(false);
       setPlaying(true);
       setError(false);
+      setBlocked(false);
       setProgress(0);
       audio.ontimeupdate = () => {
         if (audio.duration) setProgress(Math.round((audio.currentTime / audio.duration) * 100));
       };
       audio.onended = () => { setPlaying(false); setProgress(100); URL.revokeObjectURL(url); };
       audio.onerror = () => { setPlaying(false); setError(true); };
-      await audio.play().catch(() => setError(true));
+      await attemptPlay(audio, url);
       return;
     }
 
@@ -122,15 +202,19 @@ export function useTTS() {
     setProgress(0);
     setLoading(true);
     setError(false);
+    setBlocked(false);
+    startSlowTimer();
+
     try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: selectedVoice }),
-      });
-      if (!response.ok) throw new Error("TTS failed");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const url = await fetchTTS(text, selectedVoice, chainCancelRef);
+      clearSlowTimer();
+
+      if (!url || chainCancelRef.current) {
+        setLoading(false);
+        if (!chainCancelRef.current) setError(true);
+        return;
+      }
+
       const audio = new Audio(url);
       audioRef.current = audio;
       audio.oncanplay = () => { setLoading(false); setPlaying(true); };
@@ -143,13 +227,14 @@ export function useTTS() {
         URL.revokeObjectURL(url);
       };
       audio.onerror = () => { setPlaying(false); setLoading(false); setError(true); };
-      await audio.play().catch(() => { setLoading(false); setError(true); });
+      await attemptPlay(audio, url);
     } catch {
+      clearSlowTimer();
       setLoading(false);
       setPlaying(false);
       setError(true);
     }
-  }, [cleanup, notifyStart]);
+  }, [cleanup, notifyStart, startSlowTimer, clearSlowTimer, attemptPlay]);
 
   const toggle = useCallback(
     (text: string, voice?: string) => {
@@ -176,6 +261,8 @@ export function useTTS() {
     setProgress(0);
     setLoading(true);
     setError(false);
+    setBlocked(false);
+    startSlowTimer();
 
     let prefetchedUrl: string | null = null;
 
@@ -192,16 +279,14 @@ export function useTTS() {
       prefetchedUrl = null;
 
       if (!blobUrl) {
-        try {
-          const response = await fetch("/api/tts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text.slice(0, 4096), voice: selectedVoice }),
-          });
-          if (!response.ok || chainCancelRef.current) break;
-          const blob = await response.blob();
-          blobUrl = URL.createObjectURL(blob);
-        } catch { break; }
+        blobUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
+        clearSlowTimer();
+        if (!blobUrl || chainCancelRef.current) {
+          if (!chainCancelRef.current) setError(true);
+          break;
+        }
+      } else {
+        clearSlowTimer();
       }
 
       if (!blobUrl || chainCancelRef.current) break;
@@ -214,14 +299,7 @@ export function useTTS() {
       let prefetchPromise: Promise<string | null> | null = null;
       if (nextSection) {
         const nextVoice = nextSection.voice ?? getUserVoice();
-        prefetchPromise = fetch("/api/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: nextSection.text.slice(0, 4096), voice: nextVoice }),
-        })
-          .then(r => r.ok ? r.blob() : null)
-          .then(blob => blob ? URL.createObjectURL(blob) : null)
-          .catch(() => null);
+        prefetchPromise = fetchTTS(nextSection.text, nextVoice, chainCancelRef);
       }
 
       const urlToPlay = blobUrl;
@@ -239,7 +317,10 @@ export function useTTS() {
         audio.onended = () => { URL.revokeObjectURL(urlToPlay); resolve(); };
         audio.onerror = () => { URL.revokeObjectURL(urlToPlay); resolve(); };
         if (chainCancelRef.current) { URL.revokeObjectURL(urlToPlay); resolve(); return; }
-        audio.play().catch(() => resolve());
+        audio.play().catch(() => {
+          URL.revokeObjectURL(urlToPlay);
+          resolve();
+        });
       });
 
       if (prefetchPromise) {
@@ -258,9 +339,9 @@ export function useTTS() {
     } else {
       setProgress(0);
     }
-  }, [cleanup, notifyStart]);
+  }, [cleanup, notifyStart, startSlowTimer, clearSlowTimer]);
 
   useEffect(() => () => cleanup(), [cleanup]);
 
-  return { play, stop, toggle, preload, playChain, playing, loading, error, progress };
+  return { play, stop, toggle, preload, playChain, resumeAfterBlock, playing, loading, loadingLong, error, blocked, progress };
 }

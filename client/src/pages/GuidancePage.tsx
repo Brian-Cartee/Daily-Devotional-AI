@@ -351,7 +351,23 @@ export default function GuidancePage() {
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-background pt-16 pb-32">
+      <main className="min-h-screen bg-background pb-32">
+        {/* Gradient hero strip — Figma Phase 1 */}
+        <div className="relative pt-14 overflow-hidden bg-gradient-to-b from-[hsl(265_60%_8%)] to-background">
+          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-70" />
+          <div className="max-w-2xl mx-auto px-5 pt-8 pb-7 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg shadow-primary/30 shrink-0">
+              <ShepherdCrookMark className="w-5 h-5 text-white opacity-90" />
+            </div>
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-0.5">Seek Guidance</p>
+              <h1 className="text-[20px] font-extrabold text-foreground leading-tight tracking-tight">
+                {isFirstVisit ? "What's on your heart?" : "Lay Your Burdens Down"}
+              </h1>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-2xl mx-auto px-4 py-8">
 
           {/* Header — pastoral welcome */}
@@ -360,7 +376,7 @@ export default function GuidancePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <div className="flex items-center gap-2 mb-3">
+            <div className="hidden">
               <ShepherdCrookMark className="w-6 h-6 opacity-80" />
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Seek Guidance</span>
             </div>
@@ -414,25 +430,11 @@ export default function GuidancePage() {
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  {isFirstVisit ? (
-                    <>
-                      <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
-                        What's actually going on with you right now?
-                      </h1>
-                      <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
-                        The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is. A scripture for your exact moment and a prayer written just for you are waiting on the other side.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h1 className="text-[1.7rem] font-black text-foreground leading-tight tracking-tight mb-2">
-                        Lay Your Burdens Down
-                      </h1>
-                      <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mb-4">
-                        Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now. A word from Scripture and a prayer written for your exact moment await.
-                      </p>
-                    </>
-                  )}
+                  <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mb-4">
+                    {isFirstVisit
+                      ? "The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is. Scripture and a prayer written just for you await."
+                      : "Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now."}
+                  </p>
 
                   {/* Today's framework suggestion */}
                   <div className="pt-4 border-t border-border/30">
@@ -673,7 +675,7 @@ export default function GuidancePage() {
                         onClick={handleSend}
                         disabled={!followUp.trim() || isSending}
                         data-testid="button-guidance-send"
-                        className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm shadow-amber-500/30"
                       >
                         {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </button>
@@ -870,7 +872,7 @@ export default function GuidancePage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-600 group-hover:bg-violet-700 text-white flex items-center justify-center transition-colors mt-1">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 group-hover:from-amber-400 group-hover:to-orange-400 text-white flex items-center justify-center transition-all shadow-sm shadow-amber-500/30 mt-1">
                         <ArrowRight className="w-4 h-4" />
                       </div>
                     </div>

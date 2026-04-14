@@ -467,6 +467,14 @@ export default function LandingHome() {
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+  const [activeTab, setActiveTab] = useState<'today' | 'explore'>(() =>
+    (localStorage.getItem('sp_home_tab') as 'today' | 'explore') || 'today'
+  );
+  const switchTab = (tab: 'today' | 'explore') => {
+    setActiveTab(tab);
+    localStorage.setItem('sp_home_tab', tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Passage finder state
   const [passageQuery, setPassageQuery] = useState("");
@@ -707,6 +715,29 @@ export default function LandingHome() {
           {/* Time-aware greeting */}
           <GreetingHeader />
 
+          {/* ── Tab bar ── */}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-2xl p-1" role="tablist">
+            {(['today', 'explore'] as const).map((tab) => (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
+                data-testid={`tab-${tab}`}
+                onClick={() => switchTab(tab)}
+                className={`flex-1 py-2 rounded-xl text-[13px] font-bold transition-all ${
+                  activeTab === tab
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab === 'today' ? 'Today' : 'Explore'}
+              </button>
+            ))}
+          </div>
+
+          {/* ══ TODAY TAB ══ */}
+          {activeTab === 'today' && <>
+
           {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
           <LateNightBannerCard />
 
@@ -907,6 +938,10 @@ export default function LandingHome() {
             </div>
           )}
 
+          </>}
+          {/* ══ EXPLORE TAB ══ */}
+          {activeTab === 'explore' && <>
+
           {/* 7-Day Faith Framework — for engaged users, sits after core entry points */}
           <FrameworkDayCard />
 
@@ -1082,10 +1117,12 @@ export default function LandingHome() {
             </div>
           </div>
 
+          </>}
+
         </motion.div>
 
-        {/* Testimonials */}
-        <motion.div
+        {/* Testimonials — Explore tab only */}
+        {activeTab === 'explore' && <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
@@ -1232,7 +1269,10 @@ export default function LandingHome() {
               </div>
             ))}
           </div>
-        </motion.div>
+        </motion.div>}
+
+        {/* ══ EXPLORE: secondary sections ══ */}
+        {activeTab === 'explore' && <>
 
         {/* ── Find a Passage ── */}
         <motion.div
@@ -1625,6 +1665,8 @@ export default function LandingHome() {
             </p>
           </div>
         </motion.div>
+
+        </>}
 
         {/* Footer */}
         <motion.div
