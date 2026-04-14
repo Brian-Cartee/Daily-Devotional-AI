@@ -155,11 +155,13 @@ export default function GuidancePage() {
     }
   };
 
-  // Scroll to top immediately when page loads with a situation
+  // Always scroll to top on mount — covers iOS Safari scroll restoration and
+  // both the empty (/guidance) and pre-filled (/guidance?situation=…) entry paths
   useEffect(() => {
-    if (situation.trim()) {
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    }
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, []);
 
   useEffect(() => {
