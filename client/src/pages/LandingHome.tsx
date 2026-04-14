@@ -909,6 +909,12 @@ export default function LandingHome() {
             </div>
           )}
 
+          {/* ── Personal reflection cards — daily/weekly touchpoints ── */}
+          <CheckinCard />
+          <GratitudePromptCard sessionId={sessionId} />
+          <WeeklyReflectionCard />
+          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
+
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
@@ -998,12 +1004,8 @@ export default function LandingHome() {
             </Link>
           )}
 
-          {/* 3 ── Contextual engagement cards (supporting, below nav) ──────── */}
+          {/* 3 ── Contextual engagement cards ────────────────────────────── */}
           <FrameworkDayCard />
-          <CheckinCard />
-          <GratitudePromptCard sessionId={sessionId} />
-          <WeeklyReflectionCard />
-          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
 
           {/* Rhythm nudge */}
           {showNudge && (
