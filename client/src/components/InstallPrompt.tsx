@@ -19,6 +19,9 @@ export function InstallPrompt() {
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
 
+    // Don't show until the user has dismissed the welcome overlay
+    if (!localStorage.getItem("sp_welcomed")) return;
+
     const visits = parseInt(localStorage.getItem(VISIT_KEY) ?? "0") + 1;
     localStorage.setItem(VISIT_KEY, String(visits));
     if (visits < 2) return;
@@ -27,14 +30,15 @@ export function InstallPrompt() {
     const isInStandaloneMode = (window.navigator as any).standalone === true;
     if (ios && !isInStandaloneMode) {
       setIsIOS(true);
-      setTimeout(() => setVisible(true), 3500);
+      // Extra delay so it doesn't compete with the welcome screen on first impression
+      setTimeout(() => setVisible(true), 8000);
       return;
     }
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setTimeout(() => setVisible(true), 3500);
+      setTimeout(() => setVisible(true), 8000);
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);

@@ -92,16 +92,13 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           Shepherd&rsquo;s Path
         </h1>
         <p
-          className="mt-2 text-white/65 text-center leading-snug"
-          style={{
-            fontFamily: "var(--font-decorative)",
-            fontStyle: "italic",
-            fontSize: "1.02rem",
-          }}
+          className="mt-2.5 text-white/85 text-center text-[15px] leading-relaxed tracking-wide"
+          style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic" }}
         >
-          Scripture for what you&rsquo;re going through —<br />
-          words of strength, hope, and guidance<br />
-          for every season of your life.
+          Scripture for what you&rsquo;re going through
+        </p>
+        <p className="mt-1.5 text-white/50 text-center text-[13px] leading-snug px-4">
+          Words of strength, hope, and guidance for every season of your life.
         </p>
       </motion.div>
 
