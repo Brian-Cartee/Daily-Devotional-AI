@@ -91,7 +91,77 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
   return (
     <div className="mt-6 flex flex-col gap-4">
 
-      {/* Conversation thread — skip first message (it's the reflection card above) */}
+      {/* ── Guided entry point — always at the top, always visible ── */}
+      <div className="rounded-2xl border border-primary/15 bg-primary/4 dark:bg-primary/6 px-4 pt-4 pb-3 flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
+          <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary/70">
+            Go deeper with this verse
+          </span>
+        </div>
+
+        {/* Preset prompt buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          {PRESET_PROMPTS.map(({ label, icon: Icon }) => (
+            <button
+              key={label}
+              data-testid={`button-preset-${label.toLowerCase().replace(/\s+/g, "-")}`}
+              onClick={() => sendMessage(label)}
+              disabled={chatMutation.isPending}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/70 dark:bg-slate-800/60 border border-border/50 text-sm text-foreground/75 text-left hover:bg-background hover:border-primary/30 hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <Icon className="w-4 h-4 flex-shrink-0 text-primary/60" />
+              <span className="leading-tight">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Custom question input */}
+        <div className="flex gap-2 items-end">
+          <div className="flex-1 relative">
+            <Textarea
+              ref={inputRef}
+              data-testid="input-verse-question"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Or ask anything about this verse…"
+              className="resize-none min-h-[48px] max-h-32 bg-background/70 dark:bg-slate-800/60 border-border/50 rounded-xl text-sm pr-4 placeholder:text-muted-foreground/65 focus-visible:ring-primary/30"
+              rows={1}
+              disabled={chatMutation.isPending}
+            />
+          </div>
+          <Button
+            data-testid="button-ask-verse"
+            size="icon"
+            onClick={() => sendMessage(inputValue)}
+            disabled={!inputValue.trim() || chatMutation.isPending}
+            className="h-[48px] w-[48px] rounded-xl flex-shrink-0 bg-primary"
+          >
+            {chatMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
+        {(() => {
+          const remaining = getRemainingAi();
+          return remaining <= 3 ? (
+            <p className="text-xs text-center -mt-1">
+              <span className="text-amber-500 font-semibold">{remaining} free AI {remaining === 1 ? "response" : "responses"} left today</span>
+              {" · "}
+              <button onClick={() => setShowUpgrade(true)} className="text-primary underline underline-offset-2">Upgrade for unlimited</button>
+            </p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground/60 text-center -mt-1">
+              Press Enter to send · Shift+Enter for new line
+            </p>
+          );
+        })()}
+      </div>
+
+      {/* Conversation thread — accumulates below the action panel */}
       <AnimatePresence initial={false}>
         {messages.slice(1).map((msg, idx) => (
           <motion.div
@@ -153,75 +223,6 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
       {!chatMutation.isPending && (
         <ResourceSuggestionCard messages={messages} />
       )}
-
-      {/* Divider with label */}
-      <div className="flex items-center gap-3 pt-2">
-        <div className="h-px flex-1 bg-border/60" />
-        <span className="text-xs font-medium text-muted-foreground tracking-wider uppercase">
-          Explore further
-        </span>
-        <div className="h-px flex-1 bg-border/60" />
-      </div>
-
-      {/* Preset prompt buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {PRESET_PROMPTS.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            data-testid={`button-preset-${label.toLowerCase().replace(/\s+/g, "-")}`}
-            onClick={() => sendMessage(label)}
-            disabled={chatMutation.isPending}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/40 text-sm text-slate-600 dark:text-slate-300 text-left hover-elevate disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <Icon className="w-4 h-4 flex-shrink-0 text-primary/70" />
-            <span className="leading-tight">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Custom question input */}
-      <div className="flex gap-2 items-end mt-1">
-        <div className="flex-1 relative">
-          <Textarea
-            ref={inputRef}
-            data-testid="input-verse-question"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask anything about this verse..."
-            className="resize-none min-h-[52px] max-h-32 bg-white/60 dark:bg-slate-800/60 border-white/30 dark:border-slate-700/40 rounded-xl text-sm pr-4 focus-visible:ring-primary/30"
-            rows={1}
-            disabled={chatMutation.isPending}
-          />
-        </div>
-        <Button
-          data-testid="button-ask-verse"
-          size="icon"
-          onClick={() => sendMessage(inputValue)}
-          disabled={!inputValue.trim() || chatMutation.isPending}
-          className="h-[52px] w-[52px] rounded-xl flex-shrink-0 bg-primary"
-        >
-          {chatMutation.isPending ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Send className="w-5 h-5" />
-          )}
-        </Button>
-      </div>
-      {(() => {
-        const remaining = getRemainingAi();
-        return remaining <= 3 ? (
-          <p className="text-xs text-center -mt-1">
-            <span className="text-amber-500 font-semibold">{remaining} free AI {remaining === 1 ? "response" : "responses"} left today</span>
-            {" · "}
-            <button onClick={() => setShowUpgrade(true)} className="text-primary underline underline-offset-2">Upgrade for unlimited</button>
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground text-center -mt-1">
-            Press Enter to send · Shift+Enter for new line
-          </p>
-        );
-      })()}
 
       <AnimatePresence>
         {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
