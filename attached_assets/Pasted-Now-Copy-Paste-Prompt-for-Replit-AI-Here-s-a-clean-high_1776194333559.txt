@@ -1,0 +1,68 @@
+Now: Copy/Paste Prompt for Replit AI
+Here’s a clean, high-quality prompt you can drop in:
+Prompt: Testimony Drawer / “Voices” Feature
+Design and implement a sleek, modern UI component for a Christian faith app called “Voices.”
+Concept:
+A subtle, partially visible half-circle drawer/tab on the side or bottom of the screen that invites users to explore real user testimonies.
+1. Visual Design
+A half-circle or curved tab that slightly peeks into the screen
+Should feel:
+soft
+minimal
+slightly glowing or elevated
+Include a subtle icon (e.g. speech bubble, ripple, or light symbol)
+Label: “Voices” (or optionally no label, just icon)
+2. Interaction Behavior
+On tap or swipe:
+Smoothly expands into a full or partial overlay
+Animation should feel fluid and calming (not fast or mechanical)
+3. Expanded State (Main Experience)
+Display a scrollable stream of testimonies
+Each testimony:
+Short (1–3 sentences)
+Emotionally authentic
+Clean card design
+Subtle attribution (first name or anonymous)
+4. Motion / Feel
+Gentle vertical scrolling
+Optional slow auto-scroll (like a living stream)
+Slight fade-in/out transitions between entries
+Goal:
+👉 Feels alive, not static
+5. Emotional Tone
+The experience should feel:
+safe
+human
+communal
+hopeful
+NOT:
+overwhelming
+busy
+social-media-like
+6. Subtle Contribution Loop (Important)
+At the end or between testimonials, include a soft CTA:
+👉 “Share your story”
+Should not feel pushy
+Feels like an invitation, not a prompt
+7. UX Goals
+Spark curiosity when collapsed
+Create emotional connection when opened
+Encourage users to feel:
+👉 “I’m not alone”
+👉 “I want to be part of this”
+8. Placement Options
+Bottom center (preferred for subtlety)
+Or right-side edge (like a handle)
+9. Constraints
+Must feel lightweight and fast
+Should not block primary app experience
+Easy to open and dismiss
+10. Overall Goal
+Create a feature that feels less like UI and more like:
+👉 a living stream of shared faith and real human experience
+🔥 Final Thought
+If you build this right…
+This becomes:
+your emotional engine
+your social loop
+your retention driver
