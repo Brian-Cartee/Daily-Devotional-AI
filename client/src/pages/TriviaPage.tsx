@@ -225,7 +225,7 @@ export default function TriviaPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <NavBar />
-      <div className="max-w-lg mx-auto px-4 pt-4">
+      <div className="max-w-lg mx-auto px-4 pt-14">
 
         {/* ── Category Selection ─────────────────────────────────────── */}
         <AnimatePresence mode="wait">
