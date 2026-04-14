@@ -83,12 +83,15 @@ export function NavBar() {
 
           {/* Logo — icon only */}
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 mr-2" title="Shepherd's Path">
-            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
+            <div
+              className="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex items-center justify-center"
+              style={{ background: "linear-gradient(145deg, #7c3aed 0%, #5b21b6 100%)" }}
+            >
               <img
-                src="/cross-path-transparent.png"
+                src="/sp-cross-logo.png"
                 alt="Shepherd's Path"
-                className="w-full h-full select-none"
-                style={{ objectFit: "cover", objectPosition: "50% 30%" }}
+                className="select-none"
+                style={{ width: "82%", height: "82%", objectFit: "contain", objectPosition: "50% 35%" }}
                 draggable={false}
               />
             </div>

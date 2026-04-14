@@ -69,20 +69,32 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </button>
 
           <div className="relative z-10">
-            {/* App icon — centered square, same as phone home screen */}
+            {/* App icon — lighter purple box on dark purple background */}
             <div className="flex justify-center mb-4">
-              <img
-                src="/cross-path-transparent.png"
-                alt="Shepherd's Path"
+              <div
                 style={{
                   width: 88,
                   height: 88,
                   borderRadius: 20,
-                  objectFit: "cover",
-                  objectPosition: "40% 25%",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.1)",
+                  background: "linear-gradient(145deg, #7c3aed 0%, #5b21b6 100%)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <img
+                  src="/sp-cross-logo.png"
+                  alt="Shepherd's Path"
+                  style={{
+                    width: "82%",
+                    height: "82%",
+                    objectFit: "contain",
+                    objectPosition: "50% 35%",
+                  }}
+                />
+              </div>
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
