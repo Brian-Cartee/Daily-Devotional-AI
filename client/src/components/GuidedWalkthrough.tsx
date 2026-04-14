@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Headphones, ChevronRight, X, Play, Square, Check } from "lucide-react";
+import { Headphones, ChevronRight, X, Play, Square, Check, SkipForward } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 
@@ -64,6 +64,9 @@ const STEPS = [
   },
 ];
 
+// Full concatenated tour script — all 5 sections played as one continuous audio
+const FULL_TOUR_SCRIPT = STEPS.map(s => s.script).join("\n\n");
+
 const VOICE_OPTIONS = [
   { id: "shimmer", label: "Warm & Gentle", sample: "I'm here with you." },
   { id: "onyx",   label: "Deep & Calm",   sample: "I'm here with you." },
@@ -74,19 +77,30 @@ interface Props {
 }
 
 export function GuidedWalkthrough({ onDismiss }: Props) {
-  const [phase, setPhase] = useState<"voice" | "steps" | "done">("voice");
+  const [phase, setPhase] = useState<"voice" | "tour" | "done">("voice");
   const [selectedVoice, setSelectedVoice] = useState<string>(getUserVoice());
-  const [step, setStep] = useState(0);
   const tts = useTTS();
   const sampleTts = useTTS();
   const samplingVoice = useRef<string | null>(null);
 
-  const currentStep = STEPS[step];
+  // Derive current highlighted step from overall progress (0–100 split across 5 sections)
+  const activeStep = Math.min(4, Math.floor((tts.progress / 100) * STEPS.length));
+
+  // Mark done when full audio completes
+  useEffect(() => {
+    if (phase === "tour" && tts.progress >= 99 && !tts.playing && !tts.loading) {
+      const t = setTimeout(() => {
+        setPhase("done");
+        dismissWalkthrough();
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, [tts.progress, tts.playing, tts.loading, phase]);
 
   const handleVoiceConfirm = () => {
     setUserVoice(selectedVoice);
     sampleTts.stop();
-    setPhase("steps");
+    setPhase("tour");
   };
 
   const playSample = (voiceId: string) => {
@@ -99,18 +113,11 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
     sampleTts.play(VOICE_OPTIONS.find(v => v.id === voiceId)!.sample, voiceId);
   };
 
-  const playStep = () => {
-    if (tts.playing) { tts.stop(); return; }
-    tts.play(currentStep.script, selectedVoice);
-  };
-
-  const handleNext = () => {
-    tts.stop();
-    if (step < STEPS.length - 1) {
-      setStep(s => s + 1);
+  const toggleTour = () => {
+    if (tts.playing) {
+      tts.stop();
     } else {
-      setPhase("done");
-      dismissWalkthrough();
+      tts.play(FULL_TOUR_SCRIPT, selectedVoice);
     }
   };
 
@@ -120,6 +127,8 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
     dismissWalkthrough();
     onDismiss();
   };
+
+  const isStarted = tts.progress > 0 || tts.playing || tts.loading;
 
   return (
     <motion.div
@@ -134,7 +143,7 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-primary/70" strokeWidth={1.8} />
           <span className="text-[12px] font-bold text-foreground/70 uppercase tracking-wide">
-            {phase === "voice" ? "Choose Your Voice" : phase === "done" ? "You're All Set" : `Step ${step + 1} of ${STEPS.length}`}
+            {phase === "voice" ? "App Tour" : phase === "done" ? "You're All Set" : "App Tour"}
           </span>
         </div>
         <button
@@ -158,7 +167,7 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
             className="px-4 py-4"
           >
             <p className="text-[13px] text-foreground/75 leading-relaxed mb-4">
-              Let us walk you through how the app works. First — pick the voice you'd like to guide you.
+              A quick audio tour of the app — about 90 seconds. First, pick the voice.
             </p>
             <div className="flex gap-2.5 mb-4">
               {VOICE_OPTIONS.map(v => (
@@ -196,64 +205,102 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
               data-testid="button-walkthrough-start"
               className="w-full rounded-xl bg-primary text-primary-foreground text-[13px] font-bold py-3 flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all"
             >
-              Start the tour
+              Continue
               <ChevronRight className="w-4 h-4" />
             </button>
           </motion.div>
         )}
 
-        {/* ── Phase 2: Steps ── */}
-        {phase === "steps" && (
+        {/* ── Phase 2: Full tour — single play button ── */}
+        {phase === "tour" && (
           <motion.div
-            key={`step-${step}`}
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -12 }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
+            key="tour"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="px-4 py-4"
           >
-            {/* Step progress dots */}
+            {/* Section progress indicator */}
             <div className="flex gap-1.5 mb-4">
-              {STEPS.map((_, i) => (
+              {STEPS.map((s, i) => (
                 <div
-                  key={i}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    i === step ? "w-5 bg-primary" : i < step ? "w-2.5 bg-primary/40" : "w-2.5 bg-muted/60"
+                  key={s.id}
+                  className={`flex-1 h-1 rounded-full transition-all duration-500 ${
+                    !isStarted
+                      ? "bg-muted/50"
+                      : i < activeStep
+                        ? "bg-primary/50"
+                        : i === activeStep && tts.playing
+                          ? "bg-primary"
+                          : i === activeStep && !tts.playing && isStarted
+                            ? "bg-primary/70"
+                            : "bg-muted/50"
                   }`}
                 />
               ))}
             </div>
 
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-1">
-              {currentStep.subtitle}
-            </p>
-            <h3 className="text-[18px] font-bold text-foreground mb-3 leading-snug">
-              {currentStep.title}
-            </h3>
+            {/* Current section label — updates as audio progresses */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={isStarted ? activeStep : "idle"}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="mb-3"
+              >
+                {isStarted ? (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/55 mb-0.5">
+                      {STEPS[activeStep].subtitle}
+                    </p>
+                    <p className="text-[16px] font-bold text-foreground leading-snug">
+                      {STEPS[activeStep].title}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/55 mb-0.5">
+                      5 sections · ~90 seconds
+                    </p>
+                    <p className="text-[16px] font-bold text-foreground leading-snug">
+                      Tap play to begin
+                    </p>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
 
-            {/* Listen button */}
+            {/* Single play/pause button */}
             <button
-              onClick={playStep}
-              data-testid={`button-walkthrough-play-${currentStep.id}`}
-              className={`w-full rounded-xl border px-4 py-3 flex items-center gap-3 transition-all mb-4 ${
+              onClick={toggleTour}
+              data-testid="button-walkthrough-play"
+              className={`w-full rounded-xl border px-4 py-3.5 flex items-center gap-3 transition-all mb-3 ${
                 tts.playing
                   ? "border-primary/40 bg-primary/8"
                   : "border-border/50 bg-muted/30 hover:border-primary/30 hover:bg-muted/50"
               }`}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                 tts.playing ? "bg-primary" : "bg-primary/15"
               }`}>
                 {tts.loading
-                  ? <div className="w-3 h-3 rounded-full border-2 border-primary/50 border-t-primary animate-spin" />
+                  ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
                   : tts.playing
-                    ? <Square className="w-3 h-3 text-white" />
-                    : <Play className="w-3 h-3 text-primary" />
+                    ? <Square className="w-3.5 h-3.5 text-white" />
+                    : <Play className="w-3.5 h-3.5 text-primary" />
                 }
               </div>
               <div className="flex-1 text-left">
-                <p className={`text-[13px] font-semibold ${tts.playing ? "text-foreground" : "text-foreground/80"}`}>
-                  {tts.loading ? "Preparing…" : tts.playing ? "Playing — tap to stop" : "Listen to this step"}
+                <p className={`text-[13px] font-semibold leading-tight ${tts.playing ? "text-foreground" : "text-foreground/80"}`}>
+                  {tts.loading
+                    ? "Preparing…"
+                    : tts.playing
+                      ? "Playing — tap to pause"
+                      : isStarted
+                        ? "Resume tour"
+                        : "Play full tour"}
                 </p>
                 {tts.playing && tts.progress > 0 && (
                   <div className="mt-1.5 w-full h-1 rounded-full bg-primary/15 overflow-hidden">
@@ -265,18 +312,20 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
                   </div>
                 )}
                 {!tts.playing && !tts.loading && (
-                  <p className="text-[11px] text-muted-foreground/55 mt-0.5">~15 seconds</p>
+                  <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+                    {isStarted ? `${STEPS[activeStep].title} — paused` : "5 sections played continuously"}
+                  </p>
                 )}
               </div>
             </button>
 
             <button
-              onClick={handleNext}
-              data-testid="button-walkthrough-next"
-              className="w-full rounded-xl bg-primary text-primary-foreground text-[13px] font-bold py-3 flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all"
+              onClick={handleDismiss}
+              data-testid="button-walkthrough-skip"
+              className="w-full rounded-xl text-[12px] font-semibold py-2.5 text-muted-foreground/60 hover:text-muted-foreground flex items-center justify-center gap-1.5 transition-colors"
             >
-              {step < STEPS.length - 1 ? "Next" : "Finish"}
-              <ChevronRight className="w-4 h-4" />
+              <SkipForward className="w-3.5 h-3.5" />
+              Skip tour
             </button>
           </motion.div>
         )}
