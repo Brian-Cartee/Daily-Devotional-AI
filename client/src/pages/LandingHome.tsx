@@ -206,7 +206,7 @@ function HeroAIPrompt() {
 
         {/* Section 1 — open question */}
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-xl border border-border/50 bg-muted/40 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all overflow-hidden">
+          <div className="relative rounded-xl border border-border/80 bg-background focus-within:ring-2 focus-within:ring-amber-400/30 focus-within:border-amber-400/50 transition-all overflow-hidden shadow-sm">
             {/* Textarea */}
             <textarea
               value={query}
@@ -218,13 +218,13 @@ function HeroAIPrompt() {
               autoComplete="off"
               ref={inputRef}
               data-testid="hero-ai-input"
-              rows={3}
+              rows={4}
               className="w-full bg-transparent px-4 pt-3 pb-2 text-[15px] text-foreground outline-none resize-none leading-relaxed"
             />
             {/* Animated placeholder overlay */}
             {!query && (
               <span
-                className="absolute left-4 top-3 text-[15px] text-muted-foreground/65 pointer-events-none leading-relaxed transition-opacity duration-300"
+                className="absolute left-4 top-3 text-[15px] text-muted-foreground/85 pointer-events-none leading-relaxed transition-opacity duration-300"
                 style={{ opacity: placeholderVisible ? 1 : 0, right: "0.75rem" }}
               >
                 {placeholders[placeholderIndex]}
@@ -242,7 +242,7 @@ function HeroAIPrompt() {
                 >
                   {isListening
                     ? <MicOff className="w-4 h-4" />
-                    : <Mic className="w-4 h-4 opacity-50 hover:opacity-80" />
+                    : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />
                   }
                   {isListening && (
                     <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />
@@ -253,9 +253,9 @@ function HeroAIPrompt() {
                 type="submit"
                 disabled={!query.trim()}
                 data-testid="hero-ai-submit"
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary text-white disabled:opacity-25 hover:bg-primary/90 transition-all shadow-sm shadow-primary/30"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 disabled:opacity-25 transition-all shadow-md shadow-amber-400/35"
               >
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-5 h-5" />
               </button>
             </div>
           </div>
