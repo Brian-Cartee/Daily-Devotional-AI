@@ -964,7 +964,7 @@ export default function Devotional() {
                       placeholder="Share your thoughts, feelings, or a simple word…"
                       spellCheck
                       rows={3}
-                      className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <div className="flex items-center justify-between mt-2">
                       <button
@@ -1036,7 +1036,7 @@ export default function Devotional() {
                     </div>
                   )}
                   {!reflectionLoading && (
-                    <p className="text-[11px] text-muted-foreground/50 mt-3 flex items-center gap-1.5">
+                    <p className="text-[11px] text-muted-foreground/75 mt-3 flex items-center gap-1.5">
                       <span>✝</span>
                       <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                     </p>
@@ -1079,7 +1079,7 @@ export default function Devotional() {
                             placeholder="Share a thought, feeling, or a simple word…"
                             spellCheck
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-border bg-background pl-3 pr-12 pt-3 pb-10 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="w-full resize-none rounded-xl border border-border/60 bg-muted/30 pl-3 pr-12 pt-3 pb-10 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
                           />
                           <button
                             data-testid="btn-save-reflection-reply"
@@ -1109,7 +1109,7 @@ export default function Devotional() {
                               <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
                             </svg>
                           </button>
-                          <span className="absolute bottom-3 left-3 text-[10px] text-muted-foreground/40 pointer-events-none">
+                          <span className="absolute bottom-3 left-3 text-[10px] text-muted-foreground/65 pointer-events-none">
                             Enter to save · Shift+Enter for new line
                           </span>
                         </div>
@@ -1239,7 +1239,7 @@ export default function Devotional() {
                       onChange={e => setNudgeName(e.target.value)}
                       placeholder="Your first name (optional)"
                       data-testid="input-nudge-name"
-                      className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
+                      className="w-full bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70"
                     />
                     <div className="flex gap-2">
                       <input
@@ -1255,7 +1255,7 @@ export default function Devotional() {
                         enterKeyHint="done"
                         spellCheck={false}
                         data-testid="input-nudge-email"
-                        className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
+                        className="flex-1 bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70 min-w-0"
                       />
                       <Button
                         type="submit"
@@ -1287,7 +1287,7 @@ export default function Devotional() {
                         placeholder="(555) 000-0000"
                         required
                         data-testid="input-nudge-phone"
-                        className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50 min-w-0"
+                        className="flex-1 bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70 min-w-0"
                       />
                       <Button
                         type="submit"
@@ -1367,7 +1367,7 @@ export default function Devotional() {
               spellCheck
               rows={3}
               data-testid="input-gratitude"
-              className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/25 resize-none placeholder:text-muted-foreground/50 transition-shadow"
+              className="w-full bg-muted/30 border border-border/60 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/25 resize-none placeholder:text-muted-foreground/70 transition-shadow"
             />
             <div className="mt-3 flex items-center gap-3">
               <Button
