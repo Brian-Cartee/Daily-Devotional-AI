@@ -5,13 +5,24 @@ import { getUserVoice } from "@/lib/userName";
 import { useLocation } from "wouter";
 import { useState } from "react";
 
-const WELCOME_SCRIPT = `Hey. I'm glad you're here.
+const WELCOME_SCRIPT = `Hey… I'm really glad you're here.
 
-I don't know what brought you — maybe something's been weighing on you, or maybe you just felt the pull toward something more. Either way, that pull matters. Don't dismiss it.
+I don't know what brought you…
+maybe something's been weighing on you…
+or maybe you just felt a pull toward something more.
 
-You don't have to have the right words. You don't have to know what you're looking for. All you have to do is be honest about where you actually are. That's the only place God ever meets anyone anyway.
+Either way… that matters.
+Don't brush past it.
 
-So take a breath. And when you're ready — just tell us what's on your heart. Your words, however they come. We'll go from there.`;
+You don't need the right words…
+and you don't have to have anything figured out.
+Just be honest about where you are.
+That's where God meets people… every time.
+
+So take a breath…
+and when you're ready…
+you can just start sharing what's on your heart.
+We'll walk through it together.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
