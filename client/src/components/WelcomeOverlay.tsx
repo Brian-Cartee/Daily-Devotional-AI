@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, Square, X } from "lucide-react";
+import { ArrowRight, BookOpen, Loader2, Square, X } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
+import { useLocation } from "wouter";
 
 const WELCOME_SCRIPT = `Hey. I'm glad you're here.
 
@@ -17,6 +18,7 @@ interface WelcomeOverlayProps {
 
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   const { play, stop, toggle, playing, loading, progress } = useTTS();
+  const [, navigate] = useLocation();
 
   // No auto-play — browsers silently block audio without a direct user tap.
   // The button below invites the tap instead.
@@ -45,37 +47,47 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         className="bg-background border border-border rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden"
         style={{ maxHeight: "calc(100vh - 2.5rem)" }}
       >
-        {/* Hero image band */}
-        <div className="relative px-8 pt-5 pb-6 text-center overflow-hidden shrink-0 rounded-t-3xl" style={{ minHeight: 168 }}>
-          <img
-            src="/hero-landing.png"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover object-center"
+        {/* Hero band — dark purple gradient with centered icon (matches Figma Onboarding 1) */}
+        <div
+          className="relative px-8 pt-7 pb-6 text-center overflow-hidden shrink-0 rounded-t-3xl"
+          style={{ background: "linear-gradient(160deg, #2a1060 0%, #1a0848 50%, #0d0820 100%)" }}
+        >
+          {/* Subtle radial glow behind icon */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: "radial-gradient(ellipse 70% 55% at 50% 40%, rgba(120,60,220,0.35) 0%, transparent 70%)" }}
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.62) 100%)" }} />
 
           {/* Close button */}
           <button
             onClick={handleDismiss}
             data-testid="btn-close-welcome"
-            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center transition-colors"
+            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
             aria-label="Close"
           >
             <X className="w-4 h-4 text-white/80" />
           </button>
 
           <div className="relative z-10">
-            <div className="flex justify-center mb-3">
+            {/* App icon — centered square, same as phone home screen */}
+            <div className="flex justify-center mb-4">
               <img
-                src="/cross-transparent.png"
-                alt="Shepherd's Path logo"
-                style={{ width: 140, height: 140, objectFit: "contain", filter: "drop-shadow(0 4px 18px rgba(0,0,0,0.7))" }}
+                src="/cross-path-transparent.png"
+                alt="Shepherd's Path"
+                style={{
+                  width: 88,
+                  height: 88,
+                  borderRadius: 20,
+                  objectFit: "cover",
+                  objectPosition: "40% 25%",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.1)",
+                }}
               />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
               Shepherd's Path
             </h1>
-            <p className="text-white/90 mt-1" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.1rem" }}>
+            <p className="text-white/80 mt-1.5" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "1.05rem" }}>
               Scripture for what you're going through
             </p>
           </div>
@@ -164,8 +176,8 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           </button>
         </div>
 
-        {/* Primary CTA */}
-        <div className="shrink-0 px-4 pb-4 bg-background">
+        {/* CTAs */}
+        <div className="shrink-0 px-4 pb-4 bg-background space-y-2.5">
           <button
             data-testid="btn-start-exploring"
             className="w-full rounded-2xl font-bold py-4 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 active:scale-[0.98] transition-all border-0 relative flex items-center justify-center"
@@ -173,6 +185,17 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           >
             <span className="text-white text-[15px] font-bold tracking-tight">Share what you&rsquo;re carrying today</span>
             <ArrowRight className="w-4 h-4 text-white absolute right-5" />
+          </button>
+          <button
+            data-testid="btn-familiar-with-bible"
+            className="w-full rounded-2xl font-semibold py-3.5 text-[14px] flex items-center justify-center gap-2.5 border border-border/60 bg-muted/40 hover:bg-muted/70 active:scale-[0.98] transition-all"
+            onClick={() => {
+              handleDismiss();
+              navigate("/bible");
+            }}
+          >
+            <BookOpen className="w-4 h-4 text-muted-foreground" />
+            <span className="text-foreground/80">I&rsquo;m familiar with the Bible</span>
           </button>
         </div>
 

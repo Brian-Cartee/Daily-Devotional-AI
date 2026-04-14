@@ -719,34 +719,37 @@ export default function LandingHome() {
           {/* First Steps seeker card — shown to new users (days 1–7) */}
           <FirstStepsCard daysWithApp={getRelationshipAge()} />
 
-          {/* Emotion chips — quick-start guidance by feeling */}
+          {/* Emotion grid — what are you going through right now? */}
           {!isLateNight() && (
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 px-0.5">
-                How are you feeling today?
-              </p>
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                {[
-                  { label: "😟 Anxious",    query: "I'm feeling anxious and struggling to find peace" },
-                  { label: "💔 Grieving",   query: "I'm grieving and need God's comfort right now" },
-                  { label: "😔 Struggling", query: "I'm going through a really hard time and need guidance" },
-                  { label: "😕 Lost",       query: "I'm feeling lost in my faith and need direction" },
-                  { label: "🙏 Grateful",   query: "I'm feeling grateful and want to deepen that with God" },
-                  { label: "🕊️ Need peace", query: "I'm searching for peace in a difficult season" },
-                  { label: "❓ Doubting",   query: "I'm struggling with doubt and questions about my faith" },
-                ].map(({ label, query }) => (
-                  <button
-                    key={label}
-                    data-testid={`chip-emotion-${label.split(" ")[1]?.toLowerCase() ?? label}`}
-                    onClick={() => {
-                      markFirstAction();
-                      navigate(`/guidance?situation=${encodeURIComponent(query)}`);
-                    }}
-                    className="shrink-0 px-4 py-2 rounded-full border border-primary/25 bg-primary/8 text-[13px] font-semibold text-foreground/80 hover:bg-primary/18 hover:border-primary/45 active:scale-95 transition-all whitespace-nowrap"
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="relative rounded-2xl border border-primary/20 bg-card overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/60 via-violet-500/60 to-primary/60" />
+              <div className="px-4 pt-4 pb-3">
+                <p className="text-[15px] font-bold text-foreground mb-0.5">What are you going through right now?</p>
+                <p className="text-[12px] text-muted-foreground mb-3">Select what resonates — we'll bring you scripture for it.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { icon: "😟", label: "Anxiety",      sub: "Feeling overwhelmed",    query: "I'm feeling anxious and overwhelmed and need God's peace" },
+                    { icon: "💔", label: "Grief",         sub: "Experiencing loss",      query: "I'm grieving a loss and need God's comfort right now" },
+                    { icon: "😔", label: "Loneliness",   sub: "Feeling isolated",       query: "I'm feeling deeply lonely and disconnected and need God's presence" },
+                    { icon: "😤", label: "Anger",         sub: "Feeling frustrated",     query: "I'm struggling with anger and frustration and need God's guidance" },
+                    { icon: "🤝", label: "Relationship",  sub: "Interpersonal struggles",query: "I'm struggling in an important relationship and need wisdom from God" },
+                    { icon: "✨", label: "Something else", sub: "Another situation",     query: "I'm going through something difficult and need scripture to guide me" },
+                  ].map(({ icon, label, sub, query }) => (
+                    <button
+                      key={label}
+                      data-testid={`emotion-card-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                      onClick={() => {
+                        markFirstAction();
+                        navigate(`/guidance?situation=${encodeURIComponent(query)}`);
+                      }}
+                      className="flex flex-col items-start gap-1 px-3.5 py-3 rounded-xl border border-primary/15 bg-muted/40 hover:bg-primary/10 hover:border-primary/35 active:scale-[0.97] transition-all text-left group"
+                    >
+                      <span className="text-xl leading-none">{icon}</span>
+                      <span className="text-[13px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{label}</span>
+                      <span className="text-[11px] text-muted-foreground leading-tight">{sub}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
