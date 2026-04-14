@@ -1567,6 +1567,56 @@ Return only valid JSON. No markdown. No extra keys.`,
     }
   });
 
+  // ── Personal Prayer Portrait (Pro) ────────────────────────────────────────────
+  app.post("/api/guidance/prayer-portrait", async (req, res) => {
+    const { imageBase64, mimeType, situation, answers } = req.body as {
+      imageBase64?: string;
+      mimeType?: string;
+      situation?: string;
+      answers?: { belief?: string; burden?: string; cover?: string };
+    };
+    if (!imageBase64?.trim()) return res.status(400).json({ message: "Image required" });
+
+    try {
+      const parts: string[] = [];
+      if (situation?.trim()) parts.push(`What they shared: ${situation.trim().slice(0, 800)}`);
+      if (answers?.belief?.trim()) parts.push(`What they're believing God for: ${answers.belief.trim()}`);
+      if (answers?.burden?.trim()) parts.push(`What's felt heavy lately: ${answers.burden.trim()}`);
+      if (answers?.cover?.trim()) parts.push(`Who they want this prayer to cover: ${answers.cover.trim()}`);
+      const context = parts.length ? parts.join("\n\n") : "This person has come seeking a prayer over their life.";
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        max_tokens: 600,
+        messages: [
+          {
+            role: "system",
+            content: `You are a compassionate Christian pastor praying personally over someone's life. You have their photo and what they've shared. Write a prayer of 6–10 sentences spoken TO God on their behalf — not a template, not generic. Address God directly (start with "Lord," "Father," or "God,") and pray specifically about what this person is carrying, believing for, and who they want covered. Let the prayer feel like you looked them in the eyes and prayed this over them in the room. Natural, spoken language — raw and real, not formal or scripted. If something in the photo speaks to the moment (light, setting, expression), you may weave it in gently. End with "Amen."`,
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType ?? "image/jpeg"};base64,${imageBase64}`,
+                  detail: "low",
+                },
+              },
+              { type: "text", text: context },
+            ] as any,
+          },
+        ],
+      });
+
+      const prayer = completion.choices[0]?.message?.content?.trim() ?? "";
+      res.json({ prayer });
+    } catch (err) {
+      console.error("prayer-portrait error:", err);
+      res.status(500).json({ message: "Failed to generate prayer portrait" });
+    }
+  });
+
   // ── Daily Art Image ───────────────────────────────────────────────────────────
 
   const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");
