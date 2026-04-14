@@ -206,7 +206,7 @@ function HeroAIPrompt() {
 
         {/* Section 1 — open question */}
         <form onSubmit={handleSubmit}>
-          <div className="relative rounded-xl border border-border/80 bg-background focus-within:ring-2 focus-within:ring-amber-400/30 focus-within:border-amber-400/50 transition-all overflow-hidden shadow-sm">
+          <div className="relative rounded-xl border border-amber-400/30 bg-background focus-within:ring-2 focus-within:ring-amber-400/40 focus-within:border-amber-400/70 transition-all overflow-hidden shadow-sm">
             {/* Textarea */}
             <textarea
               value={query}
@@ -224,7 +224,7 @@ function HeroAIPrompt() {
             {/* Animated placeholder overlay */}
             {!query && (
               <span
-                className="absolute left-4 top-3 text-[15px] text-muted-foreground/85 pointer-events-none leading-relaxed transition-opacity duration-300"
+                className="absolute left-4 top-3 text-[15px] text-muted-foreground pointer-events-none leading-relaxed transition-opacity duration-300"
                 style={{ opacity: placeholderVisible ? 1 : 0, right: "0.75rem" }}
               >
                 {placeholders[placeholderIndex]}
@@ -253,7 +253,7 @@ function HeroAIPrompt() {
                 type="submit"
                 disabled={!query.trim()}
                 data-testid="hero-ai-submit"
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 disabled:opacity-25 transition-all shadow-md shadow-amber-400/35"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 disabled:opacity-50 transition-all shadow-md shadow-amber-400/50"
               >
                 <ArrowRight className="w-5 h-5" />
               </button>
@@ -279,27 +279,19 @@ function HeroAIPrompt() {
               </Link>
             );
           }
-          if (remaining === 3) {
-            return (
-              <div className="mt-2 flex items-center justify-end gap-1 pr-0.5">
-                <span className="text-[11px] text-muted-foreground/40 font-medium">
-                  {remaining} of {AI_FREE_LIMIT} free responses remaining today
-                </span>
-              </div>
-            );
-          }
           return null;
         })()}
 
         {/* Situation chips — secondary helper, not the preferred path */}
         <div className="mt-3">
-          <p className="text-[11px] text-muted-foreground/45 mb-2 px-0.5">
+          <p className="text-[11px] text-muted-foreground/70 mb-2 px-0.5">
             Not sure where to start? Tap one to fill in a starting point — then make it your own.
           </p>
-          <div
-            className="flex gap-2 overflow-x-auto pb-1"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+          <div className="relative">
+            <div
+              className="flex gap-2 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
             {[
               { label: "I'm grieving",         fill: "I'm grieving the loss of someone I love and I don't know how to process the pain…" },
               { label: "Marriage struggles",    fill: "My marriage is struggling and I don't know where to turn…" },
@@ -323,6 +315,12 @@ function HeroAIPrompt() {
                 {label}
               </button>
             ))}
+            </div>
+            {/* Fade + chevron — signals more chips to the right */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 flex items-center justify-end"
+              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 80%)" }}>
+              <span className="text-muted-foreground/50 text-[13px] font-bold pr-1">›</span>
+            </div>
           </div>
         </div>
 

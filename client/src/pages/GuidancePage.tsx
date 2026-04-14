@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield, Mic, MicOff } from "lucide-react";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
@@ -65,6 +65,8 @@ export default function GuidancePage() {
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
+  const [isListening, setIsListening] = useState(false);
+  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
   const userName = getUserName() ?? undefined;
   const framework = getTodayFramework();
 
@@ -282,6 +284,23 @@ export default function GuidancePage() {
       latestResponseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
   }, [streamingText, isSending, messages]);
+
+  const toggleFollowUpVoice = () => {
+    if (isListening) { setIsListening(false); return; }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.onresult = (e: any) => {
+      const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
+      setFollowUp(prev => (prev ? prev + " " + transcript : transcript));
+    };
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => setIsListening(false);
+    setIsListening(true);
+    rec.start();
+  };
 
   const handleSend = async () => {
     const text = followUp.trim();
@@ -714,7 +733,7 @@ export default function GuidancePage() {
                 {canUseAi() ? (
                   <>
                     <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.14em] mb-2 ml-1">Continue the conversation</p>
-                    <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 py-3 flex items-end gap-3 shadow-md transition-colors">
+                    <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
                       <textarea
                         ref={inputRef}
                         value={followUp}
@@ -727,16 +746,30 @@ export default function GuidancePage() {
                         rows={2}
                         disabled={isSending}
                         data-testid="input-guidance-followup"
-                        className="flex-1 resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed py-1 disabled:opacity-50"
+                        className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed disabled:opacity-50"
                       />
-                      <button
-                        onClick={handleSend}
-                        disabled={!followUp.trim() || isSending}
-                        data-testid="button-guidance-send"
-                        className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
-                      >
-                        {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                      </button>
+                      <div className="flex items-center justify-between">
+                        {hasSpeechSupport ? (
+                          <button
+                            type="button"
+                            onClick={toggleFollowUpVoice}
+                            data-testid="button-guidance-voice"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
+                            style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                          >
+                            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
+                            {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                          </button>
+                        ) : <span />}
+                        <button
+                          onClick={handleSend}
+                          disabled={!followUp.trim() || isSending}
+                          data-testid="button-guidance-send"
+                          className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
+                        >
+                          {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
                     {/* After 3rd use — subtle value reinforcement */}
                     {getAiUsage().count === 3 && (
