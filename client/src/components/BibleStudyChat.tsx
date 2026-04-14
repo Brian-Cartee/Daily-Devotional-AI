@@ -126,7 +126,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Or ask anything about this verse…"
-              className="resize-none min-h-[48px] max-h-32 bg-background/70 dark:bg-slate-800/60 border-border/50 rounded-xl text-sm pr-4 placeholder:text-muted-foreground/65 focus-visible:ring-primary/30"
+              className="resize-none min-h-[48px] max-h-32 bg-background dark:bg-slate-800/80 border-border/60 rounded-xl text-[14px] text-foreground pr-4 placeholder:text-muted-foreground/65 focus-visible:ring-primary/30"
               rows={1}
               disabled={chatMutation.isPending}
             />
