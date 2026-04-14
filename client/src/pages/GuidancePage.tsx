@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Share2, Sparkles, Heart, Shield } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield } from "lucide-react";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
@@ -19,44 +19,6 @@ import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 interface VerseResult {
   reference: string;
   text: string;
-}
-
-function ShareThisMomentButton({ verse, prayer }: { verse: VerseResult; prayer: string }) {
-  const [shared, setShared] = useState(false);
-
-  const shareText = () => {
-    const prayerSnippet = prayer.split(". ").slice(0, 3).join(". ") + (prayer.split(". ").length > 3 ? "…" : "");
-    return `"${verse.text}"\n— ${verse.reference}\n\n${prayerSnippet}\n\nFrom Shepherd's Path · shepherdspathai.com`;
-  };
-
-  const handleShare = async () => {
-    const text = shareText();
-    if (navigator.share) {
-      try { await navigator.share({ title: "A word for my moment", text }); setShared(true); } catch { }
-    } else {
-      navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2500); }).catch(() => { });
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-8"
-    >
-      <button
-        onClick={handleShare}
-        data-testid="button-share-guidance-moment"
-        className="w-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/25 py-3.5 text-[13px] font-semibold text-primary/70 hover:text-primary hover:border-primary/40 hover:bg-primary/4 transition-all"
-      >
-        {shared ? (
-          <><CheckCheck className="w-4 h-4 text-green-500" /><span className="text-green-600">Shared!</span></>
-        ) : (
-          <><Share2 className="w-4 h-4" />Share this verse &amp; prayer</>
-        )}
-      </button>
-    </motion.div>
-  );
 }
 
 interface Message {
@@ -883,10 +845,6 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {/* ── Share This Moment ── */}
-          {responseComplete && verse && prayer && (
-            <ShareThisMomentButton verse={verse} prayer={prayer} />
-          )}
 
 
           <div ref={bottomRef} />
