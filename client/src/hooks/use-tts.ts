@@ -3,7 +3,7 @@ import { getUserVoice } from "@/lib/userName";
 
 let _instanceCounter = 0;
 
-const TTS_FETCH_TIMEOUT_MS = 10_000;
+const TTS_FETCH_TIMEOUT_MS = 25_000;
 const TTS_SLOW_WARNING_MS = 3_000;
 
 /**
