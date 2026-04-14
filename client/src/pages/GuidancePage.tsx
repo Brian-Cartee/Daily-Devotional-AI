@@ -26,6 +26,15 @@ interface Message {
   content: string;
 }
 
+/** Strip any AI-generated markdown bold/italic so the response reads as a single voice */
+function cleanResponse(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")   // **bold**
+    .replace(/\*(.+?)\*/g, "$1")        // *italic*
+    .replace(/__(.+?)__/g, "$1")        // __bold__
+    .replace(/_(.+?)_/g, "$1");         // _italic_
+}
+
 function getEmpathyReflection(situation: string): string {
   const s = situation.toLowerCase();
   if (/marriage|spouse|husband|wife|partner|relationship/.test(s)) return "You're carrying something tender right now…";
@@ -461,8 +470,12 @@ export default function GuidancePage() {
           >
             {((streamingText && !isSending && !isReflecting) || assistantMessages.length > 0) && (
               <>
-                <div className="text-[17px] leading-relaxed text-foreground space-y-4" data-testid="text-guidance-response">
-                  {(isSending
+                <div
+                  className="text-[17px] leading-[1.85] text-foreground space-y-5 max-w-[68ch]"
+                  style={{ fontFamily: "var(--font-reading)" }}
+                  data-testid="text-guidance-response"
+                >
+                  {cleanResponse(isSending
                     ? (assistantMessages[0]?.content ?? "")
                     : (streamingText || (assistantMessages[0]?.content ?? ""))
                   ).split("\n\n").map((para, i) =>
@@ -581,8 +594,11 @@ export default function GuidancePage() {
                     {msg.content}
                   </div>
                 ) : (
-                  <div className="text-[16px] leading-relaxed text-foreground space-y-3">
-                    {msg.content.split("\n\n").map((para, j) =>
+                  <div
+                    className="text-[17px] leading-[1.85] text-foreground space-y-5 max-w-[68ch]"
+                    style={{ fontFamily: "var(--font-reading)" }}
+                  >
+                    {cleanResponse(msg.content).split("\n\n").map((para, j) =>
                       para.trim() ? <p key={j}>{para}</p> : null
                     )}
                   </div>
@@ -593,8 +609,11 @@ export default function GuidancePage() {
             {/* Streaming follow-up */}
             {isSending && streamingText && !isReflecting && (
               <motion.div key="streaming" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6" ref={latestResponseRef}>
-                <div className="text-[16px] leading-relaxed text-foreground space-y-3">
-                  {streamingText.split("\n\n").map((para, j) =>
+                <div
+                  className="text-[17px] leading-[1.85] text-foreground space-y-5 max-w-[68ch]"
+                  style={{ fontFamily: "var(--font-reading)" }}
+                >
+                  {cleanResponse(streamingText).split("\n\n").map((para, j) =>
                     para.trim() ? <p key={j}>{para}</p> : null
                   )}
                   <span className="inline-block w-1.5 h-5 bg-primary/60 rounded-sm animate-pulse ml-0.5 align-middle" />
