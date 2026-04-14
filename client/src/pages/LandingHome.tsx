@@ -909,6 +909,17 @@ export default function LandingHome() {
             </div>
           )}
 
+          {/* ── Take a moment — closing grace note for the daily visit ── */}
+          <div className="flex items-center gap-3 mt-4 px-0.5">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Take a moment</p>
+            <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
+          </div>
+          <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
+            <DailyArtCard />
+          </div>
+
           </>}
           {/* ══ EXPLORE TAB ══ */}
           {activeTab === 'explore' && <>
@@ -1494,19 +1505,6 @@ export default function LandingHome() {
             )}
           </AnimatePresence>
         </motion.div>
-
-        {/* Soft divider before Daily Art */}
-        <div className="flex items-center gap-3 mt-10 px-0.5">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
-          <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Take a moment</p>
-          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
-        </div>
-
-        {/* Daily Art — between Scripture commitment and download CTA */}
-        <div className="mt-4 rounded-2xl overflow-hidden shadow-sm border border-border relative">
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
-          <DailyArtCard />
-        </div>
 
         {/* Closing CTA band */}
         <motion.div
