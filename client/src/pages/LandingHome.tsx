@@ -1340,7 +1340,7 @@ export default function LandingHome() {
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(251,191,36,0.18)_0%,transparent_70%)]" />
               <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-rose-500/60 via-amber-300 to-rose-500/60" />
               <div className="relative px-6 py-7 flex flex-col items-center text-center gap-2">
-                <img src="/sp-cross-logo.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.8) saturate(0.2) drop-shadow(0 0 12px rgba(251,191,36,0.35))" }} />
+                <img src="/sp-icon-nobg.png" alt="" aria-hidden="true" className="w-12 h-12 object-contain mb-0.5 select-none pointer-events-none" style={{ filter: "brightness(1.1) drop-shadow(0 0 14px rgba(251,191,36,0.45))" }} />
                 <h2 className="text-[24px] font-bold text-white leading-tight tracking-tight">Come Home</h2>
                 <p className="text-[13px] text-white/65 leading-relaxed max-w-[260px]">New to faith, or finding your way back — the door has never been closed.</p>
                 <p className="text-[11px] text-amber-200/45 italic">"Behold, I stand at the door and knock." — Rev. 3:20</p>
@@ -1519,10 +1519,10 @@ export default function LandingHome() {
           <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
           <div className="px-5 py-6 flex flex-col items-center text-center gap-4">
             <img
-              src="/sp-cross-logo.png"
+              src="/sp-icon-nobg.png"
               alt="Shepherd's Path"
               className="w-28 h-28 object-contain"
-              style={{ opacity: 0.92, filter: "brightness(1.05) drop-shadow(0 2px 16px rgba(122,1,141,0.25))" }}
+              style={{ opacity: 0.92, filter: "brightness(1.05) drop-shadow(0 2px 16px rgba(122,1,141,0.3))" }}
             />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-1">Built for your phone</p>

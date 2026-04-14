@@ -357,13 +357,12 @@ export default function GuidancePage() {
           <div className="max-w-2xl mx-auto px-5 pt-8 pb-7 flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(145deg, #7c3aed 0%, #5b21b6 100%)" }}
             >
               <img
-                src="/sp-cross-logo.png"
+                src="/sp-icon.png"
                 alt=""
                 aria-hidden="true"
-                style={{ width: "82%", height: "82%", objectFit: "contain", objectPosition: "50% 35%" }}
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
               />
             </div>
             <div>

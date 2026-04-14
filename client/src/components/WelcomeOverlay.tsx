@@ -85,13 +85,12 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                 }}
               >
                 <img
-                  src="/sp-cross-logo.png"
+                  src="/sp-icon.png"
                   alt="Shepherd's Path"
                   style={{
-                    width: "82%",
-                    height: "82%",
-                    objectFit: "contain",
-                    objectPosition: "50% 35%",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
                   }}
                 />
               </div>
