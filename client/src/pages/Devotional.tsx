@@ -745,13 +745,10 @@ export default function Devotional() {
                 ❝
               </div>
 
-              {/* Top bar — step label left, date right */}
-              <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 px-3 py-1.5 rounded-full bg-white/12 backdrop-blur-md border border-white/15">
-                  Today's Word
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/60 px-2.5 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/12">
-                  Daily Devotional · {dateStr}
+              {/* Top bar — single merged pill */}
+              <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-center">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/15">
+                  Today's Word · {dateStr}
                 </span>
               </div>
 
