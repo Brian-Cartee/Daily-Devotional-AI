@@ -23,6 +23,7 @@ import {
   FOCUS_LABELS, type FaithRhythm,
 } from "@/lib/faithRhythm";
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
+import { GuidedWalkthrough, shouldShowWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
@@ -465,6 +466,8 @@ export default function LandingHome() {
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+  const [showWalkthrough, setShowWalkthrough] = useState(() => shouldShowWalkthrough());
+  useEffect(() => { recordWalkthroughVisit(); }, []);
   const [activeTab, setActiveTab] = useState<'today' | 'explore'>(() =>
     (localStorage.getItem('sp_home_tab') as 'today' | 'explore') || 'today'
   );
@@ -709,6 +712,13 @@ export default function LandingHome() {
           {/* ══ TAB CONTENT ══ */}
           <AnimatePresence mode="wait" initial={false}>
           {activeTab === 'today' && <motion.div key="today-tab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22, ease: "easeOut" }} className="flex flex-col gap-3">
+
+          {/* Guided walkthrough — passive entry, shows for first few visits */}
+          <AnimatePresence>
+            {showWalkthrough && (
+              <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
+            )}
+          </AnimatePresence>
 
           {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
           <LateNightBannerCard />
