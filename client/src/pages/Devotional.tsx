@@ -1203,7 +1203,7 @@ export default function Devotional() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ delay: 1.8, duration: 0.7, ease: "easeOut" }}
                 className="rounded-2xl overflow-hidden shadow-sm"
-                style={{ background: "linear-gradient(135deg, hsl(38 60% 96%) 0%, hsl(258 30% 96%) 100%)", border: "1px solid hsl(38 40% 85% / 0.8)" }}
+                style={{ background: "linear-gradient(135deg, hsl(258 30% 8%) 0%, hsl(250 25% 12%) 100%)", border: "1px solid hsl(258 20% 22% / 0.7)" }}
                 data-testid="email-nudge-card"
               >
                 <div className="px-6 pt-5 pb-2">
@@ -1505,7 +1505,7 @@ export default function Devotional() {
                 borderColor: chatOpen ? "rgba(124,58,237,0.4)" : "rgba(124,58,237,0.2)",
                 background: chatOpen
                   ? "linear-gradient(135deg, #3b0f8e18 0%, #7c3aed12 100%)"
-                  : "linear-gradient(135deg, #f5f0ff 0%, #ede8ff 100%)",
+                  : "linear-gradient(135deg, #0f0820 0%, #1a1035 100%)",
               }}
             >
               <div className="flex items-start gap-3 px-5 py-4">
