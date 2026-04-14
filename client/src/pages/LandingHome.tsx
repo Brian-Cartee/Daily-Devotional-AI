@@ -927,6 +927,19 @@ export default function LandingHome() {
             <DailyArtCard />
           </div>
 
+          {/* ── Explore nudge — bottom of For You ── */}
+          <button
+            onClick={() => { switchTab('explore'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            data-testid="button-switch-to-explore"
+            className="w-full mt-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-border/60 bg-card hover:bg-muted/40 hover:border-primary/25 transition-all group"
+          >
+            <Compass className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span className="text-[13px] font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+              See everything Shepherd's Path has to offer
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+          </button>
+
           </motion.div>}
           {/* ══ EXPLORE TAB ══ */}
           {activeTab === 'explore' && <motion.div key="explore-tab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22, ease: "easeOut" }} className="flex flex-col gap-3">
