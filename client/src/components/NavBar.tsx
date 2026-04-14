@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap, Shield } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
+import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 
 
 const NAV_ITEMS = [
@@ -58,6 +59,13 @@ export function NavBar() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [langOpen,  setLangOpen]  = useState(false);
   const [moreOpen,  setMoreOpen]  = useState(false);
+  const [guidanceTone, setGuidanceTone] = useState<GuidanceMode>(() => getGuidanceMode());
+
+  const toggleTone = () => {
+    const next: GuidanceMode = guidanceTone === "coach" ? "encouraging" : "coach";
+    saveGuidanceMode(next);
+    setGuidanceTone(next);
+  };
   const { lang, setLang } = useLanguage();
   const bookmarked = useBookmarkedSections();
   const moreRef = useRef<HTMLDivElement>(null);
@@ -169,6 +177,22 @@ export function NavBar() {
                     >
                       <Globe className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">Language</span>
+                    </button>
+
+                    {/* Guidance tone toggle */}
+                    <div className="mx-3 my-1 h-px bg-border/50" />
+                    <button
+                      onClick={toggleTone}
+                      data-testid="button-guidance-tone-toggle"
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <Shield className="w-4 h-4 text-primary/70" />
+                      <div className="flex-1 text-left">
+                        <span className="font-medium block leading-tight">Guidance Tone</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {guidanceTone === "coach" ? "Direct & Accountable ✓" : "Gentle & Encouraging ✓"}
+                        </span>
+                      </div>
                     </button>
 
                     {/* How to use */}

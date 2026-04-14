@@ -422,18 +422,13 @@ export default function GuidancePage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="relative z-10 max-w-2xl mx-auto px-5 pt-8 pb-7 flex items-center gap-3"
+                className="relative z-10 max-w-2xl mx-auto px-5 pt-8 pb-7"
                 style={{ background: "linear-gradient(160deg, hsl(265 60% 8% / 0.9) 0%, transparent 100%)" }}
               >
-                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center shrink-0">
-                  <img src="/sp-icon.png" alt="" aria-hidden="true" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-0.5">Seek Guidance</p>
-                  <h1 className="text-[20px] font-extrabold text-foreground leading-tight tracking-tight">
-                    {isFirstVisit ? "What's on your heart?" : "You don't have to carry this alone"}
-                  </h1>
-                </div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Seek Guidance</p>
+                <h1 className="text-[22px] font-extrabold text-foreground leading-tight tracking-tight">
+                  {isFirstVisit ? "What's on your heart?" : "You don't have to carry this alone"}
+                </h1>
               </motion.div>
             )}
           </AnimatePresence>
@@ -447,44 +442,6 @@ export default function GuidancePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            {/* Guidance mode toggle — only shown once a response has completed */}
-            {responseComplete && (
-              <div className="flex items-center gap-2 mb-4">
-                <button
-                  data-testid="btn-mode-encouraging"
-                  onClick={() => handleModeChange("encouraging")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                    guidanceMode === "encouraging"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                  }`}
-                >
-                  <Heart className="w-3 h-3" />
-                  Gentle &amp; Encouraging
-                </button>
-                <button
-                  data-testid="btn-mode-coach"
-                  onClick={() => handleModeChange("coach")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                    guidanceMode === "coach"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                  }`}
-                >
-                  <Shield className="w-3 h-3" />
-                  Direct &amp; Accountable
-                </button>
-              </div>
-            )}
-
-            {/* Context hint for what mode-switching does */}
-            {responseComplete && situation.trim() && (
-              <p className="text-[12px] text-muted-foreground/80 mb-4 -mt-2">
-                {messages.filter(m => m.role === "user").length > 1
-                  ? "Tone applies to your next message"
-                  : "Switching tone will refresh the guidance"}
-              </p>
-            )}
 
             <AnimatePresence>
               {!responseComplete && !streamingText && !situation && (
@@ -533,7 +490,7 @@ export default function GuidancePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.15 }}
-              className="text-sm text-muted-foreground/70 italic mb-7 border-l-2 border-primary/20 pl-3 leading-relaxed"
+              className="text-[15px] text-foreground/85 italic mb-7 border-l-2 border-primary/60 pl-4 leading-relaxed"
             >
               {getEmpathyReflection(situation)}
             </motion.p>
