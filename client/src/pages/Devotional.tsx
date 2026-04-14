@@ -20,7 +20,6 @@ import { getStoredLang } from "@/lib/language";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
-import { getDevotionalHeroPhoto } from "@/lib/shareImage";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { isLateNight } from "@/lib/nightMode";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -587,31 +586,8 @@ export default function Devotional() {
     <>
       <NavBar />
 
-      {/* Hero */}
-      <div className="relative h-[40vh] min-h-[260px] max-h-[400px] overflow-hidden pt-14">
-        <img
-          src={getDevotionalHeroPhoto()}
-          alt="Morning devotional"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          onError={e => {
-            (e.target as HTMLImageElement).src =
-              "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop";
-          }}
-        />
-        <div className="absolute inset-0 hero-overlay" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-        <div className="relative z-10 flex flex-col items-center justify-end h-full pb-8 px-6 text-center">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white text-[11px] font-bold uppercase tracking-widest mb-2 drop-shadow-lg whitespace-nowrap">
-              Daily Devotional · {dateStr}
-            </div>
-            <p className="text-white text-[13px] italic drop-shadow-lg" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}>Walk the path. Follow the Word.</p>
-          </motion.div>
-        </div>
-      </div>
-
       {/* Main content */}
-      <main className="max-w-xl mx-auto px-5 pb-24 -mt-2 relative z-10">
+      <main className="max-w-xl mx-auto px-5 pb-24 pt-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -769,10 +745,13 @@ export default function Devotional() {
                 ❝
               </div>
 
-              {/* Top pill — step label */}
-              <div className="absolute top-4 left-4 z-10">
+              {/* Top bar — step label left, date right */}
+              <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 px-3 py-1.5 rounded-full bg-white/12 backdrop-blur-md border border-white/15">
                   Today's Word
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/60 px-2.5 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/12">
+                  Daily Devotional · {dateStr}
                 </span>
               </div>
 
