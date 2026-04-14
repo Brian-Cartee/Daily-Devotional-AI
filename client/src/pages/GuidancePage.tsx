@@ -237,6 +237,17 @@ export default function GuidancePage() {
     if (firstResponse) prewarmTTS(firstResponse, getUserVoice());
   }, [responseComplete]);
 
+  // Scroll the follow-up input into view after initial response completes
+  // so users naturally see it and are invited to continue
+  const hasScrolledToInput = useRef(false);
+  useEffect(() => {
+    if (!responseComplete || hasScrolledToInput.current) return;
+    hasScrolledToInput.current = true;
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 2200);
+  }, [responseComplete]);
+
   const startGuidanceListen = async () => {
     if (ttsChain.playing || ttsChain.loading) {
       ttsChain.stop();
@@ -702,7 +713,7 @@ export default function GuidancePage() {
               >
                 {canUseAi() ? (
                   <>
-                    <p className="text-[11px] font-semibold text-foreground/50 uppercase tracking-[0.14em] mb-2 ml-1">Continue the conversation</p>
+                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.14em] mb-2 ml-1">Continue the conversation</p>
                     <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 py-3 flex items-end gap-3 shadow-md transition-colors">
                       <textarea
                         ref={inputRef}
@@ -716,13 +727,13 @@ export default function GuidancePage() {
                         rows={2}
                         disabled={isSending}
                         data-testid="input-guidance-followup"
-                        className="flex-1 resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/70 outline-none leading-relaxed py-1 disabled:opacity-50"
+                        className="flex-1 resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed py-1 disabled:opacity-50"
                       />
                       <button
                         onClick={handleSend}
                         disabled={!followUp.trim() || isSending}
                         data-testid="button-guidance-send"
-                        className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
+                        className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
                       >
                         {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                       </button>
