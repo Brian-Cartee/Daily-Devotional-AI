@@ -325,7 +325,7 @@ export default function GuidancePage() {
       <NavBar />
       <main className="min-h-screen bg-background pb-32">
         {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
-        <div className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${!situation && !streamingText ? "min-h-[380px]" : ""}`}>
+        <div className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${!situation && !streamingText ? "min-h-[330px]" : ""}`}>
 
           {/* Background image — fades out once conversation is active */}
           <img
@@ -333,7 +333,7 @@ export default function GuidancePage() {
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ filter: "brightness(0.45) saturate(1.1)" }}
+            style={{ filter: "brightness(0.55) saturate(1.65)" }}
           />
 
           {/* Depth gradient — bleeds photo into app background at bottom */}
@@ -345,11 +345,11 @@ export default function GuidancePage() {
           {/* Purple soul glow — matches welcome overlay interior */}
           <div
             className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ background: "radial-gradient(ellipse 85% 65% at 50% 45%, rgba(120,60,220,0.22) 0%, transparent 70%)" }}
+            style={{ background: "radial-gradient(ellipse 85% 65% at 50% 45%, rgba(120,60,220,0.42) 0%, transparent 70%)" }}
           />
 
           {/* Bottom accent line */}
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-60 z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-90 z-10" />
 
           <AnimatePresence mode="wait">
             {!situation && !streamingText ? (
@@ -360,13 +360,13 @@ export default function GuidancePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-10 flex flex-col items-center justify-center min-h-[330px] text-center px-6 pb-10"
+                className="relative z-10 flex flex-col items-center justify-center min-h-[278px] text-center px-6 pb-8"
               >
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-5 select-none">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/65 mb-5 select-none">
                   Seek Guidance
                 </p>
                 <h1
-                  className="text-[2.5rem] leading-[1.18] text-white text-balance mb-4"
+                  className="text-[2.5rem] leading-[1.18] text-white text-balance mb-3"
                   style={{
                     fontFamily: "var(--font-serif)",
                     fontStyle: "italic",
@@ -376,7 +376,7 @@ export default function GuidancePage() {
                   {isFirstVisit ? "What's on\nyour heart?" : "You don't have\nto carry this alone"}
                 </h1>
                 <p
-                  className="text-[13px] text-white/50 max-w-[260px] leading-relaxed"
+                  className="text-[13px] text-white/80 max-w-[260px] leading-relaxed"
                   style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
                 >
                   {isFirstVisit
