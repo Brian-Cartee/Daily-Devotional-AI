@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
-import { Heart, ChevronDown, ArrowRight, BookOpen, Compass, Sun, Check, ArrowLeft } from "lucide-react";
+import { Heart, ChevronDown, ArrowRight, BookOpen, Compass, Sun, Sunrise, Check, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SALVATION_MOMENT_KEY = "sp_salvation_moment";
@@ -155,8 +155,8 @@ export default function SalvationPage() {
 
         {/* Hero */}
         <motion.div {...fadeUp(0)} className="text-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-rose-500/20">
-            <Heart className="w-8 h-8 text-white fill-white" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/30">
+            <Sunrise className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-[28px] font-bold text-foreground leading-tight mb-3">
             Beginning with Jesus

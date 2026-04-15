@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
-import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, ArrowLeft } from "lucide-react";
+import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, ArrowLeft, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -473,7 +473,7 @@ export default function IronCirclePage() {
             Back
           </button>
           <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg">
-            <Users className="w-6 h-6 text-white" />
+            <Swords className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-white text-xl font-extrabold tracking-tight leading-snug drop-shadow-md">
             Your Iron Circle

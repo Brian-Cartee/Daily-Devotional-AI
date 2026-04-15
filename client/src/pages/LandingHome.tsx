@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { isIOS } from "@/lib/platform";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon } from "lucide-react";
+import { Sun, Sunrise, Swords, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -1096,10 +1096,10 @@ export default function LandingHome() {
                 { href: "/read",         Icon: BookOpen,   label: "Read the Bible",          desc: "KJV, WEB, and ASV",                   color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-read" },
                 { href: "/journal",      Icon: BookMarked, label: "Prayer Journal",          desc: "Your saved prayers & reflections",     color: "text-teal-400",    bg: "border-teal-500/20   bg-teal-500/6",    testid: "explore-journal" },
                 { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "Test your scripture knowledge",        color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
-                { href: "/iron-circle",  Icon: Users,      label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",       color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
+                { href: "/iron-circle",  Icon: Swords,     label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",       color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
                 { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift each other up",                   color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
                 { href: "/reading-plans",Icon: Star,       label: "Bible in a Year",         desc: "A daily path through all of Scripture", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
-                { href: "/salvation",    Icon: Heart,      label: "Beginning with Jesus",    desc: "Starting your faith journey",          color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-salvation" },
+                { href: "/salvation",    Icon: Sunrise,    label: "Beginning with Jesus",    desc: "Starting your faith journey",          color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-salvation" },
                 { href: "/study",        Icon: Sparkles,   label: "Explore Scripture",       desc: "A question, a passage, or something on your mind",color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-study" },
                 { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
               ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
