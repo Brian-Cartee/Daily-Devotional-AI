@@ -466,14 +466,14 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is it free?",
-    a: "Yes. The Daily Devotional, Guidance, Bible reading, Journeys, and Journal are all free. A Pro option exists for those who want to go deeper — but the core experience is and will remain free.",
+    a: "Yes. The Daily Devotional, Talk It Through, Bible reading, Journeys, and Journal are all free. A Pro option exists for those who want to go deeper — but the core experience is and will remain free.",
   },
   {
     q: "What is the Daily Devotional?",
     a: "Each day, a verse is waiting for you. Not a lecture — something to sit with. You can read it, listen to it, or simply let it rest in you. It's the same for everyone that day. It takes as long as you need.",
   },
   {
-    q: "What is Guidance?",
+    q: "What is Talk It Through?",
     a: "A quiet place to bring what's on your heart. You share what's weighing on you — honestly, without filtering — and receive scripture and a written prayer shaped for that moment. It's not advice. It's presence.",
   },
   {
@@ -502,7 +502,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What is Pro?",
-    a: "Pro unlocks deeper access — more Guidance conversations, expanded Journeys, and the ability to listen to any passage. It supports the work of keeping the app free for everyone else. There's no pressure to upgrade; the free experience is complete on its own.",
+    a: "Pro unlocks deeper access — more Talk It Through conversations, expanded Journeys, and the ability to listen to any passage. It supports the work of keeping the app free for everyone else. There's no pressure to upgrade; the free experience is complete on its own.",
   },
   {
     q: "Is there a mobile app?",
@@ -510,7 +510,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Where do I begin?",
-    a: "Wherever feels right. Most people start with the Devotional — it's the gentlest entry point. Or bring something to Guidance. Or open a Journey. There's no wrong door. The app is designed so any place you start is the right place.",
+    a: "Wherever feels right. Most people start with the Devotional — it's the gentlest entry point. Or open Talk It Through. Or step into a Journey. There's no wrong door. The app is designed so any place you start is the right place.",
   },
 ];
 
@@ -692,7 +692,7 @@ export default function LandingHome() {
       <AnimatePresence>
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
-      {showEntryScreen && <HomeEntryScreen onDismiss={() => setShowEntryScreen(false)} />}
+      {showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />

@@ -1,17 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2 } from "lucide-react";
 import { getUserName } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
-
-function shareVerse(text: string, ref: string) {
-  const shareText = `I thought of you when I read this. 🙏\n\n"${text}"\n— ${ref}\n\nShepherd's Path · shepherdspath.app`;
-  if (navigator.share) {
-    navigator.share({ text: shareText }).catch(() => {});
-  } else {
-    navigator.clipboard?.writeText(shareText).catch(() => {});
-  }
-}
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -162,14 +152,6 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
           >
             Walk with me today
           </button>
-          <button
-            onClick={() => shareVerse(verse.text, verse.ref)}
-            className="flex items-center justify-center gap-2 text-white/45 text-sm py-2 transition-opacity hover:text-white/65"
-            data-testid="button-whisper-share"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            Send this to someone
-          </button>
           <button onClick={onDismiss} className="text-white/25 text-xs py-1">
             Skip
           </button>
@@ -214,14 +196,6 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
         <p className="text-white/45 text-sm mb-8" style={{ fontFamily: "'Georgia', serif" }}>
           — {displayVerse.ref}
         </p>
-        <button
-          onClick={() => shareVerse(displayVerse.text, displayVerse.ref)}
-          className="flex items-center justify-center gap-2 text-white/50 text-sm mb-4 py-2 px-4 rounded-xl transition-opacity hover:text-white/70"
-          data-testid="button-heart-share"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          Send this to someone
-        </button>
         <button
           onClick={onDismiss}
           className="w-full py-4 rounded-2xl text-white font-medium"
@@ -381,15 +355,6 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
         className="flex-1 overflow-y-auto flex flex-col items-center justify-end px-5 gap-3"
         style={{ paddingBottom: "max(48px, calc(24px + env(safe-area-inset-bottom, 0px)))", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
       >
-        <button
-          onClick={() => shareVerse(verse.text, verse.ref)}
-          className="flex items-center justify-center gap-2 text-sm py-2 px-4 rounded-xl transition-opacity"
-          style={{ color: "#442f74", opacity: 0.65 }}
-          data-testid="button-letter-share"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          Send this to someone
-        </button>
         <button
           onClick={onDismiss}
           className="w-full py-4 rounded-2xl text-white font-medium text-base"
