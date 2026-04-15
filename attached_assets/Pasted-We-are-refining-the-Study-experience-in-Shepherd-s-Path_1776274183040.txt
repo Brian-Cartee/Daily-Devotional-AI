@@ -1,0 +1,268 @@
+We are refining the "Study" experience in Shepherd’s Path.
+
+This is not a search engine.
+This is not a research tool.
+
+This is:
+a place where someone comes to understand something they’re carrying — through scripture.
+
+-----------------------------------
+CORE EXPERIENCE PRINCIPLE
+-----------------------------------
+
+The Study experience should feel like:
+
+- being guided into understanding
+- being helped, not searching
+- something unfolding, not retrieved
+- scripture meeting the person
+
+NOT:
+
+- typing a query and getting results
+- a Bible Google
+- a knowledge lookup tool
+
+-----------------------------------
+HEADER + POSITIONING
+-----------------------------------
+
+Current:
+“Quick Bible Study”
+“Any topic, passage, or question — studied in seconds.”
+
+Problem:
+Too fast, too mechanical, too transactional.
+
+Refinement:
+
+Option 1:
+“Explore Scripture”
+
+Subtext:
+“Bring a question, a passage, or something on your mind.”
+
+Option 2:
+“Find understanding in scripture”
+
+Subtext:
+“Whatever you’re thinking about — start here.”
+
+Key principle:
+Slow it down. Remove “seconds.” Remove speed emphasis.
+
+-----------------------------------
+SEARCH INPUT (MOST IMPORTANT SHIFT)
+-----------------------------------
+
+Current placeholder:
+e.g. “anxiety”, “Romans 8”, “forgiveness”
+
+Problem:
+Feels like search keywords.
+
+Refinement:
+
+Placeholder:
+
+“What’s on your mind?”
+
+OR
+
+“What are you trying to understand?”
+
+OR
+
+“Bring a question, a verse, or a situation…”
+
+-----------------------------------
+
+BUTTON
+
+Current:
+“Study”
+
+Refinement options:
+
+“Explore”
+“Start here”
+“See what scripture says”
+
+Key principle:
+Avoid command tone.
+
+-----------------------------------
+SUGGESTED TOPICS (CHIPS)
+-----------------------------------
+
+Current:
+anxiety, forgiveness, Romans 8, etc.
+
+These are good — but feel like filters.
+
+Refinement:
+
+Keep them, but introduce with:
+
+“Start with something familiar…”
+
+OR
+
+“Some places people begin…”
+
+Key principle:
+Make them feel like gentle entry points, not categories.
+
+-----------------------------------
+READING TRACKS
+-----------------------------------
+
+Current:
+“Choose your track”
+
+Problem:
+Feels like a program or course.
+
+Refinement:
+
+“Follow a path”
+
+OR
+
+“Start somewhere”
+
+-----------------------------------
+
+CARD COPY REFINEMENT
+
+The Songs:
+“Prayers and praises from God’s people” ✅ (strong)
+
+The Way:
+“Ancient wisdom for everyday living” ✅ (strong)
+
+The Good News:
+“The life and words of Jesus” ✅ (strong)
+
+The Questions:
+“Faith through life’s hardest moments” ✅ (strong)
+
+→ These are actually very good. Keep them.
+
+-----------------------------------
+“FIND A PASSAGE”
+-----------------------------------
+
+Current:
+“Story, verse, or just a memory — we’ll find it”
+
+This is close, but slightly system-like.
+
+Refinement:
+
+“Looking for something specific?”
+
+Subtext:
+“A verse, a moment, or something you remember…”
+
+Key principle:
+Make it feel optional, not primary.
+
+-----------------------------------
+EMAIL CAPTURE (IMPORTANT)
+-----------------------------------
+
+Current:
+“Get today’s verse delivered to you”
+
+This is fine — but feels like a marketing block inside a sacred flow.
+
+Refinement:
+
+“Receive the daily verse”
+
+Subtext:
+“A quiet reminder each morning.”
+
+CTA:
+“Send it to me”
+
+Key principle:
+Invitation, not subscription energy.
+
+-----------------------------------
+OVERALL FLOW SHIFT
+-----------------------------------
+
+Right now:
+Search → Results → Consume
+
+We want:
+Prompt → Reflection → Understanding
+
+-----------------------------------
+
+IMPORTANT UX SHIFT:
+
+After user submits input:
+
+DO NOT immediately show results like a search engine.
+
+Instead:
+
+1. Reflect their input back:
+“You’re thinking about anxiety…”
+
+2. Introduce scripture:
+“There are a few places this shows up…”
+
+3. Then guide:
+“Let’s start here…”
+
+-----------------------------------
+
+This aligns Study with Guidance.
+
+-----------------------------------
+GLOBAL TONE RULES
+-----------------------------------
+
+1. NO SPEED LANGUAGE
+- remove “quick”
+- remove “seconds”
+
+2. NO SEARCH ENGINE FEEL
+- avoid keywords
+- avoid “results”
+
+3. INVITATION OVER ACTION
+- “start”
+- “explore”
+- “see”
+
+NOT:
+- “submit”
+- “search”
+- “generate”
+
+4. CONSISTENT VOICE
+Must match:
+- Devotional
+- Guidance
+- Journal
+
+Feels like same presence.
+
+-----------------------------------
+FINAL STANDARD
+
+Ask:
+
+Does this feel like:
+“I’m searching for information”
+
+Or:
+“I’m being guided into understanding”
+
+If it feels like search → rewrite.
+If it feels like guidance → keep.

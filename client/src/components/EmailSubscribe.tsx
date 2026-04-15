@@ -341,8 +341,8 @@ export function InlineSubscribeToggle() {
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
       <div className="px-5 pt-6 pb-6">
         <div className="mb-4">
-          <p className="text-[14px] font-bold text-foreground leading-tight">Get today's verse delivered to you</p>
-          <p className="text-[12px] text-muted-foreground mt-1">Scripture each morning — free, always.</p>
+          <p className="text-[14px] font-bold text-foreground leading-tight">Receive the daily verse</p>
+          <p className="text-[12px] text-muted-foreground mt-1">A quiet reminder each morning.</p>
         </div>
 
         {/* Tab toggle */}
@@ -390,7 +390,7 @@ export function InlineSubscribeToggle() {
                 <Input data-testid="input-toggle-email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
                 {emailStatus === "error" && <p className="text-xs text-destructive">{emailMsg}</p>}
                 <Button data-testid="button-toggle-email-submit" type="submit" disabled={!email.trim() || emailStatus === "loading"} className="w-full rounded-xl font-semibold text-sm">
-                  {emailStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-3.5 h-3.5 mr-1.5" />Subscribe — it's free</>}
+                  {emailStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-3.5 h-3.5 mr-1.5" />Send it to me</>}
                 </Button>
               </motion.form>
             ) : (

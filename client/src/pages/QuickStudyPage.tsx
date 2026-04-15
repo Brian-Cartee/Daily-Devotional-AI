@@ -509,8 +509,8 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             <Sparkles className="w-2.5 h-2.5" />
             Scripture Study
           </div>
-          <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Quick Bible Study</h2>
-          <p className="text-white/70 text-[12px] mt-1">Any topic, passage, or question — studied in seconds.</p>
+          <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Explore Scripture</h2>
+          <p className="text-white/70 text-[12px] mt-1">Bring a question, a passage, or something on your mind.</p>
         </div>
       </div>
 
@@ -552,17 +552,17 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                     <input
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
-                      placeholder='e.g. "anxiety", "Romans 8", "forgiveness"'
+                      placeholder="What are you trying to understand?"
                       data-testid="quick-study-input"
                       className="w-full bg-white dark:bg-amber-950/30 border border-amber-300/70 dark:border-amber-700/50 rounded-xl pl-10 pr-4 py-3 text-sm text-foreground dark:text-amber-100 placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/60 transition-all shadow-sm"
                     />
                   </div>
                   <Button type="submit" disabled={!topic.trim()} className="rounded-xl font-semibold shrink-0 px-5 bg-amber-600 hover:bg-amber-700 text-white shadow-sm" data-testid="quick-study-submit">
-                    Study
+                    Explore
                   </Button>
                 </form>
                 <div>
-                  <p className="text-[11px] font-bold text-amber-700/80 dark:text-amber-500/70 uppercase tracking-widest mb-3">Try one of these</p>
+                  <p className="text-[11px] font-bold text-amber-700/80 dark:text-amber-500/70 uppercase tracking-widest mb-3">Some places people begin…</p>
                   <div className="flex flex-wrap gap-2">
                     {SUGGESTIONS.map((s) => (
                       <button
@@ -583,7 +583,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                   <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5 py-2">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Preparing your study on "{activeTopic}"...</span>
+                      <span>Finding what scripture says about "{activeTopic}"…</span>
                     </div>
                     {[1, 0.92, 0.85, 0.75, 0.9, 0.8].map((w, i) => (
                       <div key={i} className="h-3 bg-muted animate-pulse rounded-full" style={{ width: `${w * 100}%` }} />
@@ -647,7 +647,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             transition={{ delay: 0.15, duration: 0.6 }}
           >
             <p className="text-xs font-semibold text-amber-700/70 dark:text-amber-500/60 uppercase tracking-widest text-center mb-3">
-              {activeTrack ? "Switch Track" : "Choose Your Track"}
+              {activeTrack ? "Switch Track" : "Follow a Path"}
             </p>
             <div className="grid grid-cols-2 gap-2.5">
               {TRACKS.map((track) => {
@@ -693,9 +693,9 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">🔍</span>
                     <div>
-                      <p className="text-sm font-bold text-foreground leading-tight">Find a Passage</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">Looking for something specific?</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                        Story, verse, or just a memory — we'll find it
+                        A verse, a moment, or something you remember…
                       </p>
                     </div>
                   </div>
