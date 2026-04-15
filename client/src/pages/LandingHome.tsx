@@ -965,6 +965,38 @@ export default function LandingHome() {
             <DailyArtCard />
           </div>
 
+          {/* ── Explore — all features ── */}
+          <div className="mt-2">
+            <div className="flex items-center gap-3 mb-3 px-0.5">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Explore</p>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {([
+                { href: "/understand",   Icon: Compass,    label: "Bible Journeys",         desc: "Guided paths through Scripture",       color: "text-indigo-400",  bg: "border-indigo-500/20 bg-indigo-500/6",  testid: "explore-understand" },
+                { href: "/read",         Icon: BookOpen,   label: "Read the Bible",          desc: "KJV, WEB, and ASV",                   color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-read" },
+                { href: "/journal",      Icon: BookMarked, label: "Prayer Journal",          desc: "Your saved prayers & reflections",     color: "text-teal-400",    bg: "border-teal-500/20   bg-teal-500/6",    testid: "explore-journal" },
+                { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "Test your scripture knowledge",        color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
+                { href: "/iron-circle",  Icon: Users,      label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",       color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
+                { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift each other up",                   color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
+                { href: "/reading-plans",Icon: Star,       label: "Reading Plans",           desc: "Bible in a Year & more",               color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
+                { href: "/salvation",    Icon: Heart,      label: "Beginning with Jesus",    desc: "Starting your faith journey",          color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-salvation" },
+              ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
+                <Link key={href} href={href}>
+                  <div
+                    data-testid={`card-${testid}`}
+                    className={`rounded-2xl border ${bg} p-3.5 cursor-pointer hover:brightness-110 active:scale-[0.97] transition-all h-full`}
+                  >
+                    <Icon className={`w-5 h-5 ${color} mb-2`} />
+                    <p className="text-[13px] font-bold text-foreground leading-tight">{label}</p>
+                    <p className="text-[11px] text-muted-foreground/65 mt-0.5 leading-snug">{desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           </div>
 
         </motion.div>
@@ -1020,6 +1052,15 @@ export default function LandingHome() {
             </Link>
             <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
               🎁 The Greatest Gift
+            </Link>
+            <Link href="/trivia" className="hover:text-foreground transition-colors" data-testid="link-trivia-footer">
+              Bible Trivia
+            </Link>
+            <Link href="/iron-circle" className="hover:text-foreground transition-colors" data-testid="link-iron-circle-footer">
+              Iron Sharpens Iron
+            </Link>
+            <Link href="/how-to-use" className="hover:text-foreground transition-colors" data-testid="link-how-to-use-footer">
+              How to Use
             </Link>
           </div>
 
