@@ -1,0 +1,160 @@
+Absolutely — here’s a **clean, copy/paste-ready version** with no extra commentary:
+
+---
+
+## **Shepherd’s Path — Entry Flow & Navigation Guidance**
+
+---
+
+### **Question 1 — Entry Flow**
+
+**Current risk:**
+The current vertical scroll (verse → reflection → prayer → sermon) makes the experience feel like content consumption instead of a guided moment.
+
+---
+
+### **Recommendation: Shift to a Guided Entry Experience**
+
+Move from:
+
+* Showing everything upfront
+
+To:
+
+* Revealing each step progressively
+
+---
+
+### **Desired Flow:**
+
+**Step 1 — Arrival**
+
+* Show the verse only
+* Calm, minimal
+* One clear starting point (implicit or explicit)
+
+---
+
+**Step 2 — Reflection**
+
+* Not pre-loaded
+* Appears when the user begins
+
+---
+
+**Step 3 — Prayer → Understand → Sermon**
+
+* Each step unfolds naturally
+* Feels like progression, not a menu
+
+---
+
+### **Core Principle:**
+
+> Don’t show the whole path — walk them through it.
+
+---
+
+### **Goal:**
+
+* Preserve focus
+* Deepen emotional engagement
+* Avoid “scrolling through content” behavior
+
+---
+
+---
+
+### **Question 2 — Navigation Depth**
+
+**Current issue:**
+Navigation is feature-based (Today, Explore, Journal), but users think in terms of intent:
+
+* “I want to pray”
+* “I want to read”
+* “I need help”
+
+---
+
+### **Recommendation: Shift to Intent-Based Navigation**
+
+---
+
+### **Suggested Bottom Navigation (3–4 tabs):**
+
+**1. For You**
+
+* Daily devotional experience
+* Guided entry point
+
+---
+
+**2. Talk It Through**
+
+* Immediate help / prayer / guidance
+* Emotional entry point
+
+---
+
+**3. Scripture**
+
+* Bible reading
+* Context
+* Study / journeys
+
+---
+
+**4. Journal**
+
+* Saved prayers
+* Reflections
+* Personal growth
+
+---
+
+### **Remove:**
+
+* “Explore” as a concept (too vague and non-emotional)
+
+---
+
+### **Core Principle:**
+
+> Navigation should reflect why the user came — not what the app offers.
+
+---
+
+### **User Intent Mapping:**
+
+| User Need         | Destination     |
+| ----------------- | --------------- |
+| Start my day      | For You         |
+| I’m struggling    | Talk It Through |
+| I want to read    | Scripture       |
+| I want to reflect | Journal         |
+
+---
+
+---
+
+### **Final Summary**
+
+**Entry Flow:**
+
+* Move from scroll-based → guided progression
+* Reveal steps instead of showing everything
+
+**Navigation:**
+
+* Move from feature-based → intent-based
+* Make it instinctive, not learned
+
+---
+
+### **End Goal:**
+
+* The app feels guided, not browsed
+* The experience feels entered, not scrolled
+* The user feels led, not left to figure it out
+
+---
