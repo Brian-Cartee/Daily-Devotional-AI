@@ -160,36 +160,38 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           data-testid="btn-toggle-audio"
           onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40"
+          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40"
           style={{
-            background: playing ? "rgba(255,255,255,0.07)" : "transparent",
-            border: playing ? "1px solid rgba(255,255,255,0.12)" : "none",
+            background: playing
+              ? "rgba(255,255,255,0.09)"
+              : "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.10)",
           }}
         >
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
             style={{
               background: playing
-                ? "rgba(255,255,255,0.12)"
-                : "rgba(255,255,255,0.10)",
+                ? "rgba(255,255,255,0.15)"
+                : "rgba(255,255,255,0.14)",
             }}
           >
             {loading
-              ? <Loader2 className="w-3 h-3 text-white/60 animate-spin" />
+              ? <Loader2 className="w-3 h-3 text-white/70 animate-spin" />
               : playing
-                ? <Square className="w-2.5 h-2.5 text-white/70" />
-                : <span className="text-white/70 text-[11px]">▶</span>
+                ? <Square className="w-2.5 h-2.5 text-white/80" />
+                : <span className="text-white/80 text-[11px]">▶</span>
             }
           </div>
           <div className="text-left">
-            <p className="text-[12px] text-white/50 leading-tight">
+            <p className="text-[12px] text-white/65 leading-tight">
               {loading
                 ? "Preparing…"
                 : playing
                   ? "Playing — tap to stop"
                   : started
                     ? "Replay welcome message"
-                    : "Hear a 15-second welcome message"}
+                    : "Or begin by listening"}
             </p>
             {started && !playing && !loading && (
               <div className="mt-1 w-32 h-0.5 rounded-full overflow-hidden bg-white/10">
