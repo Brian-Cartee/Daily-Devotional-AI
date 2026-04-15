@@ -514,8 +514,53 @@ const FAQ_ITEMS = [
   },
 ];
 
+const FAQ_INITIAL_COUNT = 5;
+
+function FaqItem({ item, index, open, setOpen }: { item: { q: string; a: string }; index: number; open: number | null; setOpen: (i: number | null) => void }) {
+  return (
+    <div className="border border-border/40 rounded-2xl overflow-hidden bg-card/40">
+      <button
+        data-testid={`faq-toggle-${index}`}
+        onClick={() => setOpen(open === index ? null : index)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+      >
+        <span className="text-[13px] font-semibold text-foreground leading-snug">{item.q}</span>
+        <motion.div
+          animate={{ rotate: open === index ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0"
+        >
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {open === index && (
+          <motion.div
+            key="answer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <p
+              data-testid={`faq-answer-${index}`}
+              className="px-4 pb-4 text-[13px] text-foreground/80 leading-relaxed"
+            >
+              {item.a}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function FaqSection() {
   const [open, setOpen] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const remaining = FAQ_ITEMS.length - FAQ_INITIAL_COUNT;
+
   return (
     <div className="px-0 mb-6">
       <div className="flex items-center gap-3 mb-5">
@@ -524,44 +569,34 @@ function FaqSection() {
         <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/60 to-transparent" />
       </div>
       <div className="space-y-1">
-        {FAQ_ITEMS.map((item, i) => (
-          <div key={i} className="border border-border/40 rounded-2xl overflow-hidden bg-card/40">
-            <button
-              data-testid={`faq-toggle-${i}`}
-              onClick={() => setOpen(open === i ? null : i)}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
-            >
-              <span className="text-[13px] font-semibold text-foreground leading-snug">{item.q}</span>
-              <motion.div
-                animate={{ rotate: open === i ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-                className="shrink-0"
-              >
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              </motion.div>
-            </button>
-            <AnimatePresence initial={false}>
-              {open === i && (
-                <motion.div
-                  key="answer"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.22, ease: "easeInOut" }}
-                  className="overflow-hidden"
-                >
-                  <p
-                    data-testid={`faq-answer-${i}`}
-                    className="px-4 pb-4 text-[13px] text-foreground/80 leading-relaxed"
-                  >
-                    {item.a}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        {FAQ_ITEMS.slice(0, FAQ_INITIAL_COUNT).map((item, i) => (
+          <FaqItem key={i} item={item} index={i} open={open} setOpen={setOpen} />
         ))}
+
+        <AnimatePresence initial={false}>
+          {showAll && FAQ_ITEMS.slice(FAQ_INITIAL_COUNT).map((item, i) => (
+            <motion.div
+              key={FAQ_INITIAL_COUNT + i}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, delay: i * 0.04 }}
+            >
+              <FaqItem item={item} index={FAQ_INITIAL_COUNT + i} open={open} setOpen={setOpen} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
+
+      {!showAll && (
+        <button
+          data-testid="button-faq-show-more"
+          onClick={() => setShowAll(true)}
+          className="mt-3 w-full py-3 rounded-2xl border border-border/40 bg-card/30 text-[13px] text-muted-foreground/80 hover:text-foreground hover:bg-card/60 transition-colors flex items-center justify-center gap-1.5"
+        >
+          <ChevronDown className="w-3.5 h-3.5" />
+          {remaining} more questions
+        </button>
+      )}
     </div>
   );
 }
