@@ -442,9 +442,9 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
             transition={{ duration: 0.5 }}
             className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white text-[13px] font-bold uppercase tracking-widest mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white/80 text-[11px] font-semibold uppercase tracking-widest mb-2">
               <Compass className="w-3 h-3" />
-              Bible Journeys
+              Journeys
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Start where you are</h1>
             <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">There's a path for this moment.</p>

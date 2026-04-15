@@ -374,12 +374,13 @@ export default function StoriesPage() {
           <motion.button
             key="fab"
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 0.72, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.4, delay: 1.2 }}
+            whileHover={{ opacity: 1 }}
             onClick={openShareForm}
             data-testid="button-fab-share"
-            className="fixed bottom-24 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground text-[13px] font-semibold px-4 py-3 shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-95 transition-all sm:bottom-6"
+            className="fixed bottom-24 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground text-[12px] font-semibold px-3.5 py-2.5 shadow-md shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all sm:bottom-6"
           >
             <Heart className="w-3.5 h-3.5 fill-current" />
             Share your story

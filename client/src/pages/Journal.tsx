@@ -1104,7 +1104,7 @@ export default function Journal() {
                 </div>
                 <div>
                   <h1 className="text-base font-bold text-foreground tracking-tight">Prayer Journal</h1>
-                  <p className="text-[11px] text-muted-foreground">A place to remember what God is doing in your life.</p>
+                  <p className="text-[11px] text-muted-foreground">A place to remember your walk with Jesus.</p>
                 </div>
               </div>
 
@@ -1113,10 +1113,10 @@ export default function Journal() {
                 <button
                   data-testid="btn-export-journal"
                   onClick={() => setExportOpen(v => !v)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[12px] font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-all ${
                     exportOpen
-                      ? "bg-primary/10 border-primary/30 text-primary"
-                      : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      ? "bg-primary/8 border-primary/20 text-primary/80"
+                      : "border-border/50 text-muted-foreground/60 hover:text-muted-foreground hover:border-border"
                   }`}
                 >
                   <Download className="w-3.5 h-3.5" />

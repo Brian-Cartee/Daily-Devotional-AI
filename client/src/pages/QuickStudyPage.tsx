@@ -510,7 +510,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             Scripture Study
           </div>
           <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Explore Scripture</h2>
-          <p className="text-white/70 text-[12px] mt-1">Bring a question, a passage, or something on your mind.</p>
+          <p className="text-white/70 text-[12px] mt-1">Bring a question, a passage, or what's on your mind.</p>
         </div>
       </div>
 
