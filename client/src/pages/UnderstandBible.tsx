@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
-  BookMarked, ArrowLeft, MapPin, Presentation, Heart, ImageDown, Check,
+  BookMarked, ArrowLeft, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
@@ -228,32 +228,59 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                   <BiblePassageText text={textQuery.data.text} />
                 </div>
               )}
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" className="rounded-full" onClick={() => generateAI("reflect")} disabled={isAiLoading} data-testid={`btn-reflect-${chapter.id}`}>
-                  <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI Reflection
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-full" onClick={() => generateAI("pray")} disabled={isAiLoading} data-testid={`btn-pray-${chapter.id}`}>
-                  <HeartHandshake className="w-3.5 h-3.5 mr-1.5" /> Prayer
-                </Button>
-                <Button size="sm" variant="ghost" className="rounded-full text-muted-foreground" onClick={() => { setAiMode("chat"); setChatMessages([]); }} disabled={isAiLoading}>
-                  Ask a question
-                </Button>
+              {/* Action grid — 4 equal tiles, 2×2 on mobile */}
+              <div className="grid grid-cols-4 gap-2 mt-1">
+                {/* Reflect */}
+                <button
+                  onClick={() => generateAI("reflect")}
+                  disabled={isAiLoading}
+                  data-testid={`btn-reflect-${chapter.id}`}
+                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 disabled:opacity-40 transition-all group"
+                >
+                  <Sparkles className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Reflect</span>
+                </button>
+
+                {/* Prayer */}
+                <button
+                  onClick={() => generateAI("pray")}
+                  disabled={isAiLoading}
+                  data-testid={`btn-pray-${chapter.id}`}
+                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 disabled:opacity-40 transition-all group"
+                >
+                  <HeartHandshake className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Prayer</span>
+                </button>
+
+                {/* Ask */}
+                <button
+                  onClick={() => { setAiMode("chat"); setChatMessages([]); }}
+                  disabled={isAiLoading}
+                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 disabled:opacity-40 transition-all group"
+                >
+                  <MessageCircle className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Ask</span>
+                </button>
+
+                {/* Save */}
                 <button
                   onClick={handleSaveSnippet}
                   disabled={snippetSaving}
                   data-testid={`btn-save-snippet-${chapter.id}`}
                   aria-label="Save to your path"
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all group ${
                     snippetSaved
-                      ? "text-primary bg-primary/10 border-primary/30"
-                      : "text-muted-foreground border-border hover:text-primary hover:border-primary/30 hover:bg-primary/8"
+                      ? "border-primary/40 bg-primary/8 text-primary"
+                      : "border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 text-foreground/70"
                   } disabled:opacity-50`}
                 >
                   {snippetSaving
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <Heart className={`w-3.5 h-3.5 transition-all ${snippetSaved ? "fill-current" : ""}`} />
+                    ? <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    : <Heart className={`w-4 h-4 text-primary group-hover:scale-110 transition-all ${snippetSaved ? "fill-current" : ""}`} />
                   }
-                  {snippetSaved ? "Saved" : "Save"}
+                  <span className="text-[11px] font-semibold leading-tight text-center">
+                    {snippetSaved ? "Saved" : "Save"}
+                  </span>
                 </button>
               </div>
               {isAiLoading && !aiContent && (
