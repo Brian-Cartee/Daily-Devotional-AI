@@ -38,6 +38,26 @@ export function dismissReturnCard(): void {
   localStorage.setItem(RETURN_CARD_DISMISSED_KEY, today);
 }
 
+// ── Last guidance session ──────────────────────────────────────────────────────
+const LAST_GUIDANCE_KEY = "sp_last_guidance";
+
+export function saveLastGuidanceSession(): void {
+  const today = new Date().toISOString().split("T")[0];
+  localStorage.setItem(LAST_GUIDANCE_KEY, today);
+}
+
+export function getLastGuidanceDate(): string | null {
+  return localStorage.getItem(LAST_GUIDANCE_KEY);
+}
+
+export function daysSinceGuidance(): number {
+  const last = getLastGuidanceDate();
+  if (!last) return 999;
+  const today = new Date().toISOString().split("T")[0];
+  if (last === today) return 0;
+  return Math.floor((new Date(today).getTime() - new Date(last).getTime()) / 86_400_000);
+}
+
 // ── Gratitude weekly prompt ────────────────────────────────────────────────────
 function getWeekKey(): string {
   const d = new Date();

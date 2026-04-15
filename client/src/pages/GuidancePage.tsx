@@ -3,6 +3,7 @@ import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield, Mic, MicOff, Camera } from "lucide-react";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
 import { getUserName, getUserVoice } from "@/lib/userName";
@@ -329,6 +330,7 @@ export default function GuidancePage() {
   const handleHeartSubmit = () => {
     const text = heartInput.trim();
     if (!text) return;
+    saveLastGuidanceSession();
     window.location.href = `/guidance?situation=${encodeURIComponent(text)}`;
   };
 

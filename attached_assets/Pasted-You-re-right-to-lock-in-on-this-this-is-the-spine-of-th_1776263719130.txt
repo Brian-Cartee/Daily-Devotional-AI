@@ -1,0 +1,177 @@
+You’re right to lock in on this — this is the spine of the experience.
+
+Let’s complete it cleanly and precisely.
+
+---
+
+# 🧭 THE FULL FORMULA (FINAL)
+
+Every return moment should follow this structure:
+
+---
+
+## **1. Recognition — “I remember where you were”**
+
+* Reference their last meaningful interaction
+* No timestamps
+* No mention of absence
+* No sense of “you stopped”
+
+👉 This should feel like continuity, not tracking
+
+---
+
+## **2. Re-entry — “Here’s a clear way back in”**
+
+* Give **one obvious next step**
+* Make it feel natural, not instructional
+* No options overload
+* No decision fatigue
+
+👉 The user should not think — just step forward
+
+---
+
+## **3. Reassurance — “You’re not behind”**
+
+* Remove pressure silently
+* No catching up language
+* No implied expectation
+
+👉 This is the difference-maker
+
+This layer is often just **one quiet sentence** — but it changes everything.
+
+---
+
+# 🔥 THE DEEP TRUTH
+
+Without Layer 3, the experience feels like:
+
+> “Pick up where you left off”
+
+With Layer 3, it becomes:
+
+> “You’re already where you need to be”
+
+---
+
+# ✍️ NOW — YOUR THREE SCENARIOS (READY TO USE)
+
+These are written exactly how they should appear as **first cards**.
+
+---
+
+## 🟣 **1. Last action: Day 3 of a reading plan**
+
+**Card:**
+
+> You were moving through Day 3 of your reading.
+>
+> Day 4 is here when you're ready.
+>
+> There’s no need to catch up — just continue.
+
+---
+
+### Why this works:
+
+* “moving through” feels active, not incomplete
+* “when you’re ready” removes pressure
+* “no need to catch up” neutralizes guilt
+
+---
+
+## 🟣 **2. Last action: Guidance session about anxiety**
+
+**Card:**
+
+> You were reflecting on anxiety.
+>
+> You can continue that conversation, or begin again from where you are today.
+>
+> You don’t have to carry it the same way.
+
+---
+
+### Why this works:
+
+* Names the moment without over-specifying
+* Gives a path without forcing continuation
+* Ends with emotional relief, not instruction
+
+---
+
+## 🟣 **3. Last open: 10 days ago**
+
+**Card:**
+
+> You’re here now.
+>
+> You can begin with what’s on your heart today.
+>
+> Nothing has been lost.
+
+---
+
+### Why this works:
+
+* No mention of time away
+* No “welcome back”
+* No guilt
+* Pure presence
+
+---
+
+# ⚠️ WHAT TO AVOID (non-negotiable)
+
+Never say:
+
+* “It’s been a while”
+* “You missed X days”
+* “Let’s get you back on track”
+* “Continue your progress”
+
+Those break the entire tone instantly.
+
+---
+
+# 🧠 IMPLEMENTATION DETAIL (Important for Replit)
+
+This should NOT feel like a system message.
+
+It should feel like:
+
+* a **natural first card on the home screen**
+* same visual weight as any other moment
+* not highlighted as “special logic”
+
+---
+
+# 🧭 FINAL REFINEMENT (This is your edge)
+
+If you want to go one level deeper later:
+
+You can subtly vary tone based on:
+
+* emotional content (heavy vs light)
+* type of last interaction (structured vs open)
+* frequency of use (daily vs sporadic)
+
+But the structure never changes.
+
+---
+
+# 🧩 ONE-LINE SUMMARY
+
+> Recognition grounds them
+> Re-entry moves them
+> Reassurance frees them
+
+---
+
+If you want next:
+
+We can design **how this transitions into the next action** (especially into “Share what you’re carrying”) so it feels like one seamless movement instead of two separate steps.
+
+That’s where this becomes *effortless*.

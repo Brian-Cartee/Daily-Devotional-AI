@@ -12,6 +12,7 @@ import {
   isReturnCardDismissedToday,
   dismissReturnCard,
   getDaysAway,
+  daysSinceGuidance,
   hasGratitudeThisWeek,
   markGratitudeThisWeek,
   getNextTip,
@@ -27,6 +28,7 @@ import {
   dismissFirstStepsCard,
   type CheckinEmotion,
 } from "@/lib/engagementCards";
+import { getActivePlanId, getPlanProgress, READING_PLANS } from "@/lib/readingPlans";
 import { getUserName } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { Link } from "wouter";
@@ -120,57 +122,111 @@ export function LateNightBannerCard() {
 }
 
 // ── 2. Returning-user grace card ──────────────────────────────────────────────
-function getReturnContent(daysAway: number, name: string | null) {
-  const firstName = name ? `, ${name}` : "";
+type ReturnScenario = "plan" | "guidance" | "long-absence" | "gentle";
 
-  if (daysAway <= 3) {
+interface ReturnCardContent {
+  scenario: ReturnScenario;
+  line1: string;
+  line2: string;
+  line3: string;
+  ctaLabel: string;
+  ctaHref: string;
+  gradient: string;
+  border: string;
+  bg: string;
+  labelColor: string;
+  xColor: string;
+}
+
+function buildReturnContent(daysAway: number): ReturnCardContent {
+  // Priority 1 — active reading plan
+  const planId = getActivePlanId();
+  if (planId) {
+    const plan = READING_PLANS.find(p => p.id === planId);
+    const completed = getPlanProgress(planId).size;
+    const nextDay = completed + 1;
+    const planName = plan?.title ?? "your reading plan";
     return {
-      label: `Good morning${firstName}`,
-      headline: "You can start right where you are.",
-      body: "Today's word is ready whenever you are.",
-      gradient: "from-sky-400 via-blue-400 to-indigo-400",
-      border: "border-sky-200 dark:border-sky-800",
-      bg: "bg-sky-50 dark:bg-sky-950/40",
-      labelColor: "text-sky-600 dark:text-sky-400",
-      xColor: "text-sky-400 hover:text-sky-600",
+      scenario: "plan",
+      line1: `You were moving through Day ${completed} of ${planName}.`,
+      line2: `Day ${nextDay} is here when you're ready.`,
+      line3: "There's no need to catch up — just continue.",
+      ctaLabel: `Continue Day ${nextDay}`,
+      ctaHref: "/reading-plans",
+      gradient: "from-emerald-400 via-teal-400 to-cyan-400",
+      border: "border-emerald-200 dark:border-emerald-800/50",
+      bg: "bg-emerald-50/60 dark:bg-emerald-950/20",
+      labelColor: "text-emerald-600 dark:text-emerald-400",
+      xColor: "text-emerald-400 hover:text-emerald-600",
     };
   }
 
+  // Priority 2 — recent guidance session (within 7 days)
+  const sincGuidance = daysSinceGuidance();
+  if (sincGuidance >= 1 && sincGuidance <= 7) {
+    return {
+      scenario: "guidance",
+      line1: "You started something here.",
+      line2: "You can continue that conversation, or begin again from where you are today.",
+      line3: "You don't have to carry it the same way.",
+      ctaLabel: "Return to Guidance",
+      ctaHref: "/guidance",
+      gradient: "from-violet-400 via-primary to-indigo-400",
+      border: "border-violet-200 dark:border-violet-800/50",
+      bg: "bg-violet-50/60 dark:bg-violet-950/20",
+      labelColor: "text-primary dark:text-violet-400",
+      xColor: "text-violet-400 hover:text-violet-600",
+    };
+  }
+
+  // Priority 3 — long absence (7+ days)
+  if (daysAway >= 7) {
+    return {
+      scenario: "long-absence",
+      line1: "You're here now.",
+      line2: "You can begin with what's on your heart today.",
+      line3: "Nothing has been lost.",
+      ctaLabel: "Begin",
+      ctaHref: "/guidance",
+      gradient: "from-amber-400 via-orange-400 to-rose-400",
+      border: "border-amber-200 dark:border-amber-800/50",
+      bg: "bg-amber-50/60 dark:bg-amber-950/20",
+      labelColor: "text-amber-600 dark:text-amber-400",
+      xColor: "text-amber-400 hover:text-amber-600",
+    };
+  }
+
+  // Default — 2–6 days, no specific context
   return {
-    label: firstName ? `Good to see you${firstName}` : "Good to see you",
-    headline: "The path hasn't moved.",
-    body: "The Good Shepherd keeps your place. Step back in whenever you're ready.",
-    gradient: "from-violet-400 via-primary to-indigo-400",
-    border: "border-violet-200 dark:border-violet-800",
-    bg: "bg-violet-50/60 dark:bg-violet-950/30",
-    labelColor: "text-primary dark:text-violet-400",
-    xColor: "text-violet-400 hover:text-violet-600",
+    scenario: "gentle",
+    line1: "You can start right where you are.",
+    line2: "Today's word is ready whenever you are.",
+    line3: "",
+    ctaLabel: "Keep walking",
+    ctaHref: "/devotional",
+    gradient: "from-sky-400 via-blue-400 to-indigo-400",
+    border: "border-sky-200 dark:border-sky-800/50",
+    bg: "bg-sky-50/60 dark:bg-sky-950/20",
+    labelColor: "text-sky-600 dark:text-sky-400",
+    xColor: "text-sky-400 hover:text-sky-600",
   };
 }
 
 export function ReturningUserCard() {
-  const name = getUserName();
-  const [visible, setVisible] = useState(false);
-  const [daysAway, setDaysAway] = useState(0);
+  const [content, setContent] = useState<ReturnCardContent | null>(null);
 
   useEffect(() => {
     const days = getDaysAway();
-    // For long absences (7+ days), silence is best — just the verse, unchanged.
-    // No card that acknowledges how long they've been away.
-    if (days >= 2 && days < 7 && !isReturnCardDismissedToday()) {
-      setDaysAway(days);
-      setVisible(true);
-    }
+    if (days < 2 || isReturnCardDismissedToday()) return;
+    setContent(buildReturnContent(days));
   }, []);
 
   function dismiss() {
     dismissReturnCard();
-    setVisible(false);
+    setContent(null);
   }
 
-  if (!visible) return null;
-
-  const content = getReturnContent(daysAway, name);
+  if (!content) return null;
 
   return (
     <AnimatePresence>
@@ -188,21 +244,24 @@ export function ReturningUserCard() {
         >
           <X className="w-4 h-4" />
         </button>
-        <p className={`text-[12px] font-bold uppercase tracking-widest mb-1.5 pr-6 ${content.labelColor}`}>
-          {content.label}
+        <p className="text-[15px] font-semibold text-foreground leading-snug mb-1 pr-6">
+          {content.line1}
         </p>
-        <p className="text-[15px] font-bold text-foreground leading-snug mb-1">
-          {content.headline}
+        <p className="text-[13px] text-foreground/70 leading-relaxed">
+          {content.line2}
         </p>
-        <p className="text-[13px] text-foreground/70 leading-relaxed mb-3">
-          {content.body}
-        </p>
-        <Link href="/devotional" onClick={dismiss}>
+        {content.line3 && (
+          <p className="text-[13px] text-foreground/55 leading-relaxed mt-0.5 mb-3">
+            {content.line3}
+          </p>
+        )}
+        {!content.line3 && <div className="mb-3" />}
+        <Link href={content.ctaHref} onClick={dismiss}>
           <button
             data-testid="button-returning-cta"
             className={`inline-flex items-center gap-1.5 text-[12px] font-bold ${content.labelColor} hover:opacity-80 transition-opacity`}
           >
-            Keep walking <ChevronRight className="w-3.5 h-3.5" />
+            {content.ctaLabel} <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </Link>
       </motion.div>
