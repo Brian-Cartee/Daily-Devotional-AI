@@ -215,12 +215,44 @@ interface GratitudePromptCardProps {
   sessionId: string;
 }
 
+const GRATITUDE_COPY: Record<"hard" | "okay" | "grateful" | "none", {
+  header: string; prompt: string; placeholder: string; journalTitle: string;
+}> = {
+  hard: {
+    header: "Stay a moment",
+    prompt: "What's one thing you're holding onto right now?",
+    placeholder: "Whatever's weighing on you…",
+    journalTitle: "What I'm holding onto",
+  },
+  okay: {
+    header: "Take a moment",
+    prompt: "What stood out to you today?",
+    placeholder: "Whatever comes to mind…",
+    journalTitle: "Reflection",
+  },
+  grateful: {
+    header: "Take a moment",
+    prompt: "Write one thing on your heart — we'll save it to your journal.",
+    placeholder: "I'm thankful for…",
+    journalTitle: "Gratitude",
+  },
+  none: {
+    header: "Take a moment",
+    prompt: "Write one thing on your heart — we'll save it to your journal.",
+    placeholder: "Whatever comes to mind…",
+    journalTitle: "Reflection",
+  },
+};
+
 export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
   const [visible, setVisible] = useState(false);
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  const checkin = getTodayCheckin();
+  const copy = GRATITUDE_COPY[checkin ?? "none"];
 
   useEffect(() => {
     if (!hasGratitudeThisWeek()) setVisible(true);
@@ -234,7 +266,7 @@ export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
       await apiRequest("POST", "/api/journal", {
         sessionId,
         type: "reflection",
-        title: "Gratitude",
+        title: copy.journalTitle,
         content: trimmed,
       });
       markGratitudeThisWeek();
@@ -270,10 +302,10 @@ export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
           <X className="w-4 h-4" />
         </button>
         <p className="text-[12px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">
-          Before you go
+          {copy.header}
         </p>
         <p className="text-[14px] text-foreground/85 leading-relaxed mb-3">
-          Name one thing you're grateful for today. We'll save it to your journal.
+          {copy.prompt}
         </p>
         {saved ? (
           <p className="text-[13px] font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
@@ -285,7 +317,7 @@ export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
               data-testid="input-gratitude"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="I'm thankful for…"
+              placeholder={copy.placeholder}
               rows={2}
               className="flex-1 text-[13px] resize-none bg-white/70 dark:bg-black/20 border-amber-200 dark:border-amber-700 focus-visible:ring-amber-400/50"
             />
@@ -371,7 +403,7 @@ export function CheckinCard() {
 
   const EMOTIONS: { key: CheckinEmotion; emoji: string; label: string }[] = [
     { key: "hard", emoji: "😔", label: "Hard day" },
-    { key: "okay", emoji: "😌", label: "Doing okay" },
+    { key: "okay", emoji: "😌", label: "Steady" },
     { key: "grateful", emoji: "🙏", label: "Grateful" },
   ];
 
