@@ -26,6 +26,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02
 // One sermon per verse per day; cleared on server restart (fine — sessionStorage handles client-side persistence)
 const dailySermonCache = new Map<string, any>();
 
+// Scripture context cache — key: normalized verse reference, value: context object
+// Stable data; safe to cache indefinitely per server run
+const scriptureContextCache = new Map<string, any>();
+
 // In-memory TTS cache — key: "voice::text_hash", value: Buffer of mp3 bytes
 // Capped to prevent unbounded memory growth
 const MAX_TTS_CACHE = 120;
@@ -3173,6 +3177,51 @@ ${historyNote}`;
     } catch (err) {
       console.error("[sermon/daily] error:", err);
       return res.json({ found: false });
+    }
+  });
+
+  // Scripture context — 3 plain-language sections + bridge back to the devotional moment
+  app.get("/api/context", async (req, res) => {
+    try {
+      const { reference, text } = req.query as { reference?: string; text?: string };
+      if (!reference || !text) return res.status(400).json({ error: "Missing params" });
+
+      const cacheKey = reference.toLowerCase().replace(/[\s:,]/g, "_");
+      if (scriptureContextCache.has(cacheKey)) return res.json(scriptureContextCache.get(cacheKey));
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a trusted pastor helping someone understand a Bible verse in plain, everyday language. You are warm, grounded, and clear. You never use academic or theological jargon. Your goal is to help the reader understand — not impress them. Write like you're explaining this to a friend over coffee, not lecturing. Sound biblical teaching only. Return ONLY valid JSON — no markdown, no code fences.`,
+          },
+          {
+            role: "user",
+            content: `Give background on this Bible passage so the reader understands it better: "${reference}" — "${text}"
+
+Return a JSON object with exactly these four fields:
+
+"whoAndWhen": 2–3 plain sentences answering: Who wrote this? What do we know about them? Roughly when did they write it? Keep it human and grounded — not a biography, just enough to place the reader.
+
+"whatWasHappening": 2–3 plain sentences answering: What was going on at the time? What was life like for the people this was written to? What were they facing or going through? Help the reader feel the world this came from.
+
+"whyItMatters": 2–3 plain sentences answering: Why does this passage land the way it does? What does it say about God, about people, about the situation? What should reading this change or clarify for us? Keep this honest and grounded — not preachy.
+
+"bridge": One warm sentence connecting this background back to reading the verse today. Something like "This helps us see why this verse speaks the way it does" — but written naturally, specific to this passage. Not generic.`,
+          },
+        ],
+        temperature: 0.4,
+        max_tokens: 700,
+        response_format: { type: "json_object" },
+      });
+
+      const result = JSON.parse(completion.choices[0].message.content || "{}");
+      scriptureContextCache.set(cacheKey, result);
+      res.json(result);
+    } catch (err) {
+      console.error("[context] error:", err);
+      res.status(500).json({ error: "Failed to generate context" });
     }
   });
 

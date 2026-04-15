@@ -32,6 +32,7 @@ import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
 import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer } from "@/lib/devotionalSession";
 import { DailySermonCard } from "@/components/DailySermonCard";
+import { ScriptureContext } from "@/components/ScriptureContext";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -848,6 +849,11 @@ export default function Devotional() {
                     {verseArtMutation.isPending ? "Painting…" : verseArtUrl ? (showAiArt ? "AI Art ✓" : "Original") : "AI Art"}
                   </span>
                 </button>
+              </div>
+
+              {/* Context — background on this passage */}
+              <div className="px-4 pt-2 pb-2.5 flex items-center justify-center border-t border-border/20">
+                <ScriptureContext reference={verse.reference} text={verse.text} />
               </div>
 
               {/* Remember this verse — always visible */}
