@@ -294,14 +294,14 @@ function HeroAIPrompt() {
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
             {[
-              { label: "I'm grieving",         fill: "I'm grieving the loss of someone I love and I don't know how to process the pain…" },
-              { label: "Marriage struggles",    fill: "My marriage is struggling and I don't know where to turn…" },
-              { label: "Feeling distant from God", fill: "I feel distant from God lately and I'm not sure why…" },
-              { label: "Battling anxiety",      fill: "I'm battling anxiety and my faith feels weak right now…" },
-              { label: "Health challenge",      fill: "I'm facing a health challenge and I'm scared about what comes next…" },
-              { label: "Need direction",        fill: "I need direction for my life and I'm not sure which way to go…" },
-              { label: "Job or finances",       fill: "I'm going through financial difficulty and I'm stressed and worried…" },
-              { label: "Feeling lost",          fill: "I feel lost and I'm struggling to find my purpose right now…" },
+              { label: "I'm carrying grief",         fill: "I'm grieving the loss of someone I love and I don't know how to process the pain…" },
+              { label: "I'm facing something in my marriage",    fill: "My marriage is struggling and I don't know where to turn…" },
+              { label: "I feel distant from God", fill: "I feel distant from God lately and I'm not sure why…" },
+              { label: "I'm struggling with anxiety",      fill: "I'm battling anxiety and my faith feels weak right now…" },
+              { label: "I'm facing something with my health",      fill: "I'm facing a health challenge and I'm scared about what comes next…" },
+              { label: "I'm searching for direction",        fill: "I need direction for my life and I'm not sure which way to go…" },
+              { label: "I'm under financial pressure",       fill: "I'm going through financial difficulty and I'm stressed and worried…" },
+              { label: "I feel lost",          fill: "I feel lost and I'm struggling to find my purpose right now…" },
             ].map(({ label, fill }) => (
               <button
                 key={label}

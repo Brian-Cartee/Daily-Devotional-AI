@@ -1,0 +1,333 @@
+We are refining the “Guidance” experience inside Shepherd’s Path.
+
+This is not a feature.
+This is the moment where a user brings something real.
+
+It must feel:
+- safe
+- human
+- spiritually grounded
+- emotionally intelligent
+- deeply personal
+
+This is where Shepherd’s Path separates from every other app.
+
+-----------------------------------
+CORE EXPERIENCE FLOW
+-----------------------------------
+
+The Guidance experience must feel like:
+
+1. Expression (user shares honestly)
+2. Being seen (immediate emotional resonance)
+3. Gentle guidance (truth + scripture)
+4. Personal response (optional continuation)
+5. Spiritual anchoring (prayer)
+
+NOT:
+input → response → content
+
+-----------------------------------
+SECTION 1 — INPUT (“Talk It Through”)
+-----------------------------------
+
+Current role:
+User expresses what’s on their heart
+
+Problems:
+- Still feels slightly like a tool
+- Not fully safe/inviting emotionally
+- Suggestion chips feel slightly mechanical
+
+Refinements:
+
+1. HEADLINE
+Replace:
+“Talk It Through”
+
+With:
+“What’s on your heart?”
+
+2. MICRO COPY (critical)
+Add beneath input:
+
+“You can be honest here.”
+
+3. INPUT FIELD
+- Increase softness (slightly less sharp border)
+- Reduce “tech feel”
+- Add subtle glow when active
+
+Update placeholder:
+“Say what’s weighing on you… nothing is too small.”
+
+4. BEHAVIOR
+- On first word typed → subtle expansion or glow
+- Remove any sense of “submission”
+- This is not sending a message — it’s opening up
+
+5. SUGGESTION CHIPS
+Refine tone:
+From labels → to starting points
+
+Example:
+“I’m grieving”
+→ “I’m carrying grief”
+
+“Health challenge”
+→ “I’m facing something with my health”
+
+Key principle:
+This must feel like a safe first step, not a prompt.
+
+-----------------------------------
+SECTION 2 — FIRST RESPONSE (BEING SEEN)
+-----------------------------------
+
+Current role:
+AI responds with empathy and understanding
+
+This is the MOST IMPORTANT PART of Guidance.
+
+Problems:
+- Slight risk of feeling templated
+- Too structured
+- Needs stronger emotional mirroring
+
+Refinements:
+
+1. FIRST LINE (CRITICAL)
+Must immediately reflect user emotion:
+
+Example:
+“That weight you’re feeling is real.”
+
+OR:
+“It makes sense that this feels overwhelming.”
+
+NO generic openings.
+
+2. PERSONALIZATION
+- Use their language subtly (not mechanically)
+- Reflect emotion before offering insight
+
+3. TONE
+- Never preach first
+- Never teach first
+- Always acknowledge first
+
+4. STRUCTURE
+Break into:
+- Validation
+- Gentle reframing
+- Invitation to reflect
+
+5. ENDING QUESTION
+Keep:
+“What feels most daunting right now?”
+
+But ensure it feels like:
+curiosity, not interrogation
+
+Key principle:
+User must feel:
+“this understood me”
+
+-----------------------------------
+SECTION 3 — SCRIPTURE (A WORD FOR THIS MOMENT)
+-----------------------------------
+
+Current role:
+Introduce truth after emotional connection
+
+Refinements:
+
+1. TIMING
+- Must come AFTER emotional validation
+- Never lead with scripture
+
+2. PRESENTATION
+- Slightly increase visual importance
+- Remove any “content card” feel
+
+3. LABEL
+“A word for this moment” is strong — keep
+
+4. OPTIONAL ADD
+Add subtle intro line:
+
+“This is for you right now:”
+
+Key principle:
+Scripture should feel placed, not inserted.
+
+-----------------------------------
+SECTION 4 — CONTINUE THE CONVERSATION
+-----------------------------------
+
+Current role:
+User can respond again
+
+Problem:
+Feels optional and slightly disconnected
+
+Refinements:
+
+1. LABEL
+Replace:
+“Continue the conversation”
+
+With:
+“Want to share more?”
+
+2. PLACEHOLDER
+“Say more… or ask what you need.”
+
+3. VISUAL
+- Slightly increase prominence
+- Keep softness
+
+4. FLOW
+This should feel like:
+being listened to, not looping input
+
+Key principle:
+Conversation should feel alive.
+
+-----------------------------------
+SECTION 5 — PRAYER (ANCHORING)
+-----------------------------------
+
+Current role:
+Bring everything into prayer
+
+Problems:
+- Feels slightly like generated output
+- Needs stronger connection to user’s words
+
+Refinements:
+
+1. TITLE
+Keep:
+“A prayer for your moment”
+
+2. INTRO LINE
+Add:
+
+“This can be your prayer — or a place to start.”
+
+3. PERSONALIZATION
+- Reflect emotion from input
+- Avoid overly formal tone shifts
+
+4. READABILITY
+- Increase spacing
+- Slightly reduce density
+
+5. CTA
+Change:
+“Pray This Aloud”
+
+To:
+“Pray this”
+
+6. OPTIONAL LINE BELOW
+“Take a moment here.”
+
+Key principle:
+This should feel like release.
+
+-----------------------------------
+SECTION 6 — TRANSITION TO JOURNEY
+-----------------------------------
+
+Current role:
+Move user into structured content
+
+Problem:
+Feels slightly abrupt
+
+Refinement:
+
+Replace:
+“The scripture journey below was shaped around everything you’ve just shared”
+
+With:
+
+“What comes next is shaped around what you shared. Take it at your pace.”
+
+Key principle:
+This is continuation, not redirection.
+
+-----------------------------------
+SECTION 7 — PERSONALIZED JOURNEY CARD
+-----------------------------------
+
+Current role:
+Offer next steps
+
+Refinements:
+
+1. TITLE
+Keep strong, but soften tone:
+
+“Facing a Health Challenge”
+→ good
+
+2. SUBTEXT
+Ensure it feels like guidance, not curriculum
+
+3. TAGS (Lament, Presence, Truth…)
+Good — keep
+
+4. DESCRIPTION
+Ensure it connects back to user emotion
+
+Key principle:
+This should feel like:
+“this is for me”
+
+-----------------------------------
+GLOBAL EXPERIENCE IMPROVEMENTS
+-----------------------------------
+
+1. REMOVE “AI FEEL”
+- No robotic phrasing
+- No repeated patterns
+
+2. EMOTIONAL PRIORITY
+- Emotion → truth → action
+NOT:
+truth → explanation → suggestion
+
+3. PACING
+- Slight delay between sections
+- Allow space to feel
+
+4. VOICE CONSISTENCY
+- One voice across entire experience
+- No UI/system tone
+
+5. SAFETY
+Every line should pass this test:
+
+Would someone in pain feel safe saying more here?
+
+-----------------------------------
+FINAL STANDARD
+
+This experience should feel like:
+
+- being heard
+- being understood
+- being gently guided toward God
+
+NOT:
+- using a feature
+- getting an answer
+- consuming content
+
+-----------------------------------
+
+Do not redesign structure.
+Refine tone, flow, emotional sequencing, and language.

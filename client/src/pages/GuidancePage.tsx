@@ -507,7 +507,7 @@ export default function GuidancePage() {
                       spellCheck
                       autoCapitalize="sentences"
                       autoCorrect="on"
-                      placeholder="Start typing… what's on your heart?"
+                      placeholder="Say what's weighing on you… nothing is too small."
                       rows={4}
                       data-testid="input-guidance-heart"
                       className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/75 outline-none leading-relaxed"
@@ -546,6 +546,10 @@ export default function GuidancePage() {
                       </button>
                     </div>
                   </div>
+
+                  <p className="text-[11px] text-muted-foreground/55 italic text-center mb-5 -mt-1">
+                    You can be honest here.
+                  </p>
 
                   {/* Divider */}
                   <div className="flex items-center gap-3 mb-5">
@@ -797,7 +801,7 @@ export default function GuidancePage() {
                         a pastor, a close friend.
                       </motion.p>
                     )}
-                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.14em] mb-2 ml-1">Continue the conversation</p>
+                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.14em] mb-2 ml-1">Want to share more?</p>
                     <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
                       <textarea
                         ref={inputRef}
@@ -807,7 +811,7 @@ export default function GuidancePage() {
                         autoCapitalize="sentences"
                         autoCorrect="on"
                         onKeyDown={handleKeyDown}
-                        placeholder="Share more, ask a question, or just talk…"
+                        placeholder="Say more… or ask what you need."
                         rows={2}
                         disabled={isSending}
                         data-testid="input-guidance-followup"
@@ -906,7 +910,10 @@ export default function GuidancePage() {
                     </div>
                   ) : (
                     <>
-                      <p className="text-[15px] leading-relaxed text-foreground/90 italic mb-5">
+                      <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic mb-4 leading-relaxed">
+                        This can be your prayer — or a place to start.
+                      </p>
+                      <p className="text-[15px] leading-[1.8] text-foreground/90 italic mb-6">
                         {prayer}
                       </p>
 
@@ -924,7 +931,7 @@ export default function GuidancePage() {
                           ) : (
                             <Volume2 className="w-3.5 h-3.5" />
                           )}
-                          {tts.playing ? "Stop" : "Pray This Aloud"}
+                          {tts.playing ? "Stop" : "Pray this"}
                         </button>
 
                         <button
@@ -946,6 +953,10 @@ export default function GuidancePage() {
                           )}
                         </button>
                       </div>
+
+                      <p className="text-[12px] text-amber-700/55 dark:text-amber-400/45 italic mt-4">
+                        Take a moment here.
+                      </p>
 
                       {/* Prayer Portrait — Pro feature */}
                       <div className="mt-4 pt-4 border-t border-amber-200/40 dark:border-amber-800/30">
@@ -986,8 +997,8 @@ export default function GuidancePage() {
 
           {/* Bridge text — connects the response to the journey below */}
           {responseComplete && (
-            <p className="text-[13px] text-muted-foreground/85 leading-relaxed mb-6 -mt-2">
-              The scripture journey below was shaped around everything you've just shared — take your time with it.
+            <p className="text-[13px] text-muted-foreground/75 leading-relaxed mb-6 -mt-2">
+              What comes next is shaped around what you shared. Take it at your pace.
             </p>
           )}
 
