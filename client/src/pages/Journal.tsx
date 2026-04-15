@@ -56,11 +56,11 @@ interface TranscriptResult {
 type TabType = "prayer" | "reflection" | "verse" | "note" | "memory";
 
 const TABS: { key: TabType; label: string; icon: React.ElementType; emptyText: string; emptyHint: string; actionLabel?: string; actionPath?: string }[] = [
-  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "Your prayer journal is waiting.",     emptyHint: "Open today's devotional or seek guidance — then tap Save Prayer to capture your prayer here.",                                  actionLabel: "Open today's devotional",  actionPath: "/devotional" },
-  { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "No reflections saved yet.",           emptyHint: "While reading a devotional or Bible journey, tap Save Reflection when something speaks to your heart.",                     actionLabel: "Open today's devotional",  actionPath: "/devotional" },
-  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "No scriptures saved yet.",            emptyHint: "In the Bible section, tap the bookmark icon on any chapter — it saves the passage here for you to return to.",              actionLabel: "Browse the Bible",         actionPath: "/read" },
-  { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "No sermon notes yet.",                emptyHint: "Use the record button above to capture a live sermon, or type notes in the notepad — both save here automatically.",      actionLabel: undefined,                  actionPath: undefined },
-  { key: "memory",      label: "Memory",       icon: Star,       emptyText: "No memory verses yet.",               emptyHint: "While reading today's devotional, tap the ☆ star next to a verse to commit it to memory — then practice it here.",        actionLabel: "Open today's devotional",  actionPath: "/devotional" },
+  { key: "prayer",      label: "Prayers",      icon: HandIcon,   emptyText: "This is where your prayers will live.",        emptyHint: "When you're ready, bring something to God.",                                                                          actionLabel: "Open today's devotional",  actionPath: "/devotional" },
+  { key: "reflection",  label: "Reflections",  icon: Sparkles,   emptyText: "Your reflections will gather here.",            emptyHint: "Moments where something spoke to you… you'll find them again.",                                                      actionLabel: "Open today's devotional",  actionPath: "/devotional" },
+  { key: "verse",       label: "Scriptures",   icon: BookOpen,   emptyText: "The words that stay with you will be here.",    emptyHint: "Save the ones you don't want to forget.",                                                                            actionLabel: "Browse the Bible",         actionPath: "/read" },
+  { key: "note",        label: "Sermon Notes", icon: PenLine,    emptyText: "A place to hold what you heard.",               emptyHint: "So it doesn't fade.",                                                                                                actionLabel: undefined,                  actionPath: undefined },
+  { key: "memory",      label: "Memory",       icon: Star,       emptyText: "What you carry with you will grow here.",       emptyHint: "Come back to what you're learning by heart.",                                                                        actionLabel: "Open today's devotional",  actionPath: "/devotional" },
 ];
 
 function formatDate(dateStr: string) {
@@ -343,7 +343,7 @@ function NoteCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: num
             </button>
           ) : (
             <div className="flex items-center gap-2 text-[13px]">
-              <span className="text-muted-foreground">Remove?</span>
+              <span className="text-muted-foreground">Remove this entry?</span>
               <button onClick={() => onDelete(entry.id)} className="font-semibold text-destructive hover:underline">Yes</button>
               <button onClick={() => setConfirming(false)} className="font-semibold text-muted-foreground hover:underline">No</button>
             </div>
@@ -399,7 +399,7 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: nu
           </button>
         ) : (
           <div className="flex items-center gap-2 text-[13px]">
-            <span className="text-muted-foreground">Remove?</span>
+            <span className="text-muted-foreground">Remove this entry?</span>
             <button onClick={() => onDelete(entry.id)} className="font-semibold text-destructive hover:underline">Yes</button>
             <button onClick={() => setConfirming(false)} className="font-semibold text-muted-foreground hover:underline">No</button>
           </div>
@@ -1104,7 +1104,7 @@ export default function Journal() {
                 </div>
                 <div>
                   <h1 className="text-base font-bold text-foreground tracking-tight">Prayer Journal</h1>
-                  <p className="text-[11px] text-muted-foreground">Prayers, reflections, scriptures & sermon notes</p>
+                  <p className="text-[11px] text-muted-foreground">A place to remember what God is doing in your life.</p>
                 </div>
               </div>
 
@@ -1247,10 +1247,10 @@ export default function Journal() {
                         </p>
                       </div>
                       <p className="text-[15px] font-bold text-foreground leading-snug mb-1.5">
-                        {textEntryCount >= 10 ? "Something beautiful is taking shape." : "You've been writing. There's something to reflect on."}
+                        {textEntryCount >= 10 ? "Something beautiful is taking shape." : "You've been showing up… there's something here for you."}
                       </p>
                       <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
-                        Based on your prayers and reflections, there's a short letter waiting — a reflection on what you seem to be learning, what God might be doing, and what you might not yet see in yourself.
+                        A quiet reflection on what your prayers and reflections reveal — what you might be learning, where God seems to be moving, what you may not yet see in yourself.
                       </p>
                       <button
                         onClick={generateLetter}
@@ -1261,7 +1261,7 @@ export default function Journal() {
                         {letterLoading ? (
                           <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Reflecting…</>
                         ) : (
-                          <><Feather className="w-3.5 h-3.5" /> Read my reflection</>
+                          <><Feather className="w-3.5 h-3.5" /> See what's been growing</>
                         )}
                       </button>
                     </>
@@ -1314,7 +1314,7 @@ export default function Journal() {
                       <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                     </div>
                     <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
-                      Looking back
+                      From a little while ago…
                     </p>
                   </div>
                   <p className="text-[11px] text-muted-foreground mb-2">
@@ -1341,9 +1341,9 @@ export default function Journal() {
               className="mb-6 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-amber-50/60 dark:from-primary/10 dark:to-amber-950/20 overflow-hidden"
             >
               <div className="px-5 pt-4 pb-2">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Your Personal Journal</p>
-                <p className="text-[15px] font-bold text-foreground leading-snug">Everything you do in the app flows here</p>
-                <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">As you use Shepherd's Path, your journal fills automatically — nothing to set up.</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Your Prayer Journal</p>
+                <p className="text-[15px] font-bold text-foreground leading-snug">Over time, this becomes a record of your walk.</p>
+                <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">Prayers, reflections, scriptures — gathered here as you go.</p>
               </div>
               <div className="px-5 pb-4 pt-2 space-y-2">
                 {[
@@ -1399,9 +1399,8 @@ export default function Journal() {
                   <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
                     <PenLine className="w-6 h-6 text-muted-foreground/50" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground max-w-[220px]">
-                    Take notes during a sermon and save them here to revisit later.
-                  </p>
+                  <p className="text-sm font-semibold text-foreground max-w-[220px]">A place to hold what you heard.</p>
+                  <p className="text-[12px] text-muted-foreground mt-1.5 max-w-[220px]">So it doesn't fade.</p>
                 </motion.div>
               )}
             </>

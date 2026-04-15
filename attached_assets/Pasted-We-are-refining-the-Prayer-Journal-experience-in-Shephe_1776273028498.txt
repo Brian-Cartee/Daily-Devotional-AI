@@ -1,0 +1,299 @@
+We are refining the Prayer Journal experience in Shepherd’s Path.
+
+This is not a storage system.
+This is not a feature hub.
+
+This is:
+a quiet place where someone returns to see how God has been moving in their life.
+
+Every word, state, and interaction must reflect that.
+
+-----------------------------------
+CORE EXPERIENCE PRINCIPLE
+-----------------------------------
+
+The Journal should feel like:
+
+- a record of a relationship
+- a place of remembrance
+- something personal, not mechanical
+- something sacred, not functional
+
+NOT:
+- a dashboard
+- a collection of entries
+- a productivity tool
+
+-----------------------------------
+HEADER + POSITIONING
+-----------------------------------
+
+Current:
+“Prayers, reflections, scriptures & sermon notes”
+
+Problem:
+This is a feature list.
+
+Refinement:
+
+Replace with something like:
+
+“A place to remember what God is doing in your life.”
+
+OR
+
+“Where your moments with God are kept.”
+
+Key principle:
+Describe meaning, not contents.
+
+-----------------------------------
+EMPTY STATES (CRITICAL)
+-----------------------------------
+
+These are the FIRST experience for many users.
+
+They currently feel like:
+system messages
+
+They must feel like:
+gentle invitations
+
+-----------------------------------
+
+PRAYERS TAB
+
+Replace:
+“Your prayer journal is waiting.”
+
+With:
+
+“This is where your prayers will live.”
+
+Subtext:
+“When you're ready, bring something to God.”
+
+CTA:
+“Start with today’s moment”
+
+-----------------------------------
+
+REFLECTIONS TAB
+
+Replace:
+“No reflections saved yet.”
+
+With:
+
+“Your reflections will gather here.”
+
+Subtext:
+“Moments where something spoke to you… you’ll find them again.”
+
+-----------------------------------
+
+SCRIPTURES TAB
+
+Replace:
+“No scriptures saved yet.”
+
+With:
+
+“The words that stay with you will be here.”
+
+Subtext:
+“Save the ones you don’t want to forget.”
+
+-----------------------------------
+
+MEMORY TAB
+
+Replace:
+“No memory verses yet.”
+
+With:
+
+“What you carry with you will grow here.”
+
+Subtext:
+“Come back to what you’re learning by heart.”
+
+-----------------------------------
+
+SERMON NOTES TAB
+
+Replace:
+Empty/system tone
+
+With:
+
+“A place to hold what you heard.”
+
+Subtext:
+“So it doesn’t fade.”
+
+-----------------------------------
+
+Key principle:
+Empty states should feel like:
+“this will become something meaningful”
+
+-----------------------------------
+FIRST-TIME GUIDE / ONBOARDING MESSAGE
+-----------------------------------
+
+Current:
+“Everything you do in the app flows here”
+
+Problem:
+Too product-oriented
+
+Refinement:
+
+Replace with:
+
+“Over time, this becomes a record of your walk.”
+
+OR
+
+“You’ll begin to see patterns… prayers, answers, moments.”
+
+Key principle:
+No system explanation — only meaning.
+
+-----------------------------------
+SPIRITUAL LETTER (HIGH VALUE FEATURE)
+-----------------------------------
+
+This is one of your most powerful differentiators.
+
+Current:
+“You’ve been writing. There’s something to reflect on.”
+
+Close, but still slightly notification-like.
+
+Refinement:
+
+“You’ve been showing up… there’s something here for you.”
+
+Button:
+“Read what’s been forming”
+
+OR
+
+“See what’s been growing”
+
+Key principle:
+This should feel:
+deeply personal, not triggered
+
+-----------------------------------
+FLASHBACK / LOOKING BACK CARD
+-----------------------------------
+
+Already strong concept.
+
+Refinement:
+
+Instead of:
+“Looking back”
+
+Consider:
+
+“Remember this?”
+
+OR
+
+“From a little while ago…”
+
+Optional subtext:
+“You were here — look at this now.”
+
+Key principle:
+Make it feel like rediscovery.
+
+-----------------------------------
+DELETE / REMOVE ACTIONS
+-----------------------------------
+
+Current:
+“Remove?”
+
+Problem:
+Too abrupt for personal content
+
+Refinement:
+
+“Remove this entry?”
+
+Subtext:
+“You won’t be able to bring it back.”
+
+Optional softer alternative:
+
+“Let this go?”
+
+Key principle:
+Respect emotional weight of content.
+
+-----------------------------------
+EXPORT
+-----------------------------------
+
+Current:
+Functional
+
+Refinement (optional):
+
+“Download your journal”
+
+OR
+
+“Keep a copy”
+
+Key principle:
+Even utility should feel human.
+
+-----------------------------------
+GLOBAL TONE RULES
+-----------------------------------
+
+1. NO SYSTEM LANGUAGE
+- no “saved yet”
+- no “data”
+- no “flows here”
+
+2. SPEAK IN MEANING
+- memory
+- growth
+- reflection
+- journey
+- presence
+
+3. QUIET CONFIDENCE
+- no hype
+- no push
+- no urgency
+
+4. CONSISTENCY
+- same voice as devotional + guidance
+- feels like one presence across the app
+
+-----------------------------------
+FINAL STANDARD
+
+Ask of every line:
+
+Does this feel like:
+- a product explaining itself?
+
+Or:
+- a place someone would want to return to?
+
+If it feels like a product, rewrite it.
+If it feels like a place, keep it.
+
+-----------------------------------
+
+Do not redesign structure.
+Refine language, tone, and emotional positioning.
