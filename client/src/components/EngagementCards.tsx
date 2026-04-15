@@ -382,10 +382,10 @@ export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
             />
             <Button
               onClick={handleSave}
-              disabled={!text.trim() || saving}
+              disabled={saving}
               data-testid="button-save-gratitude"
               size="sm"
-              className="self-end bg-amber-600 hover:bg-amber-700 text-white"
+              className="self-end bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white font-semibold shadow-sm"
             >
               {saving ? "…" : "Save"}
             </Button>
