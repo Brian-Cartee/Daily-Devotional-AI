@@ -1225,9 +1225,9 @@ export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
                 <Bell className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[15px] font-bold text-foreground leading-snug">You started something today.</p>
+                <p className="text-[15px] font-bold text-foreground leading-snug">You spent time in the Word today.</p>
                 <p className="text-[13px] text-foreground/65 leading-relaxed mt-1">
-                  Day 2 is where the habit begins. Can we send you a gentle reminder so you don't miss it?
+                  Would you like a gentle reminder so you can return tomorrow?
                 </p>
               </div>
             </div>

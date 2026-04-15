@@ -1164,10 +1164,10 @@ export default function Devotional() {
                                 } catch { setReflectionReplySaved(true); }
                               }
                             }}
-                            placeholder="Share a thought, feeling, or a simple word…"
+                            placeholder="Start typing… what's this bringing up for you?"
                             spellCheck
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-border/60 bg-muted/30 pl-3 pr-12 pt-3 pb-10 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="w-full resize-none rounded-xl border border-border/50 bg-background/60 pl-3.5 pr-12 pt-3 pb-9 text-[14px] text-foreground placeholder:text-muted-foreground/55 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-shadow"
                           />
                           <button
                             data-testid="btn-save-reflection-reply"
@@ -1197,8 +1197,8 @@ export default function Devotional() {
                               <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
                             </svg>
                           </button>
-                          <span className="absolute bottom-3 left-3 text-[10px] text-muted-foreground/65 pointer-events-none">
-                            Enter to save · Shift+Enter for new line
+                          <span className="absolute bottom-3 left-3.5 text-[10px] text-muted-foreground/45 pointer-events-none">
+                            Even a word is enough.
                           </span>
                         </div>
                       )}
@@ -1458,25 +1458,25 @@ export default function Devotional() {
             <textarea
               value={gratitudeInput}
               onChange={(e) => setGratitudeInput(e.target.value)}
-              placeholder="My family, a quiet morning, a door that opened..."
+              placeholder="Something you're grateful for… even something small"
               spellCheck
               rows={3}
               data-testid="input-gratitude"
-              className="w-full bg-muted/30 border border-border/60 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/25 resize-none placeholder:text-muted-foreground/70 transition-shadow"
+              className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 resize-none placeholder:text-muted-foreground/55 transition-shadow"
             />
             <div className="mt-3 flex items-center gap-3">
-              <Button
-                size="sm"
+              <button
                 onClick={handleGratitudePrayer}
                 disabled={!gratitudeInput.trim() || gratitudePrayerLoading}
                 data-testid="button-generate-gratitude-prayer"
-                className="rounded-xl font-semibold"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                style={{ background: (!gratitudeInput.trim() || gratitudePrayerLoading) ? undefined : "linear-gradient(135deg, #d97706, #ea580c)", backgroundColor: (!gratitudeInput.trim() || gratitudePrayerLoading) ? "hsl(var(--muted))" : undefined }}
               >
                 {gratitudePrayerLoading
-                  ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Praying...</>
-                  : <><Heart className="w-3.5 h-3.5 mr-2" /> Generate Closing Prayer</>
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
+                  : <><Heart className="w-3.5 h-3.5" /> Carry this into prayer</>
                 }
-              </Button>
+              </button>
             </div>
 
             <AnimatePresence>
@@ -1489,7 +1489,10 @@ export default function Devotional() {
                   className="mt-6 pt-5 border-t border-border/40"
                 >
                   <PrayerText text={gratitudePrayer} />
-                  <div className="mt-4 flex items-center gap-4 flex-wrap">
+                  <p className="text-[12px] text-muted-foreground/45 italic mt-4 leading-relaxed">
+                    Hold onto that.
+                  </p>
+                  <div className="mt-3 flex items-center gap-4 flex-wrap">
                     <ShareButton
                       title={`Closing Prayer — ${verse.reference}`}
                       text={gratitudePrayer}
@@ -1522,8 +1525,8 @@ export default function Devotional() {
                 {streak && streak.currentStreak >= 7
                   ? "You've walked this path faithfully. The Word has been working in you longer than you know."
                   : streak && streak.currentStreak >= 3
-                  ? "You came back again. That matters more than you realize. Come back tomorrow — the journey continues."
-                  : "You walked the path today. The Word does its work whether you feel it or not. Come back tomorrow."}
+                  ? "You came back again. That matters more than you realize."
+                  : "You spent time in the Word today. Let it stay with you."}
               </p>
             </motion.div>
           )}
