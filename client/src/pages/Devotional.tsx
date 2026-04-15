@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,6 +58,7 @@ function PrayerText({ text }: { text: string }) {
 }
 
 export default function Devotional() {
+  const [, navigate] = useLocation();
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
   const [reflectionContent, setReflectionContent] = useState(() => getCachedReflection());
   const [reflectionLoading, setReflectionLoading] = useState(false);
@@ -1215,43 +1217,19 @@ export default function Devotional() {
                     >
                       <Heart className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        {friendShareDone ? (
-                          <p className="text-[13px] text-primary font-medium">Sent. That meant something. 🙏</p>
-                        ) : (
-                          <>
-                            <p className="text-[13px] text-foreground/80 leading-snug">
-                              Did someone come to mind while reading this?
-                            </p>
-                            <div className="flex items-center gap-4 mt-2 flex-wrap">
-                              <button
-                                data-testid="button-send-to-friend"
-                                onClick={handleSendToFriend}
-                                className="text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
-                              >
-                                Send it to them →
-                              </button>
-                              {!forTwoContent && (
-                                <button
-                                  data-testid="button-reflect-together"
-                                  onClick={handleForTwo}
-                                  disabled={forTwoLoading}
-                                  className="text-[12px] font-semibold text-primary/60 hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
-                                >
-                                  {forTwoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                                  Reflect together ↗
-                                </button>
-                              )}
-                            </div>
-                            {forTwoContent && (
-                              <div className="mt-3 pt-3 border-t border-primary/10 space-y-2">
-                                {forTwoContent.split("\n").filter(p => p.trim()).map((para, i) => (
-                                  <p key={i} className="text-[12.5px] text-foreground/75 leading-relaxed">{para}</p>
-                                ))}
-                                <ShareButton title={`Reflect Together — ${verse?.reference}`} text={forTwoContent} className="text-[11px] font-semibold mt-1" />
-                              </div>
-                            )}
-                          </>
-                        )}
+                        <p className="text-[13px] text-foreground/80 leading-snug">
+                          Did someone come to mind while reading this?
+                        </p>
+                        <p className="text-[12px] text-muted-foreground/70 leading-snug mt-1">
+                          That's often the Spirit stirring something in you. Pause and pray for them.
+                        </p>
+                        <button
+                          data-testid="button-pray-for-friend"
+                          onClick={() => navigate(`/guidance?situation=${encodeURIComponent("I want to pray for someone who came to mind while I was reading Scripture today.")}`)}
+                          className="mt-2 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                        >
+                          Pray for them →
+                        </button>
                       </div>
                       <button
                         data-testid="button-dismiss-friend-prompt"
@@ -1531,14 +1509,14 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {/* Post-prayer share nudge — appears after prayer + benediction; moment of max resonance */}
+          {/* Post-prayer prayer nudge — appears after prayer + benediction */}
           {prayerContent && !postPrayerShareDone && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
               className="rounded-2xl overflow-hidden border border-amber-500/25 bg-gradient-to-br from-amber-950/50 to-orange-950/30"
-              data-testid="post-prayer-share-card"
+              data-testid="post-prayer-friend-card"
             >
               <div className="px-5 py-5">
                 <div className="flex items-start gap-3">
@@ -1546,55 +1524,22 @@ export default function Devotional() {
                     <Heart className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-amber-200 leading-snug mb-0.5">
+                    <p className="text-[14px] font-semibold text-amber-200 leading-snug mb-1">
                       Did someone come to mind?
                     </p>
-                    <p className="text-[13px] text-amber-200/60 leading-snug">
-                      Send them the verse image — sometimes the right word finds someone at exactly the right moment.
+                    <p className="text-[13px] text-amber-200/70 leading-snug">
+                      That's often the Spirit stirring something in you. Take a moment to pray for them — even just a few words is enough.
                     </p>
-
-                    <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      <button
-                        data-testid="button-share-verse-image-post-prayer"
-                        onClick={async () => {
-                          if (!verse || sharingImage) return;
-                          setSharingImage(true);
-                          try {
-                            const { createShareImage } = await import("@/lib/shareImage");
-                            const blob = await createShareImage(verse.text, verse.reference, verseArtUrl);
-                            const file = new File([blob], "shepherds-path-verse.png", { type: "image/png" });
-                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                              await navigator.share({ files: [file], title: `${verse.reference} — Shepherd's Path` });
-                            } else {
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download = "shepherds-path-verse.png";
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }
-                            setPostPrayerShareDone(true);
-                          } catch {}
-                          setSharingImage(false);
-                        }}
-                        disabled={sharingImage}
-                        className="inline-flex items-center gap-1.5 text-[13px] font-bold text-amber-950 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 rounded-full px-4 py-1.5 transition-all shadow-sm shadow-amber-500/30 disabled:opacity-50"
-                      >
-                        {sharingImage
-                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating…</>
-                          : <><Share2 className="w-3.5 h-3.5" /> Share verse image</>}
-                      </button>
-                      <button
-                        data-testid="button-send-friend-text-post-prayer"
-                        onClick={handleSendToFriend}
-                        className="text-[12px] font-semibold text-amber-400/70 hover:text-amber-300 transition-colors"
-                      >
-                        Send as text →
-                      </button>
-                    </div>
+                    <button
+                      data-testid="button-pray-for-friend-post-prayer"
+                      onClick={() => navigate(`/guidance?situation=${encodeURIComponent("I want to pray for someone who came to mind while I was in prayer and reading Scripture today.")}`)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-amber-950 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 rounded-full px-4 py-1.5 transition-all shadow-sm shadow-amber-500/30"
+                    >
+                      Bring them to prayer →
+                    </button>
                   </div>
                   <button
-                    data-testid="button-dismiss-post-prayer-share"
+                    data-testid="button-dismiss-post-prayer-friend"
                     onClick={() => setPostPrayerShareDone(true)}
                     className="shrink-0 text-amber-500/40 hover:text-amber-400 transition-colors text-lg leading-none mt-0.5"
                     aria-label="Dismiss"
