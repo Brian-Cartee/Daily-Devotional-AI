@@ -783,6 +783,18 @@ export default function GuidancePage() {
               >
                 {canUseAi() ? (
                   <>
+                    {/* After 4+ exchanges — gentle outward nudge. App supports; doesn't replace. */}
+                    {messages.filter(m => m.role === "user").length >= 4 && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="text-[12px] text-muted-foreground/55 text-center mb-4 px-4 leading-relaxed"
+                      >
+                        This might be worth bringing to someone you trust —
+                        a pastor, a close friend.
+                      </motion.p>
+                    )}
                     <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.14em] mb-2 ml-1">Continue the conversation</p>
                     <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
                       <textarea

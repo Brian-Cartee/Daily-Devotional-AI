@@ -76,16 +76,7 @@ function ContextBridgeCard({ onClose }: { onClose: () => void }) {
           where it came from and why it matters — is worth following.
         </p>
         <p className="text-[14px] leading-[1.85] text-foreground/75">
-          If you want to keep going deeper, this is part of Shepherd's Path Pro.
-        </p>
-      </div>
-
-      <div className="rounded-2xl bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/50 dark:border-amber-700/40 px-5 py-5 space-y-1.5">
-        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60">
-          Pro includes
-        </p>
-        <p className="text-[14px] text-amber-900/80 dark:text-amber-200/70 leading-relaxed">
-          Unlimited verse context · daily curated sermons · unlimited reflections and prayers
+          Pro simply continues this — as far as you want to go.
         </p>
       </div>
 

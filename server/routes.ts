@@ -699,7 +699,7 @@ When a verse speaks to human worth, dignity, or being known — being formed, be
 
 When a verse carries hope in the middle of darkness — not easy comfort, but the kind that has earned the right to speak — write it for the person who genuinely cannot see how things could be different. The steadiness of biblical hope is not pretending the darkness isn't real. It is knowing something the darkness doesn't.
 
-Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${langNote2}`;
+Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${daysWithApp2 >= 30 ? `\n\nDepth note — this person has walked with this daily practice for ${daysWithApp2} days. The structure is familiar to them — that familiarity is part of the value, not a problem to solve. Do not add novelty or surprise. Instead, go deeper. Trust them with the harder angle on this scripture — the interpretation that requires more. The less obvious entry point. They don't need to be eased in anymore.` : ""}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
@@ -1448,6 +1448,12 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       ? `\n\nNight context: It is the middle of the night and this person has opened Shepherd's Path at this late hour. Something brought them here when the world is asleep. This changes how you begin. Your first paragraph should feel like someone quietly sitting down beside them — not starting a lesson, not rushing to scripture or a path forward. Simply be fully present with the fact that it is late and they are here. Let your unhurried tone carry that weight without announcing it. Be slower. Be warmer. Hold presence before you hold scripture. If they are in pain, do not hurry them toward resolution.`
       : "";
 
+    // #6 — Deep conversation note: after 4+ exchanges, gently point beyond the app once
+    const conversationDepth = messages?.length ?? 0;
+    const deepConversationNote = conversationDepth >= 8
+      ? `\n\nConversation depth — this person has been talking with you for a while now. You've earned real trust in this conversation. At some natural point in your response — not forced, not as a closing formula — gently point them beyond this conversation once. Something like: "This might be worth bringing to someone you trust — a pastor, a close friend." Or: "Bring this into your own prayer beyond this moment too." Say it where it fits, then let it rest. The app supports spiritual life. It does not replace it.`
+      : "";
+
     const systemMsg = `You are a warm, deeply compassionate pastoral guide at Shepherd's Path. Someone has just opened up about what they are going through.
 
 Your first and primary job is to make this person feel genuinely understood — not managed, not fixed, not redirected. People can feel the difference between someone who is present with them and someone who is waiting to give advice. Be present first.
@@ -1477,7 +1483,7 @@ Rules:
 — No hollow openers: "I hear you," "That sounds really hard," "Thank you for sharing"
 — No clichés: "lean into," "God's plan," "His timing is perfect," "you are not alone," "let go and let God"
 — Speak plainly and warmly — like a wise friend who also happens to know scripture deeply and isn't afraid of hard questions
-— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}`;
+— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))

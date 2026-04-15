@@ -91,7 +91,7 @@ function SermonBridgeCard({ sermon }: { sermon: Sermon }) {
           className="text-[14px] leading-[1.85]"
           style={{ color: "rgba(255,255,255,0.55)", fontFamily: "'Georgia', serif" }}
         >
-          If you'd like to keep receiving one each day, you can continue with Pro.
+          If you want to keep receiving one — just like this — that's what Pro is for.
         </p>
       </div>
 
