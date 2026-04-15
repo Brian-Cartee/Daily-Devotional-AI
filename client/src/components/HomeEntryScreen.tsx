@@ -29,11 +29,12 @@ const DAILY_VERSES = [
 ];
 
 const HEART_EMOTIONS = [
-  { label: "Peace", icon: "🕊️", color: "#3b82f6", desc: "I need stillness", verse: { text: "Peace I leave with you; my peace I give you.", ref: "John 14:27" } },
-  { label: "Guidance", icon: "🧭", color: "#8b5cf6", desc: "I need direction", verse: { text: "Your word is a lamp for my feet, a light on my path.", ref: "Psalm 119:105" } },
-  { label: "Strength", icon: "⚡", color: "#f59e0b", desc: "I'm feeling weak", verse: { text: "The Lord is my strength and my shield; my heart trusts in him.", ref: "Psalm 28:7" } },
-  { label: "Grief", icon: "💧", color: "#6366f1", desc: "I'm hurting", verse: { text: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.", ref: "Psalm 34:18" } },
-  { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks", verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },
+  { label: "Peace",     icon: "🕊️", color: "#3b82f6", desc: "Seeking stillness",       verse: { text: "Peace I leave with you; my peace I give you.", ref: "John 14:27" } },
+  { label: "Joy",       icon: "☀️", color: "#f97316", desc: "My heart is full",         verse: { text: "In your presence there is fullness of joy; at your right hand are pleasures forevermore.", ref: "Psalm 16:11" } },
+  { label: "Guidance",  icon: "🧭", color: "#8b5cf6", desc: "Looking for direction",    verse: { text: "Your word is a lamp for my feet, a light on my path.", ref: "Psalm 119:105" } },
+  { label: "Strength",  icon: "⚡", color: "#f59e0b", desc: "I'm feeling weak",         verse: { text: "The Lord is my strength and my shield; my heart trusts in him.", ref: "Psalm 28:7" } },
+  { label: "Grief",     icon: "💧", color: "#6366f1", desc: "I'm hurting",              verse: { text: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.", ref: "Psalm 34:18" } },
+  { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks",    verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },
 ];
 
 function getTodayStr() {
@@ -183,12 +184,15 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
-    if (selected === null) return;
     setSubmitted(true);
   };
 
-  if (submitted && selected !== null) {
-    const emotion = HEART_EMOTIONS[selected];
+  if (submitted) {
+    const emotion = selected !== null ? HEART_EMOTIONS[selected] : null;
+    const displayVerse = emotion ? emotion.verse : getDayVerse();
+    const displayIcon = emotion ? emotion.icon : "✨";
+    const displayLabel = emotion ? "A word for your heart" : "A word for today";
+
     return (
       <motion.div
         key="result"
@@ -197,21 +201,21 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
         className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center"
         style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
       >
-        <div className="text-5xl mb-6">{emotion.icon}</div>
+        <div className="text-5xl mb-6">{displayIcon}</div>
         <p className="text-white/50 text-xs tracking-widest uppercase mb-4">
-          A word for your heart
+          {displayLabel}
         </p>
         <p
           className="text-white text-xl leading-relaxed mb-2"
           style={{ fontFamily: "'Georgia', serif" }}
         >
-          "{emotion.verse.text}"
+          "{displayVerse.text}"
         </p>
         <p className="text-white/45 text-sm mb-8" style={{ fontFamily: "'Georgia', serif" }}>
-          — {emotion.verse.ref}
+          — {displayVerse.ref}
         </p>
         <button
-          onClick={() => shareVerse(emotion.verse.text, emotion.verse.ref)}
+          onClick={() => shareVerse(displayVerse.text, displayVerse.ref)}
           className="flex items-center justify-center gap-2 text-white/50 text-sm mb-4 py-2 px-4 rounded-xl transition-opacity hover:text-white/70"
           data-testid="button-heart-share"
         >
@@ -255,7 +259,7 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
           >
             What's on your heart right now?
           </h1>
-          <p className="text-white/40 text-sm">Your answer shapes your time with God today.</p>
+          <p className="text-white/40 text-sm">You can begin wherever you are.</p>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -295,13 +299,12 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
 
         <button
           onClick={handleSubmit}
-          disabled={selected === null}
           className="mt-3 w-full py-4 rounded-2xl text-white font-medium text-base transition-all duration-200"
           style={{
-            background: selected !== null ? "linear-gradient(135deg, #7A018D, #442f74)" : "rgba(255,255,255,0.08)",
-            opacity: selected !== null ? 1 : 0.5,
+            background: selected !== null ? "linear-gradient(135deg, #7A018D, #442f74)" : "rgba(255,255,255,0.12)",
             boxShadow: selected !== null ? "0 8px 32px rgba(122,1,141,0.35)" : "none",
           }}
+          data-testid="button-bring-me-a-word"
         >
           Bring me a word
         </button>
