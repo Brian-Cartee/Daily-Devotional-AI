@@ -905,7 +905,7 @@ function getMilestoneContent(days: number) {
   if (days >= 60) return {
     label: "Sixty days",
     headline: "A rhythm, not a routine.",
-    body: "Two months of coming back. You know the pattern now — the verse, the quiet, the prayer. That's what faithfulness looks like. Keep walking.",
+    body: "Two months of returning. Is there anything you're carrying differently now? Not better — differently. That's what this kind of walking does.",
     gradient: "from-violet-400 via-primary to-indigo-400",
     border: "border-violet-200 dark:border-violet-800",
     bg: "bg-violet-50/60 dark:bg-violet-950/30",

@@ -1413,7 +1413,13 @@ export default function Devotional() {
               )}
               {prayerContent && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
+                  <p className="text-[12px] text-muted-foreground/50 italic mb-4 leading-relaxed">
+                    You can take this as your own — or simply let it point you toward your own words.
+                  </p>
                   <PrayerText text={prayerContent} />
+                  <p className="text-[12px] text-muted-foreground/40 italic mt-5 leading-relaxed">
+                    Sit with this for a moment. Stay here as long as you need.
+                  </p>
                   {!prayerLoading && (
                     <div className="mt-4 flex items-center gap-4">
                       <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
