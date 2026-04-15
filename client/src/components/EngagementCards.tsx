@@ -912,6 +912,95 @@ export function NotificationNudgeCard() {
   );
 }
 
+// ── WalkMilestoneCard — grounding acknowledgment for 30/60/100 day users ────────
+const MILESTONE_DAYS = [30, 60, 100];
+
+function getMilestoneContent(days: number) {
+  if (days >= 100) return {
+    label: "One hundred days",
+    headline: "A hundred mornings.",
+    body: "A hundred days of returning. This is no longer something you started. It's something you do. Walk on.",
+    gradient: "from-amber-400 via-yellow-400 to-amber-500",
+    border: "border-amber-200 dark:border-amber-800",
+    bg: "bg-amber-50/60 dark:bg-amber-950/30",
+    labelColor: "text-amber-700 dark:text-amber-400",
+    xColor: "text-amber-400 hover:text-amber-600",
+  };
+  if (days >= 60) return {
+    label: "Sixty days",
+    headline: "A rhythm, not a routine.",
+    body: "Two months of coming back. You know the pattern now — the verse, the quiet, the prayer. That's what faithfulness looks like. Keep walking.",
+    gradient: "from-violet-400 via-primary to-indigo-400",
+    border: "border-violet-200 dark:border-violet-800",
+    bg: "bg-violet-50/60 dark:bg-violet-950/30",
+    labelColor: "text-primary dark:text-violet-400",
+    xColor: "text-violet-400 hover:text-violet-600",
+  };
+  return {
+    label: "Thirty days",
+    headline: "This has become something.",
+    body: "Most people try and step away. You kept walking. That's not achievement — it's faithfulness. The path is familiar now. That's how it's supposed to feel.",
+    gradient: "from-sky-400 via-blue-400 to-indigo-400",
+    border: "border-sky-200 dark:border-sky-800",
+    bg: "bg-sky-50 dark:bg-sky-950/40",
+    labelColor: "text-sky-600 dark:text-sky-400",
+    xColor: "text-sky-400 hover:text-sky-600",
+  };
+}
+
+export function WalkMilestoneCard({ daysWithApp }: { daysWithApp: number }) {
+  const [visible, setVisible] = useState(false);
+  const milestoneDay = MILESTONE_DAYS.slice().reverse().find(m => daysWithApp >= m) ?? 0;
+
+  useEffect(() => {
+    if (!milestoneDay) return;
+    const key = `sp_walk_milestone_${milestoneDay}`;
+    if (localStorage.getItem(key)) return;
+    // Only show for the first 3 days after hitting a milestone
+    const daysSince = daysWithApp - milestoneDay;
+    if (daysSince > 3) return;
+    setVisible(true);
+  }, [milestoneDay, daysWithApp]);
+
+  function dismiss() {
+    const key = `sp_walk_milestone_${milestoneDay}`;
+    localStorage.setItem(key, "1");
+    setVisible(false);
+  }
+
+  if (!visible) return null;
+  const content = getMilestoneContent(daysWithApp);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        {...fadeIn}
+        data-testid="card-walk-milestone"
+        className={`relative rounded-2xl border ${content.border} ${content.bg} px-5 py-4 shadow-sm overflow-hidden`}
+      >
+        <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${content.gradient}`} />
+        <button
+          onClick={dismiss}
+          data-testid="button-dismiss-milestone"
+          aria-label="Dismiss"
+          className={`absolute top-3 right-3 transition-colors ${content.xColor}`}
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <p className={`text-[12px] font-bold uppercase tracking-widest mb-1.5 pr-6 ${content.labelColor}`}>
+          {content.label}
+        </p>
+        <p className="text-[15px] font-bold text-foreground leading-snug mb-1">
+          {content.headline}
+        </p>
+        <p className="text-[13px] text-foreground/70 leading-relaxed">
+          {content.body}
+        </p>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 // ── FirstDayCard — shown after Day 1 devotional to convert into Day 2 ──────────
 const FIRSTDAY_KEY = "sp_firstday_nudge_done";
 

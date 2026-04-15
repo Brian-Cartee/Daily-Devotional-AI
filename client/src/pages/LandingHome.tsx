@@ -7,8 +7,6 @@ import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
-import { NamePrompt } from "@/components/NamePrompt";
-import { hasBeenPrompted } from "@/lib/userName";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
@@ -30,6 +28,7 @@ import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
   CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
   FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
+  WalkMilestoneCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
@@ -461,7 +460,6 @@ export default function LandingHome() {
   const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
   const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
   const [expanded, setExpanded] = useState(false);
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
@@ -572,11 +570,7 @@ export default function LandingHome() {
 
   const handleDismissWelcome = () => {
     dismissWelcome();
-    if (!hasBeenPrompted()) {
-      setTimeout(() => setShowNamePrompt(true), 400);
-    } else {
-      focusHeroInput();
-    }
+    focusHeroInput();
   };
 
   return (
@@ -588,9 +582,6 @@ export default function LandingHome() {
         {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       {showEntryScreen && <HomeEntryScreen onDismiss={() => setShowEntryScreen(false)} />}
-      <AnimatePresence>
-        {showNamePrompt && <NamePrompt onDone={() => { setShowNamePrompt(false); navigate("/guidance"); }} />}
-      </AnimatePresence>
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
@@ -699,6 +690,9 @@ export default function LandingHome() {
 
           {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
           <LateNightBannerCard />
+
+          {/* Walk milestone — grounding acknowledgment at 30/60/100 days */}
+          <WalkMilestoneCard daysWithApp={getRelationshipAge()} />
 
           {/* Returning-user grace card */}
           <ReturningUserCard />

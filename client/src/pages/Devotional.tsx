@@ -513,8 +513,7 @@ export default function Devotional() {
     if (!verse) return;
     const name = getUserName();
     const from = name ? `${name} was thinking of you` : "Someone was thinking of you";
-    const appLine = "\n\nThey use an app called Shepherd's Path for daily devotionals — free to download at shepherdspathai.com";
-    const text = `${from} while reading today's verse.\n\n"${verse.text}"\n— ${verse.reference}${appLine}`;
+    const text = `${from} while reading today's verse.\n\n"${verse.text}"\n— ${verse.reference}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Someone was thinking of you today", text });
