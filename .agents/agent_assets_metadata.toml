@@ -503,3 +503,9 @@ id = "APLr9iSb-YzC_yOeeHXfF"
 uri = "file://screenshots/09-salvation.jpg"
 type = "image"
 title = "08 · Beginning with Jesus"
+
+[[outputs]]
+id = "rKY22Rk5sgRa8cCkn0VKT"
+uri = "file://screenshots/shepherds-path-screenshots.zip"
+type = "unspecified"
+title = "Shepherd’s Path — Screenshots + Prompt.zip"
