@@ -443,3 +443,9 @@ id = "iLOuu10CTMTiAGgi1NUJB"
 uri = "file://attached_assets/Shepherds_Path_Design_Brief_Round2.pdf"
 type = "pdf"
 title = "Shepherd's Path — Design Brief Supplement (Round 2)"
+
+[[outputs]]
+id = "vfG9gd3Z12DFrcdQ9F6Dt"
+uri = "file://SHEPHERD_CONTEXT.md"
+type = "text"
+title = "Shepherd's Path — App Context Document"
