@@ -512,7 +512,7 @@ export default function Devotional() {
     const prayerText = prayerContent
       ? "\n\n🙏 " + prayerContent.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim()
       : "";
-    const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd's Path`;
+    const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd's Path\nwww.shepherdspathai.com`;
     if (navigator.share) {
       try { await navigator.share({ title: `Today's Word: ${verse.reference}`, text }); } catch { }
     } else {
@@ -560,7 +560,7 @@ export default function Devotional() {
     setSharingImage(false);
   };
 
-  const APP_URL = "https://daily-devotional-ai.replit.app";
+  const APP_URL = "https://www.shepherdspathai.com";
 
   const buildShareText = () => {
     if (!verse) return "";
@@ -574,7 +574,7 @@ export default function Devotional() {
 
   const shareOnFacebook = () => {
     const text = encodeURIComponent(buildShareText());
-    window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=https://daily-devotional-ai.replit.app`, "_blank", "noopener,width=600,height=450");
+    window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=${encodeURIComponent(APP_URL)}`, "_blank", "noopener,width=600,height=450");
   };
 
   const shareOnWhatsApp = () => {
