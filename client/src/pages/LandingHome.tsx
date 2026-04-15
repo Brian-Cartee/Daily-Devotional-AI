@@ -1151,10 +1151,10 @@ export default function LandingHome() {
             <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about-footer">
               About
             </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors opacity-50" data-testid="link-privacy-footer">
+            <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy-footer">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors opacity-50" data-testid="link-terms-footer">
+            <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
               Terms
             </Link>
             <Link href="/stories" className="hover:text-foreground transition-colors" data-testid="link-stories-footer">
