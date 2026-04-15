@@ -1132,8 +1132,8 @@ export default function Devotional() {
 
                   {/* ── Reflection reply box ─────────────────────── */}
                   {!reflectionLoading && reflectionContent && (
-                    <div className="mt-4 pt-4 border-t border-border/30">
-                      <p className="text-[12px] font-semibold text-foreground/70 mb-2 leading-none">How does this speak to you today?</p>
+                    <div className="mt-5 pt-4 border-t border-border/20">
+                      <p className="text-[13px] font-medium text-foreground/65 mb-3 leading-snug">What's this bringing up for you?</p>
                       {reflectionReplySaved ? (
                         <div className="flex items-center gap-2 py-2 text-primary">
                           <Check className="w-4 h-4" />
@@ -1164,10 +1164,10 @@ export default function Devotional() {
                                 } catch { setReflectionReplySaved(true); }
                               }
                             }}
-                            placeholder="Start typing… what's this bringing up for you?"
+                            placeholder="Start typing… even a word is enough."
                             spellCheck
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-border/50 bg-background/60 pl-3.5 pr-12 pt-3 pb-9 text-[14px] text-foreground placeholder:text-muted-foreground/55 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-shadow"
+                            className="w-full resize-none rounded-xl border border-border/50 bg-background/60 pl-3.5 pr-12 pt-3.5 pb-9 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25 transition-all"
                           />
                           <button
                             data-testid="btn-save-reflection-reply"
@@ -1197,8 +1197,8 @@ export default function Devotional() {
                               <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
                             </svg>
                           </button>
-                          <span className="absolute bottom-3 left-3.5 text-[10px] text-muted-foreground/45 pointer-events-none">
-                            Even a word is enough.
+                          <span className="absolute bottom-3 left-3.5 text-[10px] text-muted-foreground/40 pointer-events-none italic">
+                            You don't have to have the right words.
                           </span>
                         </div>
                       )}
@@ -1426,17 +1426,17 @@ export default function Devotional() {
               )}
               {prayerContent && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                  <p className="text-[12px] text-muted-foreground/50 italic mb-4 leading-relaxed">
-                    You can take this as your own — or simply let it point you toward your own words.
+                  <p className="text-[12px] text-muted-foreground/50 italic mb-5 leading-relaxed">
+                    You can take this as your own — or let it guide your words.
                   </p>
                   <PrayerText text={prayerContent} />
-                  <p className="text-[12px] text-muted-foreground/40 italic mt-5 leading-relaxed">
-                    Sit with this for a moment. Stay here as long as you need.
+                  <p className="text-[12px] text-muted-foreground/40 italic mt-6 leading-relaxed">
+                    Stay here for a moment if you need to.
                   </p>
                   {!prayerLoading && (
                     <div className="mt-4 flex items-center gap-4">
                       <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
-                      <ListenButton text={prayerContent} label="Listen" />
+                      <ListenButton text={prayerContent} label="Listen quietly" />
                     </div>
                   )}
                 </motion.div>
@@ -1453,16 +1453,16 @@ export default function Devotional() {
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={4} label="Thank Him" />
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
-              What are you grateful for today?
+              What feels like a gift today?
             </p>
             <textarea
               value={gratitudeInput}
               onChange={(e) => setGratitudeInput(e.target.value)}
-              placeholder="Something you're grateful for… even something small"
+              placeholder="Even something small…"
               spellCheck
               rows={3}
               data-testid="input-gratitude"
-              className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 resize-none placeholder:text-muted-foreground/55 transition-shadow"
+              className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3.5 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25 resize-none placeholder:text-muted-foreground/50 transition-all"
             />
             <div className="mt-3 flex items-center gap-3">
               <button
@@ -1474,7 +1474,7 @@ export default function Devotional() {
               >
                 {gratitudePrayerLoading
                   ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
-                  : <><Heart className="w-3.5 h-3.5" /> Carry this into prayer</>
+                  : <><Heart className="w-3.5 h-3.5" /> Close with a prayer</>
                 }
               </button>
             </div>
