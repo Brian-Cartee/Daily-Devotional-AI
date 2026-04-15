@@ -833,11 +833,11 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
 
           </motion.div>
 
-        </div>
+          {/* Subscribe — shown at bottom */}
+          <div className="mt-6">
+            <InlineSubscribeToggle />
+          </div>
 
-        {/* Subscribe — shown at bottom */}
-        <div className="max-w-2xl mx-auto mt-6">
-          <InlineSubscribeToggle />
         </div>
       </main>
 
