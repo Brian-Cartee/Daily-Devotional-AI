@@ -455,6 +455,117 @@ const COMMITMENT_POINTS = [
   "Built for daily faithfulness — small habits that, over time, change everything",
 ];
 
+const FAQ_ITEMS = [
+  {
+    q: "What is Shepherd's Path?",
+    a: "It's a quiet companion for your faith. Not a Bible app or a content platform — a place designed to meet you where you are and walk with you toward a deeper relationship with God. Each part of the app serves a different moment: something to receive, something to express, something to understand.",
+  },
+  {
+    q: "Do I need to know anything about the Bible to start?",
+    a: "Not at all. Many people who find their way here are curious, skeptical, or returning after a long time away. You don't need any background. There's no entry requirement — just begin where you are.",
+  },
+  {
+    q: "Is it free?",
+    a: "Yes. The Daily Devotional, Guidance, Bible reading, Journeys, and Journal are all free. A Pro option exists for those who want to go deeper — but the core experience is and will remain free.",
+  },
+  {
+    q: "What is the Daily Devotional?",
+    a: "Each day, a verse is waiting for you. Not a lecture — something to sit with. You can read it, listen to it, or simply let it rest in you. It's the same for everyone that day. It takes as long as you need.",
+  },
+  {
+    q: "What is Guidance?",
+    a: "A quiet place to bring what's on your heart. You share what's weighing on you — honestly, without filtering — and receive scripture and a written prayer shaped for that moment. It's not advice. It's presence.",
+  },
+  {
+    q: "What are Journeys?",
+    a: "Guided paths through Scripture shaped around seasons of life, questions you're carrying, and themes that matter. You don't choose a program — you step into something and walk through it at your own pace. Each journey is 7 passages long.",
+  },
+  {
+    q: "What is the Journal for?",
+    a: "A private place to hold what God is doing in your life. Prayers you've prayed, things that have spoken to you, words you don't want to forget. It's not designed to be productive — it's designed to be personal. It becomes more meaningful over time.",
+  },
+  {
+    q: 'What does "Explore Scripture" do?',
+    a: "Bring any question, passage, or thing you're wondering about — and it will find what Scripture says about it. It's understanding, not searching. You can type something as open as 'I feel like I've failed' or as specific as a chapter and verse.",
+  },
+  {
+    q: 'What is "Bible in a Year"?',
+    a: "A daily path through all of Scripture, broken into manageable readings. You follow the plan at your own pace — there's no pressure to stay on a schedule. If you miss a day, you simply continue from where you left off.",
+  },
+  {
+    q: "Do I need to create an account?",
+    a: "No. Shepherd's Path doesn't require a login. Your experience — your journal, your progress, your preferences — is saved privately to your device. Nothing is tied to a name, email, or profile unless you choose to subscribe to the daily verse.",
+  },
+  {
+    q: "Is my journal private?",
+    a: "Yes. Your prayers and reflections are stored locally on your device. We cannot read them, and they are never sent to our servers. What you write stays with you.",
+  },
+  {
+    q: "What is Pro?",
+    a: "Pro unlocks deeper access — more Guidance conversations, expanded Journeys, and the ability to listen to any passage. It supports the work of keeping the app free for everyone else. There's no pressure to upgrade; the free experience is complete on its own.",
+  },
+  {
+    q: "Is there a mobile app?",
+    a: 'Yes. Shepherd\'s Path is available on iOS through the App Store. An Android version is coming soon. You can also add it to your home screen from your browser — tap the share button and choose "Add to Home Screen" — for a native app feel.',
+  },
+  {
+    q: "Where do I begin?",
+    a: "Wherever feels right. Most people start with the Devotional — it's the gentlest entry point. Or bring something to Guidance. Or open a Journey. There's no wrong door. The app is designed so any place you start is the right place.",
+  },
+];
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="px-0 mb-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+        <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Questions people ask</p>
+        <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/60 to-transparent" />
+      </div>
+      <div className="space-y-1">
+        {FAQ_ITEMS.map((item, i) => (
+          <div key={i} className="border border-border/40 rounded-2xl overflow-hidden bg-card/40">
+            <button
+              data-testid={`faq-toggle-${i}`}
+              onClick={() => setOpen(open === i ? null : i)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+            >
+              <span className="text-[13px] font-semibold text-foreground leading-snug">{item.q}</span>
+              <motion.div
+                animate={{ rotate: open === i ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="shrink-0"
+              >
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </motion.div>
+            </button>
+            <AnimatePresence initial={false}>
+              {open === i && (
+                <motion.div
+                  key="answer"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <p
+                    data-testid={`faq-answer-${i}`}
+                    className="px-4 pb-4 text-[13px] text-muted-foreground leading-relaxed"
+                  >
+                    {item.a}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LandingHome() {
   const [, navigate] = useLocation();
   const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
@@ -1019,6 +1130,8 @@ export default function LandingHome() {
               </span>
             ))}
           </div>
+
+          <FaqSection />
 
           {/* Divider */}
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
