@@ -1,0 +1,61 @@
+Core Principle (Non-Negotiable)
+All generated content must be treated as shared session context, not isolated outputs.
+Every feature must ask:
+👉 “What has this user already experienced, and how do I build on it?”
+🧠 System Requirements
+1. Persistent Session Context
+Maintain a structured session object that includes:
+Current verse (ID + text)
+Reflection content
+Generated prayer
+User input (gratitude, struggles, etc.)
+Any prior AI responses
+Active journey state (if applicable)
+This context should persist throughout the session and be accessible to all components.
+2. Context Injection into AI Prompts
+Every AI interaction must include relevant prior context:
+Reflection → included in Prayer generation
+Prayer → included in “Understand This”
+Talk It Through → influences all downstream responses
+Journal → optionally reinforces personalization
+👉 The AI should never operate on just the current prompt alone
+3. Continuity of Language
+All follow-up experiences should acknowledge prior steps:
+Instead of:
+blank input / neutral start
+Use:
+“You’ve reflected and prayed through [verse] today… go deeper whenever you’re ready.”
+4. No Redundant Generation
+Prevent duplicate or disconnected outputs:
+If a prayer already exists → deepen, extend, or personalize it further
+Do NOT generate a new unrelated version unless explicitly requested
+5. Feature Integration Rule
+Before any feature renders or generates content, it must check:
+What has the user already received in this session?
+Then:
+How should this feature build on that?
+6. Graceful Fallback
+If session context is missing:
+Do NOT default to cold or generic responses
+Instead:
+Acknowledge gently
+Re-anchor to the verse or known state
+🎯 Desired Outcome
+The entire app should feel like:
+One continuous conversation
+One guided spiritual experience
+One voice walking with the user
+NOT:
+Separate tools
+Reset interactions
+Isolated features
+🔥 Product Standard
+If any screen or feature feels like “starting over,” it is a failure of the system.
+✝️ Emotional Goal
+Every interaction should reinforce:
+You are seen
+You are known
+You are being guided
+This is connected to your real life
+🧠 Final Instruction
+Design and implement all current and future features with session continuity as a foundational requirement, not an enhancement.
