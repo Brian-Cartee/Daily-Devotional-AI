@@ -22,6 +22,10 @@ import { scheduleDailySms } from "./smsScheduler";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
 
+// Daily sermon cache — key: "YYYY-MM-DD:verseId", value: sermon result object
+// One sermon per verse per day; cleared on server restart (fine — sessionStorage handles client-side persistence)
+const dailySermonCache = new Map<string, any>();
+
 // In-memory TTS cache — key: "voice::text_hash", value: Buffer of mp3 bytes
 // Capped to prevent unbounded memory growth
 const MAX_TTS_CACHE = 120;
@@ -3055,6 +3059,120 @@ ${historyNote}`;
     } catch (err) {
       console.error("[admin] analytics error:", err);
       res.status(500).json({ message: "Failed to load analytics." });
+    }
+  });
+
+  // Daily sermon — one curated full sermon per day, anchored to verse + reflection context
+  app.post("/api/sermon/daily", async (req, res) => {
+    try {
+      const { verseId, date, reflectionContext } = req.body as {
+        verseId: number;
+        date?: string;
+        reflectionContext?: string;
+      };
+
+      const dateKey = date || new Date().toISOString().slice(0, 10);
+      const cacheKey = `${dateKey}:${verseId}`;
+
+      if (dailySermonCache.has(cacheKey)) {
+        return res.json(dailySermonCache.get(cacheKey));
+      }
+
+      const verse = await storage.getVerseById(verseId);
+      if (!verse) return res.json({ found: false });
+
+      // Step 1: Generate theme, framing text, and search query via OpenAI
+      const analysisRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        max_tokens: 400,
+        messages: [
+          {
+            role: "system",
+            content: `You are curating a single full-length sermon for someone who just completed their daily devotional. Return JSON:
+{
+  "theme": "2–4 words describing the sermon theme (e.g. 'identity in Christ', 'trusting God while waiting')",
+  "searchQuery": "a precise YouTube search for a full sermon (20+ minutes). Always include the word 'sermon' and target one specific trusted preacher or ministry: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Tony Evans, Steven Furtick, Priscilla Shirer, Jackie Hill Perry, John Piper, Christine Caine, Elevation Church, Hillsong Church",
+  "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this sermon was chosen for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them. Never mention AI, algorithm, or technology."
+}`,
+          },
+          {
+            role: "user",
+            content: `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\n\nThe reflection that landed for them today:\n"${reflectionContext.slice(0, 500)}"` : ""}\n\nFind a sermon that will deepen what they just received and close the loop on today.`,
+          },
+        ],
+      });
+
+      const analysis = JSON.parse(analysisRes.choices[0]?.message?.content || "{}");
+      if (!analysis.searchQuery) return res.json({ found: false });
+
+      // Step 2: YouTube search — long videos, embeddable, trusted channels ranked first
+      const ytKey = process.env.YOUTUBE_API_KEY;
+      if (!ytKey) return res.json({ found: false });
+
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=8&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=long&videoEmbeddable=true`;
+      const ytRes = await fetch(searchUrl);
+      const ytData = (await ytRes.json()) as any;
+
+      if (!ytData.items?.length) return res.json({ found: false });
+
+      const trustedChannels = [
+        "tim keller", "gospel in life", "louie giglio", "passion city", "elevation church",
+        "life church", "village church", "desiring god", "francis chan", "tony evans",
+        "david platt", "crossroads", "hillsong", "beth moore", "priscilla shirer",
+        "christine caine", "craig groeschel", "steven furtick", "jackie hill perry",
+        "matt chandler", "john piper", "the village church",
+      ];
+      const ranked = [...ytData.items].sort((a: any, b: any) => {
+        const aName = (a.snippet?.channelTitle || "").toLowerCase();
+        const bName = (b.snippet?.channelTitle || "").toLowerCase();
+        const aMatch = trustedChannels.some(c => aName.includes(c)) ? 0 : 1;
+        const bMatch = trustedChannels.some(c => bName.includes(c)) ? 0 : 1;
+        return aMatch - bMatch;
+      });
+
+      const video = ranked[0];
+      const videoId = video.id.videoId;
+      const snippet = video.snippet;
+
+      // Step 3: Get duration
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
+      const detailsRes = await fetch(detailsUrl);
+      const detailsData = (await detailsRes.json()) as any;
+      let duration = "";
+      if (detailsData.items?.[0]) {
+        const iso = detailsData.items[0].contentDetails.duration;
+        const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (match) {
+          const h = match[1] ? `${match[1]}:` : "";
+          const m = match[2] ? match[2].padStart(h ? 2 : 1, "0") : "0";
+          const s = match[3] ? match[3].padStart(2, "0") : "00";
+          duration = `${h}${m}:${s}`;
+        }
+      }
+
+      const result = {
+        found: true,
+        sermon: {
+          videoId,
+          title: snippet.title,
+          channel: snippet.channelTitle,
+          thumbnail: snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url,
+          duration,
+          theme: analysis.theme || "",
+          framing: analysis.framing || "",
+        },
+      };
+
+      dailySermonCache.set(cacheKey, result);
+      if (dailySermonCache.size > 20) {
+        dailySermonCache.delete(dailySermonCache.keys().next().value!);
+      }
+
+      return res.json(result);
+    } catch (err) {
+      console.error("[sermon/daily] error:", err);
+      return res.json({ found: false });
     }
   });
 

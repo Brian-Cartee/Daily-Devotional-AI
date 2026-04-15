@@ -31,6 +31,7 @@ import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
 import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer } from "@/lib/devotionalSession";
+import { DailySermonCard } from "@/components/DailySermonCard";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -1545,6 +1546,17 @@ export default function Devotional() {
               />
             </div>
           </div>
+
+          {/* Daily sermon — one curated message per day, appears after devotional is complete */}
+          {reflectionContent && (
+            <div className="px-4">
+              <DailySermonCard
+                verseId={verse.id}
+                verseReference={verse.reference}
+                reflectionContent={reflectionContent}
+              />
+            </div>
+          )}
 
           {/* Day 1 → Day 2 hook — shown to first-day users after prayer loads */}
           <FirstDayCard isFirstDay={streak?.currentStreak === 1 && !!prayerContent} />
