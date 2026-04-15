@@ -1031,29 +1031,29 @@ export default function LandingHome() {
             <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about-footer">
               About
             </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy-footer">
+            <Link href="/privacy" className="hover:text-foreground transition-colors opacity-50" data-testid="link-privacy-footer">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
+            <Link href="/terms" className="hover:text-foreground transition-colors opacity-50" data-testid="link-terms-footer">
               Terms
             </Link>
             <Link href="/stories" className="hover:text-foreground transition-colors" data-testid="link-stories-footer">
               Stories
             </Link>
-            <Link href="/store" className="hover:text-foreground transition-colors font-semibold text-primary/80" data-testid="link-store-footer">
-              🛍️ Store
+            <Link href="/store" className="hover:text-foreground transition-colors" data-testid="link-store-footer">
+              Store
             </Link>
             <Link href="/reading-plans" className="hover:text-foreground transition-colors" data-testid="link-plans-footer">
               Reading Plans
             </Link>
             <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-600/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
-              ✝ Beginning with Jesus
+              Beginning with Jesus
             </Link>
             <Link href="/prayer-wall" className="hover:text-foreground transition-colors" data-testid="link-prayer-wall-footer">
-              🙏 Prayer Wall
+              Prayer Wall
             </Link>
             <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
-              🎁 The Greatest Gift
+              The Greatest Gift
             </Link>
             <Link href="/trivia" className="hover:text-foreground transition-colors" data-testid="link-trivia-footer">
               Bible Trivia

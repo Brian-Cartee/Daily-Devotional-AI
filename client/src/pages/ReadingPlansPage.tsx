@@ -140,12 +140,8 @@ export default function ReadingPlansPage() {
   };
 
   useEffect(() => {
-    // Scroll today's reading into view with a short delay
-    const t = setTimeout(() => {
-      todayRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 400);
-    return () => clearTimeout(t);
-  }, [selectedPlanId]);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   const fadeUp = (delay = 0) => ({
     initial: { opacity: 0, y: 12 },

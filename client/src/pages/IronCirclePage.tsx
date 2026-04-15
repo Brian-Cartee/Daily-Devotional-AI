@@ -461,8 +461,8 @@ export default function IronCirclePage() {
       {/* Hero */}
       <div className="relative pt-14">
         <div
-          className="w-full flex flex-col items-center justify-end pb-8 pt-8 text-center px-6 relative"
-          style={{ background: "linear-gradient(135deg, #4c1d95 0%, #7c3aed 40%, #a16207 100%)" }}
+          className="w-full flex flex-col items-center justify-end pb-6 pt-6 text-center px-6 relative"
+          style={{ background: "linear-gradient(160deg, #1e1035 0%, #4c1d95 55%, #5c2d0e 100%)" }}
         >
           <button
             onClick={() => navigate("/")}
