@@ -30,6 +30,36 @@ uri = "file://client/public/app-icon-v3.png"
 type = "image"
 title = "app icon dark cross road v3"
 
+[[generated]]
+id = "ydznTN1cwSxmsupyJOCg6"
+uri = "file://client/public/hero-understand-new.png"
+type = "image"
+title = "path through grass sunrise"
+
+[[generated]]
+id = "YTXlCmqMUkeXb3ExNe_wC"
+uri = "file://client/public/hero-devotional-still.png"
+type = "image"
+title = "morning light quiet room"
+
+[[generated]]
+id = "YYJbtm7TN8aBG6u43g9a4"
+uri = "file://client/public/hero-understand-2.png"
+type = "image"
+title = "trail through forest morning light"
+
+[[generated]]
+id = "R1OwTGlKNfUO1T4nlf66t"
+uri = "file://client/public/hero-understand-3.png"
+type = "image"
+title = "lone figure small on path"
+
+[[generated]]
+id = "eqfcuqHfpVoQnCiEtem8E"
+uri = "file://client/public/hero-devotional-3.png"
+type = "image"
+title = "open hands resting natural light"
+
 [[outputs]]
 id = "5eXKSYOD9ozG_qHKJmLBU"
 uri = "file://SHEPHERDS_PATH_REFERENCE.md"
@@ -509,3 +539,21 @@ id = "rKY22Rk5sgRa8cCkn0VKT"
 uri = "file://screenshots/shepherds-path-screenshots.zip"
 type = "unspecified"
 title = "Shepherd’s Path — Screenshots + Prompt.zip"
+
+[[outputs]]
+id = "F692e0n0n2dxyZhyDqP3Q"
+uri = "file://attached_assets/stock_images/open_sky_horizon_guidance_1.jpg"
+type = "image"
+title = "wide open sky at dawn minimal horizon empty peaceful landscape no people"
+
+[[outputs]]
+id = "IKd7IGXT4cWyaZLCg9lLc"
+uri = "file://attached_assets/stock_images/open_sky_horizon_guidance_2.jpg"
+type = "image"
+title = "wide open sky at dawn minimal horizon empty peaceful landscape no people"
+
+[[outputs]]
+id = "hzaF5CdZ3hHzsvFvvDkSY"
+uri = "file://attached_assets/stock_images/open_sky_horizon_guidance_3.jpg"
+type = "image"
+title = "wide open sky at dawn minimal horizon empty peaceful landscape no people"

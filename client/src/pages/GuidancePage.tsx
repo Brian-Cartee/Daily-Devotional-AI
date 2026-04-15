@@ -398,7 +398,7 @@ export default function GuidancePage() {
 
           {/* Background image — fades out once conversation is active */}
           <img
-            src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=85&auto=format&fit=crop"
+            src="/hero-guidance.jpg"
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
