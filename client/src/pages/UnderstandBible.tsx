@@ -446,8 +446,8 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
               <Compass className="w-3 h-3" />
               Bible Journeys
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Choose Your Path</h1>
-            <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">Guided reading plans through the heart of Scripture</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Start where you are</h1>
+            <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">There's a path for this moment.</p>
           </motion.div>
         </div>
 
@@ -459,7 +459,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
           className="mb-7"
         >
           <div className="flex items-center gap-2 mb-3 px-0.5">
-            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Life Season</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Start with what you're walking through</span>
             <div className="flex-1 h-px bg-border/60" />
           </div>
 
@@ -478,9 +478,9 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded-full">Personalized</span>
                   </div>
-                  <h2 className="text-[17px] font-bold text-foreground leading-tight">Navigate a Life Season</h2>
-                  <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1.5">AI-crafted · 7 passages</p>
-                  <p className="text-sm text-muted-foreground leading-snug">Tell us what you're walking through. We'll build a 7-day Bible journey written just for you.</p>
+                  <h2 className="text-[17px] font-bold text-foreground leading-tight">Start with what you're walking through</h2>
+                  <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1.5">7 passages, shaped for where you are</p>
+                  <p className="text-sm text-muted-foreground leading-snug">Tell us what's on your heart — we'll guide you.</p>
                 </div>
                 <ChevronDown className="w-5 h-5 text-violet-400 flex-shrink-0 mt-1 -rotate-90" />
               </div>
