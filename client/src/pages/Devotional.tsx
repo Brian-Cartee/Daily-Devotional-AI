@@ -1534,23 +1534,19 @@ export default function Devotional() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-              className="rounded-2xl overflow-hidden"
-              style={{
-                background: "linear-gradient(135deg, hsl(35 60% 97%) 0%, hsl(30 50% 94%) 100%)",
-                border: "1px solid hsl(35 40% 85% / 0.8)",
-              }}
+              className="rounded-2xl overflow-hidden border border-amber-500/25 bg-gradient-to-br from-amber-950/50 to-orange-950/30"
               data-testid="post-prayer-share-card"
             >
               <div className="px-5 py-5">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200/80 flex items-center justify-center shrink-0 mt-0.5">
-                    <Heart className="w-4 h-4 text-amber-600" />
+                  <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <Heart className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-amber-900 leading-snug mb-0.5">
+                    <p className="text-[14px] font-semibold text-amber-200 leading-snug mb-0.5">
                       Did someone come to mind?
                     </p>
-                    <p className="text-[13px] text-amber-800/70 leading-snug">
+                    <p className="text-[13px] text-amber-200/60 leading-snug">
                       Send them the verse image — sometimes the right word finds someone at exactly the right moment.
                     </p>
 
@@ -1579,7 +1575,7 @@ export default function Devotional() {
                           setSharingImage(false);
                         }}
                         disabled={sharingImage}
-                        className="inline-flex items-center gap-1.5 text-[13px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200/80 border border-amber-300/60 rounded-full px-4 py-1.5 transition-all disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 text-[13px] font-bold text-amber-950 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 rounded-full px-4 py-1.5 transition-all shadow-sm shadow-amber-500/30 disabled:opacity-50"
                       >
                         {sharingImage
                           ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating…</>
@@ -1588,7 +1584,7 @@ export default function Devotional() {
                       <button
                         data-testid="button-send-friend-text-post-prayer"
                         onClick={handleSendToFriend}
-                        className="text-[12px] font-semibold text-amber-700/70 hover:text-amber-700 transition-colors"
+                        className="text-[12px] font-semibold text-amber-400/70 hover:text-amber-300 transition-colors"
                       >
                         Send as text →
                       </button>
@@ -1597,7 +1593,7 @@ export default function Devotional() {
                   <button
                     data-testid="button-dismiss-post-prayer-share"
                     onClick={() => setPostPrayerShareDone(true)}
-                    className="shrink-0 text-amber-400/50 hover:text-amber-600 transition-colors text-lg leading-none mt-0.5"
+                    className="shrink-0 text-amber-500/40 hover:text-amber-400 transition-colors text-lg leading-none mt-0.5"
                     aria-label="Dismiss"
                   >
                     ×
