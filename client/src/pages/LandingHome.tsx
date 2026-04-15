@@ -982,6 +982,8 @@ export default function LandingHome() {
                 { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift each other up",                   color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
                 { href: "/reading-plans",Icon: Star,       label: "Reading Plans",           desc: "Bible in a Year & more",               color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
                 { href: "/salvation",    Icon: Heart,      label: "Beginning with Jesus",    desc: "Starting your faith journey",          color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-salvation" },
+                { href: "/study",        Icon: Sparkles,   label: "Quick Bible Study",       desc: "Any topic or passage, studied instantly",color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-study" },
+                { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
               ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
                 <Link key={href} href={href}>
                   <div
@@ -1058,6 +1060,12 @@ export default function LandingHome() {
             </Link>
             <Link href="/iron-circle" className="hover:text-foreground transition-colors" data-testid="link-iron-circle-footer">
               Iron Sharpens Iron
+            </Link>
+            <Link href="/study" className="hover:text-foreground transition-colors" data-testid="link-study-footer">
+              Quick Bible Study
+            </Link>
+            <Link href="/calling" className="hover:text-foreground transition-colors" data-testid="link-calling-footer">
+              Share the Word
             </Link>
             <Link href="/how-to-use" className="hover:text-foreground transition-colors" data-testid="link-how-to-use-footer">
               How to Use
