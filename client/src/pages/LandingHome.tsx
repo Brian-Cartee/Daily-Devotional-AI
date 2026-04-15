@@ -660,7 +660,7 @@ export default function LandingHome() {
       </div>
 
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-5 pb-20 relative z-10 -mt-16 sm:-mt-20">
+      <div className="max-w-xl md:max-w-4xl mx-auto px-4 pb-20 relative z-10 -mt-16 sm:-mt-20">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
