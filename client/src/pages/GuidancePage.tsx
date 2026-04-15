@@ -111,7 +111,9 @@ export default function GuidancePage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const floatRef = useRef<HTMLTextAreaElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
+  const [revealStage, setRevealStage] = useState(0);
   const latestResponseRef = useRef<HTMLDivElement>(null);
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
@@ -248,15 +250,14 @@ export default function GuidancePage() {
     if (firstResponse) prewarmTTS(firstResponse, getUserVoice());
   }, [responseComplete]);
 
-  // Scroll the follow-up input into view after initial response completes
-  // so users naturally see it and are invited to continue
-  const hasScrolledToInput = useRef(false);
+  // Progressive reveal — stage the content in after guidance lands
   useEffect(() => {
-    if (!responseComplete || hasScrolledToInput.current) return;
-    hasScrolledToInput.current = true;
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 2200);
+    if (!responseComplete) return;
+    setRevealStage(1);
+    const t1 = setTimeout(() => setRevealStage(s => Math.max(s, 2)), 3000);
+    const t2 = setTimeout(() => setRevealStage(s => Math.max(s, 3)), 6000);
+    const t3 = setTimeout(() => setRevealStage(s => Math.max(s, 4)), 10000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [responseComplete]);
 
   const startGuidanceListen = async () => {
@@ -350,13 +351,16 @@ export default function GuidancePage() {
     setFollowUp("");
     setIsSending(true);
     setIsReflecting(true);
+    setRevealStage(s => Math.max(s, 4));
     setTimeout(() => setIsReflecting(false), 700);
     const newUserMsg: Message = { role: "user", content: text };
     const updated = [...messages, newUserMsg];
     setMessages(updated);
     await streamResponse(updated);
     setIsSending(false);
-    setTimeout(() => inputRef.current?.focus(), 100);
+    setTimeout(() => {
+      (window.innerWidth < 640 ? floatRef.current : inputRef.current)?.focus();
+    }, 100);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -709,7 +713,7 @@ export default function GuidancePage() {
 
           {/* ── A Word For This Moment ── */}
           <AnimatePresence>
-            {(vpLoading || verse) && (
+            {revealStage >= 2 && (vpLoading || verse) && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -818,57 +822,60 @@ export default function GuidancePage() {
                         a pastor, a close friend.
                       </motion.p>
                     )}
-                    <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-[0.14em] mb-2 ml-1">Continue</p>
-                    <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
-                      <textarea
-                        ref={inputRef}
-                        value={followUp}
-                        onChange={e => setFollowUp(e.target.value)}
-                        spellCheck
-                        autoCapitalize="sentences"
-                        autoCorrect="on"
-                        onKeyDown={handleKeyDown}
-                        placeholder="What's still on your heart?"
-                        rows={2}
-                        disabled={isSending}
-                        data-testid="input-guidance-followup"
-                        className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed disabled:opacity-50"
-                      />
-                      <div className="flex items-center justify-between">
-                        {hasSpeechSupport ? (
+                    {/* Desktop-only inline input — on mobile the floating bar takes over */}
+                    <div className="hidden sm:block">
+                      <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-[0.14em] mb-2 ml-1">Continue</p>
+                      <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
+                        <textarea
+                          ref={inputRef}
+                          value={followUp}
+                          onChange={e => setFollowUp(e.target.value)}
+                          spellCheck
+                          autoCapitalize="sentences"
+                          autoCorrect="on"
+                          onKeyDown={handleKeyDown}
+                          placeholder="What's still on your heart?"
+                          rows={2}
+                          disabled={isSending}
+                          data-testid="input-guidance-followup"
+                          className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed disabled:opacity-50"
+                        />
+                        <div className="flex items-center justify-between">
+                          {hasSpeechSupport ? (
+                            <button
+                              type="button"
+                              onClick={toggleFollowUpVoice}
+                              data-testid="button-guidance-voice"
+                              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
+                              style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                            >
+                              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
+                              {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                            </button>
+                          ) : <span />}
                           <button
-                            type="button"
-                            onClick={toggleFollowUpVoice}
-                            data-testid="button-guidance-voice"
-                            className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                            style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                            onClick={handleSend}
+                            disabled={!followUp.trim() || isSending}
+                            data-testid="button-guidance-send"
+                            className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
                           >
-                            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
-                            {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                           </button>
-                        ) : <span />}
-                        <button
-                          onClick={handleSend}
-                          disabled={!followUp.trim() || isSending}
-                          data-testid="button-guidance-send"
-                          className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-400/40"
-                        >
-                          {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                        </button>
+                        </div>
                       </div>
+                      {/* After 3rd use — subtle value reinforcement */}
+                      {getAiUsage().count === 3 && (
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                          className="text-[12px] text-muted-foreground/70 text-center mt-2.5 px-2 leading-relaxed"
+                        >
+                          You've spent real time with this today.{" "}
+                          <span className="text-foreground/60">That's not nothing — that's the work.</span>
+                        </motion.p>
+                      )}
                     </div>
-                    {/* After 3rd use — subtle value reinforcement */}
-                    {getAiUsage().count === 3 && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-[12px] text-muted-foreground/70 text-center mt-2.5 px-2 leading-relaxed"
-                      >
-                        You've spent real time with this today.{" "}
-                        <span className="text-foreground/60">That's not nothing — that's the work.</span>
-                      </motion.p>
-                    )}
                   </>
                 ) : (
                   /* After 5th use — emotional + supportive send-off */
@@ -900,7 +907,7 @@ export default function GuidancePage() {
 
           {/* ── A Prayer Written For You ── */}
           <AnimatePresence>
-            {responseComplete && (prayer || vpLoading) && (
+            {responseComplete && revealStage >= 3 && (prayer || vpLoading) && (
               <motion.div
                 key="prayer-card"
                 initial={{ opacity: 0, y: 12 }}
@@ -1013,7 +1020,7 @@ export default function GuidancePage() {
           </AnimatePresence>
 
           {/* Bridge text — connects the response to the journey below */}
-          {responseComplete && (
+          {responseComplete && revealStage >= 4 && (
             <p className="text-[13px] text-muted-foreground/75 leading-relaxed mb-6 -mt-2">
               Here's where I'd walk with you next.
             </p>
@@ -1021,7 +1028,7 @@ export default function GuidancePage() {
 
           {/* Journey card */}
           <AnimatePresence>
-            {(journeyLoading || journey) && (
+            {responseComplete && revealStage >= 4 && (journeyLoading || journey) && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1093,6 +1100,62 @@ export default function GuidancePage() {
           <div ref={bottomRef} />
         </div>
       </main>
+
+      {/* ── Floating input bar — mobile only, docks above NavBar ── */}
+      <AnimatePresence>
+        {responseComplete && canUseAi() && (
+          <motion.div
+            key="float-bar"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ delay: 1.8, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="sm:hidden fixed left-0 right-0 z-30 px-3"
+            style={{ bottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}
+          >
+            <div className="bg-background/96 backdrop-blur-xl border border-border/70 rounded-2xl px-4 pt-3 pb-2.5 shadow-2xl shadow-black/25 flex flex-col gap-1.5">
+              <textarea
+                ref={floatRef}
+                value={followUp}
+                onChange={e => setFollowUp(e.target.value)}
+                spellCheck
+                autoCapitalize="sentences"
+                autoCorrect="on"
+                onKeyDown={handleKeyDown}
+                placeholder="What's still on your heart?"
+                rows={1}
+                disabled={isSending}
+                data-testid="input-guidance-floating"
+                className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed disabled:opacity-50"
+                style={{ maxHeight: "96px", overflowY: "auto" }}
+              />
+              <div className="flex items-center justify-between">
+                {hasSpeechSupport ? (
+                  <button
+                    type="button"
+                    onClick={toggleFollowUpVoice}
+                    data-testid="button-guidance-float-voice"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
+                    style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                  >
+                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
+                    {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                  </button>
+                ) : <span />}
+                <button
+                  onClick={handleSend}
+                  disabled={!followUp.trim() || isSending}
+                  data-testid="button-guidance-float-send"
+                  className="flex-shrink-0 w-10 h-10 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white flex items-center justify-center transition-all disabled:opacity-40 shadow-lg shadow-amber-400/30"
+                >
+                  {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
       <AnimatePresence>
         {showPrayerPortrait && (
