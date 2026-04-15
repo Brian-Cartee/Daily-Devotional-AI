@@ -716,7 +716,10 @@ Pronoun capitalization: When addressing God directly in prayer, capitalize You, 
 When the verse or the person's situation touches on loneliness, rejection, feeling worthless, forgotten, or beyond love's reach — let the prayer carry the full honest weight of God's unconditional love for this specific person. Not as a cliché. As a real truth spoken directly to God on their behalf — that they are known, that they are held, that nothing can separate them from a love that will not let them go.
 
 Begin with "Lord," or "Heavenly Father," and close with "Amen."${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${langNote2}`;
-        userPrompt = `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
+        const reflCtx: string = (req.body as any).reflectionContext || "";
+        userPrompt = reflCtx
+          ? `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
+          : `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
       await streamCompletion(

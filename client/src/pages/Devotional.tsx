@@ -30,6 +30,7 @@ import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSe
 import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
+import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer } from "@/lib/devotionalSession";
 
 function StepLabel({ number: _number, label }: { number: number; label: string }) {
   return (
@@ -52,10 +53,10 @@ function PrayerText({ text }: { text: string }) {
 
 export default function Devotional() {
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
-  const [reflectionContent, setReflectionContent] = useState("");
+  const [reflectionContent, setReflectionContent] = useState(() => getCachedReflection());
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [reflectionError, setReflectionError] = useState(false);
-  const [prayerContent, setPrayerContent] = useState("");
+  const [prayerContent, setPrayerContent] = useState(() => getCachedPrayer());
   const [prayerLoading, setPrayerLoading] = useState(false);
   const [prayerError, setPrayerError] = useState(false);
 
@@ -239,8 +240,17 @@ export default function Devotional() {
       prewarmTTS(`${verse.text} — ${verse.reference}`, getUserVoice());
       const lang = getStoredLang();
       const userName = getUserName() ?? undefined;
-      generateReflection(verse.id, lang, userName);
-      generatePrayer(verse.id, lang, userName);
+      const cachedRefl = getCachedReflection();
+      const cachedPryr = getCachedPrayer();
+      if (cachedRefl && cachedPryr) {
+        // Both already cached today — skip generation entirely
+      } else if (cachedRefl && !cachedPryr) {
+        // Reflection cached, prayer not — generate prayer with reflection context
+        generatePrayer(verse.id, lang, userName, cachedRefl);
+      } else {
+        // Fresh session — generate reflection first, prayer follows sequentially in generateReflection callback
+        generateReflection(verse.id, lang, userName);
+      }
       fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -280,8 +290,11 @@ export default function Devotional() {
       if (!controller.signal.aborted) {
         const finalText = capitalizeDivinePronouns(result);
         setReflectionContent(finalText);
+        cacheReflection(finalText);
         // Prewarm TTS cache so Listen is near-instant when user taps it
         prewarmTTS(finalText, getUserVoice());
+        // Prayer generates sequentially so it can emerge from the same emotional space
+        generatePrayer(verseId, lang, userName, finalText);
       }
     } catch (e: any) {
       if (e?.name !== "AbortError") setReflectionError(true);
@@ -289,7 +302,7 @@ export default function Devotional() {
     if (!controller.signal.aborted) setReflectionLoading(false);
   };
 
-  const generatePrayer = async (verseId: number, lang: string, userName?: string) => {
+  const generatePrayer = async (verseId: number, lang: string, userName?: string, reflectionContext?: string) => {
     prayerAbortRef.current?.abort();
     const controller = new AbortController();
     prayerAbortRef.current = controller;
@@ -301,10 +314,12 @@ export default function Devotional() {
         verseId, type: "prayer", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
         isLateNight: isLateNight(),
+        ...(reflectionContext ? { reflectionContext } : {}),
       }, (text) => setPrayerContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
         const finalPrayer = capitalizeDivinePronouns(result);
         setPrayerContent(finalPrayer);
+        cachePrayer(finalPrayer);
         // Prewarm prayer with nova voice — matches the "Pray This Aloud" experience
         const cleaned = finalPrayer.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
         prewarmTTS(cleaned, "nova");
@@ -334,7 +349,7 @@ export default function Devotional() {
           daysWithApp: getRelationshipAge(),
           messages: [{
             role: "user",
-            content: `This person has just spent time with ${verse.reference}: "${verse.text}". They want to close by speaking their heart to God. Here is what they are grateful for today: "${gratitudeInput.trim()}". Write an intimate, personal closing prayer — 3 to 5 sentences — as if they are quietly talking to God, not performing for an audience. Let their specific gratitude and the spirit of today's verse meet each other naturally inside the prayer. Begin with "Lord," or "Father," — close with "Amen." Make it feel like it could only have been written for this person, in this moment. Warm. Unhurried. Real. When addressing God, capitalize You, Your, Yours. Never capitalize "you" or "your" when referring to the person praying.`,
+            content: `This person has just spent time with ${verse.reference}: "${verse.text}".${reflectionContent ? ` Their reflection landed on this: "${reflectionContent.split("\n").filter(p => p.trim())[0]}"` : ""} They want to close by speaking their heart to God. Here is what they are grateful for today: "${gratitudeInput.trim()}". Write an intimate, personal closing prayer — 3 to 5 sentences — as if they are quietly talking to God, not performing for an audience. Let their gratitude, the spirit of today's verse${reflectionContent ? ", and the emotional thread of the reflection" : ""} meet each other naturally inside the prayer. Begin with "Lord," or "Father," — close with "Amen." Make it feel like it could only have been written for this person, in this moment. Warm. Unhurried. Real. When addressing God, capitalize You, Your, Yours. Never capitalize "you" or "your" when referring to the person praying.`,
           }],
         }),
       });
@@ -1352,7 +1367,7 @@ export default function Devotional() {
               )}
               {prayerError && (
                 <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
-                  Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
+                  Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionContent || undefined)} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>

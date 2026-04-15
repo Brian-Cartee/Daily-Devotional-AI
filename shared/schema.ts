@@ -20,6 +20,7 @@ export const generateRequestSchema = z.object({
   verseId: z.number(),
   type: z.enum(["reflection", "prayer"]),
   lang: z.string().optional(),
+  reflectionContext: z.string().optional(),
 });
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
 
