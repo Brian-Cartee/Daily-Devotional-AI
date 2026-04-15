@@ -233,7 +233,7 @@ export default function TriviaPage() {
             <motion.div key="select" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <div className="flex items-center mb-2">
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={() => window.history.back()}
                   data-testid="btn-trivia-back"
                   className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
                 >

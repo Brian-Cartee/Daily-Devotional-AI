@@ -73,7 +73,7 @@ export default function GreatestGiftPage() {
 
         {/* Back */}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => window.history.back()}
           data-testid="button-back-greatest-gift"
           className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
         >
