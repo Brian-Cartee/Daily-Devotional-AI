@@ -520,7 +520,7 @@ function FaqSection() {
     <div className="px-0 mb-6">
       <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
-        <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Questions people ask</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/80 shrink-0">Questions people ask</p>
         <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/60 to-transparent" />
       </div>
       <div className="space-y-1">
@@ -552,7 +552,7 @@ function FaqSection() {
                 >
                   <p
                     data-testid={`faq-answer-${i}`}
-                    className="px-4 pb-4 text-[13px] text-muted-foreground leading-relaxed"
+                    className="px-4 pb-4 text-[13px] text-foreground/80 leading-relaxed"
                   >
                     {item.a}
                   </p>
@@ -1132,7 +1132,7 @@ export default function LandingHome() {
           {/* Brand pills — smaller so 2 fit per row on mobile */}
           <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-2 mb-4">
             {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
-              <span key={tag} className="text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border border-primary/20 bg-primary/6 text-primary/80">
+              <span key={tag} className="text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border border-border/60 bg-card/60 text-foreground/75">
                 {tag}
               </span>
             ))}
