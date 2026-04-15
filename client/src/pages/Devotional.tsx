@@ -1167,7 +1167,7 @@ export default function Devotional() {
                             placeholder="Start typing… even a word is enough."
                             spellCheck
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-border/50 bg-background/60 pl-3.5 pr-12 pt-3.5 pb-9 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25 transition-all"
+                            className="w-full resize-none rounded-xl border border-border bg-muted/40 pl-3.5 pr-12 pt-3.5 pb-9 text-[14px] text-foreground placeholder:text-muted-foreground/65 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
                           />
                           <button
                             data-testid="btn-save-reflection-reply"
@@ -1189,11 +1189,11 @@ export default function Devotional() {
                                 setReflectionReplySaved(true);
                               } catch { setReflectionReplySaved(true); }
                             }}
-                            className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30"
-                            style={{ background: reflectionReply.trim() ? "linear-gradient(135deg, #7c3aed, #a855f7)" : undefined }}
+                            className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                            style={{ background: "linear-gradient(135deg, #d97706, #ea580c)", opacity: reflectionReply.trim() ? 1 : 0.5 }}
                             aria-label="Save to journal"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke={reflectionReply.trim() ? "white" : "currentColor"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
                             </svg>
                           </button>
@@ -1450,7 +1450,7 @@ export default function Devotional() {
           </div>
 
           {/* STEP 4: THANK HIM */}
-          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-2xl px-5 py-6 shadow-sm">
             <StepLabel number={4} label="Thank Him" />
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
               What feels like a gift today?
@@ -1462,15 +1462,15 @@ export default function Devotional() {
               spellCheck
               rows={3}
               data-testid="input-gratitude"
-              className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3.5 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25 resize-none placeholder:text-muted-foreground/50 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3.5 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 resize-none placeholder:text-muted-foreground/65 transition-all"
             />
             <div className="mt-3 flex items-center gap-3">
               <button
                 onClick={handleGratitudePrayer}
-                disabled={!gratitudeInput.trim() || gratitudePrayerLoading}
+                disabled={gratitudePrayerLoading}
                 data-testid="button-generate-gratitude-prayer"
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
-                style={{ background: (!gratitudeInput.trim() || gratitudePrayerLoading) ? undefined : "linear-gradient(135deg, #d97706, #ea580c)", backgroundColor: (!gratitudeInput.trim() || gratitudePrayerLoading) ? "hsl(var(--muted))" : undefined }}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
+                style={{ background: "linear-gradient(135deg, #d97706, #ea580c)" }}
               >
                 {gratitudePrayerLoading
                   ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
