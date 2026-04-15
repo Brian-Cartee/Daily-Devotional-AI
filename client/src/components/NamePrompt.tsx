@@ -46,11 +46,11 @@ export function NamePrompt({ onDone }: Props) {
           </div>
 
           <h2 className="text-[22px] font-black text-foreground tracking-tight leading-tight mb-2">
-            Before we begin —
+            One more thing.
           </h2>
 
           <p className="text-[15px] text-muted-foreground leading-snug mb-7 max-w-[240px]">
-            What should we call you? Your name helps us make every reflection personal.
+            What should we call you? It helps us make every reflection feel a little more personal.
           </p>
 
           <input

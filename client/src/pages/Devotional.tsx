@@ -28,6 +28,8 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
 import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, getBadge, type Achievement } from "@/lib/achievements";
 import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
+import { NamePrompt } from "@/components/NamePrompt";
+import { hasBeenPrompted } from "@/lib/userName";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
 import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer } from "@/lib/devotionalSession";
@@ -95,6 +97,7 @@ export default function Devotional() {
   const [nudgePhone, setNudgePhone] = useState("");
   const [nudgeSmsLoading, setNudgeSmsLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showPostValueName, setShowPostValueName] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const [showTipPrompt, setShowTipPrompt] = useState(false);
   const [streakForTip, setStreakForTip] = useState(0);
@@ -282,6 +285,13 @@ export default function Devotional() {
     const timer = setTimeout(() => setEntryTriggered(true), 3000);
     return () => clearTimeout(timer);
   }, [verse, entryTriggered]);
+
+  // Effect 4: Post-value name prompt — ask for name only after prayer loads, on first few days
+  useEffect(() => {
+    if (!prayerContent || hasBeenPrompted() || getRelationshipAge() > 5) return;
+    const timer = setTimeout(() => setShowPostValueName(true), 2500);
+    return () => clearTimeout(timer);
+  }, [prayerContent]);
 
   useEffect(() => {
     return () => {
@@ -1695,6 +1705,12 @@ export default function Devotional() {
 
       <AnimatePresence>
         {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPostValueName && (
+          <NamePrompt onDone={() => setShowPostValueName(false)} />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
