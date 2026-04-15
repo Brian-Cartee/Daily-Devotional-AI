@@ -1491,61 +1491,43 @@ export default function Devotional() {
           )}
 
           {/* Actions */}
-          {/* AI Bible Scholar button — expands directly below */}
-          <div className="pt-1">
-            <button
-              data-testid="button-ask-scripture"
-              onClick={() => setChatOpen(v => !v)}
-              className="w-full rounded-2xl border transition-all text-left group active:scale-[0.99]"
-              style={{
-                borderColor: chatOpen ? "rgba(124,58,237,0.4)" : "rgba(124,58,237,0.2)",
-                background: chatOpen
-                  ? "linear-gradient(135deg, #3b0f8e18 0%, #7c3aed12 100%)"
-                  : "linear-gradient(135deg, #0f0820 0%, #1a1035 100%)",
-              }}
-            >
-              <div className="flex items-start gap-3 px-5 py-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm mt-0.5"
-                  style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
-                >
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-bold text-foreground leading-tight">Ask the AI Bible Scholar</p>
-                    <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">
-                      Try it
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                    Ask anything — original meaning, historical context, cross-references, or how this verse speaks to your life right now
-                  </p>
-                </div>
-                <ChevronDown
-                  className="w-4 h-4 text-primary/60 shrink-0 mt-1 transition-transform duration-300"
-                  style={{ transform: chatOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                />
-              </div>
-            </button>
-          </div>
-
-          {/* AI Chat — expands directly under the button */}
-          <AnimatePresence>
-            {chatOpen && (
-              <motion.div
-                key="chat"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.4 }}
+          {/* Bible Scholar — always visible, no accordion */}
+          <div
+            className="rounded-2xl border overflow-hidden"
+            style={{
+              borderColor: "rgba(124,58,237,0.28)",
+              background: "linear-gradient(135deg, #0f0820 0%, #1a1035 100%)",
+            }}
+          >
+            {/* Section header */}
+            <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-primary/10">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
               >
-                <BibleStudyChat
-                  verseId={verse.id}
-                  initialReflection={reflectionContent}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <Sparkles className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[15px] font-bold text-foreground leading-tight">Ask the Bible Scholar</p>
+                  <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">
+                    Try it
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                  Original meaning · history · cross-references · life application
+                </p>
+              </div>
+            </div>
+
+            {/* Chat — always open */}
+            <div className="px-4 pb-4">
+              <BibleStudyChat
+                verseId={verse.id}
+                initialReflection={reflectionContent}
+              />
+            </div>
+          </div>
 
           {/* Day 1 → Day 2 hook — shown to first-day users after prayer loads */}
           <FirstDayCard isFirstDay={streak?.currentStreak === 1 && !!prayerContent} />
