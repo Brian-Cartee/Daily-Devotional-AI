@@ -81,8 +81,8 @@ export const TIP_CARDS: TipCard[] = [
   },
   {
     id: "tip-notifications",
-    heading: "Let the Word meet you each morning",
-    body: "Tap the bell icon to set a morning verse, midday prayer, or evening reflection — delivered to you every day without opening the app.",
+    heading: "Let today's verse find you",
+    body: "You can receive each day's verse and reflection by email — quietly, in your morning. Sign up on the home screen.",
   },
   {
     id: "tip-prayer-journal",

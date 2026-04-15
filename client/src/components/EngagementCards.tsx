@@ -123,11 +123,11 @@ export function LateNightBannerCard() {
 function getReturnContent(daysAway: number, name: string | null) {
   const firstName = name ? `, ${name}` : "";
 
-  if (daysAway <= 2) {
+  if (daysAway <= 3) {
     return {
-      label: `Welcome back${firstName}`,
-      headline: "Let's keep walking.",
-      body: "You were here, and you're here again. That's the whole thing. Today's word is waiting.",
+      label: `Good morning${firstName}`,
+      headline: "You can start right where you are.",
+      body: "Today's word is ready whenever you are.",
       gradient: "from-sky-400 via-blue-400 to-indigo-400",
       border: "border-sky-200 dark:border-sky-800",
       bg: "bg-sky-50 dark:bg-sky-950/40",
@@ -136,41 +136,15 @@ function getReturnContent(daysAway: number, name: string | null) {
     };
   }
 
-  if (daysAway <= 6) {
-    return {
-      label: `Good to have you back${firstName}`,
-      headline: "The path hasn't moved.",
-      body: "The Good Shepherd doesn't walk away when you do. He's been keeping your place. Step back in whenever you're ready.",
-      gradient: "from-violet-400 via-primary to-indigo-400",
-      border: "border-violet-200 dark:border-violet-800",
-      bg: "bg-violet-50/60 dark:bg-violet-950/30",
-      labelColor: "text-primary dark:text-violet-400",
-      xColor: "text-violet-400 hover:text-violet-600",
-    };
-  }
-
-  if (daysAway <= 13) {
-    return {
-      label: "Welcome home",
-      headline: "He was watching the road for you.",
-      body: "Like the father who saw his son \"while he was still a great way off\" and ran — that's the heart of God toward you right now. Just begin.",
-      gradient: "from-amber-400 via-orange-400 to-rose-400",
-      border: "border-amber-200 dark:border-amber-800",
-      bg: "bg-amber-50/60 dark:bg-amber-950/30",
-      labelColor: "text-amber-700 dark:text-amber-400",
-      xColor: "text-amber-400 hover:text-amber-600",
-    };
-  }
-
   return {
-    label: "The door is still open",
-    headline: "Come back. He's not keeping score.",
-    body: "God's mercies are new every morning — including this one. No catching up required. Just today's word, today.",
-    gradient: "from-rose-400 via-primary to-violet-500",
-    border: "border-rose-200 dark:border-rose-800",
-    bg: "bg-rose-50/50 dark:bg-rose-950/20",
-    labelColor: "text-rose-700 dark:text-rose-400",
-    xColor: "text-rose-400 hover:text-rose-600",
+    label: firstName ? `Good to see you${firstName}` : "Good to see you",
+    headline: "The path hasn't moved.",
+    body: "The Good Shepherd keeps your place. Step back in whenever you're ready.",
+    gradient: "from-violet-400 via-primary to-indigo-400",
+    border: "border-violet-200 dark:border-violet-800",
+    bg: "bg-violet-50/60 dark:bg-violet-950/30",
+    labelColor: "text-primary dark:text-violet-400",
+    xColor: "text-violet-400 hover:text-violet-600",
   };
 }
 
@@ -181,7 +155,9 @@ export function ReturningUserCard() {
 
   useEffect(() => {
     const days = getDaysAway();
-    if (days >= 2 && !isReturnCardDismissedToday()) {
+    // For long absences (7+ days), silence is best — just the verse, unchanged.
+    // No card that acknowledges how long they've been away.
+    if (days >= 2 && days < 7 && !isReturnCardDismissedToday()) {
       setDaysAway(days);
       setVisible(true);
     }

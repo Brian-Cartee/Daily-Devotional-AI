@@ -1,0 +1,284 @@
+Here’s a **clean, copy/paste-ready response** with strategic guidance only:
+
+---
+
+## **Shepherd’s Path — Product Direction (Q12–Q14)**
+
+---
+
+### **Question 12 — The Long Absence**
+
+**Core truth:**
+This is not a retention moment.
+This is a **pastoral moment**.
+
+---
+
+### **What the user may feel:**
+
+* Guilt (“I fell off”)
+* Distance (“I’ve been away”)
+* Pain (“Something happened”)
+
+---
+
+### **What the app must NOT do:**
+
+* Do not acknowledge absence directly (“It’s been 14 days…”)
+* Do not reference streaks or missed time
+* Do not try to “bring them back”
+
+---
+
+### **What it SHOULD feel like:**
+
+> **“You’re still welcome here.”**
+
+---
+
+### **Best approach:**
+
+#### Option A — Silence (often best)
+
+* No special message
+* Just the verse
+* Calm, unchanged
+
+👉 This communicates:
+
+> Nothing has changed. You can step back in.
+
+---
+
+#### Option B — Soft, non-specific welcome (used sparingly)
+
+> “I’m really glad you’re here.”
+>
+> “You can start right where you are.”
+
+---
+
+👉 No mention of time away
+👉 No acknowledgment of absence
+
+---
+
+### **Core Principle:**
+
+> Remove shame, remove pressure, remove memory of absence
+
+---
+
+---
+
+### **Question 13 — Push Notifications**
+
+**Core truth:**
+A notification is not a reminder.
+
+👉 It is an **interruption into someone’s life**
+
+---
+
+### **What makes a notification worth sending:**
+
+It must feel like:
+
+> **a gentle nudge, not a demand**
+
+---
+
+### **What it SHOULD feel like:**
+
+* Calm
+* Timely
+* Personal (even if broadly sent)
+* Easy to ignore without guilt
+
+---
+
+### **What it must NOT feel like:**
+
+* Obligation
+* Pressure
+* Repetition
+* Noise
+
+---
+
+### **Examples of correct tone:**
+
+* “A moment when you’re ready.”
+* “Today’s verse is here.”
+* “You don’t have to carry everything alone.”
+
+---
+
+### **Frequency guidance:**
+
+* 1 per day max
+* Optional opt-in timing (morning, evening)
+* No stacking or catch-up notifications
+
+---
+
+### **The version that deepens practice:**
+
+Not:
+
+> “Open the app”
+
+But:
+
+> **A moment that can stand on its own**
+
+---
+
+👉 Even if they don’t tap it:
+
+* it still speaks
+* it still gives something
+
+---
+
+### **Core Principle:**
+
+> A notification should give, not ask
+
+---
+
+---
+
+### **Question 14 — What the App Should Never Become**
+
+**Core truth:**
+Your strength is restraint.
+
+---
+
+### **The traps:**
+
+#### 1. Becoming a content platform
+
+* Feeds
+* Endless scrolling
+* “More to explore”
+
+👉 Breaks focus
+
+---
+
+#### 2. Becoming a productivity tool
+
+* Streak pressure
+* Completion metrics
+* Habit tracking dominance
+
+👉 Shifts from presence → performance
+
+---
+
+#### 3. Becoming a social network
+
+* Likes
+* Comments
+* Public validation
+
+👉 Turns inward faith → outward performance
+
+---
+
+#### 4. Becoming feature-heavy
+
+* Too many entry points
+* Too many options
+* Too many paths
+
+👉 Creates confusion instead of clarity
+
+---
+
+#### 5. Becoming authoritative
+
+* Acting as the primary spiritual voice
+* Replacing real community or leadership
+
+👉 Breaks trust and responsibility
+
+---
+
+---
+
+### **What “too much” looks like:**
+
+* The user has to think about what to do
+* The user scrolls instead of enters
+* The experience feels busy instead of calm
+* The app explains itself instead of being felt
+
+---
+
+---
+
+### **What the app must protect at all costs:**
+
+* Simplicity
+* Continuity
+* Emotional safety
+* Spiritual humility
+
+---
+
+---
+
+### **What to explicitly refuse to build:**
+
+* Infinite content feeds
+* Engagement mechanics (likes, comments, rankings)
+* Gamified spirituality (points, badges, pressure loops)
+* Complex navigation structures
+* Anything that competes with the devotional flow
+
+---
+
+---
+
+### **Core Principle:**
+
+> If it adds noise, choice, or pressure — it does not belong
+
+---
+
+---
+
+## **Final Summary**
+
+**Long Absence:**
+
+* No shame, no tracking, no reminders
+* Welcome without memory
+
+---
+
+**Push Notifications:**
+
+* Gentle, optional, meaningful
+* Give something even if unopened
+
+---
+
+**Product Boundaries:**
+
+* Stay simple
+* Stay focused
+* Resist expansion that adds noise
+
+---
+
+## **End Goal**
+
+* The app always feels safe to return to
+* Every interaction feels intentional
+* Growth never compromises the core experience
+
+---

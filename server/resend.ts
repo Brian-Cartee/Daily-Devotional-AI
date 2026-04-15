@@ -144,7 +144,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
                 <td align="center">
                   <a href="${data.appUrl}"
                      style="display:inline-block;background:linear-gradient(135deg,#7a018d,#442f74);color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:50px;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(122,1,141,0.3);">
-                    Open Shepherd&rsquo;s Path &rarr;
+                    Continue with today&rsquo;s devotional &rarr;
                   </a>
                 </td>
               </tr>
