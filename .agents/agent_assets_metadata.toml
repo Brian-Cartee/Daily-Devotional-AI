@@ -449,3 +449,57 @@ id = "vfG9gd3Z12DFrcdQ9F6Dt"
 uri = "file://SHEPHERD_CONTEXT.md"
 type = "text"
 title = "Shepherd's Path — App Context Document"
+
+[[outputs]]
+id = "DL9Px_IbIT4pVMSnNsPgY"
+uri = "file://screenshots/CHATGPT_PROMPT.md"
+type = "text"
+title = "ChatGPT Prompt — copy this first"
+
+[[outputs]]
+id = "pJB4XfR9oqtvTFQpdMHeI"
+uri = "file://screenshots/01-home-today.jpg"
+type = "image"
+title = "01 · Welcome / Onboarding"
+
+[[outputs]]
+id = "ytoMrSWkVxDVJxkguNOY1"
+uri = "file://screenshots/03-devotional.jpg"
+type = "image"
+title = "02 · Today's Devotional"
+
+[[outputs]]
+id = "HVjmS82k-0SmpjWgLWHRO"
+uri = "file://screenshots/04-guidance.jpg"
+type = "image"
+title = "03 · Seek Guidance"
+
+[[outputs]]
+id = "QXuuU9c_eNvFcD7zrPB60"
+uri = "file://screenshots/05-journal.jpg"
+type = "image"
+title = "04 · Prayer Journal"
+
+[[outputs]]
+id = "k5zuPOH_0eHRKU1_yVwez"
+uri = "file://screenshots/06-journeys.jpg"
+type = "image"
+title = "05 · Bible Journeys"
+
+[[outputs]]
+id = "Uw0WmTuCMpX75B_mJg9sb"
+uri = "file://screenshots/07-quick-study.jpg"
+type = "image"
+title = "06 · Explore Scripture"
+
+[[outputs]]
+id = "RRQR_hXXgIHf7slvpRMg_"
+uri = "file://screenshots/08-read-bible.jpg"
+type = "image"
+title = "07 · Read the Bible"
+
+[[outputs]]
+id = "APLr9iSb-YzC_yOeeHXfF"
+uri = "file://screenshots/09-salvation.jpg"
+type = "image"
+title = "08 · Beginning with Jesus"
