@@ -138,7 +138,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           }}
           onClick={() => {
             handleDismiss();
-            navigate("/bible");
+            navigate("/read");
           }}
         >
           <BookOpen className="w-4 h-4 opacity-70" />
