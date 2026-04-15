@@ -14,34 +14,48 @@ import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 
 interface BibleStudyChatProps {
   verseId: number;
+  verseReference?: string;
   initialReflection: string;
+  prayerContent?: string;
 }
 
-const PRESET_PROMPTS = [
-  { label: "Cross-references",      icon: GitBranch },
-  { label: "Historical context",    icon: Clock },
-  { label: "Who wrote this & why",  icon: PenLine },
-  { label: "Life application",      icon: Lightbulb },
-  { label: "Generate a prayer",     icon: Heart },
-  { label: "Explain simply",        icon: BookOpen },
-];
+export function BibleStudyChat({
+  verseId,
+  verseReference,
+  initialReflection,
+  prayerContent,
+}: BibleStudyChatProps) {
+  // How many initial messages to hide from UI (they are context for the AI, not visible chat)
+  // messages[0] = today's reflection (always hidden)
+  // messages[1] = today's prayer context note (hidden, only if prayer exists)
+  const hiddenCount = prayerContent ? 2 : 1;
 
-export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: initialReflection }
-  ]);
+  const buildInitialMessages = (): ChatMessage[] => {
+    const init: ChatMessage[] = [
+      { role: "assistant", content: initialReflection },
+    ];
+    if (prayerContent) {
+      init.push({
+        role: "assistant",
+        content: `[Devotional context note — the following personalized prayer was already generated for this person as part of today's spiritual practice on ${verseReference ?? "this verse"}: "${prayerContent}". When the person asks you to generate or deepen a prayer, build thoughtfully on this one rather than starting from scratch.]`,
+      });
+    }
+    return init;
+  };
+
+  const [messages, setMessages] = useState<ChatMessage[]>(buildInitialMessages);
   const [inputValue, setInputValue] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const chatMutation = useChatWithVerse();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const newMsgRef = useRef<HTMLDivElement>(null);
-  const pendingScrollIdx = useRef<number | null>(null);
+  const pendingScrollRef = useRef(false);
 
   useEffect(() => {
-    if (pendingScrollIdx.current !== null) {
+    if (pendingScrollRef.current) {
       setTimeout(() => {
-        newMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        pendingScrollIdx.current = null;
+        newMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        pendingScrollRef.current = false;
       }, 60);
     }
   }, [messages.length]);
@@ -53,7 +67,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
 
     const userMessage: ChatMessage = { role: "user", content: question.trim() };
     const historyBeforeThisQuestion = [...messages];
-    pendingScrollIdx.current = messages.length - 1;
+    pendingScrollRef.current = true;
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
 
@@ -69,7 +83,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
     } catch {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: "Something went wrong. Please try again." },
+        { role: "assistant", content: "Something went wrong — please try again." },
       ]);
     }
   };
@@ -81,16 +95,46 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
     }
   };
 
+  // Presets: "Deepen today's prayer" when prayer exists, otherwise generic
+  const PRESET_PROMPTS = [
+    { label: "Cross-references",                         icon: GitBranch },
+    { label: "Historical context",                       icon: Clock },
+    { label: "Who wrote this & why",                     icon: PenLine },
+    { label: "Life application",                         icon: Lightbulb },
+    {
+      label: prayerContent ? "Deepen today's prayer" : "Write me a prayer",
+      question: prayerContent
+        ? "Take the prayer I received today and deepen it — make it more personal, intimate, and specific to this verse and my life right now."
+        : "Write me a short, heartfelt prayer based on this verse.",
+      icon: Heart,
+    },
+    { label: "Explain simply",                           icon: BookOpen },
+  ];
+
   return (
     <div className="flex flex-col gap-4 pt-3">
 
-      {/* Preset chips — horizontal scroll, always at top */}
+      {/* Warm contextual opener — only shown before any conversation */}
+      {messages.length === hiddenCount && verseReference && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-[13px] text-muted-foreground/70 italic text-center px-2 leading-relaxed -mt-1"
+        >
+          {prayerContent
+            ? `You've reflected and prayed through ${verseReference} today — go deeper whenever you're ready.`
+            : `You've just spent time with ${verseReference} — ask anything that's on your heart.`}
+        </motion.p>
+      )}
+
+      {/* Preset chips — horizontal scroll */}
       <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
-        {PRESET_PROMPTS.map(({ label, icon: Icon }) => (
+        {PRESET_PROMPTS.map(({ label, question, icon: Icon }) => (
           <button
             key={label}
-            data-testid={`button-preset-${label.toLowerCase().replace(/[\s&]+/g, "-")}`}
-            onClick={() => sendMessage(label)}
+            data-testid={`button-preset-${label.toLowerCase().replace(/[\s&']+/g, "-")}`}
+            onClick={() => sendMessage(question ?? label)}
             disabled={chatMutation.isPending}
             className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-primary/25 bg-primary/6 hover:bg-primary/12 hover:border-primary/45 text-primary/80 hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap flex-shrink-0"
           >
@@ -100,7 +144,7 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
         ))}
       </div>
 
-      {/* Custom input — amber send, full placeholder visible */}
+      {/* Input row — amber send button */}
       <div className="flex gap-2 items-end">
         <div className="flex-1 rounded-xl border-2 border-border/50 hover:border-primary/30 focus-within:border-primary/50 bg-background/80 px-3 py-2.5 transition-colors">
           <textarea
@@ -128,63 +172,78 @@ export function BibleStudyChat({ verseId, initialReflection }: BibleStudyChatPro
         </button>
       </div>
 
-      {/* Usage warning — only at ≤2 remaining */}
+      {/* Usage warning */}
       {(() => {
         const remaining = getRemainingAi();
         if (remaining <= 2 && remaining > 0) {
           return (
             <p className="text-xs text-center -mt-1">
-              <span className="text-amber-500 font-semibold">{remaining} free {remaining === 1 ? "response" : "responses"} left today</span>
+              <span className="text-amber-500 font-semibold">
+                {remaining} free {remaining === 1 ? "response" : "responses"} left today
+              </span>
               {" · "}
-              <button onClick={() => setShowUpgrade(true)} className="text-primary underline underline-offset-2">Upgrade for unlimited</button>
+              <button
+                onClick={() => setShowUpgrade(true)}
+                className="text-primary underline underline-offset-2"
+              >
+                Upgrade for unlimited
+              </button>
             </p>
           );
         }
         return null;
       })()}
 
-      {/* Conversation thread */}
+      {/* Conversation thread — skips hidden context messages */}
       <AnimatePresence initial={false}>
-        {messages.slice(1).map((msg, idx) => (
-          <motion.div
-            key={idx}
-            ref={idx === pendingScrollIdx.current ? newMsgRef : undefined}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {msg.role === "assistant" && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
-                <Sparkles className="w-4 h-4 text-primary" />
-              </div>
-            )}
-            <div className={`max-w-[85%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
-              <div
-                className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-tr-sm"
-                    : "bg-white/10 dark:bg-slate-800/60 text-foreground border border-white/10 rounded-tl-sm"
-                }`}
-              >
-                {msg.content.split("\n").map((para, i) =>
-                  para.trim() ? <p key={i} className="mb-2 last:mb-0">{para}</p> : null
+        {messages.slice(hiddenCount).map((msg, idx) => {
+          const isLast = idx === messages.slice(hiddenCount).length - 1;
+          return (
+            <motion.div
+              key={idx}
+              ref={isLast && msg.role === "assistant" ? newMsgRef : undefined}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "assistant" && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+              )}
+              <div className={`max-w-[85%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div
+                  className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      : "bg-white/10 dark:bg-slate-800/60 text-foreground border border-white/10 rounded-tl-sm"
+                  }`}
+                >
+                  {msg.content.split("\n").map((para, i) =>
+                    para.trim() ? <p key={i} className="mb-2 last:mb-0">{para}</p> : null
+                  )}
+                </div>
+                {msg.role === "assistant" && (
+                  <ShareButton
+                    title="Shepherd's Path Reflection"
+                    text={msg.content}
+                    showLabel={false}
+                    className="ml-1 opacity-50 hover:opacity-100"
+                  />
                 )}
               </div>
-              {msg.role === "assistant" && (
-                <ShareButton title="Shepherd's Path Reflection" text={msg.content} showLabel={false} className="ml-1 opacity-50 hover:opacity-100" />
+              {msg.role === "user" && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mt-1">
+                  <User className="w-4 h-4 text-slate-300" />
+                </div>
               )}
-            </div>
-            {msg.role === "user" && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mt-1">
-                <User className="w-4 h-4 text-slate-300" />
-              </div>
-            )}
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
 
-      {/* Thinking indicator */}
+      {/* Searching indicator */}
       {chatMutation.isPending && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}

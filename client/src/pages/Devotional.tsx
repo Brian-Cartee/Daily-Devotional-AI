@@ -1524,7 +1524,9 @@ export default function Devotional() {
             <div className="px-4 pb-4">
               <BibleStudyChat
                 verseId={verse.id}
+                verseReference={verse.reference}
                 initialReflection={reflectionContent}
+                prayerContent={prayerContent}
               />
             </div>
           </div>
