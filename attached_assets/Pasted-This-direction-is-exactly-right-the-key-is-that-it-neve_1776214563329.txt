@@ -1,0 +1,86 @@
+This direction is exactly right — the key is that it never feels like a content feed. It should feel like something that was found for them, not offered to them.
+Direction + Decisions
+1. Core Model: One Sermon, Not a Feed
+👉 This should be one highly curated message per day
+Not a scroll. Not options.
+The moment we give multiple choices, we shift from:
+“this was chosen for you”
+to
+“pick something”
+That breaks the experience.
+2. Placement (Strong Opinion)
+👉 Primary location: End of Devotional flow
+After:
+Reflection
+Prayer
+“Understand This”
+This becomes:
+the final step — not optional, but not forced
+Secondary placement:
+👉 A small teaser card:
+“A message was found for you today →”
+Lives on the Devotional screen
+Leads into the full experience
+3. Framing (This is EVERYTHING)
+Before the video, we anchor it:
+“After sitting with today’s verse… and what came through in your reflection… this message was chosen for you.
+Specifically around: [theme — e.g. identity, weariness, calling].”
+👉 This is what transforms it from content → experience
+4. Keep Them In-App (Important)
+We accept that YouTube can be opened…
+But we design so leaving feels like breaking the moment
+Flow:
+Thumbnail + title (no autoplay)
+Tap → video opens in-app
+AFTER video:
+👉 Immediate continuation:
+“What stayed with you?”
+Inline journal input
+Save moment
+5. Closing the Loop (Critical)
+After journaling:
+👉 Short closing prayer:
+“God, take what was heard today… and let it take root…”
+This ties:
+Verse
+Reflection
+Sermon
+User response
+👉 into one continuous experience
+6. Under-the-Hood Logic (Aligned with your thinking)
+Use:
+Verse
+Reflection themes
+User input (Talk It Through / journal if available)
+Generate:
+👉 1–2 highly targeted search queries
+Return:
+👉 Top 1–2 videos → choose best match
+NOT:
+lists
+categories
+generic recommendations
+7. Emotional Goal
+This should feel like:
+“I needed to hear this today.”
+Not:
+“Here’s a sermon”
+“Recommended for you”
+8. Future Expansion (Not Now)
+We can later explore:
+A deeper “Messages for You” archive
+Theme-based collections
+But for now:
+👉 Daily, singular, intentional
+Final Answer to Your Question
+👉 One curated sermon per day
+Because:
+It preserves meaning
+It reduces friction
+It strengthens emotional impact
+It aligns with the rest of the experience
+Final Thought
+If this is done right…
+This becomes one of the most powerful parts of the app:
+👉 not because of the video
+👉 but because of when and why it appears
