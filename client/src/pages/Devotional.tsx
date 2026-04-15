@@ -58,7 +58,7 @@ export default function Devotional() {
   const [prayerContent, setPrayerContent] = useState("");
   const [prayerLoading, setPrayerLoading] = useState(false);
   const [prayerError, setPrayerError] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+
   const [copied, setCopied] = useState(false);
   const [sharingImage, setSharingImage] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
@@ -1509,13 +1509,13 @@ export default function Devotional() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-[15px] font-bold text-foreground leading-tight">Ask the Bible Scholar</p>
+                  <p className="text-[15px] font-bold text-foreground leading-tight">Understand This</p>
                   <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">
                     Try it
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                  Original meaning · history · cross-references · life application
+                  Meaning · history · cross-references · life application
                 </p>
               </div>
             </div>
