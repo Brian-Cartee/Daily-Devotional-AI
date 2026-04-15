@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
 import { getUserName, getUserVoice } from "@/lib/userName";
+import { getTodayObservance } from "@/lib/observanceDays";
 import { ListenButton } from "@/components/ListenButton";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
@@ -623,6 +624,8 @@ export default function Devotional() {
     weekday: "short", month: "short", day: "numeric"
   });
 
+  const todayObservance = getTodayObservance();
+
   return (
     <>
       <NavBar />
@@ -737,6 +740,16 @@ export default function Devotional() {
                 <span>{streak.currentStreak}-day streak — Pro protects it so one busy day never resets your progress</span>
               </Link>
             </motion.div>
+          )}
+
+          {/* High-observance day — quiet, inclusive, non-structural */}
+          {todayObservance && (
+            <p
+              data-testid="text-observance-day"
+              className="text-center text-[11px] text-muted-foreground/50 italic py-1"
+            >
+              For many, today is {todayObservance.name}.
+            </p>
           )}
 
           {/* STEP 1: TODAY'S WORD — cinematic hero card */}

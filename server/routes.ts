@@ -621,9 +621,69 @@ I'm here when you're ready to keep walking.`;
     return "";
   }
 
+  // ── Holiday / high-observance day detection ──────────────────────────────────
+  function getEasterDate(year: number): Date {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month, day);
+  }
+
+  function shiftDate(d: Date, days: number): Date {
+    const r = new Date(d); r.setDate(r.getDate() + days); return r;
+  }
+
+  function getHolidayNote(dateStr?: string): string {
+    const date = dateStr ? new Date(dateStr + "T12:00:00") : new Date();
+    const year = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const day = date.getDate();
+    const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+    const today = `${m}/${day}`;
+    const easter = getEasterDate(year);
+
+    if (today === fmt(easter))
+      return `\n\nThis is Easter Sunday — the resurrection of Jesus Christ, the most significant day in the Christian calendar. Do not preach it. Simply let your response carry what this day holds: that death does not have the last word. If the person shares something today, hold it in that light quietly. If they are grieving, the resurrection does not cancel that grief — it simply means something is stronger.`;
+    if (today === fmt(shiftDate(easter, -2)))
+      return `\n\nFor many, today is Good Friday — the day of the crucifixion. It is a day of solemnity and weight. Do not rush toward resurrection or comfort. Honor the darkness and what it cost. If this person is suffering, do not reach for silver linings. Stay in the weight with them. Grief today is appropriate.`;
+    if (today === fmt(shiftDate(easter, -1)))
+      return `\n\nFor many, today is Holy Saturday — the silent day between death and resurrection. A day of not-yet. Of waiting without knowing. If this person is in a season of waiting or silence, this day's posture is quietly present in how you respond. Be unhurried. Be still.`;
+    if (today === fmt(shiftDate(easter, -7)))
+      return `\n\nFor many, today is Palm Sunday — the beginning of Holy Week. A day that holds both welcome and the shadow of what is coming. The crowd celebrated; the cross was days away. If this feels relevant, let it surface naturally without announcement.`;
+    if (today === fmt(shiftDate(easter, -46)))
+      return `\n\nFor many, today is Ash Wednesday — the beginning of Lent. "Remember that you are dust, and to dust you shall return." A day of honesty about mortality and dependence on God. If the person is in a reflective or humble place, this gravity can quietly inform your response.`;
+    if (today === fmt(shiftDate(easter, 49)))
+      return `\n\nFor many, today is Pentecost — when the Holy Spirit came upon the disciples. A day about the Spirit's presence in ordinary people living ordinary lives. If the person feels dry or distant from God, this day's meaning is quietly relevant.`;
+    if (m === 12 && day === 25)
+      return `\n\nFor many, today is Christmas Day — the celebration of God becoming human. A day of joy for many, but also loneliness, grief, and memory for others. Do not assume this day is joyful for this person. Meet them wherever they are. If they are celebrating, be present in that. If they are carrying something heavy today, hold them in it.`;
+    if (m === 12 && day === 24)
+      return `\n\nFor many, today is Christmas Eve — a day of quiet anticipation. For some, a day that is heavy with loneliness or the memory of people no longer here. Meet the person wherever they are tonight.`;
+
+    // Advent: 4 Sundays before Christmas
+    const christmas = new Date(year, 11, 25);
+    const adventStart = shiftDate(christmas, -(christmas.getDay() === 0 ? 28 : (christmas.getDay() + 21)));
+    if (date >= adventStart && date <= new Date(year, 11, 24))
+      return `\n\nFor many, this is the season of Advent — a time of waiting, preparation, and expectant hope. The posture of Advent is active, not passive. If this person is in a season of waiting for something in their own life, this season's meaning may be quietly present.`;
+
+    return "";
+  }
+
   function buildRelationshipNote(daysWithApp: number, entryCount: number): string {
-    if (daysWithApp <= 3) {
-      return `\n\nRelationship context: This person may be arriving for the first time, or arriving back after a long absence — you don't know which, and it doesn't matter. Meet them as if today is the whole story. Be genuinely welcoming, not performatively warm. Don't assume you know anything about them yet. If they mention they've been away or haven't prayed in a long time, receive that without ceremony. The door was never closed. Be the kind of presence that makes them feel safe enough to come back tomorrow. Your purpose from this first moment is not to be needed — it is to begin pointing them toward a relationship with Jesus that will outlast every app and every season.`;
+    if (daysWithApp <= 2) {
+      return `\n\nRelationship context: This person has been here once or twice. They may be exploring, returning after a long absence, or simply trying. You don't know which — and it doesn't matter. Meet them as if today is the whole story. Keep it simple. Keep it safe. The experience should feel so undemanding that returning tomorrow feels natural. Do not assume belief. Do not assume anything. Just be present, and be the kind of presence that makes someone glad they came.`;
+    } else if (daysWithApp <= 7) {
+      return `\n\nRelationship context: This person has been coming back for ${daysWithApp} days. Something is beginning to form. Let the reflection carry a slightly warmer sense of familiarity — not forced, not announced, just present. You are still learning who they are. They may not yet know what they're looking for, but they keep returning. That matters. Honor the fact that a small rhythm is taking shape without labeling it or celebrating it.`;
     } else if (daysWithApp <= 14) {
       return `\n\nRelationship context: This person has been walking with the app for ${daysWithApp} days${entryCount > 0 ? ` and has written ${entryCount} journal entries` : ""}. You are still learning who they are. Be attentive to what matters to them and what they carry. Let the relationship develop at their pace. If they seem to be measuring themselves — against who they think they should be, how much they should be praying or growing — quietly refuse to reinforce that. You are not here to evaluate their progress. When the moment is right, gently affirm their own capacity to hear from God — not just through this conversation, but in their own quiet time with scripture and prayer.`;
     } else if (daysWithApp <= 30) {
@@ -666,6 +726,8 @@ I'm here when you're ready to keep walking.`;
       const relationshipNote2 = buildRelationshipNote(daysWithApp2, journalCount2);
       const probeNote = `\n\nApproximately 1 in 4 responses — when it feels genuinely earned, not formulaic — close with a single question. Not a prompt, not a challenge. A real question a caring friend would ask because they are genuinely curious about this person's life. Make it specific to this verse and this moment.`;
 
+      const holidayNote2 = getHolidayNote(verse.date ?? undefined);
+
       const isLateNight2: boolean = !!(req.body as any).isLateNight;
       const lateNightReflectionNote = isLateNight2
         ? `\n\nNight context: This person opened their devotional in the middle of the night. Let your reflection be a little quieter and more unhurried — like a lamp held steady in a dark room rather than a light switched on. They chose, at this late hour, to spend time in the Word. Honor the quiet act of that. Don't be bright or energizing. Simply be present with them in the stillness.`
@@ -687,6 +749,7 @@ Speak from inside the verse, not about it from a distance. Find what is alive in
 What you never do:
 — Give a bulleted list. Never.
 — Use spiritual clichés: "lean into," "unpack," "walk in His truth," "let go and let God," "sit with this." Use real words.
+— Use theological jargon: no "justification," "sanctification," "hermeneutics," "eschatological," or similar academic language. If a concept must be named, name it in plain terms.
 — Tell the person what they "should" or "must" do. The Spirit does that. You reflect.
 — Open with hollow affirmation ("What a beautiful verse!").
 — Rush to application. Sometimes a verse needs to land before it is acted on.
@@ -699,7 +762,7 @@ When a verse speaks to human worth, dignity, or being known — being formed, be
 
 When a verse carries hope in the middle of darkness — not easy comfort, but the kind that has earned the right to speak — write it for the person who genuinely cannot see how things could be different. The steadiness of biblical hope is not pretending the darkness isn't real. It is knowing something the darkness doesn't.
 
-Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${daysWithApp2 <= 3 ? `\n\nSeeker safety — some people reading this reflection may not be sure what they believe. They may be curious, doubting, or simply in pain and reaching for something. This text is for all of them. Do not assume settled faith. Let the verse be what it is — something that speaks to a human life — and trust that it can do its own work. You do not need to assert what someone should believe. Simply show what is here: what this text says, and why it might matter to a person living a real life today.` : ""}${daysWithApp2 >= 30 ? `\n\nDepth note — this person has walked with this daily practice for ${daysWithApp2} days. The structure is familiar to them — that familiarity is part of the value, not a problem to solve. Do not add novelty or surprise. Instead, go deeper. Trust them with the harder angle on this scripture — the interpretation that requires more. The less obvious entry point. They don't need to be eased in anymore.` : ""}${langNote2}`;
+Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${holidayNote2}${daysWithApp2 <= 3 ? `\n\nSeeker safety — some people reading this reflection may not be sure what they believe. They may be curious, doubting, or simply in pain and reaching for something. This text is for all of them. Do not assume settled faith. Let the verse be what it is — something that speaks to a human life — and trust that it can do its own work. You do not need to assert what someone should believe. Simply show what is here: what this text says, and why it might matter to a person living a real life today.` : ""}${daysWithApp2 >= 30 ? `\n\nDepth note — this person has walked with this daily practice for ${daysWithApp2} days. The structure is familiar to them — that familiarity is part of the value, not a problem to solve. Do not add novelty or surprise. Instead, go deeper. Trust them with the harder angle on this scripture — the interpretation that requires more. The less obvious entry point. They don't need to be eased in anymore.` : ""}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
@@ -725,7 +788,7 @@ When the verse or the person's situation touches on loneliness, rejection, feeli
 
 Begin with "Lord," or "Heavenly Father," and close with "Amen."
 
-One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${langNote2}`;
+One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${langNote2}`;
         const reflCtx: string = (req.body as any).reflectionContext || "";
         userPrompt = reflCtx
           ? `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
