@@ -835,13 +835,17 @@ export default function Devotional() {
               </div>
 
               {/* Remember this verse — always visible */}
-              <div className="px-4 pb-2 pt-1 flex items-center justify-center border-t border-border/20">
+              <div className="px-4 pb-3 pt-2 flex items-center justify-center border-t border-border/20">
                 <button
                   data-testid="button-remember-verse"
                   onClick={handleToggleMemory}
-                  className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all ${verseInMemory ? "text-amber-600 bg-amber-50 dark:bg-amber-950/40" : "text-muted-foreground/60 hover:text-amber-500 hover:bg-amber-50/60 dark:hover:bg-amber-950/30"}`}
+                  className={`inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-full border transition-all ${
+                    verseInMemory
+                      ? "text-amber-500 bg-amber-400/10 border-amber-400/40 dark:bg-amber-950/40"
+                      : "text-amber-400/80 border-amber-400/25 hover:text-amber-400 hover:bg-amber-400/8 hover:border-amber-400/45"
+                  }`}
                 >
-                  <Star className={`w-3.5 h-3.5 ${verseInMemory ? "fill-amber-500 text-amber-500" : ""}`} />
+                  <Star className={`w-4 h-4 transition-all ${verseInMemory ? "fill-amber-400 text-amber-400 scale-110" : "text-amber-400/70"}`} />
                   {verseInMemory ? "Remembered" : "Remember this verse"}
                 </button>
               </div>
