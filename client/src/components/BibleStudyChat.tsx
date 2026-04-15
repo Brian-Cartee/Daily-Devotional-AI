@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Clock, PenLine, Heart, Lightbulb, GitBranch,
-  Send, Loader2, User, Sparkles
+  Send, Loader2, User, Sparkles, ChevronRight
 } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import type { ChatMessage } from "@shared/routes";
@@ -129,19 +129,25 @@ export function BibleStudyChat({
       )}
 
       {/* Preset chips — horizontal scroll */}
-      <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
-        {PRESET_PROMPTS.map(({ label, question, icon: Icon }) => (
-          <button
-            key={label}
-            data-testid={`button-preset-${label.toLowerCase().replace(/[\s&']+/g, "-")}`}
-            onClick={() => sendMessage(question ?? label)}
-            disabled={chatMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-primary/25 bg-primary/6 hover:bg-primary/12 hover:border-primary/45 text-primary/80 hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap flex-shrink-0"
-          >
-            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-[12px] font-semibold">{label}</span>
-          </button>
-        ))}
+      <div className="relative">
+        <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {PRESET_PROMPTS.map(({ label, question, icon: Icon }) => (
+            <button
+              key={label}
+              data-testid={`button-preset-${label.toLowerCase().replace(/[\s&']+/g, "-")}`}
+              onClick={() => sendMessage(question ?? label)}
+              disabled={chatMutation.isPending}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-primary/25 bg-primary/6 hover:bg-primary/12 hover:border-primary/45 text-primary/80 hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap flex-shrink-0"
+            >
+              <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="text-[12px] font-semibold">{label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
+          style={{ background: "linear-gradient(to right, transparent, hsl(var(--background)) 75%)" }}>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
+        </div>
       </div>
 
       {/* Input row — amber send button */}

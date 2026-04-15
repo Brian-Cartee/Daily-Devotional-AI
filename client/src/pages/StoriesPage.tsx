@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Star, Send, Check, X, ChevronDown } from "lucide-react";
+import { Heart, Star, Send, Check, X, ChevronDown, ChevronRight } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 
 const CATEGORIES = [
@@ -163,21 +163,27 @@ export default function StoriesPage() {
         {/* Category filter */}
         <div className="sticky top-14 z-30 bg-background/95 backdrop-blur-sm border-b border-border/40">
           <div className="max-w-xl mx-auto px-4 py-3">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  data-testid={`filter-${cat.toLowerCase().replace(/\s/g, "-")}`}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all ${
-                    activeCategory === cat
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="relative">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    data-testid={`filter-${cat.toLowerCase().replace(/\s/g, "-")}`}
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all ${
+                      activeCategory === cat
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
+                style={{ background: "linear-gradient(to right, transparent, hsl(var(--background)) 75%)" }}>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
+              </div>
             </div>
           </div>
         </div>

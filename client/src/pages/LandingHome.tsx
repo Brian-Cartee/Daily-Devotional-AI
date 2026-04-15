@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { isIOS } from "@/lib/platform";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -318,9 +318,9 @@ function HeroAIPrompt() {
             ))}
             </div>
             {/* Fade + chevron — signals more chips to the right */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 flex items-center justify-end"
-              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 80%)" }}>
-              <span className="text-muted-foreground/50 text-[13px] font-bold pr-1">›</span>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
+              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 75%)" }}>
+              <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
             </div>
           </div>
         </div>
@@ -824,7 +824,8 @@ export default function LandingHome() {
                 </p>
 
                 {/* Scrollable chip row — no emojis, icon + label pills */}
-                <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+                <div className="relative">
+                <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                   {([
                     { icon: <Zap  className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anxiety",      query: "I'm feeling anxious and overwhelmed and need God's peace" },
                     { icon: <Heart className="w-3.5 h-3.5 flex-shrink-0" />, label: "Grief",       query: "I'm grieving a loss and need God's comfort right now" },
@@ -856,6 +857,12 @@ export default function LandingHome() {
                     <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
                     <span className="text-[13px] font-semibold">Something else</span>
                   </button>
+                </div>
+                {/* Fade + chevron — signals more chips to the right */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
+                  style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 75%)" }}>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
+                </div>
                 </div>
 
                 {/* Inline input — appears when "Something else" is tapped */}
