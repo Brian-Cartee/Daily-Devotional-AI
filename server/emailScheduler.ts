@@ -162,6 +162,11 @@ export async function sendDailyEmailsToAllSubscribers() {
           .replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
 
+        // Mark in DB BEFORE sending — if server crashes between mark and send,
+        // the subscriber misses one email. If we mark after and crash, they get a duplicate.
+        // Missing once is far less harmful than receiving duplicates.
+        await storage.updateSubscriberLastEmailDate(subscriber.id, today);
+
         const displayFrom = fromEmail.includes('@') && !fromEmail.startsWith('"')
           ? `Shepherd's Path <${fromEmail}>`
           : fromEmail;
@@ -174,8 +179,6 @@ export async function sendDailyEmailsToAllSubscribers() {
           text,
         });
 
-        // Record the send date in the DB so a restart cannot trigger a duplicate
-        await storage.updateSubscriberLastEmailDate(subscriber.id, today);
         sent++;
       } catch (err) {
         console.error(`[email] Failed to send to ${subscriber.email}:`, err);
