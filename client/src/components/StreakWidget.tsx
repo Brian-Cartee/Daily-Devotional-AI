@@ -56,9 +56,9 @@ export function StreakWidget({ onAddName, variant = "card" }: StreakWidgetProps)
   const firstName = userName?.split(" ")[0] ?? null;
 
   function getSubtitle() {
-    if (streak >= 7) return `${streak} days strong — keep going.`;
-    if (streak > 1) return `${streak} days in a row. Don't break the momentum.`;
-    if (streak === 1 && visitedToday) return "Day one — well done for showing up.";
+    if (streak >= 7) return `${streak} days walking with God.`;
+    if (streak > 1) return `${streak} days returning. Keep coming back.`;
+    if (streak === 1 && visitedToday) return "Day one — it matters that you're here.";
     return "Your walk starts with one step.";
   }
 

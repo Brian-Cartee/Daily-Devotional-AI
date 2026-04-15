@@ -629,7 +629,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
           {/* Divider */}
           <div className="flex items-center gap-3 my-8">
             <div className="flex-1 h-px bg-amber-200/50 dark:bg-amber-800/30" />
-            <span className="text-[11px] font-semibold text-amber-700/60 dark:text-amber-500/50 uppercase tracking-widest">Reading Tracks</span>
+            <span className="text-[11px] font-semibold text-amber-700/60 dark:text-amber-500/50 uppercase tracking-widest">Paths through Scripture</span>
             <div className="flex-1 h-px bg-amber-200/50 dark:bg-amber-800/30" />
           </div>
 

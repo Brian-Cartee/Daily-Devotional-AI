@@ -390,8 +390,8 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center gap-2.5">
                     <AlarmClock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                     <div>
-                      <p className="text-[13px] font-medium text-foreground">Streak protection</p>
-                      <p className="text-[11px] text-muted-foreground">9 PM alert if streak at risk today</p>
+                      <p className="text-[13px] font-medium text-foreground">Evening reminder</p>
+                      <p className="text-[11px] text-muted-foreground">A gentle nudge if you haven't checked in yet</p>
                     </div>
                   </div>
                   <Toggle

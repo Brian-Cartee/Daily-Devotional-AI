@@ -980,9 +980,9 @@ export default function LandingHome() {
                 { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "Test your scripture knowledge",        color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
                 { href: "/iron-circle",  Icon: Users,      label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",       color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
                 { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift each other up",                   color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
-                { href: "/reading-plans",Icon: Star,       label: "Reading Plans",           desc: "Bible in a Year & more",               color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
+                { href: "/reading-plans",Icon: Star,       label: "Bible in a Year",         desc: "A daily path through all of Scripture", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
                 { href: "/salvation",    Icon: Heart,      label: "Beginning with Jesus",    desc: "Starting your faith journey",          color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-salvation" },
-                { href: "/study",        Icon: Sparkles,   label: "Quick Bible Study",       desc: "Any topic or passage, studied instantly",color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-study" },
+                { href: "/study",        Icon: Sparkles,   label: "Explore Scripture",       desc: "A question, a passage, or something on your mind",color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-study" },
                 { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
               ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
                 <Link key={href} href={href}>
@@ -1044,7 +1044,7 @@ export default function LandingHome() {
               Store
             </Link>
             <Link href="/reading-plans" className="hover:text-foreground transition-colors" data-testid="link-plans-footer">
-              Reading Plans
+              Bible in a Year
             </Link>
             <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-600/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
               Beginning with Jesus
@@ -1062,7 +1062,7 @@ export default function LandingHome() {
               Iron Sharpens Iron
             </Link>
             <Link href="/study" className="hover:text-foreground transition-colors" data-testid="link-study-footer">
-              Quick Bible Study
+              Explore Scripture
             </Link>
             <Link href="/calling" className="hover:text-foreground transition-colors" data-testid="link-calling-footer">
               Share the Word

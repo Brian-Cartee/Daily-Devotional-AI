@@ -226,7 +226,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           onClick={() => setShowDetails(v => !v)}
           className="w-full flex items-center justify-center gap-1.5 py-2 text-white/40 hover:text-white/60 transition-colors text-[12px] font-medium"
         >
-          How it works
+          What to expect
           <motion.div animate={{ rotate: showDetails ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown className="w-3.5 h-3.5" />
           </motion.div>

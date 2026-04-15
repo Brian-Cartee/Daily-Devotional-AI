@@ -167,7 +167,7 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
             className="px-4 py-4"
           >
             <p className="text-[13px] text-foreground/75 leading-relaxed mb-4">
-              A quick audio tour of the app — about 90 seconds. First, pick the voice.
+              A short introduction — about 90 seconds. First, pick the voice.
             </p>
             <div className="flex gap-2.5 mb-4">
               {VOICE_OPTIONS.map(v => (

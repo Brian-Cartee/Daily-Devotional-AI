@@ -178,7 +178,7 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
               className="flex items-center justify-center gap-1.5 w-full py-2 rounded-2xl border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-semibold hover:bg-amber-100/80 dark:hover:bg-amber-950/40 transition-colors"
             >
               <Zap className="w-3.5 h-3.5" />
-              Protect your streak with Pro — never lose it to a busy day
+              Continue your walk uninterrupted with Pro
             </Link>
           )}
         </div>
