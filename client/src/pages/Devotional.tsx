@@ -101,6 +101,7 @@ export default function Devotional() {
   const [showAiArt, setShowAiArt] = useState(true);
   const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
   const [friendShareDone, setFriendShareDone] = useState(false);
+  const [postPrayerShareDone, setPostPrayerShareDone] = useState(false);
   const [showShareRow, setShowShareRow] = useState(false);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
@@ -497,13 +498,13 @@ export default function Devotional() {
 
   const handleSendToFriend = async () => {
     if (!verse) return;
-    const reflectionSnippet = reflectionContent
-      ? "\n\n" + reflectionContent.split("\n").filter(p => p.trim())[0]
-      : "";
-    const text = `I was thinking of you while reading today's verse.\n\n"${verse.text}"\n— ${verse.reference}${reflectionSnippet}\n\nRead yours at shepherdspathai.com`;
+    const name = getUserName();
+    const from = name ? `${name} was thinking of you` : "Someone was thinking of you";
+    const appLine = "\n\nThey use an app called Shepherd's Path for daily devotionals — free to download at shepherdspathai.com";
+    const text = `${from} while reading today's verse.\n\n"${verse.text}"\n— ${verse.reference}${appLine}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "I thought of you today", text });
+        await navigator.share({ title: "Someone was thinking of you today", text });
         setFriendShareDone(true);
       } catch {}
     } else {
@@ -1456,6 +1457,85 @@ export default function Devotional() {
                   ? "You came back again. That matters more than you realize. Come back tomorrow — the journey continues."
                   : "You walked the path today. The Word does its work whether you feel it or not. Come back tomorrow."}
               </p>
+            </motion.div>
+          )}
+
+          {/* Post-prayer share nudge — appears after prayer + benediction; moment of max resonance */}
+          {prayerContent && !postPrayerShareDone && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, hsl(35 60% 97%) 0%, hsl(30 50% 94%) 100%)",
+                border: "1px solid hsl(35 40% 85% / 0.8)",
+              }}
+              data-testid="post-prayer-share-card"
+            >
+              <div className="px-5 py-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200/80 flex items-center justify-center shrink-0 mt-0.5">
+                    <Heart className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-amber-900 leading-snug mb-0.5">
+                      Did someone come to mind?
+                    </p>
+                    <p className="text-[13px] text-amber-800/70 leading-snug">
+                      Send them the verse image — sometimes the right word finds someone at exactly the right moment.
+                    </p>
+
+                    <div className="flex items-center gap-3 mt-3 flex-wrap">
+                      <button
+                        data-testid="button-share-verse-image-post-prayer"
+                        onClick={async () => {
+                          if (!verse || sharingImage) return;
+                          setSharingImage(true);
+                          try {
+                            const { createShareImage } = await import("@/lib/shareImage");
+                            const blob = await createShareImage(verse.text, verse.reference, verseArtUrl);
+                            const file = new File([blob], "shepherds-path-verse.png", { type: "image/png" });
+                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                              await navigator.share({ files: [file], title: `${verse.reference} — Shepherd's Path` });
+                            } else {
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = "shepherds-path-verse.png";
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }
+                            setPostPrayerShareDone(true);
+                          } catch {}
+                          setSharingImage(false);
+                        }}
+                        disabled={sharingImage}
+                        className="inline-flex items-center gap-1.5 text-[13px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200/80 border border-amber-300/60 rounded-full px-4 py-1.5 transition-all disabled:opacity-50"
+                      >
+                        {sharingImage
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating…</>
+                          : <><Share2 className="w-3.5 h-3.5" /> Share verse image</>}
+                      </button>
+                      <button
+                        data-testid="button-send-friend-text-post-prayer"
+                        onClick={handleSendToFriend}
+                        className="text-[12px] font-semibold text-amber-700/70 hover:text-amber-700 transition-colors"
+                      >
+                        Send as text →
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    data-testid="button-dismiss-post-prayer-share"
+                    onClick={() => setPostPrayerShareDone(true)}
+                    className="shrink-0 text-amber-400/50 hover:text-amber-600 transition-colors text-lg leading-none mt-0.5"
+                    aria-label="Dismiss"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
 

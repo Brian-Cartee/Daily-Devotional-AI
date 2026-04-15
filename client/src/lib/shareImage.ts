@@ -654,11 +654,28 @@ export async function createShareImage(
   ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 102);
   ctx.shadowBlur = 0;
 
-  // ── Footer ────────────────────────────────────────────────
-  horizontalGlowLine(ctx, S - 70, "rgba(255,255,255,0.18)");
-  ctx.fillStyle = "rgba(255,255,255,0.28)";
-  ctx.font = "22px 'Georgia', serif";
-  ctx.fillText("shepherdspathai.com", S / 2, S - 38);
+  // ── Footer — soft invite, not an ad ──────────────────────
+  const footerY = S - 88;
+  const footerGrad = ctx.createLinearGradient(0, footerY, 0, S);
+  footerGrad.addColorStop(0, "rgba(0,0,0,0)");
+  footerGrad.addColorStop(1, "rgba(0,0,0,0.60)");
+  ctx.fillStyle = footerGrad;
+  ctx.fillRect(0, footerY, S, S - footerY);
+
+  horizontalGlowLine(ctx, footerY + 4, "rgba(255,255,255,0.14)");
+
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 8;
+
+  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  ctx.font = "bold 26px 'Georgia', serif";
+  ctx.fillText("Start your own daily devotional →", S / 2, footerY + 38);
+
+  ctx.fillStyle = "rgba(255,255,255,0.40)";
+  ctx.font = "20px 'Georgia', serif";
+  ctx.fillText("Shepherd's Path  ·  shepherdspathai.com", S / 2, footerY + 66);
+  ctx.shadowBlur = 0;
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob!), "image/png");
