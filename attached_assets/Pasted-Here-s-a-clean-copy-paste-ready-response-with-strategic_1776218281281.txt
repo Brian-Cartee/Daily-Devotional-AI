@@ -1,0 +1,300 @@
+Here’s a **clean, copy/paste-ready response** with strategic guidance only:
+
+---
+
+## **Shepherd’s Path — Product Direction (Q3–Q5)**
+
+---
+
+### **Question 3 — Progressive Reveal**
+
+**Goal:**
+Create a guided experience without making it feel controlled or forced.
+
+---
+
+### **What it should NOT be:**
+
+* Not tap-to-unlock steps
+* Not gated progression
+* Not “complete this to continue”
+
+---
+
+### **What it SHOULD feel like:**
+
+> The next step naturally *appears* as the user leans in
+
+---
+
+### **Recommended Model: Passive + Responsive Reveal**
+
+**Step 1 — Verse (Arrival)**
+
+* Only the verse is visible
+* Calm, uncluttered
+
+---
+
+**Step 2 — Reflection**
+Appears when the user:
+
+* taps “Begin”
+* taps “Listen”
+* pauses briefly (~2–3 seconds)
+
+👉 Not forced — simply *invited*
+
+---
+
+**Step 3 — Prayer**
+Appears:
+
+* after reflection completes
+  OR
+* after user engages (reply, scroll, listen)
+
+---
+
+**Step 4 — Understand / Sermon**
+Appears:
+
+* after prayer moment settles
+* not immediately stacked
+
+---
+
+### **Key Mechanic:**
+
+* Use **soft transitions** (fade, slide, expand)
+* Avoid hard “step changes”
+
+---
+
+### **Big Risk to Avoid:**
+
+If users feel:
+
+> “I have to complete this to move on”
+
+You lose:
+
+* trust
+* calm
+* authenticity
+
+---
+
+### **Core Principle:**
+
+> Guide the user forward — never control their path
+
+---
+
+---
+
+### **Question 4 — Retention**
+
+**Problem:**
+You currently rely on:
+
+* streaks
+* notifications
+* reminders
+
+These create:
+👉 **pressure, not desire**
+
+---
+
+### **What actually brings users back:**
+
+Not:
+
+> “I need to keep my streak”
+
+But:
+
+> **“That helped me… I want that again.”**
+
+---
+
+### **Retention is driven by:**
+
+#### 1. Emotional Continuity
+
+User feels:
+
+* “This knows where I left off”
+
+---
+
+#### 2. Personal Relevance
+
+User feels:
+
+* “This is for me, today”
+
+---
+
+#### 3. Gentle Familiarity
+
+User feels:
+
+* “I know what I’ll find here”
+
+---
+
+---
+
+### **What Shepherd’s Path should feel like on re-entry:**
+
+Not:
+
+> “Here’s today’s content”
+
+But:
+
+> **“Welcome back — let’s keep walking”**
+
+---
+
+### **Subtle retention drivers:**
+
+* Light acknowledgment of prior day:
+
+  > “Yesterday you reflected on…” (optional, not heavy)
+
+* Consistent structure (familiar rhythm)
+
+* No pressure language:
+
+  * No guilt
+  * No “you missed a day” tone
+
+---
+
+### **Core Principle:**
+
+> People return to places that felt meaningful — not places that reminded them to return
+
+---
+
+---
+
+### **Question 5 — Pricing Page**
+
+**Current issue:**
+Feature list = transactional
+Your app = relational
+
+---
+
+### **What it SHOULD communicate:**
+
+Not:
+
+> “Here’s what you get”
+
+But:
+
+> **“Here’s what this becomes”**
+
+---
+
+### **The ONE thing it must communicate:**
+
+> **Pro is how you go deeper in something that already matters to you**
+
+---
+
+### **The ONE thing it must avoid:**
+
+* Feature-heavy explanation
+* Technical breakdowns
+* Anything that feels like selling
+
+---
+
+---
+
+### **Recommended Structure:**
+
+**1. Opening (Emotional Anchor)**
+
+> “You’ve already started something here…”
+>
+> “Pro simply takes you deeper.”
+
+---
+
+**2. What “Deeper” Means (Not Features — Experience)**
+
+* Deeper understanding of Scripture
+* More personalized guidance
+* Continued daily messages that meet you where you are
+
+---
+
+**3. Gentle Clarity (Light Feature Framing)**
+
+* Daily context
+* Daily message (sermon)
+* Unlimited guidance
+
+(keep minimal, no overload)
+
+---
+
+**4. Invitation (Not Conversion)**
+
+👉 “Continue deeper”
+👉 “Stay on the path”
+
+NOT:
+
+* “Upgrade now”
+* “Unlock features”
+
+---
+
+---
+
+### **Core Principle:**
+
+> The pricing page should feel like an invitation into depth — not a transaction
+
+---
+
+---
+
+## **Final Summary**
+
+**Progressive Reveal:**
+
+* Let the experience unfold naturally
+* No forced steps, no gating flow
+
+---
+
+**Retention:**
+
+* Driven by meaning, not mechanics
+* Users return because it mattered, not because they’re reminded
+
+---
+
+**Pricing:**
+
+* Sell depth, not features
+* Invite, don’t push
+
+---
+
+## **End Goal**
+
+* The app feels guided, not controlled
+* The user returns because they want to
+* Pro feels like a natural next step, not a paywall
+
+---

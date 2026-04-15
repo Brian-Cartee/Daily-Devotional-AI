@@ -189,15 +189,18 @@ export default function PricingPage() {
         transition={{ duration: 0.5 }}
         className="px-5 pt-8 pb-6 text-center max-w-xl mx-auto"
       >
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-widest mb-4">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-widest mb-5">
           <Sparkles className="w-3 h-3" />
-          Plans & Pricing
+          Shepherd's Path Pro
         </div>
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
-          Start free.<br />Go deeper with Pro.
+        <h1 className="text-[28px] font-extrabold text-foreground tracking-tight leading-tight mb-3">
+          You've already started<br />something here.
         </h1>
-        <p className="text-[15px] text-muted-foreground leading-relaxed">
-          Shepherd's Path is free to use every day. Pro removes the limits and adds tools that help you go further in your faith.
+        <p className="text-[15px] text-muted-foreground leading-relaxed mb-3">
+          Pro simply takes you deeper.
+        </p>
+        <p className="text-[13px] text-muted-foreground/70 leading-relaxed max-w-sm mx-auto">
+          More of what already matters — deeper Scripture, more personal guidance, every day without limits.
         </p>
       </motion.div>
 
@@ -306,7 +309,7 @@ export default function PricingPage() {
               )}
             </div>
             <p className="text-[13px] text-muted-foreground leading-snug">
-              No limits. Go as deep as you want, every day.
+              This is what it becomes when you go further.
             </p>
           </div>
 
@@ -366,7 +369,7 @@ export default function PricingPage() {
                   disabled={loading}
                 >
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
-                  {loading ? "Redirecting…" : plan === "annual" ? "Get Pro — $44.99/yr" : "Get Pro — $5.99/mo"}
+                  {loading ? "Redirecting…" : plan === "annual" ? "Continue deeper — $44.99/yr" : "Continue deeper — $5.99/mo"}
                 </Button>
 
                 {/* Trust anchor */}

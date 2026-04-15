@@ -65,6 +65,7 @@ export default function Devotional() {
   const [copied, setCopied] = useState(false);
   const [sharingImage, setSharingImage] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
+  const [entryTriggered, setEntryTriggered] = useState(() => !!getCachedReflection());
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
@@ -232,6 +233,7 @@ export default function Devotional() {
     onError: () => toast({ description: "Could not save. Please try again.", variant: "destructive" }),
   });
 
+  // Effect 1: Immediate setup when verse loads — bookmark, prewarm TTS, streak
   useEffect(() => {
     if (verse && !devotionalStarted) {
       setDevotionalStarted(true);
@@ -239,21 +241,7 @@ export default function Devotional() {
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         label: `Today's devotional · ${verse.reference}`,
       });
-      // Prewarm the verse TTS immediately so the Listen button is near-instant
       prewarmTTS(`${verse.text} — ${verse.reference}`, getUserVoice());
-      const lang = getStoredLang();
-      const userName = getUserName() ?? undefined;
-      const cachedRefl = getCachedReflection();
-      const cachedPryr = getCachedPrayer();
-      if (cachedRefl && cachedPryr) {
-        // Both already cached today — skip generation entirely
-      } else if (cachedRefl && !cachedPryr) {
-        // Reflection cached, prayer not — generate prayer with reflection context
-        generatePrayer(verse.id, lang, userName, cachedRefl);
-      } else {
-        // Fresh session — generate reflection first, prayer follows sequentially in generateReflection callback
-        generateReflection(verse.id, lang, userName);
-      }
       fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -269,6 +257,31 @@ export default function Devotional() {
       }).catch(() => {});
     }
   }, [verse]);
+
+  // Effect 2: Generate reflection/prayer once the user begins (or auto-triggers after 3s)
+  const generationStartedRef = useRef(false);
+  useEffect(() => {
+    if (!verse || !entryTriggered || generationStartedRef.current) return;
+    generationStartedRef.current = true;
+    const lang = getStoredLang();
+    const userName = getUserName() ?? undefined;
+    const cachedRefl = getCachedReflection();
+    const cachedPryr = getCachedPrayer();
+    if (cachedRefl && cachedPryr) {
+      // Both already cached today — skip generation entirely
+    } else if (cachedRefl && !cachedPryr) {
+      generatePrayer(verse.id, lang, userName, cachedRefl);
+    } else {
+      generateReflection(verse.id, lang, userName);
+    }
+  }, [verse, entryTriggered]);
+
+  // Effect 3: Passive auto-trigger — after 3 seconds of dwelling on the verse, begin naturally
+  useEffect(() => {
+    if (!verse || entryTriggered) return;
+    const timer = setTimeout(() => setEntryTriggered(true), 3000);
+    return () => clearTimeout(timer);
+  }, [verse, entryTriggered]);
 
   useEffect(() => {
     return () => {
@@ -1037,7 +1050,33 @@ export default function Devotional() {
             </div>
           </div>
 
+          {/* Progressive entry — shown on fresh sessions before reflection begins */}
+          <AnimatePresence>
+            {!entryTriggered && !reflectionContent && !reflectionLoading && (
+              <motion.div
+                key="begin-entry"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="flex flex-col items-center gap-4 py-6"
+              >
+                <p className="text-[13px] text-muted-foreground/55 text-center leading-relaxed max-w-[260px]">
+                  Sit with this a moment. Begin when you're ready.
+                </p>
+                <button
+                  data-testid="button-begin-devotional"
+                  onClick={() => setEntryTriggered(true)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-[14px] font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-95"
+                >
+                  Begin today's devotional
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* STEP 2: REFLECTION */}
+          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError) && (
           <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
             <StepLabel number={2} label="Reflection" />
             <AnimatePresence mode="wait">
@@ -1211,6 +1250,7 @@ export default function Devotional() {
               )}
             </AnimatePresence>
           </div>
+          )}
 
           {/* ── Daily Email Nudge — appears after reflection, before prayer ── */}
           <AnimatePresence>

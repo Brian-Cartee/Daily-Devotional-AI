@@ -126,8 +126,8 @@ function getReturnContent(daysAway: number, name: string | null) {
   if (daysAway <= 2) {
     return {
       label: `Welcome back${firstName}`,
-      headline: "One day away — you're still here.",
-      body: "Missing a day doesn't erase the walk you've been on. Your devotional is open and waiting.",
+      headline: "Let's keep walking.",
+      body: "You were here, and you're here again. That's the whole thing. Today's word is waiting.",
       gradient: "from-sky-400 via-blue-400 to-indigo-400",
       border: "border-sky-200 dark:border-sky-800",
       bg: "bg-sky-50 dark:bg-sky-950/40",
@@ -138,9 +138,9 @@ function getReturnContent(daysAway: number, name: string | null) {
 
   if (daysAway <= 6) {
     return {
-      label: `The path is still here${firstName}`,
-      headline: "A few days away — come back in.",
-      body: "The Good Shepherd doesn't walk away when you do. He leaves the ninety-nine to find the one. Today is a good day to return.",
+      label: `Good to have you back${firstName}`,
+      headline: "The path hasn't moved.",
+      body: "The Good Shepherd doesn't walk away when you do. He's been keeping your place. Step back in whenever you're ready.",
       gradient: "from-violet-400 via-primary to-indigo-400",
       border: "border-violet-200 dark:border-violet-800",
       bg: "bg-violet-50/60 dark:bg-violet-950/30",
@@ -151,9 +151,9 @@ function getReturnContent(daysAway: number, name: string | null) {
 
   if (daysAway <= 13) {
     return {
-      label: "The Shepherd is watching the road",
-      headline: "A week away — welcome home.",
-      body: "Like the father who saw his son \"while he was still a great way off\" and ran to meet him — that's the heart of God toward you right now. Today's devotional is the first step back.",
+      label: "Welcome home",
+      headline: "He was watching the road for you.",
+      body: "Like the father who saw his son \"while he was still a great way off\" and ran — that's the heart of God toward you right now. Just begin.",
       gradient: "from-amber-400 via-orange-400 to-rose-400",
       border: "border-amber-200 dark:border-amber-800",
       bg: "bg-amber-50/60 dark:bg-amber-950/30",
@@ -163,9 +163,9 @@ function getReturnContent(daysAway: number, name: string | null) {
   }
 
   return {
-    label: "No matter how long — you're not too far",
-    headline: "Come back. The door is open.",
-    body: "Scripture doesn't have a \"too long\" clause. God's mercies are new every morning — including this one. Start with just five minutes today.",
+    label: "The door is still open",
+    headline: "Come back. He's not keeping score.",
+    body: "God's mercies are new every morning — including this one. No catching up required. Just today's word, today.",
     gradient: "from-rose-400 via-primary to-violet-500",
     border: "border-rose-200 dark:border-rose-800",
     bg: "bg-rose-50/50 dark:bg-rose-950/20",
@@ -226,7 +226,7 @@ export function ReturningUserCard() {
             data-testid="button-returning-cta"
             className={`inline-flex items-center gap-1.5 text-[12px] font-bold ${content.labelColor} hover:opacity-80 transition-opacity`}
           >
-            Open today's devotional <ChevronRight className="w-3.5 h-3.5" />
+            Keep walking <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </Link>
       </motion.div>
