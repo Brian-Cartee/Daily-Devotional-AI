@@ -103,6 +103,7 @@ export default function GuidancePage() {
   const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
   const [prayerSaved, setPrayerSaved] = useState(false);
   const [showPrayerPortrait, setShowPrayerPortrait] = useState(false);
+  const [guidanceExpanded, setGuidanceExpanded] = useState(false);
 
   const tts = useTTS();
   const ttsChain = useTTS();
@@ -621,21 +622,37 @@ export default function GuidancePage() {
           >
             {((streamingText && !isSending && !isReflecting) || assistantMessages.length > 0) && (
               <>
-                <div
-                  className="text-[17px] leading-[1.85] text-foreground space-y-5 max-w-[68ch]"
-                  style={{ fontFamily: "var(--font-reading)" }}
-                  data-testid="text-guidance-response"
-                >
-                  {cleanResponse(isSending
+                {(() => {
+                  const rawText = cleanResponse(isSending
                     ? (assistantMessages[0]?.content ?? "")
                     : (streamingText || (assistantMessages[0]?.content ?? ""))
-                  ).split("\n\n").map((para, i) =>
-                    para.trim() ? <p key={i}>{para}</p> : null
-                  )}
-                  {!responseComplete && !isSending && (
-                    <span className="inline-block w-1.5 h-5 bg-primary/60 rounded-sm animate-pulse ml-0.5 align-middle" />
-                  )}
-                </div>
+                  );
+                  const paras = rawText.split("\n\n").filter(p => p.trim());
+                  const PREVIEW = 3;
+                  const showAll = guidanceExpanded || !responseComplete || paras.length <= PREVIEW;
+                  const visible = showAll ? paras : paras.slice(0, PREVIEW);
+                  return (
+                    <div
+                      className="text-[17px] leading-[1.85] text-foreground space-y-5 max-w-[68ch]"
+                      style={{ fontFamily: "var(--font-reading)" }}
+                      data-testid="text-guidance-response"
+                    >
+                      {visible.map((para, i) => <p key={i}>{para}</p>)}
+                      {!responseComplete && !isSending && (
+                        <span className="inline-block w-1.5 h-5 bg-primary/60 rounded-sm animate-pulse ml-0.5 align-middle" />
+                      )}
+                      {responseComplete && !showAll && (
+                        <button
+                          onClick={() => setGuidanceExpanded(true)}
+                          data-testid="button-guidance-expand"
+                          className="block text-[14px] font-semibold text-primary/80 hover:text-primary transition-colors mt-1"
+                        >
+                          Keep reading →
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
                 {responseComplete && (
                   <p className="text-[11px] text-muted-foreground/75 mt-4 flex items-center gap-1.5">
                     <span>✝</span>
@@ -801,7 +818,7 @@ export default function GuidancePage() {
                         a pastor, a close friend.
                       </motion.p>
                     )}
-                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.14em] mb-2 ml-1">Want to share more?</p>
+                    <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-[0.14em] mb-2 ml-1">Continue</p>
                     <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
                       <textarea
                         ref={inputRef}
@@ -811,7 +828,7 @@ export default function GuidancePage() {
                         autoCapitalize="sentences"
                         autoCorrect="on"
                         onKeyDown={handleKeyDown}
-                        placeholder="Say more… or ask what you need."
+                        placeholder="What's still on your heart?"
                         rows={2}
                         disabled={isSending}
                         data-testid="input-guidance-followup"
@@ -998,7 +1015,7 @@ export default function GuidancePage() {
           {/* Bridge text — connects the response to the journey below */}
           {responseComplete && (
             <p className="text-[13px] text-muted-foreground/75 leading-relaxed mb-6 -mt-2">
-              What comes next is shaped around what you shared. Take it at your pace.
+              Here's where I'd walk with you next.
             </p>
           )}
 
