@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { isIOS } from "@/lib/platform";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy } from "lucide-react";
+import { Sun, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -483,6 +483,8 @@ export default function LandingHome() {
   const [passageQuery, setPassageQuery] = useState("");
   const [passageResult, setPassageResult] = useState("");
   const [passageLoading, setPassageLoading] = useState(false);
+  const [somethingElseOpen, setSomethingElseOpen] = useState(false);
+  const [somethingElseText, setSomethingElseText] = useState("");
 
   const findPassage = async () => {
     const desc = passageQuery.trim();
@@ -737,35 +739,94 @@ export default function LandingHome() {
           {/* ── HERO: Talk It Through prompt — primary entry point ── */}
           <HeroAIPrompt />
 
-          {/* Emotion grid — quick-select if they can't find words */}
+          {/* Quick-select chips — horizontal scroll strip */}
           {!isLateNight() && (
             <div className="relative rounded-2xl border border-primary/15 bg-card overflow-hidden">
               <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/40 via-violet-500/40 to-primary/40" />
-              <div className="px-4 pt-3.5 pb-3">
-                <p className="text-[13px] font-semibold text-muted-foreground mb-2.5">Or choose what fits right now:</p>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { icon: "😟", label: "Anxiety",       query: "I'm feeling anxious and overwhelmed and need God's peace" },
-                    { icon: "💔", label: "Grief",          query: "I'm grieving a loss and need God's comfort right now" },
-                    { icon: "😔", label: "Loneliness",    query: "I'm feeling deeply lonely and disconnected and need God's presence" },
-                    { icon: "😤", label: "Anger",          query: "I'm struggling with anger and frustration and need God's guidance" },
-                    { icon: "🤝", label: "Relationship",   query: "I'm struggling in an important relationship and need wisdom from God" },
-                    { icon: "✨", label: "Something else", query: "I'm going through something difficult and need scripture to guide me" },
-                  ].map(({ icon, label, query }) => (
+              <div className="px-4 pt-3.5 pb-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60 mb-2.5">
+                  Where are you today?
+                </p>
+
+                {/* Scrollable chip row — no emojis, icon + label pills */}
+                <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+                  {([
+                    { icon: <Zap  className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anxiety",      query: "I'm feeling anxious and overwhelmed and need God's peace" },
+                    { icon: <Heart className="w-3.5 h-3.5 flex-shrink-0" />, label: "Grief",       query: "I'm grieving a loss and need God's comfort right now" },
+                    { icon: <Moon className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Loneliness", query: "I'm feeling deeply lonely and disconnected and need God's presence" },
+                    { icon: <Flame className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anger",       query: "I'm struggling with anger and frustration and need God's guidance" },
+                    { icon: <Users className="w-3.5 h-3.5 flex-shrink-0" />, label: "Relationship",query: "I'm struggling in an important relationship and need wisdom from God" },
+                  ] as const).map(({ icon, label, query }) => (
                     <button
                       key={label}
-                      data-testid={`emotion-card-${label.toLowerCase().replace(/\s+/g, "-")}`}
-                      onClick={() => {
-                        markFirstAction();
-                        navigate(`/guidance?situation=${encodeURIComponent(query)}`);
-                      }}
-                      className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border border-primary/10 bg-muted/30 hover:bg-primary/8 hover:border-primary/25 active:scale-[0.97] transition-all text-center group"
+                      data-testid={`emotion-card-${label.toLowerCase()}`}
+                      onClick={() => { markFirstAction(); navigate(`/guidance?situation=${encodeURIComponent(query)}`); }}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-primary/20 bg-muted/30 hover:bg-primary/10 hover:border-primary/45 active:scale-[0.97] transition-all whitespace-nowrap flex-shrink-0 text-primary/75 hover:text-primary"
                     >
-                      <span className="text-lg leading-none">{icon}</span>
-                      <span className="text-[11px] font-semibold text-foreground/70 leading-tight group-hover:text-primary transition-colors">{label}</span>
+                      {icon}
+                      <span className="text-[13px] font-semibold">{label}</span>
                     </button>
                   ))}
+
+                  {/* Something else — expands inline input */}
+                  <button
+                    data-testid="emotion-card-something-else"
+                    onClick={() => setSomethingElseOpen(v => !v)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border transition-all whitespace-nowrap flex-shrink-0 ${
+                      somethingElseOpen
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-primary/20 bg-muted/30 hover:bg-primary/10 hover:border-primary/45 text-primary/75 hover:text-primary"
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="text-[13px] font-semibold">Something else</span>
+                  </button>
                 </div>
+
+                {/* Inline input — appears when "Something else" is tapped */}
+                <AnimatePresence>
+                  {somethingElseOpen && (
+                    <motion.div
+                      key="something-else-input"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden mt-3"
+                    >
+                      <div className="flex gap-2 items-end">
+                        <textarea
+                          autoFocus
+                          value={somethingElseText}
+                          onChange={e => setSomethingElseText(e.target.value)}
+                          placeholder="Describe what you're carrying…"
+                          rows={2}
+                          data-testid="input-something-else"
+                          className="flex-1 resize-none rounded-xl border border-primary/30 bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 leading-relaxed"
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && !e.shiftKey && somethingElseText.trim()) {
+                              e.preventDefault();
+                              markFirstAction();
+                              navigate(`/guidance?situation=${encodeURIComponent(somethingElseText.trim())}`);
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (!somethingElseText.trim()) return;
+                            markFirstAction();
+                            navigate(`/guidance?situation=${encodeURIComponent(somethingElseText.trim())}`);
+                          }}
+                          disabled={!somethingElseText.trim()}
+                          data-testid="button-something-else-submit"
+                          className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-md shadow-amber-400/30 transition-all"
+                        >
+                          <ArrowRight className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           )}
