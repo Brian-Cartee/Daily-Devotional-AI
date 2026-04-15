@@ -339,10 +339,10 @@ export function InlineSubscribeToggle() {
       className="relative rounded-2xl border border-primary/20 bg-primary/4 overflow-hidden"
     >
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
-      <div className="px-5 pt-4 pb-4">
-        <div className="mb-3">
-          <p className="text-[13px] font-bold text-foreground leading-tight">Get today's verse delivered to you</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Scripture each morning — free, always.</p>
+      <div className="px-5 pt-6 pb-6">
+        <div className="mb-4">
+          <p className="text-[14px] font-bold text-foreground leading-tight">Get today's verse delivered to you</p>
+          <p className="text-[12px] text-muted-foreground mt-1">Scripture each morning — free, always.</p>
         </div>
 
         {/* Tab toggle */}
@@ -384,7 +384,7 @@ export function InlineSubscribeToggle() {
           <AnimatePresence mode="wait">
             {tab === "email" ? (
               <motion.form key="email" initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={{ duration: 0.15 }}
-                onSubmit={handleEmailSubmit} className="space-y-2"
+                onSubmit={handleEmailSubmit} className="space-y-3"
               >
                 <Input data-testid="input-toggle-name" type="text" placeholder="Your first name (optional)" value={name} onChange={e => setName(e.target.value)} className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
                 <Input data-testid="input-toggle-email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
@@ -395,7 +395,7 @@ export function InlineSubscribeToggle() {
               </motion.form>
             ) : (
               <motion.form key="sms" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: 0.15 }}
-                onSubmit={handleSmsSubmit} className="space-y-2"
+                onSubmit={handleSmsSubmit} className="space-y-3"
               >
                 <Input data-testid="input-toggle-phone" type="tel" placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={smsStatus === "loading"} />
                 {smsStatus === "error" && <p className="text-xs text-destructive">{smsMsg}</p>}

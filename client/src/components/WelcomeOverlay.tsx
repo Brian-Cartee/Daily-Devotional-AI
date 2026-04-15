@@ -46,7 +46,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.45 }}
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col overflow-y-auto"
       style={{
         background: "linear-gradient(175deg, #1e0d50 0%, #130636 40%, #09031e 100%)",
       }}
@@ -102,14 +102,11 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         <h1 className="mt-5 text-[26px] font-extrabold text-white tracking-tight text-center leading-tight">
           Shepherd&rsquo;s Path
         </h1>
-        <p
-          className="mt-2.5 text-white/85 text-center text-[15px] leading-relaxed tracking-wide"
-          style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic" }}
-        >
+        <p className="mt-2.5 text-white/80 text-center text-[15px] leading-relaxed tracking-wide font-medium">
           Scripture for what you&rsquo;re going through
         </p>
         <p className="mt-1.5 text-white/50 text-center text-[13px] leading-snug px-4">
-          Words of strength, hope, and guidance for every season of your life.
+          Whatever you&rsquo;re carrying &mdash; you can begin here.
         </p>
       </motion.div>
 
@@ -130,12 +127,10 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               ? "linear-gradient(135deg, rgba(40,15,90,0.9) 0%, rgba(60,20,120,0.85) 100%)"
               : "rgba(255,255,255,0.10)",
             borderColor: playing
-              ? "rgba(140,90,255,0.45)"
-              : "rgba(255,255,255,0.18)",
+              ? "rgba(140,90,255,0.35)"
+              : "rgba(255,255,255,0.12)",
             backdropFilter: "blur(10px)",
-            boxShadow: (!playing && !loading && progress === 0)
-              ? "0 0 0 3px rgba(160,100,255,0.18), 0 0 0 6px rgba(160,100,255,0.07)"
-              : undefined,
+            boxShadow: undefined,
           }}
         >
           <div className="flex items-center gap-4 px-5 py-3.5">

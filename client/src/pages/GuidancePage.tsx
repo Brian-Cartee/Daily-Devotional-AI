@@ -497,7 +497,7 @@ export default function GuidancePage() {
                   </p>
 
                   {/* PRIMARY INPUT — type what's on your heart */}
-                  <div className="bg-background border-2 border-border/60 hover:border-primary/30 focus-within:border-primary/55 rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 shadow-lg transition-colors mb-6">
+                  <div className="bg-muted/25 border-2 border-border/70 hover:border-primary/40 focus-within:border-primary/60 focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.10)] rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 shadow-md transition-all mb-6">
                     <textarea
                       value={heartInput}
                       onChange={e => setHeartInput(e.target.value)}
@@ -505,10 +505,10 @@ export default function GuidancePage() {
                       spellCheck
                       autoCapitalize="sentences"
                       autoCorrect="on"
-                      placeholder="What's on your heart right now?"
+                      placeholder="Start typing… what's on your heart?"
                       rows={4}
                       data-testid="input-guidance-heart"
-                      className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed"
+                      className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/75 outline-none leading-relaxed"
                     />
                     <div className="flex items-center justify-between border-t border-border/30 pt-2.5">
                       {hasSpeechSupport ? (
