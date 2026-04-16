@@ -257,8 +257,8 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                 </div>
 
                 {data.bridge && (
-                  <div className="rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/40 dark:border-amber-700/30 px-4 py-4">
-                    <p className="text-[14px] leading-[1.75] text-amber-800/80 dark:text-amber-300/70 italic">
+                  <div className="rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/40 dark:border-amber-700/30 px-4 py-4 w-full overflow-hidden">
+                    <p className="text-[14px] leading-[1.75] text-amber-800/80 dark:text-amber-300/70 italic break-words">
                       {data.bridge}
                     </p>
                   </div>
@@ -271,7 +271,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
               <div className="space-y-3 pt-1">
                 {/* Previous answer */}
                 {(answer || qaLoading) && (
-                  <div className="rounded-2xl bg-amber-50/50 dark:bg-amber-950/15 border border-amber-200/30 dark:border-amber-700/20 px-4 py-4">
+                  <div className="rounded-2xl bg-amber-50/50 dark:bg-amber-950/15 border border-amber-200/30 dark:border-amber-700/20 px-4 py-4 w-full overflow-hidden">
                     {qaLoading ? (
                       <div className="flex items-center gap-2 text-amber-600/60 dark:text-amber-400/50">
                         <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
@@ -280,20 +280,20 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                     ) : (
                       <>
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-500/60 mb-2">Answer</p>
-                        <p className="text-[14px] leading-[1.75] text-foreground/75">{answer}</p>
+                        <p className="text-[14px] leading-[1.75] text-foreground/75 break-words">{answer}</p>
                       </>
                     )}
                   </div>
                 )}
 
                 {/* Input */}
-                <div className="flex items-end gap-2 rounded-2xl border border-border/30 bg-foreground/[0.025] px-3.5 py-2.5">
+                <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-muted/20 px-3.5 py-2.5">
                   <textarea
                     data-testid="input-context-question"
                     value={question}
                     onChange={e => setQuestion(e.target.value)}
                     placeholder="If something feels unclear, you can ask…"
-                    className="flex-1 resize-none bg-transparent text-[14px] leading-snug text-foreground/70 placeholder:text-muted-foreground/35 outline-none min-h-[20px] max-h-[100px]"
+                    className="flex-1 resize-none bg-transparent text-[14px] leading-snug text-foreground/85 placeholder:text-muted-foreground/60 outline-none min-h-[20px] max-h-[100px]"
                     rows={1}
                     onKeyDown={e => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -306,7 +306,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                     data-testid="button-context-ask"
                     onClick={handleAsk}
                     disabled={!question.trim() || qaLoading}
-                    className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 disabled:opacity-25 transition-all"
+                    className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-35 disabled:bg-muted disabled:text-muted-foreground transition-all"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </button>
