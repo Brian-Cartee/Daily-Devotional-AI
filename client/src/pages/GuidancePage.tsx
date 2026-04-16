@@ -708,7 +708,7 @@ export default function GuidancePage() {
                     >
                       {ttsChain.loading || chainSection
                         ? <><VolumeX className="w-3 h-3" /> Stop</>
-                        : <><Volume2 className="w-3 h-3" /> Listen</>
+                        : <><Volume2 className="w-3 h-3" /> Listen instead</>
                       }
                     </button>
                   </div>

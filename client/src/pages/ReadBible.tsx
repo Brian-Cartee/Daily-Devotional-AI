@@ -442,7 +442,7 @@ export default function ReadBible() {
                                 {savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`) ? "Saved" : "Save"}
                               </span>
                             </button>
-                            <ListenButton text={chapterText.data!.text.replace(/\[\d+\]/g, "")} label="Listen" size="md" />
+                            <ListenButton text={chapterText.data!.text.replace(/\[\d+\]/g, "")} label="Listen instead" size="md" />
                           </div>
                         </div>
                         <div className="h-px bg-border mt-4" />

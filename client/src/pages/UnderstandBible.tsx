@@ -222,7 +222,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                         {sharingCard ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : cardDone ? <Check className="w-3.5 h-3.5 text-green-500" /> : <ImageDown className="w-3.5 h-3.5" />}
                         {sharingCard ? "Creating…" : cardDone ? "Done!" : "Card"}
                       </button>
-                      <ListenButton text={textQuery.data.text.length > 1500 ? (textQuery.data.text.slice(0, 1500).replace(/\s\S*$/, "") + "…") : textQuery.data.text} label="Listen" className="text-[11px]" />
+                      <ListenButton text={textQuery.data.text.length > 1500 ? (textQuery.data.text.slice(0, 1500).replace(/\s\S*$/, "") + "…") : textQuery.data.text} label="Listen instead" className="text-[11px]" />
                     </div>
                   </div>
                   <BiblePassageText text={textQuery.data.text} />
@@ -298,7 +298,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                         title={`${aiMode === "reflect" ? "Reflection" : "Prayer"} — ${chapter.reference}`}
                         text={aiContent}
                       />
-                      <ListenButton text={aiContent} label="Listen" className="text-[11px]" />
+                      <ListenButton text={aiContent} label="Listen instead" className="text-[11px]" />
                     </div>
                   </div>
                   <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">

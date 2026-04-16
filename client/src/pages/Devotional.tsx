@@ -108,6 +108,7 @@ export default function Devotional() {
   const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
   const [friendShareDone, setFriendShareDone] = useState(false);
   const [postPrayerShareDone, setPostPrayerShareDone] = useState(false);
+  const [listenHintSeen, setListenHintSeen] = useState(() => !!localStorage.getItem("sp_listen_intro_seen"));
   const [showShareRow, setShowShareRow] = useState(false);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
@@ -478,6 +479,7 @@ export default function Devotional() {
 
   const startFullListen = async () => {
     if (ttsListen.playing || ttsListen.loading) { stopFullListen(); return; }
+    if (!listenHintSeen) { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }
 
     setShowListenReply(false);
     setListenReplySaved(false);
@@ -835,7 +837,7 @@ export default function Devotional() {
                 <div className="flex justify-center py-3.5">
                   <ListenButton
                     text={`${verse.text} — ${verse.reference}`}
-                    label="Listen"
+                    label="Listen quietly"
                     vertical
                   />
                 </div>
@@ -913,6 +915,29 @@ export default function Devotional() {
                 )}
               </AnimatePresence>
 
+              {/* ── One-time listen discovery hint ── */}
+              {!listenHintSeen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: 1.2, duration: 0.7, ease: "easeOut" }}
+                  className="mx-4 mb-2 mt-1 flex items-start justify-between gap-3"
+                >
+                  <p className="text-[12px] text-primary/50 italic leading-relaxed">
+                    Prefer to receive this rather than read? A full listen experience — verse, reflection, and prayer — will be ready below.
+                  </p>
+                  <button
+                    onClick={() => { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }}
+                    className="shrink-0 text-primary/30 hover:text-primary/60 transition-colors text-base leading-none mt-0.5"
+                    aria-label="Dismiss"
+                    data-testid="button-dismiss-listen-hint"
+                  >
+                    ×
+                  </button>
+                </motion.div>
+              )}
+
               {/* ── Full Devotional Listen Mode ──────────────────── */}
               {(reflectionContent || prayerContent) && (
                 <div className="mx-4 mb-4 mt-1 rounded-xl bg-gradient-to-r from-primary/8 to-violet-500/5 border border-primary/15 px-4 py-3 flex items-center justify-between gap-3">
@@ -971,7 +996,7 @@ export default function Devotional() {
                     ) : listenSection ? (
                       <><Square className="w-3 h-3 fill-current" /> Stop</>
                     ) : (
-                      <><Headphones className="w-3 h-3" /> Listen</>
+                      <><Headphones className="w-3 h-3" /> Listen through</>
                     )}
                   </button>
                 </div>
@@ -1093,7 +1118,7 @@ export default function Devotional() {
                   {!reflectionLoading && (
                     <div className="mt-4 flex items-center gap-4">
                       <ShareButton title={`Reflection — ${verse.reference}`} text={reflectionContent} className="text-[12px] font-semibold" />
-                      <ListenButton text={reflectionContent} label="Listen" />
+                      <ListenButton text={reflectionContent} label="Listen to this" />
                     </div>
                   )}
                   {!reflectionLoading && (
@@ -1319,7 +1344,7 @@ export default function Devotional() {
                       text={gratitudePrayer}
                       className="text-[12px] font-semibold"
                     />
-                    <ListenButton text={gratitudePrayer} label="Listen" />
+                    <ListenButton text={gratitudePrayer} label="Listen quietly" />
                   </div>
                 </motion.div>
               )}
