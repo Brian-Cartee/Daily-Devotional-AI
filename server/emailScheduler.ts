@@ -7,6 +7,7 @@ import { getTodayVerseFromSheet } from "./googleSheets";
 import { db } from "./db";
 import { verses } from "@shared/schema";
 import { hasEmailSentToday, markEmailSentToday } from "./schedulerState";
+import { getCulturalMomentEmailSubject } from "./culturalMoments";
 
 const TARGET_HOUR_UTC = 12; // 12:00 UTC = 5 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
 // ⚠️ When DST ends in November (PST = UTC-8), change to 13 to maintain these local times
@@ -173,11 +174,14 @@ export async function sendDailyEmailsToAllSubscribers() {
         const displayFrom = fromEmail.includes('@') && !fromEmail.startsWith('"')
           ? `Shepherd's Path <${fromEmail}>`
           : fromEmail;
+        const emailSubject = getCulturalMomentEmailSubject(today, verse.reference)
+          ?? `${verse.reference} — a word for your morning`;
+
         await client.emails.send({
           from: displayFrom,
           to: subscriber.email,
           replyTo: 'hello@shepherdspathai.com',
-          subject: `${verse.reference} — a word for your morning`,
+          subject: emailSubject,
           html,
           text,
         });

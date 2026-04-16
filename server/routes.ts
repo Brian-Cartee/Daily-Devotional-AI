@@ -15,6 +15,7 @@ import Stripe from "stripe";
 import webpush from "web-push";
 import twilio from "twilio";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
+import { getCulturalMomentNote } from "./culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
 import { schedulePushNotifications } from "./pushScheduler";
@@ -752,6 +753,7 @@ Emotional design (internal guide — shape how responses feel, not what they say
       const probeNote = `\n\nApproximately 1 in 4 responses — when it feels genuinely earned, not formulaic — close with a single question. Not a prompt, not a challenge. A real question a caring friend would ask because they are genuinely curious about this person's life. Make it specific to this verse and this moment.`;
 
       const holidayNote2 = getHolidayNote(verse.date ?? undefined);
+      const culturalMomentNote2 = getCulturalMomentNote(verse.date ?? undefined);
 
       const isLateNight2: boolean = !!(req.body as any).isLateNight;
       const lateNightReflectionNote = isLateNight2
@@ -787,7 +789,7 @@ When a verse speaks to human worth, dignity, or being known — being formed, be
 
 When a verse carries hope in the middle of darkness — not easy comfort, but the kind that has earned the right to speak — write it for the person who genuinely cannot see how things could be different. The steadiness of biblical hope is not pretending the darkness isn't real. It is knowing something the darkness doesn't.
 
-Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${holidayNote2}${daysWithApp2 <= 3 ? `\n\nSeeker safety — some people reading this reflection may not be sure what they believe. They may be curious, doubting, or simply in pain and reaching for something. This text is for all of them. Do not assume settled faith. Let the verse be what it is — something that speaks to a human life — and trust that it can do its own work. You do not need to assert what someone should believe. Simply show what is here: what this text says, and why it might matter to a person living a real life today.` : ""}${daysWithApp2 >= 30 ? `\n\nDepth note — this person has walked with this daily practice for ${daysWithApp2} days. The structure is familiar to them — that familiarity is part of the value, not a problem to solve. Do not add novelty or surprise. Instead, go deeper. Trust them with the harder angle on this scripture — the interpretation that requires more. The less obvious entry point. They don't need to be eased in anymore.` : ""}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${langNote2}`;
+Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${holidayNote2}${culturalMomentNote2}${daysWithApp2 <= 3 ? `\n\nSeeker safety — some people reading this reflection may not be sure what they believe. They may be curious, doubting, or simply in pain and reaching for something. This text is for all of them. Do not assume settled faith. Let the verse be what it is — something that speaks to a human life — and trust that it can do its own work. You do not need to assert what someone should believe. Simply show what is here: what this text says, and why it might matter to a person living a real life today.` : ""}${daysWithApp2 >= 30 ? `\n\nDepth note — this person has walked with this daily practice for ${daysWithApp2} days. The structure is familiar to them — that familiarity is part of the value, not a problem to solve. Do not add novelty or surprise. Instead, go deeper. Trust them with the harder angle on this scripture — the interpretation that requires more. The less obvious entry point. They don't need to be eased in anymore.` : ""}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${langNote2}`;
         userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
         if (verse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
@@ -813,7 +815,7 @@ When the verse or the person's situation touches on loneliness, rejection, feeli
 
 Begin with "Lord," or "Heavenly Father," and close with "Amen."
 
-One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${langNote2}`;
+One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${culturalMomentNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${langNote2}`;
         const reflCtx: string = (req.body as any).reflectionContext || "";
         userPrompt = reflCtx
           ? `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
