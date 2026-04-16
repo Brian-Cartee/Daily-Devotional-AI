@@ -1,0 +1,221 @@
+You remembered correctly—and your instinct was right to question **“Export.”**
+
+Right now, “Export” feels:
+
+* technical
+* transactional
+* slightly cold
+
+👉 It breaks the tone you’ve worked hard to build.
+
+---
+
+# 🧭 THE CORE ISSUE
+
+“Export” belongs in:
+
+* spreadsheets
+* CRMs
+* file systems
+
+It does NOT belong in:
+
+> a reflective, spiritual journaling experience
+
+---
+
+# 🔥 WHAT THIS ACTION ACTUALLY IS
+
+Let’s reframe it:
+
+The user is not “exporting data.”
+
+They are:
+
+* preserving something meaningful
+* keeping a record of their walk
+* possibly sharing something personal
+
+---
+
+# ✅ BETTER NAMING OPTIONS (RANKED)
+
+## 🥇 BEST (aligned with your app DNA)
+
+### **“Save Your Journal”**
+
+* simple
+* human
+* non-technical
+* clear intent
+
+---
+
+## 🥈 STRONG ALTERNATIVES
+
+### “Keep a Copy”
+
+* soft, non-intrusive
+* feels personal
+
+### “Download Your Journal”
+
+* slightly more functional, still acceptable
+
+### “Save Your Entries”
+
+* specific, grounded
+
+---
+
+## 🥉 IF YOU WANT A MORE SPIRITUAL TONE
+
+### “Preserve This”
+
+* elegant, but slightly abstract (use carefully)
+
+### “Keep This Record”
+
+* meaningful, but a bit formal
+
+---
+
+# ❌ AVOID
+
+* Export ❌
+* Download Data ❌
+* Backup ❌
+* Generate File ❌
+
+All of these:
+👉 feel like software, not Shepherd’s Path
+
+---
+
+# 🧠 UX DETAIL (IMPORTANT)
+
+Right now the button also visually feels:
+
+* secondary (which is correct)
+* but slightly disconnected from meaning
+
+👉 Consider pairing label with subtle context:
+
+Example:
+
+> Save Your Journal
+> *(Keep a copy of your prayers and reflections)*
+
+---
+
+# 🔥 REPLIT AI FIXING PROMPT (DROP-IN READY)
+
+---
+
+**PROMPT:**
+
+We need to rename and reframe the “Export” function in the Prayer Journal section of Shepherd’s Path to align with the app’s tone: calm, human, and reflective—not technical.
+
+---
+
+## 1. LABEL CHANGE (REQUIRED)
+
+Replace all instances of:
+
+“Export”
+
+With:
+
+“Save Your Journal”
+
+---
+
+## 2. TONE ADJUSTMENT
+
+This action must feel like:
+
+* preserving something meaningful
+* keeping a personal record
+
+NOT:
+
+* exporting data
+* performing a system action
+
+---
+
+## 3. OPTIONAL SUBTEXT (RECOMMENDED)
+
+If space allows, add subtle supporting text:
+
+“Keep a copy of your prayers and reflections.”
+
+Style:
+
+* low emphasis
+* smaller font
+* soft color
+
+---
+
+## 4. UI BEHAVIOR
+
+* Keep this as a secondary action (not dominant CTA)
+* Maintain calm visual styling (no bright or aggressive emphasis)
+* Ensure interaction feels smooth and immediate
+
+---
+
+## 5. MICROCOPY (POST-TAP FEEDBACK)
+
+Replace any system-style confirmations like:
+“Export successful”
+
+With:
+
+“Your journal has been saved.”
+
+OR
+
+“You now have a copy of your journal.”
+
+---
+
+## 6. FAILURE CONDITIONS
+
+Do NOT use:
+
+* technical terminology (export, file, data)
+* system-style confirmations
+* abrupt or transactional language
+
+---
+
+## 7. SUCCESS CRITERIA
+
+This action should feel:
+
+* personal
+* intentional
+* aligned with the idea of remembering one’s walk
+
+---
+
+# 🧭 FINAL THOUGHT
+
+This is subtle—but it matters.
+
+> The wrong word turns a sacred moment into a software action.
+
+You’re not exporting data.
+
+You’re helping someone:
+
+> **hold onto something that mattered to them**
+
+---
+
+If you want next, I can:
+
+* audit all your button labels across the app (there are likely 2–3 more like this)
+* or refine every piece of microcopy so the entire app speaks the same language consistently

@@ -75,7 +75,7 @@ function exportAsText(entries: JournalEntry[]) {
   const sections: Record<string, JournalEntry[]> = { prayer: [], reflection: [], verse: [], note: [] };
   entries.forEach(e => sections[e.type]?.push(e));
 
-  const header = `SHEPHERD'S PATH — PRAYER JOURNAL EXPORT\n${"=".repeat(45)}\nExported: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}\n\n`;
+  const header = `SHEPHERD'S PATH — YOUR PRAYER JOURNAL\n${"=".repeat(45)}\nSaved: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}\n\n`;
 
   const sectionLabels: Record<string, string> = {
     prayer: "PRAYERS", reflection: "REFLECTIONS", verse: "SCRIPTURES", note: "SERMON NOTES",
@@ -107,7 +107,7 @@ function exportAsText(entries: JournalEntry[]) {
 
 function PremiumModal({ onClose }: { onClose: () => void }) {
   const PRO_FEATURES = [
-    "PDF export with beautiful formatting",
+    "Beautiful PDF copy of your journal",
     "Cloud backup & sync across devices",
     "Unlimited journal entries",
     "Printable weekly devotional summaries",
@@ -195,12 +195,12 @@ function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: ()
 
   const handleTextExport = () => {
     if (entries.length === 0) {
-      toast({ description: "No journal entries to export yet." });
+      toast({ description: "Nothing to save yet — start writing and your entries will appear here." });
       onClose();
       return;
     }
     exportAsText(entries);
-    toast({ description: `Exported ${entries.length} entries as text.` });
+    toast({ description: "Your journal has been saved. Keep it somewhere meaningful." });
     onClose();
   };
 
@@ -214,7 +214,8 @@ function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: ()
         className="absolute right-0 top-10 z-50 bg-background border border-border rounded-2xl shadow-xl py-2 min-w-[220px]"
       >
         <div className="px-4 py-2 border-b border-border/40 mb-1">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Export Journal</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Save Your Journal</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Keep a copy of your prayers and reflections.</p>
         </div>
 
         {/* Free: text download */}
@@ -227,7 +228,7 @@ function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: ()
             <FileText className="w-4 h-4 text-foreground/70" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">Download as Text</p>
+            <p className="text-sm font-semibold text-foreground">Save as Text</p>
             <p className="text-[11px] text-muted-foreground">All entries · .txt file</p>
           </div>
           <span className="ml-auto text-[10px] font-semibold text-green-600 bg-green-50 dark:bg-green-950/50 dark:text-green-400 px-2 py-0.5 rounded-full">Free</span>
@@ -243,7 +244,7 @@ function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: ()
             <FileType2 className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">Export as PDF</p>
+            <p className="text-sm font-semibold text-foreground">Save as PDF</p>
             <p className="text-[11px] text-muted-foreground">Beautifully formatted</p>
           </div>
           <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
@@ -1122,7 +1123,7 @@ export default function Journal() {
                 </div>
               </div>
 
-              {/* Export button */}
+              {/* Save Your Journal button */}
               <div className="relative" onClick={e => e.stopPropagation()}>
                 <button
                   data-testid="btn-export-journal"
@@ -1134,7 +1135,7 @@ export default function Journal() {
                   }`}
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Export
+                  Save Journal
                 </button>
                 <AnimatePresence>
                   {exportOpen && (
