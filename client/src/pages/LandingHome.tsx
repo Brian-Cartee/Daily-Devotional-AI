@@ -1179,7 +1179,7 @@ export default function LandingHome() {
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
 
           {/* Links — 2-col grid */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-foreground/70 text-center mb-2.5 px-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-foreground/70 text-center mb-2.5 px-4">
             <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="link-pricing-footer">
               Plans & Pricing
             </Link>
