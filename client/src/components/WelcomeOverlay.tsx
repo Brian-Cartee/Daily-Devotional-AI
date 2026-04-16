@@ -9,10 +9,10 @@ const WELCOME_SCRIPT = `Hey… I'm really glad you're here.
 
 I don't know what brought you…
 maybe something's been weighing on you…
-or maybe you just felt a pull toward something more.
+or maybe you just felt a pull.
 
 Either way… that matters.
-Don't brush past it.
+It's worth paying attention to.
 
 You don't need the right words…
 and you don't have to have anything figured out.
@@ -21,8 +21,8 @@ That's where God meets people… every time.
 
 So take a breath…
 and when you're ready…
-you can just start sharing what's on your heart.
-We'll walk through it together.`;
+you can just start sharing what's on your heart…
+or take a moment to see how this works.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;

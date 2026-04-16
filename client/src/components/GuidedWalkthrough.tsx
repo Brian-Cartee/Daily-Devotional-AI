@@ -36,7 +36,7 @@ const STEPS = [
     id: "talk",
     title: "Talk It Through",
     subtitle: "Where everything begins",
-    script: `This is where everything begins. Whatever you're carrying… whatever's been weighing on you… you can bring it here. You don't need the right words. You don't need to have it all figured out. Just start where you are. You don't have to carry this alone.`,
+    script: `When you're ready… this is where you begin. You can share whatever's on your heart here. Just be honest about where you are. You don't have to carry it alone.`,
   },
   {
     id: "response",
@@ -54,13 +54,13 @@ const STEPS = [
     id: "listen",
     title: "Listen to Everything",
     subtitle: "Let it come to you",
-    script: `At any point, you can listen instead of read. Your guidance… your prayer… your journey… all of it can be heard. Just tap listen. And let it meet you where you are.`,
+    script: `At any point, you can listen instead of read. Your guidance… your prayer… your journey… all of it can be heard. If you'd rather listen… you can. And let it meet you where you are.`,
   },
   {
     id: "journal",
     title: "Your Journal",
     subtitle: "Keep what matters",
-    script: `Along the way, you can keep what matters. A prayer that stayed with you… a verse you don't want to forget… a moment you want to come back to. Your journal becomes a record… of where you've been… and what God has been doing in your life.`,
+    script: `Along the way, you can keep what matters. A prayer that stayed with you… a verse you don't want to forget… a moment you want to come back to. Your journal becomes a place to hold what matters… and to come back to what God is doing in your life.`,
   },
 ];
 
