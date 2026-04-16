@@ -237,9 +237,9 @@ export default function ReadBible() {
           <button
             data-testid="button-back-read"
             onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-            className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[13px] font-semibold text-white/75 hover:text-white transition-colors"
+            className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             Back
           </button>
           <motion.div
