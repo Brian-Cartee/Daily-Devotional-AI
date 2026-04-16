@@ -511,7 +511,7 @@ export default function GuidancePage() {
                       spellCheck
                       autoCapitalize="sentences"
                       autoCorrect="on"
-                      placeholder="Say what's weighing on you… nothing is too small."
+                      placeholder="What are you carrying that you haven't said out loud yet?"
                       rows={4}
                       data-testid="input-guidance-heart"
                       className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/75 outline-none leading-relaxed"

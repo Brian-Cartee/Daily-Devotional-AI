@@ -233,7 +233,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         >
           {[
             { icon: "☀️", name: "Daily Devotional", body: "One verse, every morning. Yours to sit with." },
-            { icon: "💬", name: "Talk It Through", body: "Bring what's weighing on you. Receive words, scripture, and a prayer." },
+            { icon: "💬", name: "Talk It Through", body: "Bring it here exactly as it is. No need to clean it up." },
             { icon: "🧭", name: "Bible Journeys", body: "Guided scripture paths shaped around what you're carrying." },
             { icon: "📓", name: "Journal", body: "A private place to hold what God is doing in your life." },
           ].map((item, i) => (
