@@ -298,9 +298,9 @@ function HeroAIPrompt() {
             ))}
             </div>
             {/* Fade + chevron — signals more chips to the right */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
-              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 75%)" }}>
-              <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
+              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 70%)" }}>
+              <ChevronRight className="w-5 h-5 text-foreground/65 mr-0.5" />
             </div>
           </div>
         </div>
@@ -369,7 +369,7 @@ function DevotionalCard() {
             <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
               Daily Devotional
             </h2>
-            <p className="text-[15px] text-muted-foreground leading-relaxed">
+            <p className="text-[15px] text-foreground/80 leading-relaxed">
               Each day brings a new scripture, a personal reflection, and an AI-guided moment to hear from God — grounded in the actual passage, shaped for your real life. Open it, sit with it, let it speak.
             </p>
             <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
@@ -885,9 +885,9 @@ export default function LandingHome() {
                   </button>
                 </div>
                 {/* Fade + chevron — signals more chips to the right */}
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
-                  style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 75%)" }}>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
+                  style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 70%)" }}>
+                  <ChevronRight className="w-5 h-5 text-foreground/65 mr-0.5" />
                 </div>
                 </div>
 
