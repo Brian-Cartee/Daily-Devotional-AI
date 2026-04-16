@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Headphones, ChevronRight, X, Play, Square, Check, SkipForward } from "lucide-react";
+import { Headphones, X, Play, Square, Check, SkipForward } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
-import { getUserVoice, setUserVoice } from "@/lib/userName";
+import { getUserVoice } from "@/lib/userName";
 
 const WALKTHROUGH_KEY = "sp_walkthrough_done";
 const WALKTHROUGH_VISITS_KEY = "sp_walkthrough_visits";
@@ -67,21 +67,14 @@ const STEPS = [
 // Full concatenated tour script — all 5 sections played as one continuous audio
 const FULL_TOUR_SCRIPT = STEPS.map(s => s.script).join("\n\n");
 
-const VOICE_OPTIONS = [
-  { id: "shimmer", label: "Warm & Gentle", sample: "I'm here with you." },
-  { id: "onyx",   label: "Deep & Calm",   sample: "I'm here with you." },
-];
-
 interface Props {
   onDismiss: () => void;
 }
 
 export function GuidedWalkthrough({ onDismiss }: Props) {
-  const [phase, setPhase] = useState<"voice" | "tour" | "done">("voice");
-  const [selectedVoice, setSelectedVoice] = useState<string>(getUserVoice());
+  const [phase, setPhase] = useState<"tour" | "done">("tour");
+  const voice = getUserVoice() || "shimmer";
   const tts = useTTS();
-  const sampleTts = useTTS();
-  const samplingVoice = useRef<string | null>(null);
 
   // Derive current highlighted step from overall progress (0–100 split across 5 sections)
   const activeStep = Math.min(4, Math.floor((tts.progress / 100) * STEPS.length));
@@ -97,33 +90,16 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
     }
   }, [tts.progress, tts.playing, tts.loading, phase]);
 
-  const handleVoiceConfirm = () => {
-    setUserVoice(selectedVoice);
-    sampleTts.stop();
-    setPhase("tour");
-  };
-
-  const playSample = (voiceId: string) => {
-    if (samplingVoice.current === voiceId && sampleTts.playing) {
-      sampleTts.stop();
-      samplingVoice.current = null;
-      return;
-    }
-    samplingVoice.current = voiceId;
-    sampleTts.play(VOICE_OPTIONS.find(v => v.id === voiceId)!.sample, voiceId);
-  };
-
   const toggleTour = () => {
     if (tts.playing) {
       tts.stop();
     } else {
-      tts.play(FULL_TOUR_SCRIPT, selectedVoice);
+      tts.play(FULL_TOUR_SCRIPT, voice);
     }
   };
 
   const handleDismiss = () => {
     tts.stop();
-    sampleTts.stop();
     dismissWalkthrough();
     onDismiss();
   };
@@ -143,7 +119,7 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-primary/70" strokeWidth={1.8} />
           <span className="text-[12px] font-bold text-foreground/70 uppercase tracking-wide">
-            {phase === "voice" ? "App Tour" : phase === "done" ? "You're All Set" : "App Tour"}
+            {phase === "done" ? "You're All Set" : "App Tour"}
           </span>
         </div>
         <button
@@ -157,61 +133,7 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
 
       <AnimatePresence mode="wait">
 
-        {/* ── Phase 1: Voice selection ── */}
-        {phase === "voice" && (
-          <motion.div
-            key="voice"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="px-4 py-4"
-          >
-            <p className="text-[13px] text-foreground/75 leading-relaxed mb-4">
-              A short introduction — about 90 seconds. First, pick the voice.
-            </p>
-            <div className="flex gap-2.5 mb-4">
-              {VOICE_OPTIONS.map(v => (
-                <div
-                  key={v.id}
-                  role="button"
-                  tabIndex={0}
-                  data-testid={`button-voice-${v.id}`}
-                  onClick={() => setSelectedVoice(v.id)}
-                  onKeyDown={e => e.key === "Enter" && setSelectedVoice(v.id)}
-                  className={`flex-1 rounded-xl border px-3 py-3 text-left transition-all cursor-pointer ${
-                    selectedVoice === v.id
-                      ? "border-primary bg-primary/8"
-                      : "border-border/60 bg-muted/30 hover:border-primary/40"
-                  }`}
-                >
-                  <p className="text-[13px] font-bold text-foreground capitalize mb-0.5">{v.id}</p>
-                  <p className="text-[11px] text-muted-foreground/70">{v.label}</p>
-                  <button
-                    type="button"
-                    onClick={e => { e.stopPropagation(); playSample(v.id); }}
-                    data-testid={`button-sample-${v.id}`}
-                    className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-primary/70 hover:text-primary transition-colors"
-                  >
-                    {sampleTts.playing && samplingVoice.current === v.id
-                      ? <><Square className="w-2.5 h-2.5" /> Stop</>
-                      : <><Play className="w-2.5 h-2.5" /> Hear it</>
-                    }
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={handleVoiceConfirm}
-              data-testid="button-walkthrough-start"
-              className="w-full rounded-xl bg-primary text-primary-foreground text-[13px] font-bold py-3 flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all"
-            >
-              Continue
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
-
-        {/* ── Phase 2: Full tour — single play button ── */}
+        {/* ── Phase 1: Full tour — single play button ── */}
         {phase === "tour" && (
           <motion.div
             key="tour"
