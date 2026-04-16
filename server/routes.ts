@@ -3219,7 +3219,7 @@ ${historyNote}`;
     }
   });
 
-  // Daily sermon — one curated full sermon per day, anchored to verse + reflection context
+  // Daily message — one curated short clip per day, anchored to verse + reflection context
   app.post("/api/sermon/daily", async (req, res) => {
     try {
       const { verseId, date, reflectionContext } = req.body as {
@@ -3246,16 +3246,16 @@ ${historyNote}`;
         messages: [
           {
             role: "system",
-            content: `You are curating a single full-length sermon for someone who just completed their daily devotional. Return JSON:
+            content: `You are curating a single short video message (5–10 minutes) for someone who just completed their daily devotional. Return JSON:
 {
-  "theme": "2–4 words describing the sermon theme (e.g. 'identity in Christ', 'trusting God while waiting')",
-  "searchQuery": "a precise YouTube search for a full sermon (20+ minutes). Always include the word 'sermon' and target one specific trusted preacher or ministry: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Tony Evans, Steven Furtick, Priscilla Shirer, Jackie Hill Perry, John Piper, Christine Caine, Elevation Church, Hillsong Church",
-  "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this sermon was chosen for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them. Never mention AI, algorithm, or technology."
+  "theme": "2–4 words describing the message theme (e.g. 'identity in Christ', 'trusting God while waiting')",
+  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Target one specific trusted preacher: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Tony Evans, Steven Furtick, Priscilla Shirer, Jackie Hill Perry, John Piper, Christine Caine. Focus on a specific passage or theme, not a full message.",
+  "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
 }`,
           },
           {
             role: "user",
-            content: `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\n\nThe reflection that landed for them today:\n"${reflectionContext.slice(0, 500)}"` : ""}\n\nFind a sermon that will deepen what they just received and close the loop on today.`,
+            content: `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\n\nThe reflection that landed for them today:\n"${reflectionContext.slice(0, 500)}"` : ""}\n\nFind a short clip or excerpt (5–10 min) that will deepen what they just received without asking a lot of their time.`,
           },
         ],
       });
@@ -3263,11 +3263,11 @@ ${historyNote}`;
       const analysis = JSON.parse(analysisRes.choices[0]?.message?.content || "{}");
       if (!analysis.searchQuery) return res.json({ found: false });
 
-      // Step 2: YouTube search — long videos, embeddable, trusted channels ranked first
+      // Step 2: YouTube search — medium-length videos (4–20 min), embeddable, trusted channels ranked first
       const ytKey = process.env.YOUTUBE_API_KEY;
       if (!ytKey) return res.json({ found: false });
 
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=8&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=long&videoEmbeddable=true`;
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=10&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=medium&videoEmbeddable=true`;
       const ytRes = await fetch(searchUrl);
       const ytData = (await ytRes.json()) as any;
 

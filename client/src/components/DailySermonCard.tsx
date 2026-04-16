@@ -5,6 +5,16 @@ import { useLocation } from "wouter";
 import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
 interface Sermon {
   videoId: string;
   title: string;
@@ -67,13 +77,13 @@ function SermonBridgeCard({ sermon }: { sermon: Sermon }) {
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-white/40">
-            {sermon.channel}
+            {decodeHtmlEntities(sermon.channel)}
           </p>
           <p
             className="text-[15px] font-semibold leading-snug line-clamp-3"
             style={{ color: "rgba(255,255,255,0.70)", fontFamily: "'Georgia', serif" }}
           >
-            {sermon.title}
+            {decodeHtmlEntities(sermon.title)}
           </p>
         </div>
       </div>
@@ -217,7 +227,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
               <BookOpen className="w-3.5 h-3.5" style={{ color: "#a78bfa" }} />
             </div>
             <span className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "rgba(167,139,250,0.75)" }}>
-              A Message Found For You
+              A Moment For You
             </span>
           </div>
           <button
@@ -307,10 +317,10 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
                         </div>
                         <div className="px-3.5 py-3" style={{ background: "rgba(0,0,0,0.5)" }}>
                           <p className="text-[13px] font-semibold leading-snug line-clamp-2" style={{ color: "rgba(255,255,255,0.88)", fontFamily: "'Georgia', serif" }}>
-                            {sermon.title}
+                            {decodeHtmlEntities(sermon.title)}
                           </p>
                           <p className="text-[11px] mt-1" style={{ color: "rgba(167,139,250,0.7)" }}>
-                            {sermon.channel}
+                            {decodeHtmlEntities(sermon.channel)}
                           </p>
                         </div>
                       </div>
@@ -425,8 +435,8 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
             >
               <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(0,0,0,0.5)" }}>
                 <div className="min-w-0 flex-1 mr-3">
-                  <p className="text-sm font-semibold text-white line-clamp-1" style={{ fontFamily: "'Georgia', serif" }}>{sermon.title}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "rgba(167,139,250,0.7)" }}>{sermon.channel}</p>
+                  <p className="text-sm font-semibold text-white line-clamp-1" style={{ fontFamily: "'Georgia', serif" }}>{decodeHtmlEntities(sermon.title)}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(167,139,250,0.7)" }}>{decodeHtmlEntities(sermon.channel)}</p>
                 </div>
                 <button
                   data-testid="btn-close-sermon-player"
