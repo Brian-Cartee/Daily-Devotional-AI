@@ -998,7 +998,7 @@ export default function Devotional() {
                     ) : listenSection ? (
                       <><Square className="w-3 h-3 fill-current" /> Stop</>
                     ) : (
-                      <><Headphones className="w-3 h-3" /> Listen through</>
+                      <><Headphones className="w-3 h-3" /> Listen</>
                     )}
                   </button>
                 </div>
@@ -1256,7 +1256,7 @@ export default function Devotional() {
           {reflectionContent && (
             <div className="flex items-center gap-4 px-2">
               <div className="h-px flex-1 bg-border/30" />
-              <span className="text-[11px] text-muted-foreground/45 italic tracking-wide select-none">carry it into prayer</span>
+              <span className="text-[11px] text-muted-foreground/70 italic tracking-wide select-none">carry it into prayer</span>
               <div className="h-px flex-1 bg-border/30" />
             </div>
           )}
@@ -1274,11 +1274,11 @@ export default function Devotional() {
               )}
               {prayerContent && (
                 <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                  <p className="text-[12px] text-muted-foreground/50 italic mb-5 leading-relaxed">
+                  <p className="text-[12px] text-muted-foreground/80 italic mb-5 leading-relaxed">
                     You can take this as your own — or let it guide your words.
                   </p>
                   <PrayerText text={prayerContent} />
-                  <p className="text-[12px] text-muted-foreground/40 italic mt-6 leading-relaxed">
+                  <p className="text-[12px] text-muted-foreground/65 italic mt-6 leading-relaxed">
                     Stay here for a moment if you need to.
                   </p>
                   {!prayerLoading && (
