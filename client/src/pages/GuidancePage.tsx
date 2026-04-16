@@ -179,7 +179,8 @@ export default function GuidancePage() {
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
-    setTimeout(() => setIsReflecting(false), 700);
+    // Sacred restraint — hold the breath for 2.5s before the stream appears
+    setTimeout(() => setIsReflecting(false), 2500);
 
     // Pre-generate journey in the background
     fetch("/api/journey/life-season", {
@@ -601,18 +602,23 @@ export default function GuidancePage() {
             </motion.p>
           )}
 
-          {/* Presence line — "I'm here with you" shown for ~700ms before streaming begins */}
+          {/* Sacred Restraint — a breath of quiet before the response begins */}
           <AnimatePresence>
             {isReflecting && situation && (
               <motion.div
                 key="presence"
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="py-4 mb-4"
+                exit={{ opacity: 0, transition: { duration: 0.6 } }}
+                transition={{ duration: 0.5 }}
+                className="py-6 mb-2"
               >
-                <p className="text-[15px] text-foreground/70 italic">I'm here with you in this…</p>
+                <p className="text-[15px] text-foreground/65 italic leading-relaxed">
+                  Take a breath.
+                </p>
+                <p className="text-[13px] text-foreground/40 mt-1.5">
+                  You don't have to rush this.
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1095,7 +1101,26 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-
+          {/* Release Moment — a quiet word of release after everything has arrived */}
+          <AnimatePresence>
+            {responseComplete && revealStage >= 4 && journey && (
+              <motion.div
+                key="release"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 4, duration: 1.2, ease: "easeIn" }}
+                className="mt-10 mb-2 text-center"
+              >
+                <div className="inline-block w-8 h-px bg-border/40 mb-5" />
+                <p className="text-[13px] text-muted-foreground/60 leading-relaxed">
+                  You've been honest. That matters.
+                </p>
+                <p className="text-[13px] text-muted-foreground/45 mt-1">
+                  You can carry this with you now.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div ref={bottomRef} />
         </div>
