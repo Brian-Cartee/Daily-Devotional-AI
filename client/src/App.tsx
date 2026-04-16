@@ -23,6 +23,7 @@ const AboutPage = lazy(() => import("@/pages/AboutPage"));
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
+import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminSermonsPage from "@/pages/AdminSermonsPage";
 import StoriesPage from "@/pages/StoriesPage";
@@ -112,6 +113,7 @@ function Router() {
       <Route path="/trivia/:id" component={TriviaPage} />
       {/* <Route path="/sms" component={SmsPage} /> */}
       <Route path="/calling" component={CallingPage} />
+      <Route path="/prayer-portrait" component={PrayerPortraitPage} />
       <Route path="/screenshot-gen">
         <Suspense fallback={<div className="min-h-screen bg-[#0d0a1a]" />}>
           <ScreenshotGenerator />

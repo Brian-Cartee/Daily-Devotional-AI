@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield, Mic, MicOff, Camera } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield, Mic, MicOff } from "lucide-react";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
@@ -16,7 +16,7 @@ import { isLateNight } from "@/lib/nightMode";
 import { getRelationshipAge } from "@/lib/relationship";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
-import { PrayerPortrait } from "@/components/PrayerPortrait";
+
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
 
@@ -102,7 +102,7 @@ export default function GuidancePage() {
   const [prayer, setPrayer] = useState<string | null>(null);
   const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
   const [prayerSaved, setPrayerSaved] = useState(false);
-  const [showPrayerPortrait, setShowPrayerPortrait] = useState(false);
+
   const [guidanceExpanded, setGuidanceExpanded] = useState(false);
 
   const tts = useTTS();
@@ -986,28 +986,6 @@ export default function GuidancePage() {
                         Take a moment here.
                       </p>
 
-                      {/* Prayer Portrait — Pro feature */}
-                      <div className="mt-4 pt-4 border-t border-amber-200/40 dark:border-amber-800/30">
-                        <button
-                          onClick={() => {
-                            if (isProVerifiedLocally()) {
-                              setShowPrayerPortrait(true);
-                            } else {
-                              setShowUpgrade(true);
-                            }
-                          }}
-                          data-testid="btn-prayer-portrait"
-                          className="flex items-center gap-2 text-[12px] font-semibold text-amber-600/80 dark:text-amber-400/80 hover:text-amber-700 dark:hover:text-amber-300 transition-colors group"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                          <span>Personal Prayer Portrait</span>
-                          <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-amber-500/12 border border-amber-400/20 text-amber-600 dark:text-amber-400 ml-0.5">Pro</span>
-                        </button>
-                        <p className="text-[11px] text-muted-foreground/50 mt-1 leading-snug">
-                          Share a photo — receive a prayer written just for you.
-                        </p>
-                      </div>
-
                       {tts.playing && (
                         <div className="mt-3 h-1 rounded-full bg-amber-200/60 dark:bg-amber-800/30 overflow-hidden">
                           <div
@@ -1149,7 +1127,7 @@ export default function GuidancePage() {
                 rows={1}
                 disabled={isSending}
                 data-testid="input-guidance-floating"
-                className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed disabled:opacity-50"
+                className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/78 outline-none leading-relaxed disabled:opacity-50"
                 style={{ maxHeight: "96px", overflowY: "auto" }}
               />
               <div className="flex items-center justify-between">
@@ -1180,14 +1158,6 @@ export default function GuidancePage() {
       </AnimatePresence>
 
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
-      <AnimatePresence>
-        {showPrayerPortrait && (
-          <PrayerPortrait
-            situation={situation}
-            onClose={() => setShowPrayerPortrait(false)}
-          />
-        )}
-      </AnimatePresence>
     </>
   );
 }

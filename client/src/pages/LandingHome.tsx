@@ -1137,6 +1137,7 @@ export default function LandingHome() {
                 { href: "/read",         Icon: BookOpen,   label: "Read the Bible",          desc: "KJV, WEB, and ASV",                          color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-read" },
                 { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",                  color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
                 { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "A simple way to engage Scripture",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
+                { href: "/prayer-portrait", Icon: Heart,  label: "Prayer Portrait",         desc: "A prayer spoken over your life",              color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-prayer-portrait" },
               ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
                 <Link key={href} href={href}>
                   <div
