@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Share2, ArrowDown, ChevronLeft, Heart, BookOpen, Loader2, Palette, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { Share2, ArrowLeft, Heart, BookOpen, Loader2, Palette, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
 
 const FALLBACK_IMG = "/daily-art/natural-sunset.jpg";
@@ -87,15 +87,11 @@ export default function CallingPage() {
   const [artUrl, setArtUrl] = useState<string>(FALLBACK_IMG);
   const [artLoaded, setArtLoaded] = useState(false);
 
-  // Fetch today's AI-generated daily art on mount
   useEffect(() => {
     fetch("/api/daily-art")
       .then(r => r.json())
       .then(data => {
-        if (data.imageUrl) {
-          setArtUrl(data.imageUrl);
-          setArtLoaded(true);
-        }
+        if (data.imageUrl) { setArtUrl(data.imageUrl); setArtLoaded(true); }
       })
       .catch(() => {});
   }, []);
@@ -154,170 +150,126 @@ export default function CallingPage() {
   return (
     <div className="min-h-screen bg-[#0d0a1a]" style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}>
 
-      {/* Back button */}
+      {/* Back button — pill style consistent with all pages */}
       <button
-        onClick={() => setLocation("/")}
-        className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full flex items-center justify-center"
-        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
+        onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); setLocation("/"); }}
+        className="fixed top-4 left-4 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
         data-testid="button-calling-back"
       >
-        <ChevronLeft className="w-5 h-5 text-white" />
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Back
       </button>
 
-      {/* HERO */}
-      <div className="relative w-full" style={{ height: "100svh", minHeight: 600 }}>
+      {/* HERO — cinematic full-screen */}
+      <div className="relative w-full" style={{ height: "92svh", minHeight: 520 }}>
         <img
           src={artUrl}
           alt="Daily art"
           className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ filter: "brightness(0.82)" }}
+          style={{ filter: "brightness(0.75)" }}
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG; }}
         />
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 35%, rgba(13,10,26,0.6) 70%, rgba(13,10,26,1) 100%)" }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,0) 60%, rgba(0,0,0,0.3) 100%)" }}
-        />
-        <div className="absolute bottom-0 left-0 right-0 px-7 pb-16 text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-white/50 text-xs tracking-[0.22em] uppercase mb-4"
-          >
+        {/* Gradient — dark at bottom for text legibility */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 30%, rgba(13,10,26,0.72) 72%, rgba(13,10,26,1) 100%)" }} />
+
+        <div className="absolute bottom-0 left-0 right-0 px-7 pb-14 text-center">
+          <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="text-white/45 text-[11px] tracking-[0.22em] uppercase mb-4">
             Shepherd's Path
           </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-white font-light leading-tight mb-4"
-            style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(1.75rem, 6vw, 2.5rem)" }}
-          >
+          <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="text-white font-light leading-tight mb-3"
+            style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(1.75rem, 6vw, 2.5rem)" }}>
             This Is More<br />Than an App
           </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="text-white/65 text-base leading-relaxed mb-8"
-            style={{ fontFamily: "'Georgia', serif" }}
-          >
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+            className="text-white/55 text-[15px] leading-relaxed"
+            style={{ fontFamily: "'Georgia', serif" }}>
             You carry something someone needs.<br />Sharing it is the calling.
           </motion.p>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1 }}
-            className="flex justify-center"
-          >
-            <div className="flex flex-col items-center gap-1.5 text-white/35">
-              <span className="text-xs tracking-widest uppercase">Scroll</span>
-              <ArrowDown className="w-4 h-4 animate-bounce" />
-            </div>
-          </motion.div>
         </div>
       </div>
 
-      {/* INTRO */}
-      <div className="px-7 py-12 text-center" style={{ background: "#0d0a1a" }}>
-        <p className="text-white/35 text-xs tracking-[0.2em] uppercase mb-5">The Calling</p>
-        <p
-          className="text-white leading-relaxed mb-5"
-          style={{ fontFamily: "'Georgia', serif", fontSize: "1.15rem" }}
-        >
+      {/* INTRO VERSE */}
+      <div className="px-7 pt-10 pb-8 text-center">
+        <p className="text-white/30 text-[11px] tracking-[0.2em] uppercase mb-5">The Calling</p>
+        <p className="text-white leading-relaxed mb-3" style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem" }}>
           "Go and make disciples of all nations."
         </p>
-        <p className="text-white/45 text-sm mb-2" style={{ fontFamily: "'Georgia', serif" }}>
-          — Matthew 28:19
-        </p>
-        <div className="w-10 h-px mx-auto mt-8" style={{ background: "rgba(255,255,255,0.12)" }} />
+        <p className="text-white/40 text-sm" style={{ fontFamily: "'Georgia', serif" }}>— Matthew 28:19</p>
+        <div className="w-8 h-px mx-auto mt-8 bg-white/10" />
       </div>
 
-      {/* CARDS */}
-      <div className="px-5 pb-6 space-y-4">
+      {/* SHARE CARDS — editorial, minimal */}
+      <div className="px-5 pb-6 space-y-3">
         {CALLING_CARDS.map((card, i) => (
           <motion.div
             key={card.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.5, delay: i * 0.05 }}
-            className="rounded-2xl overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.45, delay: i * 0.04 }}
+            className="rounded-2xl px-5 py-5"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             data-testid={`card-calling-${card.id}`}
           >
-            <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #7A018D, #442f74)" }} />
+            {/* Message */}
+            <p className="text-white leading-snug mb-2" style={{ fontFamily: "'Georgia', serif", fontSize: "1rem" }}>
+              {card.message}
+            </p>
+            <p className="text-white/35 text-[11px] tracking-wide mb-3">— {card.scripture}</p>
+            <p className="text-white/50 text-[13px] leading-relaxed">{card.meaning}</p>
 
-            <div className="p-5">
-              <p
-                className="text-white leading-snug mb-3"
-                style={{ fontFamily: "'Georgia', serif", fontSize: "1.05rem" }}
+            {/* Share options — slim pill row */}
+            <div className="flex items-center gap-2 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <button
+                onClick={() => handlePurpleShare(card)}
+                disabled={loading !== null}
+                data-testid={`button-calling-share-purple-${card.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-95 disabled:opacity-40"
+                style={{ background: "rgba(122,1,141,0.18)", border: "1px solid rgba(122,1,141,0.3)", color: "rgba(210,160,230,0.85)" }}
               >
-                {card.message}
-              </p>
-              <p className="text-white/40 text-xs tracking-wide mb-3">— {card.scripture}</p>
-              <p className="text-white/55 text-sm leading-relaxed mb-4">{card.meaning}</p>
-
-              {/* Two share options */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handlePurpleShare(card)}
-                  disabled={loading !== null}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all active:scale-95 disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.25), rgba(68,47,116,0.25))", border: "1px solid rgba(122,1,141,0.35)", color: "rgba(200,150,220,0.9)" }}
-                  data-testid={`button-calling-share-purple-${card.id}`}
-                >
-                  {loading === `${card.id}-purple`
-                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : <Palette className="w-3 h-3" />
-                  }
-                  Purple
-                </button>
-                <button
-                  onClick={() => handleArtShare(card)}
-                  disabled={loading !== null}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all active:scale-95 disabled:opacity-50"
-                  style={{ background: artLoaded ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.07)", border: artLoaded ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(255,255,255,0.12)", color: artLoaded ? "rgba(251,191,36,0.9)" : "rgba(255,255,255,0.7)" }}
-                  data-testid={`button-calling-share-art-${card.id}`}
-                >
-                  {loading === `${card.id}-art`
-                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : <Sparkles className="w-3 h-3" />
-                  }
-                  AI Art
-                </button>
-              </div>
+                {loading === `${card.id}-purple` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Palette className="w-3 h-3" />}
+                Purple
+              </button>
+              <button
+                onClick={() => handleArtShare(card)}
+                disabled={loading !== null}
+                data-testid={`button-calling-share-art-${card.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-95 disabled:opacity-40"
+                style={{
+                  background: artLoaded ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.06)",
+                  border: artLoaded ? "1px solid rgba(251,191,36,0.28)" : "1px solid rgba(255,255,255,0.1)",
+                  color: artLoaded ? "rgba(251,191,36,0.85)" : "rgba(255,255,255,0.55)",
+                }}
+              >
+                {loading === `${card.id}-art` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                AI Art
+              </button>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* MID DIVIDER */}
+      {/* MID QUOTE */}
       <div className="px-7 py-10 text-center">
-        <div className="w-10 h-px mx-auto mb-8" style={{ background: "rgba(255,255,255,0.12)" }} />
-        <p
-          className="text-white/60 leading-relaxed"
-          style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem" }}
-        >
+        <div className="w-8 h-px mx-auto mb-8 bg-white/10" />
+        <p className="text-white/55 leading-relaxed" style={{ fontFamily: "'Georgia', serif", fontSize: "1.05rem" }}>
           Someone needs what you're about to share.
         </p>
-        <p className="text-white/30 text-sm mt-3">You never know who's waiting for it.</p>
-        <div className="w-10 h-px mx-auto mt-8" style={{ background: "rgba(255,255,255,0.12)" }} />
+        <p className="text-white/25 text-sm mt-2">You never know who's waiting for it.</p>
+        <div className="w-8 h-px mx-auto mt-8 bg-white/10" />
       </div>
 
-      {/* BOTTOM CTA */}
-      <div className="px-5 pb-12 space-y-3">
-        <p className="text-center text-white/35 text-xs tracking-[0.2em] uppercase mb-5">One Action. One Person.</p>
+      {/* BOTTOM CTAs */}
+      <div className="px-5 pb-14 space-y-3">
+        <p className="text-center text-white/30 text-[11px] tracking-[0.2em] uppercase mb-5">One Action. One Person.</p>
 
         <button
           onClick={handleShareApp}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-medium text-base"
-          style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", boxShadow: "0 8px 32px rgba(122,1,141,0.3)" }}
           data-testid="button-calling-share-app"
+          className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-[15px] active:scale-[0.98] transition-all"
+          style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", boxShadow: "0 8px 28px rgba(122,1,141,0.28)" }}
         >
           <Share2 className="w-5 h-5" />
           Share Shepherd's Path
@@ -326,9 +278,9 @@ export default function CallingPage() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={handleSendPrayer}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-medium"
-            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)" }}
             data-testid="button-calling-send-prayer"
+            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[13px] font-medium active:scale-[0.97] transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)" }}
           >
             <Heart className="w-4 h-4" />
             Send a Prayer
@@ -336,9 +288,9 @@ export default function CallingPage() {
           <button
             onClick={handleShareScripture}
             disabled={sharingScripture}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)" }}
             data-testid="button-calling-share-scripture"
+            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[13px] font-medium disabled:opacity-50 active:scale-[0.97] transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)" }}
           >
             {sharingScripture ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
             Share Scripture
