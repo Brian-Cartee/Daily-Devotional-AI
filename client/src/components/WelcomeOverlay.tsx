@@ -44,7 +44,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.45 }}
-      className="fixed inset-0 z-50 flex flex-col overflow-y-auto"
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
       style={{
         background: "linear-gradient(175deg, #1e0d50 0%, #130636 40%, #09031e 100%)",
       }}
@@ -108,9 +108,12 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         </p>
       </motion.div>
 
-      {/* Primary CTAs — immediately below title */}
+      {/* Spacer — pushes CTAs toward the lower half */}
+      <div className="flex-1" />
+
+      {/* All three entry paths — stacked, all visible without scrolling */}
       <motion.div
-        className="relative z-10 px-5 pt-6 pb-3 space-y-3 shrink-0"
+        className="relative z-10 px-5 space-y-3 shrink-0"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
@@ -142,37 +145,21 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <BookOpen className="w-4 h-4 opacity-70" />
           <span>I&rsquo;m Familiar With The Bible</span>
         </button>
-      </motion.div>
 
-      {/* Spacer */}
-      <div className="flex-1 min-h-3" />
-
-      {/* Audio — tertiary, quiet presence below the primary actions */}
-      <motion.div
-        className="relative z-10 px-5 pb-1 shrink-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.4 }}
-      >
+        {/* Audio — tertiary, quiet third option */}
         <button
           data-testid="btn-toggle-audio"
           onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 py-3 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40"
           style={{
-            background: playing
-              ? "rgba(255,255,255,0.09)"
-              : "rgba(255,255,255,0.05)",
+            background: playing ? "rgba(255,255,255,0.09)" : "rgba(255,255,255,0.05)",
             border: "1px solid rgba(255,255,255,0.10)",
           }}
         >
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{
-              background: playing
-                ? "rgba(255,255,255,0.15)"
-                : "rgba(255,255,255,0.14)",
-            }}
+            style={{ background: playing ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.14)" }}
           >
             {loading
               ? <Loader2 className="w-3 h-3 text-white/70 animate-spin" />
@@ -181,15 +168,9 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                 : <span className="text-white/80 text-[11px]">▶</span>
             }
           </div>
-          <div className="text-left">
+          <div className="text-left flex-1">
             <p className="text-[12px] text-white/65 leading-tight">
-              {loading
-                ? "Preparing…"
-                : playing
-                  ? "Playing — tap to stop"
-                  : started
-                    ? "Replay welcome message"
-                    : "Or begin by listening"}
+              {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Or begin by listening"}
             </p>
             {started && !playing && !loading && (
               <div className="mt-1 w-32 h-0.5 rounded-full overflow-hidden bg-white/10">
@@ -198,7 +179,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             )}
           </div>
           {playing && (
-            <div className="flex items-end gap-0.5 h-3.5">
+            <div className="flex items-end gap-0.5 h-3.5 flex-shrink-0">
               {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
                 <motion.div
                   key={i}
@@ -213,59 +194,17 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         </button>
       </motion.div>
 
-      {/* Four paths — always visible, so users know what's here */}
+      {/* Faith statement — small, quiet, anchored to the bottom */}
       <motion.div
-        className="relative z-10 px-5 pb-8 shrink-0"
+        className="relative z-10 px-5 shrink-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.45, duration: 0.5 }}
+        style={{ paddingBottom: "max(32px, calc(20px + env(safe-area-inset-bottom, 0px)))", paddingTop: 16 }}
       >
-        <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 text-center mb-3">
-          Four ways to begin
+        <p className="text-center text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.28)" }}>
+          ✝ Rooted in Father, Son, and Holy Spirit — grounded in God&rsquo;s Word.
         </p>
-        <div
-          className="rounded-2xl border divide-y overflow-hidden"
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            borderColor: "rgba(255,255,255,0.09)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          {[
-            { icon: "☀️", name: "Daily Devotional", body: "One verse, every morning. Yours to sit with." },
-            { icon: "💬", name: "Talk It Through", body: "Bring it here exactly as it is. No need to clean it up." },
-            { icon: "🧭", name: "Bible Journeys", body: "Guided scripture paths shaped around what you're carrying." },
-            { icon: "📓", name: "Journal", body: "A private place to hold what God is doing in your life." },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 px-4 py-3"
-              style={{ borderColor: "rgba(255,255,255,0.07)" }}
-            >
-              <span className="text-[18px] shrink-0 mt-0.5">{item.icon}</span>
-              <div>
-                <p className="text-[13px] font-bold text-white/85 leading-tight">{item.name}</p>
-                <p className="text-[12px] text-white/45 leading-snug mt-0.5">{item.body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div
-          className="mt-2.5 rounded-xl border px-4 py-3 flex items-start gap-3"
-          style={{
-            background: "rgba(255,80,80,0.07)",
-            borderColor: "rgba(255,120,120,0.18)",
-          }}
-        >
-          <span className="text-lg shrink-0">✝️</span>
-          <div>
-            <p className="text-[13px] font-bold text-white/90 leading-tight">Built to lead people to Christ</p>
-            <p className="text-[11px] text-white/50 leading-snug mt-0.5">
-              Rooted in Father, Son, and Holy Spirit. Every response is grounded in God's Word — never beside it.
-            </p>
-          </div>
-        </div>
       </motion.div>
     </motion.div>
   );
