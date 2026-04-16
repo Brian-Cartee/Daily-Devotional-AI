@@ -141,7 +141,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
       const json = await res.json();
       setAnswer(json.content ?? "");
     } catch {
-      setAnswer("Something went wrong — try again in a moment.");
+      setAnswer("We can try that again in a moment.");
     } finally {
       setQaLoading(false);
     }
@@ -213,8 +213,8 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
             {!gated && isError && (
               <div className="py-10 text-center">
                 <p className="text-[15px] text-foreground/60 leading-relaxed">
-                  We're having trouble loading the background right now —<br />
-                  try again in a moment.
+                  We're having trouble loading this right now —<br />
+                  we can try again in a moment.
                 </p>
               </div>
             )}

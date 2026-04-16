@@ -83,7 +83,7 @@ export function BibleStudyChat({
     } catch {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: "Something went wrong — please try again." },
+        { role: "assistant", content: "We can try that again." },
       ]);
     }
   };

@@ -82,7 +82,7 @@ export default function SupportPage() {
       if (!res.ok) throw new Error("Failed");
       setSent(true);
     } catch {
-      toast({ title: "Something went wrong", description: "Please try again or email us directly at support@shepherdspathai.com", variant: "destructive" });
+      toast({ description: "We can try again — or reach us at support@shepherdspathai.com" });
     } finally {
       setSending(false);
     }

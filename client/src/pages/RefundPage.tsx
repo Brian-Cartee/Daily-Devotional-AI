@@ -35,7 +35,7 @@ export default function RefundPage() {
       }
     } catch {
       setState("error");
-      setResult({ message: "Something went wrong. Please try again or contact support." });
+      setResult({ message: "We can try that again — or reach out to support@shepherdspathai.com." });
     }
   };
 

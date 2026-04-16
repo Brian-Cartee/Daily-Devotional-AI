@@ -47,7 +47,7 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
         markEmailSubscribed();
       } else {
         setStatus("error");
-        setMessage(data.message || "Something went wrong. Please try again.");
+        setMessage(data.message || "We can try that again.");
       }
     } catch {
       setStatus("error");
@@ -158,7 +158,7 @@ export function InlineEmailSignup() {
         markEmailSubscribed();
       } else {
         setStatus("error");
-        setMessage(data.message || "Something went wrong. Please try again.");
+        setMessage(data.message || "We can try that again.");
       }
     } catch {
       setStatus("error");
@@ -282,7 +282,7 @@ export function InlineSubscribeToggle() {
         setEmailSubscribed(true);
       } else {
         setEmailStatus("error");
-        setEmailMsg(data.message || "Something went wrong.");
+        setEmailMsg(data.message || "We can try that again.");
       }
     } catch {
       setEmailStatus("error");
@@ -308,7 +308,7 @@ export function InlineSubscribeToggle() {
         setSmsSubscribed(true);
       } else {
         setSmsStatus("error");
-        setSmsMsg(data.message || "Something went wrong.");
+        setSmsMsg(data.message || "We can try that again.");
       }
     } catch {
       setSmsStatus("error");
@@ -454,7 +454,7 @@ export function InlineSmsSignup() {
         markSmsSubscribed();
       } else {
         setStatus("error");
-        setMessage(data.message || "Something went wrong. Please try again.");
+        setMessage(data.message || "We can try that again.");
       }
     } catch {
       setStatus("error");

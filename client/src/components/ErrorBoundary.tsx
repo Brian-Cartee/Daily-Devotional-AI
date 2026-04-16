@@ -31,10 +31,10 @@ export class ErrorBoundary extends Component<Props, State> {
           <BookOpen className="w-12 h-12 text-primary opacity-60" />
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-foreground">
-              Something went wrong
+              Something interrupted the experience
             </h2>
             <p className="text-muted-foreground text-sm max-w-xs">
-              We're sorry for the interruption. Tap below to get back to your devotional.
+              Take a breath — tap below to pick up where you left off.
             </p>
           </div>
           <button

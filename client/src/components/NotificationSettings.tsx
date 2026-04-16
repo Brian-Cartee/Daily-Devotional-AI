@@ -204,7 +204,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
       toast({ description: "Notifications enabled! You'll hear from us. 🙏" });
     } catch (err) {
       console.error("[push] enable error:", err);
-      toast({ description: "Something went wrong enabling notifications.", variant: "destructive" });
+      toast({ description: "Notifications couldn't be enabled right now — you can try again from settings." });
     }
     setLoading(false);
   };

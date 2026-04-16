@@ -135,7 +135,7 @@ export default function GuidancePage() {
         return;
       }
       if (!res.ok || !res.body) {
-        setStreamingText("Something went wrong reaching our servers. Please go back and try again, or check your connection.");
+        setStreamingText("Having trouble connecting right now. It's worth trying once more — we're here.");
         setResponseComplete(true);
         return;
       }
@@ -150,7 +150,7 @@ export default function GuidancePage() {
         setStreamingText(accumulated);
       }
       if (!accumulated.trim()) {
-        setStreamingText("We weren't able to generate a response right now. Please try again in a moment.");
+        setStreamingText("We can try that again — give it just a moment.");
         setResponseComplete(true);
         return;
       }
@@ -158,7 +158,7 @@ export default function GuidancePage() {
       setStreamingText("");
       setResponseComplete(true);
     } catch {
-      setStreamingText("Something went wrong. Please check your connection and try again.");
+      setStreamingText("Trouble connecting — check your signal and we can try again.");
       setResponseComplete(true);
     }
   };

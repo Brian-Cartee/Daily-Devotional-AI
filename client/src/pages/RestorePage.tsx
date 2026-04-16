@@ -28,7 +28,7 @@ export default function RestorePage() {
       }
     } catch {
       setStage("error");
-      setErrorMsg("Something went wrong. Please check your connection and try again.");
+      setErrorMsg("Trouble connecting — check your signal and we can try again.");
     }
   };
 

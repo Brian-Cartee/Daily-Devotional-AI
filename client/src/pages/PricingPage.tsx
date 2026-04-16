@@ -160,10 +160,10 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        toast({ title: "Error", description: data.message || "Could not start checkout.", variant: "destructive" });
+        toast({ description: data.message || "Checkout couldn't open — we can try again." });
       }
     } catch {
-      toast({ title: "Error", description: "Network error. Please try again.", variant: "destructive" });
+      toast({ description: "Trouble connecting — we can try again." });
     } finally {
       setLoading(false);
     }

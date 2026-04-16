@@ -406,7 +406,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
       })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(journey => onLifeSeasonSelect(journey as Journey))
-        .catch(() => { setLifeError("Something went wrong. Please try again."); setLifePhase("input"); });
+        .catch(() => { setLifeError("We can try that again."); setLifePhase("input"); });
     }
   }, []);
 
@@ -424,7 +424,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
       const journey = await res.json();
       onLifeSeasonSelect(journey as Journey);
     } catch {
-      setLifeError("Something went wrong. Please try again.");
+      setLifeError("We can try that again.");
       setLifePhase("input");
     }
   };

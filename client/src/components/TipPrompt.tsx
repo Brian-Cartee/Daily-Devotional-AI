@@ -54,10 +54,10 @@ export function TipPrompt({ streakDays, onClose }: TipPromptProps) {
         dismissTip();
         window.location.href = data.url;
       } else {
-        toast({ title: "Error", description: "Could not start checkout.", variant: "destructive" });
+        toast({ description: "Checkout couldn't open — we can try again." });
       }
     } catch {
-      toast({ title: "Error", description: "Network error. Please try again.", variant: "destructive" });
+      toast({ description: "Trouble connecting — we can try again." });
     } finally {
       setLoading(null);
     }

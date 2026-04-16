@@ -75,10 +75,10 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        toast({ title: "Error", description: data.message || "Could not start checkout.", variant: "destructive" });
+        toast({ description: data.message || "Checkout couldn't open — we can try again.", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Error", description: "Network error. Please try again.", variant: "destructive" });
+      toast({ description: "Trouble connecting — we can try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
         toast({ title: "Verification failed", description: "Please contact support@shepherdspathai.com with your receipt.", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+      toast({ description: "We can try that again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }

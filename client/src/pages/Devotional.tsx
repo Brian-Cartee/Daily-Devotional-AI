@@ -436,10 +436,10 @@ export default function Devotional() {
         setEmailSubmitted(true);
         localStorage.setItem("sp_nudge_dismissed", "1");
       } else {
-        toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+        toast({ description: "We can try that again." });
       }
     } catch {
-      toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+      toast({ description: "We can try that again." });
     }
     setNudgeLoading(false);
   };
@@ -458,10 +458,10 @@ export default function Devotional() {
         setEmailSubmitted(true);
         localStorage.setItem("sp_nudge_dismissed", "1");
       } else {
-        toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+        toast({ description: "We can try that again." });
       }
     } catch {
-      toast({ description: "Something went wrong. Please try again.", variant: "destructive" });
+      toast({ description: "We can try that again." });
     }
     setNudgeSmsLoading(false);
   };
