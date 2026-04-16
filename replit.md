@@ -4,6 +4,12 @@
 
 Shepherd's Path is a faith-centered mobile and web application designed to be a Bible companion, offering daily devotionals, guided scripture paths, full Bible reading, and a prayer journal. It targets users aged 20–40, aiming for a calm, sacred, and premium aesthetic. The project's vision is to provide a digital space for spiritual growth, leveraging AI to personalize the user's journey. Key capabilities include a 4-step daily devotional loop, curated Bible journeys, a full KJV Bible reader with AI assistance, and a personal prayer journal.
 
+## Voice & Tone
+
+**Voice system lives at `docs/voice-system.md` — read it before writing any copy or AI prompt.**
+
+The short version: quiet, steady presence. Not eager, not distant. Stays. Listens. Makes space. Never instructional, never pressuring, never prophetic. The guardrail test: "Does this feel like it's trying to help me… or like it's trying to be right?" If it's trying to be right — rewrite it.
+
 ## User Preferences
 
 - The AI should foster a sense of spiritual companionship, adapting its tone based on the user's emotional state (compassionate when heavy, celebratory when joyful).
