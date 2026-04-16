@@ -141,7 +141,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
         source: chapter.title,
       });
       setSnippetSaved(true);
-      toast({ description: "Added to your Journal — you'll find it in Scriptures." });
+      toast({ description: "This has been added to your Journal. You can come back to it anytime." });
     } catch {
       toast({ description: "We can try that again.", variant: "destructive" });
     } finally {
@@ -262,13 +262,14 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.22 }}
+                    transition={{ duration: 0.28, delay: 0.12, ease: "easeOut" }}
                     className="overflow-hidden"
                   >
                     <div className="bg-white/30 dark:bg-slate-700/20 rounded-xl p-4 border border-white/20 mb-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/50 mb-2">Background</p>
+                      <p className="text-[10px] font-medium text-primary/40 mb-3 italic">Let's take a look…</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/50 mb-2">What's happening here</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{chapter.whyItMatters}</p>
-                      <p className="text-[10px] text-muted-foreground/40 mt-3 italic">Deeper historical and cultural context — coming soon.</p>
+                      <p className="text-[10px] text-muted-foreground/40 mt-3 italic">Historical and cultural depth — coming soon.</p>
                     </div>
                   </motion.div>
                 )}
@@ -361,6 +362,28 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                       )}
                     </div>
                   </div>
+
+                  {/* Natural next — gentle invitation to continue the moment */}
+                  <div className="mt-3 pt-3 border-t border-white/20">
+                    {aiMode === "reflect" && (
+                      <button
+                        onClick={() => generateAI("pray")}
+                        disabled={isAiLoading}
+                        className="w-full text-left text-[11px] text-muted-foreground/60 hover:text-primary/70 transition-colors italic"
+                      >
+                        Would you like to turn this into a prayer? →
+                      </button>
+                    )}
+                    {aiMode === "pray" && (
+                      <button
+                        onClick={() => { setAiMode("chat"); setChatMessages([]); }}
+                        disabled={isAiLoading}
+                        className="w-full text-left text-[11px] text-muted-foreground/60 hover:text-primary/70 transition-colors italic"
+                      >
+                        Is there anything you want to ask about this? →
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
               {aiMode === "chat" && (
@@ -386,6 +409,16 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                     <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()} placeholder="What's on your heart about this passage?" autoCapitalize="sentences" autoCorrect="on" enterKeyHint="send" className="flex-1 bg-white/60 dark:bg-slate-700/60 border border-white/30 dark:border-slate-600/40 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" disabled={isAiLoading} />
                     <Button size="sm" onClick={sendChat} disabled={!chatInput.trim() || isAiLoading} className="rounded-xl">Send</Button>
                   </div>
+                  {/* Natural next — invite them to hold onto this moment */}
+                  {chatMessages.length >= 2 && !snippetSaved && (
+                    <button
+                      onClick={handleSaveSnippet}
+                      disabled={snippetSaving}
+                      className="w-full text-left text-[11px] text-muted-foreground/60 hover:text-primary/70 transition-colors italic pt-1"
+                    >
+                      Do you want to hold onto this passage? →
+                    </button>
+                  )}
                 </div>
               )}
             </div>
