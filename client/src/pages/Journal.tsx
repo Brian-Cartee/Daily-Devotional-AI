@@ -1276,7 +1276,7 @@ export default function Journal() {
                         </p>
                       </div>
                       {letter?.split("\n\n").filter(p => p.trim()).map((para, i) => (
-                        <p key={i} className="text-[14px] leading-relaxed text-foreground/90 mb-3 last:mb-0">
+                        <p key={i} className="text-[15px] leading-[1.95] text-primary/75 italic mb-4 last:mb-0 tracking-wide">
                           {para}
                         </p>
                       ))}

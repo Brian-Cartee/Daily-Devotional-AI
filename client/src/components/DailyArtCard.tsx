@@ -90,17 +90,22 @@ export function DailyArtCard() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="w-full px-5 py-5"
+        className="w-full px-4 py-2"
       >
-        <div className="flex flex-col gap-2">
-          <p className="text-[15px] text-foreground/85 leading-snug italic font-medium">
+        <div
+          className="rounded-2xl px-7 py-8 shadow-sm"
+          style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.5) 100%)", border: "1px solid hsl(258 45% 55% / 0.18)" }}
+        >
+          <div className="h-px w-12 mx-auto mb-6" style={{ background: "hsl(258 45% 55% / 0.35)" }} />
+          <p className="text-[19px] text-primary/75 leading-[1.75] italic font-normal tracking-wide text-center">
             &ldquo;{art.scripture}&rdquo;
           </p>
-          <p className="text-[12px] text-muted-foreground/70 font-semibold">
-            — {art.reference}
+          <div className="h-px w-12 mx-auto mt-6 mb-4" style={{ background: "hsl(258 45% 55% / 0.35)" }} />
+          <p className="text-[11px] text-primary/50 font-bold uppercase tracking-[0.18em] text-center">
+            {art.reference}
           </p>
           {art.reflection && (
-            <p className="text-[13px] text-muted-foreground leading-relaxed italic mt-1">
+            <p className="text-[13px] text-muted-foreground/70 leading-relaxed italic mt-5 text-center">
               {art.reflection}
             </p>
           )}

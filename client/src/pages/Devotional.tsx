@@ -50,7 +50,7 @@ function StepLabel({ number: _number, label }: { number: number; label: string }
 function PrayerText({ text }: { text: string }) {
   const cleaned = text.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
   return (
-    <p className="text-[15px] leading-[2] text-foreground/75 italic font-normal">
+    <p className="text-[16px] leading-[2.1] text-primary/80 italic font-normal tracking-wide">
       {cleaned}
     </p>
   );
@@ -1223,135 +1223,7 @@ export default function Devotional() {
           </div>
           )}
 
-          {/* ── Daily Email Nudge — appears after reflection, before prayer ── */}
-          <AnimatePresence>
-            {reflectionContent && !emailSubmitted && !nudgeDismissed && (
-              <motion.div
-                key="email-nudge"
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ delay: 1.8, duration: 0.7, ease: "easeOut" }}
-                className="rounded-2xl overflow-hidden shadow-sm"
-                style={{ background: "linear-gradient(135deg, hsl(258 30% 8%) 0%, hsl(250 25% 12%) 100%)", border: "1px solid hsl(258 20% 22% / 0.7)" }}
-                data-testid="email-nudge-card"
-              >
-                <div className="px-6 pt-5 pb-2">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Daily Devotional</p>
-                  <p className="text-[17px] font-bold text-foreground leading-snug">Want us to bring this to you every morning?</p>
-                  <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
-                    Scripture and a personal reflection — free, always.
-                  </p>
-                </div>
-
-                {/* Tab toggle */}
-                <div className="px-6 pt-3 pb-1">
-                  <div className="flex gap-1 p-1 bg-black/5 dark:bg-white/10 rounded-xl">
-                    <button
-                      data-testid="nudge-tab-email"
-                      onClick={() => setNudgeTab("email")}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
-                        nudgeTab === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      ✉ Email
-                    </button>
-                    <button
-                      data-testid="nudge-tab-sms"
-                      onClick={() => setNudgeTab("sms")}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
-                        nudgeTab === "sms" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      💬 Text
-                    </button>
-                  </div>
-                </div>
-
-                {nudgeTab === "email" ? (
-                  <form onSubmit={handleNudgeSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
-                    <input
-                      type="text"
-                      spellCheck
-                      value={nudgeName}
-                      onChange={e => setNudgeName(e.target.value)}
-                      placeholder="Your first name (optional)"
-                      data-testid="input-nudge-name"
-                      className="w-full bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70"
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        value={nudgeEmail}
-                        onChange={e => setNudgeEmail(e.target.value)}
-                        placeholder="your@email.com"
-                        required
-                        inputMode="email"
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        autoComplete="email"
-                        enterKeyHint="done"
-                        spellCheck={false}
-                        data-testid="input-nudge-email"
-                        className="flex-1 bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70 min-w-0"
-                      />
-                      <Button
-                        type="submit"
-                        disabled={nudgeLoading || !nudgeEmail.trim()}
-                        data-testid="button-nudge-subscribe"
-                        className="rounded-xl px-4 font-bold shrink-0 text-sm"
-                      >
-                        {nudgeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send it"}
-                      </Button>
-                    </div>
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
-                      <input
-                        type="checkbox"
-                        checked={includeDailyArt}
-                        onChange={e => setIncludeDailyArt(e.target.checked)}
-                        data-testid="checkbox-nudge-daily-art"
-                        className="w-4 h-4 rounded accent-primary cursor-pointer"
-                      />
-                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Moment of Beauty image</span>
-                    </label>
-                  </form>
-                ) : (
-                  <form onSubmit={handleNudgeSmsSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
-                    <div className="flex gap-2">
-                      <input
-                        type="tel"
-                        value={nudgePhone}
-                        onChange={e => setNudgePhone(e.target.value)}
-                        placeholder="(555) 000-0000"
-                        required
-                        data-testid="input-nudge-phone"
-                        className="flex-1 bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70 min-w-0"
-                      />
-                      <Button
-                        type="submit"
-                        disabled={nudgeSmsLoading || !nudgePhone.trim()}
-                        data-testid="button-nudge-sms-subscribe"
-                        className="rounded-xl px-4 font-bold shrink-0 text-sm"
-                      >
-                        {nudgeSmsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send it"}
-                      </Button>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">US numbers only. Reply STOP any time to unsubscribe.</p>
-                  </form>
-                )}
-
-                <div className="px-6 pb-4 pt-1 text-center">
-                  <button
-                    onClick={handleNudgeDismiss}
-                    data-testid="button-nudge-dismiss"
-                    className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  >
-                    Maybe later
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* ── Daily Email Nudge — MOVED: now after prayer/benediction ── */}
 
           {/* Reflection → Prayer connector — only shown after reflection loads */}
           {reflectionContent && (
@@ -1363,7 +1235,7 @@ export default function Devotional() {
           )}
 
           {/* STEP 3: PRAYER */}
-          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
+          <div className="rounded-2xl px-7 py-8 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.6) 100%)", border: "1px solid hsl(258 45% 55% / 0.2)" }}>
             <StepLabel number={3} label="Prayer" />
             <AnimatePresence mode="wait">
               {prayerLoading && !prayerContent && (
@@ -1479,6 +1351,136 @@ export default function Devotional() {
               </p>
             </motion.div>
           )}
+
+          {/* ── Daily Email Nudge — appears after prayer + benediction ── */}
+          <AnimatePresence>
+            {prayerContent && !emailSubmitted && !nudgeDismissed && (
+              <motion.div
+                key="email-nudge"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ delay: 0.8, duration: 0.7, ease: "easeOut" }}
+                className="rounded-2xl overflow-hidden shadow-sm"
+                style={{ background: "linear-gradient(135deg, hsl(258 30% 8%) 0%, hsl(250 25% 12%) 100%)", border: "1px solid hsl(258 20% 22% / 0.7)" }}
+                data-testid="email-nudge-card"
+              >
+                <div className="px-6 pt-5 pb-2">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Daily Devotional</p>
+                  <p className="text-[17px] font-bold text-foreground leading-snug">Want tomorrow's waiting for you?</p>
+                  <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+                    Scripture and a personal reflection — free, always.
+                  </p>
+                </div>
+
+                {/* Tab toggle */}
+                <div className="px-6 pt-3 pb-1">
+                  <div className="flex gap-1 p-1 bg-black/5 dark:bg-white/10 rounded-xl">
+                    <button
+                      data-testid="nudge-tab-email"
+                      onClick={() => setNudgeTab("email")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                        nudgeTab === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      ✉ Email
+                    </button>
+                    <button
+                      data-testid="nudge-tab-sms"
+                      onClick={() => setNudgeTab("sms")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                        nudgeTab === "sms" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      💬 Text
+                    </button>
+                  </div>
+                </div>
+
+                {nudgeTab === "email" ? (
+                  <form onSubmit={handleNudgeSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
+                    <input
+                      type="text"
+                      spellCheck
+                      value={nudgeName}
+                      onChange={e => setNudgeName(e.target.value)}
+                      placeholder="Your first name (optional)"
+                      data-testid="input-nudge-name"
+                      className="w-full bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={nudgeEmail}
+                        onChange={e => setNudgeEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        required
+                        inputMode="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        autoComplete="email"
+                        enterKeyHint="done"
+                        spellCheck={false}
+                        data-testid="input-nudge-email"
+                        className="flex-1 bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70 min-w-0"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={nudgeLoading || !nudgeEmail.trim()}
+                        data-testid="button-nudge-subscribe"
+                        className="rounded-xl px-4 font-bold shrink-0 text-sm"
+                      >
+                        {nudgeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send it"}
+                      </Button>
+                    </div>
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={includeDailyArt}
+                        onChange={e => setIncludeDailyArt(e.target.checked)}
+                        data-testid="checkbox-nudge-daily-art"
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      />
+                      <span className="text-[12px] text-muted-foreground leading-snug">Also include today's Moment of Beauty image</span>
+                    </label>
+                  </form>
+                ) : (
+                  <form onSubmit={handleNudgeSmsSubmit} className="px-6 pb-2 pt-3 space-y-2.5">
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        value={nudgePhone}
+                        onChange={e => setNudgePhone(e.target.value)}
+                        placeholder="(555) 000-0000"
+                        required
+                        data-testid="input-nudge-phone"
+                        className="flex-1 bg-muted/30 border border-border/60 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/70 min-w-0"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={nudgeSmsLoading || !nudgePhone.trim()}
+                        data-testid="button-nudge-sms-subscribe"
+                        className="rounded-xl px-4 font-bold shrink-0 text-sm"
+                      >
+                        {nudgeSmsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send it"}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">US numbers only. Reply STOP any time to unsubscribe.</p>
+                  </form>
+                )}
+
+                <div className="px-6 pb-4 pt-1 text-center">
+                  <button
+                    onClick={handleNudgeDismiss}
+                    data-testid="button-nudge-dismiss"
+                    className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Post-prayer prayer nudge — appears after prayer + benediction */}
           {prayerContent && !postPrayerShareDone && (
