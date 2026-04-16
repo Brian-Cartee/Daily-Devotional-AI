@@ -10,6 +10,7 @@ import {
   NotebookPen, PenLine, Plus, X, ChevronDown, Church, User, BookMarked, Calendar,
   Download, FileText, FileType2, Lock, Star, Check,
   Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb, MessageCircle, Feather,
+  ArrowLeft,
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -1062,6 +1063,15 @@ export default function Journal() {
 
         {/* Hero banner */}
         <div className="relative w-full overflow-hidden" style={{ height: 300 }}>
+          {/* Back to Explore */}
+          <button
+            data-testid="button-back-journal"
+            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            className="absolute top-4 left-4 z-20 flex items-center gap-1 text-[13px] font-semibold text-white/75 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
           {/* Shimmer placeholder — fades out once image loads */}
           <div
             className="absolute inset-0 z-10 transition-opacity duration-500"

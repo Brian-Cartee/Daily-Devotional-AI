@@ -594,6 +594,14 @@ export default function LandingHome() {
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
   const [showWalkthrough, setShowWalkthrough] = useState(() => shouldShowWalkthrough());
   useEffect(() => { recordWalkthroughVisit(); }, []);
+  useEffect(() => {
+    if (sessionStorage.getItem('scrollToExplore')) {
+      sessionStorage.removeItem('scrollToExplore');
+      setTimeout(() => {
+        document.getElementById('explore-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    }
+  }, []);
   // Passage finder state
   const [passageQuery, setPassageQuery] = useState("");
   const [passageResult, setPassageResult] = useState("");
@@ -1100,7 +1108,7 @@ export default function LandingHome() {
           </div>
 
           {/* ── Explore — all features ── */}
-          <div className="mt-2">
+          <div id="explore-section" className="mt-2">
             <div className="flex items-center gap-3 mb-3 px-0.5">
               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
               <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Explore</p>

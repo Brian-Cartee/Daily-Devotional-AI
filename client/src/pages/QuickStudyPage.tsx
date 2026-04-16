@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal } from "lucide-react";
+import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { apiRequest } from "@/lib/queryClient";
@@ -342,6 +343,7 @@ function TrackPassageRow({ passage, index, trackId }: { passage: { reference: st
 }
 
 export default function QuickStudyPage() {
+  const [, navigate] = useLocation();
   const [topic, setTopic] = useState("");
   const [study, setStudy] = useState("");
   const [loading, setLoading] = useState(false);
@@ -504,6 +506,14 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.70) 100%)" }} />
+        <button
+          data-testid="button-back-study"
+          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          className="absolute top-[60px] left-3 z-10 flex items-center gap-1 text-[13px] font-semibold text-white/75 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/25 text-white/90 text-[10px] font-bold uppercase tracking-widest mb-1.5">
             <Sparkles className="w-2.5 h-2.5" />

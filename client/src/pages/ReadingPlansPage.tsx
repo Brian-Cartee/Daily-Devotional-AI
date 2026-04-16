@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
-import { Link } from "wouter";
-import { Check, BookOpen, ChevronDown, ArrowRight, Flame, Trophy, Calendar } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Check, BookOpen, ChevronDown, ArrowRight, Flame, Trophy, Calendar, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   READING_PLANS, type ReadingPlan,
@@ -106,6 +106,7 @@ function DayRow({ day, reading, done, onToggle, isCurrent }: {
 }
 
 export default function ReadingPlansPage() {
+  const [, navigate] = useLocation();
   const [activePlanId, setActivePlanIdState] = useState<string | null>(() => getActivePlanId());
   const [selectedPlanId, setSelectedPlanIdState] = useState<string | null>(
     () => getActivePlanId() || READING_PLANS[0].id
@@ -155,6 +156,16 @@ export default function ReadingPlansPage() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
+
+        {/* Back */}
+        <button
+          data-testid="button-back-reading-plans"
+          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
 
         {/* Header */}
         <motion.div {...fadeUp(0)} className="mb-6">

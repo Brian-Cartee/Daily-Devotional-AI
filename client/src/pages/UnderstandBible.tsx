@@ -434,6 +434,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
 }
 
 function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (journey: Journey) => void; onLifeSeasonSelect: (journey: Journey) => void; resumeBar?: React.ReactNode }) {
+  const [, navigate] = useLocation();
   const search = useSearch();
   const [lifePhase, setLifePhase] = useState<"idle" | "input" | "loading">("idle");
   const [lifeSituation, setLifeSituation] = useState(() => {
@@ -495,6 +496,14 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
         <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
           <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
+          <button
+            data-testid="button-back-understand"
+            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[13px] font-semibold text-white/75 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}

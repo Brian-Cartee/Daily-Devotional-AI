@@ -465,7 +465,7 @@ export default function IronCirclePage() {
           style={{ background: "linear-gradient(160deg, #1e1035 0%, #4c1d95 55%, #5c2d0e 100%)" }}
         >
           <button
-            onClick={() => window.history.back()}
+            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
             data-testid="button-back-iron-circle"
             className="absolute top-4 left-4 flex items-center gap-1 text-[13px] font-semibold text-white/70 hover:text-white transition-colors"
           >

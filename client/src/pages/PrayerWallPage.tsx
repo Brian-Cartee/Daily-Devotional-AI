@@ -99,7 +99,7 @@ export default function PrayerWallPage() {
 
         {/* Back */}
         <button
-          onClick={() => window.history.back()}
+          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
           data-testid="button-back-prayer-wall"
           className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
         >
