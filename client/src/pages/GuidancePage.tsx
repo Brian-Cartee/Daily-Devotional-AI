@@ -423,8 +423,6 @@ export default function GuidancePage() {
             style={{ background: "radial-gradient(ellipse 85% 65% at 50% 45%, rgba(120,60,220,0.42) 0%, transparent 70%)" }}
           />
 
-          {/* Bottom accent line */}
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-amber-400 opacity-90 z-10" />
 
           <AnimatePresence mode="wait">
             {!situation && !streamingText ? (
