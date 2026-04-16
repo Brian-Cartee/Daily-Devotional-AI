@@ -460,32 +460,46 @@ export default function IronCirclePage() {
 
       {/* Hero */}
       <div className="relative pt-14">
-        <div
-          className="w-full flex flex-col items-center justify-end pb-6 pt-6 text-center px-6 relative"
-          style={{ background: "linear-gradient(160deg, #1e1035 0%, #4c1d95 55%, #5c2d0e 100%)" }}
-        >
-          <button
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-            data-testid="button-back-iron-circle"
-            className="absolute top-3 left-3 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
-          </button>
-          <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg">
-            <Swords className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-white text-xl font-extrabold tracking-tight leading-snug drop-shadow-md">
-            Your Iron Circle
-          </h1>
-          {/* Foundation verse — front and center */}
-          <div className="mt-4 max-w-xs mx-auto bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20">
-            <p className="text-white text-[14px] font-bold leading-snug drop-shadow-sm">
-              "As iron sharpens iron, so one person sharpens another."
-            </p>
-            <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mt-1.5">
-              Proverbs 27:17
-            </p>
+        <div className="relative w-full overflow-hidden" style={{ minHeight: 280 }}>
+          {/* Friends photo — visible at bottom, fades into purple at top */}
+          <img
+            src="/hero-iron-circle.png"
+            alt="Friends in an Iron Circle"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            style={{ objectPosition: "center 30%" }}
+          />
+          {/* Purple gradient — solid at top, fades to reveal photo at bottom */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to bottom, #1e1035 0%, rgba(76,29,149,0.88) 30%, rgba(76,29,149,0.5) 62%, rgba(30,16,53,0.18) 100%)"
+            }}
+          />
+          {/* Content */}
+          <div className="relative z-10 flex flex-col items-center justify-start text-center px-6 pt-6 pb-8">
+            <button
+              onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+              data-testid="button-back-iron-circle"
+              className="absolute top-3 left-3 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg mt-2">
+              <Swords className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-white text-xl font-extrabold tracking-tight leading-snug drop-shadow-md">
+              Your Iron Circle
+            </h1>
+            {/* Foundation verse — front and center */}
+            <div className="mt-4 max-w-xs mx-auto bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20">
+              <p className="text-white text-[14px] font-bold leading-snug drop-shadow-sm">
+                "As iron sharpens iron, so one person sharpens another."
+              </p>
+              <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mt-1.5">
+                Proverbs 27:17
+              </p>
+            </div>
           </div>
         </div>
       </div>

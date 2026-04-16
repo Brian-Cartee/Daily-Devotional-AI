@@ -60,6 +60,12 @@ uri = "file://client/public/hero-devotional-3.png"
 type = "image"
 title = "open hands resting natural light"
 
+[[generated]]
+id = "aWb8eT1HjHw1uWhqECtDE"
+uri = "file://client/public/hero-iron-circle.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "5eXKSYOD9ozG_qHKJmLBU"
 uri = "file://SHEPHERDS_PATH_REFERENCE.md"
