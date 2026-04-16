@@ -533,8 +533,8 @@ export default function GuidancePage() {
                             </>
                           ) : (
                             <>
-                              <Mic className="w-4 h-4 opacity-60" />
-                              <span className="opacity-60">Speak instead</span>
+                              <Mic className="w-4 h-4 opacity-80" />
+                              <span className="opacity-80">Speak instead</span>
                             </>
                           )}
                         </button>
@@ -543,7 +543,7 @@ export default function GuidancePage() {
                         onClick={handleHeartSubmit}
                         disabled={!heartInput.trim()}
                         data-testid="button-guidance-heart-submit"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white font-semibold text-[14px] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-amber-400/35"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white font-semibold text-[14px] transition-all disabled:opacity-55 disabled:cursor-not-allowed shadow-lg shadow-amber-400/35"
                       >
                         Seek Guidance
                         <ArrowRight className="w-4 h-4" />
@@ -551,15 +551,15 @@ export default function GuidancePage() {
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-muted-foreground/55 italic text-center mb-5 -mt-1">
+                  <p className="text-[12px] text-muted-foreground/80 italic text-center mb-5 -mt-1">
                     You can be honest here.
                   </p>
 
                   {/* Divider */}
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="flex-1 h-px bg-border/35" />
-                    <span className="text-[10px] font-semibold text-muted-foreground/45 uppercase tracking-[0.2em]">or begin with today</span>
-                    <div className="flex-1 h-px bg-border/35" />
+                    <div className="flex-1 h-px bg-border/55" />
+                    <span className="text-[10px] font-semibold text-muted-foreground/65 uppercase tracking-[0.2em]">or begin with today</span>
+                    <div className="flex-1 h-px bg-border/55" />
                   </div>
 
                   {/* Today's framework — secondary option, styled as a real card-button */}
