@@ -17,14 +17,16 @@ export default function PrayerPortraitPage() {
       <>
         <NavBar />
         <main className="min-h-screen bg-background pb-32 pt-20">
+          <div className="px-4 mb-2">
             <button
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-            data-testid="button-back-prayer-portrait"
-            className="flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
-          </button>
+              onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+              data-testid="button-back-prayer-portrait"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back
+            </button>
+          </div>
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
