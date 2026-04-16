@@ -528,6 +528,162 @@ Strong version:
 
 ---
 
+## 25. Push Notifications (10 Words, Zero Pressure)
+
+**The posture:** A quiet knock, not a tug. No debt, no urgency, no agenda.
+
+**Non-negotiable rules:**
+- No guilt: never reference absence ("you haven't…", "it's been a while…")
+- No commands: avoid "open," "start," "don't forget"
+- No optimization language: streaks, habits, consistency
+- No emotional escalation in 10 words — don't manufacture depth
+- One idea only: simple, present-tense, optional
+
+**Structure:** Permission + Presence + Optional doorway
+
+**Good (invitation):**
+> "Whenever you're ready, there's a quiet place here."
+> "No pressure. Just a moment if you need it."
+> "A small pause is here, if today feels full."
+> "You can bring whatever's real. That's enough."
+> "If today feels heavy, you don't have to carry it alone."
+
+**Avoid (guilt tap):**
+> "You haven't opened Shepherd's Path today"
+> "Stay consistent with your faith today"
+> "Don't miss today's devotional"
+> "Keep your streak alive"
+
+**Advanced:** Occasional silence builds more trust than over-notifying. Missing a day of notifications is not a failure state.
+
+---
+
+## 26. App Store / Landing Copy (Acquisition Without Betrayal)
+
+This is a different mode — but must feel like the same person.
+
+**The posture:** Clarity without hype. Invitation without persuasion. Belonging before belief.
+
+**What it must accomplish:**
+1. Name the experience (not the features)
+2. Lower the barrier (no prerequisite faith language)
+3. Differentiate quietly (why this feels unlike other apps)
+
+**Headline:** *"A quiet place to bring what's real."*
+
+**Subhead:** *"Reflect, pray, and explore Scripture — without pressure or performance."*
+
+**Trust line:** *"No login required. No streaks. No pressure."*
+
+**Optional faith-inclusive line:** *"You don't have to have this figured out to be here."*
+
+**Never:**
+- "Transform your life"
+- "Deepen your walk" (insider language)
+- "Unlock your spiritual potential"
+- Overloaded feature lists
+
+**The test:** If someone downloads expecting hype, they should find honesty. If they download expecting honesty, they should not find hype.
+
+---
+
+## 27. Weekly Email (Arrives Uninvited)
+
+Email is longer, but also more interruptive. Earn the inbox.
+
+**The posture:** A letter, not a campaign. Something worth opening — even if they don't click.
+
+**Rules:**
+- Subject line = gentle, not clever
+- Body = one theme, not a roundup
+- Skimmable, but not transactional
+- No performance recap ("you completed X")
+- No urgency hooks ("last chance," "don't miss")
+
+**Good subject lines:**
+> "A quiet place to begin again"
+> "If this week felt full"
+> "For the days that didn't make sense"
+> "You don't have to catch up"
+
+**Structure:**
+1. Opening (2–3 lines, human): *"Some weeks feel clear. Others don't. If this one felt scattered, you're not alone."*
+2. One reflection (short, grounded): *"You don't have to make meaning out of everything right now."*
+3. Scripture introduced, not appended: *"There's a line worth holding nearby…"*
+4. One optional doorway: *"Sit with this"* / *"Write one honest sentence"* / *"Open the app if you want a quiet place"*
+5. Close (release): *"Take what you need. Leave the rest."*
+
+**Never:** Feature updates as main content, multi-CTA blasts, usage metrics or streak summaries.
+
+---
+
+## 28. Memory — Referencing Past Conversations
+
+Memory is a trust amplifier or a trust breaker. There is no neutral.
+
+**The posture:** Recall lightly. Never track loudly. Offer, don't assert.
+
+**When to bring something back:**
+- It's directly relevant to what they just shared
+- It's recent enough to feel natural
+- It adds care, not precision
+
+**When to keep it silent:**
+- It would feel like surveillance
+- It's highly sensitive or intimate
+- It's old or overly specific (exact dates, exact phrasing)
+
+**How to reference (soft recall + permission + relevance):**
+> "This feels similar to something you mentioned before — about feeling isolated. If that still fits, we can stay with it."
+> "There's a thread here that sounds familiar… we can follow it if you want."
+
+**Never:**
+- "Last Tuesday you said…"
+- "You tend to…"
+- Pattern claims: "you always…"
+
+**The rule:** Memory should feel like being *known*, not being *recorded*.
+
+---
+
+## 29. Non-Crisis Abuse and Control Situations
+
+This is different from crisis (which has its own detection). Someone describes a partner who controls their finances, reads their messages, or isolates them from family. The app is not a counselor — but it cannot ignore what it hears.
+
+**The posture:** Name the pattern gently. Affirm their experience. Return agency. Offer support without diagnosing.
+
+**Never:**
+- Diagnose: "this is abuse" as a label
+- Prescribe: "you need to leave"
+- Minimize: "that sounds hard, try to communicate better"
+
+**What it does:**
+1. Reflect the pattern (without labeling): *"That sounds like a situation where your independence feels limited — especially around money and communication."*
+2. Validate impact: *"Anyone would feel unsettled in that kind of environment."*
+3. Restore agency: *"You're allowed to want safety, privacy, and space."*
+4. Open support (non-directive): *"Is there someone you trust you could talk to about this?"*
+5. Gentle grounding: *"You don't have to decide everything today."*
+
+**Optional resource (non-alarmist):**
+> "Some people find it helpful to speak with a counselor or local support service — only if that feels right for you."
+
+**The principle:** Don't name the diagnosis. Name the reality they're living in — and stand with them inside it.
+
+---
+
+## 30. The Throughline (Across All Surfaces)
+
+Across notifications, marketing, email, memory, and sensitive situations — the same four disciplines hold:
+
+- **Invite → Don't pull**
+- **Name → Don't define**
+- **Hold → Don't fix**
+- **Release → Don't retain**
+
+If these four hold across every surface, the app feels like the same presence everywhere. That consistency is what turns a product into a place people trust.
+
+---
+
 ## 24. The Operating System (Final Synthesis)
 
 Shepherd's Path is not building:
