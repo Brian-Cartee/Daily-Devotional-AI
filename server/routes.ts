@@ -1829,7 +1829,7 @@ Return only valid JSON. No markdown. No extra keys.`,
       reflection: "The burning sky asks nothing. Only that you stop, and witness.",
     },
     4: { // Thursday
-      file: "natural-aurora.jpg",
+      file: "natural-sunset.jpg",
       scripture: "The heavens declare the glory of God; the skies proclaim the work of his hands.",
       reference: "Psalm 19:1",
       reflection: "When the skies ignite with color, creation bows before its Maker in silent worship.",

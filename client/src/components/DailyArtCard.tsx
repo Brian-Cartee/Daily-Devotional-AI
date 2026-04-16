@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ImageIcon, X, Image, Share2, Check } from "lucide-react";
+import { Loader2, Share2, Check, ChevronDown } from "lucide-react";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -23,14 +23,13 @@ export function DailyArtCard() {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [hidden, setHidden] = useState(() => isHiddenThisSession());
+  const [hidden] = useState(() => isHiddenThisSession());
   const [shared, setShared] = useState(false);
 
   const handleShare = async () => {
     if (!art) return;
     const shareText = `"${art.scripture}" — ${art.reference}${art.reflection ? `\n\n${art.reflection}` : ""}\n\nvia Shepherd's Path`;
 
-    // Try to share the actual image file on mobile (Web Share API with files)
     if (navigator.share && art.imageUrl) {
       try {
         const fullUrl = `${window.location.origin}${art.imageUrl}`;
@@ -41,16 +40,13 @@ export function DailyArtCard() {
           await navigator.share({ files: [file], text: shareText });
           return;
         }
-        // File sharing not supported — share text + URL
         await navigator.share({ title: "A Moment of Beauty", text: shareText, url: window.location.origin });
         return;
       } catch (err) {
-        if ((err as Error).name === "AbortError") return; // user cancelled
-        // Network or other error — fall through to clipboard
+        if ((err as Error).name === "AbortError") return;
       }
     }
 
-    // Clipboard fallback (desktop)
     try {
       await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`);
       setShared(true);
@@ -84,18 +80,9 @@ export function DailyArtCard() {
       .catch(() => setLoading(false));
   }, []);
 
-  const hide = () => {
-    setHidden(true);
-    sessionStorage.setItem(SESSION_HIDDEN_KEY, "true");
-  };
+  if (hidden) return null;
 
-  const show = () => {
-    setHidden(false);
-    sessionStorage.removeItem(SESSION_HIDDEN_KEY);
-  };
-
-  // If loading is done and there's no image (generation failed or took too long),
-  // show a text-only scripture card so the section is never invisible.
+  // Text-only fallback when image fails or is unavailable
   if (!loading && (!art || !art.imageUrl || imageError)) {
     if (!art) return null;
     return (
@@ -103,7 +90,7 @@ export function DailyArtCard() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="w-full px-5 py-5 bg-primary/4"
+        className="w-full px-5 py-5"
       >
         <div className="flex flex-col gap-2">
           <p className="text-[15px] text-foreground/85 leading-snug italic font-medium">
@@ -122,25 +109,6 @@ export function DailyArtCard() {
     );
   }
 
-  if (hidden) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="w-full flex justify-end px-4 py-1.5"
-      >
-        <button
-          onClick={show}
-          data-testid="button-daily-art-show"
-          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-        >
-          <Image className="w-3 h-3" />
-          <span>Show today&rsquo;s image</span>
-        </button>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -148,79 +116,93 @@ export function DailyArtCard() {
       transition={{ duration: 0.8, delay: 0.15 }}
       className="w-full"
     >
-      <div
-        onClick={() => setExpanded(e => !e)}
-        onKeyDown={e => (e.key === "Enter" || e.key === " ") && setExpanded(prev => !prev)}
-        role="button"
-        tabIndex={0}
-        data-testid="button-daily-art"
-        className="w-full text-left relative overflow-hidden focus:outline-none group cursor-pointer"
-        aria-label="View today's daily art and reflection"
-      >
-        {/* Full-bleed image */}
-        <div className="relative w-full bg-muted aspect-[16/9] sm:aspect-[16/7]">
+      {/* Image with always-visible verse overlay */}
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3" }}>
 
-          {/* Loading state — shown while fetching OR while image is downloading */}
-          <AnimatePresence>
-            {(loading || (art?.imageUrl && !imageLoaded)) && (
-              <motion.div
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="absolute inset-0 flex items-center justify-center gap-2 text-muted-foreground"
-                style={{ background: "linear-gradient(135deg, hsl(38 28% 88%) 0%, hsl(258 20% 88%) 100%)" }}
-              >
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-xs">{loading ? "Generating today's image…" : "Loading…"}</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* The image */}
-          {art?.imageUrl && (
-            <motion.img
-              src={art.imageUrl}
-              alt="Daily inspirational art"
-              onLoad={() => setImageLoaded(true)}
-              onError={() => { setImageLoaded(false); setImageError(true); }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: imageLoaded ? 1 : 0 }}
-              transition={{ duration: 1 }}
-              className="w-full h-full object-cover"
-              data-testid="img-daily-art"
-            />
-          )}
-
-          {/* Subtle vignette only */}
-          {imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
-          )}
-
-
-          {/* Hide button — top right, appears on hover/focus */}
-          {imageLoaded && (
-            <button
-              onClick={e => { e.stopPropagation(); hide(); }}
-              data-testid="button-daily-art-hide"
-              aria-label="Hide today's image"
-              className="absolute top-2.5 right-3 w-7 h-7 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+        {/* Loading shimmer */}
+        <AnimatePresence>
+          {(loading || (art?.imageUrl && !imageLoaded)) && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              className="absolute inset-0 flex items-center justify-center gap-2 text-white/60"
+              style={{ background: "linear-gradient(160deg, hsl(258 30% 18%) 0%, hsl(38 25% 22%) 100%)" }}
             >
-              <X className="w-3.5 h-3.5 text-white/80" />
-            </button>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-xs tracking-wide">A moment is being prepared…</span>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          {/* Tap hint — bottom right, hover only */}
-          {imageLoaded && (
-            <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-white/50 text-[10px] font-medium">
-                {expanded ? "close" : "scripture & reflection ↓"}
-              </span>
-            </div>
+        {/* The photograph */}
+        {art?.imageUrl && (
+          <motion.img
+            src={art.imageUrl}
+            alt="Today's moment"
+            onLoad={() => setImageLoaded(true)}
+            onError={() => {
+              // Clear stale session cache so next render re-fetches a valid URL
+              const today = new Date().toISOString().split("T")[0];
+              sessionStorage.removeItem(`sp-daily-art-${today}`);
+              setImageLoaded(false);
+              setImageError(true);
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: imageLoaded ? 1 : 0 }}
+            transition={{ duration: 1.2 }}
+            className="w-full h-full object-cover"
+            data-testid="img-daily-art"
+          />
+        )}
+
+        {/* Deep gradient so verse is always readable */}
+        {imageLoaded && (
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)"
+            }}
+          />
+        )}
+
+        {/* Verse — always visible over the image */}
+        <AnimatePresence>
+          {imageLoaded && art && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-3"
+            >
+              <p className="text-[15px] text-white/95 font-medium italic leading-snug drop-shadow-sm">
+                &ldquo;{art.scripture}&rdquo;
+              </p>
+              <p className="text-[11px] text-white/65 font-semibold mt-1.5 tracking-wide uppercase">
+                {art.reference}
+              </p>
+
+              {/* Expand button */}
+              <button
+                onClick={() => setExpanded(e => !e)}
+                data-testid="button-daily-art"
+                aria-label={expanded ? "Close reflection" : "Read today's reflection"}
+                className="mt-3 flex items-center gap-1.5 text-[11px] text-white/55 hover:text-white/80 transition-colors"
+              >
+                <motion.div
+                  animate={{ rotate: expanded ? 180 : 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </motion.div>
+                <span>{expanded ? "Close" : "Today's reflection"}</span>
+              </button>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
 
-      {/* Reflection panel — scripture + reflection together */}
+      {/* Reflection panel — expands below the image */}
       <AnimatePresence>
         {expanded && art && (
           <motion.div
@@ -231,21 +213,9 @@ export function DailyArtCard() {
             className="overflow-hidden"
           >
             <div className="bg-primary/5 border-b border-primary/10 px-5 py-4 flex flex-col gap-3">
-              <div>
-                <p className="text-[15px] text-foreground/90 leading-snug italic font-medium">
-                  &ldquo;{art.scripture}&rdquo;
-                </p>
-                <p className="text-[12px] text-muted-foreground/70 font-semibold mt-1">
-                  — {art.reference}
-                </p>
-              </div>
-              <div className="flex items-start gap-2.5 pt-2 border-t border-primary/10">
-                <ImageIcon className="w-3.5 h-3.5 text-primary/40 mt-0.5 flex-shrink-0" />
-                <p className="text-[13px] text-muted-foreground leading-relaxed italic flex-1">
-                  {art.reflection}
-                </p>
-              </div>
-              {/* Share button */}
+              <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+                {art.reflection}
+              </p>
               <div className="pt-1 border-t border-primary/10 flex justify-end">
                 <button
                   onClick={handleShare}
@@ -254,7 +224,7 @@ export function DailyArtCard() {
                 >
                   {shared
                     ? <><Check className="w-3.5 h-3.5" /> Copied!</>
-                    : <><Share2 className="w-3.5 h-3.5" /> Share this image</>}
+                    : <><Share2 className="w-3.5 h-3.5" /> Share this</>}
                 </button>
               </div>
             </div>
