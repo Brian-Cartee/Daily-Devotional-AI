@@ -791,15 +791,6 @@ export default function Devotional() {
                 style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.10) 25%, rgba(0,0,0,0.10) 75%, rgba(0,0,0,0.55) 100%)" }}
               />
 
-              {/* Ghost decorative quote mark */}
-              <div
-                className="absolute left-3 top-[18%] text-[200px] leading-none font-serif pointer-events-none"
-                style={{ color: "rgba(255,255,255,0.07)", userSelect: "none" }}
-                aria-hidden="true"
-              >
-                ❝
-              </div>
-
               {/* Top bar — single merged pill */}
               <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-center">
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/15">
