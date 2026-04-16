@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { CheckCircle2, Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle2, Sparkles, ArrowRight, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { markProVerified } from "@/lib/proStatus";
 
@@ -8,6 +8,7 @@ export default function ProSuccess() {
   const [, navigate] = useLocation();
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -29,6 +30,24 @@ export default function ProSuccess() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const openPortal = async () => {
+    if (!email) return;
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // silent fail — user can try again
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-primary/5 via-background to-amber-50/30">
@@ -82,17 +101,21 @@ export default function ProSuccess() {
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
 
-            <p className="text-xs text-muted-foreground">
-              Manage your subscription anytime at{" "}
-              <a
-                href="https://billing.stripe.com/p/login/test_00g"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors"
+            {email && (
+              <button
+                onClick={openPortal}
+                disabled={portalLoading}
+                data-testid="btn-manage-subscription"
+                className="text-xs text-muted-foreground underline hover:text-foreground transition-colors flex items-center justify-center gap-1 mx-auto disabled:opacity-50"
               >
-                billing.stripe.com
-              </a>
-            </p>
+                {portalLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <ExternalLink className="w-3 h-3" />
+                )}
+                Manage your subscription
+              </button>
+            )}
           </>
         )}
       </div>

@@ -2285,6 +2285,26 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
     }
   });
 
+  app.post("/api/stripe/create-portal-session", async (req, res) => {
+    const { email } = req.body as { email: string };
+    if (!email) return res.status(400).json({ message: "Email required" });
+    try {
+      const origin = req.headers.origin || `https://${req.headers.host}`;
+      const customers = await stripe.customers.list({ email: email.toLowerCase().trim(), limit: 1 });
+      if (!customers.data.length) {
+        return res.status(404).json({ message: "No Stripe customer found for this email" });
+      }
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customers.data[0].id,
+        return_url: `${origin}/`,
+      });
+      res.json({ url: session.url });
+    } catch (err: any) {
+      console.error("Portal session error:", err);
+      res.status(500).json({ message: err.message || "Failed to create portal session" });
+    }
+  });
+
   app.post("/api/stripe/check-pro", async (req, res) => {
     const { email } = req.body as { email: string };
     if (!email) return res.status(400).json({ message: "Email required" });
