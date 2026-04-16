@@ -60,13 +60,15 @@ export default function GroupedGrid() {
         <div className="flex flex-col gap-2 -mt-2">
           <TileRow tiles={group2.slice(0, 2)} />
           {/* Odd tile spans full width */}
-          <div className={`rounded-2xl border p-4 flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all ${group2[2].bg}`}>
-            <group2[2].Icon className={`w-6 h-6 ${group2[2].color} shrink-0`} strokeWidth={1.6} />
-            <div>
-              <p className="text-[14px] font-bold text-white leading-tight">{group2[2].label}</p>
-              <p className={`text-[11px] mt-0.5 leading-snug ${group2[2].color} opacity-80`}>{group2[2].desc}</p>
+          {(() => { const t = group2[2]; const Icon = t.Icon; return (
+            <div className={`rounded-2xl border p-4 flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all ${t.bg}`}>
+              <Icon className={`w-6 h-6 ${t.color} shrink-0`} strokeWidth={1.6} />
+              <div>
+                <p className="text-[14px] font-bold text-white leading-tight">{t.label}</p>
+                <p className={`text-[11px] mt-0.5 leading-snug ${t.color} opacity-80`}>{t.desc}</p>
+              </div>
             </div>
-          </div>
+          ); })()}
         </div>
 
         {/* Thin divider */}
