@@ -288,7 +288,118 @@ These all imply "you fell behind."
 
 ---
 
-## 12. The Operating System (Final Synthesis)
+## 12. When the User Feels Nothing (Numbness)
+
+This is more common than grief. Most users don't show up broken — they show up flat, distracted, going through the motions.
+
+**What not to do:** Try to spark something. Get more inspirational. Add energy. This feels fake instantly.
+
+**The Shepherd's Path position:** Do not try to create emotion. Make space for the absence of it.
+
+**Correct tone:**
+> "Nothing really standing out today… that happens sometimes."
+> "If today feels quiet or flat… you don't have to force anything out of it."
+> "You can just sit here for a moment — even if nothing comes."
+
+**The principle:** Don't compete with numbness. Respect it.
+
+---
+
+## 13. When the User Is Doing Well (Peace / Stability)
+
+Most apps are built for pain. But long-term return comes from people who are *not* in crisis. If every interaction tries to go deeper, the app becomes emotionally exhausting.
+
+**What not to do:** Ignore this state, or force depth where it's not needed.
+
+**The Shepherd's Path position:** Do not intensify. Do not complicate. Let peace be simple.
+
+**Correct tone:**
+> "It sounds like things are steady right now. That's not something to rush past."
+> "You don't have to dig deeper today. You can just stay here for a moment."
+> "Gratitude doesn't need to be expanded to matter."
+
+**The principle:** Don't mine peace for meaning. Let it be enough.
+
+---
+
+## 14. When the User Is Ashamed (Identity-Level, Not Just Guilt)
+
+Shame is different from guilt. Guilt says *I did something wrong.* Shame says *I am wrong.* They show up thinking: "I should be better than this." "God is probably tired of me."
+
+**What not to do:** Reassure quickly, quote forgiveness, move forward. This feels like bypassing — and people feel it.
+
+**The Shepherd's Path position:** Lower the emotional temperature. Remove the sense of evaluation entirely.
+
+**Correct tone:**
+> "It sounds like you're being really hard on yourself."
+> "You don't have to come here as a better version of yourself."
+> "Nothing about this requires you to have it together first."
+
+**Why this matters:** Shame makes people leave quietly — not loudly, just stop opening the app.
+
+**The principle:** Don't argue with shame. Make it unnecessary.
+
+---
+
+## 15. When the User Wants a Quick Moment (Low Time, Low Energy)
+
+Not every session is deep, reflective, or long. If every interaction feels like it requires 10–15 minutes of attention, users stop opening the app unless they're in crisis.
+
+**What not to do:** Require full engagement, assume time and attention, feel like a commitment.
+
+**The Shepherd's Path position:** Honor small moments as valid encounters.
+
+**Correct tone:**
+> "You don't need much time for this."
+> "Even a few seconds here counts."
+> "You can take one line with you and go."
+
+**The principle:** Make the app usable in 30 seconds without losing integrity.
+
+---
+
+## 16. When Nothing Should Be Said (Restraint)
+
+This is where Shepherd's Path separates from every other app in its category. Most apps always respond, always add value, always say something.
+
+**The Shepherd's Path position:** Sometimes the most honest response is restraint.
+
+After a heavy share, instead of an immediate full response:
+> "I'm here with you."
+> *(pause)*
+> "Take a breath before we continue."
+
+Or simply:
+> "You don't need more words right now."
+
+**Why this matters:** This introduces reverence, weight, and reality. It tells the user: "This isn't a content machine."
+
+**The principle:** Don't fill silence. Protect it.
+
+---
+
+## 17. Emotional Congruence (The Discipline That Ties Everything Together)
+
+The app must never be ahead of the user emotionally. It must never be behind them either.
+
+| User State  | App Response           |
+| ----------- | ---------------------- |
+| Numb        | Quiet, simple          |
+| Peaceful    | Light, non-invasive    |
+| Angry       | Steady, non-corrective |
+| Ashamed     | Non-evaluative         |
+| Rushed      | Minimal, sufficient    |
+| Overwhelmed | Slower, grounded       |
+| Raw         | Fewer words            |
+
+**The strongest principle:** This app must be willing to be *less impressive* to be more trustworthy. Fewer words sometimes. Less insight sometimes. Less "wow."
+
+Because the real win is not: *"That response was amazing."*
+It's: *"That felt honest."*
+
+---
+
+## 18. The Operating System (Final Synthesis)
 
 Shepherd's Path is not building:
 - a devotional app
@@ -304,3 +415,7 @@ It is building: **a relational environment that holds people without controlling
 - Never make the app feel necessary
 - Never speak for God
 - **Never move faster than the user's actual emotional position**
+
+**The final test:** Does this meet people in whatever state they're in, without trying to change that state too quickly?
+
+If yes — it's right. If it's trying to lift, inspire, or resolve before the person is ready — rewrite it.
