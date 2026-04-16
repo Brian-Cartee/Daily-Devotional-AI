@@ -5,7 +5,7 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { motion } from "framer-motion";
-import { Heart, Lock } from "lucide-react";
+import { Heart, Lock, ArrowLeft } from "lucide-react";
 
 export default function PrayerPortraitPage() {
   const [, navigate] = useLocation();
@@ -17,7 +17,15 @@ export default function PrayerPortraitPage() {
       <>
         <NavBar />
         <main className="min-h-screen bg-background pb-32 pt-20">
-          <motion.div
+            <button
+            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            data-testid="button-back-prayer-portrait"
+            className="flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back
+          </button>
+        <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-sm mx-auto px-6 text-center flex flex-col items-center gap-6 pt-8"

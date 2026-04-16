@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Star, Send, Check, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Heart, Star, Send, Check, X, ChevronDown, ChevronRight, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import { NavBar } from "@/components/NavBar";
 
 const CATEGORIES = [
@@ -111,6 +112,7 @@ interface StoryFormData {
 }
 
 export default function StoriesPage() {
+  const [, navigate] = useLocation();
   const [activeCategory, setActiveCategory] = useState("All");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<StoryFormData>({ name: "", category: "Spiritual Guidance", story: "" });
@@ -152,6 +154,14 @@ export default function StoriesPage() {
             style={{ objectPosition: "center 40%" }}
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)" }} />
+          <button
+            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            data-testid="button-back-stories"
+            className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back
+          </button>
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">
             <h1 className="text-[26px] font-bold text-white leading-tight mb-1">Real Faith. Real Stories.</h1>
             <p className="text-[13px] text-white/75 max-w-xs leading-snug">
