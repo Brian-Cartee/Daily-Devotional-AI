@@ -165,10 +165,10 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
       <button
         data-testid="button-scripture-context"
         onClick={handleOpen}
-        className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-foreground/40 hover:text-amber-500 transition-colors duration-200 group"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-400/30 bg-amber-400/6 hover:bg-amber-400/12 hover:border-amber-400/50 text-amber-600/80 dark:text-amber-400/80 hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-200 group"
       >
-        <Scroll className="w-3.5 h-3.5 group-hover:text-amber-500 transition-colors" />
-        Context
+        <Scroll className="w-3.5 h-3.5 shrink-0" />
+        <span className="text-[12px] font-semibold tracking-wide">Get Context</span>
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>

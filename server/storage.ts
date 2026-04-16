@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment } from "@shared/schema";
-import { eq, and, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
+import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
@@ -12,6 +12,7 @@ export interface IStorage {
   deactivateSubscriber(email: string): Promise<void>;
   updateSubscriberSession(email: string, sessionId: string): Promise<void>;
   updateSubscriberLastEmailDate(id: number, date: string): Promise<void>;
+  claimSubscriberEmailSlot(id: number, date: string): Promise<boolean>;
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
@@ -102,6 +103,20 @@ export class DatabaseStorage implements IStorage {
 
   async updateSubscriberLastEmailDate(id: number, date: string): Promise<void> {
     await db.update(subscribers).set({ lastEmailSentDate: date }).where(eq(subscribers.id, id));
+  }
+
+  // Atomic claim — only updates (and returns true) if not already sent today.
+  // Prevents duplicates even if the scheduler runs twice in the same day.
+  async claimSubscriberEmailSlot(id: number, date: string): Promise<boolean> {
+    const result = await db
+      .update(subscribers)
+      .set({ lastEmailSentDate: date })
+      .where(and(
+        eq(subscribers.id, id),
+        or(isNull(subscribers.lastEmailSentDate), ne(subscribers.lastEmailSentDate, date))
+      ))
+      .returning({ id: subscribers.id });
+    return result.length > 0;
   }
 
   async getJournalEntries(sessionId: string): Promise<JournalEntry[]> {

@@ -142,6 +142,14 @@ export async function sendDailyEmailsToAllSubscribers() {
       }
 
       try {
+        // Atomic DB claim — only proceeds if not already sent today.
+        // This prevents duplicates even when the scheduler restarts within the catch-up window.
+        const claimed = await storage.claimSubscriberEmailSlot(subscriber.id, today);
+        if (!claimed) {
+          console.log(`[email] Already sent to ${subscriber.email} today (atomic guard) — skipping.`);
+          continue;
+        }
+
         const artImageUrl = subscriber.includeDailyArt ? todayArtImageUrl : null;
 
         // Generate personal follow-up if this subscriber has a linked session with recent activity
@@ -161,11 +169,6 @@ export async function sendDailyEmailsToAllSubscribers() {
         const html = buildDailyVerseEmailHtml({ ...verse, appUrl, artImageUrl, followUp })
           .replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
-
-        // Mark in DB BEFORE sending — if server crashes between mark and send,
-        // the subscriber misses one email. If we mark after and crash, they get a duplicate.
-        // Missing once is far less harmful than receiving duplicates.
-        await storage.updateSubscriberLastEmailDate(subscriber.id, today);
 
         const displayFrom = fromEmail.includes('@') && !fromEmail.startsWith('"')
           ? `Shepherd's Path <${fromEmail}>`
