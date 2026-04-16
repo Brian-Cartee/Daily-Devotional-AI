@@ -78,43 +78,35 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0d0a1a 0%, #1a0f2e 40%, #2d1454 100%)" }}
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+      style={{ background: "#0d0a1a" }}
     >
-      <div className="absolute inset-0 pointer-events-none">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: (i % 3 === 0 ? 2 : 1) + "px",
-              height: (i % 3 === 0 ? 2 : 1) + "px",
-              left: ((i * 37 + 11) % 100) + "%",
-              top: ((i * 53 + 7) % 65) + "%",
-              opacity: 0.1 + (i % 4) * 0.07,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center pt-12">
+      {/* Full-bleed hero image — top ~45% of screen */}
+      <div className="absolute top-0 left-0 right-0 h-[45vh] overflow-hidden">
+        <img
+          src="/hero-landing.png"
+          alt="The Path"
+          className="w-full h-full object-cover object-center"
+          style={{ opacity: 0.92 }}
+        />
+        {/* Gradient fade: image bleeds into dark background below */}
         <div
-          className="w-48 h-28 sm:w-72 sm:h-44 rounded-2xl overflow-hidden mb-3"
-          style={{ opacity: 0.88, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" }}
-        >
-          <img
-            src="/hero-landing.png"
-            alt="The Path"
-            className="w-full h-full object-cover object-center"
-          />
-        </div>
-        <p className="text-white/20 text-[10px] tracking-[0.28em] uppercase font-light mt-1">
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(to bottom, rgba(13,10,26,0.08) 0%, rgba(13,10,26,0.0) 40%, rgba(13,10,26,0.75) 80%, rgba(13,10,26,1) 100%)",
+          }}
+        />
+        {/* App name — ghostly overlay at the bottom of the image */}
+        <p className="absolute bottom-4 left-0 right-0 text-center text-white/20 text-[9px] tracking-[0.3em] uppercase font-light">
           Shepherd's Path
         </p>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center px-8 text-center">
-        <div className="w-10 h-px bg-white/10 mb-8" />
+      {/* Spacer — holds space for the absolutely-positioned image */}
+      <div className="h-[42vh] shrink-0" />
+
+      {/* Verse — lives below the image fade */}
+      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-8 text-center">
         <p
           className="text-white text-center leading-relaxed mb-3 sm:text-2xl"
           style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", minHeight: "5.5rem" }}
@@ -122,12 +114,12 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
           "{displayedText}
           <span className="animate-pulse opacity-60">|</span>"
         </p>
-        <p className="text-white/45 text-sm mt-2" style={{ fontFamily: "'Georgia', serif" }}>
+        <p className="text-white/40 text-sm mt-1" style={{ fontFamily: "'Georgia', serif" }}>
           — {verse.ref}
         </p>
-        <div className="w-10 h-px bg-white/15 mt-7" />
       </div>
 
+      {/* CTAs */}
       <div
         className="relative z-10 flex flex-col items-center w-full px-8"
         style={{ paddingBottom: "max(56px, calc(40px + env(safe-area-inset-bottom, 0px)))" }}
