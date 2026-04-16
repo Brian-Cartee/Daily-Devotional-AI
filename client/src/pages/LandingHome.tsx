@@ -452,7 +452,7 @@ const COMMITMENT_POINTS = [
   "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit — trusting that the Holy Spirit is a living Person who opens Scripture to you as you read",
   "AI is here to illuminate the passage being studied — never to reinterpret, replace, or stand beside Scripture",
   "Grounded in historic, orthodox Christian faith across centuries and traditions — the same faith passed down through every generation",
-  "Built for daily faithfulness — small habits that, over time, change everything",
+  "Built for showing up — whenever you're able, however you're able",
 ];
 
 const FAQ_ITEMS = [

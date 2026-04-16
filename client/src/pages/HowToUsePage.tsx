@@ -34,7 +34,7 @@ const steps = [
     title: "Write in your Journal",
     where: 'Tap "Journal" in the menu',
     description:
-      "The Journal is your private space. You can write your prayers, your thoughts, what God showed you today, or anything you want to remember. No one else can see it — it is just between you and God. Writing even one or two sentences a day is a powerful spiritual habit.",
+      "The Journal is your private space. You can write your prayers, your thoughts, what God showed you today, or anything you want to remember. No one else can see it — it is just between you and God. Even one sentence is worth keeping.",
     tip: "There are no rules here. Write as much or as little as you like.",
   },
   {
@@ -53,11 +53,11 @@ const steps = [
     icon: Compass,
     color: "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50",
     iconColor: "text-rose-600 dark:text-rose-400",
-    title: "Track your Journey",
+    title: "Markers Along the Way",
     where: 'Tap "Journey" in the menu',
     description:
-      "The Journey page shows your streak — how many days in a row you have shown up. Every three days or so, you will earn a badge named after a verse from Psalm 23. Starting at Green Pastures, then Still Waters, then Restored, and so on. These are not just rewards — they are a map of how far you have walked.",
-    tip: "Your streak grows when you open the Devotional page each day.",
+      "The Journey page shows how many days you have shown up. Every few days, you will receive a milestone named after a verse from Psalm 23 — Green Pastures, Still Waters, Restored, and so on. These are not rewards for performance. They are a quiet record of where you have been.",
+    tip: "Each milestone is tied to a verse from Psalm 23. Read it when it arrives.",
   },
   {
     number: "6",
