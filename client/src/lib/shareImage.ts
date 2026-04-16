@@ -625,14 +625,22 @@ export async function createShareImage(
       ? verseText.substring(0, maxChars - 1) + "\u2026"
       : verseText;
 
-  const fontSize = short.length < 90 ? 60 : short.length < 150 ? 52 : 44;
+  // Five-tier font scale — smaller text for longer verses so the reference
+  // and footer always land above the canvas bottom (need ≤ ~870px for finalVerseY)
+  const fontSize =
+    short.length < 55  ? 60 :
+    short.length < 90  ? 54 :
+    short.length < 140 ? 46 :
+    short.length < 190 ? 40 :
+    36;
+
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
   ctx.shadowColor = "rgba(0,0,0,0.7)";
   ctx.shadowBlur = 28;
 
-  const finalVerseY = wrapText(
+  const rawVerseY = wrapText(
     ctx,
     `\u201C${short}\u201D`,
     S / 2,
@@ -641,6 +649,10 @@ export async function createShareImage(
     fontSize * 1.52
   );
   ctx.shadowBlur = 0;
+
+  // Guard: if the verse overflows the safe zone, clamp so reference fits
+  const MAX_VERSE_Y = S - 230; // leaves 230px for divider + reference + footer
+  const finalVerseY = Math.min(rawVerseY, MAX_VERSE_Y);
 
   // ── Accent divider ────────────────────────────────────────
   horizontalGlowLine(ctx, finalVerseY + 46, accentColor);
@@ -784,14 +796,20 @@ export async function createPurpleShareImage(
       ? verseText.substring(0, maxChars - 1) + "\u2026"
       : verseText;
 
-  const fontSize = short.length < 90 ? 60 : short.length < 150 ? 52 : 44;
+  const fontSize =
+    short.length < 55  ? 60 :
+    short.length < 90  ? 54 :
+    short.length < 140 ? 46 :
+    short.length < 190 ? 40 :
+    36;
+
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
   ctx.shadowColor = "rgba(122,1,141,0.5)";
   ctx.shadowBlur = 24;
 
-  const finalVerseY = wrapText(
+  const rawVerseY2 = wrapText(
     ctx,
     `\u201C${short}\u201D`,
     S / 2,
@@ -800,6 +818,9 @@ export async function createPurpleShareImage(
     fontSize * 1.52
   );
   ctx.shadowBlur = 0;
+
+  const MAX_VERSE_Y2 = S - 230;
+  const finalVerseY = Math.min(rawVerseY2, MAX_VERSE_Y2);
 
   // ── Accent divider ────────────────────────────────────────────────────────
   horizontalGlowLine(ctx, finalVerseY + 46, accentColor);

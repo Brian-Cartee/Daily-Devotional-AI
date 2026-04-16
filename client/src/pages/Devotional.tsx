@@ -760,10 +760,7 @@ export default function Devotional() {
 
             {/* ── Photo hero ─────────────────────────────────── */}
             <div
-              className="relative flex flex-col items-center justify-center px-8 text-center select-none bg-stone-900"
-              style={{
-                minHeight: verse.text.length > 200 ? "500px" : verse.text.length > 100 ? "460px" : "420px",
-              }}
+              className="relative flex flex-col items-center justify-center px-8 text-center select-none bg-stone-900 min-h-[420px]"
             >
               {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
               <img
@@ -806,7 +803,12 @@ export default function Devotional() {
                 <blockquote
                   className="verse-text text-balance mb-6"
                   style={{
-                    fontSize: verse.text.length > 180 ? "1.75rem" : verse.text.length > 100 ? "2.1rem" : "2.6rem",
+                    fontSize:
+                      verse.text.length > 180 ? "1.55rem" :
+                      verse.text.length > 130 ? "1.75rem" :
+                      verse.text.length > 90  ? "1.95rem" :
+                      verse.text.length > 65  ? "2.2rem"  :
+                      "2.5rem",
                     lineHeight: 1.45,
                     textShadow: "0 2px 22px rgba(0,0,0,0.80)",
                     fontStyle: "italic",
