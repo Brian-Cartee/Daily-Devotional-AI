@@ -591,7 +591,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
       </div>
 
       {/* Subscribe — shown at bottom */}
-      <div className="max-w-2xl mx-auto px-4 pb-8 mt-2">
+      <div className="max-w-2xl mx-auto pb-8 mt-2">
         <InlineSubscribeToggle />
       </div>
     </main>
