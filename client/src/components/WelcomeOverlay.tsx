@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, BookOpen, Loader2, Square, X } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
-import { useLocation } from "wouter";
 import { useState } from "react";
 
 const WELCOME_SCRIPT = `Hey… I'm really glad you're here.
@@ -30,7 +29,6 @@ interface WelcomeOverlayProps {
 
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   const { play, stop, toggle, playing, loading, progress } = useTTS();
-  const [, navigate] = useLocation();
   const started = progress > 0 || playing || loading;
 
   const handleDismiss = () => {
@@ -137,10 +135,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             color: "rgba(255,255,255,0.8)",
             backdropFilter: "blur(8px)",
           }}
-          onClick={() => {
-            handleDismiss();
-            navigate("/read");
-          }}
+          onClick={handleDismiss}
         >
           <BookOpen className="w-4 h-4 opacity-70" />
           <span>I&rsquo;m Familiar With The Bible</span>
