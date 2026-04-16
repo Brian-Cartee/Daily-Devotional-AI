@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
   BookMarked, ArrowLeft, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
+  Bookmark, BookmarkCheck, BookOpen,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
@@ -45,6 +46,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [showAiPause, setShowAiPause] = useState(false);
   const [snippetSaved, setSnippetSaved] = useState(false);
   const [snippetSaving, setSnippetSaving] = useState(false);
+  const [storyOpen, setStoryOpen] = useState(false);
   const [sharingCard, setSharingCard] = useState(false);
   const [cardDone, setCardDone] = useState(false);
   const [aiReply, setAiReply] = useState("");
@@ -139,9 +141,9 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
         source: chapter.title,
       });
       setSnippetSaved(true);
-      toast({ description: "Saved to your path ✦" });
+      toast({ description: "Added to your Journal — you'll find it in Scriptures." });
     } catch {
-      toast({ description: "Could not save. Please try again.", variant: "destructive" });
+      toast({ description: "We can try that again.", variant: "destructive" });
     } finally {
       setSnippetSaving(false);
     }
@@ -223,13 +225,57 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                         {sharingCard ? "Creating…" : cardDone ? "Done!" : "Card"}
                       </button>
                       <ListenButton text={textQuery.data.text.length > 1500 ? (textQuery.data.text.slice(0, 1500).replace(/\s\S*$/, "") + "…") : textQuery.data.text} label="Listen instead" className="text-[11px]" />
+                      {/* Remember this — quiet bookmark, not a primary action */}
+                      <button
+                        onClick={handleSaveSnippet}
+                        disabled={snippetSaving}
+                        data-testid={`btn-save-snippet-${chapter.id}`}
+                        aria-label={snippetSaved ? "Remembered" : "Remember this passage"}
+                        title={snippetSaved ? "Added to your Journal" : "Remember this"}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors disabled:opacity-40 text-muted-foreground hover:text-primary"
+                      >
+                        {snippetSaving
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : snippetSaved
+                            ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" />
+                            : <Bookmark className="w-3.5 h-3.5" />
+                        }
+                        <span>{snippetSaved ? "Remembered" : "Remember"}</span>
+                      </button>
                     </div>
                   </div>
                   <BiblePassageText text={textQuery.data.text} />
                 </div>
               )}
-              {/* Action grid — 4 equal tiles, 2×2 on mobile */}
-              <div className="grid grid-cols-4 gap-2 mt-1">
+              {/* "The story behind this" — quiet context layer, collapsed by default */}
+              <button
+                onClick={() => setStoryOpen(v => !v)}
+                className="w-full flex items-center gap-2 text-left text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors py-1 group"
+              >
+                <BookOpen className="w-3 h-3 flex-shrink-0 group-hover:text-primary/60 transition-colors" />
+                <span className="italic">{storyOpen ? "Close background" : "The story behind this"}</span>
+                <ChevronDown className={`w-3 h-3 ml-auto transition-transform ${storyOpen ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {storyOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-white/30 dark:bg-slate-700/20 rounded-xl p-4 border border-white/20 mb-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/50 mb-2">Background</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{chapter.whyItMatters}</p>
+                      <p className="text-[10px] text-muted-foreground/40 mt-3 italic">Deeper historical and cultural context — coming soon.</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Action row — 3 spiritual engagement actions only */}
+              <div className="grid grid-cols-3 gap-2 mt-1">
                 {/* Reflect */}
                 <button
                   onClick={() => generateAI("reflect")}
@@ -262,26 +308,6 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                   <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Ask</span>
                 </button>
 
-                {/* Save */}
-                <button
-                  onClick={handleSaveSnippet}
-                  disabled={snippetSaving}
-                  data-testid={`btn-save-snippet-${chapter.id}`}
-                  aria-label="Save to your path"
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all group ${
-                    snippetSaved
-                      ? "border-primary/40 bg-primary/8 text-primary"
-                      : "border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 text-foreground/70"
-                  } disabled:opacity-50`}
-                >
-                  {snippetSaving
-                    ? <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    : <Heart className={`w-4 h-4 text-primary group-hover:scale-110 transition-all ${snippetSaved ? "fill-current" : ""}`} />
-                  }
-                  <span className="text-[11px] font-semibold leading-tight text-center">
-                    {snippetSaved ? "Saved" : "Save"}
-                  </span>
-                </button>
               </div>
               {isAiLoading && !aiContent && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-4 h-4 animate-spin" /> Reflecting on {chapter.reference}...</div>

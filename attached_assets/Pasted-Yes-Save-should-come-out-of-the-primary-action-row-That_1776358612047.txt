@@ -1,0 +1,149 @@
+Yes: **Save should come out of the primary action row.**
+
+That is my strongest recommendation.
+
+Your row currently mixes three **engagement actions** with one **administrative action**. Reflect, Prayer, and Ask all deepen the spiritual moment. Save does not. Giving Save equal visual weight teaches the user, subconsciously, that archiving is as central as prayer. In a reflective faith product, that is the wrong hierarchy. ([youversion.com][1])
+
+## Ranked recommendation
+
+### 1) Best: remove Save from the row and make it a lighter secondary action
+
+Put it in one of these places:
+
+* a **top-right bookmark icon**
+* a small **“Remember this” / bookmark control** near the passage title
+* or a **post-engagement save moment** after Reflect or Prayer
+
+This is the cleanest architecture because it preserves the row for “what can happen now” and moves saving to “what do I want to keep.” That distinction matches your app’s tone much better.
+
+My preferred pattern is:
+
+* primary row: **Reflect · Prayer · Ask**
+* secondary control: **bookmark icon** or **Remember this passage**
+
+Why this works:
+
+* It protects contemplative hierarchy.
+* It reduces visual noise.
+* It keeps save discoverable without letting it dominate.
+
+This also aligns with how Bible and journaling apps tend to treat saving/bookmarking: YouVersion surfaces highlight/bookmark/note tools as utilities around selected verses rather than the emotional center of the experience, while Day One’s product framing is about capturing/keeping entries rather than presenting “save” as a co-equal spiritual action. ([YouVersion Support][2])
+
+### 2) Second-best: keep Save in the row, but visually demote it
+
+Only do this if discoverability is a major problem and early testing shows people are not finding bookmarking at all.
+
+If Save stays:
+
+* make Reflect, Prayer, Ask the only filled or emphasized actions
+* make Save outlined, quieter, smaller, or icon-led
+* separate it visually from the spiritual trio, for example as a trailing pill or a lower row
+
+Do **not** keep four identical tiles.
+
+The risk with equal treatment is not just clutter. It subtly reframes the screen as a tool menu rather than a guided spiritual moment.
+
+### 3) Weakest: leave all four as equal-weight tiles
+
+I would avoid this.
+
+It is the easiest to implement, but it creates the most tonal confusion and the most “productivity tool” energy.
+
+## Best label for Save
+
+Do not use “Save” if the target is the Prayer Journal. “Save” is understandable, but it is flat and file-like.
+
+Best replacements:
+
+* **Remember this**
+* **Keep this passage**
+* **Keep this**
+* **Save to Journal** if you need maximum clarity
+* **Add to Journal** if the journal framing matters more than remembrance
+
+My favorite is **Remember this**.
+
+Why:
+
+* warm
+* human
+* spiritually congruent
+* aligned with your earlier move away from technical language like “Export”
+
+If the action is specifically storing the passage in Prayer Journal, **Save to Journal** is the clearest compromise between warmth and clarity.
+
+## What top apps suggest
+
+There is not a perfect one-to-one model, but there is a pattern:
+
+YouVersion emphasizes reader utilities like highlight, bookmark, and notes as **tools around the text**, not as co-equal “spiritual response buttons” beside prayer-like actions. Its help materials describe verse actions appearing when verses are selected, which reinforces utility rather than devotional primacy. ([YouVersion Support][2])
+
+Lectio 365 positions itself around praying through Scripture and “pause in the presence of God,” which reinforces a narrower, more intentional action model rather than presenting lots of equal-weight controls at once. ([Google Play][3])
+
+Day One frames journaling around preserving memories and entries, but its core behavior is not “Save” as a foreground CTA because journal entries are inherently part of the journaling flow. That is another signal that archival actions usually work best as lower-friction utilities, not primary devotional choices. ([Day One | Your Journal for Life][4])
+
+## My exact architectural recommendation
+
+Use this:
+
+Primary row:
+
+* **Reflect**
+* **Prayer**
+* **Ask**
+
+Secondary utility:
+
+* top-right **bookmark icon**
+* label in toast or tooltip: **Remember this**
+* confirmation: **Added to your Journal**
+
+Optional post-action moment:
+after someone finishes Reflect or Prayer, offer:
+
+* **Keep this in your Journal**
+* **Remember this passage**
+
+That placement is especially strong because it makes saving feel like a response to meaning, not a parallel task.
+
+## Approaches to flag
+
+Top-right bookmark icon:
+
+* Best tonal fit
+* Slight discoverability tradeoff if the icon is too subtle
+
+Inline “Remember this” under the passage:
+
+* Very good
+* More discoverable than an icon
+* Slightly more visual weight on the screen
+
+Post-reflection/post-prayer save:
+
+* Strong emotionally
+* Weakest for users who want to save immediately
+
+Keeping Save in equal row:
+
+* Most discoverable
+* Worst tonal fit
+
+## Bottom line
+
+If you want the screen to feel like a trusted spiritual companion, not a spiritual toolset:
+
+**Take Save out of the main action row.**
+Keep **Reflect, Prayer, and Ask** as the primary spiritual actions.
+Move saving to a lighter bookmark-style control and rename it **Remember this** or **Save to Journal**.
+
+That gives you the right hierarchy:
+first, **engage**
+then, **keep**
+
+If you want, I can turn this into a Replit-ready implementation prompt with exact UI copy and hierarchy rules.
+
+[1]: https://www.youversion.com/bible-app?utm_source=chatgpt.com "Bible App - YouVersion"
+[2]: https://help.youversion.com/l/en/article/ie1gz0nsr7-highlights-ios?utm_source=chatgpt.com "iOS: Highlights"
+[3]: https://play.google.com/store/apps/details?hl=en_US&id=com.prayer247.lectio365&utm_source=chatgpt.com "Lectio 365: Daily Bible Prayer - Apps on Google Play"
+[4]: https://dayoneapp.com/features/?utm_source=chatgpt.com "Features of Day One App"
