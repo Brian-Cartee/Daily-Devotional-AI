@@ -106,15 +106,15 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
       <div className="h-[42vh] shrink-0" />
 
       {/* Verse — lives below the image fade */}
-      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-8 text-center">
+      <div className="relative z-10 flex flex-col w-full items-center justify-center flex-1 px-8 text-center">
         <p
-          className="text-white text-center leading-relaxed mb-3 sm:text-2xl"
+          className="w-full text-white text-center leading-relaxed mb-3 sm:text-2xl"
           style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", minHeight: "5.5rem" }}
         >
           "{displayedText}
           <span className="animate-pulse opacity-60">|</span>"
         </p>
-        <p className="text-white/40 text-sm mt-1" style={{ fontFamily: "'Georgia', serif" }}>
+        <p className="w-full text-white/40 text-sm text-center mt-1" style={{ fontFamily: "'Georgia', serif" }}>
           — {verse.ref}
         </p>
       </div>
