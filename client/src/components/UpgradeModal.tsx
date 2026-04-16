@@ -11,7 +11,7 @@ import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/
 
 const PRO_FEATURES = [
   "Unlimited AI responses every day",
-  "PDF export with beautiful formatting",
+  "Beautiful PDF copy of your journal",
   "Full devotional history archive",
   "Custom Bible reading plans",
   "Multiple named prayer journals",

@@ -63,7 +63,7 @@ export default function ProSuccess() {
               {[
                 "Unlimited AI responses every day",
                 "Devotional history archive",
-                "PDF export & custom plans",
+                "Beautiful PDF · custom plans",
                 "Streak protection",
               ].map(f => (
                 <div key={f} className="flex items-center gap-2.5 text-sm text-foreground/80">

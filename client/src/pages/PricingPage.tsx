@@ -25,7 +25,7 @@ const PRO_FEATURES = [
   { icon: ScrollText, text: "Multiple named prayer journals" },
   { icon: Flame, text: "Streak protection — never lose your streak" },
   { icon: History, text: "Full devotional history archive" },
-  { icon: FileText, text: "PDF export with beautiful formatting" },
+  { icon: FileText, text: "Beautiful PDF copy of your journal" },
   { icon: BookMarked, text: "Unlimited sermon notes" },
   { icon: Mail, text: "Weekly AI-powered spiritual summary email" },
 ];
@@ -39,7 +39,7 @@ const PRO_SCENARIOS = [
   {
     icon: Download,
     title: "Take your notes with you",
-    body: "Export your journal, devotional notes, and prayers as a beautifully formatted PDF — to print, share, or keep forever.",
+    body: "Save your journal, devotional notes, and prayers as a beautifully formatted PDF — to print, share, or keep forever.",
   },
   {
     icon: Flame,
