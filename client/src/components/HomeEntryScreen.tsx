@@ -108,16 +108,13 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
             className="w-full h-full object-cover object-center"
           />
         </div>
-        <p className="text-white/35 text-xs tracking-[0.25em] uppercase font-light">
+        <p className="text-white/20 text-[10px] tracking-[0.28em] uppercase font-light mt-1">
           Shepherd's Path
         </p>
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-8 text-center">
-        <div className="w-10 h-px bg-white/15 mb-7" />
-        <p className="text-white/30 text-xs tracking-[0.2em] uppercase font-light mb-5">
-          A word for today
-        </p>
+        <div className="w-10 h-px bg-white/10 mb-8" />
         <p
           className="text-white text-center leading-relaxed mb-3 sm:text-2xl"
           style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", minHeight: "5.5rem" }}
