@@ -408,7 +408,7 @@ export default function GuidancePage() {
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ filter: "brightness(0.70) saturate(1.65)" }}
+            style={{ filter: "brightness(0.70) saturate(1.65)", transform: "scale(1.12)", transformOrigin: "65% top" }}
           />
 
           {/* Depth gradient — bleeds photo into app background at bottom */}
@@ -477,7 +477,7 @@ export default function GuidancePage() {
           </AnimatePresence>
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto px-4 pt-5 pb-8">
 
           {/* Header — pastoral welcome */}
           <motion.div
