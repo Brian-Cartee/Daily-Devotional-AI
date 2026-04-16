@@ -1157,7 +1157,7 @@ export default function LandingHome() {
               <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">What people are saying</p>
               <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 snap-x snap-mandatory scrollbar-none">
               {[
                 {
                   quote: "I hadn't opened a Bible in fifteen years. This app doesn't make you feel behind. It just meets you. I've used it every morning for three months now.",
@@ -1187,7 +1187,7 @@ export default function LandingHome() {
                 <div
                   key={i}
                   data-testid={`testimonial-${i}`}
-                  className="rounded-2xl border border-border/40 bg-card/40 px-4 py-4"
+                  className="rounded-2xl border border-border/40 bg-card/40 px-4 py-4 shrink-0 w-[78vw] max-w-[300px] snap-start"
                 >
                   <div className="flex items-center gap-0.5 mb-2.5">
                     {Array.from({ length: stars }).map((_, s) => (
