@@ -597,9 +597,15 @@ export default function LandingHome() {
   useEffect(() => {
     if (sessionStorage.getItem('scrollToExplore')) {
       sessionStorage.removeItem('scrollToExplore');
-      setTimeout(() => {
-        document.getElementById('explore-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 120);
+      const scrollToIt = () => {
+        const el = document.getElementById('explore-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+      // Two-pass: attempt at 200ms then confirm at 500ms in case layout is still settling
+      setTimeout(scrollToIt, 200);
+      setTimeout(scrollToIt, 500);
     }
   }, []);
   // Passage finder state
