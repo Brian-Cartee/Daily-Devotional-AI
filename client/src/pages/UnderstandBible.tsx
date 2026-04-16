@@ -8,7 +8,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
-import { UpgradeModal } from "@/components/UpgradeModal";
+import { AiPauseModal } from "@/components/AiPauseModal";
 import { NavBar } from "@/components/NavBar";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
@@ -42,7 +42,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
   const [snippetSaved, setSnippetSaved] = useState(false);
   const [snippetSaving, setSnippetSaving] = useState(false);
   const [sharingCard, setSharingCard] = useState(false);
@@ -54,7 +54,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const textQuery = usePassageText(chapter.apiRef, open);
 
   const generateAI = async (type: "reflect" | "pray") => {
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setAiMode(type);
     setAiContent("");
@@ -87,7 +87,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
 
   const sendChat = async () => {
     if (!chatInput.trim() || isAiLoading) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     const newMessages = [...chatMessages, { role: "user", content: chatInput }];
     setChatMessages([...newMessages, { role: "assistant", content: "" }]);
@@ -368,7 +368,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+        {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
       </AnimatePresence>
     </div>
   );

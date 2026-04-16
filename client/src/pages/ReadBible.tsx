@@ -12,7 +12,7 @@ import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang, getStoredLangInfo } from "@/lib/language";
 import { getHeroImage } from "@/lib/heroImage";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
-import { UpgradeModal } from "@/components/UpgradeModal";
+import { AiPauseModal } from "@/components/AiPauseModal";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
@@ -102,7 +102,7 @@ export default function ReadBible() {
   });
 
   const [showTransMenu, setShowTransMenu] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [savedSnippets, setSavedSnippets] = useState<Set<string>>(new Set());
   const [isSavingSnippet, setIsSavingSnippet] = useState(false);
@@ -174,7 +174,7 @@ export default function ReadBible() {
 
   const handleAI = async (type: Exclude<AIPanel, "chat" | null>) => {
     if (!chapterText.data || isAiLoading) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setActivePanel(type);
     setAiResult("");
@@ -194,7 +194,7 @@ export default function ReadBible() {
 
   const sendChat = async () => {
     if (!chatInput.trim() || !chapterText.data || isAiLoading) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     const newMessages = [...chatMessages, { role: "user", content: chatInput }];
     setChatMessages([...newMessages, { role: "assistant", content: "" }]);
@@ -579,7 +579,7 @@ export default function ReadBible() {
       </main>
 
       <AnimatePresence>
-        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+        {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
       </AnimatePresence>
     </>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Scroll, X, Send, Loader2 } from "lucide-react";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { useLocation } from "wouter";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import {
@@ -120,6 +121,11 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
 
   const handleAsk = async () => {
     if (!question.trim() || qaLoading || !verseId) return;
+    if (!canUseAi()) {
+      setAnswer("You've been deep in the Word today — come back tomorrow for more.");
+      return;
+    }
+    recordAiUsage();
     const q = question.trim();
     setQaLoading(true);
     setQuestion("");

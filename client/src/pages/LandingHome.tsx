@@ -12,7 +12,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { useDemoMode } from "@/components/DemoProvider";
-import { getRemainingAi, canUseAi, recordAiUsage, AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { canUseAi, recordAiUsage, AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { AiPauseModal } from "@/components/AiPauseModal";
 import { streamAI } from "@/lib/streamAI";
 import { getUserName } from "@/lib/userName";
 import {
@@ -618,13 +619,14 @@ export default function LandingHome() {
   const [passageQuery, setPassageQuery] = useState("");
   const [passageResult, setPassageResult] = useState("");
   const [passageLoading, setPassageLoading] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
   const [somethingElseOpen, setSomethingElseOpen] = useState(false);
   const [somethingElseText, setSomethingElseText] = useState("");
 
   const findPassage = async () => {
     const desc = passageQuery.trim();
     if (!desc || passageLoading) return;
-    if (!canUseAi()) return;
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setPassageLoading(true);
     setPassageResult("");
@@ -1250,6 +1252,8 @@ export default function LandingHome() {
           </p>
         </motion.div>
       </div>
+
+      {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
     </div>
   );
 }

@@ -11,7 +11,8 @@ import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
-import { canUseAi, recordAiUsage, getRemainingAi, getAiUsage } from "@/lib/aiUsage";
+import { canUseAi, recordAiUsage, getAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { AiPauseModal } from "@/components/AiPauseModal";
 import { isLateNight } from "@/lib/nightMode";
 import { getRelationshipAge } from "@/lib/relationship";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -69,6 +70,7 @@ export default function GuidancePage() {
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
   const [isListening, setIsListening] = useState(false);
   const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
@@ -173,7 +175,7 @@ export default function GuidancePage() {
   useEffect(() => {
     if (!situation.trim()) return;
 
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
 
     const initialUserMsg: Message = { role: "user", content: situation };
@@ -347,7 +349,7 @@ export default function GuidancePage() {
   const handleSend = async () => {
     const text = followUp.trim();
     if (!text || isSending) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setFollowUp("");
     setIsSending(true);
@@ -1158,6 +1160,7 @@ export default function GuidancePage() {
       </AnimatePresence>
 
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
     </>
   );
 }

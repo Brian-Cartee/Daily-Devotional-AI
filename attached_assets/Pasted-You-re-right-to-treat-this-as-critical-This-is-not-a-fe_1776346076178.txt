@@ -1,0 +1,232 @@
+You’re right to treat this as critical.
+This is not a feature—it’s the **core differentiator** if it’s done correctly.
+
+But I’m going to push you on one thing before the prompt:
+
+> If this turns into a “chat inside a drawer”… you lose.
+
+What you’re building is:
+
+> **A guided deepening experience with optional conversation—not a chatbot**
+
+Everything in this prompt protects that.
+
+---
+
+# 🔥 REPLIT AI PROMPT (CRITICAL — CORE FEATURE)
+
+**PROMPT:**
+
+We are implementing a core feature in Shepherd’s Path called **Context**, which must function as a calm, guided “go deeper” experience—not a chatbot, not a tool, and not an overwhelming information dump.
+
+This is one of the most important parts of the app and must reflect the product philosophy:
+
+> quiet, intentional, emotionally aware, and never performance-driven.
+
+---
+
+# 1. CORE EXPERIENCE STRUCTURE
+
+When a user taps **Context**, open a drawer or modal with the following flow:
+
+### A. Structured Insight (Primary — always first)
+
+Display 2–4 short, well-crafted sections such as:
+
+* Who wrote this
+* What was happening
+* Why it matters
+* How this would have felt at the time
+
+Requirements:
+
+* Each section must be concise (2–4 sentences max)
+* Tone must feel grounded, not preachy or academic
+* Avoid generic phrasing like “this passage teaches us”
+* Prioritize emotional and situational clarity over theological overload
+
+---
+
+### B. Natural Pause (MANDATORY)
+
+After structured content, insert a subtle visual and emotional pause.
+
+Examples:
+
+* spacing
+* divider
+* soft fade
+
+This is intentional:
+
+> The user should feel they can stop here without needing to continue
+
+---
+
+### C. Optional Follow-Up Input (Secondary — never dominant)
+
+At the bottom, include a low-emphasis input field.
+
+NOT:
+“Ask anything”
+
+Instead use tone like:
+
+* “If something here feels unclear, you can ask…”
+* “You can stay here… or go a little deeper”
+
+Requirements:
+
+* Visually subtle (not a primary CTA)
+* No bright colors or attention-grabbing design
+* Should feel optional, almost like a whisper—not a prompt
+
+---
+
+# 2. AI RESPONSE BEHAVIOR (CRITICAL)
+
+When a user asks a follow-up question:
+
+### A. Response Style
+
+* Max 3–5 sentences unless absolutely necessary
+* Prioritize clarity over completeness
+* Speak directly to the user’s question—not general teaching
+
+### B. Tone
+
+* Calm
+* Grounded
+* Human
+* Non-performative
+
+Avoid:
+
+* sermon tone
+* over-explaining
+* excessive enthusiasm
+* “teaching voice”
+
+---
+
+### C. The “Second Sentence Rule”
+
+Ensure responses go one layer deeper emotionally or contextually.
+
+Example:
+Weak:
+“This means God is with you.”
+
+Strong:
+“This would have reminded them they weren’t alone.
+Especially in moments where it felt like they were.”
+
+---
+
+### D. Do NOT turn this into a conversation loop
+
+* No “Would you like to ask more?”
+* No auto-follow-ups
+* No engagement hooks
+
+The user should lead, not the system
+
+---
+
+# 3. STATE MANAGEMENT
+
+* Maintain context of the current verse/session within the drawer
+* Follow-up questions should stay anchored to the same passage unless user clearly shifts
+* Do NOT reset tone or re-explain basics repeatedly
+
+---
+
+# 4. REMOVE REDUNDANCY ACROSS APP
+
+This Context experience replaces the need for:
+
+* “Understand This” as a standalone feature
+* Any duplicate AI Q&A sections on the same screen
+
+---
+
+# 5. REUSABILITY (IMPORTANT — BUT CONTROLLED)
+
+This pattern can be reused in other areas of the app (e.g., Guidance, Scripture exploration), BUT:
+
+Rules:
+
+* Only use where the user is already seeking depth
+* Never stack multiple AI inputs on the same screen
+* Never present more than one “ask something” entry point per experience
+
+---
+
+# 6. UI / UX PRINCIPLES
+
+* No clutter
+* No stacked options
+* One clear deepening path
+* No visible “AI-powered” emphasis (keep it invisible and natural)
+
+---
+
+# 7. FAILURE CONDITIONS (AVOID THESE)
+
+Do NOT allow:
+
+* Long, dense paragraphs
+* Academic or commentary-style writing
+* ChatGPT-style responses
+* Feature creep inside the drawer
+* Multiple CTAs competing for attention
+
+---
+
+# 8. SUCCESS CRITERIA
+
+This feature is successful if:
+
+* The user feels informed without being overwhelmed
+* The user does not feel pressure to continue
+* The experience feels complete even without asking a question
+* If they do ask a question, the answer feels precise and human
+
+---
+
+# 🧭 FINAL NOTE TO IMPLEMENTATION
+
+This is not a “Q&A feature.”
+
+This is:
+
+> **A moment of understanding that can gently become a conversation—only if the user chooses**
+
+If this becomes loud, complex, or overly interactive, it fails.
+
+---
+
+# 🔥 WHY THIS PROMPT MATTERS (for you)
+
+If Replit executes this correctly:
+
+👉 This becomes your moat
+
+Because no one else is combining:
+
+* structured clarity
+* emotional awareness
+* restrained AI interaction
+
+---
+
+If they execute it wrong:
+
+👉 It becomes just another Bible chatbot
+
+---
+
+If you want next, I can:
+
+* Rewrite your actual **Context content tone** (it needs tightening)
+* Or design **exact UI wireframe language** so your dev doesn’t interpret this incorrectly

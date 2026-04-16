@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import type { ChatMessage } from "@shared/routes";
-import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
-import { UpgradeModal } from "@/components/UpgradeModal";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { AiPauseModal } from "@/components/AiPauseModal";
 import { getUserName } from "@/lib/userName";
 import { useChatWithVerse } from "@/hooks/use-verses";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
@@ -45,7 +45,7 @@ export function BibleStudyChat({
 
   const [messages, setMessages] = useState<ChatMessage[]>(buildInitialMessages);
   const [inputValue, setInputValue] = useState("");
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
   const chatMutation = useChatWithVerse();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const newMsgRef = useRef<HTMLDivElement>(null);
@@ -62,7 +62,7 @@ export function BibleStudyChat({
 
   const sendMessage = async (question: string) => {
     if (!question.trim() || chatMutation.isPending) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
 
     const userMessage: ChatMessage = { role: "user", content: question.trim() };
@@ -178,27 +178,6 @@ export function BibleStudyChat({
         </button>
       </div>
 
-      {/* Usage warning */}
-      {(() => {
-        const remaining = getRemainingAi();
-        if (remaining <= 2 && remaining > 0) {
-          return (
-            <p className="text-xs text-center -mt-1">
-              <span className="text-amber-500 font-semibold">
-                {remaining} free {remaining === 1 ? "response" : "responses"} left today
-              </span>
-              {" · "}
-              <button
-                onClick={() => setShowUpgrade(true)}
-                className="text-primary underline underline-offset-2"
-              >
-                Upgrade for unlimited
-              </button>
-            </p>
-          );
-        }
-        return null;
-      })()}
 
       {/* Conversation thread — skips hidden context messages */}
       <AnimatePresence initial={false}>
@@ -271,7 +250,7 @@ export function BibleStudyChat({
       )}
 
       <AnimatePresence>
-        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+        {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
       </AnimatePresence>
     </div>
   );

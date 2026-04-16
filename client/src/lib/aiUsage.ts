@@ -2,6 +2,7 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 
 const AI_USAGE_KEY = "sp_ai_usage";
 export const AI_FREE_LIMIT = 5;
+export const AI_GRACE_LIMIT = 7; // soft cap (5) + grace buffer (2)
 
 interface AiUsageData {
   date: string;
@@ -26,7 +27,7 @@ export function getAiUsage(): AiUsageData {
 
 export function canUseAi(): boolean {
   if (isProVerifiedLocally()) return true;
-  return getAiUsage().count < AI_FREE_LIMIT;
+  return getAiUsage().count < AI_GRACE_LIMIT;
 }
 
 export function recordAiUsage(): void {

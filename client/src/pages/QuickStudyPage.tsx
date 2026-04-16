@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { streamAI } from "@/lib/streamAI";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { getUserName } from "@/lib/userName";
-import { UpgradeModal } from "@/components/UpgradeModal";
+import { AiPauseModal } from "@/components/AiPauseModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -349,7 +349,7 @@ export default function QuickStudyPage() {
   const [activeTopic, setActiveTopic] = useState("");
   const [savedStudy, setSavedStudy] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<TrackId | null>(null);
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
 
   const [storyFinderOpen, setStoryFinderOpen] = useState(false);
   const [storyDescription, setStoryDescription] = useState("");
@@ -387,7 +387,7 @@ export default function QuickStudyPage() {
     if (e) e.preventDefault();
     const q = (overrideTopic ?? topic).trim();
     if (!q) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setLoading(true);
     setStudy("");
@@ -430,7 +430,7 @@ Keep it warm, accessible, and grounded in Scripture.`,
   const findStory = async () => {
     const desc = storyDescription.trim();
     if (!desc) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setStoryLoading(true);
     setStoryResult("");
@@ -842,7 +842,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
       </main>
 
       <AnimatePresence>
-        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+        {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
       </AnimatePresence>
     </>
   );
