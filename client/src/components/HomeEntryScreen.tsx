@@ -49,7 +49,7 @@ function getEntryType(): EntryType {
   return "whisper";
 }
 
-function markEntryShown() {
+export function markEntryShown() {
   localStorage.setItem(ENTRY_KEY, getTodayStr());
   localStorage.setItem(LAST_VISIT_KEY, getTodayStr());
 }
@@ -57,6 +57,7 @@ function markEntryShown() {
 function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
   const [displayedText, setDisplayedText] = useState("");
   const [showCta, setShowCta] = useState(false);
+  const [typingDone, setTypingDone] = useState(false);
   const verse = getDayVerse();
 
   useEffect(() => {
@@ -68,6 +69,7 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
           i++;
         } else {
           clearInterval(interval);
+          setTypingDone(true);
           setTimeout(() => setShowCta(true), 600);
         }
       }, 35);
@@ -81,6 +83,17 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
       className="fixed inset-0 z-50 flex flex-col overflow-hidden"
       style={{ background: "#0d0a1a" }}
     >
+      {/* Dismiss X — top right */}
+      <button
+        onClick={onDismiss}
+        data-testid="button-whisper-dismiss"
+        className="absolute top-12 right-5 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+        style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.55)" }}
+        aria-label="Dismiss"
+      >
+        <span className="text-lg leading-none">×</span>
+      </button>
+
       {/* Full-bleed hero image — top ~45% of screen */}
       <div className="absolute top-0 left-0 right-0 h-[45vh] overflow-hidden">
         <img
@@ -96,9 +109,9 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
             background: "linear-gradient(to bottom, rgba(13,10,26,0.08) 0%, rgba(13,10,26,0.0) 40%, rgba(13,10,26,0.75) 80%, rgba(13,10,26,1) 100%)",
           }}
         />
-        {/* App name — ghostly overlay at the bottom of the image */}
-        <p className="absolute bottom-4 left-0 right-0 text-center text-white/20 text-[9px] tracking-[0.3em] uppercase font-light">
-          Shepherd's Path
+        {/* App name — visible above the gradient */}
+        <p className="absolute bottom-4 left-0 right-0 text-center text-white/55 text-[9px] tracking-[0.3em] uppercase font-medium">
+          Shepherd&rsquo;s Path
         </p>
       </div>
 
@@ -111,11 +124,10 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
           className="w-full text-white text-center leading-relaxed mb-3 sm:text-2xl"
           style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", minHeight: "5.5rem" }}
         >
-          "{displayedText}
-          <span className="animate-pulse opacity-60">|</span>"
+          {'\u201C'}{displayedText}{!typingDone && <span className="animate-pulse opacity-60">|</span>}{'\u201D'}
         </p>
-        <p className="w-full text-white/40 text-sm text-center mt-1" style={{ fontFamily: "'Georgia', serif" }}>
-          — {verse.ref}
+        <p className="w-full text-white/45 text-sm text-center mt-1" style={{ fontFamily: "'Georgia', serif" }}>
+          &mdash; {verse.ref}
         </p>
       </div>
 
@@ -141,7 +153,7 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
           >
             Walk with me today
           </button>
-          <button onClick={onDismiss} className="text-white/25 text-xs py-1">
+          <button onClick={onDismiss} className="text-white/55 text-xs py-1" data-testid="button-whisper-skip">
             Skip
           </button>
         </motion.div>

@@ -33,7 +33,7 @@ import {
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
-import { HomeEntryScreen, shouldShowHomeEntry } from "@/components/HomeEntryScreen";
+import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -705,6 +705,8 @@ export default function LandingHome() {
 
   const handleDismissWelcome = () => {
     dismissWelcome();
+    markEntryShown();
+    setShowEntryScreen(false);
     focusHeroInput();
   };
 
