@@ -2140,9 +2140,11 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
       if (fs.existsSync(localPath)) {
         return res.json({ imageUrl: `/api/verse-art/image/${date}`, cached: true });
       }
-      // Fall back to DB (for any legacy entries)
+      // Fall back to DB — but skip any expired OpenAI blob URLs (they expire in ~1hr)
       const art = await storage.getVerseArt(date);
-      if (art) return res.json({ imageUrl: art.imageUrl, cached: true });
+      if (art && !art.imageUrl.includes("oaidalleapiprodscus")) {
+        return res.json({ imageUrl: art.imageUrl, cached: true });
+      }
       return res.json({ imageUrl: null, cached: false });
     } catch (e) {
       console.error("verse-art GET error:", e);
