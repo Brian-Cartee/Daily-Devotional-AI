@@ -131,10 +131,10 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
     setQuestion("");
     setAnswer("");
     try {
-      const res = await fetch("/api/ai/chat", {
+      const res = await fetch("/api/context/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verseId, messages: [], question: q }),
+        body: JSON.stringify({ reference, text, question: q }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("failed");
@@ -292,7 +292,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                     data-testid="input-context-question"
                     value={question}
                     onChange={e => setQuestion(e.target.value)}
-                    placeholder="Something feel unclear? Ask here…"
+                    placeholder="If something feels unclear, you can ask…"
                     className="flex-1 resize-none bg-transparent text-[14px] leading-snug text-foreground/70 placeholder:text-muted-foreground/35 outline-none min-h-[20px] max-h-[100px]"
                     rows={1}
                     onKeyDown={e => {

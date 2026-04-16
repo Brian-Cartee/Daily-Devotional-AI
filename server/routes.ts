@@ -3307,21 +3307,21 @@ ${historyNote}`;
         messages: [
           {
             role: "system",
-            content: `You are a trusted pastor helping someone understand a Bible verse in plain, everyday language. You are warm, grounded, and clear. You never use academic or theological jargon. Your goal is to help the reader understand — not impress them. Write like you're explaining this to a friend over coffee, not lecturing. Sound biblical teaching only. Return ONLY valid JSON — no markdown, no code fences.`,
+            content: `You are helping someone understand where a Bible verse comes from. Write like a knowledgeable friend — warm, plain, unhurried. No jargon. No lecture tone. No "this passage teaches us." Prioritize what the reader can feel over what they should know. Return ONLY valid JSON — no markdown, no code fences.`,
           },
           {
             role: "user",
-            content: `Give background on this Bible passage so the reader understands it better: "${reference}" — "${text}"
+            content: `Give background on this Bible passage: "${reference}" — "${text}"
 
 Return a JSON object with exactly these four fields:
 
-"whoAndWhen": 2–3 plain sentences answering: Who wrote this? What do we know about them? Roughly when did they write it? Keep it human and grounded — not a biography, just enough to place the reader.
+"whoAndWhen": 2–3 sentences. Who wrote this, and what do we know about them as a person? Just enough to place the reader — not a biography. Sound human, not like a textbook entry.
 
-"whatWasHappening": 2–3 plain sentences answering: What was going on at the time? What was life like for the people this was written to? What were they facing or going through? Help the reader feel the world this came from.
+"whatWasHappening": 2–3 sentences. What was the world actually like for the people this was written to? What were they going through? Help the reader feel the situation, not just understand it.
 
-"whyItMatters": 2–3 plain sentences answering: Why does this passage land the way it does? What does it say about God, about people, about the situation? What should reading this change or clarify for us? Keep this honest and grounded — not preachy.
+"whyItMatters": 2–3 sentences. Why does this passage land the way it does? Focus on what it would have meant to the people who first heard it, and why that still resonates. Don't tell the reader what to do with it — let it speak.
 
-"bridge": One warm sentence connecting this background back to reading the verse today. Something like "This helps us see why this verse speaks the way it does" — but written naturally, specific to this passage. Not generic.`,
+"bridge": One honest sentence that connects this background to reading the verse right now. Make it specific to this passage — not a formula that could work for any verse.`,
           },
         ],
         temperature: 0.4,
@@ -3335,6 +3335,57 @@ Return a JSON object with exactly these four fields:
     } catch (err) {
       console.error("[context] error:", err);
       res.status(500).json({ error: "Failed to generate context" });
+    }
+  });
+
+  // Context Q&A — brief, grounded follow-up answers anchored to the passage
+  app.post("/api/context/ask", async (req, res) => {
+    try {
+      const { reference, text, question } = req.body as {
+        reference?: string;
+        text?: string;
+        question?: string;
+      };
+      if (!reference || !text || !question) {
+        return res.status(400).json({ error: "Missing params" });
+      }
+
+      if (detectCrisis(question)) {
+        return res.status(200).json({ content: CRISIS_RESPONSE });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are helping someone understand a specific thing about a Bible passage they just read background on. They have already seen brief historical context — who wrote this, what was happening, why it resonates. Now they have one question. Your job is to answer it directly.
+
+Rules:
+— Respond in 3–5 sentences. Not paragraphs, not bullet points. Sentences.
+— Go one layer deeper than the surface of the question. Don't just say what — say why it would have felt that way.
+— Stay anchored to this specific passage. Don't drift into general Bible teaching.
+— No follow-up questions. No "would you like to know more?" The person leads.
+— No sermon tone. No "this reminds us to..." or "we should..." 
+— No hollow affirmations. Get straight to the answer.
+— Sound like a knowledgeable friend, not a commentary.
+
+The verse is: "${reference}" — "${text}"`,
+          },
+          {
+            role: "user",
+            content: question,
+          },
+        ],
+        temperature: 0.5,
+        max_tokens: 200,
+      });
+
+      const content = response.choices[0]?.message?.content || "Could not generate a response.";
+      res.status(200).json({ content });
+    } catch (err) {
+      console.error("[context/ask] error:", err);
+      res.status(500).json({ error: "Failed to answer question" });
     }
   });
 

@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { useDemoMode } from "@/components/DemoProvider";
-import { canUseAi, recordAiUsage, AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { streamAI } from "@/lib/streamAI";
 import { getUserName } from "@/lib/userName";
@@ -262,27 +262,6 @@ function HeroAIPrompt() {
             </div>
           </div>
         </form>
-
-        {/* AI usage awareness — only surfaces after they've already felt the value */}
-        {(() => {
-          const remaining = getRemainingAi();
-          if (remaining === Infinity || remaining <= 0) return null;
-          if (remaining <= 2) {
-            return (
-              <Link href="/pricing">
-                <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 hover:bg-amber-500/12 transition-colors cursor-pointer group">
-                  <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <p className="text-[12px] text-amber-800 dark:text-amber-300 leading-snug flex-1">
-                    <span className="font-bold">{remaining} free {remaining === 1 ? "response" : "responses"} left today</span>
-                    <span className="text-amber-700/70 dark:text-amber-400/70"> — Pro gives you unlimited, every day.</span>
-                  </p>
-                  <ArrowRight className="w-3 h-3 text-amber-600/60 dark:text-amber-400/60 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </Link>
-            );
-          }
-          return null;
-        })()}
 
         {/* Situation chips — secondary helper, not the preferred path */}
         <div className="mt-3">
