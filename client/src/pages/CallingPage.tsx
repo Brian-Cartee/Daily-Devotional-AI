@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Share2, ArrowDown, ChevronLeft, Heart, BookOpen, Loader2, Palette, Image } from "lucide-react";
+import { Share2, ArrowDown, ChevronLeft, Heart, BookOpen, Loader2, Palette, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
 
-const sunsetImg = "/daily-art/natural-sunset.jpg";
+const FALLBACK_IMG = "/daily-art/natural-sunset.jpg";
 
 const CALLING_CARDS = [
   {
@@ -84,6 +84,21 @@ export default function CallingPage() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState<LoadingKey | null>(null);
   const [sharingScripture, setSharingScripture] = useState(false);
+  const [artUrl, setArtUrl] = useState<string>(FALLBACK_IMG);
+  const [artLoaded, setArtLoaded] = useState(false);
+
+  // Fetch today's AI-generated daily art on mount
+  useEffect(() => {
+    fetch("/api/daily-art")
+      .then(r => r.json())
+      .then(data => {
+        if (data.imageUrl) {
+          setArtUrl(data.imageUrl);
+          setArtLoaded(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handlePurpleShare = async (card: typeof CALLING_CARDS[0]) => {
     const key: LoadingKey = `${card.id}-purple`;
@@ -103,7 +118,7 @@ export default function CallingPage() {
     if (loading) return;
     setLoading(key);
     try {
-      const blob = await createShareImage(card.verseText, card.scripture, sunsetImg);
+      const blob = await createShareImage(card.verseText, card.scripture, artUrl);
       await doImageShare(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
     } catch {
       navigator.share?.({ text: card.shareText }).catch(() => {});
@@ -152,10 +167,11 @@ export default function CallingPage() {
       {/* HERO */}
       <div className="relative w-full" style={{ height: "100svh", minHeight: 600 }}>
         <img
-          src={sunsetImg}
-          alt="Sunset over forest lake"
+          src={artUrl}
+          alt="Daily art"
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{ filter: "brightness(0.82)" }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG; }}
         />
         <div
           className="absolute inset-0"
@@ -265,14 +281,14 @@ export default function CallingPage() {
                   onClick={() => handleArtShare(card)}
                   disabled={loading !== null}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all active:scale-95 disabled:opacity-50"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.7)" }}
+                  style={{ background: artLoaded ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.07)", border: artLoaded ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(255,255,255,0.12)", color: artLoaded ? "rgba(251,191,36,0.9)" : "rgba(255,255,255,0.7)" }}
                   data-testid={`button-calling-share-art-${card.id}`}
                 >
                   {loading === `${card.id}-art`
                     ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : <Image className="w-3 h-3" />
+                    : <Sparkles className="w-3 h-3" />
                   }
-                  Art Image
+                  AI Art
                 </button>
               </div>
             </div>
