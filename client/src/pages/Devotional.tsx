@@ -3,13 +3,12 @@ import { useLocation } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Wand2, Star, Headphones, Square, ChevronDown } from "lucide-react";
+import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BibleStudyChat } from "@/components/BibleStudyChat";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
@@ -841,7 +840,7 @@ export default function Devotional() {
 
             {/* ── Action bar ─────────────────────────────────── */}
             <div className="bg-card border-t border-border/20">
-              <div className="grid grid-cols-4 divide-x divide-border/30 px-0">
+              <div className="grid grid-cols-3 divide-x divide-border/30 px-0">
                 <div className="flex justify-center py-3.5">
                   <ListenButton
                     text={`${verse.text} — ${verse.reference}`}
@@ -868,30 +867,11 @@ export default function Devotional() {
                   {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className={`w-5 h-5 ${showShareRow ? "text-primary" : ""}`} />}
                   <span className="text-[12px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
                 </button>
-                <button
-                  data-testid="button-generate-verse-art"
-                  onClick={() => {
-                    if (verseArtUrl) {
-                      setShowAiArt(v => !v);
-                    } else {
-                      verseArtMutation.mutate();
-                    }
-                  }}
-                  disabled={verseArtMutation.isPending}
-                  className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors disabled:opacity-50"
-                >
-                  {verseArtMutation.isPending
-                    ? <Loader2 className="w-5 h-5 animate-spin" />
-                    : <Wand2 className={`w-5 h-5 ${verseArtUrl && showAiArt ? "text-primary" : ""}`} />}
-                  <span className="text-[12px] font-semibold leading-none">
-                    {verseArtMutation.isPending ? "Painting…" : verseArtUrl ? (showAiArt ? "AI Art ✓" : "Original") : "AI Art"}
-                  </span>
-                </button>
               </div>
 
               {/* Context — background on this passage */}
               <div className="px-4 pt-2 pb-2.5 flex items-center justify-center border-t border-border/20">
-                <ScriptureContext reference={verse.reference} text={verse.text} />
+                <ScriptureContext reference={verse.reference} text={verse.text} verseId={verse.id} />
               </div>
 
               {/* Remember this verse — always visible */}
@@ -1603,47 +1583,6 @@ export default function Devotional() {
               </div>
             </motion.div>
           )}
-
-          {/* Actions */}
-          {/* Bible Scholar — always visible, no accordion */}
-          <div
-            className="rounded-2xl border overflow-hidden"
-            style={{
-              borderColor: "rgba(124,58,237,0.28)",
-              background: "linear-gradient(135deg, #0f0820 0%, #1a1035 100%)",
-            }}
-          >
-            {/* Section header */}
-            <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-primary/10">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
-              >
-                <Sparkles className="w-4.5 h-4.5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-[15px] font-bold text-foreground leading-tight">Understand This</p>
-                  <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">
-                    Try it
-                  </span>
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                  Meaning · history · cross-references · life application
-                </p>
-              </div>
-            </div>
-
-            {/* Chat — always open */}
-            <div className="px-4 pb-4">
-              <BibleStudyChat
-                verseId={verse.id}
-                verseReference={verse.reference}
-                initialReflection={reflectionContent}
-                prayerContent={prayerContent}
-              />
-            </div>
-          </div>
 
           {/* Daily sermon — one curated message per day, appears after devotional is complete */}
           {reflectionContent && (

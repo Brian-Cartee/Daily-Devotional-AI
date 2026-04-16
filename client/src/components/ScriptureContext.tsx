@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Scroll, X } from "lucide-react";
+import { Scroll, X, Send, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import {
@@ -12,6 +12,7 @@ import {
 interface ScriptureContextProps {
   reference: string;
   text: string;
+  verseId?: number;
 }
 
 interface ContextData {
@@ -42,7 +43,6 @@ function recordContextRef(reference: string): void {
 function isContextGated(reference: string): boolean {
   if (isProVerifiedLocally()) return false;
   const refs = getContextRefs();
-  // Gated only if: already at limit AND this reference hasn't been unlocked before
   return refs.length >= CONTEXT_LIMIT && !refs.includes(reference);
 }
 
@@ -102,9 +102,12 @@ function ContextBridgeCard({ onClose }: { onClose: () => void }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export function ScriptureContext({ reference, text }: ScriptureContextProps) {
+export function ScriptureContext({ reference, text, verseId }: ScriptureContextProps) {
   const [open, setOpen] = useState(false);
   const [gated, setGated] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [qaLoading, setQaLoading] = useState(false);
 
   const handleOpen = () => {
     const limited = isContextGated(reference);
@@ -113,6 +116,29 @@ export function ScriptureContext({ reference, text }: ScriptureContextProps) {
     }
     setGated(limited);
     setOpen(true);
+  };
+
+  const handleAsk = async () => {
+    if (!question.trim() || qaLoading || !verseId) return;
+    const q = question.trim();
+    setQaLoading(true);
+    setQuestion("");
+    setAnswer("");
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verseId, messages: [], question: q }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("failed");
+      const json = await res.json();
+      setAnswer(json.content ?? "");
+    } catch {
+      setAnswer("Something went wrong — try again in a moment.");
+    } finally {
+      setQaLoading(false);
+    }
   };
 
   const { data, isLoading, isError } = useQuery<ContextData>({
@@ -232,6 +258,54 @@ export function ScriptureContext({ reference, text }: ScriptureContextProps) {
                   </div>
                 )}
               </>
+            )}
+
+            {/* ── Inline Q&A — quiet, always below content ─────────────── */}
+            {!gated && !isLoading && verseId && (
+              <div className="space-y-3 pt-1">
+                {/* Previous answer */}
+                {(answer || qaLoading) && (
+                  <div className="rounded-2xl bg-amber-50/50 dark:bg-amber-950/15 border border-amber-200/30 dark:border-amber-700/20 px-4 py-4">
+                    {qaLoading ? (
+                      <div className="flex items-center gap-2 text-amber-600/60 dark:text-amber-400/50">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                        <span className="text-[13px]">Looking into this…</span>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-500/60 mb-2">Answer</p>
+                        <p className="text-[14px] leading-[1.75] text-foreground/75">{answer}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Input */}
+                <div className="flex items-end gap-2 rounded-2xl border border-border/30 bg-foreground/[0.025] px-3.5 py-2.5">
+                  <textarea
+                    data-testid="input-context-question"
+                    value={question}
+                    onChange={e => setQuestion(e.target.value)}
+                    placeholder="Something feel unclear? Ask here…"
+                    className="flex-1 resize-none bg-transparent text-[14px] leading-snug text-foreground/70 placeholder:text-muted-foreground/35 outline-none min-h-[20px] max-h-[100px]"
+                    rows={1}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAsk();
+                      }
+                    }}
+                  />
+                  <button
+                    data-testid="button-context-ask"
+                    onClick={handleAsk}
+                    disabled={!question.trim() || qaLoading}
+                    className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 disabled:opacity-25 transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             )}
 
             <div className="h-4" />
