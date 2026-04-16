@@ -718,7 +718,7 @@ export default function LandingHome() {
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
         <img
-          src="/hero-landing.png"
+          src="/hero-landing.webp"
           alt="A road cresting a green hill toward golden light"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: "center center" }}
@@ -776,7 +776,7 @@ export default function LandingHome() {
           style={{
             position: "absolute",
             inset: 0,
-            backgroundImage: "url('/hero-landing.png')",
+            backgroundImage: "url('/hero-landing.webp')",
             backgroundSize: "cover",
             backgroundPosition: "center 18%",
             filter: "blur(6px)",

@@ -952,6 +952,7 @@ export default function Journal() {
   const [, navigate] = useLocation();
   const framework = getTodayFramework();
   const [frameworkPromptDismissed, setFrameworkPromptDismissed] = useState(false);
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const bm = getBookmark("journal");
     return (bm?.tab as TabType) ?? "prayer";
@@ -1060,11 +1061,24 @@ export default function Journal() {
 
         {/* Hero banner */}
         <div className="relative w-full overflow-hidden" style={{ height: 300 }}>
+          {/* Shimmer placeholder — fades out once image loads */}
+          <div
+            className="absolute inset-0 z-10 transition-opacity duration-500"
+            style={{
+              opacity: heroImageLoaded ? 0 : 1,
+              pointerEvents: "none",
+              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
+            }}
+          />
           <img
-            src="/journal-hero.png"
+            src="/journal-hero.webp"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center center" }}
+            // @ts-ignore — fetchpriority is a valid HTML attribute (lowercase)
+            fetchpriority="high"
+            decoding="async"
+            onLoad={() => setHeroImageLoaded(true)}
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.12) 40%, rgba(0,0,0,0.68) 100%)" }} />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">

@@ -84,7 +84,7 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
       {/* Full-bleed hero image — top ~45% of screen */}
       <div className="absolute top-0 left-0 right-0 h-[45vh] overflow-hidden">
         <img
-          src="/hero-landing.png"
+          src="/hero-landing.webp"
           alt="The Path"
           className="w-full h-full object-cover object-center"
           style={{ opacity: 0.92 }}

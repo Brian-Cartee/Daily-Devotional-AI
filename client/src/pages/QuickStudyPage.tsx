@@ -499,7 +499,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
       {/* Hero banner */}
       <div className="relative w-full overflow-hidden pt-14" style={{ height: 194 }}>
         <img
-          src="/hero-study.png"
+          src="/hero-study.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
         />

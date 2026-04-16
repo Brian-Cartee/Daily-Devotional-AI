@@ -146,7 +146,7 @@ export default function StoriesPage() {
         {/* Hero */}
         <div className="relative w-full overflow-hidden" style={{ height: 260 }}>
           <img
-            src="/hero-study.png"
+            src="/hero-study.webp"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: "center 40%" }}

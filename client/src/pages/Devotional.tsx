@@ -767,7 +767,7 @@ export default function Devotional() {
             >
               {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
               <img
-                src={(showAiArt && verseArtUrl) ? verseArtUrl : "/hero-devotional.png"}
+                src={(showAiArt && verseArtUrl) ? verseArtUrl : "/hero-devotional.webp"}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
