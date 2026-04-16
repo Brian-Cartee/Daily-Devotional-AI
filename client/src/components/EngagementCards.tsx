@@ -279,9 +279,9 @@ const GRATITUDE_COPY: Record<"hard" | "okay" | "grateful" | "none", {
 }> = {
   hard: {
     header: "Stay a moment",
-    prompt: "What's one thing you're holding onto right now?",
+    prompt: "What are you carrying that you haven't said out loud yet?",
     placeholder: "Whatever's weighing on you…",
-    journalTitle: "What I'm holding onto",
+    journalTitle: "What I'm carrying",
   },
   okay: {
     header: "Take a moment",
