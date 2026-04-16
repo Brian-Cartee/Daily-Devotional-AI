@@ -268,7 +268,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
             <div>
               <h2 className="text-base font-bold text-foreground leading-tight">Reminders</h2>
               <p className="text-[11px] text-muted-foreground">
-                {subscribed ? `${activeCount} active · adjust anytime` : "Stay on the path daily"}
+                {subscribed ? `${activeCount} active · adjust anytime` : "Gentle reminders, on your terms"}
               </p>
             </div>
           </div>

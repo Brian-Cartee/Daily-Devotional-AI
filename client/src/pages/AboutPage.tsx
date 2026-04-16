@@ -97,7 +97,7 @@ const COMMITMENTS = [
   "Built to lead people to Christ using available technology — making it easier to immerse yourself in Scripture, ask honest questions, and grow without embarrassment",
   "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word, no speculation or reinterpretation",
   "Shaped by the historic, orthodox Christian faith — not cultural opinion",
-  "Designed to build real spiritual discipline: daily habits that draw you steadily closer to God",
+  "An honest, open place to encounter God — in a way that fits where you actually are",
   "Your word is a lamp to my feet and a light to my path. — Psalm 119:105",
 ];
 

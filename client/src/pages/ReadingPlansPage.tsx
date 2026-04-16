@@ -165,7 +165,7 @@ export default function ReadingPlansPage() {
             <h1 className="text-[22px] font-bold text-foreground">Reading Plans</h1>
           </div>
           <p className="text-[14px] text-muted-foreground leading-relaxed mt-2 pl-12">
-            Read through Scripture one day at a time. Track your progress and build the discipline that transforms your faith.
+            Read through Scripture one day at a time, at your own pace. Every step is enough.
           </p>
         </motion.div>
 

@@ -60,9 +60,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "Day One — You Showed Up",
     subtitle: "The most important step",
     message:
-      "In a world where everything fights for your attention — you chose God first. Don't let it go to your head. Just do it again tomorrow.",
+      "In a world where everything fights for your attention — you chose God first. That's where it starts.",
     voiceScript:
-      "Day one is in the books. You showed up. In a world where everything is competing for your attention — your phone, the news, the noise — you chose God first. And honestly? That is kind of a big deal. Don't let it go to your head though. Just do it again tomorrow. And the day after that.",
+      "Day one is in the books. You showed up. In a world where everything is competing for your attention — your phone, the news, the noise — you chose God first. And honestly? That is kind of a big deal. That is where it starts.",
     colorFrom: "from-amber-400",
     colorTo: "to-red-400",
     photo: "https://images.unsplash.com/photo-1418050327236-8de8ba25f5a1?w=800&q=80",
@@ -76,7 +76,7 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     message:
       "\"He makes me lie down in green pastures.\" Three days of choosing rest in God before the rush of the day. You are learning what it means to be led.",
     voiceScript:
-      "Green Pastures. Three days. Psalm 23 says He makes you lie down in green pastures — and that word 'makes' is important. It means He provides the kind of rest you cannot give yourself. Three days of showing up is you learning to receive that. Keep going. The path gets quieter the further you walk it.",
+      "Green Pastures. Three days. Psalm 23 says He makes you lie down in green pastures — and that word 'makes' is important. It means He provides the kind of rest you cannot give yourself. Three days of showing up is you learning to receive that. The path gets quieter the further you walk it.",
     colorFrom: "from-green-400",
     colorTo: "to-emerald-500",
     photo: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&q=80",
@@ -104,7 +104,7 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     message:
       "\"He restores my soul.\" Two weeks. Something in you is being put back together — quietly, daily, without fanfare. That is what this is.",
     voiceScript:
-      "Restored. Fourteen days. He restores my soul — not fixes it, not upgrades it. Restores it. Like something that was always meant to be whole. Two weeks of daily time with God is two weeks of that restoration work happening in you, whether you feel it yet or not. You are different than you were two weeks ago. Keep going.",
+      "Restored. Fourteen days. He restores my soul — not fixes it, not upgrades it. Restores it. Like something that was always meant to be whole. Two weeks of time with God is two weeks of that restoration work happening in you, whether you feel it yet or not.",
     colorFrom: "from-violet-400",
     colorTo: "to-purple-500",
     photo: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80",
@@ -116,9 +116,9 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     title: "Righteous Paths",
     subtitle: "21-day streak · Psalm 23:3",
     message:
-      "\"He guides me in paths of righteousness.\" Three weeks. A habit has formed. The path you are walking is not accidental — you are being guided.",
+      "\"He guides me in paths of righteousness.\" Three weeks. The path you are walking is not accidental — you are being guided.",
     voiceScript:
-      "Righteous Paths. Twenty-one days. That is not an accident — that is a habit. He guides you in paths of righteousness for His name's sake. Meaning: He has a reason for walking with you through this. It is not random. The path you are on was chosen for you, and you have been faithful enough to stay on it for three weeks. That matters more than you know.",
+      "Righteous Paths. Twenty-one days. That is not an accident. He guides you in paths of righteousness for His name's sake. Meaning: He has a reason for walking with you through this. It is not random. The path you are on was chosen for you, and you have been faithful enough to stay on it for three weeks. That matters more than you know.",
     colorFrom: "from-amber-500",
     colorTo: "to-yellow-400",
     photo: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80",
