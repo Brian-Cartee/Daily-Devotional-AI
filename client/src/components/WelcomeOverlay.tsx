@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, BookOpen, ChevronDown, Loader2, Square, X } from "lucide-react";
+import { ArrowRight, BookOpen, Loader2, Square, X } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 import { useLocation } from "wouter";
@@ -31,8 +31,6 @@ interface WelcomeOverlayProps {
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   const { play, stop, toggle, playing, loading, progress } = useTTS();
   const [, navigate] = useLocation();
-  const [showDetails, setShowDetails] = useState(false);
-
   const started = progress > 0 || playing || loading;
 
   const handleDismiss = () => {
@@ -215,72 +213,59 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         </button>
       </motion.div>
 
-      {/* How it works — collapsible */}
+      {/* Four paths — always visible, so users know what's here */}
       <motion.div
         className="relative z-10 px-5 pb-8 shrink-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.4 }}
+        transition={{ delay: 0.45, duration: 0.5 }}
       >
-        <button
-          onClick={() => setShowDetails(v => !v)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 text-white/40 hover:text-white/60 transition-colors text-[12px] font-medium"
+        <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 text-center mb-3">
+          Four ways to begin
+        </p>
+        <div
+          className="rounded-2xl border divide-y overflow-hidden"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            borderColor: "rgba(255,255,255,0.09)",
+            backdropFilter: "blur(8px)",
+          }}
         >
-          What to expect
-          <motion.div animate={{ rotate: showDetails ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown className="w-3.5 h-3.5" />
-          </motion.div>
-        </button>
-
-        <AnimatePresence>
-          {showDetails && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="overflow-hidden"
+          {[
+            { icon: "☀️", name: "Daily Devotional", body: "One verse, every morning. Yours to sit with." },
+            { icon: "💬", name: "Talk It Through", body: "Bring what's weighing on you. Receive words, scripture, and a prayer." },
+            { icon: "🧭", name: "Bible Journeys", body: "Guided scripture paths shaped around what you're carrying." },
+            { icon: "📓", name: "Journal", body: "A private place to hold what God is doing in your life." },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-3 px-4 py-3"
+              style={{ borderColor: "rgba(255,255,255,0.07)" }}
             >
-              <div
-                className="rounded-2xl border px-5 py-4 space-y-3 mt-1"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  borderColor: "rgba(255,255,255,0.1)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                {[
-                  { icon: "💬", bold: "Tell us what you're going through.", body: "Grief, anxiety, a hard relationship, a question about God — anything on your heart." },
-                  { icon: "📖", bold: "We'll find scripture for it", body: "and give you a personalized pastoral response — grounded in God's Word, made for your moment." },
-                  { icon: "🧭", bold: "Then walk a journey.", body: "We'll build you a personalized Bible journey around exactly what you shared." },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="text-xl shrink-0">{item.icon}</span>
-                    <p className="text-[13px] text-white/70 leading-relaxed">
-                      <span className="font-semibold text-white/90">{item.bold}</span>{" "}{item.body}
-                    </p>
-                  </div>
-                ))}
+              <span className="text-[18px] shrink-0 mt-0.5">{item.icon}</span>
+              <div>
+                <p className="text-[13px] font-bold text-white/85 leading-tight">{item.name}</p>
+                <p className="text-[12px] text-white/45 leading-snug mt-0.5">{item.body}</p>
               </div>
+            </div>
+          ))}
+        </div>
 
-              <div
-                className="mt-2 rounded-xl border px-4 py-3 flex items-start gap-3"
-                style={{
-                  background: "rgba(255,80,80,0.07)",
-                  borderColor: "rgba(255,120,120,0.18)",
-                }}
-              >
-                <span className="text-lg shrink-0">✝️</span>
-                <div>
-                  <p className="text-[13px] font-bold text-white/90 leading-tight">Built to lead people to Christ</p>
-                  <p className="text-[11px] text-white/50 leading-snug mt-0.5">
-                    Rooted in Father, Son, and Holy Spirit. Every response is grounded in God's Word — never beside it.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div
+          className="mt-2.5 rounded-xl border px-4 py-3 flex items-start gap-3"
+          style={{
+            background: "rgba(255,80,80,0.07)",
+            borderColor: "rgba(255,120,120,0.18)",
+          }}
+        >
+          <span className="text-lg shrink-0">✝️</span>
+          <div>
+            <p className="text-[13px] font-bold text-white/90 leading-tight">Built to lead people to Christ</p>
+            <p className="text-[11px] text-white/50 leading-snug mt-0.5">
+              Rooted in Father, Son, and Holy Spirit. Every response is grounded in God's Word — never beside it.
+            </p>
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   );
