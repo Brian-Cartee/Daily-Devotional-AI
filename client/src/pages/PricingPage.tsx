@@ -439,6 +439,16 @@ export default function PricingPage() {
         </div>
       </motion.div>
 
+      {/* Barrier line */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.36 }}
+        className="text-[12px] text-muted-foreground/60 text-center px-5 pb-8 -mt-2"
+      >
+        If cost is ever a barrier, you're still welcome here.
+      </motion.p>
+
       {!isIOS() && (<>
       {/* ── Divider: Individual → Ministry ── */}
       <div className="max-w-2xl mx-auto px-5 pb-6">

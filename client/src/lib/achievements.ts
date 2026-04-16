@@ -90,7 +90,7 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     message:
       "\"He leads me beside still waters.\" Seven days of being led. You are not forcing this — you are being guided. That is the whole difference.",
     voiceScript:
-      "Still Waters. Seven days. He leads you beside still waters — not turbulent ones, not impressive ones. Still ones. Quiet ones. The kind that restore something in you that noise keeps stealing. Seven days of choosing quiet with God is seven days of being genuinely led. You have made it to the waters. Stay close.",
+      "Still Waters. Seven days. He leads you beside still waters — not turbulent ones, not impressive ones. Still ones. Quiet ones. The kind that restore something in you that noise keeps stealing. Seven days of showing up. That kind of honesty builds something — even if it doesn't feel like it yet.",
     colorFrom: "from-sky-400",
     colorTo: "to-blue-500",
     photo: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
@@ -132,7 +132,7 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
     message:
       "\"Even though I walk through the valley of the shadow of death, I will fear no evil.\" Thirty days. You have walked through some valleys to get here. You are still here.",
     voiceScript:
-      "No Fear. Thirty days. The valley of the shadow of death is not just a poetic phrase — it is a real place, and some of your thirty days were probably spent in it. But you kept walking. And the promise is not that the valley disappears. It is that you do not have to walk it alone. Thirty days of God walking beside you. That is everything.",
+      "No Fear. Thirty days. The valley of the shadow of death is not just a poetic phrase — it is a real place, and some of your thirty days were probably spent in it. There's a quiet rhythm forming here. Not something you have to keep — just something that's been present. And the promise is not that the valley disappears. It is that you do not have to walk it alone.",
     colorFrom: "from-slate-500",
     colorTo: "to-zinc-700",
     photo: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",

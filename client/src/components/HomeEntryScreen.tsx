@@ -287,7 +287,7 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
 
   const pastoralLines = isSunday
     ? "A new week begins. Whatever last week carried, today is a fresh page. God's mercies are new every morning — and especially on this one."
-    : "It's good to have you back. God hasn't stopped thinking about you. He's been waiting for this moment with you.";
+    : "There's no catching up here. God hasn't stopped thinking about you. You can start right where you are.";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#faf8f5" }}>
