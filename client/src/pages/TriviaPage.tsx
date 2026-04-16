@@ -233,11 +233,12 @@ export default function TriviaPage() {
             <motion.div key="select" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <div className="flex items-center mb-2">
                 <button
-                  onClick={() => window.history.back()}
+                  onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
                   data-testid="btn-trivia-back"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
                 >
-                  <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back
                 </button>
               </div>
               <div className="text-center pt-2 pb-6">
