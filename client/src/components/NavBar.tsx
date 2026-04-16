@@ -22,7 +22,7 @@ const NAV_ITEMS = [
 const BOTTOM_NAV_ITEMS = [
   { href: "/",           label: "For You",   icon: Home,        bookmark: null },
   { href: "/guidance",   label: "Guidance",  icon: Heart,       bookmark: null },
-  { href: "/understand", label: "Scripture", icon: BookOpen,    bookmark: "journey" as BookmarkSection },
+  { href: "/understand", label: "Journey",   icon: Compass,     bookmark: "journey" as BookmarkSection },
   { href: "/journal",    label: "Journal",   icon: NotebookPen, bookmark: "journal" as BookmarkSection },
 ];
 
