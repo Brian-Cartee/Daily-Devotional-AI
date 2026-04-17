@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { isIOS } from "@/lib/platform";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Sunrise, Swords, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon } from "lucide-react";
+import { Sun, Sunrise, Swords, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon, HelpCircle, Wind } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -821,6 +821,16 @@ export default function LandingHome() {
           {/* Time-aware greeting */}
           <GreetingHeader />
 
+          {/* Streak whisper — quiet acknowledgment of consistency */}
+          {streak >= 2 && !isLateNight() && (
+            <div className="flex items-center gap-1.5 px-0.5 -mt-0.5">
+              <Flame className="w-3 h-3 text-amber-400" />
+              <span className="text-[11px] font-semibold tracking-wide" style={{ color: "rgba(251,191,36,0.7)" }}>
+                Day {streak} in a row
+              </span>
+            </div>
+          )}
+
           {/* ══ FOR YOU ══ */}
           <div className="flex flex-col gap-3">
 
@@ -843,6 +853,62 @@ export default function LandingHome() {
           {/* Notification nudge — shown once to users who haven't enabled reminders */}
           <NotificationNudgeCard />
 
+          {/* ── Daily Verse anchor — scripture before anything else ── */}
+          {!isLateNight() && (() => {
+            const ANCHOR_VERSES = [
+              { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
+              { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13" },
+              { text: "Come to me, all you who are weary and burdened, and I will give you rest.", ref: "Matthew 11:28" },
+              { text: "For God so loved the world that He gave His one and only Son.", ref: "John 3:16" },
+              { text: "Trust in the Lord with all your heart and lean not on your own understanding.", ref: "Proverbs 3:5" },
+              { text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you.", ref: "Joshua 1:9" },
+              { text: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.", ref: "Psalm 34:18" },
+              { text: "Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.", ref: "Philippians 4:6" },
+              { text: "For I know the plans I have for you, declares the Lord — plans to prosper you and not to harm you.", ref: "Jeremiah 29:11" },
+              { text: "And we know that in all things God works for the good of those who love Him.", ref: "Romans 8:28" },
+              { text: "Cast all your anxiety on Him because He cares for you.", ref: "1 Peter 5:7" },
+              { text: "The Lord himself goes before you and will be with you; He will never leave you nor forsake you.", ref: "Deuteronomy 31:8" },
+              { text: "Even though I walk through the darkest valley, I will fear no evil, for You are with me.", ref: "Psalm 23:4" },
+              { text: "My grace is sufficient for you, for My power is made perfect in weakness.", ref: "2 Corinthians 12:9" },
+              { text: "In Him we have redemption through His blood, the forgiveness of sins.", ref: "Ephesians 1:7" },
+              { text: "God is our refuge and strength, an ever-present help in trouble.", ref: "Psalm 46:1" },
+              { text: "The steadfast love of the Lord never ceases; His mercies never come to an end.", ref: "Lamentations 3:22-23" },
+              { text: "Ask and it will be given to you; seek and you will find; knock and the door will be opened.", ref: "Matthew 7:7" },
+              { text: "He gives strength to the weary and increases the power of the weak.", ref: "Isaiah 40:29" },
+              { text: "Peace I leave with you; My peace I give you. I do not give as the world gives.", ref: "John 14:27" },
+              { text: "Your word is a lamp to my feet and a light to my path.", ref: "Psalm 119:105" },
+              { text: "But those who hope in the Lord will renew their strength.", ref: "Isaiah 40:31" },
+              { text: "Greater is He who is in you than he who is in the world.", ref: "1 John 4:4" },
+              { text: "If God is for us, who can be against us?", ref: "Romans 8:31" },
+              { text: "The Lord bless you and keep you; the Lord make His face shine on you.", ref: "Numbers 6:24-25" },
+              { text: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.", ref: "Psalm 121:1-2" },
+              { text: "He heals the brokenhearted and binds up their wounds.", ref: "Psalm 147:3" },
+              { text: "Give thanks to the Lord, for He is good; His love endures forever.", ref: "Psalm 107:1" },
+              { text: "Come near to God and He will come near to you.", ref: "James 4:8" },
+              { text: "This is the day that the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" },
+            ];
+            const dayIndex = Math.floor(Date.now() / 86_400_000) % ANCHOR_VERSES.length;
+            const verse = ANCHOR_VERSES[dayIndex];
+            return (
+              <Link href="/devotional">
+                <div
+                  data-testid="card-daily-verse-anchor"
+                  className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
+                  style={{ background: "linear-gradient(135deg, rgba(67,20,120,0.45) 0%, rgba(30,10,60,0.55) 100%)", border: "1px solid rgba(160,80,200,0.25)" }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(to right, #7A018D, #a855f7, #f59e0b)" }} />
+                  <div className="px-5 pt-4 pb-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(192,132,252,0.65)" }}>Today's Verse</p>
+                    <p className="leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", fontSize: "15px", color: "rgba(255,255,255,0.88)" }}>
+                      "{verse.text}"
+                    </p>
+                    <p className="text-[12px] font-semibold" style={{ color: "rgba(192,132,252,0.7)" }}>— {verse.ref}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })()}
+
           {/* ── HERO: Talk It Through prompt — primary entry point ── */}
           <HeroAIPrompt />
 
@@ -863,6 +929,9 @@ export default function LandingHome() {
                     { icon: <Heart className="w-3.5 h-3.5 flex-shrink-0" />, label: "Grief",       query: "I'm grieving a loss and need God's comfort right now" },
                     { icon: <Moon className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Loneliness", query: "I'm feeling deeply lonely and disconnected and need God's presence" },
                     { icon: <Flame className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anger",       query: "I'm struggling with anger and frustration and need God's guidance" },
+                    { icon: <Wind className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Fear",        query: "I'm living with fear and I need God's courage and peace to carry me through" },
+                    { icon: <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />, label: "Doubt", query: "I'm struggling with doubt and I'm not sure what I believe — help me find solid ground" },
+                    { icon: <Sunrise className="w-3.5 h-3.5 flex-shrink-0" />, label: "Hope",     query: "I need hope — help me find God's promises for the season I'm in" },
                     { icon: <Users className="w-3.5 h-3.5 flex-shrink-0" />, label: "Relationship",query: "I'm struggling in an important relationship and need wisdom from God" },
                   ] as const).map(({ icon, label, query }) => (
                     <button
