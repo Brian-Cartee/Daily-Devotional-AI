@@ -505,7 +505,10 @@ export default function GuidancePage() {
                   </p>
 
                   {/* PRIMARY INPUT — type what's on your heart */}
-                  <div className="bg-muted/25 border-2 border-border/70 hover:border-primary/40 focus-within:border-primary/60 focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.10)] rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 shadow-md transition-all mb-6">
+                  <div
+                    className="rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 transition-all mb-6 focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.18)]"
+                    style={{ background: "rgba(255,255,255,0.055)", border: "2px solid rgba(139,92,246,0.45)", boxShadow: "0 2px 16px rgba(0,0,0,0.25)" }}
+                  >
                     <textarea
                       value={heartInput}
                       onChange={e => setHeartInput(e.target.value)}
@@ -516,27 +519,31 @@ export default function GuidancePage() {
                       placeholder="What are you carrying that you haven't said out loud yet?"
                       rows={4}
                       data-testid="input-guidance-heart"
-                      className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/75 outline-none leading-relaxed"
+                      className="w-full resize-none bg-transparent text-[17px] text-foreground placeholder:text-foreground/45 outline-none leading-relaxed"
                     />
-                    <div className="flex items-center justify-between border-t border-border/30 pt-2.5">
+                    <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                       {hasSpeechSupport ? (
                         <button
                           type="button"
                           onClick={toggleHeartVoice}
                           data-testid="button-guidance-heart-voice"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all relative"
-                          style={{ color: heartListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all relative"
+                          style={{
+                            color: heartListening ? "rgb(248,113,113)" : "rgba(255,255,255,0.65)",
+                            background: heartListening ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.07)",
+                            border: heartListening ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                          }}
                         >
                           {heartListening ? (
                             <>
-                              <MicOff className="w-4 h-4" />
+                              <MicOff className="w-5 h-5" />
                               <span>Stop listening</span>
-                              <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/15" />
+                              <span className="absolute inset-0 rounded-xl animate-ping bg-red-400/10" />
                             </>
                           ) : (
                             <>
-                              <Mic className="w-4 h-4 opacity-80" />
-                              <span className="opacity-80">Speak instead</span>
+                              <Mic className="w-5 h-5" />
+                              <span>Speak instead</span>
                             </>
                           )}
                         </button>
@@ -545,7 +552,8 @@ export default function GuidancePage() {
                         onClick={handleHeartSubmit}
                         disabled={!heartInput.trim()}
                         data-testid="button-guidance-heart-submit"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-white font-semibold text-[14px] transition-all disabled:opacity-55 disabled:cursor-not-allowed shadow-lg shadow-amber-400/35"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-[15px] transition-all disabled:opacity-45 disabled:cursor-not-allowed active:scale-[0.97]"
+                        style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", boxShadow: heartInput.trim() ? "0 4px 18px rgba(245,158,11,0.45)" : "none" }}
                       >
                         Seek Guidance
                         <ArrowRight className="w-4 h-4" />
