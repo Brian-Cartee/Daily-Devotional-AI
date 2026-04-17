@@ -623,10 +623,7 @@ export default function GuidancePage() {
                 className="py-6 mb-2"
               >
                 <p className="text-[15px] text-foreground/65 italic leading-relaxed">
-                  Take a breath.
-                </p>
-                <p className="text-[13px] text-foreground/40 mt-1.5 leading-relaxed">
-                  Finding scripture for what you're carrying…
+                  Reading this carefully…
                 </p>
               </motion.div>
             )}
