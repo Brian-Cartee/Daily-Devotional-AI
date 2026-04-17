@@ -95,10 +95,11 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           />
         </div>
 
-        <h1 className="mt-5 text-[26px] font-extrabold text-white tracking-tight text-center leading-tight">
+        <h1 className="mt-5 text-[28px] font-extrabold text-white tracking-tight text-center leading-tight">
           Shepherd&rsquo;s Path
         </h1>
-        <p className="mt-2.5 text-white/80 text-center text-[15px] leading-relaxed tracking-wide font-medium">
+        <p className="mt-3 text-center text-[16px] leading-relaxed tracking-wide font-medium italic"
+           style={{ color: "rgba(228, 210, 255, 0.96)", textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}>
           Scripture for what you&rsquo;re going through
         </p>
       </motion.div>
@@ -150,39 +151,39 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             boxShadow: playing ? "0 0 18px rgba(120,60,220,0.18)" : "none",
           }}
         >
-          {/* Icon + label row */}
-          <div className="flex items-center justify-center gap-2.5">
+          {/* Icon + label row — fully centered */}
+          <div className="flex items-center justify-center gap-3">
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                background: playing ? "rgba(160,100,255,0.25)" : "rgba(255,255,255,0.13)",
-                boxShadow: playing ? "0 0 10px rgba(160,100,255,0.35)" : "none",
+                background: playing ? "rgba(160,100,255,0.30)" : "rgba(255,255,255,0.15)",
+                boxShadow: playing ? "0 0 12px rgba(160,100,255,0.40)" : "none",
               }}
             >
               {loading
-                ? <Loader2 className="w-3 h-3 text-white/70 animate-spin" />
+                ? <Loader2 className="w-3.5 h-3.5 text-white/70 animate-spin" />
                 : playing
-                  ? <Square className="w-2.5 h-2.5 text-white/85" />
-                  : <span className="text-white/85 text-[11px]">▶</span>
+                  ? <Square className="w-3 h-3 text-white/90" />
+                  : <span className="text-white/90 text-[12px]">▶</span>
               }
             </div>
-            <div className="flex flex-col items-start">
-              <span className="text-[14px] font-medium" style={{ color: playing ? "rgba(220,195,255,0.92)" : "rgba(255,255,255,0.78)" }}>
+            <div className="flex flex-col items-center">
+              <span className="text-[15px] font-semibold" style={{ color: playing ? "rgba(220,195,255,0.95)" : "rgba(255,255,255,0.90)" }}>
                 {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a welcome"}
               </span>
               {!started && !playing && !loading && (
-                <span className="text-[11px] leading-none mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                <span className="text-[12px] leading-snug mt-0.5 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>
                   A quiet word before you begin · about a minute
                 </span>
               )}
             </div>
             {playing && (
-              <div className="flex items-end gap-0.5 h-3.5 flex-shrink-0">
+              <div className="flex items-end gap-0.5 h-4 flex-shrink-0">
                 {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
                   <motion.div
                     key={i}
                     className="w-0.5 rounded-full"
-                    style={{ background: "rgba(200,160,255,0.5)", height: "100%", transformOrigin: "bottom" }}
+                    style={{ background: "rgba(200,160,255,0.55)", height: "100%", transformOrigin: "bottom" }}
                     animate={{ scaleY: [h, 1, h * 0.7, 1, h] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
                   />
