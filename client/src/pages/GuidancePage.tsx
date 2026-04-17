@@ -451,14 +451,6 @@ export default function GuidancePage() {
                   {isFirstVisit ? "What's on\nyour heart?" : "You don't have\nto carry this alone"}
                 </h1>
                 <p
-                  className="text-[13px] text-white/80 max-w-[260px] leading-relaxed"
-                  style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
-                >
-                  {isFirstVisit
-                    ? "Bring it here exactly as it is."
-                    : "You are seen, known, and deeply loved."}
-                </p>
-                <p
                   className="text-[11px] text-white/40 italic tracking-wide mt-4"
                   style={{ textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
                 >
