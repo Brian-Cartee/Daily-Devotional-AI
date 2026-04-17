@@ -490,7 +490,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
   };
 
   return (
-    <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
+    <main className="min-h-screen bg-background pt-14 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
         {resumeBar}
         <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
@@ -672,7 +672,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
   const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
 
   return (
-    <main className="min-h-screen bg-background pt-20 pb-28 sm:pb-16 px-4">
+    <main className="min-h-screen bg-background pt-14 pb-28 sm:pb-16 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-6">
           <img src={journey.image || getHeroImage("understand")} alt={journey.title} className="absolute inset-0 w-full h-full object-cover object-center" />
