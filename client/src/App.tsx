@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSessionId } from "@/lib/session";
 import { checkReferralProStatus } from "@/lib/proStatus";
+import { ThemeContext, getStoredTheme, applyTheme, type AppTheme } from "@/lib/theme";
 import NotFound from "@/pages/not-found";
 import LandingHome from "@/pages/LandingHome";
 import Devotional from "@/pages/Devotional";
@@ -130,25 +131,32 @@ function Router() {
 }
 
 function App() {
+  const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
+
   useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
+
+  const toggleTheme = () =>
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <DemoProvider>
-            <Toaster />
-            <ScrollToTop />
-            <ReferralCapture />
-            <Router />
-            <DemoFloatingBar />
-            <InstallPrompt />
-          </DemoProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <DemoProvider>
+              <Toaster />
+              <ScrollToTop />
+              <ReferralCapture />
+              <Router />
+              <DemoFloatingBar />
+              <InstallPrompt />
+            </DemoProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </ThemeContext.Provider>
   );
 }
 

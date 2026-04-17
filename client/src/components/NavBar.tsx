@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap, Shield } from "lucide-react";
+import { BookOpen, Sun, Moon, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap, Shield } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import { useTheme } from "@/lib/theme";
 
 
 const NAV_ITEMS = [
@@ -59,6 +60,7 @@ export function NavBar() {
   const [langOpen,  setLangOpen]  = useState(false);
   const [moreOpen,  setMoreOpen]  = useState(false);
   const [guidanceTone, setGuidanceTone] = useState<GuidanceMode>(() => getGuidanceMode());
+  const { theme, toggleTheme } = useTheme();
 
   const toggleTone = () => {
     const next: GuidanceMode = guidanceTone === "coach" ? "encouraging" : "coach";
@@ -176,6 +178,25 @@ export function NavBar() {
                     >
                       <Globe className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">Language</span>
+                    </button>
+
+                    {/* Appearance — Night / Morning */}
+                    <div className="mx-3 my-1 h-px bg-border/50" />
+                    <button
+                      onClick={() => { setMoreOpen(false); toggleTheme(); }}
+                      data-testid="button-appearance-toggle"
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      {theme === "dark"
+                        ? <Sun className="w-4 h-4 text-amber-400" />
+                        : <Moon className="w-4 h-4 text-primary/70" />
+                      }
+                      <div className="flex-1 text-left">
+                        <span className="font-medium block leading-tight">Appearance</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {theme === "dark" ? "Night · Switch to Morning" : "Morning · Switch to Night"}
+                        </span>
+                      </div>
                     </button>
 
                     {/* Guidance tone toggle */}
