@@ -1198,6 +1198,7 @@ export default function LandingHome() {
               {([
                 { href: "/salvation",    Icon: Sunrise,    label: "Beginning with Jesus",    desc: "Meet Jesus without pressure",               color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-salvation" },
                 { href: "/understand",   Icon: Compass,    label: "Bible Journeys",          desc: "Let Scripture meet you where you are",       color: "text-indigo-400",  bg: "border-indigo-500/20 bg-indigo-500/6",  testid: "explore-understand" },
+                { href: "/calling",        Icon: Share2, label: "Our Calling",              desc: "Carry the hope forward — share the path",    color: "text-orange-400",  bg: "border-orange-500/20 bg-orange-500/6",  testid: "explore-calling" },
                 { href: "/journal",      Icon: BookMarked, label: "Prayer Journal",          desc: "A place for what you don't want to lose",    color: "text-teal-400",    bg: "border-teal-500/20   bg-teal-500/6",    testid: "explore-journal" },
                 { href: "/iron-circle",  Icon: Swords,     label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",             color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
                 { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift someone up today",                      color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
@@ -1207,7 +1208,6 @@ export default function LandingHome() {
                 { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",                  color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
                 { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "A simple way to engage Scripture",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
                 { href: "/prayer-portrait", Icon: Heart,  label: "Prayer Portrait",         desc: "A prayer spoken over your life",              color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-prayer-portrait" },
-                { href: "/calling",        Icon: Share2, label: "Our Calling",              desc: "Carry the hope forward — share the path",    color: "text-orange-400",  bg: "border-orange-500/20 bg-orange-500/6",  testid: "explore-calling" },
               ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
                 <Link key={href} href={href}>
                   <div

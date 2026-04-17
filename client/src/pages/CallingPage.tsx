@@ -220,30 +220,30 @@ export default function CallingPage() {
             <p className="text-white/35 text-[11px] tracking-wide mb-3">— {card.scripture}</p>
             <p className="text-white/50 text-[13px] leading-relaxed">{card.meaning}</p>
 
-            {/* Share options — slim pill row */}
-            <div className="flex items-center gap-2 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            {/* Share options */}
+            <div className="grid grid-cols-2 gap-2 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
               <button
                 onClick={() => handlePurpleShare(card)}
                 disabled={loading !== null}
                 data-testid={`button-calling-share-purple-${card.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-95 disabled:opacity-40"
-                style={{ background: "rgba(122,1,141,0.18)", border: "1px solid rgba(122,1,141,0.3)", color: "rgba(210,160,230,0.85)" }}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
+                style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
               >
-                {loading === `${card.id}-purple` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Palette className="w-3 h-3" />}
-                Purple
+                {loading === `${card.id}-purple` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+                Brand Card
               </button>
               <button
                 onClick={() => handleArtShare(card)}
                 disabled={loading !== null}
                 data-testid={`button-calling-share-art-${card.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-95 disabled:opacity-40"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
                 style={{
-                  background: artLoaded ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.06)",
-                  border: artLoaded ? "1px solid rgba(251,191,36,0.28)" : "1px solid rgba(255,255,255,0.1)",
-                  color: artLoaded ? "rgba(251,191,36,0.85)" : "rgba(255,255,255,0.55)",
+                  background: artLoaded ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.07)",
+                  border: artLoaded ? "1px solid rgba(251,191,36,0.38)" : "1px solid rgba(255,255,255,0.12)",
+                  color: artLoaded ? "rgba(255,210,80,0.95)" : "rgba(255,255,255,0.60)",
                 }}
               >
-                {loading === `${card.id}-art` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {loading === `${card.id}-art` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 AI Art
               </button>
             </div>

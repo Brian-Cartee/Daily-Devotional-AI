@@ -562,61 +562,8 @@ export async function createShareImage(
   ctx.fillStyle = bottomVeil;
   ctx.fillRect(0, 0, S, S);
 
-  // ── Brand header — logo mark + name ──────────────────────
-  const LOGO_SIZE = 64;
-  const LOGO_X = 48;
-  const LOGO_Y = 48;
-  const TEXT_X = LOGO_X + LOGO_SIZE + 18;
-  const TEXT_Y_NAME = LOGO_Y + 28;
-  const TEXT_Y_TAG = LOGO_Y + 54;
-
-  let logoDrawn = false;
-  try {
-    const logo = await loadImage("/logo-mark-white.png");
-    ctx.save();
-    ctx.globalAlpha = 0.88;
-    ctx.drawImage(logo, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
-    ctx.restore();
-    logoDrawn = true;
-  } catch {
-    try {
-      const logo2 = await loadImage("/sp-logo-mark.png");
-      ctx.save();
-      ctx.globalAlpha = 0.88;
-      ctx.drawImage(logo2, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
-      ctx.restore();
-      logoDrawn = true;
-    } catch { logoDrawn = false; }
-  }
-
-  if (logoDrawn) {
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = "bold 28px 'Georgia', serif";
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 10;
-    ctx.fillText("Shepherd's Path", TEXT_X, TEXT_Y_NAME);
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    ctx.font = "18px 'Georgia', serif";
-    ctx.fillText("Open your Bible. We'll open the conversation.", TEXT_X, TEXT_Y_TAG);
-    ctx.shadowBlur = 0;
-    horizontalGlowLine(ctx, LOGO_Y + LOGO_SIZE + 24, accentColor);
-  } else {
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,0.52)";
-    ctx.font = "600 25px 'Georgia', serif";
-    ctx.fillText("SHEPHERD'S PATH", S / 2, 96);
-    horizontalGlowLine(ctx, 115, accentColor);
-  }
-
-  // ── Large decorative opening quote ───────────────────────
-  ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "italic 220px Georgia, serif";
-  ctx.textAlign = "left";
-  ctx.fillText("\u201C", 36, 350);
-  ctx.restore();
+  // ── Brand header — current cross logo + name ─────────────
+  await drawLogoHeader(ctx, S, accentColor);
 
   // ── Verse text ────────────────────────────────────────────
   const maxChars = 230;
@@ -694,6 +641,68 @@ export async function createShareImage(
   });
 }
 
+// ── Shared helper: draw the current app logo mark ─────────────────────────
+// Renders the cross icon in an app-icon-style pill. Falls back to text.
+async function drawLogoHeader(
+  ctx: CanvasRenderingContext2D,
+  S: number,
+  accentColor: string
+): Promise<boolean> {
+  const ICON_SIZE = 54;
+  const ICON_X = 48;
+  const ICON_Y = 46;
+  const TEXT_X = ICON_X + ICON_SIZE + 16;
+  const TEXT_Y_NAME = ICON_Y + 26;
+  const TEXT_Y_TAG  = ICON_Y + 50;
+
+  // App-icon rounded square background
+  ctx.save();
+  ctx.fillStyle = "rgba(122,1,141,0.55)";
+  drawRoundRect(ctx, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE, 13);
+  ctx.fill();
+  ctx.restore();
+
+  // Try to load the cross logo (current brand mark)
+  let logoDrawn = false;
+  for (const src of ["/cross-transparent.png", "/sp-cross-logo.png", "/app-icon.png"]) {
+    try {
+      const logo = await loadImage(src);
+      ctx.save();
+      ctx.globalAlpha = src === "/app-icon.png" ? 1 : 0.92;
+      ctx.drawImage(logo, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE);
+      ctx.restore();
+      logoDrawn = true;
+      break;
+    } catch { /* try next */ }
+  }
+
+  if (!logoDrawn) {
+    // Minimal text fallback inside the pill
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.80)";
+    ctx.font = "bold 22px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("✝", ICON_X + ICON_SIZE / 2, ICON_Y + 36);
+    ctx.restore();
+  }
+
+  // App name + tagline
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "bold 27px 'Georgia', serif";
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 10;
+  ctx.fillText("Shepherd's Path", TEXT_X, TEXT_Y_NAME);
+  ctx.fillStyle = "rgba(255,255,255,0.52)";
+  ctx.font = "17px 'Georgia', serif";
+  ctx.shadowBlur = 6;
+  ctx.fillText("Open your Bible. We'll open the conversation.", TEXT_X, TEXT_Y_TAG);
+  ctx.shadowBlur = 0;
+  horizontalGlowLine(ctx, ICON_Y + ICON_SIZE + 22, accentColor);
+
+  return true;
+}
+
 // ── Purple brand share card ───────────────────────────────────────────────────
 // Uses the app's exact dark-purple palette instead of a photo background.
 export async function createPurpleShareImage(
@@ -706,139 +715,112 @@ export async function createPurpleShareImage(
   canvas.height = S;
   const ctx = canvas.getContext("2d")!;
 
-  // ── Background gradient — deep app purple ────────────────────────────────
-  const bg = ctx.createLinearGradient(0, 0, S * 0.7, S);
-  bg.addColorStop(0, "#0d0a1a");
-  bg.addColorStop(0.45, "#1a0f35");
-  bg.addColorStop(0.8, "#2a1255");
-  bg.addColorStop(1, "#0d0a1a");
+  // ── Background — deep dramatic purple ────────────────────────────────────
+  const bg = ctx.createLinearGradient(0, S * 0.1, S * 0.8, S);
+  bg.addColorStop(0,    "#08051a");
+  bg.addColorStop(0.30, "#160a38");
+  bg.addColorStop(0.60, "#2e1160");
+  bg.addColorStop(0.85, "#1c0942");
+  bg.addColorStop(1,    "#07040f");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, S, S);
 
-  // ── Radial violet glow (bottom-centre) ───────────────────────────────────
-  const glow = ctx.createRadialGradient(S / 2, S * 0.72, 0, S / 2, S * 0.72, S * 0.68);
-  glow.addColorStop(0, "rgba(122,1,141,0.38)");
-  glow.addColorStop(0.55, "rgba(68,47,116,0.18)");
-  glow.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = glow;
+  // ── Atmospheric violet glow — off-centre for depth ───────────────────────
+  const glow1 = ctx.createRadialGradient(S * 0.65, S * 0.55, 0, S * 0.65, S * 0.55, S * 0.7);
+  glow1.addColorStop(0,    "rgba(130,10,170,0.50)");
+  glow1.addColorStop(0.45, "rgba(90,20,130,0.22)");
+  glow1.addColorStop(1,    "rgba(0,0,0,0)");
+  ctx.fillStyle = glow1;
   ctx.fillRect(0, 0, S, S);
 
-  // Subtle top glow
-  const topGlow = ctx.createRadialGradient(S * 0.5, 0, 0, S * 0.5, 0, S * 0.55);
-  topGlow.addColorStop(0, "rgba(122,1,141,0.15)");
-  topGlow.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = topGlow;
+  // Cooler counter-glow top-left
+  const glow2 = ctx.createRadialGradient(S * 0.15, S * 0.2, 0, S * 0.15, S * 0.2, S * 0.55);
+  glow2.addColorStop(0,    "rgba(70,30,150,0.30)");
+  glow2.addColorStop(1,    "rgba(0,0,0,0)");
+  ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, S, S);
 
-  const accentColor = "rgba(180,120,255,0.7)";
-  const refColor = "#c8a0e0";
+  // ── Amber pinlight — subtle warmth at centre ─────────────────────────────
+  const amber = ctx.createRadialGradient(S / 2, S * 0.48, 0, S / 2, S * 0.48, S * 0.38);
+  amber.addColorStop(0,   "rgba(210,120,10,0.10)");
+  amber.addColorStop(1,   "rgba(0,0,0,0)");
+  ctx.fillStyle = amber;
+  ctx.fillRect(0, 0, S, S);
 
-  // ── Brand header ─────────────────────────────────────────────────────────
-  const LOGO_SIZE = 64;
-  const LOGO_X = 48;
-  const LOGO_Y = 48;
-  const TEXT_X = LOGO_X + LOGO_SIZE + 18;
-  const TEXT_Y_NAME = LOGO_Y + 28;
-  const TEXT_Y_TAG = LOGO_Y + 54;
+  // ── Top golden accent line ───────────────────────────────────────────────
+  horizontalGlowLine(ctx, 0, "rgba(210,160,60,0.70)");
+  horizontalGlowLine(ctx, 2, "rgba(255,220,120,0.35)");
 
-  let logoDrawn = false;
-  try {
-    const logo = await loadImage("/logo-mark-white.png");
-    ctx.save();
-    ctx.globalAlpha = 0.88;
-    ctx.drawImage(logo, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
-    ctx.restore();
-    logoDrawn = true;
-  } catch {
-    try {
-      const logo2 = await loadImage("/sp-logo-mark.png");
-      ctx.save();
-      ctx.globalAlpha = 0.88;
-      ctx.drawImage(logo2, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
-      ctx.restore();
-      logoDrawn = true;
-    } catch { logoDrawn = false; }
-  }
+  // ── Header ───────────────────────────────────────────────────────────────
+  const accentColor = "rgba(190,130,255,0.75)";
+  await drawLogoHeader(ctx, S, accentColor);
 
-  if (logoDrawn) {
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = "bold 28px 'Georgia', serif";
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 10;
-    ctx.fillText("Shepherd's Path", TEXT_X, TEXT_Y_NAME);
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = "18px 'Georgia', serif";
-    ctx.fillText("Open your Bible. We'll open the conversation.", TEXT_X, TEXT_Y_TAG);
-    ctx.shadowBlur = 0;
-    horizontalGlowLine(ctx, LOGO_Y + LOGO_SIZE + 24, accentColor);
-  } else {
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,0.52)";
-    ctx.font = "600 25px 'Georgia', serif";
-    ctx.fillText("SHEPHERD'S PATH", S / 2, 96);
-    horizontalGlowLine(ctx, 115, accentColor);
-  }
-
-  // ── Decorative opening quote ──────────────────────────────────────────────
+  // ── Subtle cross watermark (bottom-right corner, very faint) ─────────────
   ctx.save();
-  ctx.globalAlpha = 0.1;
-  ctx.fillStyle = "#c8a0e0";
-  ctx.font = "italic 220px Georgia, serif";
-  ctx.textAlign = "left";
-  ctx.fillText("\u201C", 36, 350);
+  ctx.globalAlpha = 0.05;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "380px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText("✝", S * 0.78, S * 0.92);
   ctx.restore();
 
   // ── Verse text ────────────────────────────────────────────────────────────
   const maxChars = 230;
-  const short =
-    verseText.length > maxChars
-      ? verseText.substring(0, maxChars - 1) + "\u2026"
-      : verseText;
+  const short = verseText.length > maxChars
+    ? verseText.substring(0, maxChars - 1) + "\u2026"
+    : verseText;
 
   const fontSize =
-    short.length < 55  ? 60 :
-    short.length < 90  ? 54 :
-    short.length < 140 ? 46 :
-    short.length < 190 ? 40 :
-    36;
+    short.length < 55  ? 62 :
+    short.length < 90  ? 56 :
+    short.length < 140 ? 48 :
+    short.length < 190 ? 42 :
+    37;
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  ctx.shadowColor = "rgba(122,1,141,0.5)";
-  ctx.shadowBlur = 24;
+  ctx.shadowColor = "rgba(100,0,140,0.65)";
+  ctx.shadowBlur = 30;
 
-  const rawVerseY2 = wrapText(
-    ctx,
-    `\u201C${short}\u201D`,
-    S / 2,
-    210,
-    920,
-    fontSize * 1.52
-  );
+  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, 220, 930, fontSize * 1.52);
   ctx.shadowBlur = 0;
 
-  const MAX_VERSE_Y2 = S - 230;
-  const finalVerseY = Math.min(rawVerseY2, MAX_VERSE_Y2);
+  const MAX_VERSE_Y = S - 240;
+  const finalVerseY = Math.min(rawVerseY, MAX_VERSE_Y);
 
-  // ── Accent divider ────────────────────────────────────────────────────────
-  horizontalGlowLine(ctx, finalVerseY + 46, accentColor);
+  // ── Accent divider with amber tinge ──────────────────────────────────────
+  horizontalGlowLine(ctx, finalVerseY + 50, "rgba(210,160,80,0.65)");
 
   // ── Reference ─────────────────────────────────────────────────────────────
-  ctx.fillStyle = refColor;
-  ctx.font = "bold 38px 'Georgia', serif";
+  ctx.fillStyle = "#e8c87a";
+  ctx.font = "bold 40px 'Georgia', serif";
   ctx.textAlign = "center";
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = 14;
-  ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 102);
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 18;
+  ctx.fillText(`\u2014 ${reference}`, S / 2, finalVerseY + 108);
   ctx.shadowBlur = 0;
 
-  // ── Footer ────────────────────────────────────────────────────────────────
-  horizontalGlowLine(ctx, S - 70, "rgba(180,120,255,0.22)");
-  ctx.fillStyle = "rgba(255,255,255,0.28)";
-  ctx.font = "22px 'Georgia', serif";
-  ctx.fillText("shepherdspathai.com", S / 2, S - 38);
+  // ── Footer strip ──────────────────────────────────────────────────────────
+  const stripY = S - 108;
+  const stripGrad = ctx.createLinearGradient(0, stripY, 0, S);
+  stripGrad.addColorStop(0, "rgba(0,0,0,0)");
+  stripGrad.addColorStop(1, "rgba(0,0,0,0.60)");
+  ctx.fillStyle = stripGrad;
+  ctx.fillRect(0, stripY, S, S - stripY);
+
+  horizontalGlowLine(ctx, stripY + 4, "rgba(190,130,255,0.30)");
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  ctx.font = "bold 27px 'Georgia', serif";
+  ctx.shadowColor = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur = 8;
+  ctx.fillText("Start your own daily devotional \u2192", S / 2, stripY + 42);
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.font = "20px 'Georgia', serif";
+  ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", S / 2, stripY + 72);
+  ctx.shadowBlur = 0;
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob!), "image/png");
