@@ -143,45 +143,37 @@ export default function SalvationPage() {
       <NavBar />
 
       {/* ── Cinematic hero ── */}
-      <div className="relative overflow-hidden" style={{ height: "48vh", minHeight: "320px", maxHeight: "460px" }}>
+      <div className="relative overflow-hidden" style={{ height: "46vh", minHeight: "300px", maxHeight: "420px" }}>
         <img
           src="/hero-devotional-still.webp"
           alt="Dawn light over the path"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: "center 30%" }}
         />
-        {/* Deep overlay — dark at top (nav clearance) and bottom (text contrast), warm amber glow mid */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.88) 0%, rgba(20,8,50,0.22) 42%, rgba(10,5,28,0.90) 100%)" }} />
-        <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(245,158,11,0.14) 0%, transparent 100%)" }} />
+        {/* Deep overlay */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.80) 0%, rgba(20,8,50,0.18) 45%, rgba(10,5,28,0.88) 100%)" }} />
+        <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(245,158,11,0.12) 0%, transparent 100%)" }} />
 
-        {/* Back button — right under the fixed navbar, no gap */}
-        <div className="absolute top-0 left-0 right-0 pt-[3.75rem] px-4">
-          <button
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-            data-testid="button-back-salvation"
-            className="flex items-center gap-1.5 text-[13px] font-semibold text-white/65 hover:text-white transition-colors mt-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-        </div>
+        {/* Back button — pill style, top-left inside hero */}
+        <button
+          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          data-testid="button-back-salvation"
+          className="absolute top-[62px] left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back
+        </button>
 
-        {/* Centered hero content overlaid on image */}
-        <div className="absolute inset-0 flex flex-col items-center justify-end pb-9 px-6 text-center">
-          <div
-            className="w-[70px] h-[70px] rounded-[22px] flex items-center justify-center mb-5 shadow-2xl"
-            style={{ background: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)", boxShadow: "0 8px 40px rgba(245,158,11,0.55), 0 2px 12px rgba(0,0,0,0.4)" }}
-          >
-            <Sunrise className="w-[34px] h-[34px] text-white" />
-          </div>
+        {/* Hero text — centered, bottom-anchored */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-10 px-6 text-center">
           <h1
-            className="text-[32px] font-black text-white leading-tight mb-2"
+            className="text-[34px] font-black text-white leading-tight mb-2.5"
             style={{ textShadow: "0 2px 30px rgba(0,0,0,0.7), 0 0 60px rgba(0,0,0,0.5)", letterSpacing: "-0.02em" }}
           >
             Beginning with Jesus
           </h1>
           <p
-            className="text-[14.5px] text-white/72 leading-relaxed"
+            className="text-[14.5px] text-white/78 leading-relaxed"
             style={{ textShadow: "0 1px 10px rgba(0,0,0,0.9)", maxWidth: "300px" }}
           >
             If something brought you here — curiosity, a hard season, a quiet longing — that's not an accident.
