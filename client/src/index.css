@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 @layer base {
   :root {
     /* Shepherd's Path — warm parchment base, deep indigo primary, soft gold accent */
