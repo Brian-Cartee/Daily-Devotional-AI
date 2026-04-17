@@ -519,7 +519,7 @@ export default function GuidancePage() {
                       placeholder="What are you carrying that you haven't said out loud yet?"
                       rows={4}
                       data-testid="input-guidance-heart"
-                      className="w-full resize-none bg-transparent text-[17px] text-foreground placeholder:text-foreground/45 outline-none leading-relaxed"
+                      className="w-full resize-none bg-transparent text-[17px] text-foreground placeholder:text-foreground/60 outline-none leading-relaxed"
                     />
                     <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                       {hasSpeechSupport ? (
@@ -738,10 +738,10 @@ export default function GuidancePage() {
                 </p>
                 {vpLoading && !verse ? (
                   <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 pt-6 pb-5">
-                    <p className="text-[19px] leading-relaxed font-medium text-foreground/45 italic mb-4">
+                    <p className="text-[19px] leading-relaxed font-medium text-foreground/65 italic mb-4">
                       "Be still, and know that I am God."
                     </p>
-                    <p className="text-[13px] font-bold text-primary/40 tracking-wide">— Psalm 46:10</p>
+                    <p className="text-[13px] font-bold text-primary/65 tracking-wide">— Psalm 46:10</p>
                   </div>
                 ) : verse ? (
                   <div
@@ -1027,11 +1027,11 @@ export default function GuidancePage() {
 
                 {journeyLoading ? (
                   <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-5 pt-5 pb-4">
-                    <p className="text-[16px] leading-relaxed font-medium text-foreground/40 italic mb-2">
+                    <p className="text-[16px] leading-relaxed font-medium text-foreground/60 italic mb-2">
                       "Your word is a lamp to my feet and a light to my path."
                     </p>
-                    <p className="text-[12px] font-bold text-violet-400/70 mb-3">— Psalm 119:105</p>
-                    <div className="flex items-center gap-2 text-muted-foreground/50">
+                    <p className="text-[12px] font-bold text-violet-500/90 mb-3">— Psalm 119:105</p>
+                    <div className="flex items-center gap-2 text-muted-foreground/80">
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
                       <span className="text-[11px]">Shaping your scripture journey…</span>
                     </div>

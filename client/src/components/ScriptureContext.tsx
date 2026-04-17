@@ -226,7 +226,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
             {!gated && data && (
               <>
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/60">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
                     Who wrote this · When
                   </p>
                   <p className="text-[15px] leading-[1.8] text-foreground/80">
@@ -237,7 +237,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                 <div className="h-px bg-border/25" />
 
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/60">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
                     What was happening
                   </p>
                   <p className="text-[15px] leading-[1.8] text-foreground/80">
@@ -248,7 +248,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                 <div className="h-px bg-border/25" />
 
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/60">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
                     Why it matters
                   </p>
                   <p className="text-[15px] leading-[1.8] text-foreground/80">
@@ -279,7 +279,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                       </div>
                     ) : (
                       <>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-500/60 mb-2">Answer</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-500/85 mb-2">Answer</p>
                         <p className="text-[14px] leading-[1.75] text-foreground/75 break-words">{answer}</p>
                       </>
                     )}

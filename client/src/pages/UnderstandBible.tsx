@@ -642,7 +642,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
                                 )}
                               </div>
                               <h2 className="text-[17px] font-bold text-foreground leading-tight">{journey.title}</h2>
-                              <p className={`text-xs font-semibold ${journey.iconColor} mb-1.5`}>{journey.subtitle}</p>
+                              <p className={`text-xs font-semibold ${journey.iconColor} mb-1.5 dark:brightness-125`}>{journey.subtitle}</p>
                               <p className="text-sm text-muted-foreground leading-snug">{journey.description}</p>
                             </div>
                             <ChevronDown className={`w-5 h-5 ${journey.iconColor} flex-shrink-0 mt-1 -rotate-90`} />
