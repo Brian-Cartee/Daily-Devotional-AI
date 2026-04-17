@@ -91,7 +91,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
                  alt="Shepherd's Path"
                  width="84" height="84"
                  style="display:block;margin:0 auto 14px;width:84px;height:84px;object-fit:contain;" />
-            <p style="margin:10px 0 0;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">
+            <p style="margin:10px 0 0;font-family:Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.88);">
               Shepherd&rsquo;s Path
             </p>
           </td>
@@ -102,7 +102,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
           <td style="background-color:#ffffff;padding:40px 36px 36px;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;">
 
             <!-- Date — always visible at top of card -->
-            <p style="margin:0 0 28px;font-family:Arial,sans-serif;font-size:12px;color:#9b8ea8;letter-spacing:1.5px;text-transform:uppercase;text-align:center;">${formattedDate}</p>
+            <p style="margin:0 0 28px;font-family:Arial,sans-serif;font-size:14px;color:#6b5880;letter-spacing:1.5px;text-transform:uppercase;text-align:center;">${formattedDate}</p>
 
             <!-- Scripture text with inline curly quotes -->
             <p style="margin:0 0 24px;font-size:21px;line-height:1.65;color:#1e1530;font-style:italic;font-family:Georgia,serif;">
@@ -183,13 +183,13 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- FOOTER -->
         <tr>
           <td style="background-color:#2d1b5e;border-radius:0 0 20px 20px;padding:24px 32px;text-align:center;">
-            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">
+            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.72);line-height:1.6;">
               You&rsquo;re receiving this because you subscribed to daily scripture from Shepherd&rsquo;s Path.
             </p>
-            <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.3);">
-              <a href="${data.appUrl}/api/unsubscribe?email={{email}}" style="color:rgba(255,255,255,0.35);text-decoration:underline;">Unsubscribe</a>
+            <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.65);">
+              <a href="${data.appUrl}/api/unsubscribe?email={{email}}" style="color:rgba(255,255,255,0.70);text-decoration:underline;">Unsubscribe</a>
               &nbsp;&nbsp;·&nbsp;&nbsp;
-              <a href="${data.appUrl}" style="color:rgba(255,255,255,0.35);text-decoration:none;">shepherdspath.app</a>
+              <a href="${data.appUrl}" style="color:rgba(255,255,255,0.70);text-decoration:none;">Shepherd&rsquo;s Path</a>
             </p>
           </td>
         </tr>
@@ -197,7 +197,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- Bottom breathing room -->
         <tr>
           <td style="padding-top:24px;text-align:center;">
-            <p style="margin:0;font-family:Georgia,serif;font-size:12px;color:#b5a898;font-style:italic;">
+            <p style="margin:0;font-family:Georgia,serif;font-size:14px;color:#6b5870;font-style:italic;line-height:1.7;">
               &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo; &mdash; Psalm 119:105
             </p>
           </td>
