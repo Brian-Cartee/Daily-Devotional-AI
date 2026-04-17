@@ -50,7 +50,7 @@ function StepLabel({ number: _number, label }: { number: number; label: string }
 function PrayerText({ text }: { text: string }) {
   const cleaned = text.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
   return (
-    <p className="text-[16px] leading-[2.1] text-primary/80 italic font-normal tracking-wide">
+    <p className="text-[16px] leading-[2.1] text-foreground/90 italic font-normal tracking-wide">
       {cleaned}
     </p>
   );
