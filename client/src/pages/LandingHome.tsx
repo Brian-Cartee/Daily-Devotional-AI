@@ -1222,8 +1222,31 @@ export default function LandingHome() {
           </div>
 
           {/* ── Our Commitment to Scripture ── */}
-          <div className="mt-8 rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)", border: "1px solid rgba(160,80,200,0.2)" }}>
-            <div className="px-5 pt-5 pb-4">
+          <div className="mt-8 rounded-2xl overflow-hidden relative" style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)", border: "1px solid rgba(160,80,200,0.2)" }}>
+
+            {/* Scripture watermark — faint typographic underlayer */}
+            <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 overflow-hidden" style={{ fontFamily: "'Georgia', serif", color: "rgba(255,255,255,0.055)" }}>
+              <p className="absolute text-[38px] font-bold leading-tight whitespace-nowrap" style={{ top: "-6px", left: "-4px", transform: "rotate(-2deg)" }}>
+                In the beginning was the Word
+              </p>
+              <p className="absolute text-[26px] font-bold leading-tight whitespace-nowrap" style={{ top: "44px", right: "-8px", transform: "rotate(1.5deg)" }}>
+                For God so loved the world — John 3:16
+              </p>
+              <p className="absolute text-[32px] font-bold leading-tight whitespace-nowrap" style={{ top: "108px", left: "-6px", transform: "rotate(-1deg)" }}>
+                I am the way, the truth, and the life
+              </p>
+              <p className="absolute text-[22px] font-bold leading-tight whitespace-nowrap" style={{ top: "168px", right: "-4px", transform: "rotate(2deg)" }}>
+                The Lord is my shepherd — Psalm 23:1
+              </p>
+              <p className="absolute text-[30px] font-bold leading-tight whitespace-nowrap" style={{ top: "218px", left: "-4px", transform: "rotate(-1.5deg)" }}>
+                Your word is a lamp to my feet
+              </p>
+              <p className="absolute text-[20px] font-bold leading-tight whitespace-nowrap" style={{ top: "270px", right: "-2px", transform: "rotate(1deg)" }}>
+                Be still and know that I am God — Psalm 46:10
+              </p>
+            </div>
+
+            <div className="px-5 pt-5 pb-4 relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-0.5 h-4 rounded-full bg-primary/60" />
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/90">Our Commitment to Scripture</p>
