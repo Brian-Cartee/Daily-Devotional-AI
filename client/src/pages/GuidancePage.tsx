@@ -624,8 +624,8 @@ export default function GuidancePage() {
                 <p className="text-[15px] text-foreground/65 italic leading-relaxed">
                   Take a breath.
                 </p>
-                <p className="text-[13px] text-foreground/40 mt-1.5">
-                  You don't have to rush this.
+                <p className="text-[13px] text-foreground/40 mt-1.5 leading-relaxed">
+                  Finding scripture for what you're carrying…
                 </p>
               </motion.div>
             )}
