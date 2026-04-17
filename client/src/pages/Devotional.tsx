@@ -644,7 +644,7 @@ export default function Devotional() {
       <NavBar />
 
       {/* Main content */}
-      <main className="max-w-xl mx-auto px-5 pb-24 pt-16 relative z-10">
+      <main className="max-w-xl mx-auto px-4 pb-24 pt-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1117,7 +1117,7 @@ export default function Devotional() {
 
           {/* STEP 2: REFLECTION */}
           {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError) && (
-          <div className="bg-card border border-border/60 rounded-2xl px-7 py-8 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-2xl px-5 py-8 shadow-sm">
             <StepLabel number={2} label="Reflection" />
             <AnimatePresence mode="wait">
               {reflectionLoading && !reflectionContent && (
@@ -1280,7 +1280,7 @@ export default function Devotional() {
           )}
 
           {/* STEP 3: PRAYER */}
-          <div className="rounded-2xl px-7 py-8 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.6) 100%)", border: "1px solid hsl(258 45% 55% / 0.2)" }}>
+          <div className="rounded-2xl px-5 py-8 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.6) 100%)", border: "1px solid hsl(258 45% 55% / 0.2)" }}>
             <StepLabel number={3} label="Prayer" />
             <AnimatePresence mode="wait">
               {prayerLoading && !prayerContent && (
@@ -1330,12 +1330,12 @@ export default function Devotional() {
               data-testid="input-gratitude"
               className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3.5 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 resize-none placeholder:text-muted-foreground/65 transition-all"
             />
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3">
               <button
                 onClick={handleGratitudePrayer}
                 disabled={gratitudePrayerLoading}
                 data-testid="button-generate-gratitude-prayer"
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
+                className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
                 style={{ background: "linear-gradient(135deg, #d97706, #ea580c)" }}
               >
                 {gratitudePrayerLoading
