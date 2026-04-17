@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, BookOpen, Loader2, Square, X } from "lucide-react";
+import { ArrowRight, BookOpen, Headphones, Loader2, Square, X } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 import { useState } from "react";
@@ -139,41 +139,47 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <span>I&rsquo;m Familiar With The Bible</span>
         </button>
 
-        {/* Audio — a genuine third path, centered and intentional */}
+        {/* Audio — glassmorphism floater, purple-tinted */}
         <button
           data-testid="btn-toggle-audio"
           onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
           disabled={loading}
-          className="w-full flex flex-col items-center justify-center gap-2 py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40"
+          className="w-full flex flex-col items-center justify-center gap-2 py-4 rounded-2xl backdrop-blur-md transition-all active:scale-[0.98] disabled:opacity-40"
           style={{
-            background: playing ? "rgba(120,60,220,0.14)" : "rgba(255,255,255,0.06)",
-            border: playing ? "1px solid rgba(160,100,255,0.28)" : "1px solid rgba(255,255,255,0.12)",
-            boxShadow: playing ? "0 0 18px rgba(120,60,220,0.18)" : "none",
+            background: playing
+              ? "rgba(120,60,220,0.28)"
+              : "rgba(110,50,210,0.18)",
+            border: playing
+              ? "1px solid rgba(180,130,255,0.45)"
+              : "1px solid rgba(160,100,255,0.30)",
+            boxShadow: playing
+              ? "0 0 24px rgba(120,60,220,0.30), inset 0 1px 0 rgba(255,255,255,0.10)"
+              : "0 4px 24px rgba(80,30,160,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
           }}
         >
           {/* Icon + label row — fully centered */}
           <div className="flex items-center justify-center gap-3">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                background: playing ? "rgba(160,100,255,0.30)" : "rgba(255,255,255,0.15)",
-                boxShadow: playing ? "0 0 12px rgba(160,100,255,0.40)" : "none",
+                background: playing ? "rgba(180,130,255,0.30)" : "rgba(160,100,255,0.22)",
+                boxShadow: playing ? "0 0 14px rgba(160,100,255,0.50)" : "0 0 8px rgba(120,60,220,0.30)",
               }}
             >
               {loading
-                ? <Loader2 className="w-3.5 h-3.5 text-white/70 animate-spin" />
+                ? <Loader2 className="w-4 h-4 text-white/70 animate-spin" />
                 : playing
                   ? <Square className="w-3 h-3 text-white/90" />
-                  : <span className="text-white/90 text-[12px]">▶</span>
+                  : <Headphones className="w-4 h-4 text-white/90" />
               }
             </div>
             <div className="flex flex-col items-center">
-              <span className="text-[15px] font-semibold" style={{ color: playing ? "rgba(220,195,255,0.95)" : "rgba(255,255,255,0.90)" }}>
-                {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a welcome"}
+              <span className="text-[15px] font-semibold" style={{ color: playing ? "rgba(230,210,255,0.98)" : "rgba(255,255,255,0.92)" }}>
+                {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome" : "Hear a welcome"}
               </span>
               {!started && !playing && !loading && (
-                <span className="text-[12px] leading-snug mt-0.5 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  A quiet word before you begin · about a minute
+                <span className="text-[12px] leading-snug mt-0.5 text-center" style={{ color: "rgba(200,170,255,0.65)" }}>
+                  A quiet word before you begin
                 </span>
               )}
             </div>
@@ -183,7 +189,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   <motion.div
                     key={i}
                     className="w-0.5 rounded-full"
-                    style={{ background: "rgba(200,160,255,0.55)", height: "100%", transformOrigin: "bottom" }}
+                    style={{ background: "rgba(200,160,255,0.65)", height: "100%", transformOrigin: "bottom" }}
                     animate={{ scaleY: [h, 1, h * 0.7, 1, h] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
                   />
@@ -195,7 +201,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           {/* Progress bar — centered under the label */}
           {started && !playing && !loading && (
             <div className="w-28 h-0.5 rounded-full overflow-hidden bg-white/10 mx-auto">
-              <div className="h-full rounded-full bg-white/35" style={{ width: `${progress}%` }} />
+              <div className="h-full rounded-full bg-purple-300/50" style={{ width: `${progress}%` }} />
             </div>
           )}
         </button>
