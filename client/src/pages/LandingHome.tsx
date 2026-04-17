@@ -1226,7 +1226,7 @@ export default function LandingHome() {
             <div className="px-5 pt-5 pb-4">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-0.5 h-4 rounded-full bg-primary/60" />
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/70">Our Commitment to Scripture</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/90">Our Commitment to Scripture</p>
               </div>
               <div className="space-y-2.5">
                 {[
@@ -1238,11 +1238,11 @@ export default function LandingHome() {
                 ].map((line, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: "rgba(192,132,252,0.7)" }} />
-                    <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.6)" }}>{line}</p>
+                    <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>{line}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-[12px] italic mt-4 pt-3" style={{ color: "rgba(255,255,255,0.28)", borderTop: "1px solid rgba(255,255,255,0.07)", fontFamily: "'Georgia', serif" }}>
+              <p className="text-[12px] italic mt-4 pt-3" style={{ color: "rgba(255,255,255,0.68)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
                 "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
               </p>
             </div>
