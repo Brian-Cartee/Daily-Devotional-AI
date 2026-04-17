@@ -677,6 +677,11 @@ export default function GuidancePage() {
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                   </p>
                 )}
+                {responseComplete && (
+                  <p className="text-[12px] text-muted-foreground/45 mt-1 italic tracking-wide">
+                    Walking it is up to you.
+                  </p>
+                )}
                 {responseComplete && verse && (
                   <div className="mt-4 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/6 to-violet-500/4 px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">

@@ -584,6 +584,37 @@ function FaqSection() {
   );
 }
 
+const TRUTH_LINES = [
+  "The path is here.",
+  "Start where you are.",
+  "Walking it is up to you.",
+];
+
+function RotatingTruthLine() {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % TRUTH_LINES.length);
+        setVisible(true);
+      }, 800);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <p
+      className="text-[12px] text-foreground/35 text-center mt-5 mb-1 italic tracking-wide transition-opacity duration-700"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      {TRUTH_LINES[idx]}
+    </p>
+  );
+}
+
 export default function LandingHome() {
   const [, navigate] = useLocation();
   const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
@@ -1453,6 +1484,8 @@ export default function LandingHome() {
               }
             </button>
           </div>
+
+          <RotatingTruthLine />
 
           <p className="text-[13px] text-foreground/50 text-center mt-4">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
