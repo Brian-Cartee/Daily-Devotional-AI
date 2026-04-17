@@ -458,6 +458,12 @@ export default function GuidancePage() {
                     ? "Bring it here exactly as it is."
                     : "You are seen, known, and deeply loved."}
                 </p>
+                <p
+                  className="text-[11px] text-white/40 italic tracking-wide mt-4"
+                  style={{ textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
+                >
+                  The path is already here.
+                </p>
               </motion.div>
             ) : (
               /* ── COMPACT: icon + heading strip ── */
@@ -509,6 +515,9 @@ export default function GuidancePage() {
                     className="rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 transition-all mb-6 focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.18)]"
                     style={{ background: "rgba(255,255,255,0.055)", border: "2px solid rgba(139,92,246,0.45)", boxShadow: "0 2px 16px rgba(0,0,0,0.25)" }}
                   >
+                    <p className="text-[11px] text-foreground/35 italic tracking-wide -mb-1">
+                      Start where you are.
+                    </p>
                     <textarea
                       value={heartInput}
                       onChange={e => setHeartInput(e.target.value)}
@@ -678,7 +687,12 @@ export default function GuidancePage() {
                   </p>
                 )}
                 {responseComplete && (
-                  <p className="text-[12px] text-muted-foreground/45 mt-1 italic tracking-wide">
+                  <p className="text-[12px] text-muted-foreground/45 mt-2 italic tracking-wide">
+                    This meets you—but it won't move you.
+                  </p>
+                )}
+                {responseComplete && (
+                  <p className="text-[12px] text-muted-foreground/35 mt-1 italic tracking-wide">
                     Walking it is up to you.
                   </p>
                 )}
