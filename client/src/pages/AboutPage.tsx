@@ -7,9 +7,6 @@ import {
   Sparkles, ArrowRight, Users, Share2, Check, Play, HandHeart, Loader2
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
-import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
-
-const logoMark = "/logo-mark-white.png";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 18 },
@@ -18,87 +15,23 @@ const fadeUp = (delay = 0) => ({
 });
 
 const FEATURES = [
-  {
-    icon: Sun,
-    color: "text-amber-500",
-    bg: "bg-amber-50",
-    border: "border-amber-100",
-    title: "Daily Devotional",
-    desc: "Each morning brings a fresh scripture, a personal reflection prompt, and a guided meditation tailored to where you are spiritually.",
-  },
-  {
-    icon: Compass,
-    color: "text-indigo-500",
-    bg: "bg-indigo-50",
-    border: "border-indigo-100",
-    title: "Bible Journeys",
-    desc: "Choose from guided 30-day paths through the Psalms, the Life of Jesus, Lent, the Sermon on the Mount, and more — each designed to take you deeper.",
-  },
-  {
-    icon: BookOpen,
-    color: "text-violet-500",
-    bg: "bg-violet-50",
-    border: "border-violet-100",
-    title: "Read the Bible",
-    desc: "The full Bible (KJV, WEB, and ASV) with pastoral insight available on every chapter for context, historical background, and personal reflection.",
-  },
-  {
-    icon: Search,
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-    border: "border-blue-100",
-    title: "Deep Bible Study",
-    desc: "Go deep on any passage with guided study tools that surface meaning, application, and connection across all of Scripture.",
-  },
-  {
-    icon: Heart,
-    color: "text-rose-500",
-    bg: "bg-rose-50",
-    border: "border-rose-100",
-    title: "Guided Prayer",
-    desc: "Bring what you're carrying and receive a scripture, a reflection, and a prayer shaped specifically for your moment.",
-  },
-  {
-    icon: NotebookPen,
-    color: "text-emerald-500",
-    bg: "bg-emerald-50",
-    border: "border-emerald-100",
-    title: "Prayer & Reflection Journal",
-    desc: "Log your prayers, record what God is speaking, and build a personal record of your faith journey over time.",
-  },
-  {
-    icon: Flame,
-    color: "text-orange-500",
-    bg: "bg-orange-50",
-    border: "border-orange-100",
-    title: "Daily Streak",
-    desc: "A faithfulness tracker that celebrates consistency without shame — each day you show up is marked and remembered.",
-  },
-  {
-    icon: Trophy,
-    color: "text-yellow-600",
-    bg: "bg-yellow-50",
-    border: "border-yellow-100",
-    title: "Meaningful Achievements",
-    desc: "Milestones like your first devotional, 7-day streaks, and deep study moments are marked with meaning, not just badges.",
-  },
-  {
-    icon: Users,
-    color: "text-purple-500",
-    bg: "bg-purple-50",
-    border: "border-purple-100",
-    title: "Church & Ministry Ready",
-    desc: "Pastors and ministry leaders can generate a customized preview of the app branded to their congregation in minutes.",
-  },
+  { icon: Sun,         color: "#f59e0b", title: "Daily Devotional",          desc: "Each morning brings a fresh scripture, a personal reflection prompt, and a guided meditation tailored to where you are spiritually." },
+  { icon: Compass,     color: "#818cf8", title: "Bible Journeys",            desc: "Guided 30-day paths through the Psalms, the Life of Jesus, Lent, the Sermon on the Mount, and more — each designed to take you deeper." },
+  { icon: BookOpen,    color: "#a78bfa", title: "Read the Bible",            desc: "The full Bible (KJV, WEB, and ASV) with pastoral insight available on every chapter for context, historical background, and personal reflection." },
+  { icon: Search,      color: "#60a5fa", title: "Deep Bible Study",          desc: "Go deep on any passage with guided study tools that surface meaning, application, and connection across all of Scripture." },
+  { icon: Heart,       color: "#f87171", title: "Guided Prayer",             desc: "Bring what you're carrying and receive a scripture, a reflection, and a prayer shaped specifically for your moment." },
+  { icon: NotebookPen, color: "#34d399", title: "Prayer & Reflection Journal",desc: "Log your prayers, record what God is speaking, and build a personal record of your faith journey over time." },
+  { icon: Flame,       color: "#fb923c", title: "Daily Streak",              desc: "A faithfulness tracker that celebrates consistency without shame — each day you show up is marked and remembered." },
+  { icon: Trophy,      color: "#fbbf24", title: "Meaningful Achievements",   desc: "Milestones like your first devotional, 7-day streaks, and deep study moments are marked with meaning, not just badges." },
+  { icon: Users,       color: "#c084fc", title: "Church & Ministry Ready",   desc: "Pastors and ministry leaders can generate a customized preview of the app branded to their congregation in minutes." },
 ];
 
 const COMMITMENTS = [
-  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit — where the Holy Spirit is the living, active relationship with our Lord and Savior",
-  "Built to lead people to Christ using available technology — making it easier to immerse yourself in Scripture, ask honest questions, and grow without embarrassment",
-  "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word, no speculation or reinterpretation",
+  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit",
+  "Built to lead people to Christ using available technology — making it easier to immerse yourself in Scripture",
+  "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word",
   "Shaped by the historic, orthodox Christian faith — not cultural opinion",
   "An honest, open place to encounter God — in a way that fits where you actually are",
-  "Your word is a lamp to my feet and a light to my path. — Psalm 119:105",
 ];
 
 const DONATION_AMOUNTS = [
@@ -129,7 +62,7 @@ export default function AboutPage() {
   };
 
   const handleShare = async () => {
-    const url = "https://daily-devotional-ai.replit.app/about";
+    const url = "https://shepherdspath.app/about";
     const shareData = {
       title: "Shepherd's Path — Your Daily Companion in Faith",
       text: "A daily faith app for Scripture, prayer, and reflection. Bible-first. Free to start.",
@@ -145,97 +78,101 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fdf8f0]">
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #130636 0%, #0d0a1a 100%)" }}>
       <NavBar />
 
-      <main className="max-w-2xl mx-auto px-4 pt-20 pb-28">
+      {/* HERO — cinematic, purple gradient */}
+      <div className="relative pt-14 pb-16 px-5 text-center overflow-hidden">
+        {/* Radial glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(122,1,141,0.35) 0%, rgba(80,20,180,0.1) 60%, transparent 80%)"
+        }} />
 
-        {/* Hero */}
-        <motion.div {...fadeUp(0)} className="text-center py-10">
-          <div className="flex justify-center mb-5">
-            <ShepherdCrookMark className="w-16 h-16 shadow-lg shadow-primary/30" rounded="rounded-2xl" />
+        <motion.div {...fadeUp(0)} className="relative z-10 flex flex-col items-center">
+          {/* App icon */}
+          <div className="mb-6" style={{ filter: "drop-shadow(0 8px 24px rgba(122,1,141,0.5))" }}>
+            <img src="/app-icon.png" alt="Shepherd's Path" className="w-24 h-24 rounded-[22px]" />
           </div>
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight mb-3">
-            Your Daily Companion in Faith
+
+          <p className="text-white/40 text-[11px] tracking-[0.22em] uppercase mb-3">Shepherd's Path</p>
+          <h1 className="text-white font-light leading-tight mb-4" style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(1.9rem, 6vw, 2.6rem)" }}>
+            Your Daily Companion<br />in Faith
           </h1>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
-            Shepherd's Path is a daily faith companion — devotionals, guided Bible journeys, prayer, Scripture memorization, and a personal journal — all working together to help you grow in your walk with God.
+          <p className="text-white/60 text-[15px] leading-relaxed max-w-sm mx-auto mb-5" style={{ fontFamily: "'Georgia', serif" }}>
+            Scripture, prayer, and reflection — all working together to help you grow in your walk with God.
           </p>
-          <p className="text-[13px] text-primary/70 italic font-medium mb-5">
-            "A faithful guide available anytime — open your Bible. We'll open the conversation."
+          <p className="text-white/35 text-[13px] italic mb-7" style={{ fontFamily: "'Georgia', serif" }}>
+            "Open your Bible. We'll open the conversation."
           </p>
+
           <button
             data-testid="btn-share-about"
             onClick={handleShare}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10 transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all active:scale-95"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.8)" }}
           >
             {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
             {copied ? "Link copied!" : "Share this page"}
           </button>
         </motion.div>
+      </div>
 
-        {/* Bible-First Banner */}
-        <motion.div {...fadeUp(0.1)} className="relative rounded-2xl border border-primary/20 bg-primary/5 overflow-hidden mb-8 p-5">
-          <img
-            src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800&q=80"
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
-            style={{ opacity: 0.08, filter: "saturate(0.7)" }}
-          />
-          <div className="relative flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-[15px] font-bold text-foreground mb-1">Bible-First by Design</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Every AI response is grounded in the actual passage being studied. Nothing is generated outside of God's Word. We use AI to help you engage with Scripture — not to replace it.
-              </p>
-            </div>
-          </div>
-        </motion.div>
+      <main className="max-w-2xl mx-auto px-4 pb-28">
 
-        {/* What are you facing today CTA */}
-        <motion.div {...fadeUp(0.12)} className="mb-8">
+        {/* Seek Guidance CTA */}
+        <motion.div {...fadeUp(0.1)} className="mb-6">
           <Link href="/guidance">
-            <div className="relative rounded-2xl overflow-hidden border border-primary/25 bg-gradient-to-br from-primary/8 via-violet-500/5 to-amber-500/5 p-5 cursor-pointer group hover:border-primary/40 transition-all">
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
-              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/70 mb-2">Our Signature Feature</p>
-              <p className="text-[20px] font-bold text-foreground leading-snug mb-2">
-                What are you facing today?
-              </p>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
-                Bring what's on your heart — a fear, a question, a struggle, or a praise — and receive scripture, reflection, and prayer shaped for your moment.
-              </p>
-              <div className="inline-flex items-center gap-2 text-[13px] font-bold text-primary group-hover:gap-3 transition-all">
-                Seek guidance <ArrowRight className="w-4 h-4" />
+            <div className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
+              style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.5) 0%, rgba(67,20,120,0.4) 100%)", border: "1px solid rgba(160,80,200,0.3)" }}>
+              <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(to right, #7A018D, #a855f7, #f59e0b)" }} />
+              <div className="p-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-purple-300/60 mb-2">Our Signature Feature</p>
+                <p className="text-white font-semibold text-[18px] leading-snug mb-2">What are you facing today?</p>
+                <p className="text-white/55 text-[13px] leading-relaxed mb-4">Bring what's on your heart — a fear, a question, a struggle, or a praise — and receive scripture, reflection, and prayer shaped for your moment.</p>
+                <div className="inline-flex items-center gap-2 text-[13px] font-bold text-amber-400">
+                  Seek guidance <ArrowRight className="w-4 h-4" />
+                </div>
               </div>
             </div>
           </Link>
         </motion.div>
 
-        {/* Features Grid */}
-        <motion.div {...fadeUp(0.15)}>
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <h2 className="text-[13px] font-bold uppercase tracking-wider text-primary">Everything Inside</h2>
+        {/* Bible-First */}
+        <motion.div {...fadeUp(0.15)} className="mb-6">
+          <div className="rounded-2xl p-4 flex items-start gap-3"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(122,1,141,0.25)" }}>
+              <ShieldCheck className="w-5 h-5" style={{ color: "#c084fc" }} />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-[14px] mb-1">Bible-First by Design</p>
+              <p className="text-white/50 text-[13px] leading-relaxed">Every AI response is grounded in the actual passage being studied. We use AI to help you engage with Scripture — not to replace it.</p>
+            </div>
           </div>
-          <div className="space-y-3">
+        </motion.div>
+
+        {/* Features */}
+        <motion.div {...fadeUp(0.18)} className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400/70" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/35">Everything Inside</p>
+          </div>
+          <div className="space-y-2">
             {FEATURES.map((f, i) => (
               <motion.div
                 key={f.title}
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 + i * 0.05 }}
-                className={`flex items-start gap-4 rounded-2xl border ${f.border} bg-card p-4`}
+                transition={{ duration: 0.35, delay: 0.2 + i * 0.04 }}
+                className="flex items-start gap-3 rounded-2xl p-4"
+                style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.06)" }}
               >
-                <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center shrink-0`}>
-                  <f.icon className={`w-5 h-5 ${f.color}`} />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${f.color}18` }}>
+                  <f.icon className="w-4.5 h-4.5" style={{ color: f.color, width: 18, height: 18 }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-foreground leading-tight mb-1">{f.title}</p>
-                  <p className="text-[13px] text-muted-foreground leading-snug">{f.desc}</p>
+                  <p className="text-white/90 text-[14px] font-semibold leading-tight mb-0.5">{f.title}</p>
+                  <p className="text-white/45 text-[13px] leading-snug">{f.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -243,137 +180,122 @@ export default function AboutPage() {
         </motion.div>
 
         {/* Our Commitment */}
-        <motion.div {...fadeUp(0.3)} className="mt-8">
-          <div className="flex items-center gap-2 mb-4">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            <h2 className="text-[13px] font-bold uppercase tracking-wider text-primary">Our Commitment to Scripture</h2>
+        <motion.div {...fadeUp(0.3)} className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-400/70" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/35">Our Commitment</p>
           </div>
-          <div className="rounded-2xl border border-primary/20 bg-card p-5 space-y-3">
+          <div className="rounded-2xl p-5 space-y-3" style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.06)" }}>
             {COMMITMENTS.map((point, i) => (
               <div key={i} className="flex items-start gap-3">
-                {i === COMMITMENTS.length - 1 ? (
-                  <p className="text-[13px] text-foreground/60 italic border-t border-primary/10 pt-3 w-full leading-relaxed">
-                    "{point}"
-                  </p>
-                ) : (
-                  <>
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                    <p className="text-[13px] text-foreground/75 leading-snug">{point}</p>
-                  </>
-                )}
+                <div className="w-1.5 h-1.5 rounded-full mt-2 shrink-0" style={{ background: "#a855f7" }} />
+                <p className="text-white/60 text-[13px] leading-snug">{point}</p>
               </div>
             ))}
+            <p className="text-white/30 text-[13px] italic pt-3 leading-relaxed" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+            </p>
           </div>
         </motion.div>
 
-        {/* No login / accessible */}
-        <motion.div {...fadeUp(0.35)} className="mt-6">
-          <div className="rounded-2xl border border-amber-200/60 bg-amber-50/60 p-5 flex items-start gap-3">
-            <span className="text-2xl leading-none mt-0.5">✝️</span>
+        {/* Free to begin */}
+        <motion.div {...fadeUp(0.32)} className="mb-4">
+          <div className="rounded-2xl p-4 flex items-start gap-3"
+            style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
+            <span className="text-xl leading-none mt-0.5">✝</span>
             <div>
-              <p className="text-[14px] font-bold text-foreground mb-1">Free to Begin — No Login Required</p>
-              <p className="text-[13px] text-muted-foreground leading-snug">
-                Your first experience is immediate. The app meets you before you've committed to anything. Start exploring, then make it yours.
-              </p>
+              <p className="text-white/85 font-semibold text-[14px] mb-1">Free to Begin — No Login Required</p>
+              <p className="text-white/45 text-[13px] leading-snug">The app meets you before you've committed to anything. Start exploring, then make it yours.</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Church section */}
-        <motion.div {...fadeUp(0.4)} className="mt-4">
-          <div className="rounded-2xl border border-purple-200/60 bg-purple-50/50 p-5 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
-              <Church className="w-5 h-5 text-purple-500" />
+        {/* Church */}
+        <motion.div {...fadeUp(0.34)} className="mb-6">
+          <div className="rounded-2xl p-4 flex items-start gap-3"
+            style={{ background: "rgba(192,132,252,0.08)", border: "1px solid rgba(192,132,252,0.2)" }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(192,132,252,0.15)" }}>
+              <Church className="w-5 h-5" style={{ color: "#c084fc" }} />
             </div>
             <div>
-              <p className="text-[14px] font-bold text-foreground mb-1">Built for Churches Too</p>
-              <p className="text-[13px] text-muted-foreground leading-snug">
-                Pastors and ministry leaders can generate a customized branded preview in minutes — colors, church name, and a shareable link ready to send to your congregation.
-              </p>
+              <p className="text-white/85 font-semibold text-[14px] mb-1">Built for Churches Too</p>
+              <p className="text-white/45 text-[13px] leading-snug">Pastors and ministry leaders can generate a customized branded preview in minutes — ready to share with your congregation.</p>
             </div>
           </div>
         </motion.div>
 
-        {/* ── Support the Mission ── */}
-        <motion.div {...fadeUp(0.43)} className="mt-8">
-          <div className="relative rounded-2xl overflow-hidden p-6 text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #1e1b4b 40%, #0f172a 100%)", border: "1px solid rgba(99,102,241,0.2)" }}>
-            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
-            <div className="relative">
-              {giftReceived ? (
-                <div className="text-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-                    <Heart className="w-6 h-6 text-rose-300 fill-rose-300" />
-                  </div>
-                  <p className="text-lg font-bold text-white mb-1">Thank you — truly.</p>
-                  <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
-                    Your gift helps keep Shepherd's Path free for someone who needs it most. That person may never know your name — but God does.
-                  </p>
+        {/* Support the Mission */}
+        <motion.div {...fadeUp(0.4)} className="mb-8">
+          <div className="relative rounded-2xl overflow-hidden p-6"
+            style={{ background: "linear-gradient(135deg, #1e1040 0%, #0f0a2e 100%)", border: "1px solid rgba(99,102,241,0.25)" }}>
+            {giftReceived ? (
+              <div className="text-center py-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <Heart className="w-6 h-6 fill-rose-300" style={{ color: "#fca5a5" }} />
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2.5 mb-4">
-                    <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                      <HandHeart className="w-4 h-4 text-white/80" />
-                    </div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-white/50">Support the Mission</p>
+                <p className="text-white font-bold text-lg mb-1">Thank you — truly.</p>
+                <p className="text-white/60 text-[13px] leading-relaxed max-w-xs mx-auto">Your gift helps keep Shepherd's Path free for someone who needs it most. God knows your name.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.1)" }}>
+                    <HandHeart className="w-4 h-4 text-white/70" />
                   </div>
-
-                  <h3 className="text-[20px] font-extrabold text-white leading-snug mb-3">
-                    A movement, not just an app.
-                  </h3>
-                  <p className="text-[13px] text-white/70 leading-relaxed mb-3">
-                    Shepherd's Path exists for one reason: to be there for the person at 3am who has no pastor, no church, and nowhere to turn — and put a faithful, Bible-grounded guide in their pocket that meets them exactly where they are.
-                  </p>
-                  <p className="text-[13px] text-white/70 leading-relaxed mb-5">
-                    Every subscription helps keep the app free for someone who can't afford it. Every gift reaches one more person at their lowest moment. If this has meant something to you — consider being part of what makes it possible for someone else.
-                  </p>
-
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Give a one-time gift</p>
-                  <div className="flex gap-3 mb-4">
-                    {DONATION_AMOUNTS.map(({ label, cents }) => (
-                      <button
-                        key={cents}
-                        data-testid={`btn-donate-${label}`}
-                        onClick={() => handleDonate(cents)}
-                        disabled={donating !== null}
-                        className="flex-1 py-3 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                      >
-                        {donating === cents ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-white/35 text-center leading-relaxed">
-                    Secure checkout via Stripe · One-time · No account required
-                  </p>
-                </>
-              )}
-            </div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">Support the Mission</p>
+                </div>
+                <h3 className="text-white font-bold text-[20px] leading-snug mb-3">A movement, not just an app.</h3>
+                <p className="text-white/55 text-[13px] leading-relaxed mb-3">
+                  Shepherd's Path exists for the person at 3am who has no pastor, no church, and nowhere to turn — a faithful, Bible-grounded guide in their pocket.
+                </p>
+                <p className="text-white/55 text-[13px] leading-relaxed mb-5">
+                  Every subscription helps keep the app free for someone who can't afford it. If this has meant something to you — consider being part of what makes it possible for someone else.
+                </p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Give a one-time gift</p>
+                <div className="flex gap-3 mb-4">
+                  {DONATION_AMOUNTS.map(({ label, cents }) => (
+                    <button
+                      key={cents}
+                      data-testid={`btn-donate-${label}`}
+                      onClick={() => handleDonate(cents)}
+                      disabled={donating !== null}
+                      className="flex-1 py-3 rounded-xl text-white font-bold text-[14px] transition-all disabled:opacity-50 flex items-center justify-center"
+                      style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.18)" }}
+                    >
+                      {donating === cents ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-white/25 text-center">Secure checkout via Stripe · One-time · No account required</p>
+              </>
+            )}
           </div>
         </motion.div>
 
-        {/* CTA */}
-        <motion.div {...fadeUp(0.45)} className="mt-10 text-center">
-          <p className="text-sm text-muted-foreground mb-4">Ready to take your next step in faith?</p>
+        {/* Final CTA */}
+        <motion.div {...fadeUp(0.45)} className="text-center">
+          <p className="text-white/35 text-[14px] mb-5" style={{ fontFamily: "'Georgia', serif" }}>Ready to take your next step in faith?</p>
           <Link href="/">
             <button
               data-testid="btn-about-start"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-white text-base transition-opacity hover:opacity-90"
-              style={{ background: "linear-gradient(to right, #7c3aed, #f59e0b)" }}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-white text-[15px] transition-all active:scale-[0.98]"
+              style={{ background: "linear-gradient(135deg, #7A018D, #f59e0b)", boxShadow: "0 8px 28px rgba(122,1,141,0.35)" }}
             >
               Start Exploring
               <ArrowRight className="w-4 h-4" />
             </button>
           </Link>
-          <p className="text-[12px] text-muted-foreground mt-3">Free · No account required · Bible-first</p>
+          <p className="text-white/25 text-[12px] mt-3">Free · No account required · Bible-first</p>
 
-          <div className="mt-6 pt-6 border-t border-border/40">
-            <p className="text-[12px] text-muted-foreground mb-2">Want to hear the welcome message again?</p>
+          <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-white/25 text-[12px] mb-3">Want to hear the welcome message again?</p>
             <a
               href="/?intro"
               data-testid="btn-replay-intro"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[13px] font-semibold text-foreground/70 hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all active:scale-95"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }}
             >
-              <Play className="w-3.5 h-3.5 text-primary" />
+              <Play className="w-3.5 h-3.5" style={{ color: "#a855f7" }} />
               Replay the intro
             </a>
           </div>
