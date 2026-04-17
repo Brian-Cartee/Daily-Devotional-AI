@@ -103,6 +103,9 @@ export default function GuidancePage() {
   const [verse, setVerse] = useState<VerseResult | null>(null);
   const [prayer, setPrayer] = useState<string | null>(null);
   const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
+
+  interface ContextPhoto { url: string; thumb: string; photographerName: string; photographerLink: string; }
+  const [contextPhoto, setContextPhoto] = useState<ContextPhoto | null>(null);
   const [prayerSaved, setPrayerSaved] = useState(false);
 
   const [guidanceExpanded, setGuidanceExpanded] = useState(false);
@@ -251,6 +254,27 @@ export default function GuidancePage() {
     if (!responseComplete) return;
     const firstResponse = messages.find(m => m.role === "assistant")?.content;
     if (firstResponse) prewarmTTS(firstResponse, getUserVoice());
+  }, [responseComplete]);
+
+  // Fetch contextual Unsplash photo once response lands
+  useEffect(() => {
+    if (!responseComplete || !situation.trim()) return;
+    const cacheKey = `sp_photo_${situation.trim().slice(0, 80)}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) { try { setContextPhoto(JSON.parse(cached)); } catch {} return; }
+    fetch("/api/unsplash/photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ situation: situation.trim() }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.url) {
+          setContextPhoto(data);
+          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        }
+      })
+      .catch(() => {});
   }, [responseComplete]);
 
   // Progressive reveal — stage the content in after guidance lands
@@ -731,6 +755,53 @@ export default function GuidancePage() {
               </>
             )}
           </motion.div>
+
+          {/* ── Contextual Photo ── */}
+          <AnimatePresence>
+            {revealStage >= 1 && contextPhoto && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-10"
+              >
+                <div className="relative rounded-2xl overflow-hidden" style={{ height: "210px" }}>
+                  <img
+                    src={contextPhoto.url}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ filter: "saturate(0.72) brightness(0.88)" }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(13,8,32,0.52) 100%)" }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground/40 mt-1.5 text-right">
+                  Photo by{" "}
+                  <a
+                    href={`${contextPhoto.photographerLink}?utm_source=shepherds_path&utm_medium=referral`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-muted-foreground/70 transition-colors"
+                  >
+                    {contextPhoto.photographerName}
+                  </a>
+                  {" on "}
+                  <a
+                    href="https://unsplash.com?utm_source=shepherds_path&utm_medium=referral"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-muted-foreground/70 transition-colors"
+                  >
+                    Unsplash
+                  </a>
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── A Word For This Moment ── */}
           <AnimatePresence>

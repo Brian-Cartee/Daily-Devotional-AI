@@ -1738,6 +1738,54 @@ Return only valid JSON. No markdown. No extra keys.`,
     }
   });
 
+  // ── Unsplash Contextual Photo ─────────────────────────────────────────────────
+  const unsplashPhotoCache = new Map<string, { url: string; thumb: string; photographerName: string; photographerLink: string }>();
+
+  function situationToUnsplashQuery(situation: string): string {
+    const s = situation.toLowerCase();
+    if (/grief|loss|died|death|passed|mourn|missing/.test(s)) return "still water reflections dawn";
+    if (/anxiet|fear|worry|worri|scared|panic|overwhelm/.test(s)) return "misty mountain path morning";
+    if (/marriage|spouse|husband|wife|partner|relationship/.test(s)) return "golden hour path together";
+    if (/alone|lonely|isolat|no one|nobody/.test(s)) return "sunrise empty peaceful beach";
+    if (/faith|doubt|believe|god|church|spiritual/.test(s)) return "cathedral light rays interior";
+    if (/angry|anger|rage|resentment|bitterness/.test(s)) return "flowing river rocks calm";
+    if (/sick|health|diagnos|illness|pain|medical/.test(s)) return "morning meadow soft light";
+    if (/job|work|career|money|financial|debt|provision/.test(s)) return "open road horizon landscape";
+    if (/child|kid|parent|family|son|daughter/.test(s)) return "warm golden field sunlight";
+    if (/depress|hopeless|meaningless|purpose|lost/.test(s)) return "path through forest light";
+    if (/prayer|pray|seeking|guidance/.test(s)) return "peaceful dawn landscape nature";
+    return "peaceful nature golden light landscape";
+  }
+
+  app.post("/api/unsplash/photo", async (req, res) => {
+    const { situation } = req.body as { situation?: string };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+
+    const query = situationToUnsplashQuery(situation);
+    const cached = unsplashPhotoCache.get(query);
+    if (cached) return res.json(cached);
+
+    try {
+      const response = await fetch(
+        `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&orientation=landscape&content_filter=high`,
+        { headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` } }
+      );
+      if (!response.ok) return res.status(502).json({ message: "Unsplash unavailable" });
+      const data = await response.json() as any;
+      const result = {
+        url: data.urls?.regular ?? data.urls?.full,
+        thumb: data.urls?.small ?? data.urls?.regular,
+        photographerName: data.user?.name ?? "Unsplash",
+        photographerLink: data.user?.links?.html ?? "https://unsplash.com",
+      };
+      unsplashPhotoCache.set(query, result);
+      res.json(result);
+    } catch (err) {
+      console.error("Unsplash photo error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Personal Prayer Portrait (Pro) ────────────────────────────────────────────
   app.post("/api/guidance/prayer-portrait", async (req, res) => {
     const { imageBase64, mimeType, situation, answers } = req.body as {
