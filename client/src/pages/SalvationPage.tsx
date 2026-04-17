@@ -141,30 +141,55 @@ export default function SalvationPage() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <div className="max-w-lg mx-auto px-4 pt-20 pb-24">
 
-        {/* Back */}
-        <button
-          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-          data-testid="button-back-salvation"
-          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+      {/* ── Cinematic hero ── */}
+      <div className="relative overflow-hidden" style={{ height: "48vh", minHeight: "320px", maxHeight: "460px" }}>
+        <img
+          src="/hero-devotional-still.webp"
+          alt="Dawn light over the path"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center 30%" }}
+        />
+        {/* Deep overlay — dark at top (nav clearance) and bottom (text contrast), warm amber glow mid */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.88) 0%, rgba(20,8,50,0.22) 42%, rgba(10,5,28,0.90) 100%)" }} />
+        <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(245,158,11,0.14) 0%, transparent 100%)" }} />
 
-        {/* Hero */}
-        <motion.div {...fadeUp(0)} className="text-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/30">
-            <Sunrise className="w-8 h-8 text-white" />
+        {/* Back button — right under the fixed navbar, no gap */}
+        <div className="absolute top-0 left-0 right-0 pt-[3.75rem] px-4">
+          <button
+            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            data-testid="button-back-salvation"
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-white/65 hover:text-white transition-colors mt-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
+
+        {/* Centered hero content overlaid on image */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-9 px-6 text-center">
+          <div
+            className="w-[70px] h-[70px] rounded-[22px] flex items-center justify-center mb-5 shadow-2xl"
+            style={{ background: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)", boxShadow: "0 8px 40px rgba(245,158,11,0.55), 0 2px 12px rgba(0,0,0,0.4)" }}
+          >
+            <Sunrise className="w-[34px] h-[34px] text-white" />
           </div>
-          <h1 className="text-[28px] font-bold text-foreground leading-tight mb-3">
+          <h1
+            className="text-[32px] font-black text-white leading-tight mb-2"
+            style={{ textShadow: "0 2px 30px rgba(0,0,0,0.7), 0 0 60px rgba(0,0,0,0.5)", letterSpacing: "-0.02em" }}
+          >
             Beginning with Jesus
           </h1>
-          <p className="text-[16px] text-muted-foreground leading-relaxed">
-            If something brought you here — curiosity, a hard season, a quiet longing for more — that's not an accident. This page is for you.
+          <p
+            className="text-[14.5px] text-white/72 leading-relaxed"
+            style={{ textShadow: "0 1px 10px rgba(0,0,0,0.9)", maxWidth: "300px" }}
+          >
+            If something brought you here — curiosity, a hard season, a quiet longing — that's not an accident.
           </p>
-        </motion.div>
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 pt-7 pb-24">
 
         {/* Intro */}
         <motion.div {...fadeUp(0.1)} className="rounded-2xl border border-border bg-card p-5 mb-8">
