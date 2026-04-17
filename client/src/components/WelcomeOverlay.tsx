@@ -141,49 +141,56 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           <span>I&rsquo;m Familiar With The Bible</span>
         </button>
 
-        {/* Audio — tertiary, quiet third option */}
+        {/* Audio — a genuine third path, centered and intentional */}
         <button
           data-testid="btn-toggle-audio"
           onClick={() => toggle(WELCOME_SCRIPT, getUserVoice())}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40"
+          className="w-full flex flex-col items-center justify-center gap-2 py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-40"
           style={{
-            background: playing ? "rgba(255,255,255,0.09)" : "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: playing ? "rgba(120,60,220,0.14)" : "rgba(255,255,255,0.06)",
+            border: playing ? "1px solid rgba(160,100,255,0.28)" : "1px solid rgba(255,255,255,0.12)",
+            boxShadow: playing ? "0 0 18px rgba(120,60,220,0.18)" : "none",
           }}
         >
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: playing ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.14)" }}
-          >
-            {loading
-              ? <Loader2 className="w-3 h-3 text-white/70 animate-spin" />
-              : playing
-                ? <Square className="w-2.5 h-2.5 text-white/80" />
-                : <span className="text-white/80 text-[11px]">▶</span>
-            }
-          </div>
-          <div className="text-left flex-1">
-            <p className="text-[12px] text-white/65 leading-tight">
+          {/* Icon + label row */}
+          <div className="flex items-center justify-center gap-2.5">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: playing ? "rgba(160,100,255,0.25)" : "rgba(255,255,255,0.13)",
+                boxShadow: playing ? "0 0 10px rgba(160,100,255,0.35)" : "none",
+              }}
+            >
+              {loading
+                ? <Loader2 className="w-3 h-3 text-white/70 animate-spin" />
+                : playing
+                  ? <Square className="w-2.5 h-2.5 text-white/85" />
+                  : <span className="text-white/85 text-[11px]">▶</span>
+              }
+            </div>
+            <span className="text-[14px] font-medium text-center" style={{ color: playing ? "rgba(220,195,255,0.92)" : "rgba(255,255,255,0.72)" }}>
               {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Or begin by listening"}
-            </p>
-            {started && !playing && !loading && (
-              <div className="mt-1 w-32 h-0.5 rounded-full overflow-hidden bg-white/10">
-                <div className="h-full rounded-full bg-white/40" style={{ width: `${progress}%` }} />
+            </span>
+            {playing && (
+              <div className="flex items-end gap-0.5 h-3.5 flex-shrink-0">
+                {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-0.5 rounded-full"
+                    style={{ background: "rgba(200,160,255,0.5)", height: "100%", transformOrigin: "bottom" }}
+                    animate={{ scaleY: [h, 1, h * 0.7, 1, h] }}
+                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
+                  />
+                ))}
               </div>
             )}
           </div>
-          {playing && (
-            <div className="flex items-end gap-0.5 h-3.5 flex-shrink-0">
-              {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
-                <motion.div
-                  key={i}
-                  className="w-0.5 rounded-full bg-white/40"
-                  animate={{ scaleY: [h, 1, h * 0.7, 1, h] }}
-                  transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
-                  style={{ height: "100%", transformOrigin: "bottom" }}
-                />
-              ))}
+
+          {/* Progress bar — centered under the label */}
+          {started && !playing && !loading && (
+            <div className="w-28 h-0.5 rounded-full overflow-hidden bg-white/10 mx-auto">
+              <div className="h-full rounded-full bg-white/35" style={{ width: `${progress}%` }} />
             </div>
           )}
         </button>
