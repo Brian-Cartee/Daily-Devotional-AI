@@ -901,7 +901,7 @@ export default function LandingHome() {
                   <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(to right, #7A018D, #a855f7, #f59e0b)" }} />
                   <div className="px-5 pt-4 pb-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(192,132,252,0.65)" }}>Today's Verse</p>
-                    <p className="leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", fontSize: "15px", color: "rgba(255,255,255,0.88)" }}>
+                    <p className="leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", fontSize: "17px", color: "rgba(255,255,255,0.90)" }}>
                       "{verse.text}"
                     </p>
                     <p className="text-[12px] font-semibold" style={{ color: "rgba(192,132,252,0.7)" }}>— {verse.ref}</p>
