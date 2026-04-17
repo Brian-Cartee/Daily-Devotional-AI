@@ -34,6 +34,7 @@ import {
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
+import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -1349,6 +1350,16 @@ export default function LandingHome() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ── Daily Scripture Sign-Up ── */}
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4 px-0.5">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Start your morning with Scripture</p>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
+            </div>
+            <InlineSubscribeToggle />
           </div>
 
           </div>
