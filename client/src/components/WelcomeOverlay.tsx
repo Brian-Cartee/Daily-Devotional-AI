@@ -101,9 +101,6 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         <p className="mt-2.5 text-white/80 text-center text-[15px] leading-relaxed tracking-wide font-medium">
           Scripture for what you&rsquo;re going through
         </p>
-        <p className="mt-1.5 text-white/50 text-center text-[13px] leading-snug px-4">
-          Whatever you&rsquo;re carrying &mdash; you can begin here.
-        </p>
       </motion.div>
 
       {/* Spacer — pushes CTAs toward the lower half */}
@@ -169,9 +166,16 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
                   : <span className="text-white/85 text-[11px]">▶</span>
               }
             </div>
-            <span className="text-[14px] font-medium text-center" style={{ color: playing ? "rgba(220,195,255,0.92)" : "rgba(255,255,255,0.72)" }}>
-              {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a welcome"}
-            </span>
+            <div className="flex flex-col items-start">
+              <span className="text-[14px] font-medium" style={{ color: playing ? "rgba(220,195,255,0.92)" : "rgba(255,255,255,0.78)" }}>
+                {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a welcome"}
+              </span>
+              {!started && !playing && !loading && (
+                <span className="text-[11px] leading-none mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  A quiet word before you begin · about a minute
+                </span>
+              )}
+            </div>
             {playing && (
               <div className="flex items-end gap-0.5 h-3.5 flex-shrink-0">
                 {[0.6, 1, 0.75, 0.45, 0.85].map((h, i) => (
