@@ -227,23 +227,24 @@ export default function TriviaPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <NavBar />
+      {/* Back button — fixed, out of flow so content centers cleanly */}
+      {phase === "select" && (
+        <button
+          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          data-testid="btn-trivia-back"
+          className="fixed top-[60px] left-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back
+        </button>
+      )}
       <div className="max-w-lg mx-auto px-4 pt-14">
 
         {/* ── Category Selection ─────────────────────────────────────── */}
         <AnimatePresence mode="wait">
           {phase === "select" && (
             <motion.div key="select" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <div className="flex items-center mb-2">
-                <button
-                  onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-                  data-testid="btn-trivia-back"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Back
-                </button>
-              </div>
-              <div className="text-center pt-2 pb-6">
+              <div className="text-center pt-6 pb-6">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/30 mb-3">
                   <Trophy className="w-7 h-7 text-white" />
                 </div>
