@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Share2, Check, ChevronDown } from "lucide-react";
 
@@ -236,6 +237,21 @@ export function DailyArtCard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quiet link to Our Calling — always visible, never pushy */}
+      {imageLoaded && art && (
+        <Link href="/calling">
+          <div
+            data-testid="link-daily-art-calling"
+            className="flex items-center justify-center gap-1.5 py-2.5 text-[11px] text-muted-foreground/45 hover:text-primary/60 active:text-primary/80 transition-colors cursor-pointer"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+          >
+            <Share2 className="w-3 h-3" />
+            <span>Share today's art</span>
+            <span className="opacity-60">→</span>
+          </div>
+        </Link>
+      )}
     </motion.div>
   );
 }
