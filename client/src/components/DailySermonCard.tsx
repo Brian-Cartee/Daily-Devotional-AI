@@ -221,7 +221,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
         <div className="h-0.5" style={{ background: "linear-gradient(90deg, #7c3aed, #a78bfa40, transparent)" }} />
 
         {/* Header row */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-1">
+        <div className="flex items-center justify-between px-4 pt-4 pb-1">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(124,58,237,0.2)" }}>
               <BookOpen className="w-3.5 h-3.5" style={{ color: "#a78bfa" }} />
@@ -252,7 +252,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
             >
               {/* Loading skeleton */}
               {loading && !sermon && (
-                <div className="px-5 pb-5 pt-3 space-y-3">
+                <div className="px-4 pb-4 pt-3 space-y-3">
                   <div className="h-4 rounded-full bg-white/5 animate-pulse w-3/4" />
                   <div className="h-4 rounded-full bg-white/5 animate-pulse w-1/2" />
                   <div className="rounded-2xl bg-white/5 animate-pulse" style={{ aspectRatio: "16/9" }} />
@@ -260,7 +260,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
               )}
 
               {sermon && (
-                <div className="px-5 pb-5 pt-3 space-y-4">
+                <div className="px-4 pb-4 pt-3 space-y-4">
 
                   {/* ── GATED: preview with bridge card ── */}
                   {gated ? (
