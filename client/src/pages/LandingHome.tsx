@@ -296,6 +296,8 @@ function HeroAIPrompt() {
                 {label}
               </button>
             ))}
+            {/* Trailing spacer — must be >= fade overlay width (w-14) to clear it */}
+            <div className="w-14 flex-shrink-0" />
             </div>
             {/* Fade + chevron — signals more chips to the right */}
             <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
