@@ -175,7 +175,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             </div>
             <div className="flex flex-col items-center">
               <span className="text-[15px] font-semibold" style={{ color: playing ? "rgba(230,210,255,0.98)" : "rgba(255,255,255,0.92)" }}>
-                {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome" : "Hear a welcome"}
+                {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome" : "A personal welcome"}
               </span>
               {!started && !playing && !loading && (
                 <span className="text-[12px] leading-snug mt-0.5 text-center" style={{ color: "rgba(200,170,255,0.65)" }}>
