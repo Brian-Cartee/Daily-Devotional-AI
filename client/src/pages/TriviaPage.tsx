@@ -59,6 +59,7 @@ export default function TriviaPage() {
   const { toast } = useToast();
 
   const [phase, setPhase] = useState<Phase>("select");
+  const [difficulty, setDifficulty] = useState<"standard" | "challenging">("standard");
   const [category, setCategory] = useState<typeof CATEGORIES[0] | null>(null);
   const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -99,8 +100,9 @@ export default function TriviaPage() {
     setCategory(cat);
     setPhase("loading");
     try {
+      const diffParam = difficulty === "challenging" ? "?difficulty=challenging" : "";
       const [qRes, playRes] = await Promise.all([
-        fetch(`/api/trivia/questions/${cat.id}`),
+        fetch(`/api/trivia/questions/${cat.id}${diffParam}`),
         fetch("/api/trivia/play", { method: "POST" }),
       ]);
       const data = await qRes.json();
@@ -248,6 +250,37 @@ export default function TriviaPage() {
                 <h1 className="text-[26px] font-bold text-foreground">Bible Challenge</h1>
                 <p className="text-[14px] text-muted-foreground mt-1">Test your knowledge. Challenge a friend to beat your score.</p>
               </div>
+
+              {/* ── Difficulty toggle ───────────────────────────── */}
+              <div className="flex rounded-xl border border-border bg-muted/40 p-1 mb-4 gap-1">
+                <button
+                  data-testid="btn-difficulty-standard"
+                  onClick={() => setDifficulty("standard")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+                    difficulty === "standard"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  📖 Standard
+                </button>
+                <button
+                  data-testid="btn-difficulty-challenging"
+                  onClick={() => setDifficulty("challenging")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+                    difficulty === "challenging"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  🔥 Challenging
+                </button>
+              </div>
+              {difficulty === "challenging" && (
+                <p className="text-[11px] text-muted-foreground/70 text-center -mt-2 mb-3">
+                  Specific chapters, numbers &amp; deeper knowledge
+                </p>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 {CATEGORIES.map((cat, i) => (
