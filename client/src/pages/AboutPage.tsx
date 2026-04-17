@@ -119,6 +119,23 @@ export default function AboutPage() {
 
       <main className="max-w-2xl mx-auto px-4 pb-28">
 
+        {/* Mission Statement */}
+        <motion.div {...fadeUp(0.08)} className="mb-8 text-center px-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] mb-4" style={{ color: "rgba(192,132,252,0.6)" }}>Our Mission</p>
+          <p className="text-white leading-relaxed mb-5" style={{ fontFamily: "'Georgia', serif", fontSize: "1.2rem" }}>
+            "A quiet, consistent presence that meets you where you are — and walks with you forward."
+          </p>
+          <div className="rounded-2xl p-5 text-left" style={{ background: "rgba(122,1,141,0.14)", border: "1px solid rgba(160,80,200,0.22)" }}>
+            <p className="text-white/65 text-[14px] leading-relaxed mb-3">
+              Our mission is simple: to bring as many people as possible into a real, personal relationship with Jesus Christ — through the Word of God, honest prayer, and the quiet work of the Spirit.
+            </p>
+            <p className="text-white/65 text-[14px] leading-relaxed">
+              We use technology not to replace that encounter, but to remove every obstacle in the way. Wherever you are — doubting, grieving, returning, or just curious — there is a path from here.
+            </p>
+          </div>
+          <div className="w-8 h-px mx-auto mt-6" style={{ background: "rgba(255,255,255,0.1)" }} />
+        </motion.div>
+
         {/* Seek Guidance CTA */}
         <motion.div {...fadeUp(0.1)} className="mb-6">
           <Link href="/guidance">

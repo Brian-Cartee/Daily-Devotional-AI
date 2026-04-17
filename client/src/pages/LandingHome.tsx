@@ -1152,6 +1152,33 @@ export default function LandingHome() {
             </div>
           </div>
 
+          {/* ── Our Commitment to Scripture ── */}
+          <div className="mt-8 rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)", border: "1px solid rgba(160,80,200,0.2)" }}>
+            <div className="px-5 pt-5 pb-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-0.5 h-4 rounded-full bg-primary/60" />
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/70">Our Commitment to Scripture</p>
+              </div>
+              <div className="space-y-2.5">
+                {[
+                  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit",
+                  "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word",
+                  "Shaped by the historic, orthodox Christian faith — not cultural opinion",
+                  "Built to lead people to Christ, making it easier to immerse yourself in Scripture without embarrassment",
+                  "An honest, open place to encounter God — in a way that fits where you actually are",
+                ].map((line, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: "rgba(192,132,252,0.7)" }} />
+                    <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.6)" }}>{line}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[12px] italic mt-4 pt-3" style={{ color: "rgba(255,255,255,0.28)", borderTop: "1px solid rgba(255,255,255,0.07)", fontFamily: "'Georgia', serif" }}>
+                "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+              </p>
+            </div>
+          </div>
+
           {/* ── Testimonials ── */}
           <div className="mt-8">
             <div className="flex items-center gap-3 mb-4 px-0.5">
