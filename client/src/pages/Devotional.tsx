@@ -569,13 +569,20 @@ export default function Devotional() {
   };
 
   const shareOnX = () => {
-    const text = encodeURIComponent(buildShareText());
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(APP_URL)}`, "_blank", "noopener,width=600,height=450");
+    if (!verse) return;
+    // X intent: keep text short, URL goes as separate param (creates link preview card)
+    const tweetText = encodeURIComponent(
+      `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏`
+    );
+    window.open(`https://x.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(APP_URL)}`, "_blank", "noopener,width=600,height=450");
   };
 
   const shareOnFacebook = () => {
-    const text = encodeURIComponent(buildShareText());
-    window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=${encodeURIComponent(APP_URL)}`, "_blank", "noopener,width=600,height=450");
+    // Facebook sharer: u = page to share (OG tags drive the preview), quote = pre-fill text
+    const quote = encodeURIComponent(
+      `📖 ${verse?.reference ?? ""}\n\n"${verse?.text ?? ""}"\n\nReflect & pray with me at Shepherd's Path 🙏`
+    );
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(APP_URL)}&quote=${quote}`, "_blank", "noopener,width=600,height=450");
   };
 
   const shareOnWhatsApp = () => {
@@ -585,12 +592,15 @@ export default function Devotional() {
 
   const shareOnTruthSocial = () => {
     const text = encodeURIComponent(buildShareText());
-    window.open(`https://truthsocial.com/share?text=${text}`, "_blank", "noopener");
+    window.open(`https://truthsocial.com/share?text=${text}&url=${encodeURIComponent(APP_URL)}`, "_blank", "noopener");
   };
 
   const shareOnTelegram = () => {
-    const text = encodeURIComponent(buildShareText());
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${text}`, "_blank", "noopener");
+    if (!verse) return;
+    const msg = encodeURIComponent(
+      `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏`
+    );
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${msg}`, "_blank", "noopener");
   };
 
   if (isVerseLoading) {
@@ -896,23 +906,30 @@ export default function Devotional() {
                     transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                     className="overflow-hidden"
                   >
-                    <div className="px-4 pb-3.5 pt-2 border-t border-border/20 flex items-center justify-center gap-1.5">
-                      <span className="text-[11px] text-muted-foreground/40 font-medium mr-1">Also share to</span>
-                      <button data-testid="share-x" onClick={shareOnX} title="Share on X" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-all">
-                        <SiX className="w-4 h-4" />
-                      </button>
-                      <button data-testid="share-facebook" onClick={shareOnFacebook} title="Share on Facebook" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all">
-                        <SiFacebook className="w-4 h-4" />
-                      </button>
-                      <button data-testid="share-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#25D366] hover:bg-green-50 dark:hover:bg-green-950/40 transition-all">
-                        <SiWhatsapp className="w-4 h-4" />
-                      </button>
-                      <button data-testid="share-truthsocial" onClick={shareOnTruthSocial} title="Share on Truth Social" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#7347CC] hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-all">
-                        <span className="text-[12px] font-black leading-none">T</span>
-                      </button>
-                      <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram" className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-[#2AABEE] hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all">
-                        <SiTelegram className="w-4 h-4" />
-                      </button>
+                    <div className="px-4 pb-4 pt-3 border-t border-border/20 flex flex-col items-center gap-3">
+                      <span className="text-[11px] text-foreground/50 font-medium tracking-wide uppercase">Also share to</span>
+                      <div className="flex items-center gap-3">
+                        <button data-testid="share-x" onClick={shareOnX} title="Share on X"
+                          className="w-11 h-11 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
+                          <SiX className="w-[18px] h-[18px]" />
+                        </button>
+                        <button data-testid="share-facebook" onClick={shareOnFacebook} title="Share on Facebook"
+                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#1877F2] text-white active:scale-95 transition-transform shadow-md">
+                          <SiFacebook className="w-[18px] h-[18px]" />
+                        </button>
+                        <button data-testid="share-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp"
+                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
+                          <SiWhatsapp className="w-[18px] h-[18px]" />
+                        </button>
+                        <button data-testid="share-truthsocial" onClick={shareOnTruthSocial} title="Share on Truth Social"
+                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#7347CC] text-white active:scale-95 transition-transform shadow-md">
+                          <span className="text-[14px] font-black leading-none">T</span>
+                        </button>
+                        <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram"
+                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
+                          <SiTelegram className="w-[18px] h-[18px]" />
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -927,7 +944,7 @@ export default function Devotional() {
                   transition={{ delay: 1.2, duration: 0.7, ease: "easeOut" }}
                   className="mx-4 mb-2 mt-1 flex items-start justify-between gap-3"
                 >
-                  <p className="text-[12px] text-primary/50 italic leading-relaxed">
+                  <p className="text-[12px] text-foreground/70 italic leading-relaxed">
                     Prefer to receive this rather than read? A full listen experience — verse, reflection, and prayer — will be ready below.
                   </p>
                   <button
