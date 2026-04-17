@@ -168,8 +168,15 @@ export async function registerRoutes(
   // Sync today's verse from Google Sheets at startup
   syncTodayVerseFromSheet().catch(console.error);
 
-  // Start the daily email scheduler
-  scheduleDailyEmails().catch(console.error);
+  // Start the daily email scheduler — only in the deployed production environment.
+  // Skipped in dev to prevent duplicate sends when both environments share the same
+  // subscriber email addresses but maintain separate databases.
+  const isDeployedProduction = process.env.REPLIT_DEPLOYMENT === '1';
+  if (isDeployedProduction || process.env.ENABLE_EMAIL_SCHEDULER === 'true') {
+    scheduleDailyEmails().catch(console.error);
+  } else {
+    console.log("[email] Scheduler skipped — not a production deployment. Set ENABLE_EMAIL_SCHEDULER=true to override.");
+  }
 
   // ── Health check ──────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
