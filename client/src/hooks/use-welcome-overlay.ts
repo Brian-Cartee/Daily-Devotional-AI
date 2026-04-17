@@ -4,7 +4,7 @@ const VISIT_COUNT_KEY = "sp_visit_count";
 const SESSION_KEY = "sp_welcome_shown_this_session";
 
 // Show welcome overlay for first N visits, then stop
-const REGULAR_THRESHOLD = 3;
+const REGULAR_THRESHOLD = 5;
 
 export function useWelcomeOverlay() {
   const [show, setShow] = useState(false);
