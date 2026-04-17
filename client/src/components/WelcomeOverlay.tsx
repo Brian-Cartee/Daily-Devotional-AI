@@ -170,7 +170,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
               }
             </div>
             <span className="text-[14px] font-medium text-center" style={{ color: playing ? "rgba(220,195,255,0.92)" : "rgba(255,255,255,0.72)" }}>
-              {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Or begin by listening"}
+              {loading ? "Preparing…" : playing ? "Playing — tap to stop" : started ? "Replay welcome message" : "Hear a welcome"}
             </span>
             {playing && (
               <div className="flex items-end gap-0.5 h-3.5 flex-shrink-0">
