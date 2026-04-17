@@ -875,7 +875,6 @@ export default function LandingHome() {
                       <span className="text-[13px] font-semibold">{label}</span>
                     </button>
                   ))}
-
                   {/* Something else — expands inline input */}
                   <button
                     data-testid="emotion-card-something-else"
@@ -889,6 +888,8 @@ export default function LandingHome() {
                     <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
                     <span className="text-[13px] font-semibold">Something else</span>
                   </button>
+                  {/* Trailing spacer — must be >= fade overlay width (w-14) to clear it */}
+                  <div className="w-14 flex-shrink-0" />
                 </div>
                 {/* Fade + chevron — signals more chips to the right */}
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
