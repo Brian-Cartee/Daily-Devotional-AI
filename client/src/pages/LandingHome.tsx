@@ -1255,7 +1255,7 @@ export default function LandingHome() {
               <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">What people are saying</p>
               <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 snap-x snap-mandatory scrollbar-none">
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 pl-7 pr-5 snap-x snap-mandatory scrollbar-none">
               {[
                 {
                   quote: "I hadn't opened a Bible in fifteen years. This app doesn't make you feel behind. It just meets you. I've used it every morning for three months now.",
