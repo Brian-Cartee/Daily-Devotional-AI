@@ -287,29 +287,41 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                 )}
 
                 {/* Input */}
-                <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-muted/20 px-3.5 py-2.5">
-                  <textarea
-                    data-testid="input-context-question"
-                    value={question}
-                    onChange={e => setQuestion(e.target.value)}
-                    placeholder="If something feels unclear, you can ask…"
-                    className="flex-1 resize-none bg-transparent text-[14px] leading-snug text-foreground/85 placeholder:text-muted-foreground/60 outline-none min-h-[20px] max-h-[100px]"
-                    rows={1}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAsk();
-                      }
-                    }}
-                  />
-                  <button
-                    data-testid="button-context-ask"
-                    onClick={handleAsk}
-                    disabled={!question.trim() || qaLoading}
-                    className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-35 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500/70 mb-2 px-1">
+                    Have a question about this verse?
+                  </p>
+                  <div
+                    className="flex items-end gap-3 rounded-2xl px-4 py-3.5 transition-all"
+                    style={{ background: "rgba(245,158,11,0.07)", border: "1.5px solid rgba(245,158,11,0.3)" }}
                   >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
+                    <textarea
+                      data-testid="input-context-question"
+                      value={question}
+                      onChange={e => setQuestion(e.target.value)}
+                      placeholder="Ask anything — I'm here to help…"
+                      className="flex-1 resize-none bg-transparent text-[15px] leading-snug text-foreground/90 placeholder:text-amber-700/50 dark:placeholder:text-amber-300/40 outline-none min-h-[22px] max-h-[100px]"
+                      rows={1}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAsk();
+                        }
+                      }}
+                    />
+                    <button
+                      data-testid="button-context-ask"
+                      onClick={handleAsk}
+                      disabled={!question.trim() || qaLoading}
+                      className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", boxShadow: question.trim() ? "0 4px 14px rgba(245,158,11,0.4)" : "none" }}
+                    >
+                      {qaLoading
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Send className="w-4 h-4" />
+                      }
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
