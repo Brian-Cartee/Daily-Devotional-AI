@@ -254,17 +254,13 @@ export function PrayerPortrait({ situation, onClose }: Props) {
                 </div>
               )}
               <div>
-                <motion.div
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="flex items-center gap-2 justify-center text-amber-500 mb-3"
+                <motion.p
+                  animate={{ opacity: [0.45, 1, 0.45] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                  className="text-[15px] text-muted-foreground max-w-[240px] mx-auto leading-relaxed italic"
                 >
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-[14px] font-semibold">Crafting your prayer…</span>
-                </motion.div>
-                <p className="text-[13px] text-muted-foreground max-w-[240px] mx-auto leading-relaxed">
                   Taking a moment to hold what you shared and speak it before God.
-                </p>
+                </motion.p>
               </div>
             </motion.div>
           )}

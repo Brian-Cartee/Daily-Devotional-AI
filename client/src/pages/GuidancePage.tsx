@@ -500,7 +500,7 @@ export default function GuidancePage() {
                 >
                   <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mb-6">
                     {isFirstVisit
-                      ? "The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is. Scripture and a prayer written just for you await."
+                      ? "The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is."
                       : "Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now."}
                   </p>
 
@@ -689,8 +689,7 @@ export default function GuidancePage() {
                       <div className="min-w-0">
                         {ttsChain.loading ? (
                           <>
-                            <p className="text-[12px] font-bold text-primary leading-none">Preparing audio…</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Fetching next section in background</p>
+                            <p className="text-[12px] font-bold text-primary leading-none">A moment…</p>
                           </>
                         ) : chainSection ? (
                           <>
@@ -742,11 +741,7 @@ export default function GuidancePage() {
                     <p className="text-[19px] leading-relaxed font-medium text-foreground/45 italic mb-4">
                       "Be still, and know that I am God."
                     </p>
-                    <p className="text-[13px] font-bold text-primary/40 tracking-wide mb-3">— Psalm 46:10</p>
-                    <p className="text-[11px] text-muted-foreground/50 flex items-center gap-1.5">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Finding a word for your moment…
-                    </p>
+                    <p className="text-[13px] font-bold text-primary/40 tracking-wide">— Psalm 46:10</p>
                   </div>
                 ) : verse ? (
                   <div
