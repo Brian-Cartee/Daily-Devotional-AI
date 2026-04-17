@@ -645,43 +645,67 @@ export function FirstStepsCard({ daysWithApp }: FirstStepsCardProps) {
       <motion.div
         {...fadeIn}
         data-testid="card-first-steps"
-        className="relative rounded-2xl border border-border/60 bg-muted/30 overflow-hidden"
+        className="relative rounded-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(30,15,65,0.95) 0%, rgba(20,10,45,0.98) 100%)",
+          border: "1px solid rgba(245,158,11,0.22)",
+          boxShadow: "0 2px 20px rgba(0,0,0,0.25)",
+        }}
       >
+        {/* Amber accent bar along the top */}
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600" />
+
         <button
           onClick={dismiss}
           data-testid="button-dismiss-first-steps"
           aria-label="Dismiss"
-          className="absolute top-2.5 right-2.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+          style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-3 h-3" />
         </button>
 
-        <div className="px-4 pt-3.5 pb-3 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0">
-            <Compass className="w-4 h-4 text-orange-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground leading-snug">
-              New here? There's a journey built for you.
-            </p>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Link href="/understand?j=first-steps" onClick={dismiss}>
-                <button
-                  data-testid="button-start-first-steps"
-                  className="text-[12px] font-semibold text-orange-500 hover:text-orange-600 transition-colors"
-                >
-                  Start First Steps →
-                </button>
-              </Link>
-              <button
-                onClick={dismiss}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-skip-first-steps"
-              >
-                I'm familiar with the Bible
-              </button>
+        <div className="px-4 pt-4 pb-4">
+          {/* Header */}
+          <div className="flex items-start gap-3 mb-3.5">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+              style={{ background: "rgba(245,158,11,0.18)", border: "1px solid rgba(245,158,11,0.25)" }}
+            >
+              <Compass className="w-[18px] h-[18px] text-amber-400" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-white/90 leading-snug">
+                New here?
+              </p>
+              <p className="text-[12px] text-white/55 leading-snug mt-0.5">
+                There's a journey built for you.
+              </p>
             </div>
           </div>
+
+          {/* CTAs — stacked for clarity */}
+          <Link href="/understand?j=first-steps" onClick={dismiss}>
+            <button
+              data-testid="button-start-first-steps"
+              className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] mb-2"
+              style={{ background: "linear-gradient(90deg, #f59e0b, #f97316)" }}
+            >
+              Start First Steps →
+            </button>
+          </Link>
+          <button
+            onClick={dismiss}
+            className="w-full py-2 rounded-xl text-[12px] font-medium transition-colors"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.55)",
+            }}
+            data-testid="button-skip-first-steps"
+          >
+            I'm familiar with the Bible
+          </button>
         </div>
       </motion.div>
     </AnimatePresence>
