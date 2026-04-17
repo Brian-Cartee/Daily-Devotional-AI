@@ -617,6 +617,7 @@ export default function LandingHome() {
   const [showAiPause, setShowAiPause] = useState(false);
   const [somethingElseOpen, setSomethingElseOpen] = useState(false);
   const [somethingElseText, setSomethingElseText] = useState("");
+  const [commitmentOpen, setCommitmentOpen] = useState(true);
 
   const findPassage = async () => {
     const desc = passageQuery.trim();
@@ -1224,53 +1225,69 @@ export default function LandingHome() {
           </div>
 
           {/* ── Our Commitment to Scripture ── */}
-          <div className="mt-8 rounded-2xl overflow-hidden relative" style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)", border: "1px solid rgba(160,80,200,0.2)" }}>
+          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(160,80,200,0.25)" }}>
 
-            {/* Scripture watermark — faint typographic underlayer */}
-            <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 overflow-hidden" style={{ fontFamily: "'Georgia', serif", color: "rgba(255,255,255,0.055)" }}>
-              <p className="absolute text-[38px] font-bold leading-tight whitespace-nowrap" style={{ top: "-6px", left: "-4px", transform: "rotate(-2deg)" }}>
-                In the beginning was the Word
-              </p>
-              <p className="absolute text-[26px] font-bold leading-tight whitespace-nowrap" style={{ top: "44px", right: "-8px", transform: "rotate(1.5deg)" }}>
-                For God so loved the world — John 3:16
-              </p>
-              <p className="absolute text-[32px] font-bold leading-tight whitespace-nowrap" style={{ top: "108px", left: "-6px", transform: "rotate(-1deg)" }}>
-                I am the way, the truth, and the life
-              </p>
-              <p className="absolute text-[22px] font-bold leading-tight whitespace-nowrap" style={{ top: "168px", right: "-4px", transform: "rotate(2deg)" }}>
-                The Lord is my shepherd — Psalm 23:1
-              </p>
-              <p className="absolute text-[30px] font-bold leading-tight whitespace-nowrap" style={{ top: "218px", left: "-4px", transform: "rotate(-1.5deg)" }}>
-                Your word is a lamp to my feet
-              </p>
-              <p className="absolute text-[20px] font-bold leading-tight whitespace-nowrap" style={{ top: "270px", right: "-2px", transform: "rotate(1deg)" }}>
-                Be still and know that I am God — Psalm 46:10
-              </p>
-            </div>
-
-            <div className="px-5 pt-5 pb-4 relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-0.5 h-4 rounded-full bg-primary/60" />
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/90">Our Commitment to Scripture</p>
+            {/* Bible hero image — acts as the toggle header */}
+            <button
+              data-testid="toggle-commitment"
+              onClick={() => setCommitmentOpen(v => !v)}
+              className="relative w-full block text-left focus:outline-none"
+              style={{ height: "128px" }}
+            >
+              <img
+                src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=700&q=72"
+                alt="Open Bible"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: "center 38%" }}
+              />
+              {/* Dark gradient so header text is legible */}
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,3,22,0.35) 0%, rgba(8,3,22,0.82) 100%)" }} />
+              {/* Header text + chevron */}
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 pb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(192,132,252,0.85)" }} />
+                  <p className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: "rgba(255,255,255,0.90)" }}>Our Commitment to Scripture</p>
+                </div>
+                <motion.div animate={{ rotate: commitmentOpen ? 180 : 0 }} transition={{ duration: 0.22 }}>
+                  <ChevronDown className="w-4 h-4" style={{ color: "rgba(255,255,255,0.55)" }} />
+                </motion.div>
               </div>
-              <div className="space-y-2.5">
-                {[
-                  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit",
-                  "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word",
-                  "Shaped by the historic, orthodox Christian faith — not cultural opinion",
-                  "Built to lead people to Christ, making it easier to immerse yourself in Scripture without embarrassment",
-                  "An honest, open place to encounter God — in a way that fits where you actually are",
-                ].map((line, i) => (
-                  <div key={i} className="flex items-start gap-2.5">
-                    <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: "rgba(192,132,252,0.7)" }} />
-                    <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>{line}</p>
+            </button>
+
+            {/* Collapsible body */}
+            <AnimatePresence initial={false}>
+              {commitmentOpen && (
+                <motion.div
+                  key="commitment-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                  style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)" }}
+                >
+                  <div className="px-5 pt-4 pb-5">
+                    <div className="space-y-2.5">
+                      {[
+                        "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit",
+                        "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word",
+                        "Shaped by the historic, orthodox Christian faith — not cultural opinion",
+                        "Built to lead people to Christ, making it easier to immerse yourself in Scripture without embarrassment",
+                        "An honest, open place to encounter God — in a way that fits where you actually are",
+                      ].map((line, i) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: "rgba(192,132,252,0.7)" }} />
+                          <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>{line}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[12px] italic mt-4 pt-3" style={{ color: "rgba(255,255,255,0.68)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
+                      "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+                    </p>
                   </div>
-                ))}
-              </div>
-              <p className="text-[12px] italic mt-4 pt-3" style={{ color: "rgba(255,255,255,0.68)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
-                "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
-              </p>
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* ── Testimonials ── */}
