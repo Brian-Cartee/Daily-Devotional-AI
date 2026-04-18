@@ -3358,7 +3358,7 @@ ${historyNote}`;
         "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
         "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
         "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
-        // "UC???", // Real Life with Jack Hibbs — pending
+        "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
         // "UC???", // Allen Jackson Ministries — pending
         // "UC???", // Change Church (Dharius Daniels) — pending
         // Tier 2 — Strong
@@ -3680,7 +3680,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
         "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
         "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
-        // "UC???", // Real Life with Jack Hibbs — pending
+        "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
         // "UC???", // Allen Jackson Ministries — pending
         // "UC???", // Change Church (Dharius Daniels) — pending
         // Tier 2 — Strong
