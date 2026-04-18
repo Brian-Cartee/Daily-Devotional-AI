@@ -3797,6 +3797,67 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
     }
   });
 
+  // ── Generate custom scripture for a user-provided topic (Calling page) ──
+  app.post("/api/calling/generate", async (req, res) => {
+    try {
+      const { topic } = req.body as { topic?: string };
+      if (!topic || typeof topic !== "string" || topic.trim().length < 3) {
+        return res.status(400).json({ error: "Please describe what's on your heart." });
+      }
+      const trimmed = topic.trim().slice(0, 300);
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You help people find the perfect Bible verse to share for a given topic or life moment. 
+Respond with JSON only:
+{
+  "message": string,
+  "verseText": string,
+  "scripture": string,
+  "meaning": string,
+  "shareText": string
+}
+
+Rules:
+- message: a short, warm 8–14 word phrase that captures the spirit of what they want to share (no quotes, no scripture yet)
+- verseText: the exact NIV Bible verse text — precise, beautiful, directly relevant
+- scripture: the book, chapter:verse reference (e.g. "Psalm 46:10")
+- meaning: 1–2 sentences in a warm pastoral voice explaining why this verse meets this moment — not preachy, just honest
+- shareText: the complete text someone would copy-paste to share — includes the message line, the verse in quotes, the reference, and "Shepherd's Path · shepherdspath.app"
+
+Choose a verse that feels discovered, not generic. Avoid John 3:16, Romans 8:28, Jeremiah 29:11 unless they are genuinely the single best fit. Prefer a verse that will make someone stop and feel seen.`,
+          },
+          {
+            role: "user",
+            content: `Topic: ${trimmed}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 400,
+      });
+
+      const result = JSON.parse(completion.choices[0].message.content || "{}");
+
+      if (!result.verseText || !result.scripture) {
+        return res.status(500).json({ error: "Could not generate a verse. Please try again." });
+      }
+
+      return res.json({
+        message: result.message || "",
+        verseText: result.verseText,
+        scripture: result.scripture,
+        meaning: result.meaning || "",
+        shareText: result.shareText || `"${result.verseText}"\n— ${result.scripture}\n\nShepherd's Path · shepherdspath.app`,
+      });
+    } catch (err) {
+      console.error("[calling/generate] error:", err);
+      return res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
   return httpServer;
 }
 

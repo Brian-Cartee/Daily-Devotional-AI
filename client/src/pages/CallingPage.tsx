@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Share2, ArrowLeft, Heart, BookOpen, Loader2, Palette, Sparkles } from "lucide-react";
+import { Share2, ArrowLeft, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
 
@@ -65,7 +65,15 @@ const CALLING_CARDS = [
   },
 ];
 
-type LoadingKey = `${number}-${"purple" | "art"}`;
+interface GeneratedCard {
+  message: string;
+  verseText: string;
+  scripture: string;
+  meaning: string;
+  shareText: string;
+}
+
+type LoadingKey = `${number}-${"purple" | "art"}` | `gen-${"purple" | "art"}`;
 
 async function doImageShare(blob: Blob, title: string, fallbackText: string) {
   const file = new File([blob], "shepherds-path.png", { type: "image/png" });
@@ -87,6 +95,13 @@ export default function CallingPage() {
   const [artUrl, setArtUrl] = useState<string>(FALLBACK_IMG);
   const [artLoaded, setArtLoaded] = useState(false);
 
+  // Generate-your-own state
+  const [topic, setTopic] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState<GeneratedCard | null>(null);
+  const [genError, setGenError] = useState("");
+  const generatedRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetch("/api/daily-art")
       .then(r => r.json())
@@ -96,8 +111,32 @@ export default function CallingPage() {
       .catch(() => {});
   }, []);
 
-  const handlePurpleShare = async (card: typeof CALLING_CARDS[0]) => {
-    const key: LoadingKey = `${card.id}-purple`;
+  const handleGenerate = async () => {
+    if (!topic.trim() || generating) return;
+    setGenerating(true);
+    setGenError("");
+    setGenerated(null);
+    try {
+      const res = await fetch("/api/calling/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: topic.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setGenError(data.error || "Something went wrong. Please try again.");
+      } else {
+        setGenerated(data);
+        setTimeout(() => generatedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      }
+    } catch {
+      setGenError("Something went wrong. Please try again.");
+    }
+    setGenerating(false);
+  };
+
+  const handlePurpleShare = async (card: typeof CALLING_CARDS[0] | GeneratedCard, keyPrefix: string) => {
+    const key = `${keyPrefix}-purple` as LoadingKey;
     if (loading) return;
     setLoading(key);
     try {
@@ -109,8 +148,8 @@ export default function CallingPage() {
     setLoading(null);
   };
 
-  const handleArtShare = async (card: typeof CALLING_CARDS[0]) => {
-    const key: LoadingKey = `${card.id}-art`;
+  const handleArtShare = async (card: typeof CALLING_CARDS[0] | GeneratedCard, keyPrefix: string) => {
+    const key = `${keyPrefix}-art` as LoadingKey;
     if (loading) return;
     setLoading(key);
     try {
@@ -150,7 +189,7 @@ export default function CallingPage() {
   return (
     <div className="min-h-screen bg-[#0d0a1a]" style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}>
 
-      {/* Back button — pill style consistent with all pages */}
+      {/* Back button */}
       <button
         onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); setLocation("/"); }}
         className="fixed top-4 left-4 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
@@ -160,7 +199,7 @@ export default function CallingPage() {
         Back
       </button>
 
-      {/* HERO — cinematic full-screen */}
+      {/* HERO */}
       <div className="relative w-full" style={{ height: "92svh", minHeight: 520 }}>
         <img
           src={artUrl}
@@ -169,7 +208,6 @@ export default function CallingPage() {
           style={{ filter: "brightness(0.75)" }}
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG; }}
         />
-        {/* Gradient — dark at bottom for text legibility */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 30%, rgba(13,10,26,0.72) 72%, rgba(13,10,26,1) 100%)" }} />
 
         <div className="absolute bottom-0 left-0 right-0 px-7 pb-14 text-center">
@@ -200,7 +238,150 @@ export default function CallingPage() {
         <div className="w-8 h-px mx-auto mt-8 bg-white/10" />
       </div>
 
-      {/* SHARE CARDS — editorial, minimal */}
+      {/* ── CREATE YOUR OWN MOMENT ── */}
+      <div className="px-5 pb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(68,47,116,0.22) 60%, rgba(13,10,26,0.8) 100%)",
+            border: "1px solid rgba(180,80,220,0.22)",
+          }}
+        >
+          {/* Header */}
+          <div className="px-5 pt-5 pb-4">
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(122,1,141,0.4)" }}>
+                <Wand2 className="w-3.5 h-3.5" style={{ color: "rgba(220,170,255,0.9)" }} />
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "rgba(180,120,255,0.8)" }}>
+                Create Your Moment
+              </p>
+            </div>
+            <p className="text-white/45 text-[13px] leading-relaxed mt-2">
+              What's on your heart to share? Describe a topic, a person, a struggle — the AI finds the verse made for this moment.
+            </p>
+          </div>
+
+          {/* Input */}
+          <div className="px-5 pb-5">
+            <div
+              className="flex items-end gap-2 rounded-xl px-4 py-3"
+              style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <textarea
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                placeholder="e.g. a friend going through grief, someone losing hope, anxiety about the future…"
+                rows={2}
+                maxLength={300}
+                data-testid="input-calling-topic"
+                className="flex-1 bg-transparent text-white placeholder:text-white/25 text-[14px] leading-relaxed resize-none outline-none"
+              />
+              <button
+                onClick={handleGenerate}
+                disabled={!topic.trim() || generating}
+                data-testid="button-calling-generate"
+                className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-95 disabled:opacity-35"
+                style={{ background: topic.trim() && !generating ? "rgba(122,1,141,0.7)" : "rgba(255,255,255,0.08)" }}
+              >
+                {generating
+                  ? <Loader2 className="w-4 h-4 animate-spin text-white/60" />
+                  : <Send className="w-4 h-4" style={{ color: topic.trim() ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.3)" }} />
+                }
+              </button>
+            </div>
+
+            {genError && (
+              <p className="text-red-400/80 text-[12px] mt-2 px-1">{genError}</p>
+            )}
+          </div>
+
+          {/* Generated result */}
+          <AnimatePresence>
+            {generated && (
+              <motion.div
+                ref={generatedRef}
+                key="generated-card"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="mx-5 mb-5 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(180,80,220,0.25)", background: "rgba(0,0,0,0.3)" }}>
+                  {/* Accent bar */}
+                  <div className="h-px w-full" style={{ background: "linear-gradient(90deg, rgba(122,1,141,0.9), rgba(68,47,116,0.6), transparent)" }} />
+
+                  <div className="px-4 pt-4 pb-3">
+                    {generated.message && (
+                      <p className="text-white leading-snug mb-2.5" style={{ fontFamily: "'Georgia', serif", fontSize: "0.95rem" }}>
+                        {generated.message}
+                      </p>
+                    )}
+                    <p className="text-white/75 leading-relaxed text-[14px] mb-1" style={{ fontFamily: "'Georgia', serif" }}>
+                      "{generated.verseText}"
+                    </p>
+                    <p className="text-white/35 text-[12px] tracking-wide mb-3">— {generated.scripture}</p>
+                    {generated.meaning && (
+                      <p className="text-white/50 text-[13px] leading-relaxed">{generated.meaning}</p>
+                    )}
+                  </div>
+
+                  {/* Share buttons */}
+                  <div className="grid grid-cols-2 gap-2 mx-4 mb-4 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                    <button
+                      onClick={() => handlePurpleShare(generated, "gen")}
+                      disabled={loading !== null}
+                      data-testid="button-calling-gen-share-purple"
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
+                      style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
+                    >
+                      {loading === "gen-purple" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+                      Brand Card
+                    </button>
+                    <button
+                      onClick={() => handleArtShare(generated, "gen")}
+                      disabled={loading !== null}
+                      data-testid="button-calling-gen-share-art"
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
+                      style={{
+                        background: artLoaded ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.07)",
+                        border: artLoaded ? "1px solid rgba(251,191,36,0.38)" : "1px solid rgba(255,255,255,0.12)",
+                        color: artLoaded ? "rgba(255,210,80,0.95)" : "rgba(255,255,255,0.60)",
+                      }}
+                    >
+                      {loading === "gen-art" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      AI Art
+                    </button>
+                  </div>
+
+                  {/* Try again */}
+                  <div className="text-center pb-4">
+                    <button
+                      onClick={() => { setGenerated(null); setTopic(""); }}
+                      className="text-[12px] text-white/30 hover:text-white/55 transition-colors"
+                      data-testid="button-calling-gen-reset"
+                    >
+                      Try a different topic
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+
+      {/* SECTION DIVIDER */}
+      <div className="px-7 pb-6 text-center">
+        <p className="text-white/20 text-[11px] tracking-[0.2em] uppercase">Or share one of these</p>
+      </div>
+
+      {/* SHARE CARDS */}
       <div className="px-5 pb-6 space-y-3">
         {CALLING_CARDS.map((card, i) => (
           <motion.div
@@ -213,17 +394,15 @@ export default function CallingPage() {
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             data-testid={`card-calling-${card.id}`}
           >
-            {/* Message */}
             <p className="text-white leading-snug mb-2" style={{ fontFamily: "'Georgia', serif", fontSize: "1rem" }}>
               {card.message}
             </p>
             <p className="text-white/35 text-[11px] tracking-wide mb-3">— {card.scripture}</p>
             <p className="text-white/50 text-[13px] leading-relaxed">{card.meaning}</p>
 
-            {/* Share options */}
             <div className="grid grid-cols-2 gap-2 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
               <button
-                onClick={() => handlePurpleShare(card)}
+                onClick={() => handlePurpleShare(card, String(card.id))}
                 disabled={loading !== null}
                 data-testid={`button-calling-share-purple-${card.id}`}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
@@ -233,7 +412,7 @@ export default function CallingPage() {
                 Brand Card
               </button>
               <button
-                onClick={() => handleArtShare(card)}
+                onClick={() => handleArtShare(card, String(card.id))}
                 disabled={loading !== null}
                 data-testid={`button-calling-share-art-${card.id}`}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
