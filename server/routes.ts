@@ -3328,7 +3328,7 @@ ${historyNote}`;
             content: `You are curating a single short video message (5–10 minutes) for someone who just completed their daily devotional. Return JSON:
 {
   "theme": "2–4 words describing the message theme (e.g. 'identity in Christ', 'trusting God while waiting')",
-  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Target one specific trusted preacher from this list: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler. Choose the preacher whose style and voice best fits the emotional tone of the verse and reflection. Focus on a specific passage or theme, not a full message.",
+  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Target one specific trusted preacher from this list: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Phillip Mitchell, Jentezen Franklin, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler. Choose the preacher whose style and voice best fits the emotional tone of the verse and reflection. Focus on a specific passage or theme, not a full message.",
   "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
 }`,
           },
@@ -3376,6 +3376,8 @@ ${historyNote}`;
         "tim ross",
         "rich wilkerson", "vous church",
         "eric thomas", "hip hop preacher",
+        "phillip mitchell", "2819 church",
+        "jentezen franklin", "free chapel",
         "steven furtick", "elevation church",
         "craig groeschel", "life.church", "lifechurch",
         "td jakes", "t.d. jakes", "potter's house", "potters house",
@@ -3581,7 +3583,7 @@ Only return shouldSuggest: true when ALL of these are true:
 
 If shouldSuggest is true:
 - emotionTags: array of 2–5 lowercase single-word emotion states from this list: grief, loss, anxiety, fear, hopelessness, depression, anger, loneliness, doubt, confusion, shame, guilt, identity, purpose, direction, hope, gratitude, forgiveness, marriage, prodigal, addiction, suffering, healing, trust, surrender, waiting, courage, failure, rejection, betrayal, comparison, envy, pride, control, worth, relationship
-- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target one trusted voice whose style fits this person's emotional state: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler.
+- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target one trusted voice whose style fits this person's emotional state: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Phillip Mitchell, Jentezen Franklin, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler.
 - preacher: the specific teacher you are targeting (e.g. "Michael Todd")
 - momentTitle: a specific, compelling 4–8 word title for what this moment addresses (e.g. "On carrying grief no one can see")
 - leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
@@ -3693,6 +3695,8 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "tim ross",
         "rich wilkerson", "vous church",
         "eric thomas", "hip hop preacher",
+        "phillip mitchell", "2819 church",
+        "jentezen franklin", "free chapel",
         "steven furtick", "elevation church",
         "craig groeschel", "life.church", "lifechurch",
         "td jakes", "t.d. jakes", "potter's house", "potters house",
