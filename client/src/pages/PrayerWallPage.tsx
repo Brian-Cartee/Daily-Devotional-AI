@@ -99,13 +99,13 @@ export default function PrayerWallPage() {
       {/* ── Cinematic hero ── */}
       <div className="relative overflow-hidden" style={{ height: "42vh", minHeight: "280px", maxHeight: "380px" }}>
         <img
-          src="/hero-prayer-wall.png"
-          alt="Hands clasped in prayer with candlelight"
+          src="/hero-prayer-wall-lake.jpg"
+          alt="Sun setting through pine trees reflected in a still lake"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "center 35%" }}
+          style={{ objectPosition: "center 45%" }}
         />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.75) 0%, rgba(20,8,50,0.12) 40%, rgba(10,5,28,0.90) 100%)" }} />
-        <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(122,1,141,0.10) 0%, transparent 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(6,3,18,0.65) 0%, rgba(10,5,20,0.08) 38%, rgba(6,3,18,0.88) 100%)" }} />
+        <div className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(80,30,0,0.18) 0%, transparent 100%)" }} />
 
         {/* Back button */}
         <button
