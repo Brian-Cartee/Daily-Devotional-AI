@@ -94,7 +94,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
             >
-              Scripture for what you&rsquo;re going through
+              You don&rsquo;t have to walk this alone
             </motion.p>
           </motion.div>
 

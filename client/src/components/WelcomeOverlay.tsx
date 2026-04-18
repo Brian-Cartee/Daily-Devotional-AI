@@ -106,7 +106,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         </h1>
         <p className="mt-3 text-center text-[16px] leading-relaxed tracking-wide font-medium italic"
            style={{ color: "rgba(228, 210, 255, 0.96)", textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}>
-          Scripture for what you&rsquo;re going through
+          You don&rsquo;t have to walk this alone
         </p>
       </motion.div>
 
