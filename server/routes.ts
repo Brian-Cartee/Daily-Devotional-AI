@@ -3355,7 +3355,7 @@ ${historyNote}`;
       // Trusted channel IDs — exact match (tier 1). Add UCxxx IDs here once confirmed.
       const TRUSTED_CHANNEL_IDS: string[] = [
         // Tier 1 — Core
-        // "UC???", // 2819 Church (Phillip Mitchell) — pending
+        "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
         // "UC???", // The Urban Alternative (Tony Evans) — pending
         // "UC???", // The Village Church (Matt Chandler) — pending
         // "UC???", // Real Life with Jack Hibbs — pending
@@ -3677,7 +3677,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
       // Prefer videos from trusted ministry channels — tier 1: exact channel ID, tier 2: name fragment
       const TRUSTED_CHANNEL_IDS_G: string[] = [
         // Tier 1 — Core
-        // "UC???", // 2819 Church (Phillip Mitchell) — pending
+        "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
         // "UC???", // The Urban Alternative (Tony Evans) — pending
         // "UC???", // The Village Church (Matt Chandler) — pending
         // "UC???", // Real Life with Jack Hibbs — pending
