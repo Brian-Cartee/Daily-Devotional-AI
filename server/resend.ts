@@ -127,7 +127,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
             </p>
 
             <!-- Quiet depth hint — whisper, not marketing -->
-            <p style="margin:0 0 32px;text-align:center;font-family:Georgia,serif;font-size:13px;color:#b5a898;font-style:italic;line-height:1.7;">
+            <p style="margin:0 0 32px;text-align:center;font-family:Georgia,serif;font-size:13px;color:#6b5d7a;font-style:italic;line-height:1.7;">
               Wondering what this verse meant to its original readers?<br />
               History, cultural context, and meaning are a question away in the app.
             </p>
