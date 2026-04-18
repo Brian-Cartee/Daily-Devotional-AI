@@ -6,7 +6,8 @@ import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guid
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
-import { getUserName, getUserVoice } from "@/lib/userName";
+import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
+import { NamePrompt } from "@/components/NamePrompt";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
@@ -74,8 +75,9 @@ export default function GuidancePage() {
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
   const [isListening, setIsListening] = useState(false);
   const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-  const userName = getUserName() ?? undefined;
   const framework = getTodayFramework();
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const pendingGuidanceFlow = useRef(false);
 
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
@@ -130,7 +132,7 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages, userName, sessionId: getSessionId(), guidanceMode: explicitMode ?? guidanceMode, isLateNight: isLateNight(), daysWithApp: getRelationshipAge() }),
+        body: JSON.stringify({ situation, messages: conversationMessages, userName: getUserName() ?? undefined, sessionId: getSessionId(), guidanceMode: explicitMode ?? guidanceMode, isLateNight: isLateNight(), daysWithApp: getRelationshipAge() }),
       });
       if (res.status === 429) {
         setStreamingText("You've sent a lot of requests recently. Please wait a few minutes and try again.");
@@ -175,19 +177,12 @@ export default function GuidancePage() {
     document.body.scrollTop = 0;
   }, []);
 
-  useEffect(() => {
-    if (!situation.trim()) return;
-
-    if (!canUseAi()) { setShowAiPause(true); return; }
-    recordAiUsage();
-
+  const startGuidanceFlow = () => {
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
-    // Sacred restraint — hold the breath for 2.5s before the stream appears
     setTimeout(() => setIsReflecting(false), 2500);
 
-    // Pre-generate journey in the background
     fetch("/api/journey/life-season", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -201,11 +196,10 @@ export default function GuidancePage() {
       })
       .catch(() => setJourneyLoading(false));
 
-    // Fetch verse + personal prayer in parallel
     fetch("/api/guidance/verse-and-prayer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId(), userName }),
+      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId(), userName: getUserName() ?? undefined }),
     })
       .then(r => r.json())
       .then((data: { verse?: VerseResult; prayer?: string }) => {
@@ -214,7 +208,33 @@ export default function GuidancePage() {
         setVpLoading(false);
       })
       .catch(() => setVpLoading(false));
+  };
 
+  const handleNameDone = () => {
+    setShowNamePrompt(false);
+    if (pendingGuidanceFlow.current) {
+      pendingGuidanceFlow.current = false;
+      startGuidanceFlow();
+    }
+  };
+
+  useEffect(() => {
+    if (!situation.trim()) return;
+
+    if (!canUseAi()) { setShowAiPause(true); return; }
+    recordAiUsage();
+
+    // Name gate: if the user hasn't been asked yet and has no name,
+    // show the prompt first so the very first response can address them personally.
+    if (!getUserName() && !hasBeenPrompted()) {
+      setShowNamePrompt(true);
+      pendingGuidanceFlow.current = true;
+      // Still show the "reflecting" breathing animation while they fill in their name
+      setTimeout(() => setIsReflecting(false), 2500);
+      return;
+    }
+
+    startGuidanceFlow();
   }, []);
 
   // Save guidance memory silently when first response completes
@@ -1242,6 +1262,10 @@ export default function GuidancePage() {
 
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
       {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
+
+      <AnimatePresence>
+        {showNamePrompt && <NamePrompt onDone={handleNameDone} />}
+      </AnimatePresence>
     </>
   );
 }

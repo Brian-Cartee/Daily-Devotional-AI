@@ -280,9 +280,10 @@ export default function Devotional() {
     return () => clearTimeout(timer);
   }, [verse, entryTriggered]);
 
-  // Effect 4: Post-value name prompt — ask for name only after prayer loads, on first few days
+  // Effect 4: Post-value name prompt — ask for name after prayer loads, any time it hasn't been done yet.
+  // The only acceptable reason for no name is the user explicitly skipping this prompt.
   useEffect(() => {
-    if (!prayerContent || hasBeenPrompted() || getRelationshipAge() > 5) return;
+    if (!prayerContent || hasBeenPrompted()) return;
     const timer = setTimeout(() => setShowPostValueName(true), 2500);
     return () => clearTimeout(timer);
   }, [prayerContent]);
