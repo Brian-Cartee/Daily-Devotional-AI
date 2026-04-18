@@ -3368,7 +3368,7 @@ ${historyNote}`;
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
         "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
         "UCZRjT2mSmOVE5ROt51ifIyg", // VOUS Church (Rich Wilkerson Jr) ✓
-        // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
+        "UC1d28mrBqCQliL_N48tZZiw", // ET The Hip Hop Preacher (Eric Thomas) ✓
       ];
       // Trusted channel name fragments — string match fallback (tier 2)
       const trustedChannelNames = [
@@ -3690,7 +3690,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
         "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
         "UCZRjT2mSmOVE5ROt51ifIyg", // VOUS Church (Rich Wilkerson Jr) ✓
-        // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
+        "UC1d28mrBqCQliL_N48tZZiw", // ET The Hip Hop Preacher (Eric Thomas) ✓
       ];
       const trustedChannelNamesG = [
         // Tier 1 — Core (Truth + Conviction + Scripture Authority)
