@@ -3363,7 +3363,7 @@ ${historyNote}`;
         "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
         // Tier 2 — Strong
         "UChxJPnZ0x9I8iYrm4jjuo0w", // Free Chapel (Jentezen Franklin) ✓
-        // "UC???", // The Potter's House (T.D. Jakes) — pending
+        "UCjQbTcszB-gRhDByY9WhySw", // The Potter's House (T.D. Jakes) ✓
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
         // "UC???", // The Basement with Tim Ross — pending
@@ -3685,7 +3685,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
         // Tier 2 — Strong
         "UChxJPnZ0x9I8iYrm4jjuo0w", // Free Chapel (Jentezen Franklin) ✓
-        // "UC???", // The Potter's House (T.D. Jakes) — pending
+        "UCjQbTcszB-gRhDByY9WhySw", // The Potter's House (T.D. Jakes) ✓
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
         // "UC???", // The Basement with Tim Ross — pending
