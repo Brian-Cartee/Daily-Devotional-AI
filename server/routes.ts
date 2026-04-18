@@ -3359,7 +3359,7 @@ ${historyNote}`;
         "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
         "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
         "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
-        // "UC???", // Allen Jackson Ministries — pending
+        "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
         // "UC???", // Change Church (Dharius Daniels) — pending
         // Tier 2 — Strong
         // "UC???", // Free Chapel (Jentezen Franklin) — pending
@@ -3681,7 +3681,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
         "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
         "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
-        // "UC???", // Allen Jackson Ministries — pending
+        "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
         // "UC???", // Change Church (Dharius Daniels) — pending
         // Tier 2 — Strong
         // "UC???", // Free Chapel (Jentezen Franklin) — pending
