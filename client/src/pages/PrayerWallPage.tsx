@@ -95,33 +95,51 @@ export default function PrayerWallPage() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
-        {/* Back */}
+      {/* ── Cinematic hero ── */}
+      <div className="relative overflow-hidden" style={{ height: "42vh", minHeight: "280px", maxHeight: "380px" }}>
+        <img
+          src="/hero-prayer-wall.png"
+          alt="Hands clasped in prayer with candlelight"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center 35%" }}
+        />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.75) 0%, rgba(20,8,50,0.12) 40%, rgba(10,5,28,0.90) 100%)" }} />
+        <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(122,1,141,0.10) 0%, transparent 100%)" }} />
+
+        {/* Back button */}
         <button
           onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
           data-testid="button-back-prayer-wall"
-          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-5"
+          className="absolute top-[62px] left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back
         </button>
 
-        {/* Header */}
-        <motion.div {...fadeUp(0)} className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center shadow-md shadow-violet-500/20 shrink-0">
-              <HandHeart className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-[22px] font-bold text-foreground">Prayer Wall</h1>
-          </div>
-          <p className="text-[14px] text-muted-foreground leading-relaxed mt-1 pl-13">
-            Share what's on your heart. Other believers are here — and they're praying with you.
+        {/* Hero text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 px-6 text-center">
+          <h1
+            className="text-[30px] font-black text-white leading-tight mb-2"
+            style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7)", letterSpacing: "-0.02em" }}
+          >
+            Prayer Wall
+          </h1>
+          <p
+            className="text-[13.5px] text-white/70 leading-relaxed"
+            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.9)", maxWidth: "280px" }}
+          >
+            Share what's on your heart. Others are here — and they're praying with you.
           </p>
-          <p className="text-[12px] text-muted-foreground/60 mt-2 pl-13 italic">
-            "For where two or three gather in My name, there am I with them." — Matthew 18:20
-          </p>
-        </motion.div>
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 pt-5 pb-28">
+
+        {/* Matthew verse — compact below hero */}
+        <motion.p {...fadeUp(0)} className="text-[12px] text-muted-foreground/55 text-center italic mb-6 mt-1">
+          "For where two or three gather in My name, there am I with them." — Matthew 18:20
+        </motion.p>
 
         {/* Submit button / form */}
         <motion.div {...fadeUp(0.05)} className="mb-6">

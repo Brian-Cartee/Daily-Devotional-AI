@@ -145,10 +145,10 @@ export default function SalvationPage() {
       {/* ── Cinematic hero ── */}
       <div className="relative overflow-hidden" style={{ height: "46vh", minHeight: "300px", maxHeight: "420px" }}>
         <img
-          src="/hero-devotional-still.webp"
-          alt="Dawn light over the path"
+          src="/hero-salvation.png"
+          alt="A path leading into dawn light"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "center 30%" }}
+          style={{ objectPosition: "center 40%" }}
         />
         {/* Deep overlay */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.80) 0%, rgba(20,8,50,0.18) 45%, rgba(10,5,28,0.88) 100%)" }} />

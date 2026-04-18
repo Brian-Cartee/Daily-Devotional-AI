@@ -66,6 +66,18 @@ uri = "file://client/public/hero-iron-circle.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "VK7bSqy7znbOC2eTNYfh_"
+uri = "file://client/public/hero-salvation.png"
+type = "image"
+title = "salvation dawn path hero"
+
+[[generated]]
+id = "X3Wv4TzbzwSasH_eOZ4tQ"
+uri = "file://client/public/hero-prayer-wall.png"
+type = "image"
+title = "prayer wall hands candles hero"
+
 [[outputs]]
 id = "5eXKSYOD9ozG_qHKJmLBU"
 uri = "file://SHEPHERDS_PATH_REFERENCE.md"
