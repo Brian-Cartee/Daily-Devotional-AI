@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, BookOpen, Headphones, Loader2, Square, X } from "lucide-react";
+import { ArrowRight, Sprout, Headphones, Loader2, Square, X } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 import { useState } from "react";
@@ -34,6 +34,12 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   const handleDismiss = () => {
     stop();
     onDismiss();
+  };
+
+  const handleGrow = () => {
+    stop();
+    onDismiss();
+    window.location.href = "/devotional";
   };
 
   return (
@@ -133,10 +139,10 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
             color: "rgba(255,255,255,0.8)",
             backdropFilter: "blur(8px)",
           }}
-          onClick={handleDismiss}
+          onClick={handleGrow}
         >
-          <BookOpen className="w-4 h-4 opacity-70" />
-          <span>I&rsquo;m Familiar With The Bible</span>
+          <Sprout className="w-4 h-4 opacity-70" />
+          <span>I&rsquo;m here to grow</span>
         </button>
 
         {/* Audio — glassmorphism floater, purple-tinted */}
