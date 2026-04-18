@@ -3362,7 +3362,7 @@ ${historyNote}`;
         "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
         "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
         // Tier 2 — Strong
-        // "UC???", // Free Chapel (Jentezen Franklin) — pending
+        "UChxJPnZ0x9I8iYrm4jjuo0w", // Free Chapel (Jentezen Franklin) ✓
         // "UC???", // The Potter's House (T.D. Jakes) — pending
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
@@ -3684,7 +3684,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
         "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
         // Tier 2 — Strong
-        // "UC???", // Free Chapel (Jentezen Franklin) — pending
+        "UChxJPnZ0x9I8iYrm4jjuo0w", // Free Chapel (Jentezen Franklin) ✓
         // "UC???", // The Potter's House (T.D. Jakes) — pending
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
