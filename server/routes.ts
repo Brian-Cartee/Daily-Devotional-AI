@@ -3367,7 +3367,7 @@ ${historyNote}`;
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
         "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
-        // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
+        "UCZRjT2mSmOVE5ROt51ifIyg", // VOUS Church (Rich Wilkerson Jr) ✓
         // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
       ];
       // Trusted channel name fragments — string match fallback (tier 2)
@@ -3689,7 +3689,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
         "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
-        // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
+        "UCZRjT2mSmOVE5ROt51ifIyg", // VOUS Church (Rich Wilkerson Jr) ✓
         // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
       ];
       const trustedChannelNamesG = [
