@@ -3448,13 +3448,16 @@ ${historyNote}`;
 
   app.post("/api/sermon/additional", async (req, res) => {
     try {
-      const { verseId, date, reflectionContext, primaryPastor } = req.body as {
-        verseId: number; date?: string; reflectionContext?: string; primaryPastor?: string;
+      const { verseId, date, reflectionContext, primaryPastor, customTopic } = req.body as {
+        verseId: number; date?: string; reflectionContext?: string; primaryPastor?: string; customTopic?: string;
       };
 
       const dateKey = date || new Date().toISOString().slice(0, 10);
-      const cacheKey = `${dateKey}:${verseId}:additional`;
-      if (additionalSermonCache.has(cacheKey)) return res.json(additionalSermonCache.get(cacheKey));
+      // Custom topic searches are not cached by day — they're user-directed, unique per query
+      const cacheKey = customTopic
+        ? `topic:${customTopic.slice(0, 40).toLowerCase().replace(/\s+/g, "-")}`
+        : `${dateKey}:${verseId}:additional`;
+      if (!customTopic && additionalSermonCache.has(cacheKey)) return res.json(additionalSermonCache.get(cacheKey));
 
       const verse = await storage.getVerseById(verseId);
       if (!verse) return res.json({ found: false, sermons: [] });
@@ -3462,15 +3465,22 @@ ${historyNote}`;
       const ytKey = process.env.YOUTUBE_API_KEY;
       if (!ytKey) return res.json({ found: false, sermons: [] });
 
-      // Ask AI for 2 search queries targeting different pastors / tiers than the primary
-      const aiRes = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        max_tokens: 350,
-        messages: [
-          {
-            role: "system",
-            content: `You are curating 2 additional short sermon clips for someone who just completed a devotional. Return JSON:
+      // Build AI prompt — custom topic search gets a different prompt focused on the user's term
+      const systemPrompt = customTopic
+        ? `You are curating 2 sermon or podcast clips for a user who wants to explore a specific topic after their devotional. Return JSON:
+{
+  "clips": [
+    { "searchQuery": "...", "pastor": "..." },
+    { "searchQuery": "...", "pastor": "..." }
+  ]
+}
+The user's requested topic: "${customTopic}"
+Choose 2 preachers from different tiers who speak well on this topic.
+Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels.
+Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes.
+Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas.
+For each searchQuery: include the pastor name + the topic + "podcast" or "sermon" or "teaching" to surface audio-style content. Keep clips 5–15 min.`
+        : `You are curating 2 additional short sermon clips for someone who just completed a devotional. Return JSON:
 {
   "clips": [
     { "searchQuery": "...", "pastor": "..." },
@@ -3483,12 +3493,19 @@ Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes.
 Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas.
 Each clip should approach the verse theme from a different angle than the other.
 Avoid repeating: ${primaryPastor || "none"}.
-Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`,
-          },
-          {
-            role: "user",
-            content: `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\nReflection context: "${reflectionContext.slice(0, 300)}"` : ""}`,
-          },
+Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`;
+
+      const userPrompt = customTopic
+        ? `Find 2 clips on this topic: "${customTopic}". Verse context: ${verse.reference} — "${verse.text}"`
+        : `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\nReflection context: "${reflectionContext.slice(0, 300)}"` : ""}`;
+
+      const aiRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        max_tokens: 350,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
       });
 

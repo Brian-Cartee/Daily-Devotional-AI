@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Play, Share2, X, Loader2, BookOpen } from "lucide-react";
+import { ChevronDown, Play, Share2, X, Loader2, BookOpen, ArrowRight, Headphones } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 function decodeHtml(str: string): string {
@@ -39,11 +39,7 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
     const shareText = `"${decodeHtml(sermon.title)}" — ${decodeHtml(sermon.channel)}\n\nFound this message after today's devotional on Shepherd's Path.\n\nGet the app: shepherdspath.app`;
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: decodeHtml(sermon.title),
-          text: shareText,
-          url: videoUrl,
-        });
+        await navigator.share({ title: decodeHtml(sermon.title), text: shareText, url: videoUrl });
       } else {
         await navigator.clipboard.writeText(`${shareText}\n\n${videoUrl}`);
         setShared(true);
@@ -56,10 +52,7 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
     <>
       <div
         className="flex gap-3 items-start rounded-2xl p-3"
-        style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.07)",
-        }}
+        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
       >
         {/* Thumbnail */}
         <button
@@ -68,19 +61,9 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
           className="relative flex-shrink-0 rounded-xl overflow-hidden"
           style={{ width: 96, height: 64 }}
         >
-          <img
-            src={sermon.thumbnail}
-            alt={decodeHtml(sermon.title)}
-            className="w-full h-full object-cover"
-          />
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.38)" }}
-          >
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(245,158,11,0.9)" }}
-            >
+          <img src={sermon.thumbnail} alt={decodeHtml(sermon.title)} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.38)" }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(245,158,11,0.9)" }}>
               <Play className="w-3.5 h-3.5 text-white" fill="white" />
             </div>
           </div>
@@ -96,21 +79,15 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p
-            className="text-[13px] font-semibold leading-snug line-clamp-2"
-            style={{ color: "rgba(255,255,255,0.85)", fontFamily: "'Georgia', serif" }}
-          >
+          <p className="text-[13px] font-semibold leading-snug line-clamp-2" style={{ color: "rgba(255,255,255,0.85)", fontFamily: "'Georgia', serif" }}>
             {decodeHtml(sermon.title)}
           </p>
-          <p
-            className="text-[11px] mt-1"
-            style={{ color: "rgba(167,139,250,0.65)" }}
-          >
+          <p className="text-[11px] mt-1" style={{ color: "rgba(167,139,250,0.65)" }}>
             {decodeHtml(sermon.channel)}
           </p>
         </div>
 
-        {/* Share button */}
+        {/* Share */}
         <button
           data-testid={`btn-additional-sermon-share-${sermon.videoId}`}
           onClick={handleShare}
@@ -122,31 +99,25 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
           title="Share this message"
         >
           {shared ? (
-            <span className="text-[11px] font-semibold" style={{ color: "rgba(34,197,94,0.9)" }}>
-              Copied
-            </span>
+            <span className="text-[11px] font-semibold" style={{ color: "rgba(34,197,94,0.9)" }}>Copied</span>
           ) : (
             <Share2 className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.45)" }} />
           )}
         </button>
       </div>
 
-      {/* Inline player overlay */}
+      {/* Player overlay */}
       <AnimatePresence>
         {showPlayer && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4"
             style={{ background: "rgba(0,0,0,0.94)" }}
             onClick={() => setShowPlayer(false)}
             data-testid="overlay-additional-sermon-player"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.22 }}
               className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
               style={{ background: "#0c0a1e", border: "1px solid rgba(124,58,237,0.25)" }}
@@ -154,18 +125,10 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
             >
               <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(0,0,0,0.5)" }}>
                 <div className="min-w-0 flex-1 mr-3">
-                  <p className="text-sm font-semibold text-white line-clamp-1" style={{ fontFamily: "'Georgia', serif" }}>
-                    {decodeHtml(sermon.title)}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "rgba(167,139,250,0.7)" }}>
-                    {decodeHtml(sermon.channel)}
-                  </p>
+                  <p className="text-sm font-semibold text-white line-clamp-1" style={{ fontFamily: "'Georgia', serif" }}>{decodeHtml(sermon.title)}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(167,139,250,0.7)" }}>{decodeHtml(sermon.channel)}</p>
                 </div>
-                <button
-                  data-testid="btn-close-additional-sermon-player"
-                  onClick={() => setShowPlayer(false)}
-                  className="text-white/30 hover:text-white/70 transition-colors flex-shrink-0"
-                >
+                <button data-testid="btn-close-additional-sermon-player" onClick={() => setShowPlayer(false)} className="text-white/30 hover:text-white/70 transition-colors flex-shrink-0">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -178,12 +141,7 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
                 />
               </div>
               <div className="px-4 py-3 text-center" style={{ background: "rgba(0,0,0,0.4)" }}>
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-1.5 mx-auto text-[11px]"
-                  style={{ color: "rgba(245,158,11,0.7)" }}
-                  data-testid="btn-share-from-player"
-                >
+                <button onClick={handleShare} className="flex items-center gap-1.5 mx-auto text-[11px]" style={{ color: "rgba(245,158,11,0.7)" }} data-testid="btn-share-from-player">
                   <Share2 className="w-3 h-3" />
                   Share this message
                 </button>
@@ -196,50 +154,81 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
   );
 }
 
+async function fetchSermons(body: object): Promise<AdditionalSermon[]> {
+  const res = await apiRequest("POST", "/api/sermon/additional", body);
+  const data = await res.json();
+  return data.found && data.sermons?.length ? data.sermons : [];
+}
+
 export function AdditionalSermonsSection({ verseId, verseReference, reflectionContent, primaryChannel }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [sermons, setSermons] = useState<AdditionalSermon[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+
+  // Auto-curated clips state
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoSermons, setAutoSermons] = useState<AdditionalSermon[]>([]);
+  const [autoLoaded, setAutoLoaded] = useState(false);
+  const [autoFailed, setAutoFailed] = useState(false);
+
+  // Custom topic search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchSermons, setSearchSermons] = useState<AdditionalSermon[]>([]);
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [lastSearched, setLastSearched] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleExpand = async () => {
     setExpanded(true);
-    if (loaded || loading) return;
-    setLoading(true);
+    if (autoLoaded || autoLoading) return;
+    setAutoLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/sermon/additional", {
+      const results = await fetchSermons({
         verseId,
         date: new Date().toISOString().slice(0, 10),
         reflectionContext: reflectionContent?.slice(0, 400),
         primaryPastor: primaryChannel || "",
       });
-      const data = await res.json();
-      if (data.found && data.sermons?.length) {
-        setSermons(data.sermons);
-      } else {
-        setFailed(true);
-      }
+      if (results.length) setAutoSermons(results);
+      else setAutoFailed(true);
     } catch {
-      setFailed(true);
+      setAutoFailed(true);
     } finally {
-      setLoading(false);
-      setLoaded(true);
+      setAutoLoading(false);
+      setAutoLoaded(true);
+    }
+  };
+
+  const handleTopicSearch = async () => {
+    const topic = searchQuery.trim();
+    if (!topic || searchLoading) return;
+    setSearchLoading(true);
+    setSearchSermons([]);
+    setSearchFailed(false);
+    setLastSearched(topic);
+    try {
+      const results = await fetchSermons({
+        verseId,
+        date: new Date().toISOString().slice(0, 10),
+        customTopic: topic,
+      });
+      if (results.length) setSearchSermons(results);
+      else setSearchFailed(true);
+    } catch {
+      setSearchFailed(true);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
   return (
     <div className="mt-3">
-      {/* Trigger */}
+      {/* Collapsed trigger */}
       {!expanded && (
         <button
           data-testid="btn-go-deeper-expand"
           onClick={handleExpand}
           className="w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-opacity active:opacity-70"
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
         >
           <div className="flex items-center gap-2.5">
             <div
@@ -249,19 +238,15 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
               <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.75)" }} />
             </div>
             <div className="text-left">
-              <p className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.78)" }}>
-                Go Deeper
-              </p>
-              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                2 more voices on today's verse
-              </p>
+              <p className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.78)" }}>Go Deeper</p>
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>More voices · search any topic</p>
             </div>
           </div>
           <ChevronDown className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} />
         </button>
       )}
 
-      {/* Expanded content */}
+      {/* Expanded panel */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -271,7 +256,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
             transition={{ duration: 0.28, ease: "easeOut" }}
             style={{ overflow: "hidden" }}
           >
-            {/* Section header with collapse */}
+            {/* Header + collapse */}
             <button
               data-testid="btn-go-deeper-collapse"
               onClick={() => setExpanded(false)}
@@ -279,22 +264,16 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
             >
               <div className="flex items-center gap-2">
                 <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.6)" }} />
-                <span
-                  className="text-[12px] font-bold uppercase tracking-[0.14em]"
-                  style={{ color: "rgba(255,255,255,0.38)" }}
-                >
+                <span className="text-[12px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(255,255,255,0.38)" }}>
                   Go Deeper
                 </span>
               </div>
-              <ChevronDown
-                className="w-4 h-4 rotate-180 transition-transform"
-                style={{ color: "rgba(255,255,255,0.25)" }}
-              />
+              <ChevronDown className="w-4 h-4 rotate-180 transition-transform" style={{ color: "rgba(255,255,255,0.25)" }} />
             </button>
 
-            {/* Loading */}
-            {loading && (
-              <div className="flex items-center gap-2.5 py-6 justify-center">
+            {/* Auto-curated clips */}
+            {autoLoading && (
+              <div className="flex items-center gap-2.5 py-5 justify-center">
                 <Loader2 className="w-4 h-4 animate-spin" style={{ color: "rgba(245,158,11,0.5)" }} />
                 <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.35)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
                   Finding more voices…
@@ -302,32 +281,90 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
               </div>
             )}
 
-            {/* Failed */}
-            {!loading && failed && (
-              <p
-                className="text-center text-[13px] py-5"
-                style={{ color: "rgba(255,255,255,0.35)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}
-              >
-                Nothing found for today — check back tomorrow.
+            {!autoLoading && autoFailed && (
+              <p className="text-center text-[13px] py-4" style={{ color: "rgba(255,255,255,0.32)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                Nothing curated for today — use the search below to go your own direction.
               </p>
             )}
 
-            {/* Sermon cards */}
-            {!loading && !failed && sermons.length > 0 && (
+            {!autoLoading && autoSermons.length > 0 && (
               <div className="space-y-2.5">
-                {sermons.map(sermon => (
-                  <AdditionalSermonCard key={sermon.videoId} sermon={sermon} />
-                ))}
-
-                {/* Share nudge */}
-                <p
-                  className="text-center text-[11px] pt-1 pb-0.5"
-                  style={{ color: "rgba(255,255,255,0.22)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}
-                >
+                {autoSermons.map(s => <AdditionalSermonCard key={s.videoId} sermon={s} />)}
+                <p className="text-center text-[11px] pt-0.5" style={{ color: "rgba(255,255,255,0.2)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
                   Tap the share icon to send a message to someone who needs it today.
                 </p>
               </div>
             )}
+
+            {/* ── Topic Search ─────────────────────────────────────── */}
+            <div
+              className="mt-3.5 rounded-2xl px-3.5 py-3"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <div className="flex items-center gap-2 mb-2.5">
+                <Headphones className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(245,158,11,0.55)" }} />
+                <span className="text-[11px] font-bold uppercase tracking-[0.13em]" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  Search · Audio &amp; Podcasts
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  data-testid="input-topic-search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleTopicSearch(); }}
+                  placeholder="anxiety, identity, surrender, marriage…"
+                  className="flex-1 bg-transparent outline-none text-[13px] placeholder:text-white/20"
+                  style={{
+                    color: "rgba(255,255,255,0.75)",
+                    fontFamily: "'Georgia', serif",
+                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    paddingBottom: "4px",
+                  }}
+                />
+                <button
+                  data-testid="btn-topic-search-submit"
+                  onClick={handleTopicSearch}
+                  disabled={!searchQuery.trim() || searchLoading}
+                  className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl transition-opacity disabled:opacity-30"
+                  style={{ background: "rgba(245,158,11,0.18)", border: "1px solid rgba(245,158,11,0.3)" }}
+                >
+                  {searchLoading
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "rgba(245,158,11,0.8)" }} />
+                    : <ArrowRight className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.9)" }} />
+                  }
+                </button>
+              </div>
+            </div>
+
+            {/* Search results */}
+            <AnimatePresence>
+              {(searchSermons.length > 0 || searchFailed) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.22 }}
+                  className="mt-3 space-y-2.5"
+                >
+                  {lastSearched && (
+                    <p className="text-[11px] px-1" style={{ color: "rgba(255,255,255,0.28)" }}>
+                      Results for <span style={{ color: "rgba(245,158,11,0.6)" }}>"{lastSearched}"</span>
+                    </p>
+                  )}
+                  {searchFailed && (
+                    <p className="text-center text-[13px] py-3" style={{ color: "rgba(255,255,255,0.32)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                      Nothing found — try a different word or phrase.
+                    </p>
+                  )}
+                  {searchSermons.map(s => <AdditionalSermonCard key={s.videoId} sermon={s} />)}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
           </motion.div>
         )}
       </AnimatePresence>
