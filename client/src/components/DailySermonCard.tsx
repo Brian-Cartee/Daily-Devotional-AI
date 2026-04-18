@@ -29,6 +29,7 @@ interface DailySermonCardProps {
   verseId: number;
   verseReference: string;
   reflectionContent: string;
+  onSermonLoaded?: (channel: string) => void;
 }
 
 // ── Sermon usage tracking — counts unique verse IDs with sermon shown ─────────
@@ -127,7 +128,7 @@ function SermonBridgeCard({ sermon }: { sermon: Sermon }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export function DailySermonCard({ verseId, verseReference, reflectionContent }: DailySermonCardProps) {
+export function DailySermonCard({ verseId, verseReference, reflectionContent, onSermonLoaded }: DailySermonCardProps) {
   const [sermon, setSermon] = useState<Sermon | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
@@ -174,6 +175,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent }: 
           setSermon(data.sermon);
           try { sessionStorage.setItem(cacheKey, JSON.stringify(data.sermon)); } catch {}
           if (!limited) recordSermonVerseId(verseId);
+          onSermonLoaded?.(data.sermon.channel);
         }
       })
       .catch(() => {})

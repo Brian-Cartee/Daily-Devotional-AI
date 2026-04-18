@@ -3443,6 +3443,133 @@ ${historyNote}`;
     }
   });
 
+  // ── Additional sermon clips — 2 more voices after the primary one ───────────
+  const additionalSermonCache = new Map<string, any>();
+
+  app.post("/api/sermon/additional", async (req, res) => {
+    try {
+      const { verseId, date, reflectionContext, primaryPastor } = req.body as {
+        verseId: number; date?: string; reflectionContext?: string; primaryPastor?: string;
+      };
+
+      const dateKey = date || new Date().toISOString().slice(0, 10);
+      const cacheKey = `${dateKey}:${verseId}:additional`;
+      if (additionalSermonCache.has(cacheKey)) return res.json(additionalSermonCache.get(cacheKey));
+
+      const verse = await storage.getVerseById(verseId);
+      if (!verse) return res.json({ found: false, sermons: [] });
+
+      const ytKey = process.env.YOUTUBE_API_KEY;
+      if (!ytKey) return res.json({ found: false, sermons: [] });
+
+      // Ask AI for 2 search queries targeting different pastors / tiers than the primary
+      const aiRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        max_tokens: 350,
+        messages: [
+          {
+            role: "system",
+            content: `You are curating 2 additional short sermon clips for someone who just completed a devotional. Return JSON:
+{
+  "clips": [
+    { "searchQuery": "...", "pastor": "..." },
+    { "searchQuery": "...", "pastor": "..." }
+  ]
+}
+Choose 2 preachers from different tiers to give range of voice and perspective.
+Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels.
+Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes.
+Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas.
+Each clip should approach the verse theme from a different angle than the other.
+Avoid repeating: ${primaryPastor || "none"}.
+Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`,
+          },
+          {
+            role: "user",
+            content: `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\nReflection context: "${reflectionContext.slice(0, 300)}"` : ""}`,
+          },
+        ],
+      });
+
+      const analysis = JSON.parse(aiRes.choices[0]?.message?.content || "{}");
+      if (!analysis.clips?.length) return res.json({ found: false, sermons: [] });
+
+      const TRUSTED_IDS = [
+        "UCrPGIKiPtgQ25TaW1fLdR0Q", "UCRZweRCzcK5ObXPCNKvdMOQ",
+        "UC5tzTmPEue1OMqkT9CIAP0g", "UCzvq_2THJhueXOP8JdAO2-A",
+        "UCmJ_L35KPnDoIfzbe4sfRQA", "UCexLpWnpWeHGlrlqywU3bWA",
+        "UChxJPnZ0x9I8iYrm4jjuo0w", "UCjQbTcszB-gRhDByY9WhySw",
+        "UCYv-siSKd3Gn9IsliO95gIw", "UCqzgGwRrOLH20OIc8bM_VAg",
+        "UCZRjT2mSmOVE5ROt51ifIyg", "UC1d28mrBqCQliL_N48tZZiw",
+      ];
+      const TRUSTED_NAMES = [
+        "phillip mitchell", "2819 church", "tony evans", "urban alternative",
+        "matt chandler", "village church", "jack hibbs", "allen jackson",
+        "dharius daniels", "change church", "jentezen franklin", "free chapel",
+        "td jakes", "t.d. jakes", "potter's house", "potters house",
+        "michael todd", "transformation church", "tim ross", "the basement",
+        "rich wilkerson", "vous church", "eric thomas", "hip hop preacher",
+      ];
+
+      // Run both searches in parallel
+      const sermonPromises = analysis.clips.slice(0, 2).map(async (clip: any) => {
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(clip.searchQuery)}&type=video&maxResults=10&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=medium&videoEmbeddable=true`;
+        const ytRes = await fetch(searchUrl);
+        const ytData = (await ytRes.json()) as any;
+        if (!ytData.items?.length) return null;
+
+        const ranked = [...ytData.items].sort((a: any, b: any) => {
+          const aId = a.snippet?.channelId || "";
+          const bId = b.snippet?.channelId || "";
+          const aName = (a.snippet?.channelTitle || "").toLowerCase();
+          const bName = (b.snippet?.channelTitle || "").toLowerCase();
+          const aScore = TRUSTED_IDS.includes(aId) ? 0 : TRUSTED_NAMES.some(n => aName.includes(n)) ? 1 : 2;
+          const bScore = TRUSTED_IDS.includes(bId) ? 0 : TRUSTED_NAMES.some(n => bName.includes(n)) ? 1 : 2;
+          return aScore - bScore;
+        });
+
+        const video = ranked[0];
+        const videoId = video.id.videoId;
+        const snippet = video.snippet;
+
+        // Get duration
+        const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
+        const detailsRes = await fetch(detailsUrl);
+        const detailsData = (await detailsRes.json()) as any;
+        let duration = "";
+        if (detailsData.items?.[0]) {
+          const iso = detailsData.items[0].contentDetails.duration;
+          const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (match) {
+            const h = match[1] ? `${match[1]}:` : "";
+            const m = match[2] ? match[2].padStart(h ? 2 : 1, "0") : "0";
+            const s = match[3] ? match[3].padStart(2, "0") : "00";
+            duration = `${h}${m}:${s}`;
+          }
+        }
+
+        return {
+          videoId,
+          title: snippet.title,
+          channel: snippet.channelTitle,
+          thumbnail: snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url,
+          duration,
+          pastor: clip.pastor || snippet.channelTitle,
+        };
+      });
+
+      const sermons = (await Promise.all(sermonPromises)).filter(Boolean);
+      const result = { found: sermons.length > 0, sermons };
+      additionalSermonCache.set(cacheKey, result);
+      if (additionalSermonCache.size > 20) additionalSermonCache.delete(additionalSermonCache.keys().next().value!);
+      return res.json(result);
+    } catch (err) {
+      console.error("[sermon/additional] error:", err);
+      return res.json({ found: false, sermons: [] });
+    }
+  });
+
   // Scripture context — 3 plain-language sections + bridge back to the devotional moment
   app.get("/api/context", async (req, res) => {
     try {
