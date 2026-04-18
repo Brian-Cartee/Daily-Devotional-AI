@@ -3041,16 +3041,28 @@ ${historyNote}`;
 
   // Digital Asset Links — required for Android TWA
   app.get("/.well-known/assetlinks.json", (_req, res) => {
-    const packageName = process.env.ANDROID_PACKAGE_NAME || "com.shepherdspath.app";
     const sha256 = process.env.ANDROID_SHA256_CERT || "REPLACE_WITH_YOUR_SHA256_CERT_FINGERPRINT";
-    res.json([{
-      relation: ["delegate_permission/common.handle_all_urls"],
+    // TWA package (actual published Play Store app) — includes both deep links and credential sharing
+    const twaEntry = {
+      relation: [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds",
+      ],
       target: {
         namespace: "android_app",
-        package_name: packageName,
+        package_name: "app.replit.daily_devotional_ai.twa",
         sha256_cert_fingerprints: [sha256],
       },
-    }]);
+    };
+    // Custom package entry — deep links only (kept for any standalone APK variants)
+    const customPkg = process.env.ANDROID_PACKAGE_NAME;
+    const entries = customPkg && customPkg !== "app.replit.daily_devotional_ai.twa"
+      ? [twaEntry, {
+          relation: ["delegate_permission/common.handle_all_urls"],
+          target: { namespace: "android_app", package_name: customPkg, sha256_cert_fingerprints: [sha256] },
+        }]
+      : [twaEntry];
+    res.json(entries);
   });
 
   // Google Play Billing verification
