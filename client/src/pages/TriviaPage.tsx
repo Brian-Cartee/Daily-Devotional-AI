@@ -378,7 +378,7 @@ export default function TriviaPage() {
               <div className="rounded-2xl border border-border bg-card shadow-sm p-5 mb-4">
                 <p className="text-[18px] font-semibold text-foreground leading-snug">{q.question}</p>
                 {q.verseRef && (
-                  <p className="text-[11px] text-muted-foreground mt-2 italic">{q.verseRef}</p>
+                  <p className="text-[11px] text-muted-foreground mt-2">{q.verseRef}</p>
                 )}
               </div>
 
@@ -480,7 +480,7 @@ export default function TriviaPage() {
                     </div>
                   )}
 
-                  <p className="text-[13px] text-white/65 italic px-2 leading-relaxed">
+                  <p className="text-[13px] text-white/65 px-2 leading-relaxed">
                     "{getResultVerse(score).verse}"
                   </p>
                   <p className="text-[11px] text-white/45 mt-1">— {getResultVerse(score).ref}</p>

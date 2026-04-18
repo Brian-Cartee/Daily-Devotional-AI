@@ -527,7 +527,7 @@ export default function ReadBible() {
                               {aiResult.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground/70 italic py-4">Reflecting on {selectedBook} {selectedChapter}...</p>
+                            <p className="text-xs text-muted-foreground/70 py-4">Reflecting on {selectedBook} {selectedChapter}...</p>
                           )}
                         </motion.div>
                       )}
@@ -546,11 +546,11 @@ export default function ReadBible() {
                         <motion.div key="chat" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-2">
                           <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
                             {chatMessages.length === 0 && (
-                              <p className="text-xs text-muted-foreground/70 italic text-center py-4">What's on your heart about {selectedBook} {selectedChapter}?</p>
+                              <p className="text-xs text-muted-foreground/70 text-center py-4">What's on your heart about {selectedBook} {selectedChapter}?</p>
                             )}
                             {chatMessages.map((m, i) =>
                               m.role === "user" ? (
-                                <p key={i} className="text-[11px] text-muted-foreground/70 italic">"{m.content}"</p>
+                                <p key={i} className="text-[11px] text-muted-foreground/70">"{m.content}"</p>
                               ) : (
                                 <div key={i} className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-1.5 pb-3 mb-1 border-b border-border/20 last:border-0">
                                   {m.content

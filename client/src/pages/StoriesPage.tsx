@@ -225,7 +225,7 @@ export default function StoriesPage() {
                       ))}
                     </div>
                   </div>
-                  <p className="text-[15px] text-foreground leading-relaxed italic font-medium mb-4">
+                  <p className="text-[15px] text-foreground leading-relaxed font-medium mb-4">
                     &ldquo;{story.quote}&rdquo;
                   </p>
                   <div className="flex items-center gap-2.5 pt-3 border-t border-border/60">

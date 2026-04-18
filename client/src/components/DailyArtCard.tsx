@@ -98,7 +98,7 @@ export function DailyArtCard() {
           style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.5) 100%)", border: "1px solid hsl(258 45% 55% / 0.18)" }}
         >
           <div className="h-px w-12 mx-auto mb-6" style={{ background: "hsl(258 45% 55% / 0.35)" }} />
-          <p className="text-[19px] text-primary/75 leading-[1.75] italic font-normal tracking-wide text-center">
+          <p className="text-[19px] text-primary/75 leading-[1.75] font-normal tracking-wide text-center">
             &ldquo;{art.scripture}&rdquo;
           </p>
           <div className="h-px w-12 mx-auto mt-6 mb-4" style={{ background: "hsl(258 45% 55% / 0.35)" }} />
@@ -106,7 +106,7 @@ export function DailyArtCard() {
             {art.reference}
           </p>
           {art.reflection && (
-            <p className="text-[13px] text-muted-foreground/70 leading-relaxed italic mt-5 text-center">
+            <p className="text-[13px] text-muted-foreground/70 leading-relaxed mt-5 text-center">
               {art.reflection}
             </p>
           )}
@@ -181,7 +181,7 @@ export function DailyArtCard() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-3"
             >
-              <p className="text-[15px] text-white/95 font-medium italic leading-snug drop-shadow-sm">
+              <p className="text-[15px] text-white/95 font-medium leading-snug drop-shadow-sm">
                 &ldquo;{art.scripture}&rdquo;
               </p>
               <p className="text-[11px] text-white/65 font-semibold mt-1.5 tracking-wide uppercase">
@@ -219,7 +219,7 @@ export function DailyArtCard() {
             className="overflow-hidden"
           >
             <div className="bg-primary/5 border-b border-primary/10 px-5 py-4 flex flex-col gap-3">
-              <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
                 {art.reflection}
               </p>
               <div className="pt-1 border-t border-primary/10 flex justify-end">
