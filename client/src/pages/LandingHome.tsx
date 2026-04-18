@@ -472,8 +472,8 @@ const FAQ_ITEMS = [
     a: "Bring any question, passage, or thing you're wondering about — and it will find what Scripture says about it. It's understanding, not searching. You can type something as open as 'I feel like I've failed' or as specific as a chapter and verse.",
   },
   {
-    q: 'What is "Bible in a Year"?',
-    a: "A daily path through all of Scripture, broken into manageable readings. You follow the plan at your own pace — there's no pressure to stay on a schedule. If you miss a day, you simply continue from where you left off.",
+    q: 'What is "Your Walk"?',
+    a: "A personalized path through Scripture built around where you actually are — exploring faith for the first time, returning after time away, growing deeper, or struggling and needing something to hold onto. Two quick questions, and your path is ready.",
   },
   {
     q: "Do I need to create an account?",
@@ -1235,7 +1235,7 @@ export default function LandingHome() {
                 { href: "/journal",      Icon: BookMarked, label: "Prayer Journal",          desc: "A place for what you don't want to lose",    color: "text-teal-400",    bg: "border-teal-500/20   bg-teal-500/6",    testid: "explore-journal" },
                 { href: "/iron-circle",  Icon: Swords,     label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",             color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
                 { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift someone up today",                      color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
-                { href: "/reading-plans",Icon: Star,       label: "Bible in a Year",         desc: "One step at a time, through it all",          color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
+                { href: "/reading-plans",Icon: Star,       label: "Your Walk",               desc: "A path through Scripture made for where you are", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
                 { href: "/study",        Icon: Sparkles,   label: "Explore Scripture",       desc: "A question, a passage, or something on your mind", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-study" },
                 { href: "/read",         Icon: BookOpen,   label: "Read the Bible",          desc: "KJV, WEB, and ASV",                          color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-read" },
                 { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",                  color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
@@ -1440,7 +1440,7 @@ export default function LandingHome() {
               Store
             </Link>
             <Link href="/reading-plans" className="hover:text-foreground transition-colors" data-testid="link-plans-footer">
-              Bible in a Year
+              Your Walk
             </Link>
             <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-600/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
               Beginning with Jesus
