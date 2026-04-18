@@ -434,7 +434,7 @@ export default function GuidancePage() {
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ filter: "brightness(0.70) saturate(1.65)", transform: "scale(1.12)", transformOrigin: "65% top" }}
+            style={{ filter: "brightness(0.70) saturate(1.65)", transform: "scale(1.12)", transformOrigin: "50% top" }}
           />
 
           {/* Depth gradient — bleeds photo into app background at bottom */}
@@ -468,14 +468,13 @@ export default function GuidancePage() {
                   className="text-[2.5rem] leading-[1.18] text-white text-balance mb-3"
                   style={{
                     fontFamily: "var(--font-serif)",
-                    fontStyle: "italic",
                     textShadow: "0 2px 24px rgba(0,0,0,0.65)",
                   }}
                 >
                   {isFirstVisit ? "What's on\nyour heart?" : "You don't have\nto carry this alone"}
                 </h1>
                 <p
-                  className="text-[11px] text-white/40 italic tracking-wide mt-4"
+                  className="text-[11px] text-white/40 tracking-wide mt-4"
                   style={{ textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
                 >
                   The path is already here.
@@ -490,7 +489,7 @@ export default function GuidancePage() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 className="relative z-10 max-w-2xl mx-auto px-5 pt-8 pb-7"
-                style={{ background: "linear-gradient(160deg, hsl(265 60% 8% / 0.9) 0%, transparent 100%)" }}
+                style={{ background: "linear-gradient(180deg, hsl(265 60% 8% / 0.85) 0%, transparent 100%)" }}
               >
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Seek Guidance</p>
                 <h1 className="text-[22px] font-extrabold text-foreground leading-tight tracking-tight">
@@ -700,12 +699,12 @@ export default function GuidancePage() {
                   </p>
                 )}
                 {responseComplete && (
-                  <p className="text-[12px] text-muted-foreground/45 mt-2 italic tracking-wide">
+                  <p className="text-[12px] text-muted-foreground/45 mt-2 tracking-wide">
                     This meets you—but it won't move you.
                   </p>
                 )}
                 {responseComplete && (
-                  <p className="text-[12px] text-muted-foreground/35 mt-1 italic tracking-wide">
+                  <p className="text-[12px] text-muted-foreground/35 mt-1 tracking-wide">
                     Walking it is up to you.
                   </p>
                 )}

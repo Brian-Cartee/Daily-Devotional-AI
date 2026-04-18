@@ -607,7 +607,7 @@ function RotatingTruthLine() {
 
   return (
     <p
-      className="text-[12px] text-foreground/35 text-center mt-5 mb-1 italic tracking-wide transition-opacity duration-700"
+      className="text-[12px] text-foreground/35 text-center mt-5 mb-1 tracking-wide transition-opacity duration-700"
       style={{ opacity: visible ? 1 : 0 }}
     >
       {TRUTH_LINES[idx]}
@@ -801,9 +801,9 @@ export default function LandingHome() {
           >
             <div className="flex flex-col items-start leading-none mb-3 select-none">
               <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
-              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
+              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
             </div>
-            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic", fontWeight: 400, fontSize: "clamp(1.1rem, 4vw, 1.65rem)", letterSpacing: "0.01em" }}>
+            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.1rem, 4vw, 1.65rem)", letterSpacing: "0.01em" }}>
               You don't have to walk this alone.
             </p>
 
