@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Lock, Sparkles } from "lucide-react";
+import { X, Play, Lock, BookOpen } from "lucide-react";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -95,9 +95,9 @@ export function ResourceSuggestionCard({ messages, topic }: ResourceSuggestionCa
 
         {/* Header label */}
         <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-          <Sparkles className="w-3.5 h-3.5" style={{ color: "rgba(180,120,255,0.8)" }} />
+          <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(180,120,255,0.8)" }} />
           <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "rgba(180,120,255,0.7)" }}>
-            A Moment Found For You
+            A Moment For You
           </span>
         </div>
 
