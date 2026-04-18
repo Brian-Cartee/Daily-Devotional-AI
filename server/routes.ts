@@ -3360,7 +3360,7 @@ ${historyNote}`;
         "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
         "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
         "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
-        // "UC???", // Change Church (Dharius Daniels) — pending
+        "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
         // Tier 2 — Strong
         // "UC???", // Free Chapel (Jentezen Franklin) — pending
         // "UC???", // The Potter's House (T.D. Jakes) — pending
@@ -3682,7 +3682,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
         "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
         "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
-        // "UC???", // Change Church (Dharius Daniels) — pending
+        "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
         // Tier 2 — Strong
         // "UC???", // Free Chapel (Jentezen Franklin) — pending
         // "UC???", // The Potter's House (T.D. Jakes) — pending
