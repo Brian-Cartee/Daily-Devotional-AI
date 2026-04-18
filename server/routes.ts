@@ -3328,7 +3328,7 @@ ${historyNote}`;
             content: `You are curating a single short video message (5–10 minutes) for someone who just completed their daily devotional. Return JSON:
 {
   "theme": "2–4 words describing the message theme (e.g. 'identity in Christ', 'trusting God while waiting')",
-  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Target one specific trusted preacher: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Tony Evans, Steven Furtick, Priscilla Shirer, Jackie Hill Perry, John Piper, Christine Caine. Focus on a specific passage or theme, not a full message.",
+  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Target one specific trusted preacher from this list: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler. Choose the preacher whose style and voice best fits the emotional tone of the verse and reflection. Focus on a specific passage or theme, not a full message.",
   "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
 }`,
           },
@@ -3352,19 +3352,46 @@ ${historyNote}`;
 
       if (!ytData.items?.length) return res.json({ found: false });
 
-      const trustedChannels = [
-        "tim keller", "gospel in life", "louie giglio", "passion city", "elevation church",
-        "life church", "village church", "desiring god", "francis chan", "tony evans",
-        "david platt", "crossroads", "hillsong", "beth moore", "priscilla shirer",
-        "christine caine", "craig groeschel", "steven furtick", "jackie hill perry",
-        "matt chandler", "john piper", "the village church",
+      // Trusted channel IDs — exact match (tier 1). Add UCxxx IDs here once confirmed.
+      const TRUSTED_CHANNEL_IDS: string[] = [
+        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd)
+        // "UC???", // Change Church (Dharius Daniels) — pending
+        // "UC???", // Charles Metcalf — pending
+        // "UC???", // Tim Ross — pending
+        // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
+        // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
+        // "UC???", // Elevation Church (Steven Furtick) — pending
+        // "UC???", // Life.Church (Craig Groeschel) — pending
+        // "UC???", // The Potter's House (T.D. Jakes) — pending
+        // "UC???", // The Urban Alternative (Tony Evans) — pending
+        // "UC???", // Passion City Church (Louie Giglio) — pending
+        // "UC???", // North Point Ministries (Andy Stanley) — pending
+        // "UC???", // The Village Church (Matt Chandler) — pending
+      ];
+      // Trusted channel name fragments — string match fallback (tier 2)
+      const trustedChannelNames = [
+        "transformation church", "michael todd",
+        "dharius daniels", "change church",
+        "charles metcalf",
+        "tim ross",
+        "rich wilkerson", "vous church",
+        "eric thomas", "hip hop preacher",
+        "steven furtick", "elevation church",
+        "craig groeschel", "life.church", "lifechurch",
+        "td jakes", "t.d. jakes", "potter's house", "potters house",
+        "tony evans", "urban alternative",
+        "louie giglio", "passion city",
+        "andy stanley", "north point",
+        "matt chandler", "village church",
       ];
       const ranked = [...ytData.items].sort((a: any, b: any) => {
+        const aId = a.snippet?.channelId || "";
+        const bId = b.snippet?.channelId || "";
         const aName = (a.snippet?.channelTitle || "").toLowerCase();
         const bName = (b.snippet?.channelTitle || "").toLowerCase();
-        const aMatch = trustedChannels.some(c => aName.includes(c)) ? 0 : 1;
-        const bMatch = trustedChannels.some(c => bName.includes(c)) ? 0 : 1;
-        return aMatch - bMatch;
+        const aScore = TRUSTED_CHANNEL_IDS.includes(aId) ? 0 : trustedChannelNames.some(c => aName.includes(c)) ? 1 : 2;
+        const bScore = TRUSTED_CHANNEL_IDS.includes(bId) ? 0 : trustedChannelNames.some(c => bName.includes(c)) ? 1 : 2;
+        return aScore - bScore;
       });
 
       const video = ranked[0];
@@ -3554,8 +3581,8 @@ Only return shouldSuggest: true when ALL of these are true:
 
 If shouldSuggest is true:
 - emotionTags: array of 2–5 lowercase single-word emotion states from this list: grief, loss, anxiety, fear, hopelessness, depression, anger, loneliness, doubt, confusion, shame, guilt, identity, purpose, direction, hope, gratitude, forgiveness, marriage, prodigal, addiction, suffering, healing, trust, surrender, waiting, courage, failure, rejection, betrayal, comparison, envy, pride, control, worth, relationship
-- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target trusted voices: Tim Keller, Louie Giglio, Francis Chan, David Platt, Matt Chandler, Craig Groeschel, Christine Caine, Tony Evans, John Piper.
-- preacher: the specific teacher you are targeting (e.g. "Tim Keller")
+- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target one trusted voice whose style fits this person's emotional state: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler.
+- preacher: the specific teacher you are targeting (e.g. "Michael Todd")
 - momentTitle: a specific, compelling 4–8 word title for what this moment addresses (e.g. "On carrying grief no one can see")
 - leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
 
@@ -3643,19 +3670,45 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         return res.json({ shouldSuggest: false });
       }
 
-      // Prefer videos from trusted ministry channels; fall back to first result
-      const trustedChannels = [
-        "gospel in life", "louie giglio", "passion city", "elevation church",
-        "life church", "village church", "desiring god", "francis chan",
-        "tony evans", "david platt", "crossroads", "hillsong", "beth moore",
-        "priscilla shirer", "christine caine", "craig groeschel",
+      // Prefer videos from trusted ministry channels — tier 1: exact channel ID, tier 2: name fragment
+      const TRUSTED_CHANNEL_IDS_G: string[] = [
+        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd)
+        // "UC???", // Change Church (Dharius Daniels) — pending
+        // "UC???", // Charles Metcalf — pending
+        // "UC???", // Tim Ross — pending
+        // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
+        // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
+        // "UC???", // Elevation Church (Steven Furtick) — pending
+        // "UC???", // Life.Church (Craig Groeschel) — pending
+        // "UC???", // The Potter's House (T.D. Jakes) — pending
+        // "UC???", // The Urban Alternative (Tony Evans) — pending
+        // "UC???", // Passion City Church (Louie Giglio) — pending
+        // "UC???", // North Point Ministries (Andy Stanley) — pending
+        // "UC???", // The Village Church (Matt Chandler) — pending
+      ];
+      const trustedChannelNamesG = [
+        "transformation church", "michael todd",
+        "dharius daniels", "change church",
+        "charles metcalf",
+        "tim ross",
+        "rich wilkerson", "vous church",
+        "eric thomas", "hip hop preacher",
+        "steven furtick", "elevation church",
+        "craig groeschel", "life.church", "lifechurch",
+        "td jakes", "t.d. jakes", "potter's house", "potters house",
+        "tony evans", "urban alternative",
+        "louie giglio", "passion city",
+        "andy stanley", "north point",
+        "matt chandler", "village church",
       ];
       const ranked = [...ytData.items].sort((a: any, b: any) => {
+        const aId = a.snippet?.channelId || "";
+        const bId = b.snippet?.channelId || "";
         const aName = (a.snippet?.channelTitle || "").toLowerCase();
         const bName = (b.snippet?.channelTitle || "").toLowerCase();
-        const aMatch = trustedChannels.some(c => aName.includes(c)) ? 0 : 1;
-        const bMatch = trustedChannels.some(c => bName.includes(c)) ? 0 : 1;
-        return aMatch - bMatch;
+        const aScore = TRUSTED_CHANNEL_IDS_G.includes(aId) ? 0 : trustedChannelNamesG.some(c => aName.includes(c)) ? 1 : 2;
+        const bScore = TRUSTED_CHANNEL_IDS_G.includes(bId) ? 0 : trustedChannelNamesG.some(c => bName.includes(c)) ? 1 : 2;
+        return aScore - bScore;
       });
 
       const video = ranked[0];
