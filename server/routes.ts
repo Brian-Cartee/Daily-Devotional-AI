@@ -3356,7 +3356,7 @@ ${historyNote}`;
       const TRUSTED_CHANNEL_IDS: string[] = [
         // Tier 1 — Core
         "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
-        // "UC???", // The Urban Alternative (Tony Evans) — pending
+        "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
         // "UC???", // The Village Church (Matt Chandler) — pending
         // "UC???", // Real Life with Jack Hibbs — pending
         // "UC???", // Allen Jackson Ministries — pending
@@ -3678,7 +3678,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
       const TRUSTED_CHANNEL_IDS_G: string[] = [
         // Tier 1 — Core
         "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
-        // "UC???", // The Urban Alternative (Tony Evans) — pending
+        "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
         // "UC???", // The Village Church (Matt Chandler) — pending
         // "UC???", // Real Life with Jack Hibbs — pending
         // "UC???", // Allen Jackson Ministries — pending
