@@ -3328,7 +3328,7 @@ ${historyNote}`;
             content: `You are curating a single short video message (5–10 minutes) for someone who just completed their daily devotional. Return JSON:
 {
   "theme": "2–4 words describing the message theme (e.g. 'identity in Christ', 'trusting God while waiting')",
-  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Target one specific trusted preacher from this list: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Phillip Mitchell, Jentezen Franklin, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler. Choose the preacher whose style and voice best fits the emotional tone of the verse and reflection. Focus on a specific passage or theme, not a full message.",
+  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Choose one preacher whose voice fits the emotional tone of this verse — use this tiered guide: Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels. Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes. Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas. Default to Tier 1 unless the verse calls for engagement or encouragement.",
   "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
 }`,
           },
@@ -3354,37 +3354,39 @@ ${historyNote}`;
 
       // Trusted channel IDs — exact match (tier 1). Add UCxxx IDs here once confirmed.
       const TRUSTED_CHANNEL_IDS: string[] = [
-        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd)
+        // Tier 1 — Core
+        // "UC???", // 2819 Church (Phillip Mitchell) — pending
+        // "UC???", // The Urban Alternative (Tony Evans) — pending
+        // "UC???", // The Village Church (Matt Chandler) — pending
+        // "UC???", // Real Life with Jack Hibbs — pending
+        // "UC???", // Allen Jackson Ministries — pending
         // "UC???", // Change Church (Dharius Daniels) — pending
-        // "UC???", // Charles Metcalf — pending
-        // "UC???", // Tim Ross — pending
+        // Tier 2 — Strong
+        // "UC???", // Free Chapel (Jentezen Franklin) — pending
+        // "UC???", // The Potter's House (T.D. Jakes) — pending
+        // Tier 3 — Cultural Bridge
+        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
+        // "UC???", // The Basement with Tim Ross — pending
         // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
         // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
-        // "UC???", // Elevation Church (Steven Furtick) — pending
-        // "UC???", // Life.Church (Craig Groeschel) — pending
-        // "UC???", // The Potter's House (T.D. Jakes) — pending
-        // "UC???", // The Urban Alternative (Tony Evans) — pending
-        // "UC???", // Passion City Church (Louie Giglio) — pending
-        // "UC???", // North Point Ministries (Andy Stanley) — pending
-        // "UC???", // The Village Church (Matt Chandler) — pending
       ];
       // Trusted channel name fragments — string match fallback (tier 2)
       const trustedChannelNames = [
-        "transformation church", "michael todd",
+        // Tier 1 — Core (Truth + Conviction + Scripture Authority)
+        "phillip mitchell", "2819 church",
+        "tony evans", "urban alternative",
+        "matt chandler", "village church",
+        "jack hibbs", "real life with jack hibbs",
+        "allen jackson", "allen jackson ministries",
         "dharius daniels", "change church",
-        "charles metcalf",
-        "tim ross",
+        // Tier 2 — Strong but Stylistically Different
+        "jentezen franklin", "free chapel",
+        "td jakes", "t.d. jakes", "potter's house", "potters house",
+        // Tier 3 — Cultural Bridge / Engagement
+        "michael todd", "transformation church",
+        "tim ross", "the basement",
         "rich wilkerson", "vous church",
         "eric thomas", "hip hop preacher",
-        "phillip mitchell", "2819 church",
-        "jentezen franklin", "free chapel",
-        "steven furtick", "elevation church",
-        "craig groeschel", "life.church", "lifechurch",
-        "td jakes", "t.d. jakes", "potter's house", "potters house",
-        "tony evans", "urban alternative",
-        "louie giglio", "passion city",
-        "andy stanley", "north point",
-        "matt chandler", "village church",
       ];
       const ranked = [...ytData.items].sort((a: any, b: any) => {
         const aId = a.snippet?.channelId || "";
@@ -3583,7 +3585,7 @@ Only return shouldSuggest: true when ALL of these are true:
 
 If shouldSuggest is true:
 - emotionTags: array of 2–5 lowercase single-word emotion states from this list: grief, loss, anxiety, fear, hopelessness, depression, anger, loneliness, doubt, confusion, shame, guilt, identity, purpose, direction, hope, gratitude, forgiveness, marriage, prodigal, addiction, suffering, healing, trust, surrender, waiting, courage, failure, rejection, betrayal, comparison, envy, pride, control, worth, relationship
-- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Target one trusted voice whose style fits this person's emotional state: Michael Todd, Dharius Daniels, Charles Metcalf, Tim Ross, Rich Wilkerson Jr, Phillip Mitchell, Jentezen Franklin, Steven Furtick, Craig Groeschel, T.D. Jakes, Tony Evans, Louie Giglio, Andy Stanley, Matt Chandler.
+- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Choose one preacher whose tone matches this person's emotional state — Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels. Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes. Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas. Default to Tier 1 for grief, doubt, shame, surrender — use Tier 3 for motivation, identity, or cultural resonance.
 - preacher: the specific teacher you are targeting (e.g. "Michael Todd")
 - momentTitle: a specific, compelling 4–8 word title for what this moment addresses (e.g. "On carrying grief no one can see")
 - leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
@@ -3674,36 +3676,38 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
 
       // Prefer videos from trusted ministry channels — tier 1: exact channel ID, tier 2: name fragment
       const TRUSTED_CHANNEL_IDS_G: string[] = [
-        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd)
+        // Tier 1 — Core
+        // "UC???", // 2819 Church (Phillip Mitchell) — pending
+        // "UC???", // The Urban Alternative (Tony Evans) — pending
+        // "UC???", // The Village Church (Matt Chandler) — pending
+        // "UC???", // Real Life with Jack Hibbs — pending
+        // "UC???", // Allen Jackson Ministries — pending
         // "UC???", // Change Church (Dharius Daniels) — pending
-        // "UC???", // Charles Metcalf — pending
-        // "UC???", // Tim Ross — pending
+        // Tier 2 — Strong
+        // "UC???", // Free Chapel (Jentezen Franklin) — pending
+        // "UC???", // The Potter's House (T.D. Jakes) — pending
+        // Tier 3 — Cultural Bridge
+        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
+        // "UC???", // The Basement with Tim Ross — pending
         // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
         // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
-        // "UC???", // Elevation Church (Steven Furtick) — pending
-        // "UC???", // Life.Church (Craig Groeschel) — pending
-        // "UC???", // The Potter's House (T.D. Jakes) — pending
-        // "UC???", // The Urban Alternative (Tony Evans) — pending
-        // "UC???", // Passion City Church (Louie Giglio) — pending
-        // "UC???", // North Point Ministries (Andy Stanley) — pending
-        // "UC???", // The Village Church (Matt Chandler) — pending
       ];
       const trustedChannelNamesG = [
-        "transformation church", "michael todd",
+        // Tier 1 — Core (Truth + Conviction + Scripture Authority)
+        "phillip mitchell", "2819 church",
+        "tony evans", "urban alternative",
+        "matt chandler", "village church",
+        "jack hibbs", "real life with jack hibbs",
+        "allen jackson", "allen jackson ministries",
         "dharius daniels", "change church",
-        "charles metcalf",
-        "tim ross",
+        // Tier 2 — Strong but Stylistically Different
+        "jentezen franklin", "free chapel",
+        "td jakes", "t.d. jakes", "potter's house", "potters house",
+        // Tier 3 — Cultural Bridge / Engagement
+        "michael todd", "transformation church",
+        "tim ross", "the basement",
         "rich wilkerson", "vous church",
         "eric thomas", "hip hop preacher",
-        "phillip mitchell", "2819 church",
-        "jentezen franklin", "free chapel",
-        "steven furtick", "elevation church",
-        "craig groeschel", "life.church", "lifechurch",
-        "td jakes", "t.d. jakes", "potter's house", "potters house",
-        "tony evans", "urban alternative",
-        "louie giglio", "passion city",
-        "andy stanley", "north point",
-        "matt chandler", "village church",
       ];
       const ranked = [...ytData.items].sort((a: any, b: any) => {
         const aId = a.snippet?.channelId || "";
