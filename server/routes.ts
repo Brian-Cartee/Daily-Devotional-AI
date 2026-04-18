@@ -3366,7 +3366,7 @@ ${historyNote}`;
         "UCjQbTcszB-gRhDByY9WhySw", // The Potter's House (T.D. Jakes) ✓
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
-        // "UC???", // The Basement with Tim Ross — pending
+        "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
         // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
         // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
       ];
@@ -3688,7 +3688,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
         "UCjQbTcszB-gRhDByY9WhySw", // The Potter's House (T.D. Jakes) ✓
         // Tier 3 — Cultural Bridge
         "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
-        // "UC???", // The Basement with Tim Ross — pending
+        "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
         // "UC???", // VOUS Church (Rich Wilkerson Jr) — pending
         // "UC???", // ET The Hip Hop Preacher (Eric Thomas) — pending
       ];
