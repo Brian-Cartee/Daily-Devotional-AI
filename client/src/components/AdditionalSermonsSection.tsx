@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Play, Share2, X, Loader2, BookOpen, ArrowRight, Headphones } from "lucide-react";
+import { ChevronDown, Play, Share2, X, Loader2, BookOpen, ArrowRight, Headphones, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 function decodeHtml(str: string): string {
   return str
@@ -154,6 +155,151 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
   );
 }
 
+interface DeepPromptData {
+  prompts: string[];
+  scriptures: { reference: string; text: string }[];
+}
+
+function DeepStudyPrompts({ verseReference, reflectionContent }: { verseReference: string; reflectionContent: string }) {
+  const [, navigate] = useLocation();
+  const [data, setData] = useState<DeepPromptData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [customQ, setCustomQ] = useState("");
+  const customRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/api/study/deep-prompts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verseReference, reflectionContent: reflectionContent?.slice(0, 300) }),
+    })
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setData(d); })
+      .catch(() => { if (!cancelled) setData({ prompts: [], scriptures: [] }); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [verseReference]);
+
+  const goToGuidance = (question: string) => {
+    navigate(`/guidance?situation=${encodeURIComponent(question)}`);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="mt-4 rounded-2xl overflow-hidden"
+      style={{ background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.18)" }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3.5 pt-3.5 pb-2">
+        <div
+          className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: "rgba(124,58,237,0.2)", border: "1px solid rgba(167,139,250,0.3)" }}
+        >
+          <Sparkles className="w-3 h-3" style={{ color: "rgba(167,139,250,0.9)" }} />
+        </div>
+        <span className="text-[12px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(167,139,250,0.8)" }}>
+          Explore Further
+        </span>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-5">
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: "rgba(167,139,250,0.5)" }} />
+        </div>
+      ) : (
+        <div className="px-3.5 pb-3.5 space-y-4">
+
+          {/* Study prompt chips */}
+          {data?.prompts && data.prompts.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.35)" }}>Study prompts</p>
+              <div className="flex flex-wrap gap-2">
+                {data.prompts.map((prompt, i) => (
+                  <button
+                    key={i}
+                    data-testid={`btn-deep-prompt-${i}`}
+                    onClick={() => goToGuidance(prompt)}
+                    className="text-left px-3 py-2 rounded-xl text-[13px] leading-snug transition-all active:scale-[0.97]"
+                    style={{
+                      background: "rgba(124,58,237,0.15)",
+                      border: "1px solid rgba(167,139,250,0.25)",
+                      color: "rgba(255,255,255,0.82)",
+                    }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Related scriptures */}
+          {data?.scriptures && data.scriptures.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.35)" }}>Related scripture</p>
+              <div className="space-y-2">
+                {data.scriptures.map((s, i) => (
+                  <button
+                    key={i}
+                    data-testid={`btn-deep-scripture-${i}`}
+                    onClick={() => goToGuidance(`Help me understand and reflect on ${s.reference}: "${s.text}"`)}
+                    className="w-full text-left px-3 py-2.5 rounded-xl transition-all active:scale-[0.98]"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <p className="text-[12px] font-bold mb-0.5" style={{ color: "rgba(167,139,250,0.85)" }}>{s.reference}</p>
+                    <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.72)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                      "{s.text}"
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom question bar */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.35)" }}>Ask your own question</p>
+            <div className="flex gap-2">
+              <input
+                ref={customRef}
+                data-testid="input-explore-further"
+                value={customQ}
+                onChange={e => setCustomQ(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && customQ.trim()) goToGuidance(customQ.trim()); }}
+                placeholder={`Something about ${verseReference}…`}
+                className="flex-1 bg-transparent outline-none text-[13px] placeholder:text-white/35"
+                style={{
+                  color: "rgba(255,255,255,0.85)",
+                  borderBottom: "1px solid rgba(167,139,250,0.3)",
+                  paddingBottom: "4px",
+                }}
+              />
+              <button
+                data-testid="btn-explore-further-send"
+                onClick={() => { if (customQ.trim()) goToGuidance(customQ.trim()); }}
+                disabled={!customQ.trim()}
+                className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl transition-opacity disabled:opacity-30"
+                style={{ background: "rgba(124,58,237,0.25)", border: "1px solid rgba(167,139,250,0.4)" }}
+              >
+                <ArrowRight className="w-3.5 h-3.5" style={{ color: "rgba(167,139,250,0.9)" }} />
+              </button>
+            </div>
+          </div>
+
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 async function fetchSermons(body: object): Promise<AdditionalSermon[]> {
   const res = await apiRequest("POST", "/api/sermon/additional", body);
   const data = await res.json();
@@ -294,6 +440,14 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
                   Tap the share icon to send a message to someone who needs it today.
                 </p>
               </div>
+            )}
+
+            {/* ── Explore Further: AI prompts + related scripture ── */}
+            {autoLoaded && (
+              <DeepStudyPrompts
+                verseReference={verseReference}
+                reflectionContent={reflectionContent}
+              />
             )}
 
             {/* ── Topic Search ─────────────────────────────────────── */}

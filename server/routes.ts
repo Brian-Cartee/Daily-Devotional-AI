@@ -3624,6 +3624,64 @@ Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`;
     }
   });
 
+  // Deep study prompts + related scriptures — for further exploration after videos
+  app.post("/api/study/deep-prompts", async (req, res) => {
+    try {
+      const { verseReference, reflectionContent } = req.body as { verseReference?: string; reflectionContent?: string };
+      if (!verseReference) return res.status(400).json({ error: "Missing verseReference" });
+
+      const snippet = (reflectionContent || "").slice(0, 300);
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a Bible teacher helping someone go deeper after watching sermon videos. Given a verse and reflection, return a JSON object with two keys:
+"prompts": exactly 4 short, powerful study prompts (questions or explore topics). Each 5-12 words, spiritually rich and actionable.
+"scriptures": exactly 3 related Bible verses that deepen or expand this theme. Each entry has "reference" (e.g. "Romans 8:1") and "text" (the verse text, max 25 words, no ellipsis).
+Output ONLY valid JSON, no markdown, no explanation.
+Example: {"prompts":["What does adoption mean in Romans 8?","How does the Spirit confirm our identity?","Living free from condemnation — what changes?","Praying Scripture back to God on identity"],"scriptures":[{"reference":"John 1:12","text":"Yet to all who did receive him, to those who believed in his name, he gave the right to become children of God"},{"reference":"Galatians 4:6","text":"Because you are his sons, God sent the Spirit of his Son into our hearts, the Spirit who calls out, Abba, Father"},{"reference":"1 John 3:1","text":"See what great love the Father has lavished on us, that we should be called children of God! And that is what we are"}]}`
+          },
+          {
+            role: "user",
+            content: `Verse: ${verseReference}\nReflection snippet: ${snippet}`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 400,
+      });
+
+      const raw = completion.choices[0]?.message?.content?.trim() ?? "{}";
+      let prompts: string[] = [];
+      let scriptures: { reference: string; text: string }[] = [];
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.prompts)) {
+          prompts = parsed.prompts.slice(0, 4).filter((p: unknown) => typeof p === "string" && (p as string).trim());
+        }
+        if (Array.isArray(parsed.scriptures)) {
+          scriptures = parsed.scriptures.slice(0, 3).filter(
+            (s: unknown) => s && typeof (s as { reference: string }).reference === "string" && typeof (s as { text: string }).text === "string"
+          );
+        }
+      } catch { /* fallback below */ }
+
+      if (!prompts.length) {
+        prompts = [
+          `What did the original audience understand about ${verseReference}?`,
+          "How does this truth change how I see myself today?",
+          "Related passages that connect to this theme",
+          "How can I pray this verse back to God?",
+        ];
+      }
+
+      res.json({ prompts, scriptures });
+    } catch (err) {
+      console.error("[deep-prompts] error:", err);
+      res.status(500).json({ error: "Failed to generate prompts" });
+    }
+  });
+
   // Scripture context — 3 plain-language sections + bridge back to the devotional moment
   app.get("/api/context", async (req, res) => {
     try {
