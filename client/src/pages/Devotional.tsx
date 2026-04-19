@@ -1171,7 +1171,7 @@ export default function Devotional() {
                               <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
                             </svg>
                           </button>
-                          <span className="absolute bottom-3 left-3.5 text-[10px] text-muted-foreground/40 pointer-events-none italic">
+                          <span className="absolute bottom-3 left-3.5 text-[12px] text-muted-foreground/65 pointer-events-none italic">
                             You don't have to have the right words.
                           </span>
                         </div>
