@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Send } from "lucide-react";
+import { X, Send, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { getSessionId } from "@/lib/session";
@@ -29,10 +29,11 @@ function cleanResponse(text: string): string {
 }
 
 export function FloatingAskAI() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [question, setQuestion] = useState("");
+  const [submittedQuestion, setSubmittedQuestion] = useState("");
   const [response, setResponse] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -78,6 +79,7 @@ export function FloatingAskAI() {
     const text = (q ?? question).trim();
     if (!text || isStreaming) return;
     if (!q) {} else setQuestion(q);
+    setSubmittedQuestion(text);
     setResponse("");
     setIsDone(false);
     setIsStreaming(true);
@@ -125,6 +127,7 @@ export function FloatingAskAI() {
   const handleClose = () => {
     setIsOpen(false);
     setQuestion("");
+    setSubmittedQuestion("");
     setResponse("");
     setIsDone(false);
   };
@@ -136,6 +139,7 @@ export function FloatingAskAI() {
 
   const handleReset = () => {
     setQuestion("");
+    setSubmittedQuestion("");
     setResponse("");
     setIsDone(false);
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -384,15 +388,32 @@ export function FloatingAskAI() {
                     </motion.div>
                   )}
 
-                  {/* ── Ask another ─────────────────────────────────── */}
+                  {/* ── Post-response CTAs ──────────────────────────── */}
                   {isDone && (
-                    <button
-                      data-testid="button-ask-ai-new"
-                      onClick={handleReset}
-                      className="w-full py-2.5 rounded-xl border border-border/60 text-[14px] text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-                    >
-                      Ask another question
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      {/* Primary: Take to Guidance */}
+                      <button
+                        data-testid="button-ask-ai-guidance"
+                        onClick={() => {
+                          const encoded = encodeURIComponent(submittedQuestion);
+                          handleClose();
+                          navigate(`/guidance?situation=${encoded}`);
+                        }}
+                        className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[15px] font-semibold transition-all active:scale-[0.98]"
+                        style={{ background: "linear-gradient(135deg, #b45309, #d97706)", color: "#fff" }}
+                      >
+                        Take this to Guidance
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      {/* Secondary: Ask another */}
+                      <button
+                        data-testid="button-ask-ai-new"
+                        onClick={handleReset}
+                        className="w-full py-2.5 rounded-xl border border-border/60 text-[14px] text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                      >
+                        Ask another question
+                      </button>
+                    </div>
                   )}
 
                   {/* ── Footer note ─────────────────────────────────── */}
