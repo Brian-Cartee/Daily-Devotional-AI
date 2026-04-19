@@ -817,12 +817,11 @@ export default function LandingHome() {
           <button
             onClick={handleShareApp}
             data-testid="btn-share-hero"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white/85 text-[11px] font-semibold hover:bg-black/45 active:scale-95 transition-all"
-            style={{ letterSpacing: "0.04em" }}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white/85 hover:bg-black/45 active:scale-95 transition-all"
           >
             {shared
-              ? <><Check className="w-3 h-3 text-green-400" /> Copied!</>
-              : <><Share2 className="w-3 h-3" /> Share</>
+              ? <Check className="w-3.5 h-3.5 text-green-400" />
+              : <Share2 className="w-3.5 h-3.5" />
             }
           </button>
         </div>
