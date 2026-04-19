@@ -24,6 +24,7 @@ const AboutPage = lazy(() => import("@/pages/AboutPage"));
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
+import { FloatingAskAI } from "@/components/FloatingAskAI";
 import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminSermonsPage from "@/pages/AdminSermonsPage";
@@ -150,6 +151,7 @@ function App() {
               <ScrollToTop />
               <ReferralCapture />
               <Router />
+              <FloatingAskAI />
               <DemoFloatingBar />
               <InstallPrompt />
             </DemoProvider>
