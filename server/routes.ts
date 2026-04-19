@@ -3129,12 +3129,50 @@ ${historyNote}`;
         token: purchaseToken,
       });
 
-      const isValid = purchase.data.paymentState === 1 || purchase.data.paymentState === 2;
-      if (isValid) {
-        return res.json({ success: true });
-      } else {
-        return res.status(402).json({ success: false, error: "Purchase not valid" });
+      const data = purchase.data;
+
+      // Check subscription hasn't expired
+      const expiryMs = data.expiryTimeMillis ? parseInt(data.expiryTimeMillis, 10) : 0;
+      const isExpired = expiryMs > 0 && expiryMs < Date.now();
+      if (isExpired) {
+        console.warn("[Play Billing] Subscription expired:", productId, "at", new Date(expiryMs).toISOString());
+        return res.status(402).json({ success: false, error: "Subscription expired", expired: true });
       }
+
+      // paymentState: 0=pending, 1=received, 2=free trial
+      const isValid = data.paymentState === 1 || data.paymentState === 2;
+      if (!isValid) {
+        console.warn("[Play Billing] Invalid payment state:", data.paymentState);
+        return res.status(402).json({ success: false, error: "Purchase not valid", paymentState: data.paymentState });
+      }
+
+      // Acknowledge the purchase — required within 3 days or Google auto-refunds
+      // acknowledgementState: 0=not acknowledged, 1=acknowledged
+      if (data.acknowledgementState === 0) {
+        try {
+          await androidPublisher.purchases.subscriptions.acknowledge({
+            packageName: bundleId,
+            subscriptionId: productId,
+            token: purchaseToken,
+            requestBody: {},
+          });
+          console.log("[Play Billing] Purchase acknowledged:", productId);
+        } catch (ackErr) {
+          // Log but don't fail — Google may have already acknowledged or it was acknowledged client-side
+          console.warn("[Play Billing] Acknowledge warning (non-fatal):", ackErr);
+        }
+      }
+
+      const cancelReason = data.cancelReason;
+      const isCancelled = cancelReason !== undefined && cancelReason !== null;
+
+      return res.json({
+        success: true,
+        expiryTimeMillis: data.expiryTimeMillis,
+        autoRenewing: data.autoRenewing,
+        isCancelled,
+        cancelReason,
+      });
     } catch (err) {
       console.error("[Play Billing] Verification error:", err);
       return res.status(500).json({ success: false, error: "Verification failed" });

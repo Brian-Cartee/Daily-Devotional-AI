@@ -10,7 +10,7 @@ import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
 import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
 
 const PRO_FEATURES = [
-  "Unlimited AI responses every day",
+  "No daily limits — use it as much as you need",
   "Beautiful PDF copy of your journal",
   "Full devotional history archive",
   "Custom Bible reading plans",

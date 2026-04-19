@@ -71,7 +71,7 @@ export default function ProSuccess() {
                 Welcome to Shepherd's Path Pro!
               </h1>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Your subscription is active. Enjoy unlimited AI responses and all Pro features.
+                Your subscription is active. No daily limits — use Path AI as much as you need.
                 {email && (
                   <span className="block mt-1 font-medium text-foreground">{email}</span>
                 )}
@@ -80,7 +80,7 @@ export default function ProSuccess() {
 
             <div className="bg-card border border-border rounded-2xl p-4 text-left space-y-2.5">
               {[
-                "Unlimited AI responses every day",
+                "No daily limits — use it as much as you need",
                 "Devotional history archive",
                 "Beautiful PDF · custom plans",
                 "Streak protection",

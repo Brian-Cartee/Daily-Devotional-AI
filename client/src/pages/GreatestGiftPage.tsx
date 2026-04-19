@@ -31,7 +31,7 @@ function useCountdown(target: Date) {
 }
 
 const PRO_FEATURES = [
-  "Unlimited AI guidance, reflections & prayers",
+  "No daily limits — AI guidance, reflections & prayers",
   "Full Bible journey access — every track",
   "Daily Beauty art + morning devotionals",
   "Community prayer wall access",

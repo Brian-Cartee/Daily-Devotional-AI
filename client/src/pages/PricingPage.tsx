@@ -19,7 +19,7 @@ const FREE_FEATURES = [
 ];
 
 const PRO_FEATURES = [
-  { icon: Zap, text: "Unlimited AI responses — every day" },
+  { icon: Zap, text: "No daily limits — use it as much as you need" },
   { icon: BookOpen, text: "Full Bible reading (KJV, WEB, ASV)" },
   { icon: Sun, text: "Daily devotional with scripture & prayer" },
   { icon: Compass, text: "All 4 guided Bible journeys" },

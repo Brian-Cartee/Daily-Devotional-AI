@@ -5,7 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSessionId } from "@/lib/session";
-import { checkReferralProStatus } from "@/lib/proStatus";
+import { checkReferralProStatus, silentlyRevalidatePro } from "@/lib/proStatus";
 import { ThemeContext, getStoredTheme, applyTheme, type AppTheme } from "@/lib/theme";
 import NotFound from "@/pages/not-found";
 import LandingHome from "@/pages/LandingHome";
@@ -56,6 +56,7 @@ function ReferralCapture() {
   useEffect(() => {
     const sessionId = getSessionId();
     checkReferralProStatus(sessionId).catch(() => {});
+    silentlyRevalidatePro().catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (!ref) return;

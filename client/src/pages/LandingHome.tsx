@@ -1208,7 +1208,7 @@ export default function LandingHome() {
                 {/* Feature bullets */}
                 <div className="flex flex-col gap-1.5 mb-4">
                   {[
-                    "Unlimited AI guidance — no daily cap",
+                    "No daily limits — AI guidance whenever you need it",
                     "Streak protection — miss a day, keep your streak",
                     "Full access to all devotional themes",
                   ].map((point) => (
