@@ -39,6 +39,26 @@ The application is built with a React + Vite + TypeScript frontend utilizing Tai
 - **Visuals:** Deep dark gradient hero overlays for a sacred feel, and subtle SVG grain texture for warmth.
 - **Target Aesthetic:** Calm, sacred, premium, inspired by applications like Hallow and Glorify.
 
+## STANDING DESIGN RULE — Mobile Width Utilization
+
+**Every pixel of screen width is precious. Never waste it.**
+
+This is a mobile-first app. A phone screen is ~390px wide. Any unnecessary horizontal reduction has a compounding negative impact on readability, hierarchy, and feel.
+
+**Mandatory rules for every UI decision:**
+1. **Full-bleed sections:** Hero images, cards, banners, and section containers must reach edge-to-edge (`w-full`, no `max-w-*` wrapping unless explicitly justified).
+2. **Padding discipline:** Use `px-4` (16px per side) as the standard content padding. Never stack padding — if a parent already has `px-4`, children must not add their own horizontal padding.
+3. **No gratuitous `max-w-*` constraints inside page bodies** — `max-w-lg`, `max-w-md`, etc. artificially shrink content on a screen that is already small. Only use them for centered layouts on wide-screen views (tablet/desktop).
+4. **Cards and tiles must be full-width** within their padded container. Avoid two-column layouts for primary content — side-by-side cards cut available width in half.
+5. **Before reducing width for any reason, ask:** "Does this serve the user or just look tidy on a desktop preview?" If it serves the desktop preview at the cost of the mobile experience, don't do it.
+6. **Text must use the full line width** — narrow text columns (e.g., `max-w-xs` centered text) should only be used for short labels, never for body copy or scripture passages.
+
+**Violation signs to watch for and fix:**
+- Content that looks fine in the browser but cramped on an actual phone screenshot
+- Nested containers each adding their own `px-*` values
+- Cards with internal padding + parent padding both active simultaneously
+- `mx-auto max-w-sm` wrappers inside an already-padded scroll container
+
 **AI Personalization:**
 - **Spiritual Memory:** AI endpoints incorporate the user's last 6 journal entries as context for personalized responses.
 - **Relationship Depth:** AI responses adapt based on `daysWithApp`, progressing from a welcoming tone to that of a deep spiritual companion.
