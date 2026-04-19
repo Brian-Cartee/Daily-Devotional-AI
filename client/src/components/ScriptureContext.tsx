@@ -306,7 +306,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
                       value={question}
                       onChange={e => setQuestion(e.target.value)}
                       placeholder="Ask anything — I'm here to help…"
-                      className="flex-1 resize-none bg-transparent text-[15px] leading-snug text-foreground/90 placeholder:text-amber-700/50 dark:placeholder:text-amber-300/40 outline-none min-h-[22px] max-h-[100px]"
+                      className="flex-1 resize-none bg-transparent text-[16px] leading-snug text-foreground/90 placeholder:text-amber-700/50 dark:placeholder:text-amber-300/40 outline-none min-h-[22px] max-h-[100px]"
                       rows={1}
                       onKeyDown={e => {
                         if (e.key === "Enter" && !e.shiftKey) {

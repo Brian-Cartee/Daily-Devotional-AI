@@ -187,7 +187,7 @@ export function PrayerPortrait({ situation, onClose }: Props) {
                     data-testid="input-portrait-belief"
                     placeholder="A breakthrough, healing, direction, peace…"
                     rows={2}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/30 leading-relaxed"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/30 leading-relaxed"
                   />
                 </div>
 
@@ -201,7 +201,7 @@ export function PrayerPortrait({ situation, onClose }: Props) {
                     data-testid="input-portrait-burden"
                     placeholder="Fear, grief, uncertainty, a relationship…"
                     rows={2}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/30 leading-relaxed"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/30 leading-relaxed"
                   />
                 </div>
 
@@ -215,7 +215,7 @@ export function PrayerPortrait({ situation, onClose }: Props) {
                     data-testid="input-portrait-cover"
                     placeholder="A family member, friend, or yourself…"
                     rows={2}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/30 leading-relaxed"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/30 leading-relaxed"
                   />
                 </div>
               </div>

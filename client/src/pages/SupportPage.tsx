@@ -211,7 +211,7 @@ export default function SupportPage() {
                   autoCorrect="on"
                   rows={5}
                   placeholder="Tell us what's going on and we'll do our best to help..."
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 

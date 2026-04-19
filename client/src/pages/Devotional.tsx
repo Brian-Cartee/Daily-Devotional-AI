@@ -1000,7 +1000,7 @@ export default function Devotional() {
                       placeholder="Share your thoughts, feelings, or a simple word…"
                       spellCheck
                       rows={3}
-                      className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[16px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <div className="flex items-center justify-between mt-2">
                       <button
@@ -1141,7 +1141,7 @@ export default function Devotional() {
                             placeholder="Start typing… even a word is enough."
                             spellCheck
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-border bg-muted/40 pl-3.5 pr-12 pt-3.5 pb-9 text-[15px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
+                            className="w-full resize-none rounded-xl border border-border bg-muted/40 pl-3.5 pr-12 pt-3.5 pb-9 text-[16px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
                           />
                           <button
                             data-testid="btn-save-reflection-reply"
@@ -1284,7 +1284,7 @@ export default function Devotional() {
               spellCheck
               rows={3}
               data-testid="input-gratitude"
-              className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3.5 text-[14px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 resize-none placeholder:text-muted-foreground/65 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3.5 text-[16px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 resize-none placeholder:text-muted-foreground/65 transition-all"
             />
             <div className="mt-3">
               <button

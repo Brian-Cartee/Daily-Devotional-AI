@@ -320,7 +320,7 @@ export function FloatingAskAI() {
                     >
                       <p
                         className="text-[11px] uppercase tracking-[0.13em] px-0.5"
-                        style={{ color: "rgba(255,255,255,0.35)" }}
+                        style={{ color: "rgba(255,255,255,0.52)" }}
                       >
                         Common places to start
                       </p>
@@ -355,7 +355,7 @@ export function FloatingAskAI() {
                       {!showingResponse && (
                         <p
                           className="text-[11px] uppercase tracking-[0.13em] mb-2 px-0.5"
-                          style={{ color: "rgba(255,255,255,0.35)" }}
+                          style={{ color: "rgba(255,255,255,0.52)" }}
                         >
                           Or ask your own
                         </p>
@@ -369,7 +369,7 @@ export function FloatingAskAI() {
                           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                           placeholder="What's on your heart or mind?"
                           disabled={isStreaming}
-                          className="flex-1 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[15px] text-foreground placeholder:text-muted-foreground/65 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all disabled:opacity-50"
+                          className="flex-1 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/65 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all disabled:opacity-50"
                         />
                         <button
                           data-testid="button-ask-ai-send"

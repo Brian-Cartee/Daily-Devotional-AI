@@ -947,7 +947,7 @@ export default function GuidancePage() {
                           rows={2}
                           disabled={isSending}
                           data-testid="input-guidance-followup"
-                          className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed disabled:opacity-50"
+                          className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed disabled:opacity-50"
                         />
                         <div className="flex items-center justify-between">
                           {hasSpeechSupport ? (
@@ -1232,7 +1232,7 @@ export default function GuidancePage() {
                 rows={1}
                 disabled={isSending}
                 data-testid="input-guidance-floating"
-                className="w-full resize-none bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/78 outline-none leading-relaxed disabled:opacity-50"
+                className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/78 outline-none leading-relaxed disabled:opacity-50"
                 style={{ maxHeight: "96px", overflowY: "auto" }}
               />
               <div className="flex items-center justify-between">

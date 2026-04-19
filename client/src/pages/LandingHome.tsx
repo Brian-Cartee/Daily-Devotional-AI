@@ -1056,7 +1056,7 @@ export default function LandingHome() {
                           placeholder="Describe what you're carrying…"
                           rows={2}
                           data-testid="input-something-else"
-                          className="flex-1 resize-none rounded-xl border border-primary/30 bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 leading-relaxed"
+                          className="flex-1 resize-none rounded-xl border border-primary/30 bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 leading-relaxed"
                           onKeyDown={e => {
                             if (e.key === "Enter" && !e.shiftKey && somethingElseText.trim()) {
                               e.preventDefault();

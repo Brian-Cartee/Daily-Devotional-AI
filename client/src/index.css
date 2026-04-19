@@ -8,6 +8,19 @@ html, body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y pinch-zoom;
+  /* Android: prevent text auto-scaling on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Remove Android tap highlight flash on all interactive elements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Faster tap response on Android (removes 300ms delay) */
+button, a, input, textarea, select, [role="button"] {
+  touch-action: manipulation;
 }
 
 @layer base {

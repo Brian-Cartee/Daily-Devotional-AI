@@ -174,7 +174,7 @@ export default function PrayerWallPage() {
                     maxLength={280}
                     rows={4}
                     placeholder="What would you like others to pray for? Share what's on your heart — you can be as specific or as general as you need..."
-                    className="w-full rounded-xl border border-border bg-background px-3.5 py-3 text-[14px] text-foreground placeholder:text-muted-foreground/60 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-xl border border-border bg-background px-3.5 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                   <div className="flex items-center justify-between mt-1 mb-3">
                     <p className="text-[11px] text-muted-foreground/60">

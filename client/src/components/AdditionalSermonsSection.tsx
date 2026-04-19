@@ -217,7 +217,7 @@ function DeepStudyPrompts({ verseReference, reflectionContent }: { verseReferenc
           {/* Study prompt chips */}
           {data?.prompts && data.prompts.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.35)" }}>Study prompts</p>
+              <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.50)" }}>Study prompts</p>
               <div className="flex flex-wrap gap-2">
                 {data.prompts.map((prompt, i) => (
                   <button
@@ -241,7 +241,7 @@ function DeepStudyPrompts({ verseReference, reflectionContent }: { verseReferenc
           {/* Related scriptures */}
           {data?.scriptures && data.scriptures.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.35)" }}>Related scripture</p>
+              <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.50)" }}>Related scripture</p>
               <div className="space-y-2">
                 {data.scriptures.map((s, i) => (
                   <button
@@ -266,7 +266,7 @@ function DeepStudyPrompts({ verseReference, reflectionContent }: { verseReferenc
 
           {/* Custom question bar */}
           <div className="space-y-1.5">
-            <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.35)" }}>Ask your own question</p>
+            <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.50)" }}>Ask your own question</p>
             <div className="flex gap-2">
               <input
                 ref={customRef}
@@ -275,7 +275,7 @@ function DeepStudyPrompts({ verseReference, reflectionContent }: { verseReferenc
                 onChange={e => setCustomQ(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && customQ.trim()) goToGuidance(customQ.trim()); }}
                 placeholder={`Something about ${verseReference}…`}
-                className="flex-1 bg-transparent outline-none text-[13px] placeholder:text-white/35"
+                className="flex-1 bg-transparent outline-none text-[16px] placeholder:text-white/35"
                 style={{
                   color: "rgba(255,255,255,0.85)",
                   borderBottom: "1px solid rgba(167,139,250,0.3)",
@@ -385,7 +385,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
             </div>
             <div className="text-left">
               <p className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.78)" }}>Go Deeper</p>
-              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>More voices · search any topic</p>
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.50)" }}>More voices · search any topic</p>
             </div>
           </div>
           <ChevronDown className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} />
@@ -421,7 +421,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
             {autoLoading && (
               <div className="flex items-center gap-2.5 py-5 justify-center">
                 <Loader2 className="w-4 h-4 animate-spin" style={{ color: "rgba(245,158,11,0.5)" }} />
-                <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.35)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.50)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
                   Finding more voices…
                 </span>
               </div>

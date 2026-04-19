@@ -162,7 +162,7 @@ export function BibleStudyChat({
             placeholder="Ask anything about this verse…"
             rows={2}
             disabled={chatMutation.isPending}
-            className="w-full resize-none bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground/55 outline-none leading-relaxed disabled:opacity-50"
+            className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/55 outline-none leading-relaxed disabled:opacity-50"
           />
         </div>
         <button
