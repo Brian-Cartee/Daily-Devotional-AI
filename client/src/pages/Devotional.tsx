@@ -1107,7 +1107,7 @@ export default function Devotional() {
                   {/* ── Reflection reply box ─────────────────────── */}
                   {!reflectionLoading && reflectionContent && (
                     <div className="mt-5 pt-4 border-t border-border/20">
-                      <p className="text-[13px] font-medium text-foreground/65 mb-3 leading-snug">What's this bringing up for you?</p>
+                      <p className="text-[15px] font-medium text-foreground/85 mb-3 leading-snug">What's this bringing up for you?</p>
                       {reflectionReplySaved ? (
                         <div className="flex items-center gap-2 py-2 text-primary">
                           <Check className="w-4 h-4" />
@@ -1141,7 +1141,7 @@ export default function Devotional() {
                             placeholder="Start typing… even a word is enough."
                             spellCheck
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-border bg-muted/40 pl-3.5 pr-12 pt-3.5 pb-9 text-[14px] text-foreground placeholder:text-muted-foreground/65 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
+                            className="w-full resize-none rounded-xl border border-border bg-muted/40 pl-3.5 pr-12 pt-3.5 pb-9 text-[15px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
                           />
                           <button
                             data-testid="btn-save-reflection-reply"
@@ -1171,7 +1171,7 @@ export default function Devotional() {
                               <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
                             </svg>
                           </button>
-                          <span className="absolute bottom-3 left-3.5 right-12 text-[12px] text-muted-foreground/65 pointer-events-none italic">
+                          <span className="absolute bottom-3 left-3.5 right-12 text-[13px] text-muted-foreground/75 pointer-events-none italic">
                             You don't have to have the right words.
                           </span>
                         </div>
@@ -1189,16 +1189,16 @@ export default function Devotional() {
                     >
                       <Heart className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-foreground/80 leading-snug">
+                        <p className="text-[15px] text-foreground/90 leading-snug">
                           Did someone come to mind while reading this?
                         </p>
-                        <p className="text-[12px] text-muted-foreground/70 leading-snug mt-1">
+                        <p className="text-[14px] text-muted-foreground/80 leading-snug mt-1">
                           That's often the Spirit stirring something in you. Pause and pray for them.
                         </p>
                         <button
                           data-testid="button-pray-for-friend"
                           onClick={() => navigate(`/guidance?situation=${encodeURIComponent("I want to pray for someone who came to mind while I was reading Scripture today.")}`)}
-                          className="mt-2 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                          className="mt-2 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors"
                         >
                           Pray for them →
                         </button>
