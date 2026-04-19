@@ -148,7 +148,7 @@ export function FloatingAskAI() {
   return (
     <>
       {/* FAB */}
-      <div className="fixed bottom-[84px] right-4 z-40 flex items-center">
+      <div className="fixed bottom-[72px] right-4 z-40 flex items-center">
         <AnimatePresence>
           {isExpanded && !isOpen && (
             <motion.span
