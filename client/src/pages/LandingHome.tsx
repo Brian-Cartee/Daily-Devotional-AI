@@ -360,7 +360,7 @@ function DevotionalCard() {
           </div>
           <div className="flex-1 min-w-0 py-0.5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600">
+              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-500 border border-teal-400/40 shadow-sm">
                 Daily
               </span>
               {visitedToday && (
