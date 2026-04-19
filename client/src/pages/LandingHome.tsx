@@ -197,14 +197,14 @@ function HeroAIPrompt() {
       className="relative rounded-2xl overflow-hidden mb-1 shadow-lg shadow-primary/15 border border-primary/20"
     >
       {/* Colored header band */}
-      <div className="px-5 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(258 42% 32%), hsl(258 38% 42%))" }}>
+      <div className="px-6 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(258 42% 32%), hsl(258 38% 42%))" }}>
         <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-white/90" />
         </div>
         <span className="text-[14px] font-bold text-white" style={{ letterSpacing: "0.01em" }}>Talk It Through</span>
       </div>
 
-      <div className="px-5 pt-4 pb-5 bg-card">
+      <div className="px-6 pt-4 pb-5 bg-card">
 
 
         {/* Section 1 — open question */}

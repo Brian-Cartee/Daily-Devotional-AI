@@ -1124,7 +1124,7 @@ export default function GuidancePage() {
                 </p>
 
                 {journeyLoading ? (
-                  <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-5 pt-5 pb-4">
+                  <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-7 pt-6 pb-5">
                     <p className="text-[16px] leading-relaxed font-medium text-foreground/60 italic mb-2">
                       "Your word is a lamp to my feet and a light to my path."
                     </p>

@@ -76,7 +76,7 @@ export function LateNightBannerCard() {
       style={{ background: "linear-gradient(145deg, hsl(240 40% 10%) 0%, hsl(258 42% 15%) 60%, hsl(240 35% 8%) 100%)" }}
     >
       <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent 0%, hsl(258 42% 45%) 40%, hsl(220 60% 55%) 100%)" }} />
-      <div className="px-5 pt-5 pb-4">
+      <div className="px-7 pt-5 pb-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Moon className="w-3.5 h-3.5 text-indigo-300/70" />
@@ -233,7 +233,7 @@ export function ReturningUserCard() {
       <motion.div
         {...fadeIn}
         data-testid="card-returning-user"
-        className={`relative rounded-2xl border ${content.border} ${content.bg} px-5 py-4 shadow-sm overflow-hidden`}
+        className={`relative rounded-2xl border ${content.border} ${content.bg} px-7 py-5 shadow-sm overflow-hidden`}
       >
         <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${content.gradient}`} />
         <button
@@ -349,7 +349,7 @@ export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
       <motion.div
         {...fadeIn}
         data-testid="card-gratitude-prompt"
-        className="relative rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-5 py-4 shadow-sm overflow-hidden"
+        className="relative rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-7 py-5 shadow-sm overflow-hidden"
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-300" />
         <button
@@ -412,7 +412,7 @@ export function TipCard() {
       <motion.div
         {...fadeIn}
         data-testid="card-tip"
-        className="relative rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-4 shadow-sm overflow-hidden"
+        className="relative rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-7 py-5 shadow-sm overflow-hidden"
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400" />
         <button
@@ -470,7 +470,7 @@ export function CheckinCard() {
     <motion.div
       {...fadeIn}
       data-testid="card-checkin"
-      className="rounded-2xl border border-border/60 bg-card px-5 py-4 shadow-sm"
+      className="rounded-2xl border border-border/60 bg-card px-7 py-5 shadow-sm"
     >
       <div className="flex items-center gap-2 mb-3">
         <div className="w-7 h-7 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
@@ -577,7 +577,7 @@ export function SundaySummaryCard({ streak, visitCount }: SundaySummaryCardProps
       <motion.div
         {...fadeIn}
         data-testid="card-sunday-summary"
-        className="relative rounded-2xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-5 py-4 shadow-sm overflow-hidden"
+        className="relative rounded-2xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-7 py-5 shadow-sm overflow-hidden"
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400" />
         <button
@@ -770,7 +770,7 @@ export function WeeklyReflectionCard() {
       <motion.div
         {...fadeIn}
         data-testid="card-weekly-reflection"
-        className="relative rounded-2xl border border-violet-200 dark:border-violet-800/50 bg-violet-50/60 dark:bg-violet-950/20 px-5 py-4 shadow-sm overflow-hidden"
+        className="relative rounded-2xl border border-violet-200 dark:border-violet-800/50 bg-violet-50/60 dark:bg-violet-950/20 px-7 py-5 shadow-sm overflow-hidden"
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-400" />
         <button
@@ -826,7 +826,7 @@ export function FrameworkDayCard() {
           <X className="w-4 h-4" />
         </button>
 
-        <div className="px-5 pt-4 pb-4 pr-10">
+        <div className="px-7 pt-5 pb-5 pr-10">
           {/* Label row */}
           <div className="flex items-center gap-2 mb-2">
             <span className={`text-[10px] font-black uppercase tracking-[0.18em] ${day.color.text}`}>
@@ -931,7 +931,7 @@ export function NotificationNudgeCard() {
       <motion.div
         {...fadeIn}
         data-testid="card-notif-nudge"
-        className="relative rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/70 dark:bg-amber-950/20 px-5 py-4 shadow-sm overflow-hidden"
+        className="relative rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/70 dark:bg-amber-950/20 px-7 py-5 shadow-sm overflow-hidden"
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
 
@@ -1067,7 +1067,7 @@ export function WalkMilestoneCard({ daysWithApp }: { daysWithApp: number }) {
       <motion.div
         {...fadeIn}
         data-testid="card-walk-milestone"
-        className={`relative rounded-2xl border ${content.border} ${content.bg} px-5 py-4 shadow-sm overflow-hidden`}
+        className={`relative rounded-2xl border ${content.border} ${content.bg} px-7 py-5 shadow-sm overflow-hidden`}
       >
         <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${content.gradient}`} />
         <button
@@ -1173,7 +1173,7 @@ export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
       <motion.div
         {...fadeIn}
         data-testid="card-first-day"
-        className="relative rounded-2xl border border-primary/20 bg-gradient-to-br from-violet-50/80 to-indigo-50/60 dark:from-violet-950/30 dark:to-indigo-950/20 px-5 py-5 shadow-sm overflow-hidden"
+        className="relative rounded-2xl border border-primary/20 bg-gradient-to-br from-violet-50/80 to-indigo-50/60 dark:from-violet-950/30 dark:to-indigo-950/20 px-7 py-6 shadow-sm overflow-hidden"
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-400 to-indigo-400" />
 

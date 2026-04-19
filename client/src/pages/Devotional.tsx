@@ -1259,7 +1259,7 @@ export default function Devotional() {
           </div>
 
           {/* STEP 4: THANK HIM */}
-          <div className="bg-card border border-border/60 rounded-2xl px-5 py-6 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-2xl px-7 py-6 shadow-sm">
             <StepLabel number={4} label="Thank Him" />
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
               What feels like a gift today?
@@ -1351,7 +1351,7 @@ export default function Devotional() {
               className="rounded-2xl overflow-hidden border border-amber-500/25 bg-gradient-to-br from-amber-950/50 to-orange-950/30"
               data-testid="post-prayer-friend-card"
             >
-              <div className="px-5 py-5">
+              <div className="px-7 py-6">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
                     <Heart className="w-4 h-4 text-amber-400" />
