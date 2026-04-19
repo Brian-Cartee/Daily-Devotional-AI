@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon } from "lucide-react";
 import { isLateNight, getNightTimeLabel, getNightGreeting } from "@/lib/nightMode";
@@ -461,10 +461,23 @@ export function CheckinCard() {
   }
 
   const EMOTIONS: { key: CheckinEmotion; emoji: string; label: string }[] = [
-    { key: "hard", emoji: "😔", label: "Hard day" },
-    { key: "okay", emoji: "😌", label: "Steady" },
+    { key: "hard",     emoji: "😔", label: "Hard day" },
+    { key: "anxious",  emoji: "😟", label: "Anxious" },
+    { key: "okay",     emoji: "😌", label: "Steady" },
+    { key: "lonely",   emoji: "🫂", label: "Lonely" },
     { key: "grateful", emoji: "🙏", label: "Grateful" },
+    { key: "hopeful",  emoji: "🌤️", label: "Hopeful" },
+    { key: "drained",  emoji: "🪫", label: "Drained" },
   ];
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showArrow, setShowArrow] = useState(true);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowArrow(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  }
 
   return (
     <motion.div
@@ -480,23 +493,44 @@ export function CheckinCard() {
           {isLateNight() ? "What's on your heart tonight?" : "How are you doing today, really?"}
         </p>
       </div>
-      <div className="flex gap-2">
-        {EMOTIONS.map(({ key, emoji, label }) => (
-          <button
-            key={key}
-            data-testid={`button-checkin-${key}`}
-            onClick={() => handleSelect(key)}
-            className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 border transition-all ${
-              selected === key
-                ? "bg-primary/10 border-primary/40 text-primary"
-                : "bg-muted/40 border-border/50 text-foreground/70 hover:bg-muted/70 active:scale-95"
-            }`}
+
+      {/* Scrollable row with right-fade + arrow hint */}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex gap-2 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+        >
+          {EMOTIONS.map(({ key, emoji, label }) => (
+            <button
+              key={key}
+              data-testid={`button-checkin-${key}`}
+              onClick={() => handleSelect(key)}
+              style={{ touchAction: "manipulation", minWidth: "72px", flexShrink: 0 }}
+              className={`flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 border transition-all ${
+                selected === key
+                  ? "bg-primary/10 border-primary/40 text-primary"
+                  : "bg-muted/40 border-border/50 text-foreground/70 hover:bg-muted/70 active:scale-95"
+              }`}
+            >
+              <span className="text-xl">{emoji}</span>
+              <span className="text-[11px] font-semibold leading-none">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Right-side fade + chevron — hidden once fully scrolled */}
+        {showArrow && (
+          <div
+            className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-end pointer-events-none"
+            style={{ background: "linear-gradient(to right, transparent, var(--card) 75%)" }}
           >
-            <span className="text-xl">{emoji}</span>
-            <span className="text-[11px] font-semibold leading-none">{label}</span>
-          </button>
-        ))}
+            <ChevronRight className="w-4 h-4 text-muted-foreground/60 mr-0.5" />
+          </div>
+        )}
       </div>
+
       {selected && (
         <p className="mt-2.5 text-[12px] text-muted-foreground text-center">
           A reflection has been suggested above — feel free to edit it.
