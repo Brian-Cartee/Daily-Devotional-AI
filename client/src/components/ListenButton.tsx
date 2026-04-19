@@ -82,7 +82,7 @@ export function ListenButton({
         <span className="leading-none">{displayLabel()}</span>
       </button>
       {duration && (
-        <span className={`${vertical ? "text-[10px]" : "text-[11px]"} text-muted-foreground/50 leading-none`}>
+        <span className={`${vertical ? "text-[11px]" : "text-[12px]"} text-muted-foreground/70 leading-none`}>
           {duration}
         </span>
       )}

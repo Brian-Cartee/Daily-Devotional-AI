@@ -109,6 +109,19 @@ export default function Devotional() {
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
+  // Rotating daily background art
+  const [dailyArtBg, setDailyArtBg] = useState<string | null>(null);
+  useQuery({
+    queryKey: ["/api/daily-art"],
+    queryFn: async () => {
+      const res = await fetch("/api/daily-art");
+      const data = await res.json();
+      if (data.imageUrl) setDailyArtBg(data.imageUrl);
+      return data;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
   // Check if today's verse art has already been generated (cached on server)
   const verseDate = verse?.date ?? "";
   useQuery({
@@ -717,13 +730,13 @@ export default function Devotional() {
             >
               {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
               <img
-                src={(showAiArt && verseArtUrl) ? verseArtUrl : "/hero-devotional.webp"}
+                src={(showAiArt && verseArtUrl) ? verseArtUrl : (dailyArtBg ?? "/hero-devotional.webp")}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/hero-devotional.webp"; }}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{
-                  filter: (showAiArt && verseArtUrl) ? "brightness(0.6) saturate(1.1)" : "brightness(0.82) saturate(1.1)",
+                  filter: (showAiArt && verseArtUrl) ? "brightness(0.6) saturate(1.1)" : "brightness(0.72) saturate(1.1)",
                 }}
               />
 

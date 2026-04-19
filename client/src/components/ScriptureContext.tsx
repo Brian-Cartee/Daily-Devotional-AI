@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Scroll, X, Send, Loader2 } from "lucide-react";
+import { Scroll, X, Send, Loader2, ChevronRight } from "lucide-react";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { useLocation } from "wouter";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -165,10 +165,16 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
       <button
         data-testid="button-scripture-context"
         onClick={handleOpen}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-400/30 bg-amber-400/6 hover:bg-amber-400/12 hover:border-amber-400/50 text-amber-600/80 dark:text-amber-400/80 hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-200 group"
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-400/35 bg-amber-400/8 hover:bg-amber-400/15 hover:border-amber-400/55 transition-all duration-200 group text-left"
       >
-        <Scroll className="w-3.5 h-3.5 shrink-0" />
-        <span className="text-[12px] font-semibold tracking-wide">Get Context</span>
+        <div className="w-8 h-8 rounded-xl bg-amber-400/15 flex items-center justify-center shrink-0">
+          <Scroll className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-amber-600 dark:text-amber-400 leading-none mb-0.5">Get Context</p>
+          <p className="text-[11px] text-amber-600/60 dark:text-amber-400/60 leading-snug">History · cross-references · original language</p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-amber-500/50 dark:text-amber-400/50 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors shrink-0" />
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
