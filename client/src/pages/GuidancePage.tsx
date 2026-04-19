@@ -565,43 +565,45 @@ export default function GuidancePage() {
                       data-testid="input-guidance-heart"
                       className="w-full resize-none bg-transparent text-[17px] text-foreground placeholder:text-foreground/60 outline-none leading-relaxed"
                     />
-                    <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                      {hasSpeechSupport ? (
-                        <button
-                          type="button"
-                          onClick={toggleHeartVoice}
-                          data-testid="button-guidance-heart-voice"
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all relative"
-                          style={{
-                            color: heartListening ? "rgb(248,113,113)" : "rgba(255,255,255,0.65)",
-                            background: heartListening ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.07)",
-                            border: heartListening ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.1)",
-                          }}
-                        >
-                          {heartListening ? (
-                            <>
-                              <MicOff className="w-5 h-5" />
-                              <span>Stop listening</span>
-                              <span className="absolute inset-0 rounded-xl animate-ping bg-red-400/10" />
-                            </>
-                          ) : (
-                            <>
-                              <Mic className="w-5 h-5" />
-                              <span>Speak instead</span>
-                            </>
-                          )}
-                        </button>
-                      ) : <span />}
+                    <div className="flex flex-col gap-2.5 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      {/* Primary CTA — full width */}
                       <button
                         onClick={handleHeartSubmit}
                         disabled={!heartInput.trim()}
                         data-testid="button-guidance-heart-submit"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-[15px] transition-all disabled:opacity-45 disabled:cursor-not-allowed active:scale-[0.97]"
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-[15px] transition-all disabled:opacity-45 disabled:cursor-not-allowed active:scale-[0.97]"
                         style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", boxShadow: heartInput.trim() ? "0 4px 18px rgba(245,158,11,0.45)" : "none" }}
                       >
                         Seek Guidance
                         <ArrowRight className="w-4 h-4" />
                       </button>
+                      {/* Secondary — speak option, smaller + centered */}
+                      {hasSpeechSupport && (
+                        <button
+                          type="button"
+                          onClick={toggleHeartVoice}
+                          data-testid="button-guidance-heart-voice"
+                          className="flex items-center justify-center gap-2 py-2 rounded-xl text-[13px] font-semibold transition-all relative"
+                          style={{
+                            color: heartListening ? "rgb(248,113,113)" : "rgba(255,255,255,0.55)",
+                            background: heartListening ? "rgba(239,68,68,0.10)" : "transparent",
+                            border: heartListening ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.08)",
+                          }}
+                        >
+                          {heartListening ? (
+                            <>
+                              <MicOff className="w-4 h-4" />
+                              <span>Stop listening</span>
+                              <span className="absolute inset-0 rounded-xl animate-ping bg-red-400/10" />
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="w-4 h-4" />
+                              <span>Speak instead</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
 
