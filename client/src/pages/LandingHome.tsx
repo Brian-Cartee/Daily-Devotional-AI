@@ -586,17 +586,68 @@ function FaqSection() {
 
 function ClosingManifesto() {
   return (
-    <div className="text-center mt-6 mb-1">
-      <div className="h-px w-10 bg-violet-500/30 mx-auto mb-5" />
-      <p className="text-[15px] font-light italic text-violet-400/90 tracking-wide leading-loose">
-        The path is here.
-      </p>
-      <p className="text-[15px] font-light italic text-violet-400/75 tracking-wide leading-loose">
-        Start where you are.
-      </p>
-      <p className="text-[15px] font-light italic text-violet-400/60 tracking-wide leading-loose">
-        Walking it is up to you.
-      </p>
+    <div className="relative w-full mt-10 mb-2 overflow-hidden">
+      {/* Atmospheric violet bloom */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 90% 100% at 50% 50%, rgba(109,40,217,0.18) 0%, rgba(109,40,217,0.06) 55%, transparent 80%)",
+        }}
+      />
+      {/* Top vignette blend */}
+      <div
+        className="absolute inset-x-0 top-0 h-8 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, hsl(var(--background)), transparent)" }}
+      />
+      {/* Bottom vignette blend */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-8 pointer-events-none"
+        style={{ background: "linear-gradient(to top, hsl(var(--background)), transparent)" }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center text-center px-4 py-8">
+        {/* Sigil mark */}
+        <div className="flex items-center gap-3 mb-7">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(109,40,217,0.20)", border: "1px solid rgba(139,92,246,0.35)" }}
+          >
+            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none">
+              <path d="M8 2 C5 2 3 4 3 6.5 C3 9 5 11 8 14 C11 11 13 9 13 6.5 C13 4 11 2 8 2 Z" stroke="rgba(167,139,250,0.85)" strokeWidth="1.2" fill="none"/>
+            </svg>
+          </div>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
+        </div>
+
+        {/* The three lines — consistent weight, all equal, each a beat */}
+        <p
+          className="text-[22px] leading-snug mb-3 text-violet-300"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", opacity: 0.95 }}
+        >
+          The path is here.
+        </p>
+        <p
+          className="text-[22px] leading-snug mb-3 text-violet-300"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", opacity: 0.95 }}
+        >
+          Start where you are.
+        </p>
+        <p
+          className="text-[22px] leading-snug text-violet-300"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", opacity: 0.95 }}
+        >
+          Walking it is up to you.
+        </p>
+
+        {/* Bottom mark */}
+        <div className="flex items-center gap-3 mt-7">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/30" />
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-500/50 flex-shrink-0" />
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/30" />
+        </div>
+      </div>
     </div>
   );
 }
