@@ -263,12 +263,12 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
               className="w-full flex items-center justify-between px-1 pb-2.5 pt-0.5"
             >
               <div className="flex items-center gap-2">
-                <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.6)" }} />
-                <span className="text-[12px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(255,255,255,0.38)" }}>
+                <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.85)" }} />
+                <span className="text-[12px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Go Deeper
                 </span>
               </div>
-              <ChevronDown className="w-4 h-4 rotate-180 transition-transform" style={{ color: "rgba(255,255,255,0.25)" }} />
+              <ChevronDown className="w-4 h-4 rotate-180 transition-transform" style={{ color: "rgba(255,255,255,0.50)" }} />
             </button>
 
             {/* Auto-curated clips */}
@@ -290,7 +290,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
             {!autoLoading && autoSermons.length > 0 && (
               <div className="space-y-2.5">
                 {autoSermons.map(s => <AdditionalSermonCard key={s.videoId} sermon={s} />)}
-                <p className="text-center text-[11px] pt-0.5" style={{ color: "rgba(255,255,255,0.2)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                <p className="text-center text-[13px] pt-0.5" style={{ color: "rgba(255,255,255,0.55)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
                   Tap the share icon to send a message to someone who needs it today.
                 </p>
               </div>
@@ -302,8 +302,8 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             >
               <div className="flex items-center gap-2 mb-2.5">
-                <Headphones className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(245,158,11,0.55)" }} />
-                <span className="text-[11px] font-bold uppercase tracking-[0.13em]" style={{ color: "rgba(255,255,255,0.3)" }}>
+                <Headphones className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(245,158,11,0.85)" }} />
+                <span className="text-[12px] font-bold uppercase tracking-[0.13em]" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Search · Audio &amp; Podcasts
                 </span>
               </div>
@@ -317,11 +317,11 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") handleTopicSearch(); }}
                   placeholder="anxiety, identity, surrender, marriage…"
-                  className="flex-1 bg-transparent outline-none text-[13px] placeholder:text-white/20"
+                  className="flex-1 bg-transparent outline-none text-[13px] placeholder:text-white/45"
                   style={{
-                    color: "rgba(255,255,255,0.75)",
+                    color: "rgba(255,255,255,0.85)",
                     fontFamily: "'Georgia', serif",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    borderBottom: "1px solid rgba(255,255,255,0.2)",
                     paddingBottom: "4px",
                   }}
                 />
@@ -330,7 +330,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
                   onClick={handleTopicSearch}
                   disabled={!searchQuery.trim() || searchLoading}
                   className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl transition-opacity disabled:opacity-30"
-                  style={{ background: "rgba(245,158,11,0.18)", border: "1px solid rgba(245,158,11,0.3)" }}
+                  style={{ background: "rgba(245,158,11,0.25)", border: "1px solid rgba(245,158,11,0.5)" }}
                 >
                   {searchLoading
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "rgba(245,158,11,0.8)" }} />
