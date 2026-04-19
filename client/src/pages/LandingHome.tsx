@@ -1299,7 +1299,7 @@ export default function LandingHome() {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[12px] italic mt-4 pt-3" style={{ color: "rgba(255,255,255,0.68)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
+                    <p className="text-[14px] italic mt-4 pt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.80)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
                       "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
                     </p>
                   </div>
