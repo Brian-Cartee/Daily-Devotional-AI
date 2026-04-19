@@ -607,17 +607,15 @@ function ClosingManifesto() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 py-8">
-        {/* Sigil mark */}
-        <div className="flex items-center gap-3 mb-7">
+        {/* App icon — brand seal */}
+        <div className="flex items-center gap-3 mb-6">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(109,40,217,0.20)", border: "1px solid rgba(139,92,246,0.35)" }}
-          >
-            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none">
-              <path d="M8 2 C5 2 3 4 3 6.5 C3 9 5 11 8 14 C11 11 13 9 13 6.5 C13 4 11 2 8 2 Z" stroke="rgba(167,139,250,0.85)" strokeWidth="1.2" fill="none"/>
-            </svg>
-          </div>
+          <img
+            src="/sp-icon.png"
+            alt="Shepherd's Path"
+            className="w-10 h-10 rounded-[10px] flex-shrink-0"
+            style={{ boxShadow: "0 0 12px rgba(109,40,217,0.45)" }}
+          />
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
         </div>
 
@@ -1524,7 +1522,7 @@ export default function LandingHome() {
 
           <ClosingManifesto />
 
-          <p className="text-[13px] text-foreground/50 text-center mt-3 pb-6">
+          <p className="text-[13px] text-foreground/50 text-center mt-3 pb-4">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
           </p>
         </motion.div>
