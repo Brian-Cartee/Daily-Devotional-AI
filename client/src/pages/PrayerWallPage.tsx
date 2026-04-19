@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
-import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing, ArrowLeft } from "lucide-react";
+import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -108,14 +109,11 @@ export default function PrayerWallPage() {
         <div className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(80,30,0,0.18) 0%, transparent 100%)" }} />
 
         {/* Back button */}
-        <button
+        <BackButton
           onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-          data-testid="button-back-prayer-wall"
-          className="absolute top-[62px] left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back
-        </button>
+          testId="button-back-prayer-wall"
+          className="absolute top-[62px] left-4 z-10"
+        />
 
         {/* Hero text */}
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 px-6 text-center">

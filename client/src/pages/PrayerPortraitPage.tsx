@@ -5,7 +5,8 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { motion } from "framer-motion";
-import { Heart, Lock, ArrowLeft, Camera, Sparkles } from "lucide-react";
+import { Heart, Lock, Camera, Sparkles } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 
 // Warm, contemplative photo — sunlight through forest canopy
 const HERO_PHOTO = "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=900&q=85&auto=format&fit=crop";
@@ -35,15 +36,12 @@ export default function PrayerPortraitPage() {
               <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, transparent 38%, transparent 52%, rgba(13,10,26,1) 100%)" }} />
             </div>
 
-            {/* Back button — overlaid on hero, out of flow concern */}
-            <button
+            {/* Back button */}
+            <BackButton
               onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-              data-testid="button-back-prayer-portrait"
-              className="absolute top-3 left-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back
-            </button>
+              testId="button-back-prayer-portrait"
+              className="absolute top-3 left-4 z-10"
+            />
 
             {/* Icon badge — bleeds out of the strip, NOT clipped */}
             <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 z-10">

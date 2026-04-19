@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Share2, ArrowLeft, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send } from "lucide-react";
+import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
 
@@ -190,14 +191,11 @@ export default function CallingPage() {
     <div className="min-h-screen bg-[#0d0a1a]" style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}>
 
       {/* Back button */}
-      <button
+      <BackButton
         onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); setLocation("/"); }}
-        className="fixed top-4 left-4 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/55 active:scale-95 transition-all"
-        data-testid="button-calling-back"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        Back
-      </button>
+        testId="button-calling-back"
+        className="fixed top-4 left-4 z-50"
+      />
 
       {/* HERO */}
       <div className="relative w-full" style={{ height: "92svh", minHeight: 520 }}>

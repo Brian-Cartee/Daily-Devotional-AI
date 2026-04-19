@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
-import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, ArrowLeft, Swords } from "lucide-react";
+import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, Swords } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -477,14 +478,11 @@ export default function IronCirclePage() {
           />
           {/* Content */}
           <div className="relative z-10 flex flex-col items-center justify-start text-center px-6 pt-6 pb-8">
-            <button
+            <BackButton
               onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-              data-testid="button-back-iron-circle"
-              className="absolute top-3 left-3 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back
-            </button>
+              testId="button-back-iron-circle"
+              className="absolute top-3 left-3 z-50"
+            />
             <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg mt-2">
               <Swords className="w-6 h-6 text-white" />
             </div>

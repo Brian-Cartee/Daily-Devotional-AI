@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
+import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,7 +11,7 @@ import {
   NotebookPen, PenLine, Plus, X, ChevronDown, Church, User, BookMarked, Calendar,
   Download, FileText, FileType2, Lock, Star, Check,
   Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb, MessageCircle, Feather,
-  ArrowLeft,
+  // ArrowLeft removed — using BackButton component
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -1063,15 +1064,12 @@ export default function Journal() {
 
         {/* Hero banner */}
         <div className="relative w-full overflow-hidden" style={{ height: 300 }}>
-          {/* Back to Explore */}
-          <button
-            data-testid="button-back-journal"
+          {/* Back */}
+          <BackButton
+            testId="button-back-journal"
             onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-            className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
-          </button>
+            className="absolute top-3 left-3 z-20"
+          />
           {/* Shimmer placeholder — fades out once image loads */}
           <div
             className="absolute inset-0 z-10 transition-opacity duration-500"

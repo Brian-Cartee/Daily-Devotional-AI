@@ -4,8 +4,9 @@ import { NavBar } from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
 import {
   Check, BookOpen, ChevronDown, ArrowRight, Trophy,
-  ArrowLeft, Sprout, RotateCcw, Home, Flame, Anchor, ChevronRight,
+  Sprout, RotateCcw, Home, Flame, Anchor, ChevronRight,
 } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import {
   READING_PLANS, type ReadingPlan, type WhereAreYou, type DailyPace,
   getPlanProgress, markDayComplete, markDayIncomplete,
@@ -157,14 +158,11 @@ export default function ReadingPlansPage() {
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
         {/* Back */}
-        <button
-          data-testid="button-back-reading-plans"
+        <BackButton
+          testId="button-back-reading-plans"
           onClick={() => { sessionStorage.setItem("scrollToExplore", "1"); navigate("/"); }}
-          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+          className="mb-6"
+        />
 
         <AnimatePresence mode="wait">
 
@@ -207,13 +205,10 @@ export default function ReadingPlansPage() {
           {/* ── PHASE 1b: Daily pace ── */}
           {phase === "intake-pace" && (
             <motion.div key="intake-pace" {...fadeUp}>
-              <button
+              <BackButton
                 onClick={() => setPhase("intake-where")}
-                className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors mb-7"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back
-              </button>
+                className="mb-7"
+              />
 
               <div className="mb-8 text-center">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/60 mb-3">Your Walk</p>

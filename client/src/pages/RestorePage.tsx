@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, CheckCircle2, AlertCircle, ArrowLeft, Zap } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Zap } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { checkProWithServer } from "@/lib/proStatus";
 
 type Stage = "idle" | "loading" | "success" | "error" | "not-found";
@@ -54,14 +55,12 @@ export default function RestorePage() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10"
         >
-          {/* Back link */}
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/70 transition-colors mb-8 uppercase tracking-widest"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            Back
-          </Link>
+          {/* Back */}
+          <BackButton
+            onClick={() => navigate("/")}
+            testId="button-back-restore"
+            className="mb-8"
+          />
 
           {/* App icon */}
           <div className="flex justify-center mb-5">

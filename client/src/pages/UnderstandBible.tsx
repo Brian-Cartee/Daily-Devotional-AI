@@ -3,10 +3,11 @@ import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
-  BookMarked, ArrowLeft, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
+  BookMarked, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
   Bookmark, BookmarkCheck, BookOpen,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { BackButton } from "@/components/BackButton";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
@@ -496,14 +497,11 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
         <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
           <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
-          <button
-            data-testid="button-back-understand"
+          <BackButton
+            testId="button-back-understand"
             onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-            className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/20 text-white text-[13px] font-semibold hover:bg-black/50 active:scale-95 transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
-          </button>
+            className="absolute top-3 left-3 z-20"
+          />
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}

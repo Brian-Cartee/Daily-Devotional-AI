@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { BackButton } from "@/components/BackButton";
 import {
-  Trophy, Share2, RefreshCw, ChevronRight, BookOpen, ArrowLeft,
+  Trophy, Share2, RefreshCw, ChevronRight, BookOpen,
   Copy, Check, Star, Users, Sparkles, BookMarked, ImageIcon, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -229,14 +230,11 @@ export default function TriviaPage() {
       <NavBar />
       {/* Back button — fixed, out of flow so content centers cleanly */}
       {phase === "select" && (
-        <button
+        <BackButton
           onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
-          data-testid="btn-trivia-back"
-          className="fixed top-[60px] left-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px] font-semibold hover:bg-muted/80 active:scale-95 transition-all"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back
-        </button>
+          testId="btn-trivia-back"
+          className="fixed top-[60px] left-3 z-30"
+        />
       )}
       <div className="max-w-lg mx-auto px-4 pt-14">
 

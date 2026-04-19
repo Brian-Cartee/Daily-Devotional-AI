@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Check, Zap, Loader2, ArrowLeft, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
+import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
@@ -174,12 +175,10 @@ export default function PricingPage() {
 
       {/* Back nav */}
       <div className="px-5 pt-5">
-        <Link href="/">
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-pricing-back">
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-        </Link>
+        <BackButton
+          onClick={() => setLocation("/")}
+          testId="btn-pricing-back"
+        />
       </div>
 
       {/* Header */}
