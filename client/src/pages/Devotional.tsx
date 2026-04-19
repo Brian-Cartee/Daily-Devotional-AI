@@ -51,7 +51,7 @@ function StepLabel({ number: _number, label }: { number: number; label: string }
 function PrayerText({ text }: { text: string }) {
   const cleaned = text.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
   return (
-    <p className="text-[16px] leading-[2.1] text-foreground/90 italic font-normal tracking-wide">
+    <p className="text-[18px] leading-[1.72] text-foreground font-normal">
       {cleaned}
     </p>
   );
@@ -1086,7 +1086,7 @@ export default function Devotional() {
               )}
               {reflectionContent && (
                 <motion.div key="ref-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                  <div className="text-[15px] leading-relaxed text-foreground/80 space-y-3">
+                  <div className="text-[17px] leading-[1.72] text-foreground/95 space-y-4">
                     {reflectionContent.split("\n").filter(p => p.trim()).map((para, i) => (
                       <p key={i}>{para}</p>
                     ))}

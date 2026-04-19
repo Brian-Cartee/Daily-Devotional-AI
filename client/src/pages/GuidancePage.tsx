@@ -694,7 +694,7 @@ export default function GuidancePage() {
                   const visible = showAll ? paras : paras.slice(0, PREVIEW);
                   return (
                     <div
-                      className="text-[17px] leading-[1.85] text-foreground space-y-5 max-w-[68ch]"
+                      className="text-[18px] leading-[1.72] text-foreground space-y-5"
                       style={{ fontFamily: "var(--font-reading)" }}
                       data-testid="text-guidance-response"
                     >
