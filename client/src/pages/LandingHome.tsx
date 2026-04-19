@@ -584,34 +584,20 @@ function FaqSection() {
   );
 }
 
-const TRUTH_LINES = [
-  "The path is here.",
-  "Start where you are.",
-  "Walking it is up to you.",
-];
-
-function RotatingTruthLine() {
-  const [idx, setIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % TRUTH_LINES.length);
-        setVisible(true);
-      }, 800);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, []);
-
+function ClosingManifesto() {
   return (
-    <p
-      className="text-[12px] text-foreground/35 text-center mt-5 mb-1 tracking-wide transition-opacity duration-700"
-      style={{ opacity: visible ? 1 : 0 }}
-    >
-      {TRUTH_LINES[idx]}
-    </p>
+    <div className="text-center mt-6 mb-1">
+      <div className="h-px w-10 bg-violet-500/30 mx-auto mb-5" />
+      <p className="text-[15px] font-light italic text-violet-400/90 tracking-wide leading-loose">
+        The path is here.
+      </p>
+      <p className="text-[15px] font-light italic text-violet-400/75 tracking-wide leading-loose">
+        Start where you are.
+      </p>
+      <p className="text-[15px] font-light italic text-violet-400/60 tracking-wide leading-loose">
+        Walking it is up to you.
+      </p>
+    </div>
   );
 }
 
@@ -1485,9 +1471,9 @@ export default function LandingHome() {
             </button>
           </div>
 
-          <RotatingTruthLine />
+          <ClosingManifesto />
 
-          <p className="text-[13px] text-foreground/50 text-center mt-4">
+          <p className="text-[13px] text-foreground/50 text-center mt-3 pb-6">
             © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
           </p>
         </motion.div>
