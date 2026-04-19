@@ -193,7 +193,7 @@ export function DailyArtCard() {
                 onClick={() => setExpanded(e => !e)}
                 data-testid="button-daily-art"
                 aria-label={expanded ? "Close reflection" : "Read today's reflection"}
-                className="mt-3 flex items-center gap-1.5 text-[11px] text-white/55 hover:text-white/80 transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/85 hover:text-white transition-colors bg-black/20 backdrop-blur-sm rounded-full px-3 py-1"
               >
                 <motion.div
                   animate={{ rotate: expanded ? 180 : 0 }}
@@ -238,19 +238,26 @@ export function DailyArtCard() {
         )}
       </AnimatePresence>
 
-      {/* Quiet link to Our Calling — always visible, never pushy */}
+      {/* Share row — always visible */}
       {imageLoaded && art && (
-        <Link href="/calling">
-          <div
+        <div
+          className="flex items-center justify-between px-4 py-3 gap-3"
+          style={{ borderTop: "1px solid hsl(var(--border) / 0.4)" }}
+        >
+          <button
+            onClick={handleShare}
             data-testid="link-daily-art-calling"
-            className="flex items-center justify-center gap-1.5 py-2.5 text-[11px] text-muted-foreground/45 hover:text-primary/60 active:text-primary/80 transition-colors cursor-pointer"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+            className="flex items-center gap-2 text-[13px] font-semibold text-foreground/70 hover:text-primary transition-colors"
           >
-            <Share2 className="w-3 h-3" />
-            <span>Share today's art</span>
-            <span className="opacity-60">→</span>
-          </div>
-        </Link>
+            <Share2 className="w-4 h-4 text-primary/60" />
+            {shared ? "Copied!" : "Share today's art"}
+          </button>
+          <Link href="/calling">
+            <span className="text-[12px] text-primary/60 hover:text-primary font-medium transition-colors">
+              Our calling →
+            </span>
+          </Link>
+        </div>
       )}
     </motion.div>
   );
