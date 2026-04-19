@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getUserName } from "@/lib/userName";
+import { getUserName, syncUserNameFromServer } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
 
 const ENTRY_KEY = "sp_entry_shown_date";
@@ -289,8 +289,14 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
 }
 
 function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
-  const name = getUserName();
+  const [name, setName] = useState<string | null>(getUserName);
   const hour = new Date().getHours();
+
+  useEffect(() => {
+    if (!name) {
+      syncUserNameFromServer().then((n) => { if (n) setName(n); });
+    }
+  }, []);
   const dayOfWeek = new Date().getDay();
   const isSunday = dayOfWeek === 0;
   const greeting =
@@ -307,25 +313,17 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
         className="shrink-0 px-6 pt-14 pb-6"
         style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
       >
-        <p className="text-white/40 text-xs tracking-widest uppercase mb-2">Shepherd's Path</p>
+        <p className="text-white/65 text-xs tracking-widest uppercase mb-2">Shepherd's Path</p>
         <div className="flex items-end justify-between">
           <div>
             <h1
               className="text-white font-light"
               style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem" }}
             >
-              {greeting}{name ? "," : "."}
+              {greeting}{name ? `, ${name}.` : "."}
             </h1>
-            {name && (
-              <h1
-                className="text-white"
-                style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem" }}
-              >
-                {name}.
-              </h1>
-            )}
           </div>
-          <button onClick={onDismiss} className="text-white/30 text-xs pb-1">
+          <button onClick={onDismiss} className="text-white/60 text-sm pb-1">
             Skip
           </button>
         </div>
@@ -343,12 +341,12 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
         </p>
         <div className="pl-4 border-l-2 mb-1" style={{ borderColor: "#442f74" }}>
           <p
-            className="text-gray-600 italic text-sm leading-relaxed"
-            style={{ fontFamily: "'Georgia', serif" }}
+            className="text-gray-600 italic leading-relaxed"
+            style={{ fontFamily: "'Georgia', serif", fontSize: "0.9375rem" }}
           >
             "{verse.text}"
           </p>
-          <p className="text-gray-400 text-xs mt-1">— {verse.ref}</p>
+          <p className="text-gray-500 mt-1.5" style={{ fontSize: "0.8125rem" }}>— {verse.ref}</p>
         </div>
       </div>
 

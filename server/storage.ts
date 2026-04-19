@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment } from "@shared/schema";
 import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -58,6 +58,8 @@ export interface IStorage {
   saveTriviaQuestions(category: string, questions: TriviaQuestion[]): Promise<void>;
   saveTriviaChallenge(id: string, data: { challengerName: string; category: string; categoryLabel: string; score: number; total: number; questions: TriviaQuestion[] }): Promise<TriviaChallenge>;
   getTriviaChallenge(id: string): Promise<TriviaChallenge | undefined>;
+  getUserProfileName(sessionId: string): Promise<string | null>;
+  setUserProfileName(sessionId: string, name: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -493,6 +495,18 @@ export class DatabaseStorage implements IStorage {
   async getTriviaChallenge(id: string): Promise<TriviaChallenge | undefined> {
     const [row] = await db.select().from(triviaChallenges).where(eq(triviaChallenges.id, id));
     return row;
+  }
+
+  async getUserProfileName(sessionId: string): Promise<string | null> {
+    const [row] = await db.select({ name: userProfiles.name }).from(userProfiles).where(eq(userProfiles.sessionId, sessionId));
+    return row?.name ?? null;
+  }
+
+  async setUserProfileName(sessionId: string, name: string): Promise<void> {
+    await db.insert(userProfiles).values({ sessionId, name }).onConflictDoUpdate({
+      target: userProfiles.sessionId,
+      set: { name, updatedAt: new Date() },
+    });
   }
 }
 

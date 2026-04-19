@@ -245,6 +245,31 @@ export async function registerRoutes(
     });
   });
 
+  // ── User profile name (persists across Safari/iOS localStorage clears) ────────
+  app.get("/api/user-name", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.json({ name: null });
+    try {
+      const name = await storage.getUserProfileName(sessionId);
+      res.json({ name });
+    } catch {
+      res.json({ name: null });
+    }
+  });
+
+  app.post("/api/user-name", async (req, res) => {
+    const { sessionId, name } = req.body as { sessionId?: string; name?: string };
+    if (!sessionId || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ message: "sessionId and name required" });
+    }
+    try {
+      await storage.setUserProfileName(sessionId, name.trim());
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
     try {

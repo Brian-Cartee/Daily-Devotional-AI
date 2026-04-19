@@ -305,3 +305,12 @@ export const sermonSegments = pgTable("sermon_segments", {
 
 export type SermonVideo = typeof sermonVideos.$inferSelect;
 export type SermonSegment = typeof sermonSegments.$inferSelect;
+
+// ── User Profiles (name persistence across sessions/browsers) ─────────────────
+export const userProfiles = pgTable("user_profiles", {
+  sessionId: text("session_id").primaryKey(),
+  name: text("name"),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
