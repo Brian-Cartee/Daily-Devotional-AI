@@ -858,7 +858,7 @@ export default function LandingHome() {
       {/* Ambient grass — blurred hero image bleeds into side margins on wide screens */}
       <div
         aria-hidden="true"
-        className="pointer-events-none select-none absolute inset-x-0 bottom-0"
+        className="pointer-events-none select-none absolute inset-x-0 bottom-0 overflow-hidden"
         style={{ top: "56vh", zIndex: 1 }}
       >
         <div
