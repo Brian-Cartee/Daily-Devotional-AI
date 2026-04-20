@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment } from "@shared/schema";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern } from "@shared/schema";
 import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -60,6 +60,8 @@ export interface IStorage {
   getTriviaChallenge(id: string): Promise<TriviaChallenge | undefined>;
   getUserProfileName(sessionId: string): Promise<string | null>;
   setUserProfileName(sessionId: string, name: string): Promise<void>;
+  getUserMemory(sessionId: string): Promise<UserMemoryRow | undefined>;
+  upsertUserMemory(sessionId: string, data: Partial<Omit<UserMemoryRow, "sessionId" | "updatedAt">>): Promise<UserMemoryRow>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -507,6 +509,26 @@ export class DatabaseStorage implements IStorage {
       target: userProfiles.sessionId,
       set: { name, updatedAt: new Date() },
     });
+  }
+
+  async getUserMemory(sessionId: string): Promise<UserMemoryRow | undefined> {
+    const [row] = await db.select().from(userMemory).where(eq(userMemory.sessionId, sessionId));
+    return row;
+  }
+
+  async upsertUserMemory(
+    sessionId: string,
+    data: Partial<Omit<UserMemoryRow, "sessionId" | "updatedAt">>
+  ): Promise<UserMemoryRow> {
+    const [row] = await db
+      .insert(userMemory)
+      .values({ sessionId, ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: userMemory.sessionId,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return row;
   }
 }
 

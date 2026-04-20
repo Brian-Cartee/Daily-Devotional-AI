@@ -15,6 +15,7 @@ import Stripe from "stripe";
 import webpush from "web-push";
 import twilio from "twilio";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
+import { updateMemory, getMemoryContext, buildMemoryPromptNote } from "./lib/userMemory";
 import { getCulturalMomentNote } from "./culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
@@ -1536,15 +1537,17 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
       : "";
 
-    // Fetch journal context, recent journal echo, and memory verses in parallel
+    // Fetch journal context, recent journal echo, memory verses, and user memory in parallel
     const [
       { context: journalCtx, count: journalEntryCount },
       recentEcho,
       savedVerses,
+      userMemCtx,
     ] = await Promise.all([
       getJournalContext(sessionId || ""),
       getRecentJournalEcho(sessionId || ""),
       getMemoryVerseNote(sessionId || ""),
+      getMemoryContext(sessionId || ""),
     ]);
 
     const memoryNote = journalCtx
@@ -1591,6 +1594,8 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     const deepConversationNote = conversationDepth >= 8
       ? `\n\nConversation depth — this person has been talking with you for a while now. You've earned real trust in this conversation. At some natural point in your response — not forced, not as a closing formula — gently point them beyond this conversation once. Something like: "This might be worth bringing to someone you trust — a pastor, a close friend." Or: "Bring this into your own prayer beyond this moment too." Say it where it fits, then let it rest. The app supports spiritual life. It does not replace it.`
       : "";
+
+    const userPatternNote = buildMemoryPromptNote(userMemCtx);
 
     const systemMsg = `You are a warm, deeply compassionate pastoral guide at Shepherd's Path. Someone has just opened up about what they are going through.
 
@@ -1663,7 +1668,7 @@ Rules:
 — Never escalate emotionally beyond where the user actually is — if they say "I feel off today," do not open with "this deep ache you're carrying." Match their register first
 — Never assemble a tidy package of reflection + scripture + prayer in one response — let what's needed emerge naturally; intimacy is not a formula
 — If the user pushes back on your response ("that didn't help" / "that felt off") — never defend, never explain yourself, never over-apologize. Simply own the miss: "That didn't land the way you needed." Then re-open: "What part felt off?" or "We can stay closer to what you're actually feeling." The user is never wrong about how something felt
-— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))
@@ -1716,6 +1721,37 @@ Rules:
       res.status(200).json({ ok: true });
     } catch (err) {
       console.error("[memory] save failed:", err);
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
+  // ── User Memory: update emotional pattern ─────────────────────────────────────
+  app.post("/api/memory/update", async (req, res) => {
+    const { sessionId, emotionKey, daysWithApp = 0, journalCount = 0, wasGap = false } = req.body as {
+      sessionId?: string; emotionKey?: string;
+      daysWithApp?: number; journalCount?: number; wasGap?: boolean;
+    };
+    if (!sessionId || !emotionKey) {
+      return res.status(400).json({ message: "sessionId and emotionKey required" });
+    }
+    try {
+      await updateMemory(sessionId, { emotionKey, daysWithApp, journalCount, wasGap });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[memory/update]", err);
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
+  // ── User Memory: retrieve context for AI personalisation ──────────────────────
+  app.get("/api/memory/context", async (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const ctx = await getMemoryContext(sessionId);
+      res.json(ctx);
+    } catch (err) {
+      console.error("[memory/context]", err);
       res.status(500).json({ message: "failed" });
     }
   });

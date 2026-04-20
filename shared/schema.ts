@@ -314,3 +314,24 @@ export const userProfiles = pgTable("user_profiles", {
 });
 
 export type UserProfile = typeof userProfiles.$inferSelect;
+
+// ── User Memory (emotional + spiritual pattern tracking) ──────────────────────
+export type EmotionPattern = { count: number; lastSeen: string };
+
+export const userMemory = pgTable("user_memory", {
+  sessionId:         text("session_id").primaryKey(),
+  // { anxiety: { count: 3, lastSeen: "2026-04-20T..." }, ... }
+  emotionalPatterns: jsonb("emotional_patterns")
+                       .$type<Record<string, EmotionPattern>>()
+                       .default({})
+                       .notNull(),
+  // "just-starting" | "returning" | "growing" | "struggling"
+  spiritualState:    text("spiritual_state").default("just-starting").notNull(),
+  // "new" | "occasional" | "regular" | "deep"
+  engagementLevel:   text("engagement_level").default("new").notNull(),
+  // ordered list of last 10 detected emotions (most recent first)
+  recentEmotions:    text("recent_emotions").array().default([]).notNull(),
+  updatedAt:         timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export type UserMemoryRow = typeof userMemory.$inferSelect;
