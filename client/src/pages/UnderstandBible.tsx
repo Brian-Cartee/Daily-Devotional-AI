@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
   BookMarked, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
-  Bookmark, BookmarkCheck, BookOpen,
+  Bookmark, BookmarkCheck, BookOpen, ArrowLeft,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { BackButton } from "@/components/BackButton";

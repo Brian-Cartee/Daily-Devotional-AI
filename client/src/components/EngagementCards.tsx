@@ -276,7 +276,7 @@ interface GratitudePromptCardProps {
   sessionId: string;
 }
 
-const GRATITUDE_COPY: Record<"hard" | "okay" | "grateful" | "none", {
+const GRATITUDE_COPY: Record<CheckinEmotion | "none", {
   header: string; prompt: string; placeholder: string; journalTitle: string;
 }> = {
   hard: {
@@ -284,6 +284,18 @@ const GRATITUDE_COPY: Record<"hard" | "okay" | "grateful" | "none", {
     prompt: "What are you carrying that you haven't said out loud yet?",
     placeholder: "Whatever's weighing on you…",
     journalTitle: "What I'm carrying",
+  },
+  anxious: {
+    header: "Breathe a moment",
+    prompt: "What's underneath the anxiety — what are you afraid of right now?",
+    placeholder: "Whatever's stirring inside…",
+    journalTitle: "What I'm anxious about",
+  },
+  lonely: {
+    header: "You're not alone",
+    prompt: "Write what you wish someone understood about where you are right now.",
+    placeholder: "What's been heavy to carry alone…",
+    journalTitle: "Loneliness",
   },
   okay: {
     header: "Take a moment",
@@ -296,6 +308,18 @@ const GRATITUDE_COPY: Record<"hard" | "okay" | "grateful" | "none", {
     prompt: "Write one thing on your heart — we'll save it to your journal.",
     placeholder: "I'm thankful for…",
     journalTitle: "Gratitude",
+  },
+  hopeful: {
+    header: "Hold onto that",
+    prompt: "What's giving you hope right now? Write it down before the moment passes.",
+    placeholder: "What I'm hopeful about…",
+    journalTitle: "Hope",
+  },
+  drained: {
+    header: "Rest a moment",
+    prompt: "What do you need God to restore in you right now?",
+    placeholder: "What I need renewed…",
+    journalTitle: "What I need",
   },
   none: {
     header: "Take a moment",

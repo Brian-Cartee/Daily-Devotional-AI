@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/BackButton";
 import {
   Trophy, Share2, RefreshCw, ChevronRight, BookOpen,
-  Copy, Check, Star, Users, Sparkles, BookMarked, ImageIcon, Loader2
+  Copy, Check, Star, Users, Sparkles, BookMarked, ImageIcon, Loader2, ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavBar } from "@/components/NavBar";
