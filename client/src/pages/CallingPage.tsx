@@ -95,6 +95,8 @@ export default function CallingPage() {
   const [sharingScripture, setSharingScripture] = useState(false);
   const [artUrl, setArtUrl] = useState<string>(FALLBACK_IMG);
   const [artLoaded, setArtLoaded] = useState(false);
+  const [todayVerse, setTodayVerse] = useState<{ text: string; reference: string } | null>(null);
+  const [sharingTodayVerse, setSharingTodayVerse] = useState(false);
 
   // Generate-your-own state
   const [topic, setTopic] = useState("");
@@ -108,6 +110,14 @@ export default function CallingPage() {
       .then(r => r.json())
       .then(data => {
         if (data.imageUrl) { setArtUrl(data.imageUrl); setArtLoaded(true); }
+      })
+      .catch(() => {});
+
+    const localDate = new Intl.DateTimeFormat("en-CA").format(new Date());
+    fetch(`/api/verses/daily?date=${localDate}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data?.text && data?.reference) setTodayVerse({ text: data.text, reference: data.reference });
       })
       .catch(() => {});
   }, []);
@@ -160,6 +170,19 @@ export default function CallingPage() {
       navigator.share?.({ text: card.shareText }).catch(() => {});
     }
     setLoading(null);
+  };
+
+  const handleShareTodayVerse = async () => {
+    if (!todayVerse || sharingTodayVerse) return;
+    setSharingTodayVerse(true);
+    const shareText = `"${todayVerse.text}"\n— ${todayVerse.reference}\n\nShepherd's Path · shepherdspath.app`;
+    try {
+      const blob = await createShareImage(todayVerse.text, todayVerse.reference, artUrl);
+      await doImageShare(blob, `${todayVerse.reference} — Shepherd's Path`, shareText);
+    } catch {
+      navigator.share?.({ text: shareText }).catch(() => {});
+    }
+    setSharingTodayVerse(false);
   };
 
   const handleSendPrayer = () => {
@@ -378,6 +401,64 @@ export default function CallingPage() {
       <div className="px-7 pb-6 text-center">
         <p className="text-white/20 text-[11px] tracking-[0.2em] uppercase">Or share one of these</p>
       </div>
+
+      {/* TODAY'S VERSE — share the daily devotional scripture */}
+      {todayVerse && (
+        <div className="px-5 pb-5">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="rounded-2xl overflow-hidden"
+            style={{ border: "1px solid rgba(251,191,36,0.22)" }}
+          >
+            {/* Landscape thumbnail with verse overlay */}
+            <div className="relative overflow-hidden" style={{ height: 120 }}>
+              <img
+                src={artUrl}
+                alt=""
+                aria-hidden="true"
+                className="w-full h-full object-cover"
+                style={{ filter: "brightness(0.55)" }}
+              />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 15%, rgba(0,0,0,0.6) 100%)" }} />
+              <div className="absolute bottom-0 left-0 right-0 px-4 pb-3">
+                <p
+                  className="text-white/90 leading-snug line-clamp-2"
+                  style={{ fontFamily: "'Georgia', serif", fontSize: "0.88rem" }}
+                >
+                  &ldquo;{todayVerse.text}&rdquo;
+                </p>
+              </div>
+            </div>
+
+            {/* Reference + share button */}
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ background: "rgba(251,191,36,0.08)", borderTop: "1px solid rgba(251,191,36,0.18)" }}
+            >
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5" style={{ color: "rgba(251,191,36,0.55)" }}>
+                  Today's Verse
+                </p>
+                <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.65)" }}>— {todayVerse.reference}</p>
+              </div>
+              <button
+                onClick={handleShareTodayVerse}
+                disabled={sharingTodayVerse}
+                data-testid="button-calling-share-today-verse"
+                className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
+                style={{ background: "rgba(251,191,36,0.18)", border: "1px solid rgba(251,191,36,0.35)", color: "rgba(255,210,80,0.95)" }}
+              >
+                {sharingTodayVerse
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Share2 className="w-4 h-4" />}
+                Share
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* SHARE CARDS */}
       <div className="px-5 pb-6 space-y-3">
