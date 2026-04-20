@@ -814,7 +814,7 @@ export default function LandingHome() {
           style={{ objectPosition: "center center" }}
         />
         <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background)) 4%, transparent 42%)" }} />
 
         {/* Share — top right of hero */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20">
