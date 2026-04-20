@@ -61,8 +61,8 @@ async function sendMorningNotifications() {
     if (h !== hour) continue;
 
     const ok = await sendToSubscription(sub, {
-      title: "Good morning — Shepherd's Path 🌅",
-      body: `${ref} is waiting. Start your 4-step devotional and walk the path.`,
+      title: "Good morning 🌅",
+      body: `${ref} is waiting. You don't have to carry today alone.`,
       tag: "morning",
       url: "/devotional",
     });
@@ -71,13 +71,13 @@ async function sendMorningNotifications() {
 }
 
 const MIDDAY_MESSAGES: { title: string; body: string }[] = [
-  { title: "A midday moment 🌿", body: "Five minutes with God in the middle of the day changes the whole rest of it." },
-  { title: "Pausing is not falling behind 🌿", body: "Step away for a few minutes. Your devotional is open and waiting for you." },
-  { title: "Midday breath 🌿", body: "Be still — even for five minutes. Today's verse is worth returning to." },
+  { title: "Before you move on 🌿", body: "Take a breath. Where are you, really? A quiet moment changes the rest of the day." },
+  { title: "A midday moment 🌿", body: "Pausing is not falling behind. Five minutes with God is enough." },
+  { title: "Midday breath 🌿", body: "Before the afternoon takes over — bring what you're carrying to God." },
   { title: "A quiet place in the middle 🌿", body: "The day is only half over. There's still time to walk with God through the rest of it." },
-  { title: "Shepherd's Path · midday 🌿", body: "You don't have to finish the day spiritually empty. Start with today's verse." },
-  { title: "The Word is still there 🌿", body: "Whatever the morning held — the path is still open. Come back for a few minutes." },
-  { title: "Halfway home 🌿", body: "The second half of the day is still ahead. Carry something good into it." },
+  { title: "Take a quiet moment 🌿", body: "You don't have to push through alone. The path is open — come as you are." },
+  { title: "The door is still open 🌿", body: "Whatever the morning held — you can bring it here. Just for a few minutes." },
+  { title: "Halfway through 🌿", body: "The second half of the day is ahead. Carry something good into it." },
 ];
 
 async function sendMiddayNotifications() {
@@ -97,21 +97,21 @@ async function sendMiddayNotifications() {
   }
 }
 
-const EVENING_MESSAGES: { title: string; body: string }[] = [
-  { title: "Before the day closes ✨", body: "A quiet moment with God before bed. Your devotional and prayer are still open." },
-  { title: "Evening reflection ✨", body: "The day is winding down. Bring it to God before you rest — 4 steps, 5 minutes." },
-  { title: "End well ✨", body: "What happened today deserves a few minutes with God. Your devotional is waiting." },
-  { title: "Night is near ✨", body: "Lay down whatever the day held. Start with today's verse and let it settle." },
-  { title: "A faithful close ✨", body: "Your evening prayer is one tap away. Let God have the last word today." },
-  { title: "Shepherd's Path · evening ✨", body: "Before sleep — five minutes in the Word. Everything else can wait." },
-  { title: "Rest begins here ✨", body: "Your devotional is a quiet place to end the day. Four steps. You have time." },
+const EVENING_MESSAGES: { title: string; body: string; url: string }[] = [
+  { title: "How did you walk today? ✨", body: "A few quiet minutes before the day closes. Reflect on where you walked — and where you struggled.", url: "/alignment" },
+  { title: "Before the day closes ✨", body: "The day is winding down. How did you walk? Bring it to God honestly before you rest.", url: "/alignment" },
+  { title: "Evening reflection ✨", body: "Not perfection. Just honest reflection. Where did you feel closest to God today?", url: "/alignment" },
+  { title: "Before you rest ✨", body: "Lay down whatever the day held. Five quiet minutes of reflection before you sleep.", url: "/alignment" },
+  { title: "A faithful close ✨", body: "Tomorrow is another step. You don't have to get it all right — just keep walking.", url: "/devotional" },
+  { title: "The day behind you ✨", body: "Whatever today held — God saw it all. Take a quiet moment to close the day with Him.", url: "/alignment" },
+  { title: "Rest begins here ✨", body: "A quiet place to end the day. Reflect on where faith showed up — and where you needed grace.", url: "/alignment" },
 ];
 
 async function sendEveningNotifications() {
   const subs = await storage.getAllPushSubscriptions();
   const hour = new Date().getUTCHours();
   const dayOfWeek = new Date().getDay();
-  const { title, body } = EVENING_MESSAGES[dayOfWeek % EVENING_MESSAGES.length];
+  const { title, body, url } = EVENING_MESSAGES[dayOfWeek % EVENING_MESSAGES.length];
 
   for (const sub of subs) {
     if (!sub.eveningEnabled) continue;
@@ -122,7 +122,7 @@ async function sendEveningNotifications() {
       title,
       body,
       tag: "evening",
-      url: "/devotional",
+      url,
     });
     if (!ok) await storage.deletePushSubscription(sub.sessionId);
   }
@@ -140,12 +140,12 @@ async function sendStreakReminders() {
 
       const badgeName = streak ? getStreakBadgeName(streak.currentStreak) : null;
       const ok = await sendToSubscription(sub, {
-        title: "Don't break your streak 🔥",
+        title: streak && streak.currentStreak > 1 ? `Day ${streak.currentStreak} 🌿` : "Take a quiet moment 🌿",
         body: streak && streak.currentStreak > 1
           ? badgeName
-            ? `Day ${streak.currentStreak} · ${badgeName} — keep walking.`
-            : `You're on a ${streak.currentStreak}-day streak — don't let it end today!`
-          : "Your devotional for today is still open. Come walk the path.",
+            ? `${badgeName} · The path is still open today. Come back when you can.`
+            : `You've been walking ${streak.currentStreak} days. Today's a good day to keep going.`
+          : "No pressure — just an open door. Come as you are.",
         tag: "streak-reminder",
         url: "/devotional",
       });

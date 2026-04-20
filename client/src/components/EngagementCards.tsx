@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon } from "lucide-react";
+import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon, Sun, Wind } from "lucide-react";
+import { getReturnPhase, type DayPhase } from "@/lib/returnFlow";
+import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight, getNightTimeLabel, getNightGreeting } from "@/lib/nightMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { Button } from "@/components/ui/button";
@@ -1321,5 +1323,76 @@ export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
         )}
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+// ── The Return — time-aware daily prompt card ────────────────────────────────
+
+const PHASE_ICON: Record<DayPhase, React.ReactNode> = {
+  morning:   <Sun  className="w-3.5 h-3.5" />,
+  midday:    <Sun  className="w-3.5 h-3.5" />,
+  evening:   <Moon className="w-3.5 h-3.5" />,
+  close:     <Moon className="w-3.5 h-3.5" />,
+  latenight: <Wind className="w-3.5 h-3.5" />,
+};
+
+const PHASE_COLORS: Record<DayPhase, { border: string; bg: string; eyebrow: string; top: string }> = {
+  morning:   { border: "rgba(251,191,36,0.22)", bg: "linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.04))",  eyebrow: "rgba(251,191,36,0.75)", top: "linear-gradient(90deg,transparent,rgba(251,191,36,0.5),transparent)" },
+  midday:    { border: "rgba(251,191,36,0.18)", bg: "linear-gradient(135deg,rgba(245,158,11,0.07),rgba(251,191,36,0.03))",  eyebrow: "rgba(245,158,11,0.70)", top: "linear-gradient(90deg,transparent,rgba(245,158,11,0.45),transparent)" },
+  evening:   { border: "rgba(99,102,241,0.25)",  bg: "linear-gradient(135deg,rgba(79,70,229,0.10),rgba(99,102,241,0.04))", eyebrow: "rgba(165,180,252,0.80)", top: "linear-gradient(90deg,transparent,rgba(99,102,241,0.5),transparent)" },
+  close:     { border: "rgba(99,102,241,0.20)",  bg: "linear-gradient(135deg,rgba(67,56,202,0.08),rgba(99,102,241,0.03))", eyebrow: "rgba(165,180,252,0.70)", top: "linear-gradient(90deg,transparent,rgba(99,102,241,0.4),transparent)" },
+  latenight: { border: "rgba(99,102,241,0.18)",  bg: "linear-gradient(135deg,rgba(55,48,163,0.12),rgba(67,56,202,0.05))", eyebrow: "rgba(165,180,252,0.60)", top: "linear-gradient(90deg,transparent,rgba(79,70,229,0.35),transparent)" },
+};
+
+export function TheReturnCard() {
+  const phase = getReturnPhase(getRelationshipAge());
+  // Morning arrival is already handled by the daily verse anchor + mood chips
+  if (phase.phase === "morning" || phase.phase === "latenight") return null;
+
+  const colors = PHASE_COLORS[phase.phase];
+
+  return (
+    <motion.div {...fadeIn} data-testid={`card-the-return-${phase.phase}`}>
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ border: `1px solid ${colors.border}`, background: colors.bg }}
+      >
+        <div className="h-[2px]" style={{ background: colors.top }} />
+        <div className="px-5 py-4">
+          <div className="flex items-center gap-1.5 mb-2.5" style={{ color: colors.eyebrow }}>
+            {PHASE_ICON[phase.phase]}
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase">{phase.eyebrow}</p>
+          </div>
+          <p className="text-[17px] font-bold text-foreground leading-snug mb-1">
+            {phase.headline}
+          </p>
+          <p className="text-[13px] text-muted-foreground/65 mb-4 leading-snug">
+            {phase.subtext}
+          </p>
+          <div className="flex flex-col gap-2">
+            <Link href={phase.ctaUrl}>
+              <button
+                data-testid={`button-return-cta-${phase.phase}`}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.98]"
+                style={{ background: phase.phase === "evening" || phase.phase === "close" ? "rgba(99,102,241,0.7)" : "rgba(245,158,11,0.75)" }}
+              >
+                {phase.cta}
+                <ArrowRight className="w-4 h-4 opacity-80" />
+              </button>
+            </Link>
+            {phase.secondaryCta && phase.secondaryUrl && (
+              <Link href={phase.secondaryUrl}>
+                <button
+                  data-testid={`button-return-secondary-${phase.phase}`}
+                  className="w-full text-center text-[12px] text-muted-foreground/55 hover:text-muted-foreground transition-colors py-1"
+                >
+                  {phase.secondaryCta}
+                </button>
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }

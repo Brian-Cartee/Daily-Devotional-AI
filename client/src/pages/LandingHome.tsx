@@ -29,7 +29,7 @@ import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
   CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
   FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
-  WalkMilestoneCard,
+  WalkMilestoneCard, TheReturnCard,
 } from "@/components/EngagementCards";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
@@ -977,6 +977,9 @@ export default function LandingHome() {
               </Link>
             );
           })()}
+
+          {/* ── The Return — time-aware daily prompt (midday / evening / close) ── */}
+          {!isLateNight() && <TheReturnCard />}
 
           {/* ── HERO: Talk It Through prompt — primary entry point ── */}
           <HeroAIPrompt />
