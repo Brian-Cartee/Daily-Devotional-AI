@@ -791,7 +791,7 @@ export default function LandingHome() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen relative" style={{ background: "hsl(var(--background))" }}>
       <AnimatePresence>
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>
@@ -804,6 +804,16 @@ export default function LandingHome() {
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
         )}
       </AnimatePresence>
+
+      {/* Desktop side vignette — frames the content column on wide screens only */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 hidden xl:block"
+        style={{
+          background: "linear-gradient(to right, rgba(0,0,0,0.55) 0%, transparent calc(50% - 480px), transparent calc(50% + 480px), rgba(0,0,0,0.55) 100%)",
+          zIndex: 3,
+        }}
+      />
 
       {/* Hero section */}
       <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
@@ -868,9 +878,9 @@ export default function LandingHome() {
             backgroundImage: "url('/hero-landing.webp')",
             backgroundSize: "cover",
             backgroundPosition: "center 18%",
-            filter: "blur(6px)",
-            opacity: 0.32,
-            transform: "scale(1.04)",
+            filter: "blur(5px)",
+            opacity: 0.48,
+            transform: "scale(1.06)",
           }}
         />
       </div>
