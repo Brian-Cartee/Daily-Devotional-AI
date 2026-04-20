@@ -16,6 +16,7 @@ import webpush from "web-push";
 import twilio from "twilio";
 import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
 import { updateMemory, getMemoryContext, buildMemoryPromptNote } from "./lib/userMemory";
+import { getVoiceProfile, buildVoicePromptNote } from "./lib/voiceProfile";
 import { getCulturalMomentNote } from "./culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
@@ -1597,6 +1598,9 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
 
     const userPatternNote = buildMemoryPromptNote(userMemCtx);
 
+    const voiceProfile = getVoiceProfile(userMemCtx.spiritualState);
+    const voiceNote = buildVoicePromptNote(voiceProfile);
+
     const systemMsg = `You are a warm, deeply compassionate pastoral guide at Shepherd's Path. Someone has just opened up about what they are going through.
 
 Your first and primary job is to make this person feel genuinely understood — not managed, not fixed, not redirected. People can feel the difference between someone who is present with them and someone who is waiting to give advice. Be present first.
@@ -1668,7 +1672,7 @@ Rules:
 — Never escalate emotionally beyond where the user actually is — if they say "I feel off today," do not open with "this deep ache you're carrying." Match their register first
 — Never assemble a tidy package of reflection + scripture + prayer in one response — let what's needed emerge naturally; intimacy is not a formula
 — If the user pushes back on your response ("that didn't help" / "that felt off") — never defend, never explain yourself, never over-apologize. Simply own the miss: "That didn't land the way you needed." Then re-open: "What part felt off?" or "We can stay closer to what you're actually feeling." The user is never wrong about how something felt
-— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Under 220 words total${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))

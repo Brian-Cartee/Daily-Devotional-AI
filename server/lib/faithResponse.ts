@@ -14,14 +14,17 @@
 
 import OpenAI from "openai";
 import { withGuardrails, validateResponse } from "./responseGuardrails";
+import { getVoiceProfile, buildVoicePromptNote } from "./voiceProfile";
+import type { SpiritualState } from "./userMemory";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface FaithResponseInput {
   userInput: string;
-  emotionHint?: string;   // optional pre-detected emotion for anchoring
-  userName?: string;      // personalise first paragraph if provided
-  maxWords?: number;      // default 80
+  emotionHint?: string;         // optional pre-detected emotion for anchoring
+  userName?: string;            // personalise first paragraph if provided
+  maxWords?: number;            // default 80
+  spiritualState?: SpiritualState; // from getMemoryContext() — drives voice calibration
 }
 
 export interface FaithResponseOutput {
@@ -81,13 +84,18 @@ After the response, also return JSON metadata about the response on a NEW LINE, 
 
 // ── Internal raw generator ────────────────────────────────────────────────────
 
-async function callAI(userContent: string, temperature: number): Promise<string> {
+async function callAI(
+  userContent: string,
+  temperature: number,
+  voiceNote?: string
+): Promise<string> {
+  const systemContent = voiceNote ? `${SYSTEM_PROMPT}${voiceNote}` : SYSTEM_PROMPT;
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     max_tokens: 280,
     temperature,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemContent },
       { role: "user", content: userContent },
     ],
   });
@@ -122,7 +130,12 @@ function parseRaw(raw: string): Omit<FaithResponseOutput, "response"> & { respon
 export async function generateFaithResponse(
   input: FaithResponseInput
 ): Promise<FaithResponseOutput> {
-  const { userInput, emotionHint, userName, maxWords = 80 } = input;
+  const { userInput, emotionHint, userName, maxWords = 80, spiritualState } = input;
+
+  // Build voice calibration note from spiritual state (if provided)
+  const voiceNote = spiritualState
+    ? buildVoicePromptNote(getVoiceProfile(spiritualState))
+    : undefined;
 
   const userContent = [
     emotionHint ? `[Detected emotion: ${emotionHint}]` : "",
@@ -139,7 +152,7 @@ export async function generateFaithResponse(
   const { text: raw } = await withGuardrails(
     async (attempt) => {
       const temperature = Math.min(0.78 + (attempt - 1) * 0.06, 0.95);
-      return callAI(userContent, temperature);
+      return callAI(userContent, temperature, voiceNote);
     },
     {
       maxAttempts: 3,
