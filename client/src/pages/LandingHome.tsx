@@ -1261,8 +1261,8 @@ export default function LandingHome() {
             <DailyArtCard />
           </div>
 
-          {/* ── Your Walk Today — end-of-day alignment card ── */}
-          <Link href="/alignment">
+          {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}
+          {new Date().getHours() >= 17 && <Link href="/alignment">
             <div
               data-testid="card-walk-today-entry"
               className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
@@ -1296,7 +1296,7 @@ export default function LandingHome() {
                 <p className="text-[11px] text-white/28 mt-3">Faith · Obedience · Love · Surrender · Endurance</p>
               </div>
             </div>
-          </Link>
+          </Link>}
 
           {/* ── Explore — all features ── */}
           <div id="explore-section" className="mt-2">
