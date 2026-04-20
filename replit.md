@@ -73,6 +73,19 @@ This is a mobile-first app. A phone screen is ~390px wide. Any unnecessary horiz
 - `streaks`: Tracks user's daily visit streaks.
 - `pro_subscribers`: Manages Pro subscription details.
 
+## Deferred Ideas (Do Not Build Yet)
+
+### Visual Tool — "Hold Frame" (revisit July 2026)
+Discussed April 2026. The concept: after an AI guidance response completes, a subtle fade reveals a single visual — quiet typographic scripture art tied to the verse that surfaced in the conversation. No feed, no CTA, no daily rotation. A digital "Selah" moment.
+
+Decision: sound concept, wrong time. Wait for more user engagement data from the Google Play launch before adding visual layers. Risk of diluting the text-voice identity if rushed.
+
+Starting point when ready: leverage the existing `verseArt` system (already generates scripture art per verse). Begin with Quiet Type (scripture as typography), not landscape/path imagery. In-app only, post-response only. No email, no SMS.
+
+ChatGPT analysis and full discussion saved in `attached_assets/Pasted-You-re-thinking-about-this-at-exactly-the-right-level*.txt`.
+
+---
+
 ## External Dependencies
 
 - **AI:** OpenAI GPT-4o-mini (via Replit AI Integrations)
