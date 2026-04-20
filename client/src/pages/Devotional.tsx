@@ -730,14 +730,12 @@ export default function Devotional() {
             >
               {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
               <img
-                src={(showAiArt && verseArtUrl) ? verseArtUrl : (dailyArtBg ?? "/hero-devotional.webp")}
+                src={dailyArtBg ?? "/hero-devotional.webp"}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/hero-devotional.webp"; }}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
-                style={{
-                  filter: (showAiArt && verseArtUrl) ? "brightness(0.6) saturate(1.1)" : "brightness(0.72) saturate(1.1)",
-                }}
+                style={{ filter: "brightness(0.72) saturate(1.1)" }}
               />
 
               {/* Gradient overlay — bottom darkened for text legibility, top stays bright */}
