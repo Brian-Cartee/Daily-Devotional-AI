@@ -33,7 +33,7 @@ import {
 import { getActivePlanId, getPlanProgress, READING_PLANS } from "@/lib/readingPlans";
 import { getUserName } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 // ── Shared slide-in animation ─────────────────────────────────────────────────
 const fadeIn = {
@@ -452,14 +452,12 @@ export function TipCard() {
 // ── 5. Daily check-in emotion card ────────────────────────────────────────────
 export function CheckinCard() {
   const [selected, setSelected] = useState<CheckinEmotion | null>(getTodayCheckin);
+  const [, navigate] = useLocation();
 
   function handleSelect(emotion: CheckinEmotion) {
     saveCheckin(emotion);
     setSelected(emotion);
-    // Fire event so HeroAIPrompt can pre-fill
-    window.dispatchEvent(
-      new CustomEvent("sp-fill-prompt", { detail: { text: CHECKIN_PROMPTS[emotion] } })
-    );
+    navigate(`/guidance?situation=${encodeURIComponent(CHECKIN_PROMPTS[emotion])}`);
   }
 
   const EMOTIONS: { key: CheckinEmotion; emoji: string; label: string }[] = [

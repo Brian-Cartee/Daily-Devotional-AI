@@ -140,7 +140,11 @@ function HeroAIPrompt() {
   useEffect(() => {
     function handler(e: CustomEvent<{ text: string }>) {
       setQuery(e.detail.text);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setTimeout(() => {
+        const input = document.querySelector<HTMLElement>('[data-testid="hero-ai-input"]');
+        input?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => inputRef.current?.focus(), 300);
+      }, 80);
     }
     window.addEventListener("sp-fill-prompt", handler as EventListener);
     return () => window.removeEventListener("sp-fill-prompt", handler as EventListener);
