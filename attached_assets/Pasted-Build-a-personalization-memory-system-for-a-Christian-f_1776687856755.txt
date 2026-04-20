@@ -1,0 +1,128 @@
+Build a personalization memory system for a Christian faith app called "Shepherd’s Path."
+
+PURPOSE:
+Allow the app to remember patterns in a user’s emotional and spiritual life so responses feel personal over time — without feeling invasive or overly analytical.
+
+CORE PRINCIPLE:
+Memory should feel like being known, not being tracked.
+
+---
+
+DATA TO STORE (LIGHTWEIGHT, NOT OVERWHELMING):
+
+For each user, store:
+
+1. emotionalPatterns:
+- anxiety
+- fear
+- control
+- loneliness
+- doubt
+- etc.
+
+Track:
+- frequency
+- lastSeen timestamp
+
+---
+
+2. spiritualState:
+- "just starting"
+- "returning"
+- "growing"
+- "struggling"
+
+---
+
+3. recentTopics:
+Array of last 5–10 user inputs (summarized, not raw text)
+
+---
+
+4. walkHistory:
+Track last 7–14 days of:
+- “Walk This Today” responses
+- reflection responses (Yes / Not yet / I struggled)
+
+---
+
+---
+
+MEMORY RULES:
+
+- DO NOT store highly sensitive personal details verbatim
+- Summarize instead of storing exact text
+- Keep memory abstract (patterns, not specifics)
+
+Example:
+Store: "user struggling with control"
+NOT: exact personal situation
+
+---
+
+USAGE IN AI RESPONSE:
+
+When generating a response, incorporate memory subtly:
+
+Example:
+
+IF user has repeated anxiety:
+"This seems to come up for you more than once…"
+
+IF user is returning:
+"Coming back isn’t always easy, but it matters that you did."
+
+IF user is growing:
+"You’ve been consistent — that’s not nothing."
+
+---
+
+IMPORTANT:
+- Never say: "Based on your history..."
+- Never feel like surveillance
+- Should feel like natural recognition
+
+---
+
+FUNCTIONS:
+
+updateMemory(userId, newInput)
+
+- classify emotional state
+- update frequency counts
+- update timestamps
+
+---
+
+getMemoryContext(userId)
+
+Returns:
+{
+  dominantEmotion,
+  recentTrend,
+  spiritualState,
+  engagementLevel
+}
+
+---
+
+INTEGRATION:
+
+Pass memory context into:
+generateFaithResponse(userInput, memoryContext)
+
+---
+
+OPTIONAL:
+
+Decay system:
+- Reduce weight of old patterns over time
+- Keep system adaptive
+
+---
+
+OUTPUT:
+Return:
+- data structure (JSON)
+- update + retrieval functions (JS/TS)
+- integration example with response generator

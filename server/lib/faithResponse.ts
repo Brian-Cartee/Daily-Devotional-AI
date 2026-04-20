@@ -13,6 +13,7 @@
  */
 
 import OpenAI from "openai";
+import { withGuardrails, validateResponse } from "./responseGuardrails";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -78,7 +79,45 @@ CRITICAL TONE RULES — apply to all 4 parts:
 After the response, also return JSON metadata about the response on a NEW LINE, prefixed with METADATA:
 {"emotional_state":"<detected state>","scripture_used":"<reference or empty string>","response_type":"<acknowledge_and_hold|truth_and_reframe|invitation|steady_presence>"}`;
 
-// ── Main function ─────────────────────────────────────────────────────────────
+// ── Internal raw generator ────────────────────────────────────────────────────
+
+async function callAI(userContent: string, temperature: number): Promise<string> {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_tokens: 280,
+    temperature,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userContent },
+    ],
+  });
+  return completion.choices[0]?.message?.content ?? "";
+}
+
+function parseRaw(raw: string): Omit<FaithResponseOutput, "response"> & { response: string } {
+  const metaIndex = raw.lastIndexOf("METADATA:");
+  const response = metaIndex > -1 ? raw.slice(0, metaIndex).trim() : raw.trim();
+
+  let emotional_state = "uncertain";
+  let scripture_used = "";
+  let response_type: FaithResponseOutput["response_type"] = "acknowledge_and_hold";
+
+  if (metaIndex > -1) {
+    try {
+      const metaRaw = raw.slice(metaIndex + "METADATA:".length).trim();
+      const meta = JSON.parse(metaRaw);
+      emotional_state = meta.emotional_state ?? emotional_state;
+      scripture_used = meta.scripture_used ?? scripture_used;
+      response_type = meta.response_type ?? response_type;
+    } catch {
+      // metadata parse failed — use defaults
+    }
+  }
+
+  return { response, emotional_state, scripture_used, response_type };
+}
+
+// ── Main function (with guardrails + auto-retry) ──────────────────────────────
 
 export async function generateFaithResponse(
   input: FaithResponseInput
@@ -95,46 +134,25 @@ export async function generateFaithResponse(
     .filter(Boolean)
     .join("\n");
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_tokens: 280,
-    temperature: 0.78,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userContent },
-    ],
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? "";
-
-  // Split response text from metadata
-  const metaIndex = raw.lastIndexOf("METADATA:");
-  const responseText =
-    metaIndex > -1 ? raw.slice(0, metaIndex).trim() : raw.trim();
-
-  let emotional_state = "uncertain";
-  let scripture_used = "";
-  let response_type: FaithResponseOutput["response_type"] =
-    "acknowledge_and_hold";
-
-  if (metaIndex > -1) {
-    try {
-      const metaRaw = raw.slice(metaIndex + "METADATA:".length).trim();
-      const meta = JSON.parse(metaRaw);
-      emotional_state = meta.emotional_state ?? emotional_state;
-      scripture_used = meta.scripture_used ?? scripture_used;
-      response_type = meta.response_type ?? response_type;
-    } catch {
-      // metadata parse failed — proceed with defaults
+  // Wrap in guardrails — auto-retries up to 3 times.
+  // Each retry increases temperature slightly to encourage variation.
+  const { text: raw } = await withGuardrails(
+    async (attempt) => {
+      const temperature = Math.min(0.78 + (attempt - 1) * 0.06, 0.95);
+      return callAI(userContent, temperature);
+    },
+    {
+      maxAttempts: 3,
+      onReject: (attempt, result) => {
+        console.warn(
+          `[faithResponse] attempt ${attempt} rejected (score ${result.score}):`,
+          result.issues.join(" | ")
+        );
+      },
     }
-  }
+  );
 
-  return {
-    response: responseText,
-    emotional_state,
-    scripture_used,
-    response_type,
-  };
+  return parseRaw(raw);
 }
 
 // ── Convenience: detect emotion from input text ───────────────────────────────
