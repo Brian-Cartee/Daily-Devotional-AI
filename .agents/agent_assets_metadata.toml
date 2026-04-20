@@ -575,3 +575,15 @@ id = "hzaF5CdZ3hHzsvFvvDkSY"
 uri = "file://attached_assets/stock_images/open_sky_horizon_guidance_3.jpg"
 type = "image"
 title = "wide open sky at dawn minimal horizon empty peaceful landscape no people"
+
+[[outputs]]
+id = "z-5oXb-jX_UGFYXedJocS"
+uri = "file://shepherds-path-visible-features.pdf"
+type = "pdf"
+title = "Visible Features — What Users See & Interact With"
+
+[[outputs]]
+id = "sJvFVoTaxmOL7m39BN8JP"
+uri = "file://shepherds-path-invisible-features.pdf"
+type = "pdf"
+title = "Invisible Features — What's Working Behind the Scenes"
