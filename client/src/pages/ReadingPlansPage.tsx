@@ -157,12 +157,14 @@ export default function ReadingPlansPage() {
       <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
-        {/* Back */}
-        <BackButton
-          testId="button-back-reading-plans"
-          onClick={() => { sessionStorage.setItem("scrollToExplore", "1"); navigate("/"); }}
-          className="mb-6"
-        />
+        {/* Back — hidden on intake-pace which has its own inline back button */}
+        {phase !== "intake-pace" && (
+          <BackButton
+            testId="button-back-reading-plans"
+            onClick={() => { sessionStorage.setItem("scrollToExplore", "1"); navigate("/"); }}
+            className="mb-6"
+          />
+        )}
 
         <AnimatePresence mode="wait">
 
