@@ -87,7 +87,7 @@ export function NavBar() {
   return (
     <>
       {/* ── Top navigation bar ── */}
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
 
           {/* Logo — icon only */}
