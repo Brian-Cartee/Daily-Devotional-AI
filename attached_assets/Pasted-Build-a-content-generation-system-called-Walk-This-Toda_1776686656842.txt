@@ -1,0 +1,100 @@
+Build a content generation system called "Walk This Today" for a Christian app.
+
+PURPOSE:
+After a user receives a scripture-based response, generate ONE simple, real-world action rooted in scripture.
+
+RULES:
+- Must be short (1–2 sentences max)
+- Must be practical (something they can actually do today)
+- Must be rooted in biblical truth (not generic advice)
+- Must NOT feel like a task list or checklist
+- Should feel like an invitation, not an assignment
+
+FORMAT:
+
+INPUT:
+User emotional state or situation
+
+OUTPUT:
+One "Walk This Today" statement
+
+---
+
+SCENARIOS + OUTPUTS:
+
+1. Anxiety
+"Pause once today, breathe, and give that worry to God before you try to solve it yourself."
+
+2. Overwhelmed
+"Do the next small thing in front of you, and trust God with everything else you can't control."
+
+3. Anger
+"Before you respond today, take one moment to slow down and choose a softer answer."
+
+4. Forgiveness
+"Release the offense once today, even if your feelings haven’t caught up yet."
+
+5. Fear
+"Take one step forward today, even if you still feel afraid."
+
+6. Doubt
+"Bring your doubt to God honestly instead of hiding it."
+
+7. Control
+"Let go of one thing today that you're trying to force."
+
+8. Pride
+"Choose humility in one moment where you’d normally defend yourself."
+
+9. Comparison
+"Stay in your lane today — don’t measure your life against someone else’s."
+
+10. Loneliness
+"Reach out to one person instead of withdrawing."
+
+11. Temptation
+"Walk away earlier than you normally would."
+
+12. Discouragement
+"Keep going today, even if it feels like nothing is changing."
+
+13. Impatience
+"Wait without rushing the outcome."
+
+14. Confusion
+"Take the next right step, not the whole path."
+
+15. Guilt
+"Accept God’s forgiveness instead of replaying your mistake."
+
+16. Shame
+"Speak truth over yourself instead of what you feel."
+
+17. Busyness
+"Make space for one quiet moment with God today."
+
+18. Decision-making
+"Choose what aligns with truth, not just what feels easiest."
+
+19. Spiritual dryness
+"Show up anyway — even if you don’t feel anything."
+
+20. Returning to faith
+"Take one step back toward God today — no matter how small."
+
+---
+
+IMPLEMENTATION:
+
+Create a function:
+getWalkThisToday(emotionType)
+
+Return one matching statement.
+
+Optional:
+Add light variation so responses don’t feel repetitive.
+
+---
+
+OUTPUT:
+Clean JS/TS function + JSON structure for easy expansion.

@@ -1763,6 +1763,51 @@ Return only valid JSON. No markdown. No extra keys.`,
     }
   });
 
+  // ── Walk This Today ───────────────────────────────────────────────────────────
+  app.post("/api/guidance/walk-today", async (req, res) => {
+    const { situation, responseText } = req.body as { situation?: string; responseText?: string };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 120,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a wise Christian pastor. Based on what someone shared and the guidance they just received, give them ONE specific, small, doable action to carry into their day — grounded in what was said to them.
+
+The action must be:
+- One sentence. Not a task list.
+- Concrete and specific to their situation — not generic advice
+- Something they can actually do today, even once
+- The kind of thing a trusted pastor would say as you stand up to leave: "Here's one thing to take with you…"
+- NOT preachy. NOT motivational-poster language.
+
+Examples of the RIGHT tone:
+- "Pause once today before reacting, and breathe the name of Jesus into that space."
+- "Let yourself grieve it — even for five minutes — instead of pushing through."
+- "Say the thing you've been holding back, even if your voice shakes."
+
+Also return the single scripture reference (book chapter:verse) that most directly grounds this action.
+
+Return JSON: { "action": "...", "scripture": "..." }`
+          },
+          {
+            role: "user",
+            content: `What they shared: ${situation.trim().slice(0, 600)}\n\nGuidance they received: ${(responseText ?? "").trim().slice(0, 800)}`
+          }
+        ]
+      });
+      const raw = completion.choices[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(raw);
+      res.json({ action: parsed.action ?? null, scripture: parsed.scripture ?? null });
+    } catch (err) {
+      console.error("walk-today error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Unsplash Contextual Photo ─────────────────────────────────────────────────
   const unsplashPhotoCache = new Map<string, { url: string; thumb: string; photographerName: string; photographerLink: string }>();
 

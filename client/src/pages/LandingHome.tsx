@@ -1254,6 +1254,43 @@ export default function LandingHome() {
             <DailyArtCard />
           </div>
 
+          {/* ── Your Walk Today — end-of-day alignment card ── */}
+          <Link href="/alignment">
+            <div
+              data-testid="card-walk-today-entry"
+              className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+              style={{ background: "linear-gradient(130deg, hsl(240 20% 10%), hsl(30 18% 12%))", border: "1px solid rgba(251,191,36,0.18)" }}
+            >
+              {/* Glowing top edge */}
+              <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(251,191,36,0.5), transparent)" }} />
+              <div className="px-5 py-4">
+                {/* Path dots decoration */}
+                <div className="flex items-center gap-1.5 mb-3">
+                  {[0.2, 0.45, 0.65, 0.8, 1].map((o, i) => (
+                    <div key={i} className="flex items-center gap-1.5 flex-1 last:flex-none">
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: `rgba(251,191,36,${o})`, boxShadow: o > 0.6 ? `0 0 6px rgba(251,191,36,${o * 0.6})` : "none" }}
+                      />
+                      {i < 4 && <div className="flex-1 h-px bg-amber-400/12" />}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-amber-400/60 mb-1">End of day</p>
+                    <p className="text-[17px] font-bold text-white leading-tight">Your Walk Today</p>
+                    <p className="text-[12px] text-white/40 mt-0.5">Not perfection. Alignment.</p>
+                  </div>
+                  <div className="mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.25)" }}>
+                    <ArrowRight className="w-4 h-4 text-amber-400/80" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-white/28 mt-3">Faith · Obedience · Love · Surrender · Endurance</p>
+              </div>
+            </div>
+          </Link>
+
           {/* ── Explore — all features ── */}
           <div id="explore-section" className="mt-2">
             <div className="flex items-center gap-3 mb-3 px-0.5">

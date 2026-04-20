@@ -112,6 +112,11 @@ export default function GuidancePage() {
 
   const [guidanceExpanded, setGuidanceExpanded] = useState(false);
 
+  interface WalkToday { action: string; scripture: string; }
+  const [walkToday, setWalkToday] = useState<WalkToday | null>(null);
+  const [walkLoading, setWalkLoading] = useState(false);
+  const walkFetchedRef = useRef(false);
+
   const tts = useTTS();
   const ttsChain = useTTS();
   const [chainSection, setChainSection] = useState<string | null>(null);
@@ -128,6 +133,9 @@ export default function GuidancePage() {
   const streamResponse = async (conversationMessages: Message[], explicitMode?: GuidanceMode) => {
     setStreamingText("");
     setResponseComplete(false);
+    setWalkToday(null);
+    setWalkLoading(false);
+    walkFetchedRef.current = false;
     try {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
@@ -254,6 +262,25 @@ export default function GuidancePage() {
     }).catch(() => {});
   }, [responseComplete]);
 
+
+  // Fetch "Walk This Today" once the first pastoral response completes
+  useEffect(() => {
+    if (!responseComplete || !situation.trim() || walkFetchedRef.current) return;
+    const assistantMessages = messages.filter(m => m.role === "assistant");
+    const firstResponse = assistantMessages[0]?.content;
+    if (!firstResponse) return;
+    walkFetchedRef.current = true;
+    setWalkLoading(true);
+    fetch("/api/guidance/walk-today", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ situation: situation.trim(), responseText: firstResponse }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.action) setWalkToday(data); })
+      .catch(() => {})
+      .finally(() => setWalkLoading(false));
+  }, [responseComplete]);
 
   // Mark initial scroll as done — keep user at top so scripture is visible first
   useEffect(() => {
@@ -729,6 +756,33 @@ export default function GuidancePage() {
                   <p className="text-[12px] text-muted-foreground/35 mt-1 tracking-wide">
                     Walking it is up to you.
                   </p>
+                )}
+                {responseComplete && (walkLoading || walkToday) && (
+                  <div className="mt-6 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-50/60 to-amber-100/30 dark:from-amber-900/15 dark:to-amber-800/8 px-5 py-4" data-testid="card-walk-today">
+                    <p className="text-[10px] font-bold tracking-[0.18em] text-amber-600/80 dark:text-amber-400/70 uppercase mb-2.5">Walk This Today</p>
+                    {walkLoading ? (
+                      <div className="space-y-2 animate-pulse">
+                        <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-full" />
+                        <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-4/5" />
+                        <div className="h-3 bg-amber-100/50 dark:bg-amber-800/15 rounded w-28 mt-1" />
+                      </div>
+                    ) : walkToday && (
+                      <>
+                        <p
+                          className="text-[16px] leading-[1.6] text-foreground"
+                          style={{ fontFamily: "var(--font-reading)" }}
+                          data-testid="text-walk-today-action"
+                        >
+                          {walkToday.action}
+                        </p>
+                        {walkToday.scripture && (
+                          <p className="text-[11px] text-amber-600/65 dark:text-amber-400/55 mt-2 font-medium" data-testid="text-walk-today-scripture">
+                            — {walkToday.scripture}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
                 {responseComplete && verse && (
                   <div className="mt-4 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/6 to-violet-500/4 px-4 py-3 flex items-center justify-between gap-3">
