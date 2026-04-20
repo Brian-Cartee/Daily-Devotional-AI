@@ -20,6 +20,33 @@ const PRESET_PROMPTS = [
   { label: "I need encouragement right now", icon: "🌄" },
 ];
 
+function buildTodayWalkMessage(): string | null {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const raw = localStorage.getItem(`sp_walk_${today}`);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { responses: Record<string, string>; reflection: string };
+    const dims = ["faith", "obedience", "love", "surrender", "endurance"];
+    const answered = dims.filter(d => data.responses[d]).length;
+    if (answered < 5) return null;
+    const dimLabels: Record<string, string> = {
+      faith: "Faith", obedience: "Obedience", love: "Love", surrender: "Surrender", endurance: "Endurance",
+    };
+    const hard = dims.filter(d => data.responses[d] === "struggled" || data.responses[d] === "not-yet")
+      .map(d => dimLabels[d]);
+    if (hard.length === 0) {
+      return "I just finished my Walk Today reflection and it was a good day. I want to go deeper with God — can you help me?";
+    }
+    if (hard.length === 1) {
+      return `I just finished my Walk Today reflection. ${hard[0]} was hard for me today. Can you help me work through this with Scripture?`;
+    }
+    const listed = hard.length === 2 ? hard.join(" and ") : `${hard.slice(0, -1).join(", ")}, and ${hard[hard.length - 1]}`;
+    return `I just finished my Walk Today reflection. ${listed} were challenging for me today. Can you help me bring this to God?`;
+  } catch {
+    return null;
+  }
+}
+
 function cleanResponse(text: string): string {
   return text
     .replace(/\*\*(.+?)\*\*/g, "$1")
@@ -41,6 +68,8 @@ export function FloatingAskAI() {
   const responseRef = useRef<HTMLDivElement>(null);
   const expandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expandIndexRef = useRef(0);
+  const pendingPrefillRef = useRef<string | null>(null);
+  const [todayWalkMsg] = useState<string | null>(() => buildTodayWalkMessage());
 
   const hide = HIDE_ON.some(p => location.startsWith(p));
 
@@ -68,6 +97,25 @@ export function FloatingAskAI() {
       setTimeout(() => inputRef.current?.focus(), 350);
     }
   }, [isOpen]);
+
+  // On mount: check if Walk Today left a pre-filled question for Path AI
+  useEffect(() => {
+    const prefill = localStorage.getItem("sp_ask_ai_prefill");
+    if (prefill) {
+      localStorage.removeItem("sp_ask_ai_prefill");
+      pendingPrefillRef.current = prefill;
+      setIsOpen(true);
+    }
+  }, []);
+
+  // When modal opens with a pending prefill, auto-send it
+  useEffect(() => {
+    if (isOpen && pendingPrefillRef.current) {
+      const msg = pendingPrefillRef.current;
+      pendingPrefillRef.current = null;
+      setTimeout(() => handleSend(msg), 350);
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (responseRef.current && response) {
@@ -328,6 +376,30 @@ export function FloatingAskAI() {
                       >
                         Common places to start
                       </p>
+
+                      {/* Dynamic Walk Today card — shows only if today's walk is complete */}
+                      {todayWalkMsg && (
+                        <button
+                          data-testid="btn-preset-walk-today"
+                          onClick={() => handlePreset(todayWalkMsg)}
+                          className="w-full text-left px-4 py-3 rounded-xl transition-all active:scale-[0.97] flex items-center gap-3"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(251,191,36,0.10) 0%, rgba(251,191,36,0.05) 100%)",
+                            border: "1px solid rgba(251,191,36,0.25)",
+                          }}
+                        >
+                          <span className="text-lg leading-none flex-shrink-0">🌅</span>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-0.5" style={{ color: "rgba(251,191,36,0.60)" }}>
+                              From your Walk Today
+                            </p>
+                            <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.82)" }}>
+                              Continue where you left off
+                            </p>
+                          </div>
+                        </button>
+                      )}
+
                       <div className="grid grid-cols-2 gap-2">
                         {PRESET_PROMPTS.map((p, i) => (
                           <button

@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link } from "wouter";
-import { ArrowLeft, Check, Minus, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "wouter";
+import { ArrowLeft, Check, Minus, AlertCircle, ArrowRight } from "lucide-react";
+import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 const STORAGE_KEY = `sp_walk_${TODAY}`;
@@ -215,13 +217,43 @@ function DimensionCard({
   );
 }
 
+// ── Build context string for Path AI prefill ─────────────────────────────────
+
+function buildWalkContext(responses: Responses): string {
+  const struggled = DIMENSIONS.filter(d => responses[d.id] === "struggled").map(d => d.title);
+  const notYet = DIMENSIONS.filter(d => responses[d.id] === "not-yet").map(d => d.title);
+  const hard = [...struggled, ...notYet];
+  if (hard.length === 0) {
+    return "I just finished my daily Walk Today reflection and it was a good day overall. I want to go deeper with God. Can you help me?";
+  }
+  if (hard.length === 1) {
+    return `I just finished my daily Walk Today reflection. ${hard[0]} was hard for me today. Can you help me work through this with Scripture?`;
+  }
+  const listed = hard.length === 2
+    ? hard.join(" and ")
+    : `${hard.slice(0, -1).join(", ")}, and ${hard[hard.length - 1]}`;
+  return `I just finished my daily Walk Today reflection. ${listed} were challenging for me today. Can you help me bring this to God?`;
+}
+
+function mapToEmotionKey(responses: Responses): string {
+  const struggled = DIMENSIONS.filter(d => responses[d.id] === "struggled").length;
+  const notYet = DIMENSIONS.filter(d => responses[d.id] === "not-yet").length;
+  const yes = DIMENSIONS.filter(d => responses[d.id] === "yes").length;
+  if (yes === 5) return "grateful";
+  if (struggled >= 3 || (struggled + notYet) >= 4) return "struggling";
+  if (notYet >= 3) return "seeking";
+  return "growth";
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ScripturalAlignment() {
+  const [, navigate] = useLocation();
   const saved = loadSaved();
   const [responses, setResponses] = useState<Responses>(saved.responses);
   const [reflection, setReflection] = useState(saved.reflection);
   const [saved_, setSaved_] = useState(false);
+  const memoryFiredRef = useRef(false);
 
   useEffect(() => {
     saveTodo(responses, reflection);
@@ -229,6 +261,22 @@ export default function ScripturalAlignment() {
 
   const answered = Object.values(responses).filter(Boolean).length;
   const allAnswered = answered === DIMENSIONS.length;
+
+  // Wire updateMemory when all 5 are answered — fires once per day
+  useEffect(() => {
+    if (!allAnswered || memoryFiredRef.current) return;
+    const memKey = `sp_walk_memory_${TODAY}`;
+    if (localStorage.getItem(memKey)) return;
+    memoryFiredRef.current = true;
+    localStorage.setItem(memKey, "1");
+    const sessionId = getSessionId();
+    const emotionKey = mapToEmotionKey(responses);
+    fetch("/api/memory/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, emotionKey, daysWithApp: getRelationshipAge() }),
+    }).catch(() => {});
+  }, [allAnswered, responses]);
 
   const handleSelect = (id: string, value: Response) => {
     setSaved_(false);
@@ -325,15 +373,42 @@ export default function ScripturalAlignment() {
           )}
         </div>
 
-        {/* Closing word */}
+        {/* Closing word + Path AI bridge */}
         {allAnswered && (
-          <div className="text-center py-4 space-y-1">
-            <p className="text-[13px] text-white/40 leading-relaxed">
-              This is between you and God.
-            </p>
-            <p className="text-[13px] text-white/30 leading-relaxed">
-              He sees the whole of your day — not just the highlights.
-            </p>
+          <div className="space-y-5">
+            <div className="text-center py-2 space-y-1">
+              <p className="text-[13px] text-white/40 leading-relaxed">
+                This is between you and God.
+              </p>
+              <p className="text-[13px] text-white/30 leading-relaxed">
+                He sees the whole of your day — not just the highlights.
+              </p>
+            </div>
+
+            {/* Bridge to Path AI */}
+            <button
+              data-testid="button-walk-to-path-ai"
+              onClick={() => {
+                const ctx = buildWalkContext(responses);
+                localStorage.setItem("sp_ask_ai_prefill", ctx);
+                navigate("/");
+              }}
+              className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(109,40,217,0.10) 100%)",
+                border: "1px solid rgba(124,58,237,0.28)",
+              }}
+            >
+              <div className="text-left">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] mb-0.5" style={{ color: "rgba(167,139,250,0.65)" }}>
+                  Something surfaced?
+                </p>
+                <p className="text-[15px] font-semibold text-white/85">
+                  Take it to Path AI
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(167,139,250,0.7)" }} />
+            </button>
           </div>
         )}
 
