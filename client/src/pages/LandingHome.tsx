@@ -655,6 +655,23 @@ function ClosingManifesto() {
   );
 }
 
+// Deterministic arch data mirroring the Chris Harrison Bible cross-reference visualization
+// Colors shift blue → green → red based on span (distance between referenced books)
+const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
+  const out: { left: number; right: number; t: number }[] = [];
+  for (let i = 0; i < 160; i++) {
+    const s1 = (Math.sin(i * 127.1) * 0.5 + 0.5);
+    const s2 = (Math.sin(i * 311.7 + 1.3) * 0.5 + 0.5);
+    const x1 = 6 + s1 * 388;
+    const x2 = 6 + s2 * 388;
+    const left = Math.min(x1, x2);
+    const right = Math.max(x1, x2);
+    if (right - left < 4) continue;
+    out.push({ left, right, t: (right - left) / 388 });
+  }
+  return out;
+})();
+
 export default function LandingHome() {
   const [, navigate] = useLocation();
   const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
@@ -1387,6 +1404,71 @@ export default function LandingHome() {
 
           {/* Go Deeper — sermon search for scrollers ready to explore */}
           {!isLateNight() && <GoDeepCard />}
+
+          {/* ── 63,779 Scripture Unity Card ── */}
+          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(120,60,200,0.22)" }}>
+            {/* SVG arch visualization — simplified Chris Harrison style */}
+            <div style={{ background: "linear-gradient(180deg, #06030f 0%, #0d0620 100%)" }}>
+              <svg viewBox="0 0 400 110" className="w-full" style={{ height: "110px", display: "block" }} preserveAspectRatio="none">
+                {/* Baseline */}
+                <line x1="0" y1="104" x2="400" y2="104" stroke="rgba(255,255,255,0.10)" strokeWidth="0.8" />
+                {/* 66 book tick marks */}
+                {Array.from({ length: 66 }, (_, i) => {
+                  const x = 6 + (i / 65) * 388;
+                  return <line key={i} x1={x} y1="99" x2={x} y2="105" stroke="rgba(255,255,255,0.22)" strokeWidth="0.6" />;
+                })}
+                {/* Arch curves — rainbow colored by span like the original visualization */}
+                {BIBLE_ARCHES.map(({ left, right, t }, i) => {
+                  const cx = (left + right) / 2;
+                  const height = t * 95 + 4;
+                  const cy = 104 - height;
+                  const hue = Math.round(240 - t * 240);
+                  const opacity = 0.28 + t * 0.22;
+                  return (
+                    <path
+                      key={i}
+                      d={`M ${left} 104 Q ${cx} ${cy} ${right} 104`}
+                      fill="none"
+                      stroke={`hsla(${hue},88%,62%,${opacity})`}
+                      strokeWidth="0.75"
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* Content body */}
+            <div className="px-5 pt-5 pb-6" style={{ background: "linear-gradient(135deg, rgba(8,4,22,0.98) 0%, rgba(18,8,40,0.98) 100%)" }}>
+              <p className="text-[10.5px] font-black uppercase tracking-[0.24em] mb-3" style={{ color: "rgba(192,132,252,0.6)" }}>One Unified Story</p>
+
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-[44px] font-extrabold leading-none" style={{ color: "rgba(255,255,255,0.96)", letterSpacing: "-0.02em" }}>63,779</span>
+              </div>
+              <p className="text-[14px] mb-5" style={{ color: "rgba(255,255,255,0.50)" }}>cross-references woven through one Book</p>
+
+              {/* Three stats */}
+              <div className="flex gap-0 mb-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                {[
+                  { value: "66", label: "books" },
+                  { value: "~40", label: "authors" },
+                  { value: "1,500", label: "years written" },
+                ].map(({ value, label }, i) => (
+                  <div key={i} className="flex-1 text-center py-3.5" style={{ borderRight: i < 2 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
+                    <p className="text-[22px] font-extrabold leading-none mb-1" style={{ color: "rgba(192,132,252,0.95)" }}>{value}</p>
+                    <p className="text-[10.5px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.38)" }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* The argument */}
+              <p className="text-[13.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                "Shepherds, kings, fishermen — 40 authors who never met, writing across 15 centuries. Yet every thread points to the same story. No committee planned this."
+              </p>
+              <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.42)" }}>
+                Each arc above represents a real cross-reference in Scripture — short arcs in blue, long-range connections in red. The visualization was created by Chris Harrison and Christoph Römhild.
+              </p>
+            </div>
+          </div>
 
           {/* ── Our Commitment to Scripture ── */}
           <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(160,80,200,0.25)" }}>
