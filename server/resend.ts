@@ -63,6 +63,8 @@ export interface DailyVerseEmailData {
   appUrl: string;
   artImageUrl?: string | null;
   followUp?: string | null;
+  // When present, replaces the generic encouragement with season-specific AI text
+  personalEncouragement?: string | null;
 }
 
 export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
@@ -121,9 +123,9 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
               </tr>
             </table>
 
-            <!-- Encouragement -->
+            <!-- Encouragement — personalized for this subscriber's season, or curated for today -->
             <p style="margin:0 0 28px;font-family:Arial,sans-serif;font-size:15px;line-height:1.75;color:#3d3048;">
-              ${data.encouragement}
+              ${data.personalEncouragement || data.encouragement}
             </p>
 
             <!-- Quiet depth hint — whisper, not marketing -->

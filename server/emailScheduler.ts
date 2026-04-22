@@ -32,44 +32,88 @@ function withinCatchupWindow(): boolean {
   return hoursPast >= 0 && hoursPast < CATCHUP_WINDOW_HOURS;
 }
 
-// Generate a personal follow-up paragraph if subscriber had a recent guidance session
-async function getPersonalFollowUp(
+interface SeasonalContent {
+  encouragement: string; // replaces the generic verse.encouragement
+  subject: string;       // replaces the generic subject line
+}
+
+// Build a season-aware email for subscribers with a linked session.
+// Looks 21 days back across guidance memories, prayers, and reflections to
+// understand what this person is actually walking through, then writes the
+// encouragement body and subject line specifically for their season.
+async function getSeasonalContent(
   sessionId: string,
   verseRef: string,
   verseText: string,
   name?: string | null
-): Promise<string | null> {
+): Promise<SeasonalContent | null> {
   try {
     const entries = await storage.getJournalEntries(sessionId);
-    const cutoff = Date.now() - 36 * 60 * 60 * 1000; // 36 hours ago
-    const recentMemories = entries.filter(
-      e => e.type === "guidance_memory" && new Date(e.createdAt).getTime() > cutoff
-    );
-    if (recentMemories.length === 0) return null;
+    const cutoff = Date.now() - 21 * 24 * 60 * 60 * 1000; // 21 days
 
-    const memorySnippet = recentMemories[0].content.slice(0, 300);
-    const nameClause = name ? ` The person's name is ${name}.` : "";
+    const memories = entries
+      .filter(e => e.type === "guidance_memory" && new Date(e.createdAt).getTime() > cutoff)
+      .slice(0, 4);
 
+    const humanEntries = entries
+      .filter(e =>
+        e.type !== "guidance_memory" &&
+        new Date(e.createdAt).getTime() > cutoff
+      )
+      .slice(0, 4);
+
+    const allContext = [...memories, ...humanEntries];
+    if (allContext.length === 0) return null;
+
+    const contextBlock = allContext.map(e => {
+      const label = e.type === "guidance_memory" ? "Guidance conversation"
+        : e.type === "prayer" ? "Prayer"
+        : e.type === "reflection" ? "Reflection"
+        : "Note";
+      return `[${label}]: ${e.content.replace(/\n+/g, " ").slice(0, 250)}`;
+    }).join("\n");
+
+    const nameClause = name ? ` Their name is ${name}.` : "";
     const openai = new OpenAI();
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 120,
+      max_tokens: 220,
+      temperature: 0.82,
       messages: [
         {
           role: "system",
-          content: `You are a pastoral friend writing 2 warm sentences for someone's morning email.${nameClause} Yesterday they brought something to prayer or reflection. Today's verse is: "${verseText}" — ${verseRef}. Write 2 sentences that quietly connect today's verse to what they were carrying yesterday — not preachy, not summarizing, just the gentle sense that today's word arrived for a reason. Do not start with "I". No clichés. Sound like a friend who remembered.`,
+          content: `You are a pastoral writer crafting a personal morning email for one specific person.${nameClause}
+
+Today's verse: "${verseText}" — ${verseRef}
+
+Below is what this person has been carrying over the past few weeks — their prayers, reflections, and conversations. Your job is to write:
+
+1. ENCOURAGEMENT (3–4 sentences): Replace the generic devotional text entirely. Write as if you personally know what this person is walking through. Let today's verse arrive for their specific season — not universally, but for them. Warm, honest, not preachy. Do not repeat the verse reference robotically. No clichés. Sound like a trusted friend who has been paying attention.
+
+2. SUBJECT: A personal email subject line (under 60 characters) that speaks to their season. Do not use the verse reference. Make it feel like the sender knows them.
+
+Return JSON only in this exact format:
+{"encouragement":"...","subject":"..."}`,
         },
         {
           role: "user",
-          content: `What they were carrying yesterday: ${memorySnippet}`,
+          content: `What they have been carrying:\n\n${contextBlock}`,
         },
       ],
     });
 
-    const text = completion.choices[0]?.message?.content?.trim();
-    return text && text.length > 20 ? text : null;
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.encouragement || !parsed.subject) return null;
+    return {
+      encouragement: parsed.encouragement,
+      subject: parsed.subject,
+    };
   } catch (err) {
-    console.error("[email] Failed to generate personal follow-up:", err);
+    console.error("[email] Failed to generate seasonal content:", err);
     return null;
   }
 }
@@ -153,28 +197,42 @@ export async function sendDailyEmailsToAllSubscribers() {
 
         const artImageUrl = subscriber.includeDailyArt ? todayArtImageUrl : null;
 
-        // Generate personal follow-up if this subscriber has a linked session with recent activity
-        let followUp: string | null = null;
+        // For subscribers with a linked session, generate season-aware content:
+        // a personalized encouragement body and a subject line tuned to their walk.
+        // Falls back gracefully to the standard email for anyone without session context.
+        let personalEncouragement: string | null = null;
+        let personalSubject: string | null = null;
+
         if (subscriber.sessionId) {
-          followUp = await getPersonalFollowUp(
+          const seasonal = await getSeasonalContent(
             subscriber.sessionId,
             verse.reference,
             verse.text,
             subscriber.name
           );
-          if (followUp) {
-            console.log(`[email] Personal follow-up generated for ${subscriber.email}`);
+          if (seasonal) {
+            personalEncouragement = seasonal.encouragement;
+            personalSubject = seasonal.subject;
+            console.log(`[email] Seasonal content generated for ${subscriber.email}`);
           }
         }
 
-        const html = buildDailyVerseEmailHtml({ ...verse, appUrl, artImageUrl, followUp })
-          .replace("{{email}}", encodeURIComponent(subscriber.email));
+        const html = buildDailyVerseEmailHtml({
+          ...verse,
+          appUrl,
+          artImageUrl,
+          personalEncouragement,
+        }).replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
 
         const displayFrom = fromEmail.includes('@') && !fromEmail.startsWith('"')
           ? `Shepherd's Path <${fromEmail}>`
           : fromEmail;
-        const emailSubject = getCulturalMomentEmailSubject(today, verse.reference)
+
+        // Subject priority: cultural moment > personal season > generic
+        const emailSubject =
+          getCulturalMomentEmailSubject(today, verse.reference)
+          ?? personalSubject
           ?? `${verse.reference} — a word for your morning`;
 
         await client.emails.send({
