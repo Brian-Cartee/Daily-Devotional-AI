@@ -35,6 +35,7 @@ import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
+import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -1140,6 +1141,9 @@ export default function LandingHome() {
               </div>
             </div>
           )}
+
+          {/* Go Deeper — sermon search, accessible right from home */}
+          {!isLateNight() && <GoDeepCard />}
 
           {/* Daily Devotional */}
           <DevotionalCard />

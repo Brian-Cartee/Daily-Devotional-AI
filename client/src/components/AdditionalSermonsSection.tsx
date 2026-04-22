@@ -525,3 +525,111 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
     </div>
   );
 }
+
+// ── Standalone home-screen card ──────────────────────────────────────────────
+// Self-contained "Go Deeper" search card — no verse/session context needed.
+// Users can search any topic, scripture, or teacher right from the home screen.
+export function GoDeepCard() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<AdditionalSermon[]>([]);
+  const [failed, setFailed] = useState(false);
+  const [lastTopic, setLastTopic] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSearch = async () => {
+    const topic = searchQuery.trim();
+    if (!topic || searching) return;
+    setSearching(true);
+    setResults([]);
+    setFailed(false);
+    setLastTopic(topic);
+    try {
+      const found = await fetchSermons({ customTopic: topic, date: new Date().toISOString().slice(0, 10) });
+      if (found.length) setResults(found);
+      else setFailed(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(245,158,11,0.055)", border: "1px solid rgba(245,158,11,0.18)" }}>
+      <div className="px-4 pt-3.5 pb-3.5">
+        {/* Header */}
+        <div className="flex items-center gap-2.5 mb-3">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(245,158,11,0.14)", border: "1px solid rgba(245,158,11,0.25)" }}
+          >
+            <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.9)" }} />
+          </div>
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">Go Deeper</p>
+            <p className="text-[11px] text-muted-foreground/65">Search any teaching, topic, or scripture</p>
+          </div>
+        </div>
+
+        {/* Search row */}
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+            placeholder="e.g. forgiveness, Psalm 23, grace under pressure…"
+            data-testid="input-go-deeper-search"
+            className="flex-1 rounded-xl border border-border/50 bg-background/50 px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-amber-400/40"
+          />
+          <button
+            onClick={handleSearch}
+            disabled={!searchQuery.trim() || searching}
+            data-testid="btn-go-deeper-search-submit"
+            className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-40"
+            style={{ background: "rgba(245,158,11,0.88)" }}
+          >
+            {searching
+              ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+              : <ArrowRight className="w-4 h-4 text-white" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Results */}
+      <AnimatePresence>
+        {results.length > 0 && (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-2.5 space-y-2.5 border-t border-amber-500/10">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(245,158,11,0.7)" }}>
+                Teachings on "{lastTopic}"
+              </p>
+              {results.map(s => <AdditionalSermonCard key={s.videoId} sermon={s} />)}
+            </div>
+          </motion.div>
+        )}
+        {failed && (
+          <motion.div
+            key="failed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="px-4 pb-4 text-center"
+          >
+            <p className="text-[13px] text-muted-foreground/55 italic" style={{ fontFamily: "'Georgia', serif" }}>
+              No teachings found for "{lastTopic}" — try a different search.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
