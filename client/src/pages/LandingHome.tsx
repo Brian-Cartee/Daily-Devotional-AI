@@ -15,7 +15,7 @@ import { useDemoMode } from "@/components/DemoProvider";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { streamAI } from "@/lib/streamAI";
-import { getUserName } from "@/lib/userName";
+import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import {
   getRhythm, markFirstAction, hasFirstAction,
   getRhythmDismissed, incrementRhythmDismissed,
@@ -667,6 +667,8 @@ export default function LandingHome() {
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
   const [showWalkthrough, setShowWalkthrough] = useState(() => shouldShowWalkthrough());
   useEffect(() => { recordWalkthroughVisit(); }, []);
+  const [nameInput, setNameInput] = useState("");
+  const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());
   useEffect(() => {
     if (sessionStorage.getItem('scrollToExplore')) {
       sessionStorage.removeItem('scrollToExplore');
@@ -881,12 +883,14 @@ export default function LandingHome() {
             filter: "blur(5px)",
             opacity: 0.48,
             transform: "scale(1.06)",
+            maskImage: "linear-gradient(to bottom, transparent 0%, black 35%)",
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 35%)",
           }}
         />
       </div>
 
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-4 pb-20 relative z-10 -mt-16 sm:-mt-20">
+      <div className="max-w-xl md:max-w-4xl mx-auto px-3 pb-20 relative z-10 -mt-16 sm:-mt-20">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
@@ -903,6 +907,42 @@ export default function LandingHome() {
         >
           {/* Time-aware greeting */}
           <GreetingHeader />
+
+          {/* Name prompt — shown once for returning users who haven't set their name */}
+          {!getUserName() && !nameDismissed && streak >= 1 && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-primary/8 border border-primary/15">
+              <input
+                data-testid="input-name-prompt"
+                type="text"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && nameInput.trim()) {
+                    setUserName(nameInput.trim());
+                    setNameDismissed(true);
+                  }
+                }}
+                placeholder="What should we call you?"
+                className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none"
+              />
+              {nameInput.trim() && (
+                <button
+                  data-testid="btn-name-submit"
+                  onClick={() => { setUserName(nameInput.trim()); setNameDismissed(true); }}
+                  className="text-[12px] font-semibold text-primary px-2 py-0.5 rounded-lg hover:bg-primary/10 transition-colors"
+                >
+                  Save
+                </button>
+              )}
+              <button
+                data-testid="btn-name-dismiss"
+                onClick={() => { markNamePrompted(); setNameDismissed(true); }}
+                className="text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors text-[16px] leading-none"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           {/* Streak whisper — quiet acknowledgment of consistency */}
           {streak >= 2 && !isLateNight() && (
