@@ -43,6 +43,9 @@ function cleanResponse(text: string): string {
 
 function getEmpathyReflection(situation: string): string {
   const s = situation.toLowerCase();
+  // Positive states — must come first so they aren't swallowed by faith/other patterns
+  if (/grateful|gratitude|thankful|thankfulness|blessed|blessing/.test(s)) return "Gratitude is one of the most powerful places to start from…";
+  if (/happy|joy|joyful|peaceful|peace|content|uplifted|hopeful|celebrat|excit|thriving/.test(s)) return "There's something beautiful about coming to God from a place like this…";
   if (/marriage|spouse|husband|wife|partner|relationship/.test(s)) return "You're carrying something tender right now…";
   if (/anxiet|fear|worry|worri|scared|panic|overwhelm/.test(s)) return "That weight you're feeling is real…";
   if (/grief|loss|died|death|passed|mourn|missing/.test(s)) return "Grief has a way of silencing everything else…";
@@ -54,6 +57,22 @@ function getEmpathyReflection(situation: string): string {
   if (/angry|anger|rage|resentment|bitterness/.test(s)) return "Something in you is crying out to be heard…";
   if (/sick|health|diagnos|illness|pain|medical/.test(s)) return "This is a hard season to be walking through…";
   return "You're carrying a lot right now…";
+}
+
+function getHeroHeading(situation: string, isFirstVisit: boolean): string {
+  if (isFirstVisit || !situation) return "What's on\nyour heart?";
+  const s = situation.toLowerCase();
+  if (/grateful|gratitude|thankful|thankfulness|blessed|blessing/.test(s)) return "What a beautiful\nplace to start";
+  if (/happy|joy|joyful|peaceful|peace|content|uplifted|hopeful|celebrat|excit|thriving/.test(s)) return "Let's go\ndeeper from here";
+  return "You don't have\nto carry this alone";
+}
+
+function getHeroHeadingCompact(situation: string, isFirstVisit: boolean): string {
+  if (isFirstVisit || !situation) return "What's on your heart?";
+  const s = situation.toLowerCase();
+  if (/grateful|gratitude|thankful|thankfulness|blessed|blessing/.test(s)) return "What a beautiful place to start";
+  if (/happy|joy|joyful|peaceful|peace|content|uplifted|hopeful|celebrat|excit|thriving/.test(s)) return "Let's go deeper from here";
+  return "You don't have to carry this alone";
 }
 
 export default function GuidancePage() {
@@ -518,7 +537,7 @@ export default function GuidancePage() {
                     textShadow: "0 2px 24px rgba(0,0,0,0.65)",
                   }}
                 >
-                  {isFirstVisit ? "What's on\nyour heart?" : "You don't have\nto carry this alone"}
+                  {getHeroHeading(situation, isFirstVisit)}
                 </h1>
                 <p
                   className="text-[11px] text-white/40 tracking-wide mt-4"
@@ -540,7 +559,7 @@ export default function GuidancePage() {
               >
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Seek Guidance</p>
                 <h1 className="text-[22px] font-extrabold text-foreground leading-tight tracking-tight">
-                  {isFirstVisit ? "What's on your heart?" : "You don't have to carry this alone"}
+                  {getHeroHeadingCompact(situation, isFirstVisit)}
                 </h1>
               </motion.div>
             )}
