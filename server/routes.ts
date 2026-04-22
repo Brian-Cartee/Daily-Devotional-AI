@@ -2333,15 +2333,15 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
         return res.json({ imageUrl: `/api/verse-art/image/${verseDate}`, cached: true });
       }
 
-      const prompt = `A breathtaking, painterly spiritual landscape that captures the essence of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Cinematic oil painting style. Scene: dramatic natural scenery such as golden sunrise over misty mountains, ancient cathedral forest with God-rays of light, calm ocean at sunset with dramatic clouds, rolling hills at golden hour, or Milky Way over a wilderness valley. Rich warm tones, atmospheric depth, spiritual mood. IMPORTANT: absolutely no people, no human figures, no faces, no text, no words, no letters anywhere in the image. Pure nature only.`;
+      const prompt = `A breathtaking, cinematic spiritual landscape that captures the soul of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Style: ultra-high quality photorealistic landscape photography combined with painterly, luminous quality — National Geographic meets Rembrandt. Choose a scene that powerfully echoes the verse's meaning: radiant golden light bursting through ancient cathedral forest, majestic snow-capped mountains at sunrise, vast ocean at twilight with God-rays piercing the clouds, aurora borealis over a still wilderness valley, rolling fields of wildflowers at golden hour, or a serene river winding through ancient woodland. Rich warm light, extraordinary atmospheric depth, deeply spiritual and awe-inspiring mood. IMPORTANT: no people, no human figures, no faces, no text, no words, no letters anywhere. Pure nature only. This must be the most powerful, moving image possible.`;
 
       // Use direct OpenAI client — the AI integrations proxy doesn't support image generation
       const response = await openaiTTS.images.generate({
         model: "dall-e-3",
         prompt,
         n: 1,
-        size: "1024x1024",
-        quality: "standard",
+        size: "1792x1024",
+        quality: "hd",
         style: "vivid",
       });
 

@@ -123,17 +123,32 @@ export default function Devotional() {
   });
 
   // Check if today's verse art has already been generated (cached on server)
+  // If not cached, auto-generate it — verse art is now the primary card image
   const verseDate = verse?.date ?? "";
+  const autoGeneratingRef = useRef(false);
   useQuery({
     queryKey: ["/api/verse-art", verseDate],
     queryFn: async () => {
       if (!verseDate) return null;
       const res = await fetch(`/api/verse-art/${verseDate}`);
       const data = await res.json();
-      if (data.imageUrl) setVerseArtUrl(data.imageUrl);
+      if (data.imageUrl) {
+        setVerseArtUrl(data.imageUrl);
+      } else if (!data.cached && verse && !autoGeneratingRef.current) {
+        // No cached art — auto-generate in the background (silent, no toast)
+        autoGeneratingRef.current = true;
+        fetch("/api/verse-art/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ verseDate: verse.date, verseText: verse.text, verseReference: verse.reference }),
+        })
+          .then(r => r.json())
+          .then(d => { if (d.imageUrl) setVerseArtUrl(d.imageUrl); })
+          .catch(() => {}); // silent — dailyArtBg shows in the meantime
+      }
       return data;
     },
-    enabled: !!verseDate,
+    enabled: !!verseDate && !!verse,
     staleTime: Infinity,
   });
 
@@ -728,10 +743,14 @@ export default function Devotional() {
             <div
               className="relative flex flex-col items-center justify-center px-8 text-center select-none bg-stone-900 min-h-[420px]"
             >
-              {/* Photo layer — img tag so it loads reliably (same pattern as hero) */}
+              {/* Photo layer — verse-specific AI art first, daily art as fallback */}
               <img
-                src={dailyArtBg ?? "/hero-devotional.webp"}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/hero-devotional.webp"; }}
+                src={verseArtUrl ?? dailyArtBg ?? "/hero-devotional.webp"}
+                onError={(e) => {
+                  const el = e.currentTarget as HTMLImageElement;
+                  if (dailyArtBg && el.src !== dailyArtBg) { el.src = dailyArtBg; }
+                  else { el.src = "/hero-devotional.webp"; }
+                }}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
@@ -764,10 +783,11 @@ export default function Devotional() {
 
 
               {/* Verse + reference */}
-              <div className="relative z-10 py-14 max-w-lg">
+              <div className="relative z-10 py-14 w-full max-w-lg text-center">
                 <blockquote
                   className="verse-text text-balance mb-6"
                   style={{
+                    textAlign: "center",
                     fontSize:
                       verse.text.length > 180 ? "1.55rem" :
                       verse.text.length > 130 ? "1.75rem" :
