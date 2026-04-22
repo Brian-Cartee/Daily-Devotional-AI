@@ -525,7 +525,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
           className="mb-7"
         >
           <div className="flex items-center gap-2 mb-3 px-0.5">
-            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Start with what you're walking through</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap flex-shrink-0">Start with what you're walking through</span>
             <div className="flex-1 h-px bg-border/60" />
           </div>
 
@@ -600,7 +600,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
                 return (
                   <div key={cat}>
                     <div className="flex items-center gap-2 mb-3 px-0.5">
-                      <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">{cat}</span>
+                      <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap flex-shrink-0">{cat}</span>
                       <div className="flex-1 h-px bg-border/60" />
                     </div>
                     <div className="space-y-3">
