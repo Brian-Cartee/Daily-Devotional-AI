@@ -1721,7 +1721,7 @@ export default function LandingHome() {
                   {/* App Store — shown to iOS and desktop */}
                   {!isAndroid() && (
                     <a
-                      href="https://apps.apple.com/us/app/shepherds-path/id6744949609"
+                      href="https://apps.apple.com/app/shepherds-path/id6760953522"
                       target="_blank"
                       rel="noopener noreferrer"
                       data-testid="btn-appstore-cta"
