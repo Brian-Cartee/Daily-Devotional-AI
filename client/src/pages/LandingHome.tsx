@@ -1142,9 +1142,6 @@ export default function LandingHome() {
             </div>
           )}
 
-          {/* Go Deeper — sermon search, accessible right from home */}
-          {!isLateNight() && <GoDeepCard />}
-
           {/* Daily Devotional */}
           <DevotionalCard />
 
@@ -1387,6 +1384,9 @@ export default function LandingHome() {
               ))}
             </div>
           </div>
+
+          {/* Go Deeper — sermon search for scrollers ready to explore */}
+          {!isLateNight() && <GoDeepCard />}
 
           {/* ── Our Commitment to Scripture ── */}
           <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(160,80,200,0.25)" }}>
