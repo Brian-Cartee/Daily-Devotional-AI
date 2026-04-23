@@ -54,7 +54,7 @@ const STEPS = [
     id: "listen",
     title: "Listen to Everything",
     subtitle: "Let it come to you",
-    script: `At any point, you can listen instead of read. Your guidance… your prayer… your journey… all of it can be heard. If you'd rather listen… you can. And let it meet you where you are.`,
+    script: `Here's something worth knowing — everything in this app can be heard aloud. Your guidance, your prayer, your scripture. Some people find the best way to settle into Shepherd's Path is simply to listen. Press play… set the phone down… and let the words come to you. You don't have to navigate. You can just… receive.`,
   },
   {
     id: "journal",
