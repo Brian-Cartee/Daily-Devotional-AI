@@ -3614,8 +3614,10 @@ ${historyNote}`;
         : `${dateKey}:${verseId}:additional`;
       if (!customTopic && additionalSermonCache.has(cacheKey)) return res.json(additionalSermonCache.get(cacheKey));
 
-      const verse = await storage.getVerseById(verseId);
-      if (!verse) return res.json({ found: false, sermons: [] });
+      // For standalone custom-topic searches (GoDeepCard), verseId is not provided —
+      // skip the verse lookup entirely; the AI only needs the topic.
+      const verse = verseId ? await storage.getVerseById(verseId) : null;
+      if (!verse && !customTopic) return res.json({ found: false, sermons: [] });
 
       const ytKey = process.env.YOUTUBE_API_KEY;
       if (!ytKey) return res.json({ found: false, sermons: [] });
@@ -3662,8 +3664,8 @@ Avoid repeating: ${primaryPastor || "none"}.
 Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`;
 
       const userPrompt = customTopic
-        ? `Find 2 clips on this topic: "${customTopic}". Verse context: ${verse.reference} — "${verse.text}"`
-        : `Verse: ${verse.reference} — "${verse.text}"${reflectionContext ? `\nReflection context: "${reflectionContext.slice(0, 300)}"` : ""}`;
+        ? `Find 2 clips on this topic: "${customTopic}".${verse ? ` Verse context: ${verse.reference} — "${verse.text}"` : ""}`
+        : `Verse: ${verse!.reference} — "${verse!.text}"${reflectionContext ? `\nReflection context: "${reflectionContext.slice(0, 300)}"` : ""}`;
 
       const aiRes = await openai.chat.completions.create({
         model: "gpt-4o-mini",
