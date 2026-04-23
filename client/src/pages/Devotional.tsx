@@ -5,7 +5,7 @@ import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
-import { SiX, SiFacebook, SiWhatsapp, SiTelegram } from "react-icons/si";
+import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -561,9 +561,21 @@ export default function Devotional() {
     window.open(`https://wa.me/?text=${text}`, "_blank", "noopener");
   };
 
-  const shareOnTruthSocial = () => {
-    const text = encodeURIComponent(buildShareText());
-    window.open(`https://truthsocial.com/share?text=${text}&url=${encodeURIComponent(APP_URL)}`, "_blank", "noopener");
+  const shareOnInstagram = async () => {
+    const text = buildShareText();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ description: "Copied! Open Instagram and paste it in your story or post." });
+    } catch {
+      toast({ description: "Open Instagram and share today's verse.", variant: "default" });
+    }
+    setTimeout(() => window.open("https://www.instagram.com", "_blank", "noopener"), 400);
+  };
+
+  const shareOnPinterest = () => {
+    if (!verse) return;
+    const description = encodeURIComponent(`📖 ${verse.reference} — "${verse.text}" — Reflect & pray at Shepherd's Path 🙏`);
+    window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(APP_URL)}&description=${description}`, "_blank", "noopener,width=750,height=550");
   };
 
   const shareOnTelegram = () => {
@@ -895,13 +907,18 @@ export default function Devotional() {
                           className="w-11 h-11 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
                           <SiWhatsapp className="w-[18px] h-[18px]" />
                         </button>
-                        <button data-testid="share-truthsocial" onClick={shareOnTruthSocial} title="Share on Truth Social"
-                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#7347CC] text-white active:scale-95 transition-transform shadow-md">
-                          <span className="text-[14px] font-black leading-none">T</span>
+                        <button data-testid="share-instagram" onClick={shareOnInstagram} title="Copy for Instagram"
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform shadow-md"
+                          style={{ background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)" }}>
+                          <SiInstagram className="w-[18px] h-[18px]" />
                         </button>
                         <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram"
                           className="w-11 h-11 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
                           <SiTelegram className="w-[18px] h-[18px]" />
+                        </button>
+                        <button data-testid="share-pinterest" onClick={shareOnPinterest} title="Pin to Pinterest"
+                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#E60023] text-white active:scale-95 transition-transform shadow-md">
+                          <SiPinterest className="w-[18px] h-[18px]" />
                         </button>
                       </div>
                     </div>
