@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Scroll, X, Send, Loader2, ChevronRight } from "lucide-react";
+import { Scroll, X, Send, Loader2, ChevronRight, Headphones, Square } from "lucide-react";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { useLocation } from "wouter";
 import { isProVerifiedLocally } from "@/lib/proStatus";
+import { ListenButton } from "@/components/ListenButton";
+import { useTTS } from "@/hooks/use-tts";
 import {
   Sheet,
   SheetContent,
@@ -26,6 +28,7 @@ interface ContextData {
 // ── Usage tracking — counts unique verse references looked up ───────────────
 const CONTEXT_LIMIT = 3;
 const CONTEXT_REFS_KEY = "sp_context_refs";
+const LISTEN_NUDGE_KEY = "sp_ctx_listen_nudge";
 
 function getContextRefs(): string[] {
   try { return JSON.parse(localStorage.getItem(CONTEXT_REFS_KEY) || "[]"); } catch { return []; }
@@ -45,6 +48,13 @@ function isContextGated(reference: string): boolean {
   if (isProVerifiedLocally()) return false;
   const refs = getContextRefs();
   return refs.length >= CONTEXT_LIMIT && !refs.includes(reference);
+}
+
+function getListenNudgeCount(): number {
+  try { return parseInt(localStorage.getItem(LISTEN_NUDGE_KEY) || "0", 10); } catch { return 0; }
+}
+function bumpListenNudge(): void {
+  try { localStorage.setItem(LISTEN_NUDGE_KEY, String(getListenNudgeCount() + 1)); } catch {}
 }
 
 // ── Calm loading skeleton ────────────────────────────────────────────────────
@@ -109,12 +119,12 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [qaLoading, setQaLoading] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
+  const tts = useTTS();
 
   const handleOpen = () => {
     const limited = isContextGated(reference);
-    if (!limited) {
-      recordContextRef(reference);
-    }
+    if (!limited) recordContextRef(reference);
     setGated(limited);
     setOpen(true);
   };
@@ -159,6 +169,36 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
     staleTime: Infinity,
     retry: 1,
   });
+
+  // Show animated nudge for first 3 unique opens (once per open, not per session)
+  useEffect(() => {
+    if (data && open) {
+      const count = getListenNudgeCount();
+      if (count < 3) {
+        setShowNudge(true);
+        bumpListenNudge();
+      }
+    }
+  }, [data, open]);
+
+  // Stop audio when panel closes
+  useEffect(() => {
+    if (!open) tts.stop();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fullContextText = data
+    ? `Who wrote this and when: ${data.whoAndWhen}\n\nWhat was happening: ${data.whatWasHappening}\n\nWhy it matters: ${data.whyItMatters}${data.bridge ? `\n\n${data.bridge}` : ""}`
+    : "";
+
+  const handleListenAll = () => {
+    if (!data) return;
+    if (tts.playing || tts.loading) {
+      tts.stop();
+    } else {
+      setShowNudge(false);
+      tts.play(fullContextText);
+    }
+  };
 
   return (
     <>
@@ -231,10 +271,49 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
             {/* Content */}
             {!gated && data && (
               <>
+                {/* ── Listen to everything button ──────────────────────── */}
+                <div className="flex items-center gap-3">
+                  <button
+                    data-testid="button-context-listen-all"
+                    onClick={handleListenAll}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold transition-all ${
+                      tts.playing || tts.loading
+                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                        : showNudge
+                        ? "bg-amber-500 text-white shadow-md animate-pulse"
+                        : "bg-amber-400/12 text-amber-600/80 dark:text-amber-400/80 hover:bg-amber-400/20 hover:text-amber-600 dark:hover:text-amber-400"
+                    }`}
+                  >
+                    {tts.loading
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : tts.playing
+                      ? <Square className="w-3.5 h-3.5 fill-current" />
+                      : <Headphones className="w-3.5 h-3.5" />
+                    }
+                    {tts.loading
+                      ? (tts.loadingLong ? "Still on its way…" : "Preparing…")
+                      : tts.playing
+                      ? "Stop"
+                      : showNudge
+                      ? "Tap to hear all of this"
+                      : "Listen to everything"
+                    }
+                  </button>
+                  {showNudge && !tts.playing && !tts.loading && (
+                    <span className="text-[11px] text-amber-500/70 italic">
+                      ← hear it explained
+                    </span>
+                  )}
+                </div>
+
+                {/* WHO WROTE THIS · WHEN */}
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
-                    Who wrote this · When
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
+                      Who wrote this · When
+                    </p>
+                    <ListenButton text={data.whoAndWhen} label="Listen" size="sm" />
+                  </div>
                   <p className="text-[15px] leading-[1.8] text-foreground/80">
                     {data.whoAndWhen}
                   </p>
@@ -242,10 +321,14 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
 
                 <div className="h-px bg-border/25" />
 
+                {/* WHAT WAS HAPPENING */}
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
-                    What was happening
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
+                      What was happening
+                    </p>
+                    <ListenButton text={data.whatWasHappening} label="Listen" size="sm" />
+                  </div>
                   <p className="text-[15px] leading-[1.8] text-foreground/80">
                     {data.whatWasHappening}
                   </p>
@@ -253,10 +336,14 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
 
                 <div className="h-px bg-border/25" />
 
+                {/* WHY IT MATTERS */}
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
-                    Why it matters
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-500/85">
+                      Why it matters
+                    </p>
+                    <ListenButton text={data.whyItMatters} label="Listen" size="sm" />
+                  </div>
                   <p className="text-[15px] leading-[1.8] text-foreground/80">
                     {data.whyItMatters}
                   </p>
