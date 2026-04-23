@@ -258,22 +258,34 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
         <tr>
           <td style="background-color:#ffffff;padding:40px 36px 36px;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;">
 
-            <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#7a018d;text-align:center;">
-              Welcome
-            </p>
-
-            <p style="margin:0 0 28px;font-family:Georgia,serif;font-size:20px;line-height:1.6;color:#1e1530;text-align:center;">
-              ${greeting}
-            </p>
-
+            <!-- PERSONAL LETTER FROM BRIAN -->
             <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
-              Something brought you here. That&rsquo;s not nothing.
+              Hey &mdash; I&rsquo;m glad you found this.
             </p>
             <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
-              Shepherd&rsquo;s Path exists for exactly this — the moments when you need more than a verse on a wall. When life is hard, or heavy, or you just can&rsquo;t find the words. This is a place to come as you are and be met where you are.
+              My name is Brian, and I built Shepherd&rsquo;s Path because I know what it&rsquo;s like to go looking for God in the middle of something hard &mdash; and not know where to start.
             </p>
-            <p style="margin:0 0 32px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
-              Every day, scripture will come to you. When you need guidance, it&rsquo;s there. When you want to go deeper, it&rsquo;s waiting. You don&rsquo;t have to walk this alone.
+            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              This isn&rsquo;t another Bible app. It&rsquo;s a companion.
+            </p>
+            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              You can bring it whatever&rsquo;s on your heart &mdash; fear, grief, a decision you can&rsquo;t make, a morning where you just feel off &mdash; and it will meet you there with Scripture, a prayer, and a word shaped for where you actually are right now.
+            </p>
+            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              Every day, a verse comes to you. You can read it, listen to it, or go deeper into its meaning. You can ask for guidance. Or you can just sit with it.
+            </p>
+            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              If you don&rsquo;t know where to start &mdash; open the app and tap <strong>&ldquo;Guidance.&rdquo;</strong> Say what&rsquo;s actually on your mind. That&rsquo;s enough.
+            </p>
+            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              You don&rsquo;t have to have it together. You don&rsquo;t have to know the right words.
+            </p>
+            <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              The path is here.<br />
+              Walking it is up to you.
+            </p>
+            <p style="margin:0 0 36px;font-family:Arial,sans-serif;font-size:15px;line-height:1.8;color:#3d3048;">
+              &mdash; Brian
             </p>
 
             <!-- Divider -->
@@ -283,33 +295,25 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
 
             ${videoUrl ? `
             <!-- VIDEO MESSAGE SECTION -->
-            <p style="margin:0 0 10px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7a018d;text-align:center;">
-              A Message For You
-            </p>
-            <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:15px;line-height:1.7;color:#5c4e70;text-align:center;font-style:italic;">
-              I recorded a short message just for you.
+            <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:14px;line-height:1.7;color:#5c4e70;text-align:center;font-style:italic;">
+              I also recorded a short video message for you.
             </p>
             <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
               <tr>
                 <td align="center">
-                  <a href="${videoUrl}" target="_blank" rel="noopener noreferrer"
-                     style="display:inline-block;position:relative;text-decoration:none;">
-                    <!-- Video thumbnail frame -->
+                  <a href="${videoUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">
                     <table cellpadding="0" cellspacing="0"
                            style="background:linear-gradient(135deg,#2d1b5e,#5a3d8a);border-radius:16px;width:400px;max-width:100%;overflow:hidden;">
                       <tr>
                         <td style="padding:48px 32px;text-align:center;">
-                          <!-- Play button circle -->
-                          <div style="width:72px;height:72px;background:rgba(255,255,255,0.95);border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;">
-                            <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                              <tr>
-                                <td align="center" valign="middle"
-                                    style="width:72px;height:72px;background:rgba(255,255,255,0.95);border-radius:50%;">
-                                  <span style="display:inline-block;margin-left:6px;width:0;height:0;border-style:solid;border-width:12px 0 12px 22px;border-color:transparent transparent transparent #7a018d;"></span>
-                                </td>
-                              </tr>
-                            </table>
-                          </div>
+                          <table cellpadding="0" cellspacing="0" style="margin:0 auto 20px;">
+                            <tr>
+                              <td align="center" valign="middle"
+                                  style="width:72px;height:72px;background:rgba(255,255,255,0.95);border-radius:50%;">
+                                <span style="display:inline-block;margin-left:6px;width:0;height:0;border-style:solid;border-width:12px 0 12px 22px;border-color:transparent transparent transparent #7a018d;"></span>
+                              </td>
+                            </tr>
+                          </table>
                           <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:17px;color:#ffffff;font-weight:400;">
                             Watch the message
                           </p>
@@ -325,56 +329,17 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
             </table>
             ` : ''}
 
-            <!-- THREE THINGS -->
-            <p style="margin:0 0 18px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7a018d;text-align:center;">
-              Three things you now have
-            </p>
-
-            <!-- Item 1 -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-              <tr>
-                <td style="padding:16px 20px;background:#f5f0fc;border-left:3px solid #7a018d;border-radius:0 10px 10px 0;">
-                  <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#7a018d;letter-spacing:1px;text-transform:uppercase;">Daily Scripture</p>
-                  <p style="margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.7;color:#3d3048;">Each morning, today&rsquo;s verse arrives in your inbox. Open it. Sit with it. Let it meet you where you are.</p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Item 2 -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-              <tr>
-                <td style="padding:16px 20px;background:#f5f0fc;border-left:3px solid #442f74;border-radius:0 10px 10px 0;">
-                  <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#442f74;letter-spacing:1px;text-transform:uppercase;">Guidance When You Need It</p>
-                  <p style="margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.7;color:#3d3048;">Whatever is on your heart — grief, fear, a decision you can&rsquo;t make — bring it. You&rsquo;ll receive scripture, a prayer, and a word shaped just for your moment.</p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Item 3 -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
-              <tr>
-                <td style="padding:16px 20px;background:#f5f0fc;border-left:3px solid #5a3d8a;border-radius:0 10px 10px 0;">
-                  <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#5a3d8a;letter-spacing:1px;text-transform:uppercase;">Listen to Everything</p>
-                  <p style="margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.7;color:#3d3048;">Every word in the app can be heard aloud. Set the phone down and let it come to you. You don&rsquo;t have to navigate. You can just receive.</p>
-                </td>
-              </tr>
-            </table>
-
             <!-- CTA -->
             <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:12px;">
               <tr>
                 <td align="center">
                   <a href="${data.appUrl}"
-                     style="display:inline-block;background:linear-gradient(135deg,#7a018d,#442f74);color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:16px 44px;border-radius:50px;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(122,1,141,0.3);">
-                    Begin today &rarr;
+                     style="display:inline-block;background-color:#111111;color:#ffffff;padding:12px 20px;text-decoration:none;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;">
+                    Open Shepherd&rsquo;s Path
                   </a>
                 </td>
               </tr>
             </table>
-
-            <p style="margin:20px 0 0;text-align:center;font-family:Georgia,serif;font-size:13px;color:#6b5d7a;font-style:italic;line-height:1.7;">
-              I&rsquo;m glad you&rsquo;re here.
-            </p>
 
           </td>
         </tr>
@@ -410,31 +375,30 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
 }
 
 export function buildWelcomeEmailText(data: WelcomeEmailData): string {
-  const firstName = data.name?.split(" ")[0] ?? null;
-  const greeting = firstName ? `${firstName},` : "Friend,";
   return `Welcome to Shepherd's Path
 
-${greeting}
+Hey — I'm glad you found this.
 
-Something brought you here. That's not nothing.
+My name is Brian, and I built Shepherd's Path because I know what it's like to go looking for God in the middle of something hard — and not know where to start.
 
-Shepherd's Path exists for exactly this — the moments when you need more than a verse on a wall. When life is hard, or heavy, or you just can't find the words. This is a place to come as you are and be met where you are.
+This isn't another Bible app. It's a companion.
 
-Every day, scripture will come to you. When you need guidance, it's there. When you want to go deeper, it's waiting. You don't have to walk this alone.
+You can bring it whatever's on your heart — fear, grief, a decision you can't make, a morning where you just feel off — and it will meet you there with Scripture, a prayer, and a word shaped for where you actually are right now.
 
-${data.videoUrl ? `Watch a short message recorded just for you:\n${data.videoUrl}\n\n` : ''}Three things you now have:
+Every day, a verse comes to you. You can read it, listen to it, or go deeper into its meaning. You can ask for guidance. Or you can just sit with it.
 
-1. Daily Scripture — Each morning, today's verse arrives in your inbox. Open it. Sit with it.
+If you don't know where to start — open the app and tap "Guidance." Say what's actually on your mind. That's enough.
 
-2. Guidance When You Need It — Whatever is on your heart, bring it. You'll receive scripture, a prayer, and a word shaped just for your moment.
+You don't have to have it together. You don't have to know the right words.
 
-3. Listen to Everything — Every word in the app can be heard aloud. Set the phone down and let it come to you.
+The path is here.
+Walking it is up to you.
 
-Begin today: ${data.appUrl}
+— Brian
 
-I'm glad you're here.
+${data.videoUrl ? `Watch a short video message from Brian:\n${data.videoUrl}\n\n` : ''}Open Shepherd's Path: ${data.appUrl}
 
-— Shepherd's Path
+---
 "Your word is a lamp to my feet and a light to my path." — Psalm 119:105`;
 }
 
