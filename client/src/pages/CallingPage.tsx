@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send } from "lucide-react";
+import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
+import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 
+const APP_URL = "https://www.shepherdspathai.com";
 const FALLBACK_IMG = "/daily-art/natural-sunset.jpg";
 
 const CALLING_CARDS = [
@@ -14,7 +16,7 @@ const CALLING_CARDS = [
     verseText: "Go and make disciples of all nations.",
     scripture: "Matthew 28:19",
     meaning: "We are called to go, to share truth and hope with the world.",
-    shareText: "Sharing is caring… but more than that — it's our calling.\n\n\"Go and make disciples of all nations.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app",
+    shareText: `Sharing is caring… but more than that — it's our calling.\n\n"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 2,
@@ -22,7 +24,7 @@ const CALLING_CARDS = [
     verseText: "Faith by itself, if it is not accompanied by action, is dead.",
     scripture: "James 2:17",
     meaning: "Faith without action is empty. Our care for others shows in what we do.",
-    shareText: "Care enough to share. Called enough to act.\n\n\"Faith by itself, if it is not accompanied by action, is dead.\"\n— James 2:17\n\nShepherd's Path · shepherdspath.app",
+    shareText: `Care enough to share. Called enough to act.\n\n"Faith by itself, if it is not accompanied by action, is dead."\n— James 2:17\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 3,
@@ -30,7 +32,7 @@ const CALLING_CARDS = [
     verseText: "Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.",
     scripture: "1 Peter 3:15",
     meaning: "Hope is meant to be shared. Always be ready to give a reason for the hope you carry.",
-    shareText: "Sharing hope isn't optional — it's part of the calling.\n\n\"Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.\"\n— 1 Peter 3:15\n\nShepherd's Path · shepherdspath.app",
+    shareText: `Sharing hope isn't optional — it's part of the calling.\n\n"Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have."\n— 1 Peter 3:15\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 4,
@@ -38,7 +40,7 @@ const CALLING_CARDS = [
     verseText: "Serve one another humbly in love.",
     scripture: "Galatians 5:13",
     meaning: "Sharing is an act of service. Use your freedom to serve one another in love.",
-    shareText: "We don't just share… we serve, we care, we answer the call.\n\n\"Serve one another humbly in love.\"\n— Galatians 5:13\n\nShepherd's Path · shepherdspath.app",
+    shareText: `We don't just share… we serve, we care, we answer the call.\n\n"Serve one another humbly in love."\n— Galatians 5:13\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 5,
@@ -46,7 +48,7 @@ const CALLING_CARDS = [
     verseText: "How can they believe in the one of whom they have not heard?",
     scripture: "Romans 10:14",
     meaning: "People need to hear. How can they believe if no one tells them?",
-    shareText: "Share the Word. Answer the Call.\n\n\"How can they believe in the one of whom they have not heard?\"\n— Romans 10:14\n\nShepherd's Path · shepherdspath.app",
+    shareText: `Share the Word. Answer the Call.\n\n"How can they believe in the one of whom they have not heard?"\n— Romans 10:14\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 6,
@@ -54,7 +56,7 @@ const CALLING_CARDS = [
     verseText: "A generous person will prosper; whoever refreshes others will be refreshed.",
     scripture: "Proverbs 11:25",
     meaning: "A generous person prospers. Whoever refreshes others will themselves be refreshed.",
-    shareText: "What you share could change a life.\n\n\"A generous person will prosper; whoever refreshes others will be refreshed.\"\n— Proverbs 11:25\n\nShepherd's Path · shepherdspath.app",
+    shareText: `What you share could change a life.\n\n"A generous person will prosper; whoever refreshes others will be refreshed."\n— Proverbs 11:25\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 7,
@@ -62,7 +64,7 @@ const CALLING_CARDS = [
     verseText: "Carry each other's burdens, and in this way you will fulfill the law of Christ.",
     scripture: "Galatians 6:2",
     meaning: "We were never meant to walk this alone. Carry each other's burdens.",
-    shareText: "Carry one another. Share what matters.\n\n\"Carry each other's burdens, and in this way you will fulfill the law of Christ.\"\n— Galatians 6:2\n\nShepherd's Path · shepherdspath.app",
+    shareText: `Carry one another. Share what matters.\n\n"Carry each other's burdens, and in this way you will fulfill the law of Christ."\n— Galatians 6:2\n\nShepherd's Path · ${APP_URL}`,
   },
 ];
 
@@ -74,19 +76,13 @@ interface GeneratedCard {
   shareText: string;
 }
 
-type LoadingKey = `${number}-${"purple" | "art"}` | `gen-${"purple" | "art"}`;
+type LoadingKey = `${number}-${"purple" | "art"}` | `gen-${"purple" | "art"}` | "today";
 
-async function doImageShare(blob: Blob, title: string, fallbackText: string) {
-  const file = new File([blob], "shepherds-path.png", { type: "image/png" });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ files: [file], title });
-    return;
-  }
-  if (navigator.share) {
-    await navigator.share({ text: fallbackText });
-  } else {
-    navigator.clipboard?.writeText(fallbackText).catch(() => {});
-  }
+interface PreviewState {
+  url: string;
+  blob: Blob;
+  shareText: string;
+  title: string;
 }
 
 export default function CallingPage() {
@@ -96,9 +92,9 @@ export default function CallingPage() {
   const [artUrl, setArtUrl] = useState<string>(FALLBACK_IMG);
   const [artLoaded, setArtLoaded] = useState(false);
   const [todayVerse, setTodayVerse] = useState<{ text: string; reference: string } | null>(null);
-  const [sharingTodayVerse, setSharingTodayVerse] = useState(false);
 
-  // Generate-your-own state
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GeneratedCard | null>(null);
@@ -121,6 +117,65 @@ export default function CallingPage() {
       })
       .catch(() => {});
   }, []);
+
+  const showPreview = (blob: Blob, title: string, shareText: string) => {
+    const url = URL.createObjectURL(blob);
+    if (preview) URL.revokeObjectURL(preview.url);
+    setPreview({ url, blob, title, shareText });
+  };
+
+  const closePreview = () => {
+    if (preview) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  };
+
+  const handleNativeShare = async () => {
+    if (!preview) return;
+    try {
+      const file = new File([preview.blob], "shepherds-path.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: preview.title });
+      } else {
+        handleDownload();
+      }
+    } catch { }
+  };
+
+  const handleDownload = () => {
+    if (!preview) return;
+    const a = document.createElement("a");
+    a.href = preview.url;
+    a.download = "shepherds-path.png";
+    a.click();
+  };
+
+  const shareTextOnPlatform = (platform: "x" | "facebook" | "whatsapp" | "instagram" | "telegram" | "pinterest") => {
+    if (!preview) return;
+    const text = preview.shareText;
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(APP_URL);
+    switch (platform) {
+      case "x":
+        window.open(`https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`, "_blank", "noopener,width=600,height=450");
+        break;
+      case "facebook":
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`, "_blank", "noopener,width=600,height=450");
+        break;
+      case "whatsapp":
+        window.open(`https://wa.me/?text=${encodedText}`, "_blank", "noopener");
+        break;
+      case "instagram":
+        navigator.clipboard?.writeText(text).catch(() => {});
+        break;
+      case "telegram":
+        window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, "_blank", "noopener");
+        break;
+      case "pinterest":
+        window.open(`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedText}`, "_blank", "noopener");
+        break;
+    }
+    closePreview();
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim() || generating) return;
@@ -152,7 +207,7 @@ export default function CallingPage() {
     setLoading(key);
     try {
       const blob = await createPurpleShareImage(card.verseText, card.scripture);
-      await doImageShare(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
+      showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
     } catch {
       navigator.share?.({ text: card.shareText }).catch(() => {});
     }
@@ -165,7 +220,7 @@ export default function CallingPage() {
     setLoading(key);
     try {
       const blob = await createShareImage(card.verseText, card.scripture, artUrl);
-      await doImageShare(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
+      showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
     } catch {
       navigator.share?.({ text: card.shareText }).catch(() => {});
     }
@@ -173,20 +228,20 @@ export default function CallingPage() {
   };
 
   const handleShareTodayVerse = async () => {
-    if (!todayVerse || sharingTodayVerse) return;
-    setSharingTodayVerse(true);
-    const shareText = `"${todayVerse.text}"\n— ${todayVerse.reference}\n\nShepherd's Path · shepherdspath.app`;
+    if (!todayVerse || loading === "today") return;
+    setLoading("today");
+    const shareText = `"${todayVerse.text}"\n— ${todayVerse.reference}\n\nReflect & pray with me at Shepherd's Path 🙏\n${APP_URL}`;
     try {
       const blob = await createShareImage(todayVerse.text, todayVerse.reference, artUrl);
-      await doImageShare(blob, `${todayVerse.reference} — Shepherd's Path`, shareText);
+      showPreview(blob, `${todayVerse.reference} — Shepherd's Path`, shareText);
     } catch {
       navigator.share?.({ text: shareText }).catch(() => {});
     }
-    setSharingTodayVerse(false);
+    setLoading(null);
   };
 
   const handleSendPrayer = () => {
-    const text = "I prayed for you today. 🙏\n\nShepherd's Path · shepherdspath.app";
+    const text = `I prayed for you today. 🙏\n\nWhatever you're carrying right now — you're not carrying it alone. I thought of you and brought you before God.\n\nShepherd's Path · ${APP_URL}`;
     navigator.share?.({ text }).catch(() => {});
   };
 
@@ -198,22 +253,22 @@ export default function CallingPage() {
         "Go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.",
         "Matthew 28:19"
       );
-      await doImageShare(blob, "Matthew 28:19 — Shepherd's Path", "\"Go and make disciples of all nations.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app");
+      const shareText = `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}`;
+      showPreview(blob, "Matthew 28:19 — Shepherd's Path", shareText);
     } catch {
-      navigator.share?.({ text: "\"Go and make disciples of all nations.\"\n— Matthew 28:19\n\nShepherd's Path · shepherdspath.app" }).catch(() => {});
+      navigator.share?.({ text: `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}` }).catch(() => {});
     }
     setSharingScripture(false);
   };
 
   const handleShareApp = () => {
-    const text = "This app has been meaningful to me and I thought of you.\n\nShepherd's Path — daily scripture, prayer, and guidance.\n\nshepherdspath.app";
+    const text = `This has been meaningful to me and I thought of you.\n\nShepherd's Path — daily scripture, prayer, and guidance. Come as you are.\n\n${APP_URL}`;
     navigator.share?.({ text }).catch(() => {});
   };
 
   return (
     <div className="min-h-screen bg-[#0d0a1a]" style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}>
 
-      {/* Back button */}
       <BackButton
         onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); setLocation("/"); }}
         testId="button-calling-back"
@@ -271,7 +326,6 @@ export default function CallingPage() {
             border: "1px solid rgba(180,80,220,0.22)",
           }}
         >
-          {/* Header */}
           <div className="px-5 pt-5 pb-4">
             <div className="flex items-center gap-2.5 mb-1.5">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(122,1,141,0.4)" }}>
@@ -286,7 +340,6 @@ export default function CallingPage() {
             </p>
           </div>
 
-          {/* Input */}
           <div className="px-5 pb-5">
             <div
               className="flex items-end gap-2 rounded-xl px-4 py-3"
@@ -321,7 +374,6 @@ export default function CallingPage() {
             )}
           </div>
 
-          {/* Generated result */}
           <AnimatePresence>
             {generated && (
               <motion.div
@@ -334,7 +386,6 @@ export default function CallingPage() {
                 className="overflow-hidden"
               >
                 <div className="mx-5 mb-5 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(180,80,220,0.25)", background: "rgba(0,0,0,0.3)" }}>
-                  {/* Accent bar */}
                   <div className="h-px w-full" style={{ background: "linear-gradient(90deg, rgba(122,1,141,0.9), rgba(68,47,116,0.6), transparent)" }} />
 
                   <div className="px-4 pt-4 pb-3">
@@ -352,7 +403,6 @@ export default function CallingPage() {
                     )}
                   </div>
 
-                  {/* Share buttons */}
                   <div className="grid grid-cols-2 gap-2 mx-4 mb-4 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
                     <button
                       onClick={() => handlePurpleShare(generated, "gen")}
@@ -362,7 +412,7 @@ export default function CallingPage() {
                       style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
                     >
                       {loading === "gen-purple" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                      Brand Card
+                      Purple Card
                     </button>
                     <button
                       onClick={() => handleArtShare(generated, "gen")}
@@ -376,11 +426,10 @@ export default function CallingPage() {
                       }}
                     >
                       {loading === "gen-art" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      AI Art
+                      Landscape
                     </button>
                   </div>
 
-                  {/* Try again */}
                   <div className="text-center pb-4">
                     <button
                       onClick={() => { setGenerated(null); setTopic(""); }}
@@ -402,7 +451,7 @@ export default function CallingPage() {
         <p className="text-white/20 text-[11px] tracking-[0.2em] uppercase">Or share one of these</p>
       </div>
 
-      {/* TODAY'S VERSE — share the daily devotional scripture */}
+      {/* TODAY'S VERSE */}
       {todayVerse && (
         <div className="px-5 pb-5">
           <motion.div
@@ -412,7 +461,6 @@ export default function CallingPage() {
             className="rounded-2xl overflow-hidden"
             style={{ border: "1px solid rgba(251,191,36,0.22)" }}
           >
-            {/* Landscape thumbnail with verse overlay */}
             <div className="relative overflow-hidden" style={{ height: 120 }}>
               <img
                 src={artUrl}
@@ -432,7 +480,6 @@ export default function CallingPage() {
               </div>
             </div>
 
-            {/* Reference + share button */}
             <div
               className="flex items-center justify-between px-4 py-3"
               style={{ background: "rgba(251,191,36,0.08)", borderTop: "1px solid rgba(251,191,36,0.18)" }}
@@ -445,15 +492,15 @@ export default function CallingPage() {
               </div>
               <button
                 onClick={handleShareTodayVerse}
-                disabled={sharingTodayVerse}
+                disabled={loading === "today"}
                 data-testid="button-calling-share-today-verse"
                 className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
                 style={{ background: "rgba(251,191,36,0.18)", border: "1px solid rgba(251,191,36,0.35)", color: "rgba(255,210,80,0.95)" }}
               >
-                {sharingTodayVerse
+                {loading === "today"
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <Share2 className="w-4 h-4" />}
-                Share
+                Preview & Share
               </button>
             </div>
           </motion.div>
@@ -488,7 +535,7 @@ export default function CallingPage() {
                 style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
               >
                 {loading === `${card.id}-purple` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                Brand Card
+                Purple Card
               </button>
               <button
                 onClick={() => handleArtShare(card, String(card.id))}
@@ -502,7 +549,7 @@ export default function CallingPage() {
                 }}
               >
                 {loading === `${card.id}-art` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                AI Art
+                Landscape
               </button>
             </div>
           </motion.div>
@@ -555,6 +602,107 @@ export default function CallingPage() {
           </button>
         </div>
       </div>
+
+      {/* ── SHARE PREVIEW SHEET ─────────────────────────────────── */}
+      <AnimatePresence>
+        {preview && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/75"
+              onClick={closePreview}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0d0a1a] rounded-t-2xl shadow-2xl overflow-hidden"
+              style={{ maxWidth: 480, margin: "0 auto" }}
+            >
+              {/* Handle + header */}
+              <div className="relative flex items-center justify-between px-5 pt-4 pb-3">
+                <div className="w-10 h-1 rounded-full bg-white/15 absolute left-1/2 -translate-x-1/2 top-2.5" />
+                <p className="text-[12px] font-semibold uppercase tracking-widest text-white/35 mt-1">Preview</p>
+                <button
+                  onClick={closePreview}
+                  data-testid="button-close-calling-preview"
+                  className="ml-auto p-1.5 rounded-full text-white/30 hover:text-white/70 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Image */}
+              <div className="px-4 pb-3">
+                <img
+                  src={preview.url}
+                  alt="Share preview"
+                  className="w-full rounded-xl shadow-lg"
+                  style={{ aspectRatio: "1/1", objectFit: "cover" }}
+                />
+              </div>
+
+              {/* Primary actions */}
+              <div className="px-4 pb-3 flex gap-3">
+                <button
+                  onClick={handleNativeShare}
+                  data-testid="button-calling-share-native"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-[14px] active:scale-95 transition-transform"
+                  style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", color: "#ffffff" }}
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share image
+                </button>
+                <button
+                  onClick={handleDownload}
+                  data-testid="button-calling-download"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[14px] font-semibold active:scale-95 transition-transform"
+                  style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.65)" }}
+                >
+                  <Download className="w-4 h-4" />
+                  Save
+                </button>
+              </div>
+
+              {/* Social row */}
+              <div className="px-4 pb-6 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-[11px] text-white/30 font-medium tracking-wide uppercase text-center mb-3 mt-3">Or share to</p>
+                <div className="flex items-center justify-center gap-2.5">
+                  <button data-testid="share-calling-x" onClick={() => shareTextOnPlatform("x")} title="Share on X"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
+                    <SiX className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-calling-facebook" onClick={() => shareTextOnPlatform("facebook")} title="Share on Facebook"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1877F2] text-white active:scale-95 transition-transform shadow-md">
+                    <SiFacebook className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-calling-whatsapp" onClick={() => shareTextOnPlatform("whatsapp")} title="Share on WhatsApp"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
+                    <SiWhatsapp className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-calling-instagram" onClick={() => shareTextOnPlatform("instagram")} title="Copy for Instagram"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform shadow-md"
+                    style={{ background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)" }}>
+                    <SiInstagram className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-calling-telegram" onClick={() => shareTextOnPlatform("telegram")} title="Share on Telegram"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
+                    <SiTelegram className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-calling-pinterest" onClick={() => shareTextOnPlatform("pinterest")} title="Pin to Pinterest"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#E60023] text-white active:scale-95 transition-transform shadow-md">
+                    <SiPinterest className="w-[16px] h-[16px]" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     </div>
   );
