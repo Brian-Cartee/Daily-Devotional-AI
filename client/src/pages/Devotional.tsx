@@ -894,31 +894,31 @@ export default function Devotional() {
                   >
                     <div className="px-4 pb-4 pt-3 border-t border-border/20 flex flex-col items-center gap-3">
                       <span className="text-[11px] text-foreground/50 font-medium tracking-wide uppercase">Also share to</span>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center gap-2.5">
                         <button data-testid="share-x" onClick={shareOnX} title="Share on X"
-                          className="w-11 h-11 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
-                          <SiX className="w-[18px] h-[18px]" />
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
+                          <SiX className="w-[16px] h-[16px]" />
                         </button>
                         <button data-testid="share-facebook" onClick={shareOnFacebook} title="Share on Facebook"
-                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#1877F2] text-white active:scale-95 transition-transform shadow-md">
-                          <SiFacebook className="w-[18px] h-[18px]" />
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1877F2] text-white active:scale-95 transition-transform shadow-md">
+                          <SiFacebook className="w-[16px] h-[16px]" />
                         </button>
                         <button data-testid="share-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp"
-                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
-                          <SiWhatsapp className="w-[18px] h-[18px]" />
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
+                          <SiWhatsapp className="w-[16px] h-[16px]" />
                         </button>
                         <button data-testid="share-instagram" onClick={shareOnInstagram} title="Copy for Instagram"
-                          className="w-11 h-11 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform shadow-md"
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform shadow-md"
                           style={{ background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)" }}>
-                          <SiInstagram className="w-[18px] h-[18px]" />
+                          <SiInstagram className="w-[16px] h-[16px]" />
                         </button>
                         <button data-testid="share-telegram" onClick={shareOnTelegram} title="Share on Telegram"
-                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
-                          <SiTelegram className="w-[18px] h-[18px]" />
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
+                          <SiTelegram className="w-[16px] h-[16px]" />
                         </button>
                         <button data-testid="share-pinterest" onClick={shareOnPinterest} title="Pin to Pinterest"
-                          className="w-11 h-11 rounded-full flex items-center justify-center bg-[#E60023] text-white active:scale-95 transition-transform shadow-md">
-                          <SiPinterest className="w-[18px] h-[18px]" />
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-[#E60023] text-white active:scale-95 transition-transform shadow-md">
+                          <SiPinterest className="w-[16px] h-[16px]" />
                         </button>
                       </div>
                     </div>
