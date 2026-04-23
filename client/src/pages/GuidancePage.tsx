@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Heart, Shield, Mic, MicOff } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff } from "lucide-react";
+import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
@@ -761,6 +762,16 @@ export default function GuidancePage() {
                   );
                 })()}
                 {responseComplete && (
+                  <div className="mt-5 flex items-center gap-3">
+                    <ListenButton
+                      text={cleanResponse(assistantMessages[0]?.content ?? "")}
+                      label="Hear this"
+                      size="sm"
+                      data-testid="button-guidance-listen-text"
+                    />
+                  </div>
+                )}
+                {responseComplete && (
                   <p className="text-[11px] text-muted-foreground/75 mt-4 flex items-center gap-1.5">
                     <span>✝</span>
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
@@ -778,7 +789,10 @@ export default function GuidancePage() {
                 )}
                 {responseComplete && (walkLoading || walkToday) && (
                   <div className="mt-6 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-50/60 to-amber-100/30 dark:from-amber-900/15 dark:to-amber-800/8 px-5 py-4" data-testid="card-walk-today">
-                    <p className="text-[10px] font-bold tracking-[0.18em] text-amber-600/80 dark:text-amber-400/70 uppercase mb-2.5">Walk This Today</p>
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <p className="text-[10px] font-bold tracking-[0.18em] text-amber-600/80 dark:text-amber-400/70 uppercase">Walk This Today</p>
+                      {walkToday && <ListenButton text={walkToday.action} label="Listen" size="sm" />}
+                    </div>
                     {walkLoading ? (
                       <div className="space-y-2 animate-pulse">
                         <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-full" />
@@ -906,9 +920,12 @@ export default function GuidancePage() {
                 transition={{ duration: 0.5 }}
                 className="mb-10"
               >
-                <p className="text-[12px] font-bold uppercase tracking-widest text-primary/90 mb-3">
-                  A word for this moment
-                </p>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <p className="text-[12px] font-bold uppercase tracking-widest text-primary/90">
+                    A word for this moment
+                  </p>
+                  {verse && <ListenButton text={`${verse.text} — ${verse.reference}`} label="Listen" size="sm" />}
+                </div>
                 {vpLoading && !verse ? (
                   <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 pt-6 pb-5">
                     <p className="text-[19px] leading-relaxed font-medium text-foreground/65 italic mb-4">
