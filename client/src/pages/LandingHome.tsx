@@ -624,22 +624,22 @@ function ClosingManifesto() {
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
         </div>
 
-        {/* The three lines — consistent weight, all equal, each a beat */}
+        {/* The three lines — ascending scale, each one landing harder */}
         <p
-          className="text-[22px] leading-snug mb-3 text-violet-300"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", opacity: 0.95 }}
+          className="text-[18px] leading-snug mb-3 text-violet-300/70"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
         >
           The path is here.
         </p>
         <p
-          className="text-[22px] leading-snug mb-3 text-violet-300"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", opacity: 0.95 }}
+          className="text-[25px] leading-snug mb-4 text-violet-200/88"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
         >
           Start where you are.
         </p>
         <p
-          className="text-[22px] leading-snug text-violet-300"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", opacity: 0.95 }}
+          className="text-[34px] leading-tight text-white"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", textShadow: "0 2px 24px rgba(139,92,246,0.55)" }}
         >
           Walking it is up to you.
         </p>
@@ -1716,7 +1716,7 @@ export default function LandingHome() {
                 </p>
               </div>
               <div className="flex flex-col items-center gap-1.5 w-full">
-                <p className="text-[11px] text-foreground/40 tracking-wide">If you want it with you —</p>
+                <p className="text-[12px] text-foreground/70 tracking-wide">If you want it with you —</p>
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                   {/* App Store — shown to iOS and desktop */}
                   {!isAndroid() && (
@@ -1750,9 +1750,9 @@ export default function LandingHome() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/25">A reminder for the path</p>
-                <p className="text-[12px] text-foreground/45 italic">
+              <div className="flex flex-col items-center gap-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/55">A reminder for the path</p>
+                <p className="text-[13px] text-foreground/70 italic text-center leading-relaxed">
                   "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
                 </p>
               </div>
