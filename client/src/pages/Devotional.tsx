@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown } from "lucide-react";
+import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download } from "lucide-react";
 import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -103,6 +103,8 @@ export default function Devotional() {
   const [postPrayerShareDone, setPostPrayerShareDone] = useState(false);
   const [listenHintSeen, setListenHintSeen] = useState(() => !!localStorage.getItem("sp_listen_intro_seen"));
   const [showShareRow, setShowShareRow] = useState(false);
+  const [sharePreviewUrl, setSharePreviewUrl] = useState<string | null>(null);
+  const [sharePreviewBlob, setSharePreviewBlob] = useState<Blob | null>(null);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
   const [verseInMemory, setVerseInMemory] = useState(false);
@@ -517,19 +519,39 @@ export default function Devotional() {
     setSharingImage(true);
     try {
       const blob = await createShareImage(verse.text, verse.reference, verseArtUrl);
-      const file = new File([blob], "shepherds-path-devotional.png", { type: "image/png" });
+      const url = URL.createObjectURL(blob);
+      // Clean up any previous preview URL
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+      setSharePreviewBlob(blob);
+      setSharePreviewUrl(url);
+    } catch { }
+    setSharingImage(false);
+  };
+
+  const handleNativeShareImage = async () => {
+    if (!sharePreviewBlob || !verse) return;
+    try {
+      const file = new File([sharePreviewBlob], "shepherds-path-devotional.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: `${verse.reference} — Shepherd's Path` });
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "shepherds-path-devotional.png";
-        a.click();
-        URL.revokeObjectURL(url);
+        handleDownloadImage();
       }
     } catch { }
-    setSharingImage(false);
+  };
+
+  const handleDownloadImage = () => {
+    if (!sharePreviewUrl) return;
+    const a = document.createElement("a");
+    a.href = sharePreviewUrl;
+    a.download = "shepherds-path-devotional.png";
+    a.click();
+  };
+
+  const closeSharePreview = () => {
+    if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+    setSharePreviewUrl(null);
+    setSharePreviewBlob(null);
   };
 
   const APP_URL = "https://www.shepherdspathai.com";
@@ -1547,6 +1569,107 @@ export default function Devotional() {
             streakDays={streakForTip}
             onClose={() => setShowTipPrompt(false)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ── Share Image Preview Sheet ──────────────────────────── */}
+      <AnimatePresence>
+        {sharePreviewUrl && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/75"
+              onClick={closeSharePreview}
+            />
+            {/* Bottom sheet */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl shadow-2xl overflow-hidden"
+              style={{ maxWidth: 480, margin: "0 auto" }}
+            >
+              {/* Handle + header */}
+              <div className="flex items-center justify-between px-5 pt-4 pb-3">
+                <div className="w-10 h-1 rounded-full bg-border/60 absolute left-1/2 -translate-x-1/2 top-2.5" />
+                <p className="text-[12px] font-semibold uppercase tracking-widest text-foreground/50 mt-1">Preview</p>
+                <button
+                  onClick={closeSharePreview}
+                  data-testid="button-close-share-preview"
+                  className="ml-auto p-1.5 rounded-full text-foreground/40 hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Image preview */}
+              <div className="px-4 pb-3">
+                <img
+                  src={sharePreviewUrl}
+                  alt="Share preview"
+                  className="w-full rounded-xl shadow-md"
+                  style={{ aspectRatio: "1/1", objectFit: "cover" }}
+                />
+              </div>
+
+              {/* Action buttons */}
+              <div className="px-4 pb-3 flex gap-3">
+                <button
+                  onClick={handleNativeShareImage}
+                  data-testid="button-share-image-native"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-[14px] active:scale-95 transition-transform shadow-md"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share image
+                </button>
+                <button
+                  onClick={handleDownloadImage}
+                  data-testid="button-download-image"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border/50 text-foreground/70 font-semibold text-[14px] active:scale-95 transition-transform"
+                >
+                  <Download className="w-4 h-4" />
+                  Save
+                </button>
+              </div>
+
+              {/* Social share row */}
+              <div className="px-4 pb-5 pt-1 border-t border-border/20">
+                <p className="text-[11px] text-foreground/40 font-medium tracking-wide uppercase text-center mb-3">Or share to</p>
+                <div className="flex items-center justify-center gap-2.5">
+                  <button data-testid="share-preview-x" onClick={() => { shareOnX(); closeSharePreview(); }} title="Share on X"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
+                    <SiX className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-preview-facebook" onClick={() => { shareOnFacebook(); closeSharePreview(); }} title="Share on Facebook"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1877F2] text-white active:scale-95 transition-transform shadow-md">
+                    <SiFacebook className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-preview-whatsapp" onClick={() => { shareOnWhatsApp(); closeSharePreview(); }} title="Share on WhatsApp"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
+                    <SiWhatsapp className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-preview-instagram" onClick={() => { shareOnInstagram(); closeSharePreview(); }} title="Copy for Instagram"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform shadow-md"
+                    style={{ background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)" }}>
+                    <SiInstagram className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-preview-telegram" onClick={() => { shareOnTelegram(); closeSharePreview(); }} title="Share on Telegram"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
+                    <SiTelegram className="w-[16px] h-[16px]" />
+                  </button>
+                  <button data-testid="share-preview-pinterest" onClick={() => { shareOnPinterest(); closeSharePreview(); }} title="Pin to Pinterest"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#E60023] text-white active:scale-95 transition-transform shadow-md">
+                    <SiPinterest className="w-[16px] h-[16px]" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

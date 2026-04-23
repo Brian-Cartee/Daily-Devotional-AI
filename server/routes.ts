@@ -2086,21 +2086,18 @@ Return JSON: { "action": "...", "scripture": "..." }`
         ? `${theme}. Cinematic oil painting style with expressive painterly brushstrokes, rich warm tones, atmospheric depth, spiritual mood. No text, no watermarks, no people. Pure nature only.`
         : `${theme}. Ultra-high quality photorealistic landscape photography, shot on Canon 5D Mark IV, National Geographic quality, natural lighting, no digital artifacts, no HDR over-processing. No text, no watermarks, no people. Pure nature photography.`;
       const imageRes = await openai.images.generate({
-        model: "dall-e-3",
+        model: "gpt-image-1",
         prompt: stylePrompt,
         n: 1,
-        size: "1792x1024",
-        quality: "standard",
-        response_format: "url",
-      });
+        size: "1536x1024",
+        quality: "medium",
+      } as any);
 
-      const imageUrl = imageRes.data?.[0]?.url;
-      if (!imageUrl) return res.json({ imageUrl: null, ...scriptureData });
+      const b64Image = imageRes.data?.[0]?.b64_json;
+      if (!b64Image) return res.json({ imageUrl: null, ...scriptureData });
 
-      // Download and save the image
-      const imgRes = await fetch(imageUrl);
-      if (!imgRes.ok) return res.json({ imageUrl: null, ...scriptureData });
-      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+      // Decode b64 directly — no external fetch needed
+      const imgBuffer = Buffer.from(b64Image, "base64");
       fs.writeFileSync(imgFile, imgBuffer);
       // Compress to mobile-friendly size (900px wide, ~70KB)
       try {
@@ -2335,21 +2332,18 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
 
       // Use direct OpenAI client — the AI integrations proxy doesn't support image generation
       const response = await openaiTTS.images.generate({
-        model: "dall-e-3",
+        model: "gpt-image-1",
         prompt,
         n: 1,
-        size: "1792x1024",
-        quality: "hd",
-        style: "vivid",
-      });
+        size: "1536x1024",
+        quality: "high",
+      } as any);
 
-      const tempUrl = response.data?.[0]?.url;
-      if (!tempUrl) return res.status(500).json({ message: "No image returned" });
+      const b64Art = response.data?.[0]?.b64_json;
+      if (!b64Art) return res.status(500).json({ message: "No image returned" });
 
-      // Download and save permanently — OpenAI URLs expire in ~1hr
-      const imgRes = await fetch(tempUrl);
-      if (!imgRes.ok) throw new Error("Failed to download generated image");
-      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+      // Decode b64 directly — no external fetch needed
+      const imgBuffer = Buffer.from(b64Art, "base64");
       fs.writeFileSync(localPath, imgBuffer);
 
       // Save stable local URL to DB
