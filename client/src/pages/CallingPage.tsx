@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { createShareImage, createPurpleShareImage } from "@/lib/shareImage";
+import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 
 const APP_URL = "https://www.shepherdspathai.com";
@@ -83,6 +83,9 @@ interface PreviewState {
   blob: Blob;
   shareText: string;
   title: string;
+  verseText: string;
+  reference: string;
+  cardType: "purple" | "landscape";
 }
 
 export default function CallingPage() {
@@ -94,6 +97,8 @@ export default function CallingPage() {
   const [todayVerse, setTodayVerse] = useState<{ text: string; reference: string } | null>(null);
 
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [previewFormat, setPreviewFormat] = useState<"square" | "story">("square");
+  const [regenerating, setRegenerating] = useState(false);
 
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -118,15 +123,38 @@ export default function CallingPage() {
       .catch(() => {});
   }, []);
 
-  const showPreview = (blob: Blob, title: string, shareText: string) => {
+  const showPreview = (blob: Blob, title: string, shareText: string, verseText: string, reference: string, cardType: "purple" | "landscape") => {
     const url = URL.createObjectURL(blob);
     if (preview) URL.revokeObjectURL(preview.url);
-    setPreview({ url, blob, title, shareText });
+    setPreviewFormat("square");
+    setPreview({ url, blob, title, shareText, verseText, reference, cardType });
   };
 
   const closePreview = () => {
     if (preview) URL.revokeObjectURL(preview.url);
     setPreview(null);
+  };
+
+  const handleSwitchFormat = async (fmt: "square" | "story") => {
+    if (!preview || fmt === previewFormat || regenerating) return;
+    setRegenerating(true);
+    try {
+      let blob: Blob;
+      if (preview.cardType === "purple") {
+        blob = fmt === "story"
+          ? await createPurpleStoryImage(preview.verseText, preview.reference)
+          : await createPurpleShareImage(preview.verseText, preview.reference);
+      } else {
+        blob = fmt === "story"
+          ? await createStoryShareImage(preview.verseText, preview.reference, artUrl)
+          : await createShareImage(preview.verseText, preview.reference, artUrl);
+      }
+      const url = URL.createObjectURL(blob);
+      URL.revokeObjectURL(preview.url);
+      setPreview(prev => prev ? { ...prev, url, blob } : null);
+      setPreviewFormat(fmt);
+    } catch { }
+    setRegenerating(false);
   };
 
   const handleNativeShare = async () => {
@@ -207,7 +235,7 @@ export default function CallingPage() {
     setLoading(key);
     try {
       const blob = await createPurpleShareImage(card.verseText, card.scripture);
-      showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
+      showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText, card.verseText, card.scripture, "purple");
     } catch {
       navigator.share?.({ text: card.shareText }).catch(() => {});
     }
@@ -220,7 +248,7 @@ export default function CallingPage() {
     setLoading(key);
     try {
       const blob = await createShareImage(card.verseText, card.scripture, artUrl);
-      showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText);
+      showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText, card.verseText, card.scripture, "landscape");
     } catch {
       navigator.share?.({ text: card.shareText }).catch(() => {});
     }
@@ -233,7 +261,7 @@ export default function CallingPage() {
     const shareText = `"${todayVerse.text}"\n— ${todayVerse.reference}\n\nReflect & pray with me at Shepherd's Path 🙏\n${APP_URL}`;
     try {
       const blob = await createShareImage(todayVerse.text, todayVerse.reference, artUrl);
-      showPreview(blob, `${todayVerse.reference} — Shepherd's Path`, shareText);
+      showPreview(blob, `${todayVerse.reference} — Shepherd's Path`, shareText, todayVerse.text, todayVerse.reference, "landscape");
     } catch {
       navigator.share?.({ text: shareText }).catch(() => {});
     }
@@ -248,13 +276,12 @@ export default function CallingPage() {
   const handleShareScripture = async () => {
     if (sharingScripture) return;
     setSharingScripture(true);
+    const scriptureVerse = "Go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.";
+    const scriptureRef = "Matthew 28:19";
     try {
-      const blob = await createPurpleShareImage(
-        "Go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.",
-        "Matthew 28:19"
-      );
+      const blob = await createPurpleShareImage(scriptureVerse, scriptureRef);
       const shareText = `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}`;
-      showPreview(blob, "Matthew 28:19 — Shepherd's Path", shareText);
+      showPreview(blob, "Matthew 28:19 — Shepherd's Path", shareText, scriptureVerse, scriptureRef, "purple");
     } catch {
       navigator.share?.({ text: `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}` }).catch(() => {});
     }
@@ -636,13 +663,48 @@ export default function CallingPage() {
                 </button>
               </div>
 
+              {/* Format toggle */}
+              <div className="px-4 pb-3 flex gap-2">
+                <button
+                  onClick={() => handleSwitchFormat("square")}
+                  disabled={regenerating}
+                  data-testid="button-calling-format-square"
+                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  style={{
+                    background: previewFormat === "square" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
+                    border: previewFormat === "square" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
+                    color: previewFormat === "square" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  □ Square
+                </button>
+                <button
+                  onClick={() => handleSwitchFormat("story")}
+                  disabled={regenerating}
+                  data-testid="button-calling-format-story"
+                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  style={{
+                    background: previewFormat === "story" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
+                    border: previewFormat === "story" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
+                    color: previewFormat === "story" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" /> : null}
+                  ↕ Story
+                </button>
+              </div>
+
               {/* Image */}
               <div className="px-4 pb-3">
                 <img
                   src={preview.url}
                   alt="Share preview"
-                  className="w-full rounded-xl shadow-lg"
-                  style={{ aspectRatio: "1/1", objectFit: "cover" }}
+                  className="w-full rounded-xl shadow-lg mx-auto"
+                  style={{
+                    aspectRatio: previewFormat === "story" ? "9/16" : "1/1",
+                    objectFit: "cover",
+                    maxHeight: previewFormat === "story" ? 360 : undefined,
+                  }}
                 />
               </div>
 

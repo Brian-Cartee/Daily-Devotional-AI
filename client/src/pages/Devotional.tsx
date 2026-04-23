@@ -4,7 +4,7 @@ import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download } from "lucide-react";
-import { createShareImage, getDailyVersePhoto } from "@/lib/shareImage";
+import { createShareImage, createStoryShareImage, getDailyVersePhoto } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
@@ -105,6 +105,8 @@ export default function Devotional() {
   const [showShareRow, setShowShareRow] = useState(false);
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | null>(null);
   const [sharePreviewBlob, setSharePreviewBlob] = useState<Blob | null>(null);
+  const [sharePreviewFormat, setSharePreviewFormat] = useState<"square" | "story">("square");
+  const [regeneratingPreview, setRegeneratingPreview] = useState(false);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
   const [verseInMemory, setVerseInMemory] = useState(false);
@@ -552,6 +554,23 @@ export default function Devotional() {
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     setSharePreviewUrl(null);
     setSharePreviewBlob(null);
+    setSharePreviewFormat("square");
+  };
+
+  const handleSwitchShareFormat = async (fmt: "square" | "story") => {
+    if (!verse || fmt === sharePreviewFormat || regeneratingPreview) return;
+    setRegeneratingPreview(true);
+    try {
+      const blob = fmt === "story"
+        ? await createStoryShareImage(verse.text, verse.reference, verseArtUrl)
+        : await createShareImage(verse.text, verse.reference, verseArtUrl);
+      const url = URL.createObjectURL(blob);
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+      setSharePreviewBlob(blob);
+      setSharePreviewUrl(url);
+      setSharePreviewFormat(fmt);
+    } catch { }
+    setRegeneratingPreview(false);
   };
 
   const APP_URL = "https://www.shepherdspathai.com";
@@ -1607,13 +1626,48 @@ export default function Devotional() {
                 </button>
               </div>
 
+              {/* Format toggle */}
+              <div className="px-4 pb-3 flex gap-2">
+                <button
+                  onClick={() => handleSwitchShareFormat("square")}
+                  disabled={regeneratingPreview}
+                  data-testid="button-devotional-format-square"
+                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  style={{
+                    background: sharePreviewFormat === "square" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
+                    border: sharePreviewFormat === "square" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
+                    color: sharePreviewFormat === "square" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  □ Square
+                </button>
+                <button
+                  onClick={() => handleSwitchShareFormat("story")}
+                  disabled={regeneratingPreview}
+                  data-testid="button-devotional-format-story"
+                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  style={{
+                    background: sharePreviewFormat === "story" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
+                    border: sharePreviewFormat === "story" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
+                    color: sharePreviewFormat === "story" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  {regeneratingPreview ? <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" /> : null}
+                  ↕ Story
+                </button>
+              </div>
+
               {/* Image preview */}
               <div className="px-4 pb-3">
                 <img
                   src={sharePreviewUrl}
                   alt="Share preview"
-                  className="w-full rounded-xl shadow-md"
-                  style={{ aspectRatio: "1/1", objectFit: "cover" }}
+                  className="w-full rounded-xl shadow-md mx-auto"
+                  style={{
+                    aspectRatio: sharePreviewFormat === "story" ? "9/16" : "1/1",
+                    objectFit: "cover",
+                    maxHeight: sharePreviewFormat === "story" ? 360 : undefined,
+                  }}
                 />
               </div>
 

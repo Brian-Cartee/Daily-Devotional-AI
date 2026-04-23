@@ -172,6 +172,62 @@ function horizontalGlowLine(
   ctx.fillRect(0, y, size, 1.5);
 }
 
+// Scattered star/particle field — deterministic positions via sine seeding
+function drawStarField(ctx: CanvasRenderingContext2D, W: number, H: number) {
+  const STARS = 95;
+  ctx.save();
+  for (let i = 0; i < STARS; i++) {
+    const x = ((Math.sin(i * 2.399) * 0.5 + 0.5)) * W;
+    const y = ((Math.sin(i * 1.618 + 0.9) * 0.5 + 0.5)) * H;
+    const size = i % 7 === 0 ? 2.2 : i % 3 === 0 ? 1.5 : 0.9;
+    const alpha = 0.06 + (Math.sin(i * 3.77) * 0.5 + 0.5) * 0.22;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Frosted glass rounded-rect panel — dark semi-transparent with subtle border
+function drawFrostedPanel(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+  bgAlpha = 0.44
+) {
+  ctx.save();
+  ctx.fillStyle = `rgba(0,0,0,${bgAlpha})`;
+  drawRoundRect(ctx, x, y, w, h, r);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = 1;
+  drawRoundRect(ctx, x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Dry-run text wrap to estimate rendered height without drawing
+function measureWrapHeight(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  lineHeight: number
+): number {
+  const words = text.split(" ");
+  let line = "";
+  let lines = 1;
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + " ";
+    if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+      line = words[n] + " ";
+      lines++;
+    } else {
+      line = testLine;
+    }
+  }
+  return lines * lineHeight;
+}
+
 function drawFallbackGradient(
   ctx: CanvasRenderingContext2D,
   S: number,
@@ -557,18 +613,13 @@ export async function createShareImage(
   ctx.fillStyle = bottomVeil;
   ctx.fillRect(0, 0, S, S);
 
-  // ── Brand header — current cross logo + name ─────────────
-  await drawLogoHeader(ctx, S, accentColor);
-
-  // ── Verse text ────────────────────────────────────────────
+  // ── Measure verse height first so frosted panel fits ──────────────────
   const maxChars = 230;
   const short =
     verseText.length > maxChars
       ? verseText.substring(0, maxChars - 1) + "\u2026"
       : verseText;
 
-  // Five-tier font scale — smaller text for longer verses so the reference
-  // and footer always land above the canvas bottom (need ≤ ~870px for finalVerseY)
   const fontSize =
     short.length < 55  ? 60 :
     short.length < 90  ? 54 :
@@ -576,6 +627,29 @@ export async function createShareImage(
     short.length < 190 ? 40 :
     36;
 
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 920, fontSize * 1.52);
+  const estimatedFinalY = Math.min(210 + verseH, S - 230);
+
+  // ── Frosted glass panel behind verse + reference ────────────────────────
+  const panelPad = 36;
+  const panelTop = 166;
+  const panelBottom = estimatedFinalY + 130;
+  drawFrostedPanel(ctx, panelPad, panelTop, S - panelPad * 2, panelBottom - panelTop, 22);
+
+  // ── Large decorative opening quotation mark (editorial depth) ──────────
+  ctx.save();
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = accentColor;
+  ctx.font = `italic 240px 'Georgia', serif`;
+  ctx.textAlign = "left";
+  ctx.fillText("\u201C", panelPad + 24, panelTop + 190);
+  ctx.restore();
+
+  // ── Brand header — current cross logo + name ─────────────
+  await drawLogoHeader(ctx, S, accentColor);
+
+  // ── Verse text ────────────────────────────────────────────
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
@@ -743,24 +817,27 @@ export async function createPurpleShareImage(
   ctx.fillStyle = amber;
   ctx.fillRect(0, 0, S, S);
 
+  // ── Star/particle field — cosmic depth ───────────────────────────────────
+  drawStarField(ctx, S, S);
+
   // ── Top golden accent line ───────────────────────────────────────────────
-  horizontalGlowLine(ctx, 0, "rgba(210,160,60,0.70)");
-  horizontalGlowLine(ctx, 2, "rgba(255,220,120,0.35)");
+  horizontalGlowLine(ctx, 0, "rgba(210,160,60,0.75)");
+  horizontalGlowLine(ctx, 2, "rgba(255,220,120,0.38)");
 
   // ── Header ───────────────────────────────────────────────────────────────
   const accentColor = "rgba(190,130,255,0.75)";
   await drawLogoHeader(ctx, S, accentColor);
 
-  // ── Subtle cross watermark (bottom-right corner, very faint) ─────────────
+  // ── Cross watermark (bottom-right corner, atmospheric) ──────────────────
   ctx.save();
-  ctx.globalAlpha = 0.05;
+  ctx.globalAlpha = 0.08;
   ctx.fillStyle = "#ffffff";
-  ctx.font = "380px Georgia, serif";
+  ctx.font = "400px Georgia, serif";
   ctx.textAlign = "center";
-  ctx.fillText("✝", S * 0.78, S * 0.92);
+  ctx.fillText("✝", S * 0.78, S * 0.93);
   ctx.restore();
 
-  // ── Verse text ────────────────────────────────────────────────────────────
+  // ── Verse text — measure first for frosted panel ────────────────────────
   const maxChars = 230;
   const short = verseText.length > maxChars
     ? verseText.substring(0, maxChars - 1) + "\u2026"
@@ -772,6 +849,25 @@ export async function createPurpleShareImage(
     short.length < 140 ? 48 :
     short.length < 190 ? 42 :
     37;
+
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  const verseHP = measureWrapHeight(ctx, `\u201C${short}\u201D`, 930, fontSize * 1.52);
+  const estimatedFinalYP = Math.min(220 + verseHP, S - 240);
+
+  // ── Frosted panel behind verse + reference ───────────────────────────────
+  const panelPadP = 40;
+  const panelTopP = 166;
+  const panelBottomP = estimatedFinalYP + 128;
+  drawFrostedPanel(ctx, panelPadP, panelTopP, S - panelPadP * 2, panelBottomP - panelTopP, 22, 0.28);
+
+  // ── Decorative opening quote mark (in purple accent, editorial) ──────────
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.fillStyle = "rgba(190,130,255,1)";
+  ctx.font = `italic 240px 'Georgia', serif`;
+  ctx.textAlign = "left";
+  ctx.fillText("\u201C", panelPadP + 20, panelTopP + 195);
+  ctx.restore();
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
@@ -822,3 +918,288 @@ export async function createPurpleShareImage(
     canvas.toBlob((blob) => resolve(blob!), "image/png");
   });
 }
+
+// ── Centered logo header for Story (9:16) format ──────────────────────────
+async function drawCenteredLogoHeader(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  accentColor: string
+): Promise<void> {
+  const ICON_SIZE = 68;
+  const ICON_X = (W - ICON_SIZE) / 2;
+  const ICON_Y = 86;
+  const RADIUS = 17;
+
+  let logoDrawn = false;
+  for (const src of ["/app-icon.png", "/app-icon-192.png"]) {
+    try {
+      const logo = await loadImage(src);
+      ctx.save();
+      drawRoundRect(ctx, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE, RADIUS);
+      ctx.clip();
+      ctx.drawImage(logo, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE);
+      ctx.restore();
+      logoDrawn = true;
+      break;
+    } catch { }
+  }
+  if (!logoDrawn) {
+    ctx.save();
+    ctx.fillStyle = "rgba(122,1,141,0.60)";
+    drawRoundRect(ctx, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE, RADIUS);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "bold 28px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("✝", W / 2, ICON_Y + 44);
+  }
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "bold 30px 'Georgia', serif";
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 10;
+  ctx.fillText("Shepherd's Path", W / 2, ICON_Y + ICON_SIZE + 34);
+  ctx.fillStyle = "rgba(255,255,255,0.50)";
+  ctx.font = "19px 'Georgia', serif";
+  ctx.shadowBlur = 6;
+  ctx.fillText("Open your Bible. We'll open the conversation.", W / 2, ICON_Y + ICON_SIZE + 60);
+  ctx.shadowBlur = 0;
+  horizontalGlowLine(ctx, ICON_Y + ICON_SIZE + 76, accentColor, W);
+}
+
+// ── Story (9:16) landscape share card ─────────────────────────────────────
+export async function createStoryShareImage(
+  verseText: string,
+  reference: string,
+  verseArtUrl?: string | null
+): Promise<Blob> {
+  const W = 1080;
+  const H = 1920;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+
+  const palettes = ["warm", "cool", "gold"] as const;
+  const palette = palettes[Math.floor(Math.random() * palettes.length)];
+  const accentColor =
+    palette === "cool" ? "rgba(160,140,255,0.75)" :
+    palette === "gold" ? "rgba(255,200,80,0.75)" :
+    "rgba(255,165,80,0.75)";
+  const refColor =
+    palette === "cool" ? "#d0c4ff" :
+    palette === "gold" ? "#ffe099" :
+    "#ffcc88";
+
+  const backgroundUrl = verseArtUrl || PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
+  try {
+    const img = await loadImage(backgroundUrl);
+    drawImageCover(ctx, img, W, H);
+  } catch {
+    try {
+      if (verseArtUrl) {
+        const fallbackImg = await loadImage(PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)]);
+        drawImageCover(ctx, fallbackImg, W, H);
+      } else {
+        const bg = ctx.createLinearGradient(0, 0, W * 0.6, H);
+        bg.addColorStop(0, "#12043a"); bg.addColorStop(0.45, "#2d1460");
+        bg.addColorStop(0.75, "#5a2008"); bg.addColorStop(1, "#1a0508");
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      }
+    } catch {
+      const bg = ctx.createLinearGradient(0, 0, W * 0.6, H);
+      bg.addColorStop(0, "#12043a"); bg.addColorStop(1, "#1a0508");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  const topVeil = ctx.createLinearGradient(0, 0, 0, H * 0.22);
+  topVeil.addColorStop(0, "rgba(0,0,0,0.82)"); topVeil.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = topVeil; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(0,0,0,0.26)"; ctx.fillRect(0, 0, W, H);
+  const bottomVeil = ctx.createLinearGradient(0, H * 0.76, 0, H);
+  bottomVeil.addColorStop(0, "rgba(0,0,0,0)"); bottomVeil.addColorStop(1, "rgba(0,0,0,0.88)");
+  ctx.fillStyle = bottomVeil; ctx.fillRect(0, 0, W, H);
+
+  const maxChars = 230;
+  const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
+  const fontSize =
+    short.length < 55  ? 72 :
+    short.length < 90  ? 64 :
+    short.length < 140 ? 56 :
+    short.length < 190 ? 48 :
+    42;
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, fontSize * 1.52);
+  const totalContentH = verseH + 190;
+
+  const minPanelTop = 270;
+  const maxPanelTop = H - totalContentH - 200;
+  const idealPanelTop = Math.round((H - totalContentH) / 2) - 60;
+  const panelTop = Math.max(minPanelTop, Math.min(maxPanelTop, idealPanelTop));
+  const panelPad = 38;
+  const panelBottom = panelTop + totalContentH;
+  drawFrostedPanel(ctx, panelPad, panelTop, W - panelPad * 2, panelBottom - panelTop, 24);
+
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = accentColor;
+  ctx.font = `italic 280px 'Georgia', serif`;
+  ctx.textAlign = "left";
+  ctx.fillText("\u201C", panelPad + 22, panelTop + 230);
+  ctx.restore();
+
+  await drawCenteredLogoHeader(ctx, W, accentColor);
+
+  const verseStartY = panelTop + 68;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  ctx.shadowColor = "rgba(0,0,0,0.72)";
+  ctx.shadowBlur = 30;
+  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, W / 2, verseStartY, 940, fontSize * 1.52);
+  ctx.shadowBlur = 0;
+  const finalVerseY = Math.min(rawVerseY, panelBottom - 155);
+
+  horizontalGlowLine(ctx, finalVerseY + 46, accentColor, W);
+
+  ctx.fillStyle = refColor;
+  ctx.font = "bold 44px 'Georgia', serif";
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = 18;
+  ctx.fillText(`\u2014 ${reference}`, W / 2, finalVerseY + 114);
+  ctx.shadowBlur = 0;
+
+  const footerY = H - 148;
+  const footerGrad = ctx.createLinearGradient(0, footerY - 20, 0, H);
+  footerGrad.addColorStop(0, "rgba(0,0,0,0)"); footerGrad.addColorStop(1, "rgba(0,0,0,0.65)");
+  ctx.fillStyle = footerGrad; ctx.fillRect(0, footerY - 20, W, H - footerY + 20);
+  horizontalGlowLine(ctx, footerY, "rgba(255,255,255,0.14)", W);
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 8;
+  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  ctx.font = "bold 30px 'Georgia', serif";
+  ctx.fillText("Start your own daily devotional \u2192", W / 2, footerY + 46);
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.font = "22px 'Georgia', serif";
+  ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", W / 2, footerY + 86);
+  ctx.shadowBlur = 0;
+
+  return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob!), "image/png"); });
+}
+
+// ── Story (9:16) purple brand card ────────────────────────────────────────
+export async function createPurpleStoryImage(
+  verseText: string,
+  reference: string
+): Promise<Blob> {
+  const W = 1080;
+  const H = 1920;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+
+  const bg = ctx.createLinearGradient(0, H * 0.1, W * 0.8, H);
+  bg.addColorStop(0, "#08051a"); bg.addColorStop(0.25, "#160a38");
+  bg.addColorStop(0.55, "#2e1160"); bg.addColorStop(0.80, "#1c0942"); bg.addColorStop(1, "#07040f");
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  const glow1 = ctx.createRadialGradient(W * 0.65, H * 0.55, 0, W * 0.65, H * 0.55, H * 0.65);
+  glow1.addColorStop(0, "rgba(130,10,170,0.48)"); glow1.addColorStop(0.45, "rgba(90,20,130,0.20)"); glow1.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow1; ctx.fillRect(0, 0, W, H);
+
+  const glow2 = ctx.createRadialGradient(W * 0.15, H * 0.18, 0, W * 0.15, H * 0.18, H * 0.45);
+  glow2.addColorStop(0, "rgba(70,30,150,0.30)"); glow2.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow2; ctx.fillRect(0, 0, W, H);
+
+  const amber = ctx.createRadialGradient(W / 2, H * 0.50, 0, W / 2, H * 0.50, H * 0.35);
+  amber.addColorStop(0, "rgba(210,120,10,0.10)"); amber.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = amber; ctx.fillRect(0, 0, W, H);
+
+  drawStarField(ctx, W, H);
+
+  horizontalGlowLine(ctx, 0, "rgba(210,160,60,0.75)", W);
+  horizontalGlowLine(ctx, 2, "rgba(255,220,120,0.38)", W);
+
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "560px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText("✝", W * 0.78, H * 0.65);
+  ctx.restore();
+
+  const accentColor = "rgba(190,130,255,0.75)";
+
+  const maxChars = 230;
+  const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
+  const fontSize =
+    short.length < 55  ? 72 :
+    short.length < 90  ? 64 :
+    short.length < 140 ? 56 :
+    short.length < 190 ? 48 :
+    42;
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, fontSize * 1.52);
+  const totalContentH = verseH + 190;
+
+  const minPanelTop = 270;
+  const maxPanelTop = H - totalContentH - 200;
+  const idealPanelTop = Math.round((H - totalContentH) / 2) - 60;
+  const panelTop = Math.max(minPanelTop, Math.min(maxPanelTop, idealPanelTop));
+  const panelPad = 40;
+  const panelBottom = panelTop + totalContentH;
+  drawFrostedPanel(ctx, panelPad, panelTop, W - panelPad * 2, panelBottom - panelTop, 24, 0.26);
+
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.fillStyle = "rgba(190,130,255,1)";
+  ctx.font = `italic 280px 'Georgia', serif`;
+  ctx.textAlign = "left";
+  ctx.fillText("\u201C", panelPad + 18, panelTop + 230);
+  ctx.restore();
+
+  await drawCenteredLogoHeader(ctx, W, accentColor);
+
+  const verseStartY = panelTop + 68;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `italic ${fontSize}px 'Georgia', serif`;
+  ctx.shadowColor = "rgba(100,0,140,0.65)";
+  ctx.shadowBlur = 30;
+  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, W / 2, verseStartY, 940, fontSize * 1.52);
+  ctx.shadowBlur = 0;
+  const finalVerseY = Math.min(rawVerseY, panelBottom - 155);
+
+  horizontalGlowLine(ctx, finalVerseY + 50, "rgba(210,160,80,0.65)", W);
+
+  ctx.fillStyle = "#e8c87a";
+  ctx.font = "bold 44px 'Georgia', serif";
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 18;
+  ctx.fillText(`\u2014 ${reference}`, W / 2, finalVerseY + 114);
+  ctx.shadowBlur = 0;
+
+  const stripY = H - 148;
+  const stripGrad = ctx.createLinearGradient(0, stripY, 0, H);
+  stripGrad.addColorStop(0, "rgba(0,0,0,0)"); stripGrad.addColorStop(1, "rgba(0,0,0,0.60)");
+  ctx.fillStyle = stripGrad; ctx.fillRect(0, stripY, W, H - stripY);
+  horizontalGlowLine(ctx, stripY + 4, "rgba(190,130,255,0.32)", W);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  ctx.font = "bold 30px 'Georgia', serif";
+  ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 8;
+  ctx.fillText("Start your own daily devotional \u2192", W / 2, stripY + 46);
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.font = "22px 'Georgia', serif";
+  ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", W / 2, stripY + 84);
+  ctx.shadowBlur = 0;
+
+  return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob!), "image/png"); });
+}
+
