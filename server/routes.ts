@@ -3622,19 +3622,30 @@ ${historyNote}`;
 
       // Build AI prompt — custom topic search gets a different prompt focused on the user's term
       const systemPrompt = customTopic
-        ? `You are curating 2 sermon or podcast clips for a user who wants to explore a specific topic after their devotional. Return JSON:
+        ? `You are curating 2 sermon or podcast clips for a Christian devotional app. Return JSON:
 {
   "clips": [
     { "searchQuery": "...", "pastor": "..." },
     { "searchQuery": "...", "pastor": "..." }
   ]
 }
-The user's requested topic: "${customTopic}"
-Choose 2 preachers from different tiers who speak well on this topic.
+The user typed: "${customTopic}"
+
+IMPORTANT: Users often type raw emotional phrases ("I'm struggling with heartbreak", "my marriage is falling apart", "I feel worthless"). Your job is to EXTRACT the core spiritual/emotional theme and convert it into a clean, effective YouTube search query that will actually return results.
+
+Examples of good extraction:
+- "pain from a breakup and heartbreak is killing me" → theme: heartbreak healing → searchQuery: "Tony Evans heartbreak healing sermon"
+- "I can't stop being anxious" → theme: anxiety, peace → searchQuery: "Matt Chandler anxiety peace sermon"
+- "my marriage is falling apart" → theme: marriage restoration → searchQuery: "T.D. Jakes marriage restoration sermon"
+- "I feel completely worthless" → theme: identity, self-worth → searchQuery: "Dharius Daniels identity worth in God sermon"
+- "addiction is ruining my life" → theme: addiction, freedom → searchQuery: "Michael Todd addiction freedom teaching"
+
+Choose 2 preachers from different tiers who speak WELL on this specific theme.
 Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels.
 Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes.
 Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas.
-For each searchQuery: include the pastor name + the topic + "podcast" or "sermon" or "teaching" to surface audio-style content. Keep clips 5–15 min.`
+
+For each searchQuery: use pastor name + the CLEAN EXTRACTED THEME + "sermon" or "teaching". Do NOT put the user's raw emotional phrase in the search query. Target 5–15 min content.`
         : `You are curating 2 additional short sermon clips for someone who just completed a devotional. Return JSON:
 {
   "clips": [

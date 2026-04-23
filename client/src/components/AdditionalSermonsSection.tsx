@@ -530,6 +530,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
 // Self-contained "Go Deeper" search card — no verse/session context needed.
 // Users can search any topic, scripture, or teacher right from the home screen.
 export function GoDeepCard() {
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<AdditionalSermon[]>([]);
@@ -622,11 +623,20 @@ export function GoDeepCard() {
             key="failed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="px-4 pb-4 text-center"
+            className="px-4 pb-5"
           >
-            <p className="text-[13px] text-muted-foreground/55 italic" style={{ fontFamily: "'Georgia', serif" }}>
-              No teachings found for "{lastTopic}" — try a different search.
+            <p className="text-[13px] text-muted-foreground/55 italic text-center mb-3" style={{ fontFamily: "'Georgia', serif" }}>
+              No video teachings found for "{lastTopic}"
             </p>
+            <button
+              data-testid="btn-go-deeper-ai-fallback"
+              onClick={() => navigate(`/guidance?situation=${encodeURIComponent(lastTopic)}`)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all active:scale-95"
+              style={{ background: "rgba(167,139,250,0.13)", border: "1px solid rgba(167,139,250,0.25)", color: "rgba(167,139,250,0.9)" }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Let our AI guide walk you through this
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
