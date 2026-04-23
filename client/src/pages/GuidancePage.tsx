@@ -13,6 +13,7 @@ import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { canUseAi, recordAiUsage, getAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { isLateNight } from "@/lib/nightMode";
@@ -103,6 +104,12 @@ export default function GuidancePage() {
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
   const [guidanceMode, setGuidanceModeState] = useState<GuidanceMode>(() => getGuidanceMode());
+
+  const { data: dailyArtData } = useQuery<{ imageUrl: string }>({
+    queryKey: ["/api/daily-art"],
+    staleTime: 1000 * 60 * 60 * 6,
+  });
+  const heroArtUrl = dailyArtData?.imageUrl ?? "/hero-guidance.jpg";
 
   const handleModeChange = (mode: GuidanceMode) => {
     if (mode === guidanceMode) return;
@@ -495,13 +502,14 @@ export default function GuidancePage() {
         {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
         <div className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${!situation && !streamingText ? "min-h-[330px]" : ""}`}>
 
-          {/* Background image — fades out once conversation is active */}
+          {/* Background image — daily AI landscape, fades out once conversation is active */}
           <img
-            src="/hero-guidance.jpg"
+            src={heroArtUrl}
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
             style={{ filter: "brightness(0.70) saturate(1.65)", transform: "scale(1.12)", transformOrigin: "50% top" }}
+            onError={e => { (e.target as HTMLImageElement).src = "/hero-guidance.jpg"; }}
           />
 
           {/* Depth gradient — bleeds photo into app background at bottom */}
