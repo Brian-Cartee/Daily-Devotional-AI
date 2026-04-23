@@ -642,7 +642,7 @@ export async function createShareImage(
 }
 
 // ── Shared helper: draw the current app logo mark ─────────────────────────
-// Renders the cross icon in an app-icon-style pill. Falls back to text.
+// Renders the app icon with rounded clip. Falls back to text cross.
 async function drawLogoHeader(
   ctx: CanvasRenderingContext2D,
   S: number,
@@ -654,21 +654,17 @@ async function drawLogoHeader(
   const TEXT_X = ICON_X + ICON_SIZE + 16;
   const TEXT_Y_NAME = ICON_Y + 26;
   const TEXT_Y_TAG  = ICON_Y + 50;
+  const RADIUS = 13;
 
-  // App-icon rounded square background
-  ctx.save();
-  ctx.fillStyle = "rgba(122,1,141,0.55)";
-  drawRoundRect(ctx, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE, 13);
-  ctx.fill();
-  ctx.restore();
-
-  // Try to load the cross logo (current brand mark)
+  // Try to load the new app icon
   let logoDrawn = false;
-  for (const src of ["/cross-transparent.png", "/sp-cross-logo.png", "/app-icon.png"]) {
+  for (const src of ["/app-icon.png", "/app-icon-192.png"]) {
     try {
       const logo = await loadImage(src);
       ctx.save();
-      ctx.globalAlpha = src === "/app-icon.png" ? 1 : 0.92;
+      // Clip to rounded square so the icon edges look clean
+      drawRoundRect(ctx, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE, RADIUS);
+      ctx.clip();
       ctx.drawImage(logo, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE);
       ctx.restore();
       logoDrawn = true;
@@ -677,7 +673,12 @@ async function drawLogoHeader(
   }
 
   if (!logoDrawn) {
-    // Minimal text fallback inside the pill
+    // Fallback: purple pill + text cross
+    ctx.save();
+    ctx.fillStyle = "rgba(122,1,141,0.55)";
+    drawRoundRect(ctx, ICON_X, ICON_Y, ICON_SIZE, ICON_SIZE, RADIUS);
+    ctx.fill();
+    ctx.restore();
     ctx.save();
     ctx.fillStyle = "rgba(255,255,255,0.80)";
     ctx.font = "bold 22px Georgia, serif";
