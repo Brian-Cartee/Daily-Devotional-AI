@@ -18,7 +18,7 @@ import { getTodayVerseFromSheet, getRawSheetRows } from "./googleSheets";
 import { updateMemory, getMemoryContext, buildMemoryPromptNote } from "./lib/userMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "./lib/voiceProfile";
 import { getCulturalMomentNote } from "./culturalMoments";
-import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText } from "./resend";
+import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText, buildWelcomeEmailHtml, buildWelcomeEmailText } from "./resend";
 import { scheduleDailyEmails } from "./emailScheduler";
 import { schedulePushNotifications } from "./pushScheduler";
 import { scheduleDailySms } from "./smsScheduler";
@@ -1117,19 +1117,17 @@ What you never do:
       // Send a welcome email
       try {
         const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+        const videoUrl = process.env.WELCOME_VIDEO_URL || null;
         const { client, fromEmail } = await getUncachableResendClient();
+        const welcomeData = { name: input.name ?? null, appUrl, videoUrl };
         await client.emails.send({
           from: fromEmail,
           to: input.email,
-          subject: "Welcome to Shepherd's Path",
-          html: `<div style="font-family:Georgia,serif;max-width:500px;margin:auto;padding:32px;">
-            <h2 style="color:#3d3530;">Welcome${input.name ? `, ${input.name}` : ''}!</h2>
-            <p style="color:#5c5248;line-height:1.7;">You're now subscribed to Shepherd's Path. Each morning you'll receive today's scripture, an encouragement message, and a link to explore it deeper with AI.</p>
-            <p style="color:#5c5248;">May each verse be a blessing to your day.</p>
-            <p style="margin-top:32px;"><a href="${appUrl}" style="background:#8b6f47;color:#fff;padding:12px 28px;border-radius:40px;text-decoration:none;font-family:sans-serif;font-size:14px;">Visit the App</a></p>
-          </div>`,
-          text: `Welcome${input.name ? `, ${input.name}` : ''}!\n\nYou're now subscribed to Shepherd's Path. Each morning you'll receive today's scripture and encouragement.\n\n${appUrl}`,
+          subject: "You're on the path now — Welcome to Shepherd's Path",
+          html: buildWelcomeEmailHtml(welcomeData),
+          text: buildWelcomeEmailText(welcomeData),
         });
+        console.log(`[welcome] Email sent to ${input.email}`);
       } catch (emailErr) {
         console.error("Welcome email failed (non-fatal):", emailErr);
       }
