@@ -612,14 +612,14 @@ function ClosingManifesto() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 py-8">
-        {/* App icon — brand seal */}
-        <div className="flex items-center gap-3 mb-6">
+        {/* App icon — brand seal, larger now that it anchors the whole closing */}
+        <div className="flex items-center gap-3 mb-7">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
           <img
             src="/sp-icon.png"
             alt="Shepherd's Path"
-            className="w-10 h-10 rounded-[10px] flex-shrink-0"
-            style={{ boxShadow: "0 0 12px rgba(109,40,217,0.45)" }}
+            className="w-16 h-16 rounded-[14px] flex-shrink-0"
+            style={{ boxShadow: "0 0 20px rgba(109,40,217,0.50)" }}
           />
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
         </div>
@@ -643,13 +643,6 @@ function ClosingManifesto() {
         >
           Walking it is up to you.
         </p>
-
-        {/* Bottom mark */}
-        <div className="flex items-center gap-3 mt-7">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/30" />
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-500/50 flex-shrink-0" />
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/30" />
-        </div>
       </div>
     </div>
   );
@@ -1633,13 +1626,25 @@ export default function LandingHome() {
           {/* Divider */}
           <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
 
-          {/* Links — 2-col grid */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-foreground/70 text-center mb-2.5 px-4">
+          {/* Links — 8 key destinations, 2-col */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs text-foreground/65 text-center mb-3 px-4">
             <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="link-pricing-footer">
               Plans & Pricing
             </Link>
             <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about-footer">
               About
+            </Link>
+            <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-500/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
+              Beginning with Jesus
+            </Link>
+            <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
+              The Greatest Gift
+            </Link>
+            <Link href="/prayer-wall" className="hover:text-foreground transition-colors" data-testid="link-prayer-wall-footer">
+              Prayer Wall
+            </Link>
+            <Link href="/how-to-use" className="hover:text-foreground transition-colors" data-testid="link-how-to-use-footer">
+              How to Use
             </Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy-footer">
               Privacy Policy
@@ -1647,123 +1652,88 @@ export default function LandingHome() {
             <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
               Terms
             </Link>
-            <Link href="/stories" className="hover:text-foreground transition-colors" data-testid="link-stories-footer">
-              Stories
-            </Link>
-            <Link href="/store" className="hover:text-foreground transition-colors" data-testid="link-store-footer">
-              Store
-            </Link>
-            <Link href="/reading-plans" className="hover:text-foreground transition-colors" data-testid="link-plans-footer">
-              Your Walk
-            </Link>
-            <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-600/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
-              Beginning with Jesus
-            </Link>
-            <Link href="/prayer-wall" className="hover:text-foreground transition-colors" data-testid="link-prayer-wall-footer">
-              Prayer Wall
-            </Link>
-            <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
-              The Greatest Gift
-            </Link>
-            <Link href="/trivia" className="hover:text-foreground transition-colors" data-testid="link-trivia-footer">
-              Bible Trivia
-            </Link>
-            <Link href="/iron-circle" className="hover:text-foreground transition-colors" data-testid="link-iron-circle-footer">
-              Iron Sharpens Iron
-            </Link>
-            <Link href="/study" className="hover:text-foreground transition-colors" data-testid="link-study-footer">
-              Explore Scripture
-            </Link>
-            <Link href="/calling" className="hover:text-foreground transition-colors" data-testid="link-calling-footer">
-              Share the Word
-            </Link>
-            <Link href="/how-to-use" className="hover:text-foreground transition-colors" data-testid="link-how-to-use-footer">
-              How to Use
-            </Link>
           </div>
 
-          {/* Email + Share — stacked to avoid overflow */}
-          <div className="flex flex-col items-center gap-1.5 text-sm text-foreground/70">
+          {/* Contact + Share — inline row */}
+          <div className="flex items-center justify-center gap-5 text-xs text-foreground/55 mb-1">
             <Link href="/support" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
               Contact Support
             </Link>
+            <span className="text-border/60">·</span>
             <button
               onClick={handleShareApp}
               data-testid="btn-share-app-footer"
-              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
             >
               {shared
-                ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copied!</>
-                : <><Share2 className="w-3.5 h-3.5" /> Share App</>
+                ? <><Check className="w-3 h-3 text-green-500" /> Copied!</>
+                : <><Share2 className="w-3 h-3" /> Share App</>
               }
             </button>
           </div>
 
-          {/* ── Get the App ── */}
-          <div className="mt-8 rounded-2xl overflow-hidden border border-primary/25 bg-gradient-to-br from-primary/12 via-violet-500/8 to-amber-500/6">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/50 via-violet-400/40 to-amber-400/35" />
-            <div className="px-5 py-6 flex flex-col items-center text-center gap-4">
-              <img
-                src="/sp-icon-nobg.png"
-                alt="Shepherd's Path"
-                className="w-24 h-24 object-contain"
-                style={{ opacity: 0.92, filter: "brightness(1.05) drop-shadow(0 2px 16px rgba(122,1,141,0.3))" }}
-              />
-              <div>
-                <p className="text-[20px] font-bold text-foreground leading-tight">When you need it, it's here.</p>
-                <p className="text-[14px] text-foreground/70 mt-2 leading-relaxed">
-                  In the moments that catch you off guard — grief, doubt, something you didn't expect — your guide is already there.
-                </p>
-              </div>
-              <div className="flex flex-col items-center gap-1.5 w-full">
-                <p className="text-[12px] text-foreground/70 tracking-wide">If you want it with you —</p>
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                  {/* App Store — shown to iOS and desktop */}
-                  {!isAndroid() && (
-                    <a
-                      href="https://apps.apple.com/app/shepherds-path/id6760953522"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid="btn-appstore-cta"
-                      className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl bg-foreground text-background font-semibold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
-                    >
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
-                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                      </svg>
-                      View on the App Store
-                    </a>
-                  )}
-                  {/* Google Play — shown to Android and desktop */}
-                  {!isIOS() && (
-                    <a
-                      href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid="btn-googleplay-cta"
-                      className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[14px] hover:bg-primary/15 active:scale-[0.98] transition-all"
-                    >
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
-                        <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
-                      </svg>
-                      View on Google Play
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/55">A reminder for the path</p>
-                <p className="text-[13px] text-foreground/70 italic text-center leading-relaxed">
-                  "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
-                </p>
-              </div>
+          {/* ── Closing sequence: Manifesto → Scripture → Download ── */}
+          <ClosingManifesto />
+
+          {/* Psalm 119:105 — bridge between manifesto and CTA */}
+          <div className="flex flex-col items-center gap-1.5 px-6 -mt-2 mb-8">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/40">A reminder for the path</p>
+            <p
+              className="text-[15px] text-foreground/65 italic text-center leading-relaxed"
+              style={{ fontFamily: "var(--font-serif)" }}
+            >
+              "Your word is a lamp to my feet and a light to my path."
+            </p>
+            <p className="text-[12px] text-foreground/40 tracking-wide">— Psalm 119:105</p>
+          </div>
+
+          {/* Download buttons — clean, no card border */}
+          <div className="flex flex-col items-center gap-3 px-4 mb-2">
+            <p className="text-[12px] text-foreground/50 tracking-wide">If you want it with you —</p>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              {!isAndroid() && (
+                <a
+                  href="https://apps.apple.com/app/shepherds-path/id6760953522"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="btn-appstore-cta"
+                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl bg-foreground text-background font-semibold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                  </svg>
+                  View on the App Store
+                </a>
+              )}
+              {!isIOS() && (
+                <a
+                  href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="btn-googleplay-cta"
+                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[14px] hover:bg-primary/15 active:scale-[0.98] transition-all"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
+                    <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
+                  </svg>
+                  View on Google Play
+                </a>
+              )}
             </div>
           </div>
 
-          <ClosingManifesto />
-
-          <p className="text-[13px] text-foreground/50 text-center mt-3 pb-4">
-            © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
-          </p>
+          {/* Copyright */}
+          <div className="flex flex-col items-center gap-1 mt-6 pb-4">
+            <p className="text-[12px] text-foreground/40 text-center">
+              © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
+            </p>
+            <a
+              href="https://www.shepherdspathai.com"
+              className="text-[11px] text-foreground/30 hover:text-foreground/55 transition-colors tracking-wide"
+            >
+              shepherdspathai.com
+            </a>
+          </div>
         </motion.div>
       </div>
 
