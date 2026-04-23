@@ -591,22 +591,22 @@ function FaqSection() {
 
 function ClosingManifesto() {
   return (
-    <div className="relative w-full mt-10 mb-2 overflow-hidden">
-      {/* Atmospheric violet bloom */}
+    <div className="relative w-full mt-10 mb-2">
+      {/* Atmospheric violet bloom — bleeds freely, no clip */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 90% 100% at 50% 50%, rgba(109,40,217,0.18) 0%, rgba(109,40,217,0.06) 55%, transparent 80%)",
+          background: "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(109,40,217,0.16) 0%, rgba(109,40,217,0.05) 60%, transparent 85%)",
         }}
       />
-      {/* Top vignette blend */}
+      {/* Top fade into page background */}
       <div
-        className="absolute inset-x-0 top-0 h-8 pointer-events-none"
+        className="absolute inset-x-0 top-0 h-12 pointer-events-none"
         style={{ background: "linear-gradient(to bottom, hsl(var(--background)), transparent)" }}
       />
-      {/* Bottom vignette blend */}
+      {/* Bottom fade into page background */}
       <div
-        className="absolute inset-x-0 bottom-0 h-8 pointer-events-none"
+        className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
         style={{ background: "linear-gradient(to top, hsl(var(--background)), transparent)" }}
       />
 
@@ -626,20 +626,20 @@ function ClosingManifesto() {
 
         {/* The three lines — ascending scale, each one landing harder */}
         <p
-          className="text-[18px] leading-snug mb-3 text-violet-300/70"
+          className="text-[18px] leading-snug mb-3 text-white/70"
           style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
         >
           The path is here.
         </p>
         <p
-          className="text-[25px] leading-snug mb-4 text-violet-200/88"
+          className="text-[28px] leading-snug mb-4 text-white/88"
           style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
         >
           Start where you are.
         </p>
         <p
-          className="text-[34px] leading-tight text-white"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", textShadow: "0 2px 24px rgba(139,92,246,0.55)" }}
+          className="text-[36px] leading-tight text-white"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", textShadow: "0 2px 24px rgba(139,92,246,0.65)" }}
         >
           Walking it is up to you.
         </p>
