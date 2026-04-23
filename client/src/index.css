@@ -25,7 +25,7 @@ button, a, input, textarea, select, [role="button"] {
 
 @layer base {
   :root {
-    /* Shepherd's Path — warm parchment base, deep indigo primary, soft gold accent */
+    /* Shepherd's Path — warm parchment base, brand purple primary, soft gold accent */
     --background: 38 38% 95%;
     --foreground: 224 22% 14%;
 
@@ -35,8 +35,8 @@ button, a, input, textarea, select, [role="button"] {
     --popover: 38 25% 99%;
     --popover-foreground: 224 22% 14%;
 
-    /* Deep ecclesiastical purple — rich, sacred, unhurried */
-    --primary: 258 42% 32%;
+    /* Brand purple — vivid warm magenta-purple, matches app icon exactly */
+    --primary: 292 98% 28%;
     --primary-foreground: 0 0% 100%;
 
     /* Warm amber-gold — warmth, reverence */
@@ -54,7 +54,7 @@ button, a, input, textarea, select, [role="button"] {
 
     --border: 38 18% 86%;
     --input: 38 18% 86%;
-    --ring: 258 42% 32%;
+    --ring: 292 98% 28%;
 
     --radius: 0.875rem;
 
@@ -65,35 +65,35 @@ button, a, input, textarea, select, [role="button"] {
   }
 
   .dark {
-    /* Shepherd's Path dark — deep sacred purple, like #0d0a1a */
-    --background: 251 45% 6%;
+    /* Shepherd's Path dark — deep near-black with warm purple cast */
+    --background: 292 30% 5%;
     --foreground: 38 22% 93%;
 
-    --card: 258 42% 10%;
+    --card: 292 38% 10%;
     --card-foreground: 38 22% 93%;
 
-    --popover: 258 42% 10%;
+    --popover: 292 38% 10%;
     --popover-foreground: 38 22% 93%;
 
-    /* Brand purple #442f74 — lightened for readability on dark */
-    --primary: 258 42% 64%;
+    /* Brand purple — bright vivid warm purple for dark mode readability */
+    --primary: 292 90% 54%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 37 90% 57%;
     --secondary-foreground: 224 28% 10%;
 
-    --muted: 258 35% 15%;
-    --muted-foreground: 258 15% 68%;
+    --muted: 292 30% 14%;
+    --muted-foreground: 292 12% 68%;
 
-    --accent: 258 35% 15%;
+    --accent: 292 30% 14%;
     --accent-foreground: 38 22% 93%;
 
     --destructive: 0 62% 52%;
     --destructive-foreground: 38 22% 93%;
 
-    --border: 258 32% 19%;
-    --input: 258 32% 19%;
-    --ring: 258 42% 64%;
+    --border: 292 28% 18%;
+    --input: 292 28% 18%;
+    --ring: 292 90% 54%;
   }
 }
 

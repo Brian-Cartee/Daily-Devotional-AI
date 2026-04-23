@@ -202,7 +202,7 @@ function HeroAIPrompt() {
       className="relative rounded-2xl overflow-hidden mb-1 shadow-lg shadow-primary/15 border border-primary/20"
     >
       {/* Colored header band */}
-      <div className="px-6 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(258 42% 32%), hsl(258 38% 42%))" }}>
+      <div className="px-6 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(292 98% 28%), hsl(292 85% 36%))" }}>
         <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-white/90" />
         </div>
@@ -596,7 +596,7 @@ function ClosingManifesto() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(109,40,217,0.16) 0%, rgba(109,40,217,0.05) 60%, transparent 85%)",
+          background: "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(122,1,141,0.16) 0%, rgba(122,1,141,0.05) 60%, transparent 85%)",
         }}
       />
       {/* Top fade into page background */}
@@ -619,7 +619,7 @@ function ClosingManifesto() {
             src="/sp-icon.png"
             alt="Shepherd's Path"
             className="w-16 h-16 rounded-[14px] flex-shrink-0"
-            style={{ boxShadow: "0 0 20px rgba(109,40,217,0.50)" }}
+            style={{ boxShadow: "0 0 20px rgba(122,1,141,0.55)" }}
           />
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
         </div>
@@ -1028,7 +1028,7 @@ export default function LandingHome() {
                 <div
                   data-testid="card-daily-verse-anchor"
                   className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
-                  style={{ background: "linear-gradient(135deg, rgba(67,20,120,0.45) 0%, rgba(30,10,60,0.55) 100%)", border: "1px solid rgba(160,80,200,0.25)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(100,0,120,0.45) 0%, rgba(60,0,80,0.55) 100%)", border: "1px solid rgba(160,0,180,0.25)" }}
                 >
                   <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(to right, #7A018D, #a855f7, #f59e0b)" }} />
                   <div className="px-5 pt-4 pb-4">
