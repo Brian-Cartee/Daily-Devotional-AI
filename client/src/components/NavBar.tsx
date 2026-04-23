@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Moon, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap, Shield } from "lucide-react";
+import { BookOpen, Sun, Moon, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap, Shield, Headphones } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -8,6 +8,7 @@ import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { useTheme } from "@/lib/theme";
+import { getUserVoice, setUserVoice } from "@/lib/userName";
 
 
 const NAV_ITEMS = [
@@ -67,6 +68,13 @@ export function NavBar() {
     saveGuidanceMode(next);
     setGuidanceTone(next);
   };
+  const [voicePref, setVoicePref] = useState<string>(() => getUserVoice());
+  const toggleVoice = () => {
+    const next = voicePref === "onyx" ? "shimmer" : "onyx";
+    setUserVoice(next);
+    setVoicePref(next);
+  };
+
   const { lang, setLang } = useLanguage();
   const bookmarked = useBookmarkedSections();
   const moreRef = useRef<HTMLDivElement>(null);
@@ -211,6 +219,21 @@ export function NavBar() {
                         <span className="font-medium block leading-tight">Guidance Tone</span>
                         <span className="text-[11px] text-muted-foreground">
                           {guidanceTone === "coach" ? "Direct & Accountable ✓" : "Gentle & Encouraging ✓"}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Listen voice */}
+                    <button
+                      onClick={() => { toggleVoice(); setMoreOpen(false); }}
+                      data-testid="button-voice-toggle"
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <Headphones className="w-4 h-4 text-primary/70" />
+                      <div className="flex-1 text-left">
+                        <span className="font-medium block leading-tight">Listen Voice</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {voicePref === "onyx" ? "Male · Switch to Female" : "Female · Switch to Male"}
                         </span>
                       </div>
                     </button>
