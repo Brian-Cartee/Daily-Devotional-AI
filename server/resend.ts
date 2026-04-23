@@ -294,7 +294,7 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
             </table>
 
             ${videoUrl ? `
-            <!-- VIDEO MESSAGE SECTION -->
+            <!-- VIDEO PLAY BUTTON -->
             <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:14px;line-height:1.7;color:#5c4e70;text-align:center;font-style:italic;">
               I also recorded a short video message for you.
             </p>
@@ -327,7 +327,59 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
                 </td>
               </tr>
             </table>
-            ` : ''}
+            ` : `
+            <!-- FEATURED MESSAGE CARD — stands in until video is recorded -->
+            <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+              <tr>
+                <td style="background:linear-gradient(160deg,#1e1030 0%,#2d1b5e 55%,#3d2870 100%);border-radius:16px;padding:36px 32px 32px;">
+
+                  <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.45);text-align:center;">
+                    A Message From Brian
+                  </p>
+
+                  <!-- Decorative rule -->
+                  <table width="60" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                    <tr><td style="height:1px;background:rgba(255,255,255,0.25);"></td></tr>
+                  </table>
+
+                  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    Hey &mdash; I&rsquo;m really glad you found this.
+                  </p>
+                  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    My name is Brian&hellip; and I built Shepherd&rsquo;s Path because I know what it&rsquo;s like to go looking for God in the middle of something hard&hellip; and not know where to start.
+                  </p>
+                  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    This isn&rsquo;t another Bible app. It&rsquo;s something you can actually bring your life into.
+                  </p>
+                  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    Whatever&rsquo;s on your mind &mdash; fear, grief, something you&rsquo;re trying to figure out &mdash; you can just say it. And it will meet you there with Scripture, with a real prayer, and something that actually speaks to where you are.
+                  </p>
+                  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    If you don&rsquo;t know where to start&hellip; just open the app and tap &ldquo;Guidance.&rdquo;
+                  </p>
+                  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    Say what&rsquo;s on your mind. That&rsquo;s enough.
+                  </p>
+                  <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:16px;line-height:1.9;color:rgba(255,255,255,0.92);font-style:italic;">
+                    You don&rsquo;t have to have it together.
+                  </p>
+                  <p style="margin:0 0 24px;font-family:Georgia,serif;font-size:17px;line-height:1.7;color:#ffffff;font-weight:400;">
+                    The path is here.<br />
+                    Walking it is up to you.
+                  </p>
+
+                  <!-- Decorative rule -->
+                  <table width="60" cellpadding="0" cellspacing="0" style="margin:0 auto 20px;">
+                    <tr><td style="height:1px;background:rgba(255,255,255,0.25);"></td></tr>
+                  </table>
+
+                  <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.55);text-align:center;letter-spacing:1px;">
+                    &mdash; Brian
+                  </p>
+                </td>
+              </tr>
+            </table>
+            `}
 
             <!-- CTA -->
             <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:12px;">
