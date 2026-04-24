@@ -3,3 +3,19 @@
 
 # No need to store the pnpm store twice.
 .local
+
+# Migration backup — large (~3 GB), dev-only
+.migration-backup/
+
+# Uploaded/attached assets — large (~2.7 GB), bundled into the build at build time
+attached_assets/
+
+# Design sandbox — dev-only canvas tool, not part of web deployment
+artifacts/mockup-sandbox/
+
+# Mobile app — Expo, not part of web deployment
+artifacts/shepherds-path-mobile/
+
+# Dev caches — not needed in production
+server/tts-cache/
+server/verse-art-cache/
