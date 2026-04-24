@@ -1,0 +1,74 @@
+# EAS Metadata — used by `eas metadata:push` to populate the App Store listing.
+# Run: eas metadata:push --profile production
+#
+# BEFORE SUBMITTING — replace every placeholder marked with TODO:
+#   - YOUR_DOMAIN  →  your live domain (e.g. shepherdspath.app)
+#   - YOUR_EMAIL   →  App Review contact email
+#   - First/Last   →  App Review contact name
+#   - +1-555-…     →  App Review contact phone number
+
+configVersion: 0
+apple:
+  info:
+    en-US:
+      title: "Shepherd's Path"
+      subtitle: "Daily Faith & Devotionals"
+      description: |
+        Shepherd's Path is your daily companion for growing deeper in faith.
+        Start every morning with a hand-curated devotional, guided prayer, and a
+        verse to carry with you through the day. When you need to dig deeper,
+        our AI-powered Bible study companion meets you right where you are —
+        answering questions, surfacing context, and making Scripture come alive.
+
+        FEATURES
+        • Daily Devotionals – Fresh, faith-filled readings every morning with
+          scripture, reflection, and a closing prayer.
+        • AI Bible Study – Ask any question about a passage, character, or theme
+          and receive thoughtful, contextually rich answers drawn from Scripture.
+        • Community Prayer Wall – Share prayer requests and lift up others in
+          your community, knowing you are never praying alone.
+        • Verse Memorization – Save and review your favourite verses with a
+          clean, distraction-free reader.
+        • Scripture Reminders – Receive a daily push notification with an
+          encouraging verse to anchor your morning.
+
+        PRO MEMBERSHIP
+        Unlock unlimited access to every feature with a Shepherd's Path Pro
+        subscription. Choose monthly or annual billing — cancel anytime from
+        your App Store settings. Subscription auto-renews unless cancelled at
+        least 24 hours before the end of the current period.
+
+        Privacy Policy: https://YOUR_DOMAIN/privacy   # TODO: replace with real URL
+        Terms of Service: https://YOUR_DOMAIN/terms   # TODO: replace with real URL
+      keywords:
+        - Bible
+        - devotional
+        - prayer
+        - faith
+        - Christian
+        - scripture
+        - Bible study
+        - daily devotional
+        - worship
+        - spiritual growth
+      releaseNotes: "Initial release of Shepherd's Path — daily devotionals, AI Bible study, and community prayer."
+      marketingUrl: "https://YOUR_DOMAIN"                   # TODO: replace with real URL
+      supportUrl: "https://YOUR_DOMAIN/support"             # TODO: replace with real URL
+      privacyPolicyUrl: "https://YOUR_DOMAIN/privacy"       # TODO: replace with real URL (required by Apple)
+  categories:
+    primary: LIFESTYLE
+    secondary: BOOKS
+  review:
+    firstName: "First"           # TODO: replace with your name
+    lastName: "Last"             # TODO: replace with your name
+    phoneNumber: "+1-555-000-0000"   # TODO: replace with your phone number
+    email: "YOUR_EMAIL@example.com"  # TODO: replace with your email
+    notes: |
+      This app includes in-app purchases (monthly and annual Pro subscriptions).
+      RevenueCat is used to manage subscriptions. Apple IAP sandbox testing can
+      be performed using an Apple sandbox test account. The subscription products
+      are configured in App Store Connect under In-App Purchases and synced via
+      RevenueCat.
+
+      There is no login wall — all free features are accessible without an account.
+      Pro features unlock after a successful subscription purchase.

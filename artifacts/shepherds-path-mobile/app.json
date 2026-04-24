@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "shepherds-path-mobile",
+    "scheme": "shepherdspath",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,9 +14,35 @@
       "backgroundColor": "#0d0612"
     },
     "ios": {
-      "supportsTablet": false
+      "bundleIdentifier": "com.shepherdspath.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "requireFullScreen": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Shepherd's Path does not use the camera.",
+        "NSMicrophoneUsageDescription": "Shepherd's Path does not use the microphone.",
+        "NSPhotoLibraryUsageDescription": "Shepherd's Path does not access your photo library.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [],
+        "NSPrivacyCollectedDataTypes": [
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePurchaseHistory",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          }
+        ],
+        "NSPrivacyTracking": false
+      }
     },
-    "android": {},
+    "android": {
+      "package": "com.shepherdspath.app"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,11 +54,24 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID_FROM_expo.dev"
+      }
     }
   }
 }

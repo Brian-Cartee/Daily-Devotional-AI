@@ -10,27 +10,43 @@ const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_AP
 
 export const REVENUECAT_ENTITLEMENT_IDENTIFIER = "pro";
 
-function getRevenueCatApiKey() {
-  if (!REVENUECAT_TEST_API_KEY || !REVENUECAT_IOS_API_KEY || !REVENUECAT_ANDROID_API_KEY) {
-    throw new Error("RevenueCat Public API Keys not found");
-  }
+function getRevenueCatApiKey(): string {
+  const isExpoGo = Constants.executionEnvironment === "storeClient";
 
-  if (__DEV__ || Platform.OS === "web" || Constants.executionEnvironment === "storeClient") {
+  if (__DEV__ || isExpoGo || Platform.OS === "web") {
+    if (!REVENUECAT_TEST_API_KEY) {
+      throw new Error("EXPO_PUBLIC_REVENUECAT_TEST_API_KEY is not set");
+    }
     return REVENUECAT_TEST_API_KEY;
   }
 
-  if (Platform.OS === "ios") return REVENUECAT_IOS_API_KEY;
-  if (Platform.OS === "android") return REVENUECAT_ANDROID_API_KEY;
+  if (Platform.OS === "ios") {
+    if (!REVENUECAT_IOS_API_KEY) {
+      throw new Error("EXPO_PUBLIC_REVENUECAT_IOS_API_KEY is not set");
+    }
+    return REVENUECAT_IOS_API_KEY;
+  }
 
+  if (Platform.OS === "android") {
+    if (!REVENUECAT_ANDROID_API_KEY) {
+      throw new Error("EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY is not set");
+    }
+    return REVENUECAT_ANDROID_API_KEY;
+  }
+
+  if (!REVENUECAT_TEST_API_KEY) {
+    throw new Error("EXPO_PUBLIC_REVENUECAT_TEST_API_KEY is not set");
+  }
   return REVENUECAT_TEST_API_KEY;
 }
 
 export function initializeRevenueCat() {
   const apiKey = getRevenueCatApiKey();
-  if (!apiKey) throw new Error("RevenueCat Public API Key not found");
-  Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+  Purchases.setLogLevel(__DEV__ ? Purchases.LOG_LEVEL.DEBUG : Purchases.LOG_LEVEL.ERROR);
   Purchases.configure({ apiKey });
-  console.log("Configured RevenueCat");
+  if (__DEV__) {
+    console.log("[RevenueCat] Configured with key for platform:", Platform.OS);
+  }
 }
 
 function useSubscriptionContext() {

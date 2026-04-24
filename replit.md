@@ -8,6 +8,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 - **Shepherd's Path Web App** — `artifacts/shepherds-path/` (React + Vite, preview at `/`)
 - **API Server** — `artifacts/api-server/` (Express 5, preview at `/api`)
+- **Shepherd's Path Mobile** — `artifacts/shepherds-path-mobile/` (Expo / React Native, bundle ID: `com.shepherdspath.app`)
 
 ## Stack
 
@@ -52,11 +53,21 @@ lib/
 - Verse art cache: `server/verse-art-cache/` at workspace root
 - Growth plan PDF: `scripts/shepherds-path-growth-plan.pdf` at workspace root
 
+## Mobile App (iOS)
+
+- **Bundle ID**: `com.shepherdspath.app`
+- **EAS build profiles**: development (simulator), preview (device), production (App Store)
+- **RevenueCat**: platform key selected at runtime — test key in dev/Expo Go, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` in production iOS builds
+- **Store metadata**: `artifacts/shepherds-path-mobile/store.config.yaml` (EAS Metadata format)
+- **Submission config**: `artifacts/shepherds-path-mobile/eas.json` — fill in `appleId`, `ascAppId`, `appleTeamId`, and `extra.eas.projectId` in `app.json` before first build
+- **Privacy manifest**: included in `app.json` under `ios.privacyManifests` (required for iOS 17+)
+
 ## External Services
 
 - OpenAI (AI responses + TTS)
 - Google Sheets (daily verse sync)
 - Stripe (Pro subscriptions)
+- RevenueCat (iOS in-app purchases)
 - Resend (email)
 - Twilio (SMS)
 - Web Push / VAPID (push notifications)
