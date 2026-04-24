@@ -38,6 +38,18 @@ import { DailySermonCard } from "@/components/DailySermonCard";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
 import { ScriptureContext } from "@/components/ScriptureContext";
 
+/** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
+const openLink = (url: string) => {
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
 function StepLabel({ number, label }: { number: number; label: string }) {
   return (
     <div className="flex items-center gap-3 mb-6">
@@ -637,41 +649,40 @@ export default function Devotional() {
 
   const shareOnX = () => {
     if (!verse) return;
-    // X intent: keep text short, URL goes as separate param (creates link preview card)
     const tweetText = encodeURIComponent(
       `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏`
     );
-    window.open(`https://x.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(APP_URL)}`, "_blank", "noopener,width=600,height=450");
+    openLink(`https://x.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(APP_URL)}`);
   };
 
   const shareOnFacebook = () => {
-    // Facebook sharer: u = page to share (OG tags drive the preview), quote = pre-fill text
     const quote = encodeURIComponent(
       `📖 ${verse?.reference ?? ""}\n\n"${verse?.text ?? ""}"\n\nReflect & pray with me at Shepherd's Path 🙏`
     );
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(APP_URL)}&quote=${quote}`, "_blank", "noopener,width=600,height=450");
+    openLink(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(APP_URL)}&quote=${quote}`);
   };
 
   const shareOnWhatsApp = () => {
     const text = encodeURIComponent(buildShareText());
-    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener");
+    openLink(`https://wa.me/?text=${text}`);
   };
 
-  const shareOnInstagram = async () => {
+  const shareOnInstagram = () => {
+    // Open Instagram first (synchronous — keeps the user-gesture token alive)
+    openLink("https://www.instagram.com");
+    // Clipboard write is async but doesn't block the navigation above
     const text = buildShareText();
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({ description: "Copied! Open Instagram and paste it in your story or post." });
-    } catch {
+    navigator.clipboard?.writeText(text).then(() => {
+      toast({ description: "Caption copied — paste it into your Instagram story or post." });
+    }).catch(() => {
       toast({ description: "Open Instagram and share today's verse.", variant: "default" });
-    }
-    setTimeout(() => window.open("https://www.instagram.com", "_blank", "noopener"), 400);
+    });
   };
 
   const shareOnPinterest = () => {
     if (!verse) return;
     const description = encodeURIComponent(`📖 ${verse.reference} — "${verse.text}" — Reflect & pray at Shepherd's Path 🙏`);
-    window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(APP_URL)}&description=${description}`, "_blank", "noopener,width=750,height=550");
+    openLink(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(APP_URL)}&description=${description}`);
   };
 
   const shareOnTelegram = () => {
@@ -679,7 +690,7 @@ export default function Devotional() {
     const msg = encodeURIComponent(
       `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏`
     );
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${msg}`, "_blank", "noopener");
+    openLink(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${msg}`);
   };
 
   if (isVerseLoading) {

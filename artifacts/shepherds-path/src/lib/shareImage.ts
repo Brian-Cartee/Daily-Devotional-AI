@@ -628,14 +628,18 @@ export async function createShareImage(
     36;
 
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 920, fontSize * 1.52);
-  const estimatedFinalY = Math.min(210 + verseH, S - 230);
+  const lineH = fontSize * 1.52;
+  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 920, lineH);
+  // measureWrapHeight returns nLines*lineH; wrapText returns y of the LAST line
+  // which is startY + (nLines-1)*lineH — so subtract one lineH to avoid over-estimating
+  const estimatedFinalY = Math.min(210 + verseH - lineH, S - 230);
 
   // ── Frosted glass panel behind verse + reference ────────────────────────
+  // alpha 0.28 = light tint: photo shows through, text stays readable
   const panelPad = 36;
   const panelTop = 166;
-  const panelBottom = estimatedFinalY + 130;
-  drawFrostedPanel(ctx, panelPad, panelTop, S - panelPad * 2, panelBottom - panelTop, 22);
+  const panelBottom = estimatedFinalY + 120;
+  drawFrostedPanel(ctx, panelPad, panelTop, S - panelPad * 2, panelBottom - panelTop, 22, 0.28);
 
   // ── Large decorative opening quotation mark (editorial depth) ──────────
   ctx.save();

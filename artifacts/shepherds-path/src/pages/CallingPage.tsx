@@ -7,6 +7,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage, PHOTO_POOL } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
+import { useToast } from "@/hooks/use-toast";
+
+/** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
+const openLink = (url: string) => {
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
 
 const APP_URL = "https://www.shepherdspathai.com";
 const FALLBACK_IMG = "/daily-art/natural-sunset.jpg";
@@ -91,6 +104,7 @@ interface PreviewState {
 }
 
 export default function CallingPage() {
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const [loading, setLoading] = useState<LoadingKey | null>(null);
   const [sharingScripture, setSharingScripture] = useState(false);
@@ -225,24 +239,29 @@ export default function CallingPage() {
     const text = preview.shareText;
     const encodedText = encodeURIComponent(text);
     const encodedUrl = encodeURIComponent(APP_URL);
+    // openLink uses anchor-click navigation — more reliable than window.open on iOS Safari
     switch (platform) {
       case "x":
-        window.open(`https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`, "_blank", "noopener,width=600,height=450");
+        openLink(`https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`);
         break;
       case "facebook":
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`, "_blank", "noopener,width=600,height=450");
+        openLink(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`);
         break;
       case "whatsapp":
-        window.open(`https://wa.me/?text=${encodedText}`, "_blank", "noopener");
+        openLink(`https://wa.me/?text=${encodedText}`);
         break;
       case "instagram":
-        navigator.clipboard?.writeText(text).catch(() => {});
+        // Open Instagram first (synchronous) before any async clipboard work
+        openLink("https://www.instagram.com");
+        navigator.clipboard?.writeText(text).then(() => {
+          toast({ description: "Caption copied — paste it into your Instagram story or post." });
+        }).catch(() => {});
         break;
       case "telegram":
-        window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, "_blank", "noopener");
+        openLink(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`);
         break;
       case "pinterest":
-        window.open(`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedText}`, "_blank", "noopener");
+        openLink(`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedText}`);
         break;
     }
     closePreview();
