@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { BackButton } from "@/components/BackButton";
-import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw } from "lucide-react";
+import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
@@ -324,43 +324,7 @@ export default function PricingPage() {
           </div>
 
           <div className="px-6 pb-6 space-y-2">
-            {isIOS() ? (
-              <>
-                <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3 mb-1">
-                  <Smartphone className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-muted-foreground leading-relaxed">
-                    To subscribe, visit{" "}
-                    <a
-                      href="https://shepherdspathai.com/pricing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-blue-600 dark:text-blue-400 underline"
-                    >
-                      shepherdspathai.com/pricing
-                    </a>
-                    {" "}in Safari, then sign back in here to unlock Pro.
-                  </p>
-                </div>
-                <Button
-                  data-testid="btn-pricing-pro-cta-ios"
-                  className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
-                  onClick={() => window.open("https://shepherdspathai.com/pricing", "_blank")}
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Subscribe on the Web
-                </Button>
-                <Button
-                  data-testid="btn-pricing-restore-ios"
-                  variant="ghost"
-                  className="w-full rounded-2xl text-sm text-muted-foreground"
-                  onClick={() => window.location.href = "/restore"}
-                >
-                  <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                  Restore Purchase
-                </Button>
-              </>
-            ) : (
-              <>
+            <>
                 <Button
                   data-testid="btn-pricing-pro-cta"
                   className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
@@ -407,7 +371,6 @@ export default function PricingPage() {
                   </span>
                 </div>
               </>
-            )}
           </div>
         </motion.div>
       </div>
