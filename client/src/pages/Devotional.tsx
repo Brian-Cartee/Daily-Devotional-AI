@@ -542,12 +542,21 @@ export default function Devotional() {
     } catch { }
   };
 
-  const handleDownloadImage = () => {
-    if (!sharePreviewUrl) return;
-    const a = document.createElement("a");
-    a.href = sharePreviewUrl;
-    a.download = "shepherds-path-devotional.png";
-    a.click();
+  const handleDownloadImage = async () => {
+    if (!sharePreviewBlob) return;
+    try {
+      const file = new File([sharePreviewBlob], "shepherds-path-devotional.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${verse?.reference ?? "Today's Verse"} — Shepherd's Path` });
+        return;
+      }
+    } catch {}
+    if (sharePreviewUrl) {
+      const a = document.createElement("a");
+      a.href = sharePreviewUrl;
+      a.download = "shepherds-path-devotional.png";
+      a.click();
+    }
   };
 
   const closeSharePreview = () => {
@@ -1632,28 +1641,38 @@ export default function Devotional() {
                   onClick={() => handleSwitchShareFormat("square")}
                   disabled={regeneratingPreview}
                   data-testid="button-devotional-format-square"
-                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: sharePreviewFormat === "square" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
                     border: sharePreviewFormat === "square" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
                     color: sharePreviewFormat === "square" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
                   }}
                 >
-                  □ Square
+                  <div className="w-[14px] h-[14px] rounded-[2px] border-2 flex-shrink-0" style={{ borderColor: "currentColor" }} />
+                  <div className="text-left">
+                    <div className="text-[12px] font-semibold leading-tight">Square</div>
+                    <div className="text-[10px] opacity-60 leading-tight">Instagram · Feed</div>
+                  </div>
                 </button>
                 <button
                   onClick={() => handleSwitchShareFormat("story")}
                   disabled={regeneratingPreview}
                   data-testid="button-devotional-format-story"
-                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: sharePreviewFormat === "story" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
                     border: sharePreviewFormat === "story" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
                     color: sharePreviewFormat === "story" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
                   }}
                 >
-                  {regeneratingPreview ? <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" /> : null}
-                  ↕ Story
+                  {regeneratingPreview
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                    : <div className="w-[10px] h-[16px] rounded-[2px] border-2 flex-shrink-0" style={{ borderColor: "currentColor" }} />
+                  }
+                  <div className="text-left">
+                    <div className="text-[12px] font-semibold leading-tight">Story</div>
+                    <div className="text-[10px] opacity-60 leading-tight">Reels · TikTok</div>
+                  </div>
                 </button>
               </div>
 
@@ -1693,34 +1712,35 @@ export default function Devotional() {
 
               {/* Social share row */}
               <div className="px-4 pb-5 pt-1 border-t border-border/20">
-                <p className="text-[11px] text-foreground/40 font-medium tracking-wide uppercase text-center mb-3">Or share to</p>
+                <p className="text-[11px] text-foreground/40 font-medium tracking-wide uppercase text-center mb-3">Share link to</p>
                 <div className="flex items-center justify-center gap-2.5">
-                  <button data-testid="share-preview-x" onClick={() => { shareOnX(); closeSharePreview(); }} title="Share on X"
+                  <button data-testid="share-preview-x" onClick={shareOnX} title="Share on X"
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
                     <SiX className="w-[16px] h-[16px]" />
                   </button>
-                  <button data-testid="share-preview-facebook" onClick={() => { shareOnFacebook(); closeSharePreview(); }} title="Share on Facebook"
+                  <button data-testid="share-preview-facebook" onClick={shareOnFacebook} title="Share on Facebook"
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1877F2] text-white active:scale-95 transition-transform shadow-md">
                     <SiFacebook className="w-[16px] h-[16px]" />
                   </button>
-                  <button data-testid="share-preview-whatsapp" onClick={() => { shareOnWhatsApp(); closeSharePreview(); }} title="Share on WhatsApp"
+                  <button data-testid="share-preview-whatsapp" onClick={shareOnWhatsApp} title="Share on WhatsApp"
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-[#25D366] text-white active:scale-95 transition-transform shadow-md">
                     <SiWhatsapp className="w-[16px] h-[16px]" />
                   </button>
-                  <button data-testid="share-preview-instagram" onClick={() => { shareOnInstagram(); closeSharePreview(); }} title="Copy for Instagram"
+                  <button data-testid="share-preview-instagram" onClick={shareOnInstagram} title="Copy for Instagram"
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform shadow-md"
                     style={{ background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)" }}>
                     <SiInstagram className="w-[16px] h-[16px]" />
                   </button>
-                  <button data-testid="share-preview-telegram" onClick={() => { shareOnTelegram(); closeSharePreview(); }} title="Share on Telegram"
+                  <button data-testid="share-preview-telegram" onClick={shareOnTelegram} title="Share on Telegram"
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-[#2AABEE] text-white active:scale-95 transition-transform shadow-md">
                     <SiTelegram className="w-[16px] h-[16px]" />
                   </button>
-                  <button data-testid="share-preview-pinterest" onClick={() => { shareOnPinterest(); closeSharePreview(); }} title="Pin to Pinterest"
+                  <button data-testid="share-preview-pinterest" onClick={shareOnPinterest} title="Pin to Pinterest"
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-[#E60023] text-white active:scale-95 transition-transform shadow-md">
                     <SiPinterest className="w-[16px] h-[16px]" />
                   </button>
                 </div>
+                <p className="text-[10px] text-foreground/30 text-center mt-2.5">These share the verse link. Use "Share image" above to share the card.</p>
               </div>
             </motion.div>
           </>

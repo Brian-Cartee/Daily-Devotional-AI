@@ -696,11 +696,11 @@ export async function createShareImage(
   ctx.shadowColor = "rgba(0,0,0,0.5)";
   ctx.shadowBlur = 8;
 
-  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "bold 26px 'Georgia', serif";
   ctx.fillText("Start your own daily devotional →", S / 2, footerY + 38);
 
-  ctx.fillStyle = "rgba(255,255,255,0.40)";
+  ctx.fillStyle = "rgba(255,255,255,0.65)";
   ctx.font = "20px 'Georgia', serif";
   ctx.fillText("Shepherd's Path  ·  shepherdspathai.com", S / 2, footerY + 66);
   ctx.shadowBlur = 0;
@@ -763,9 +763,9 @@ async function drawLogoHeader(
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10;
   ctx.fillText("Shepherd's Path", TEXT_X, TEXT_Y_NAME);
-  ctx.fillStyle = "rgba(255,255,255,0.52)";
-  ctx.font = "17px 'Georgia', serif";
-  ctx.shadowBlur = 6;
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.font = "18px 'Georgia', serif";
+  ctx.shadowBlur = 8;
   ctx.fillText("Open your Bible. We'll open the conversation.", TEXT_X, TEXT_Y_TAG);
   ctx.shadowBlur = 0;
   horizontalGlowLine(ctx, ICON_Y + ICON_SIZE + 22, accentColor);
@@ -904,12 +904,12 @@ export async function createPurpleShareImage(
   horizontalGlowLine(ctx, stripY + 4, "rgba(190,130,255,0.30)");
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
   ctx.font = "bold 27px 'Georgia', serif";
   ctx.shadowColor = "rgba(0,0,0,0.4)";
   ctx.shadowBlur = 8;
   ctx.fillText("Start your own daily devotional \u2192", S / 2, stripY + 42);
-  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.fillStyle = "rgba(255,255,255,0.68)";
   ctx.font = "20px 'Georgia', serif";
   ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", S / 2, stripY + 72);
   ctx.shadowBlur = 0;
@@ -961,9 +961,9 @@ async function drawCenteredLogoHeader(
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10;
   ctx.fillText("Shepherd's Path", W / 2, ICON_Y + ICON_SIZE + 34);
-  ctx.fillStyle = "rgba(255,255,255,0.50)";
-  ctx.font = "19px 'Georgia', serif";
-  ctx.shadowBlur = 6;
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.font = "20px 'Georgia', serif";
+  ctx.shadowBlur = 8;
   ctx.fillText("Open your Bible. We'll open the conversation.", W / 2, ICON_Y + ICON_SIZE + 60);
   ctx.shadowBlur = 0;
   horizontalGlowLine(ctx, ICON_Y + ICON_SIZE + 76, accentColor, W);
@@ -1080,10 +1080,10 @@ export async function createStoryShareImage(
   horizontalGlowLine(ctx, footerY, "rgba(255,255,255,0.14)", W);
   ctx.textAlign = "center";
   ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 8;
-  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
   ctx.font = "bold 30px 'Georgia', serif";
   ctx.fillText("Start your own daily devotional \u2192", W / 2, footerY + 46);
-  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.fillStyle = "rgba(255,255,255,0.68)";
   ctx.font = "22px 'Georgia', serif";
   ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", W / 2, footerY + 86);
   ctx.shadowBlur = 0;
@@ -1191,11 +1191,11 @@ export async function createPurpleStoryImage(
   ctx.fillStyle = stripGrad; ctx.fillRect(0, stripY, W, H - stripY);
   horizontalGlowLine(ctx, stripY + 4, "rgba(190,130,255,0.32)", W);
   ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
   ctx.font = "bold 30px 'Georgia', serif";
   ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 8;
   ctx.fillText("Start your own daily devotional \u2192", W / 2, stripY + 46);
-  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.fillStyle = "rgba(255,255,255,0.68)";
   ctx.font = "22px 'Georgia', serif";
   ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", W / 2, stripY + 84);
   ctx.shadowBlur = 0;
