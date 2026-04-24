@@ -221,16 +221,13 @@ export function FloatingAskAI() {
           data-testid="button-floating-ask-ai"
           onClick={() => setIsOpen(true)}
           aria-label="Ask Path AI"
-          className="w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-          style={{
-            background: "#ffffff",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.18)",
-          }}
+          className="flex items-center justify-center active:scale-95 transition-transform bg-transparent border-0 p-0"
         >
           <img
             src="/sp-icon.png"
             alt="Path AI"
-            className="w-10 h-10 rounded-xl"
+            className="w-14 h-14 rounded-2xl"
+            style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.35))" }}
           />
         </button>
       </div>
