@@ -1040,9 +1040,13 @@ export async function createStoryShareImage(
     short.length < 140 ? 56 :
     short.length < 190 ? 48 :
     42;
+  const lineHStory = fontSize * 1.52;
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, fontSize * 1.52);
-  const totalContentH = verseH + 190;
+  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, lineHStory);
+  // +24 to top offset vs old 68 → 92 gives ~34px clearance above tallest ascenders (72px font)
+  // totalContentH expanded by same 24 to keep panel bottom balanced
+  const STORY_TOP_OFFSET = 92;
+  const totalContentH = verseH + 214;
 
   const minPanelTop = 270;
   const maxPanelTop = H - totalContentH - 200;
@@ -1057,12 +1061,12 @@ export async function createStoryShareImage(
   ctx.fillStyle = accentColor;
   ctx.font = `italic 280px 'Georgia', serif`;
   ctx.textAlign = "left";
-  ctx.fillText("\u201C", panelPad + 22, panelTop + 230);
+  ctx.fillText("\u201C", panelPad + 22, panelTop + 250);
   ctx.restore();
 
   await drawCenteredLogoHeader(ctx, W, accentColor);
 
-  const verseStartY = panelTop + 68;
+  const verseStartY = panelTop + STORY_TOP_OFFSET;
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
@@ -1152,9 +1156,13 @@ export async function createPurpleStoryImage(
     short.length < 140 ? 56 :
     short.length < 190 ? 48 :
     42;
+  const lineHPStory = fontSize * 1.52;
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, fontSize * 1.52);
-  const totalContentH = verseH + 190;
+  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, lineHPStory);
+  // +24 to top offset vs old 68 → 92 gives ~34px clearance above tallest ascenders (72px font)
+  // totalContentH expanded by same 24 to keep panel bottom balanced
+  const STORY_TOP_OFFSET_P = 92;
+  const totalContentH = verseH + 214;
 
   const minPanelTop = 270;
   const maxPanelTop = H - totalContentH - 200;
@@ -1169,12 +1177,12 @@ export async function createPurpleStoryImage(
   ctx.fillStyle = "rgba(190,130,255,1)";
   ctx.font = `italic 280px 'Georgia', serif`;
   ctx.textAlign = "left";
-  ctx.fillText("\u201C", panelPad + 18, panelTop + 230);
+  ctx.fillText("\u201C", panelPad + 18, panelTop + 250);
   ctx.restore();
 
   await drawCenteredLogoHeader(ctx, W, accentColor);
 
-  const verseStartY = panelTop + 68;
+  const verseStartY = panelTop + STORY_TOP_OFFSET_P;
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
