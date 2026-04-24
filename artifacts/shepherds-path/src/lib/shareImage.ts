@@ -632,13 +632,16 @@ export async function createShareImage(
   const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 920, lineH);
   // measureWrapHeight returns nLines*lineH; wrapText returns y of the LAST line
   // which is startY + (nLines-1)*lineH — so subtract one lineH to avoid over-estimating
-  const estimatedFinalY = Math.min(210 + verseH - lineH, S - 230);
+  // verseStartY = baseline of first verse line
+  // panelTop must sit high enough that ascenders (≈ fontSize*0.8 above baseline) have clearance
+  const VERSE_START_Y = 232;
+  const estimatedFinalY = Math.min(VERSE_START_Y + verseH - lineH, S - 230);
 
   // ── Frosted glass panel behind verse + reference ────────────────────────
-  // alpha 0.28 = light tint: photo shows through, text stays readable
+  // panelTop extended up to give ~28px clearance above the tallest ascenders
   const panelPad = 36;
-  const panelTop = 166;
-  const panelBottom = estimatedFinalY + 120;
+  const panelTop = 148;
+  const panelBottom = estimatedFinalY + 124;
   drawFrostedPanel(ctx, panelPad, panelTop, S - panelPad * 2, panelBottom - panelTop, 22, 0.28);
 
   // ── Large decorative opening quotation mark (editorial depth) ──────────
@@ -647,7 +650,7 @@ export async function createShareImage(
   ctx.fillStyle = accentColor;
   ctx.font = `italic 240px 'Georgia', serif`;
   ctx.textAlign = "left";
-  ctx.fillText("\u201C", panelPad + 24, panelTop + 190);
+  ctx.fillText("\u201C", panelPad + 24, panelTop + 200);
   ctx.restore();
 
   // ── Brand header — current cross logo + name ─────────────
@@ -664,7 +667,7 @@ export async function createShareImage(
     ctx,
     `\u201C${short}\u201D`,
     S / 2,
-    210,
+    VERSE_START_Y,
     920,
     fontSize * 1.52
   );
@@ -855,12 +858,14 @@ export async function createPurpleShareImage(
     37;
 
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  const verseHP = measureWrapHeight(ctx, `\u201C${short}\u201D`, 930, fontSize * 1.52);
-  const estimatedFinalYP = Math.min(220 + verseHP, S - 240);
+  const lineHP = fontSize * 1.52;
+  const verseHP = measureWrapHeight(ctx, `\u201C${short}\u201D`, 930, lineHP);
+  const VERSE_START_YP = 232;
+  const estimatedFinalYP = Math.min(VERSE_START_YP + verseHP - lineHP, S - 240);
 
   // ── Frosted panel behind verse + reference ───────────────────────────────
   const panelPadP = 40;
-  const panelTopP = 166;
+  const panelTopP = 148;
   const panelBottomP = estimatedFinalYP + 128;
   drawFrostedPanel(ctx, panelPadP, panelTopP, S - panelPadP * 2, panelBottomP - panelTopP, 22, 0.28);
 
@@ -870,7 +875,7 @@ export async function createPurpleShareImage(
   ctx.fillStyle = "rgba(190,130,255,1)";
   ctx.font = `italic 240px 'Georgia', serif`;
   ctx.textAlign = "left";
-  ctx.fillText("\u201C", panelPadP + 20, panelTopP + 195);
+  ctx.fillText("\u201C", panelPadP + 20, panelTopP + 210);
   ctx.restore();
 
   ctx.textAlign = "center";
@@ -879,7 +884,7 @@ export async function createPurpleShareImage(
   ctx.shadowColor = "rgba(100,0,140,0.65)";
   ctx.shadowBlur = 30;
 
-  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, 220, 930, fontSize * 1.52);
+  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, VERSE_START_YP, 930, lineHP);
   ctx.shadowBlur = 0;
 
   const MAX_VERSE_Y = S - 240;
