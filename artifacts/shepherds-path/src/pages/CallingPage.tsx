@@ -5,7 +5,7 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage } from "@/lib/shareImage";
+import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage, PHOTO_POOL } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 
 const APP_URL = "https://www.shepherdspathai.com";
@@ -126,6 +126,21 @@ export default function CallingPage() {
       .catch(() => {});
   }, []);
 
+  // Lock body scroll while share preview sheet is open
+  useEffect(() => {
+    if (preview) {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, [preview]);
+
   const showPreview = (blob: Blob, title: string, shareText: string, verseText: string, reference: string, cardType: "purple" | "landscape") => {
     const url = URL.createObjectURL(blob);
     if (preview) URL.revokeObjectURL(preview.url);
@@ -170,9 +185,12 @@ export default function CallingPage() {
           ? await createPurpleStoryImage(preview.verseText, preview.reference)
           : await createPurpleShareImage(preview.verseText, preview.reference);
       } else {
+        const others = PHOTO_POOL.filter(u => u !== artUrl);
+        const pool = others.length > 0 ? others : PHOTO_POOL;
+        const randomUrl = pool[Math.floor(Math.random() * pool.length)];
         blob = previewFormat === "story"
-          ? await createStoryShareImage(preview.verseText, preview.reference, artUrl)
-          : await createShareImage(preview.verseText, preview.reference, artUrl);
+          ? await createStoryShareImage(preview.verseText, preview.reference, randomUrl)
+          : await createShareImage(preview.verseText, preview.reference, randomUrl);
       }
       const url = URL.createObjectURL(blob);
       URL.revokeObjectURL(preview.url);
@@ -792,24 +810,30 @@ export default function CallingPage() {
       <AnimatePresence>
         {preview && (
           <>
+            {/* Backdrop — lower z than sheet */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/75"
+              className="fixed inset-0 bg-black/75"
+              style={{ zIndex: 199 }}
               onClick={closePreview}
+              onTouchMove={e => e.stopPropagation()}
             />
+            {/* Bottom sheet — higher z, flex-col, max-height, internal scroll */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0d0a1a] rounded-t-2xl shadow-2xl overflow-hidden"
-              style={{ maxWidth: 480, margin: "0 auto" }}
+              className="fixed bottom-0 left-0 right-0 bg-[#0d0a1a] rounded-t-2xl shadow-2xl flex flex-col"
+              style={{ zIndex: 200, maxWidth: 480, margin: "0 auto", maxHeight: "92dvh" }}
+              onClick={e => e.stopPropagation()}
+              onTouchMove={e => e.stopPropagation()}
             >
-              {/* Handle + header */}
-              <div className="relative flex items-center justify-between px-5 pt-4 pb-3">
+              {/* Handle + header — always visible at top */}
+              <div className="relative flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
                 <div className="w-10 h-1 rounded-full bg-white/15 absolute left-1/2 -translate-x-1/2 top-2.5" />
                 <p className="text-[12px] font-semibold uppercase tracking-widest text-white/35 mt-1">Preview</p>
                 <button
@@ -820,6 +844,8 @@ export default function CallingPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              {/* Scrollable content */}
+              <div className="overflow-y-auto flex-1 overscroll-contain">
 
               {/* Format toggle */}
               <div className="px-4 pb-1 flex gap-2">
@@ -860,16 +886,6 @@ export default function CallingPage() {
                     <div className="text-[10px] opacity-60 leading-tight">Reels · TikTok</div>
                   </div>
                 </button>
-              </div>
-
-              {/* Discovery hint */}
-              <div className="px-4 pb-3 flex items-center justify-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-violet-400/70" />
-                {isProVerifiedLocally() ? (
-                  <p className="text-[11px] text-foreground/45">Tap <RefreshCw className="w-2.5 h-2.5 inline mb-0.5" /> to discover a new scene any time</p>
-                ) : (
-                  <p className="text-[11px] text-foreground/45">Browse any scene freely &mdash; <span className="text-violet-400/80 font-medium">Pro</span> unlocks sharing</p>
-                )}
               </div>
 
               {/* Image */}
@@ -955,6 +971,7 @@ export default function CallingPage() {
                   </button>
                 </div>
               </div>
+              </div>{/* end scroll wrapper */}
             </motion.div>
           </>
         )}

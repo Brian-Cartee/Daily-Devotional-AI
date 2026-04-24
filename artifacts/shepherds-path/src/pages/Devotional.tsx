@@ -4,7 +4,7 @@ import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download, RefreshCw, Sparkles, Lock } from "lucide-react";
-import { createShareImage, createStoryShareImage, getDailyVersePhoto } from "@/lib/shareImage";
+import { createShareImage, createStoryShareImage, getDailyVersePhoto, PHOTO_POOL } from "@/lib/shareImage";
 import { isProVerifiedLocally, activateProCode } from "@/lib/proStatus";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -250,6 +250,21 @@ export default function Devotional() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
+
+  // Lock body scroll while share preview sheet is open
+  useEffect(() => {
+    if (sharePreviewUrl) {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, [sharePreviewUrl]);
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
 
@@ -596,9 +611,15 @@ export default function Devotional() {
     if (!verse || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
+      const currentBg = sharePreviewUrl
+        ? null
+        : verseArtUrl;
+      const others = PHOTO_POOL.filter(u => u !== verseArtUrl && u !== currentBg);
+      const pool = others.length > 0 ? others : PHOTO_POOL;
+      const randomUrl = pool[Math.floor(Math.random() * pool.length)];
       const blob = sharePreviewFormat === "story"
-        ? await createStoryShareImage(verse.text, verse.reference, verseArtUrl)
-        : await createShareImage(verse.text, verse.reference, verseArtUrl);
+        ? await createStoryShareImage(verse.text, verse.reference, randomUrl)
+        : await createShareImage(verse.text, verse.reference, randomUrl);
       const url = URL.createObjectURL(blob);
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
       setSharePreviewBlob(blob);
@@ -1714,26 +1735,30 @@ export default function Devotional() {
       <AnimatePresence>
         {sharePreviewUrl && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop — lower z than sheet */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/75"
+              className="fixed inset-0 bg-black/75"
+              style={{ zIndex: 199 }}
               onClick={closeSharePreview}
+              onTouchMove={e => e.stopPropagation()}
             />
-            {/* Bottom sheet */}
+            {/* Bottom sheet — higher z than backdrop */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl shadow-2xl overflow-hidden"
-              style={{ maxWidth: 480, margin: "0 auto" }}
+              className="fixed bottom-0 left-0 right-0 bg-background rounded-t-2xl shadow-2xl flex flex-col"
+              style={{ zIndex: 200, maxWidth: 480, margin: "0 auto", maxHeight: "92dvh" }}
+              onClick={e => e.stopPropagation()}
+              onTouchMove={e => e.stopPropagation()}
             >
-              {/* Handle + header */}
-              <div className="flex items-center justify-between px-5 pt-4 pb-3">
+              {/* Handle + header — sticky so X is always reachable */}
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0 relative">
                 <div className="w-10 h-1 rounded-full bg-border/60 absolute left-1/2 -translate-x-1/2 top-2.5" />
                 <p className="text-[12px] font-semibold uppercase tracking-widest text-foreground/50 mt-1">Preview</p>
                 <button
@@ -1744,6 +1769,8 @@ export default function Devotional() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              {/* Scrollable content area */}
+              <div className="overflow-y-auto flex-1 overscroll-contain">
 
               {/* Format toggle */}
               <div className="px-4 pb-1 flex gap-2">
@@ -1784,16 +1811,6 @@ export default function Devotional() {
                     <div className="text-[10px] opacity-60 leading-tight">Reels · TikTok</div>
                   </div>
                 </button>
-              </div>
-
-              {/* Discovery hint */}
-              <div className="px-4 pb-3 flex items-center justify-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-violet-400/70" />
-                {isProVerifiedLocally() ? (
-                  <p className="text-[11px] text-foreground/45">Tap <RefreshCw className="w-2.5 h-2.5 inline mb-0.5" /> to discover a new scene any time</p>
-                ) : (
-                  <p className="text-[11px] text-foreground/45">Browse any scene freely &mdash; <span className="text-violet-400/80 font-medium">Pro</span> unlocks sharing</p>
-                )}
               </div>
 
               {/* Image preview */}
@@ -1878,6 +1895,7 @@ export default function Devotional() {
                 </div>
                 <p className="text-[10px] text-foreground/30 text-center mt-2.5">These share the verse link. Use "Share image" above to share the card.</p>
               </div>
+              </div>{/* end scroll wrapper */}
             </motion.div>
           </>
         )}

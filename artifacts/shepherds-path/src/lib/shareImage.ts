@@ -2,7 +2,7 @@ import { getRelationshipAge } from "./relationship";
 
 // Curated pool of spiritual landscape fallback photos — used when AI art is unavailable.
 // All photos must be nature / light / sky — no people, babies, or pets.
-const PHOTO_POOL = [
+export const PHOTO_POOL = [
   // Golden sunrise / dawn light
   "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop",
   // Cathedral forest — God-rays through ancient trees
