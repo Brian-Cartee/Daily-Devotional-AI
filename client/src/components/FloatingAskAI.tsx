@@ -223,8 +223,8 @@ export function FloatingAskAI() {
           aria-label="Ask Path AI"
           className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform"
           style={{
-            background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.75))",
-            boxShadow: "0 4px 16px rgba(109,40,217,0.55), 0 2px 6px rgba(0,0,0,0.35)",
+            background: "#ffffff",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.15)",
           }}
         >
           <img
