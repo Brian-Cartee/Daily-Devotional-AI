@@ -228,9 +228,9 @@ export function FloatingAskAI() {
           }}
         >
           <img
-            src="/sp-icon-nobg.png"
+            src="/sp-icon.png"
             alt="Path AI"
-            className="w-9 h-9"
+            className="w-10 h-10 rounded-xl"
           />
         </button>
       </div>
