@@ -225,13 +225,12 @@ export function FloatingAskAI() {
           style={{
             background: "#ffffff",
             boxShadow: "0 4px 16px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.18)",
-            padding: "4px",
           }}
         >
           <img
-            src="/sp-icon.png"
+            src="/sp-icon-nobg.png"
             alt="Path AI"
-            className="w-full h-full rounded-[9px]"
+            className="w-9 h-9"
           />
         </button>
       </div>
