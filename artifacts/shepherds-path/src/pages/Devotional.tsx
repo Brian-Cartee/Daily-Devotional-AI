@@ -255,14 +255,11 @@ export default function Devotional() {
   useEffect(() => {
     if (sharePreviewUrl) {
       document.body.style.overflow = "hidden";
-      document.body.style.touchAction = "none";
     } else {
       document.body.style.overflow = "";
-      document.body.style.touchAction = "";
     }
     return () => {
       document.body.style.overflow = "";
-      document.body.style.touchAction = "";
     };
   }, [sharePreviewUrl]);
   const queryClient = useQueryClient();
@@ -580,7 +577,10 @@ export default function Devotional() {
       const a = document.createElement("a");
       a.href = sharePreviewUrl;
       a.download = "shepherds-path-devotional.png";
+      a.style.display = "none";
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
     }
   };
 
@@ -1770,7 +1770,7 @@ export default function Devotional() {
                 </button>
               </div>
               {/* Scrollable content area */}
-              <div className="overflow-y-auto flex-1 overscroll-contain">
+              <div className="overflow-y-auto flex-1 overscroll-contain" style={{ touchAction: "pan-y" }}>
 
               {/* Format toggle */}
               <div className="px-4 pb-1 flex gap-2">

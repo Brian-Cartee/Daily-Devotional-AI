@@ -130,14 +130,11 @@ export default function CallingPage() {
   useEffect(() => {
     if (preview) {
       document.body.style.overflow = "hidden";
-      document.body.style.touchAction = "none";
     } else {
       document.body.style.overflow = "";
-      document.body.style.touchAction = "";
     }
     return () => {
       document.body.style.overflow = "";
-      document.body.style.touchAction = "";
     };
   }, [preview]);
 
@@ -217,7 +214,10 @@ export default function CallingPage() {
     const a = document.createElement("a");
     a.href = preview.url;
     a.download = "shepherds-path.png";
+    a.style.display = "none";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
   };
 
   const shareTextOnPlatform = (platform: "x" | "facebook" | "whatsapp" | "instagram" | "telegram" | "pinterest") => {
@@ -845,7 +845,7 @@ export default function CallingPage() {
                 </button>
               </div>
               {/* Scrollable content */}
-              <div className="overflow-y-auto flex-1 overscroll-contain">
+              <div className="overflow-y-auto flex-1 overscroll-contain" style={{ touchAction: "pan-y" }}>
 
               {/* Format toggle */}
               <div className="px-4 pb-1 flex gap-2">
