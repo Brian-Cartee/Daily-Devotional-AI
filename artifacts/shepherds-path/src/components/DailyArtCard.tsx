@@ -254,7 +254,7 @@ export function DailyArtCard() {
           </button>
           <Link href="/calling">
             <span className="text-[12px] text-primary/60 hover:text-primary font-medium transition-colors">
-              Our calling →
+              Into the world →
             </span>
           </Link>
         </div>

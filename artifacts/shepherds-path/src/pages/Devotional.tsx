@@ -3,8 +3,10 @@ import { useLocation } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download } from "lucide-react";
+import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download, RefreshCw, Sparkles, Lock } from "lucide-react";
 import { createShareImage, createStoryShareImage, getDailyVersePhoto } from "@/lib/shareImage";
+import { canGenerateImage, recordImageGeneration, getRemainingImages, IMAGE_FREE_LIMIT } from "@/lib/imageUsage";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { streamAI } from "@/lib/streamAI";
@@ -23,7 +25,6 @@ import { ListenButton } from "@/components/ListenButton";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { canUseAi, recordAiUsage, getRemainingAi } from "@/lib/aiUsage";
 import { isLateNight } from "@/lib/nightMode";
-import { isProVerifiedLocally } from "@/lib/proStatus";
 import { Link } from "wouter";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
@@ -115,6 +116,8 @@ export default function Devotional() {
   const [sharePreviewBlob, setSharePreviewBlob] = useState<Blob | null>(null);
   const [sharePreviewFormat, setSharePreviewFormat] = useState<"square" | "story">("square");
   const [regeneratingPreview, setRegeneratingPreview] = useState(false);
+  const [showImageLimitModal, setShowImageLimitModal] = useState(false);
+  const [remainingImages, setRemainingImages] = useState(() => getRemainingImages());
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
   const [verseInMemory, setVerseInMemory] = useState(false);
@@ -568,6 +571,7 @@ export default function Devotional() {
   };
 
   const closeSharePreview = () => {
+    setShowImageLimitModal(false);
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     setSharePreviewUrl(null);
     setSharePreviewBlob(null);
@@ -576,6 +580,7 @@ export default function Devotional() {
 
   const handleSwitchShareFormat = async (fmt: "square" | "story") => {
     if (!verse || fmt === sharePreviewFormat || regeneratingPreview) return;
+    if (!canGenerateImage()) { setShowImageLimitModal(true); return; }
     setRegeneratingPreview(true);
     try {
       const blob = fmt === "story"
@@ -586,6 +591,26 @@ export default function Devotional() {
       setSharePreviewBlob(blob);
       setSharePreviewUrl(url);
       setSharePreviewFormat(fmt);
+      recordImageGeneration();
+      setRemainingImages(getRemainingImages());
+    } catch { }
+    setRegeneratingPreview(false);
+  };
+
+  const handleRefreshScene = async () => {
+    if (!verse || regeneratingPreview) return;
+    if (!canGenerateImage()) { setShowImageLimitModal(true); return; }
+    setRegeneratingPreview(true);
+    try {
+      const blob = sharePreviewFormat === "story"
+        ? await createStoryShareImage(verse.text, verse.reference, verseArtUrl)
+        : await createShareImage(verse.text, verse.reference, verseArtUrl);
+      const url = URL.createObjectURL(blob);
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+      setSharePreviewBlob(blob);
+      setSharePreviewUrl(url);
+      recordImageGeneration();
+      setRemainingImages(getRemainingImages());
     } catch { }
     setRegeneratingPreview(false);
   };
@@ -1719,7 +1744,7 @@ export default function Devotional() {
               </div>
 
               {/* Format toggle */}
-              <div className="px-4 pb-3 flex gap-2">
+              <div className="px-4 pb-1 flex gap-2">
                 <button
                   onClick={() => handleSwitchShareFormat("square")}
                   disabled={regeneratingPreview}
@@ -1759,10 +1784,24 @@ export default function Devotional() {
                 </button>
               </div>
 
+              {/* Discovery hint — scene refresh */}
+              <div className="px-4 pb-3 flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-violet-400/70" />
+                {isProVerifiedLocally() ? (
+                  <p className="text-[11px] text-foreground/45">Unlimited scenes — tap <RefreshCw className="w-2.5 h-2.5 inline mb-0.5" /> for a fresh view</p>
+                ) : remainingImages > 0 ? (
+                  <p className="text-[11px] text-foreground/45">
+                    Each switch or <RefreshCw className="w-2.5 h-2.5 inline mb-0.5" /> pulls a new scene from creation &mdash; <span className="text-violet-400/80 font-medium">{remainingImages} left today</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-amber-400/80 font-medium">Daily scenes used &mdash; <button onClick={() => setShowImageLimitModal(true)} className="underline underline-offset-2">Unlock Pro for unlimited</button></p>
+                )}
+              </div>
+
               {/* Image preview */}
-              <div className="px-4 pb-3">
+              <div className="px-4 pb-3 relative">
                 <img
-                  src={sharePreviewUrl}
+                  src={sharePreviewUrl ?? undefined}
                   alt="Share preview"
                   className="w-full rounded-xl shadow-md mx-auto"
                   style={{
@@ -1771,6 +1810,49 @@ export default function Devotional() {
                     maxHeight: sharePreviewFormat === "story" ? 360 : undefined,
                   }}
                 />
+                {/* Refresh scene button */}
+                <button
+                  onClick={handleRefreshScene}
+                  disabled={regeneratingPreview}
+                  data-testid="button-refresh-scene"
+                  title="New scene"
+                  className="absolute bottom-6 right-7 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90 active:scale-95 transition-all disabled:opacity-40"
+                  style={{ background: "rgba(0,0,0,0.52)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.15)" }}
+                >
+                  {regeneratingPreview
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <RefreshCw className="w-3 h-3" />
+                  }
+                  New scene
+                </button>
+
+                {/* Image limit upgrade overlay */}
+                {showImageLimitModal && (
+                  <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center text-center p-6 z-10"
+                    style={{ background: "rgba(10,5,20,0.88)", backdropFilter: "blur(8px)" }}>
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+                      style={{ background: "rgba(122,1,141,0.25)", border: "1px solid rgba(180,80,220,0.35)" }}>
+                      <Lock className="w-5 h-5 text-violet-300" />
+                    </div>
+                    <p className="text-white font-bold text-[15px] mb-1">You've created something beautiful today</p>
+                    <p className="text-white/55 text-[12px] mb-5 leading-relaxed">
+                      Free members get {IMAGE_FREE_LIMIT} unique scenes per day.<br />Upgrade to unlock endless imagery.
+                    </p>
+                    <button
+                      onClick={() => { setShowImageLimitModal(false); navigate("/pricing"); }}
+                      className="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white mb-2"
+                      style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.9) 0%, rgba(139,92,246,0.9) 100%)" }}
+                    >
+                      Unlock Pro — Unlimited Scenes
+                    </button>
+                    <button
+                      onClick={() => setShowImageLimitModal(false)}
+                      className="text-[12px] text-white/35 py-1"
+                    >
+                      Maybe later
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Action buttons */}

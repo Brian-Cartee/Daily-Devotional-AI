@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download } from "lucide-react";
+import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download, RefreshCw, Lock } from "lucide-react";
+import { canGenerateImage, recordImageGeneration, getRemainingImages, IMAGE_FREE_LIMIT } from "@/lib/imageUsage";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage } from "@/lib/shareImage";
@@ -89,7 +91,7 @@ interface PreviewState {
 }
 
 export default function CallingPage() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const [loading, setLoading] = useState<LoadingKey | null>(null);
   const [sharingScripture, setSharingScripture] = useState(false);
   const [artUrl, setArtUrl] = useState<string>(FALLBACK_IMG);
@@ -99,6 +101,8 @@ export default function CallingPage() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [previewFormat, setPreviewFormat] = useState<"square" | "story">("square");
   const [regenerating, setRegenerating] = useState(false);
+  const [showImageLimitModal, setShowImageLimitModal] = useState(false);
+  const [remainingImages, setRemainingImages] = useState(() => getRemainingImages());
 
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -131,12 +135,17 @@ export default function CallingPage() {
   };
 
   const closePreview = () => {
+    setShowImageLimitModal(false);
     if (preview) URL.revokeObjectURL(preview.url);
     setPreview(null);
   };
 
   const handleSwitchFormat = async (fmt: "square" | "story") => {
     if (!preview || fmt === previewFormat || regenerating) return;
+    if (!isProVerifiedLocally() && !canGenerateImage()) {
+      setShowImageLimitModal(true);
+      return;
+    }
     setRegenerating(true);
     try {
       let blob: Blob;
@@ -149,10 +158,43 @@ export default function CallingPage() {
           ? await createStoryShareImage(preview.verseText, preview.reference, artUrl)
           : await createShareImage(preview.verseText, preview.reference, artUrl);
       }
+      if (!isProVerifiedLocally()) {
+        recordImageGeneration();
+        setRemainingImages(getRemainingImages());
+      }
       const url = URL.createObjectURL(blob);
       URL.revokeObjectURL(preview.url);
       setPreview(prev => prev ? { ...prev, url, blob } : null);
       setPreviewFormat(fmt);
+    } catch { }
+    setRegenerating(false);
+  };
+
+  const handleRefreshScene = async () => {
+    if (!preview || regenerating) return;
+    if (!isProVerifiedLocally() && !canGenerateImage()) {
+      setShowImageLimitModal(true);
+      return;
+    }
+    setRegenerating(true);
+    try {
+      let blob: Blob;
+      if (preview.cardType === "purple") {
+        blob = previewFormat === "story"
+          ? await createPurpleStoryImage(preview.verseText, preview.reference)
+          : await createPurpleShareImage(preview.verseText, preview.reference);
+      } else {
+        blob = previewFormat === "story"
+          ? await createStoryShareImage(preview.verseText, preview.reference, artUrl)
+          : await createShareImage(preview.verseText, preview.reference, artUrl);
+      }
+      if (!isProVerifiedLocally()) {
+        recordImageGeneration();
+        setRemainingImages(getRemainingImages());
+      }
+      const url = URL.createObjectURL(blob);
+      URL.revokeObjectURL(preview.url);
+      setPreview(prev => prev ? { ...prev, url, blob } : null);
     } catch { }
     setRegenerating(false);
   };
@@ -330,7 +372,7 @@ export default function CallingPage() {
       `}</style>
 
       <BackButton
-        onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); setLocation("/"); }}
+        onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate("/"); }}
         testId="button-calling-back"
         className="fixed top-4 left-4 z-50"
       />
@@ -369,7 +411,7 @@ export default function CallingPage() {
           <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             className="text-white font-light leading-tight mb-3"
             style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(1.75rem, 6vw, 2.5rem)", textShadow: "0 2px 30px rgba(0,0,0,0.7)" }}>
-            This Is More<br />Than an App
+            Into All<br />the World
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
             className="text-white/60 text-[15px] leading-relaxed"
@@ -797,38 +839,62 @@ export default function CallingPage() {
               </div>
 
               {/* Format toggle */}
-              <div className="px-4 pb-3 flex gap-2">
+              <div className="px-4 pb-1 flex gap-2">
                 <button
                   onClick={() => handleSwitchFormat("square")}
                   disabled={regenerating}
                   data-testid="button-calling-format-square"
-                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: previewFormat === "square" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
                     border: previewFormat === "square" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
                     color: previewFormat === "square" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
                   }}
                 >
-                  □ Square
+                  <div className="w-[14px] h-[14px] rounded-[2px] border-2 flex-shrink-0" style={{ borderColor: "currentColor" }} />
+                  <div className="text-left">
+                    <div className="text-[12px] font-semibold leading-tight">Square</div>
+                    <div className="text-[10px] opacity-60 leading-tight">Instagram · Feed</div>
+                  </div>
                 </button>
                 <button
                   onClick={() => handleSwitchFormat("story")}
                   disabled={regenerating}
                   data-testid="button-calling-format-story"
-                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: previewFormat === "story" ? "rgba(122,1,141,0.55)" : "rgba(255,255,255,0.07)",
                     border: previewFormat === "story" ? "1px solid rgba(180,80,220,0.50)" : "1px solid rgba(255,255,255,0.10)",
                     color: previewFormat === "story" ? "rgba(220,170,255,0.95)" : "rgba(255,255,255,0.45)",
                   }}
                 >
-                  {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" /> : null}
-                  ↕ Story
+                  {regenerating
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                    : <div className="w-[10px] h-[16px] rounded-[2px] border-2 flex-shrink-0" style={{ borderColor: "currentColor" }} />
+                  }
+                  <div className="text-left">
+                    <div className="text-[12px] font-semibold leading-tight">Story</div>
+                    <div className="text-[10px] opacity-60 leading-tight">Reels · TikTok</div>
+                  </div>
                 </button>
               </div>
 
+              {/* Discovery hint */}
+              <div className="px-4 pb-3 flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-violet-400/70" />
+                {isProVerifiedLocally() ? (
+                  <p className="text-[11px] text-foreground/45">Unlimited scenes — tap <RefreshCw className="w-2.5 h-2.5 inline mb-0.5" /> for a fresh view</p>
+                ) : remainingImages > 0 ? (
+                  <p className="text-[11px] text-foreground/45">
+                    Each switch or <RefreshCw className="w-2.5 h-2.5 inline mb-0.5" /> pulls a new scene &mdash; <span className="text-violet-400/80 font-medium">{remainingImages} left today</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-amber-400/80 font-medium">Daily scenes used &mdash; <button onClick={() => setShowImageLimitModal(true)} className="underline underline-offset-2">Unlock Pro for unlimited</button></p>
+                )}
+              </div>
+
               {/* Image */}
-              <div className="px-4 pb-3">
+              <div className="px-4 pb-3 relative">
                 <img
                   src={preview.url}
                   alt="Share preview"
@@ -839,6 +905,49 @@ export default function CallingPage() {
                     maxHeight: previewFormat === "story" ? 360 : undefined,
                   }}
                 />
+                {/* Refresh scene button */}
+                <button
+                  onClick={handleRefreshScene}
+                  disabled={regenerating}
+                  data-testid="button-refresh-calling-scene"
+                  title="New scene"
+                  className="absolute bottom-6 right-7 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90 active:scale-95 transition-all disabled:opacity-40"
+                  style={{ background: "rgba(0,0,0,0.52)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.15)" }}
+                >
+                  {regenerating
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <RefreshCw className="w-3 h-3" />
+                  }
+                  New scene
+                </button>
+
+                {/* Image limit upgrade overlay */}
+                {showImageLimitModal && (
+                  <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center text-center p-6 z-10"
+                    style={{ background: "rgba(10,5,20,0.88)", backdropFilter: "blur(8px)" }}>
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+                      style={{ background: "rgba(122,1,141,0.25)", border: "1px solid rgba(180,80,220,0.35)" }}>
+                      <Lock className="w-5 h-5 text-violet-300" />
+                    </div>
+                    <p className="text-white font-bold text-[15px] mb-1">You've created something beautiful today</p>
+                    <p className="text-white/55 text-[12px] mb-5 leading-relaxed">
+                      Free members get {IMAGE_FREE_LIMIT} unique scenes per day.<br />Upgrade to unlock endless imagery.
+                    </p>
+                    <button
+                      onClick={() => { setShowImageLimitModal(false); navigate("/pricing"); }}
+                      className="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white mb-2"
+                      style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.9) 0%, rgba(139,92,246,0.9) 100%)" }}
+                    >
+                      Unlock Pro — Unlimited Scenes
+                    </button>
+                    <button
+                      onClick={() => setShowImageLimitModal(false)}
+                      className="text-[12px] text-white/35 py-1"
+                    >
+                      Maybe later
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Primary actions */}
