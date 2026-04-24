@@ -226,7 +226,7 @@ export function FloatingAskAI() {
           <img
             src="/sp-icon.png"
             alt="Path AI"
-            className="w-14 h-14 rounded-2xl"
+            className="w-10 h-10 rounded-xl"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.35))" }}
           />
         </button>
