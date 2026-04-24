@@ -97,6 +97,24 @@ export async function silentlyRevalidatePro(): Promise<void> {
   }
 }
 
+export async function activateProCode(code: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const res = await fetch("/api/promo/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code.trim().toUpperCase() }),
+    });
+    const data = await res.json();
+    if (data.valid && data.expiresAt) {
+      markReferralPro(data.expiresAt);
+      return { success: true, message: "Pro access activated! Welcome." };
+    }
+    return { success: false, message: data.error || "Invalid code." };
+  } catch {
+    return { success: false, message: "Could not verify code. Try again." };
+  }
+}
+
 export async function checkReferralProStatus(sessionId: string): Promise<boolean> {
   try {
     const res = await fetch(`/api/referral/check-pro?sessionId=${encodeURIComponent(sessionId)}`);

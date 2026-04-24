@@ -21,32 +21,24 @@ path = "scripts/post-merge.sh"
 timeoutMs = 20000
 
 [[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
 localPort = 8080
 externalPort = 8080
 
 [[ports]]
 localPort = 22182
-externalPort = 5000
-
-[[ports]]
-localPort = 23636
 externalPort = 3000
 
 [[ports]]
 localPort = 23637
-externalPort = 3002
+externalPort = 80
 
 [[ports]]
 localPort = 23638
-externalPort = 4200
+externalPort = 3001
 
 [[ports]]
 localPort = 24628
-externalPort = 5173
+externalPort = 3002
 
 [nix]
 channel = "stable-25_05"
@@ -62,3 +54,4 @@ EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = "test_cIBvopiHKFTqjsnjdWiIfXgLtNi"
 EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "appl_fznKTWBRurIjZrjtAyyvVqVpZBL"
 EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "goog_QIMTVotWHNqMnAtibhgIEflMiud"
 EXPO_PUBLIC_API_URL = "https://7994e962-1f00-4eda-966a-8af35b737e2c-00-2y12wipwx2k0d.janeway.replit.dev"
+PROMO_CODES = "PATHPRO2024,CREATOR2024,SHEPHERD2024"

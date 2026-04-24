@@ -4281,6 +4281,33 @@ Choose a verse that feels discovered, not generic. Avoid John 3:16, Romans 8:28,
     }
   });
 
+  // ── PROMO CODE VALIDATION ──────────────────────────────────────────────
+  app.post("/api/promo/validate", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code || typeof code !== "string") {
+        return res.status(400).json({ valid: false, error: "No code provided." });
+      }
+      const normalized = code.trim().toUpperCase();
+      const envCodes = (process.env.PROMO_CODES || "")
+        .split(",")
+        .map((c: string) => c.trim().toUpperCase())
+        .filter(Boolean);
+
+      if (!envCodes.includes(normalized)) {
+        return res.json({ valid: false, error: "That code isn't valid. Check the spelling and try again." });
+      }
+
+      // Grant 1 year of Pro via the existing referral-pro system
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      return res.json({ valid: true, expiresAt: expiresAt.toISOString() });
+    } catch (err) {
+      console.error("[promo/validate] error:", err);
+      return res.status(500).json({ valid: false, error: "Something went wrong. Please try again." });
+    }
+  });
+
   return httpServer;
 }
 
