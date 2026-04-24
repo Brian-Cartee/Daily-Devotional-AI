@@ -1,0 +1,116 @@
+We are improving a production-ready Node/Express backend for a live AI-powered devotional app. The goal is to increase reliability, user experience quality, and cost control without breaking existing functionality.
+
+You will act as a senior backend engineer. Make precise, minimal, safe improvements.
+
+---
+
+### CONTEXT
+
+The backend already includes:
+
+* OpenAI streaming responses (chat completions)
+* Text-to-speech with caching (memory + disk)
+* Google Sheets daily verse sync
+* Email, SMS, and push notification schedulers
+* Journal-based personalization
+* Crisis detection logic (currently underused)
+* Rate limiting (basic implementation)
+
+The core file to modify is:
+
+* server/routes.ts
+
+---
+
+### TASKS (IMPLEMENT EXACTLY)
+
+#### 1. Enforce AI Safety + Crisis Handling
+
+* Before any OpenAI call, check user input using existing detectCrisis()
+* If true, immediately return CRISIS_RESPONSE
+* Ensure this is applied consistently across all AI endpoints
+
+---
+
+#### 2. Add Strong Rate Limiting
+
+* Use existing isRateLimited()
+* Limit each sessionId to:
+
+  * 10 requests per minute
+* Return HTTP 429 with message:
+  "Slow down a bit 🙏"
+
+---
+
+#### 3. Add OpenAI Cost Protection
+
+* Add max_tokens: 500 to all chat completion calls
+* Ensure temperature remains unchanged unless explicitly set
+
+---
+
+#### 4. Add Streaming Fallback Protection
+
+* Wrap streaming logic in try/catch
+* If streaming fails:
+
+  * Return a graceful fallback message:
+    "Take a breath… I'm still here with you. Try again in a moment 🙏"
+
+---
+
+#### 5. Add Perceived Response Delay (UX Improvement)
+
+* Before initiating AI stream, add:
+  await new Promise(resolve => setTimeout(resolve, 500–800ms))
+* This should NOT block the server globally (only per request)
+
+---
+
+#### 6. Improve AI Prompt Naturalness
+
+* Modify system prompts slightly to:
+
+  * Reduce overly polished tone
+  * Allow occasional natural, conversational phrasing
+* Add instruction:
+  "Avoid sounding like a formal devotional writer. Occasionally write like a real person thinking out loud."
+
+---
+
+#### 7. Add Daily Usage Cap (Soft Limit)
+
+* Track number of AI requests per sessionId (reuse storage if possible)
+* Limit to ~20 per day
+* If exceeded, return:
+  "You've reached today's reflection limit. Come back tomorrow 🙏"
+
+---
+
+### CONSTRAINTS
+
+* Do NOT break existing endpoints
+* Do NOT remove any current features
+* Keep all changes minimal and localized
+* Reuse existing helper functions whenever possible
+* Maintain TypeScript types
+
+---
+
+### SUCCESS CRITERIA
+
+* App runs without errors
+* AI responses still stream correctly
+* Crisis responses override AI when triggered
+* Rate limiting works per session
+* OpenAI usage is capped safely
+* User experience feels slightly more natural and human
+
+---
+
+After implementing:
+
+* Briefly explain what you changed
+* Highlight any assumptions made
+* Suggest any optional improvements (but do not implement them yet)

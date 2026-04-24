@@ -1,0 +1,94 @@
+We are refining the UI of Shepherd’s Path to maintain a calm, distraction-free, non-app-like experience.
+
+Context:
+Shepherd’s Path is a quiet, consistent presence — not a traditional app. Every screen should feel like a place someone arrives, not a tool they operate.
+
+---
+
+## NAVIGATION RULES (IMPORTANT)
+
+* Do NOT add back arrows to any top-level tab screens
+* The bottom navigation bar is the only navigation system at the root level
+* Back arrows should ONLY appear on deeper, drill-down screens (e.g., sessions, results, detail views)
+
+---
+
+## SCREEN-SPECIFIC REFINEMENTS
+
+### 1. Explore Scripture (Scripture tab)
+
+* Keep title: “Explore Scripture”
+* Update subtitle to:
+  “Bring a question, a passage, or what’s on your mind.”
+* Maintain clean spacing and hierarchy
+* Do not add additional UI elements to the hero
+
+---
+
+### 2. Stories / Community Screen
+
+* Keep headline but consider slightly grounding tone if needed
+* Reduce prominence of floating “Share your story” button:
+
+  * Slightly smaller OR
+  * Slight opacity reduction OR
+  * Delay appearance until scroll
+
+Goal: reduce social-media feeling and maintain calm tone
+
+---
+
+### 3. Journal Screen
+
+* Keep marble background (this is a strong visual anchor)
+* Update subtitle to one of:
+
+  * “A place to remember your walk with Jesus.”
+  * OR “A place to hold what you’ve walked through.”
+* Reduce visual weight of “Export” button:
+
+  * Lower contrast OR
+  * Move slightly out of primary visual focus
+
+Goal: prioritize emotional tone over utility
+
+---
+
+### 4. Journeys Screen
+
+* Keep current path image (this is correct direction)
+* Keep headline: “Start where you are”
+* Keep subtext: “There’s a path for this moment.”
+* Simplify or remove “BIBLE JOURNEYS” label:
+
+  * Option: shorten to “Journeys”
+  * OR remove entirely
+
+Goal: reduce system/category feel and increase emotional clarity
+
+---
+
+## GLOBAL DESIGN PRINCIPLE
+
+Before adding any UI element, ask:
+
+“Does this make the screen feel more like a tool… or more like a place?”
+
+If it feels like a tool, remove or simplify it.
+
+We are optimizing for:
+
+* calm
+* clarity
+* emotional resonance
+* minimal cognitive load
+
+Not:
+
+* feature visibility
+* navigation density
+* or app-like structure
+
+---
+
+Proceed with these refinements while preserving current layout and spacing system.

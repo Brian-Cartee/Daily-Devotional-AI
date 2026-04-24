@@ -1,0 +1,318 @@
+Good—this is exactly how you lock in quality before scale.
+
+You don’t want a checklist that gets skimmed.
+You want something Replit’s AI **treats like a gate**—not a suggestion.
+
+So we’re going to frame this as:
+
+> **“Nothing ships unless this passes.”**
+
+---
+
+# 🔥 REPLIT AI PROMPT — UX TESTING & RELEASE GATE (NON-NEGOTIABLE)
+
+**PROMPT:**
+
+We are implementing a mandatory UX Testing & Release Gate system for Shepherd’s Path.
+
+This is not a guideline.
+This is a required validation layer before any feature, screen, or update is considered complete.
+
+If any item fails, the feature must not ship.
+
+---
+
+# 🧭 CORE PRINCIPLE
+
+Shepherd’s Path is a reflective, emotionally sensitive experience.
+
+Any friction, delay, confusion, or instability breaks the user’s sense of presence and trust.
+
+This checklist ensures:
+
+* no distractions
+* no interruptions
+* no technical friction
+
+---
+
+# ✅ 1. FIRST TOUCH RESPONSE TEST
+
+**Test:**
+Tap every primary button on the screen.
+
+**Pass Criteria:**
+
+* Response begins within 100–300ms
+* No double-tap required
+* No visual lag or hesitation
+
+**Fail if:**
+
+* User hesitates because system feels slow
+* Button feels unresponsive
+
+---
+
+# 🔊 2. AUDIO IMMERSION TEST (CRITICAL)
+
+**Test:**
+Tap “Listen” from multiple states:
+
+* fresh load
+* after scrolling
+* after navigation
+
+**Pass Criteria:**
+
+* Audio begins immediately or with a clear, soft transition
+* No silence gap longer than ~300ms without feedback
+* Playback is stable (no dropouts)
+
+**Fail if:**
+
+* Delay feels noticeable
+* Audio fails, buffers, or restarts unexpectedly
+
+---
+
+# 📜 3. SCROLL & POSITION CONTINUITY TEST
+
+**Test:**
+
+* Scroll mid-page → navigate away → return
+
+**Pass Criteria:**
+
+* User returns to exact previous position
+* No jump to top
+* No layout shift
+
+**Fail if:**
+
+* Scroll resets
+* Content reflows unexpectedly
+
+---
+
+# 🔁 4. BACK NAVIGATION TEST (CRITICAL)
+
+**Test:**
+Enter any subpage (Explore, Context, etc.), then press back
+
+**Pass Criteria:**
+
+* Returns to exact previous section (not top of homepage)
+* No disorientation
+* Feels seamless
+
+**Fail if:**
+
+* User loses place
+* App resets to top
+* Navigation feels disconnected
+
+---
+
+# 🧠 5. CONTEXT PRESERVATION TEST
+
+**Test:**
+
+* Enter Context (drawer)
+* Ask a follow-up question
+* Close and reopen
+
+**Pass Criteria:**
+
+* Context remains anchored to the same verse/session
+* No reset unless intentional
+
+**Fail if:**
+
+* Context is lost
+* AI “forgets” what user is viewing
+
+---
+
+# 🌊 6. FLOW CONTINUITY TEST
+
+**Test:**
+Move through:
+
+* Verse → Context → Devotional → Back
+
+**Pass Criteria:**
+
+* Feels like one continuous experience
+* No hard transitions or mental resets
+
+**Fail if:**
+
+* Feels like separate tools stitched together
+
+---
+
+# 🎨 7. VISUAL STABILITY TEST
+
+**Test:**
+Observe screen during:
+
+* load
+* transitions
+* content changes
+
+**Pass Criteria:**
+
+* No flicker
+* No layout jump
+* No rapid animations
+
+**Fail if:**
+
+* Any visual instability is noticeable
+
+---
+
+# ⏳ 8. LOADING EXPERIENCE TEST
+
+**Test:**
+Trigger AI response or content load
+
+**Pass Criteria:**
+
+* Immediate feedback (soft text or placeholder)
+* Calm, non-technical messaging
+
+Examples:
+
+* “Give me a moment…”
+* “Let’s take a second with this…”
+
+**Fail if:**
+
+* Blank screen
+* spinning loader with no context
+* abrupt content pop-in
+
+---
+
+# 🧍‍♂️ 9. COGNITIVE LOAD TEST
+
+**Test:**
+Look at each screen for 3 seconds
+
+**Pass Criteria:**
+
+* One clear primary action
+* No competing elements
+* No confusion about what to do
+
+**Fail if:**
+
+* User has to think about where to go
+* Multiple equal-weight options
+
+---
+
+# 🧩 10. REDUNDANCY ELIMINATION TEST
+
+**Test:**
+Check for duplicate functionality
+
+**Pass Criteria:**
+
+* Each feature has a single clear place
+* No overlapping tools (e.g., multiple “ask AI” areas)
+
+**Fail if:**
+
+* User can do the same thing in multiple places unnecessarily
+
+---
+
+# 🧘 11. INTERRUPTION TEST (MOST IMPORTANT)
+
+**Test:**
+Use the app slowly and intentionally
+
+**Pass Criteria:**
+
+* No moment breaks emotional engagement
+* No friction, confusion, or delay
+
+**Fail if:**
+
+* User is pulled out of the experience even briefly
+
+---
+
+# 🧭 12. “DOES THIS BREAK PRESENCE?” TEST
+
+For every screen and interaction, ask:
+
+> Does this help the user stay present…
+> or does it introduce distraction?
+
+**Fail if:**
+
+* Anything feels like a “feature”
+* Anything feels like work
+* Anything creates urgency or pressure
+
+---
+
+# 🚫 FINAL RELEASE RULE
+
+If ANY of the following exist, DO NOT SHIP:
+
+* noticeable delay
+* audio inconsistency
+* navigation confusion
+* duplicated functionality
+* visual instability
+* loss of user position
+
+---
+
+# 🕊️ SUCCESS CONDITION
+
+The experience is ready only when:
+
+* the user never notices the system
+* nothing interrupts their focus
+* everything feels continuous and calm
+
+---
+
+# FINAL DIRECTIVE
+
+Do not treat this as a checklist to review.
+
+Treat this as a **release gate**.
+
+Nothing goes live unless every item passes.
+
+---
+
+# 🧠 WHY THIS WILL WORK
+
+This gets Replit to:
+
+* think like a **product owner**, not just a builder
+* understand what **failure actually is**
+* prioritize **experience over features**
+
+---
+
+# 🔥 ONE LINE TO REMEMBER
+
+> If the user notices the app… we failed.
+
+---
+
+If you want next, I can turn this into:
+
+* a **real QA workflow with scoring**
+* or a **tester script for your 4–6 people** so they catch what you won’t see yourself
+
+You’re now protecting the part most founders lose control of.

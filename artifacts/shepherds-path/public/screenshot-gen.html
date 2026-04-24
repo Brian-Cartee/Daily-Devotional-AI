@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shepherd's Path — Screenshot Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a2e; color: #fff; font-family: Inter, sans-serif; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 8px; color: #c4a8f5; }
+  p.subtitle { text-align: center; color: #888; margin-bottom: 40px; font-size: 14px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; }
+  .frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .preview-canvas { border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); cursor: pointer; }
+  .frame-label { font-size: 13px; color: #aaa; text-align: center; max-width: 240px; }
+  .btn { background: #442f74; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+  .btn:hover { background: #5a3f96; }
+  .btn-all { display: block; margin: 0 auto 40px; background: #2d7a3a; font-size: 16px; padding: 14px 40px; border-radius: 10px; }
+  .btn-all:hover { background: #3a9a4a; }
+  .status { text-align: center; color: #6adb78; margin-bottom: 16px; font-size: 14px; min-height: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Shepherd's Path — App Store Screenshots</h1>
+<p class="subtitle">1242 × 2688 px &nbsp;·&nbsp; 6.5" iPhone display &nbsp;·&nbsp; Click any preview to download</p>
+
+<div class="status" id="status"></div>
+<button class="btn btn-all" onclick="downloadAll()">⬇ Download All 10 Screenshots</button>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const CANVAS_W = 1242;
+const CANVAS_H = 2688;
+const BRAND_PURPLE = '#442f74';
+const DARK_PURPLE  = '#1a0b3a';
+const FONT_TITLE   = 'italic 700 96px "Playfair Display", serif';
+const FONT_SMALL   = '500 52px Inter, sans-serif';
+
+const shots = [
+  {
+    id: 1,
+    src: 'screenshots/src/shot1.png',
+    caption: 'Walk the path.\nFollow the Word.',
+    sub: '',
+    style: 'fullbleed'
+  },
+  {
+    id: 2,
+    src: 'screenshots/src/shot2.png',
+    caption: 'Scripture for what\nyou\'re going through',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 3,
+    src: 'screenshots/src/shot3.png',
+    caption: 'Share what\'s on your heart.\nReceive Scripture made\nfor your moment.',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 4,
+    src: 'screenshots/src/shot4.png',
+    caption: 'Start every day\nin God\'s Word',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 5,
+    src: 'screenshots/src/shot5.png',
+    caption: 'Guided journeys through\nthe heart of Scripture',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 6,
+    src: 'screenshots/src/shot6.png',
+    caption: 'Test your faith.\nChallenge a friend.',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 7,
+    src: 'screenshots/src/shot7.png',
+    caption: 'You\'re not\npraying alone.',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 8,
+    src: 'screenshots/src/shot8.png',
+    caption: 'Every book.\nEvery chapter.\nWith guidance.',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 9,
+    src: 'screenshots/src/shot9.png',
+    caption: 'What people\nare saying',
+    sub: '',
+    style: 'phone'
+  },
+  {
+    id: 10,
+    src: 'screenshots/src/shot10.png',
+    caption: 'It starts with a question.\nIt ends with\na relationship.',
+    sub: '',
+    style: 'phone'
+  }
+];
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed: ' + src));
+    img.src = src;
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const lines = text.split('\n');
+  const allLines = [];
+  for (const line of lines) {
+    const words = line.split(' ');
+    let current = '';
+    for (const word of words) {
+      const test = current ? current + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        allLines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) allLines.push(current);
+  }
+  const totalHeight = allLines.length * lineHeight;
+  let startY = y - totalHeight / 2;
+  for (const line of allLines) {
+    ctx.fillText(line, x, startY);
+    startY += lineHeight;
+  }
+  return allLines.length;
+}
+
+async function renderShot(shot) {
+  const canvas = document.createElement('canvas');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  const ctx = canvas.getContext('2d');
+
+  const img = await loadImage(shot.src);
+
+  if (shot.style === 'fullbleed') {
+    // Full bleed: draw image covering canvas
+    const scale = Math.max(CANVAS_W / img.width, CANVAS_H / img.height);
+    const sw = img.width * scale;
+    const sh = img.height * scale;
+    const sx = (CANVAS_W - sw) / 2;
+    const sy = (CANVAS_H - sh) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh);
+
+    // Dark gradient overlay at top for text readability
+    const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H * 0.52);
+    grad.addColorStop(0, 'rgba(15, 5, 30, 0.88)');
+    grad.addColorStop(0.6, 'rgba(15, 5, 30, 0.55)');
+    grad.addColorStop(1, 'rgba(15, 5, 30, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Bottom gradient too
+    const gradB = ctx.createLinearGradient(0, CANVAS_H * 0.72, 0, CANVAS_H);
+    gradB.addColorStop(0, 'rgba(15, 5, 30, 0)');
+    gradB.addColorStop(1, 'rgba(15, 5, 30, 0.7)');
+    ctx.fillStyle = gradB;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Caption text — centered vertically in top 40%
+    const captionCenterY = CANVAS_H * 0.24;
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = FONT_TITLE;
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 20;
+    wrapText(ctx, shot.caption, CANVAS_W / 2, captionCenterY, CANVAS_W * 0.8, 115);
+
+    // App name at bottom
+    ctx.font = '600 48px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.shadowBlur = 10;
+    ctx.fillText("Shepherd's Path", CANVAS_W / 2, CANVAS_H - 160);
+
+    // Cross / shepherd icon hint — small decorative line
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(CANVAS_W / 2 - 80, CANVAS_H - 220);
+    ctx.lineTo(CANVAS_W / 2 + 80, CANVAS_H - 220);
+    ctx.stroke();
+
+  } else {
+    // Phone screenshot style
+    // --- Background gradient ---
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    bgGrad.addColorStop(0, '#2a1356');
+    bgGrad.addColorStop(0.4, '#442f74');
+    bgGrad.addColorStop(1, '#1a0b3a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Subtle radial light behind text
+    const radGrad = ctx.createRadialGradient(CANVAS_W/2, 300, 0, CANVAS_W/2, 300, 600);
+    radGrad.addColorStop(0, 'rgba(180,140,255,0.18)');
+    radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // --- Caption text ---
+    const captionLines = shot.caption.split('\n').length;
+    const captionAreaHeight = 460 + captionLines * 20;
+    const captionCenterY = captionAreaHeight / 2 + 60;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = FONT_TITLE;
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 12;
+    wrapText(ctx, shot.caption, CANVAS_W / 2, captionCenterY, CANVAS_W * 0.82, 108);
+    ctx.shadowBlur = 0;
+
+    // Decorative underline bar
+    const barY = captionAreaHeight - 20;
+    const barW = 80;
+    ctx.fillStyle = 'rgba(200,170,255,0.5)';
+    ctx.fillRect(CANVAS_W/2 - barW/2, barY, barW, 3);
+
+    // --- Phone screenshot frame ---
+    const PAD_H = 50;    // horizontal padding from canvas edge
+    const TOP_Y = captionAreaHeight + 30;
+    const frameW = CANVAS_W - PAD_H * 2;   // 1142
+    const BORDER = 8;
+    const RADIUS = 56;
+
+    // Scale image to fit frame width
+    const imgScale = frameW / img.width;
+    const imgH = img.height * imgScale;
+    const frameH = Math.min(imgH + BORDER * 2, CANVAS_H - TOP_Y - 60);
+
+    // White border shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 16;
+
+    // White rounded border
+    ctx.fillStyle = '#ffffff';
+    roundRect(ctx, PAD_H - BORDER, TOP_Y - BORDER, frameW + BORDER*2, frameH + BORDER*2, RADIUS + BORDER);
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Clip and draw screenshot inside frame
+    ctx.save();
+    roundRect(ctx, PAD_H, TOP_Y, frameW, frameH, RADIUS);
+    ctx.clip();
+    ctx.drawImage(img, PAD_H, TOP_Y, frameW, imgH);
+    ctx.restore();
+  }
+
+  return canvas;
+}
+
+async function buildAll() {
+  const grid = document.getElementById('grid');
+  const status = document.getElementById('status');
+  status.textContent = 'Rendering screenshots...';
+
+  for (const shot of shots) {
+    status.textContent = `Rendering screenshot ${shot.id} of ${shots.length}...`;
+    try {
+      const full = await renderShot(shot);
+
+      // Preview at 20% scale
+      const preview = document.createElement('canvas');
+      const SCALE = 0.195;
+      preview.width = Math.round(CANVAS_W * SCALE);
+      preview.height = Math.round(CANVAS_H * SCALE);
+      preview.className = 'preview-canvas';
+      const pCtx = preview.getContext('2d');
+      pCtx.drawImage(full, 0, 0, preview.width, preview.height);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'frame-wrap';
+
+      const label = document.createElement('div');
+      label.className = 'frame-label';
+      const captionPreview = shot.caption.replace(/\n/g, ' ');
+      label.textContent = `${shot.id}. ${captionPreview.substring(0, 50)}${captionPreview.length > 50 ? '…' : ''}`;
+
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.textContent = `⬇ Download #${shot.id}`;
+      btn.onclick = () => downloadCanvas(full, `shepherds-path-screenshot-${shot.id}.png`);
+
+      preview.onclick = () => downloadCanvas(full, `shepherds-path-screenshot-${shot.id}.png`);
+      preview.title = 'Click to download';
+
+      wrap.appendChild(preview);
+      wrap.appendChild(label);
+      wrap.appendChild(btn);
+      grid.appendChild(wrap);
+
+      // Store for download-all
+      full._shotId = shot.id;
+      window._canvases = window._canvases || [];
+      window._canvases.push(full);
+
+    } catch (err) {
+      console.error('Error rendering shot', shot.id, err);
+      status.textContent = `Error on screenshot ${shot.id}: ${err.message}`;
+    }
+  }
+
+  status.textContent = `All ${shots.length} screenshots ready. Click any to download.`;
+}
+
+function downloadCanvas(canvas, filename) {
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function downloadAll() {
+  const status = document.getElementById('status');
+  status.textContent = 'Downloading all screenshots...';
+  const canvases = window._canvases || [];
+  if (!canvases.length) {
+    status.textContent = 'Please wait for rendering to complete first.';
+    return;
+  }
+  for (const c of canvases) {
+    downloadCanvas(c, `shepherds-path-screenshot-${c._shotId}.png`);
+    await new Promise(r => setTimeout(r, 400));
+  }
+  status.textContent = 'All 10 downloaded!';
+}
+
+buildAll();
+</script>
+</body>
+</html>

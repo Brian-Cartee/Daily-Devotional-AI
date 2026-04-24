@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Cross + Curved Path — white on transparent background -->
+  <path fill="white" d="
+    M 390 55
+    L 560 55
+    L 560 215
+    L 780 215
+    L 780 350
+    L 560 350
+    L 560 690
+    C 560 690 600 760 680 820
+    C 760 880 900 920 960 980
+    L 820 980
+    C 820 980 680 940 590 870
+    C 500 800 475 720 475 720
+    L 475 350
+    L 250 350
+    L 250 215
+    L 390 215
+    Z
+  "/>
+</svg>

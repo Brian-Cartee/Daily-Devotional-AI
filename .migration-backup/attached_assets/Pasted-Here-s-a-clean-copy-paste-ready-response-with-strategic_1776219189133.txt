@@ -1,0 +1,299 @@
+Here’s a **clean, copy/paste-ready response** with strategic guidance only:
+
+---
+
+## **Shepherd’s Path — Product Direction (Q6–Q8)**
+
+---
+
+### **Question 6 — Onboarding (First 3 Minutes)**
+
+**Goal:**
+Make the user feel something real — immediately — without explaining anything.
+
+---
+
+### **What it should NOT be:**
+
+* No tutorial
+* No walkthrough
+* No setup friction
+* No “enter your name to begin”
+
+---
+
+### **What it SHOULD feel like:**
+
+> *“I didn’t expect this… but this is for me.”*
+
+---
+
+### **First 3-Minute Experience (Ideal Flow):**
+
+**Minute 0–1 — Arrival**
+
+* Verse is present
+* Calm, uncluttered
+* No instructions
+
+👉 The user should feel:
+
+> “I can just be here”
+
+---
+
+**Minute 1–2 — First Engagement**
+
+* User taps, listens, or pauses
+* Reflection begins
+
+👉 This is the moment that matters most:
+
+> The reflection must feel *personally relevant*
+
+---
+
+**Minute 2–3 — Connection**
+
+* Prayer follows naturally
+* No pressure to complete anything
+
+👉 The user should feel:
+
+> “This understood me”
+
+---
+
+### **What the user must feel to return:**
+
+* Seen (not generic)
+* Safe (no pressure, no expectations)
+* Curious (there’s more here)
+
+---
+
+### **Subtle addition (optional):**
+
+After first session, gently ask for name:
+
+> “What should we call you?”
+
+Only after value is felt.
+
+---
+
+### **Core Principle:**
+
+> Don’t onboard the user — let the experience speak for itself
+
+---
+
+---
+
+### **Question 7 — Social Sharing**
+
+**Core truth:**
+People don’t share faith content to promote something.
+
+They share because:
+
+> **something meant something to them — or reminded them of someone**
+
+---
+
+### **What makes sharing happen:**
+
+#### 1. Personal resonance
+
+> “This spoke to me”
+
+#### 2. Relational trigger
+
+> “This made me think of you”
+
+---
+
+### **What sharing should feel like:**
+
+* Personal
+* Intentional
+* Almost private, even when public
+
+---
+
+### **What it should NOT feel like:**
+
+* Marketing
+* Broadcasting
+* “Check out this app”
+
+---
+
+### **Best framing for sharing:**
+
+Not:
+
+> “Share this”
+
+But:
+
+> **“Did someone come to mind?”**
+
+---
+
+### **Key design principle:**
+
+Sharing should feel like:
+
+> passing something meaningful along
+
+Not:
+
+> posting content
+
+---
+
+### **The one thing it must never feel like:**
+
+> **Promotion**
+
+---
+
+---
+
+### **Question 8 — Long-Term Habit Formation (Day 30+)**
+
+**Early stage (Day 1–7):**
+
+* Driven by emotional impact
+* “This helped me”
+
+---
+
+### **Long-term stage (Day 30+):**
+
+Retention shifts from:
+
+> emotional moment
+
+To:
+
+> **spiritual rhythm**
+
+---
+
+### **What the app must become:**
+
+Not:
+
+> something they check
+
+But:
+
+> **a place they return to**
+
+---
+
+### **What it should feel like:**
+
+* Familiar
+* Grounding
+* Personal
+* Steady
+
+---
+
+### **Key shift:**
+
+Early:
+
+> “This is powerful”
+
+Later:
+
+> **“This is part of my life”**
+
+---
+
+### **What drives long-term retention:**
+
+#### 1. Continuity
+
+User feels:
+
+> “This is connected to my journey”
+
+---
+
+#### 2. Identity
+
+User feels:
+
+> “This is something I do”
+
+---
+
+#### 3. Simplicity
+
+No friction
+No thinking required
+
+---
+
+---
+
+### **What changes after Day 30:**
+
+Less need for:
+
+* novelty
+* explanation
+
+More need for:
+
+* consistency
+* reliability
+* depth
+
+---
+
+---
+
+### **Core Principle:**
+
+> Habits form when something becomes part of who someone is — not just something they use
+
+---
+
+---
+
+## **Final Summary**
+
+**Onboarding:**
+
+* Let the experience speak
+* No instructions, no friction
+
+---
+
+**Sharing:**
+
+* Driven by meaning and relationships
+* Never feels like promotion
+
+---
+
+**Long-Term Retention:**
+
+* Shift from emotional moments → spiritual rhythm
+* Become part of the user’s life
+
+---
+
+## **End Goal**
+
+* The app feels personal from day one
+* Sharing feels natural, not forced
+* Long-term use feels like returning, not checking
+
+---

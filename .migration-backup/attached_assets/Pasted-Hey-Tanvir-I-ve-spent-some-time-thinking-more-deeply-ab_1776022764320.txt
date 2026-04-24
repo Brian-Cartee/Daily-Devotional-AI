@@ -1,0 +1,32 @@
+Hey Tanvir — I’ve spent some time thinking more deeply about the direction, and I want to give you clearer guidance so we stay aligned as we move forward.
+
+At the core, this app should feel like an encounter, not a product. Every screen should remove pressure, not introduce direction. The user should never feel like they are navigating a system — it should feel like they stepped into a quiet, personal moment.
+
+For the homepage specifically:
+- It should have one primary focus only — not multiple sections or options  
+- No dashboards, no categories, no “start here” structure  
+- The experience should feel like something is already waiting for the user when they arrive  
+- Center the screen around a single message and a simple input (for example: “What’s on your heart right now?”)  
+- Only one soft call-to-action — nothing that feels like a task or next step  
+
+For the guidance experience:
+- We should remove browsing, categories, and multiple options  
+- The user shares what they’re going through, and the app responds  
+- The response should be simple and focused: one message, one scripture, and optionally one short piece of content  
+- It should feel like the app understands them, not like they are searching for help  
+
+In terms of overall UX direction:
+- No progress indicators, streaks, or gamification elements  
+- Avoid anything that feels like a system, framework, or repeatable program  
+- Design for stillness — soft transitions, minimal UI, no sharp or overly interactive elements  
+- Slight pauses and gentle transitions are important so it feels intentional, not mechanical  
+
+From a Figma standpoint:
+- I’d like to think in terms of “moments” rather than traditional app screens (arrival, expression, response, reflection)  
+- Keep the component system very minimal — only what is absolutely necessary  
+- Please also create a clickable prototype so I can experience the flow, not just view static screens  
+
+One important test for every screen:
+If a user opens it and feels like they need to “do something,” we need to simplify it further.
+
+I’m very happy with the direction so far — I just want to make sure we protect this core experience as we continue building. Let’s walk through this together on our call and refine anything needed before moving forward further.

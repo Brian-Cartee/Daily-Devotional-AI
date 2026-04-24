@@ -1,0 +1,68 @@
+This is excellent feedback and I agree with your direction — especially around removing any sense of “must.” That’s exactly right. The experience should feel invited, not required. We never want the app to feel like something the user has to complete — it should feel like something they step into when ready.
+Direction + Decisions
+1. Where it lives
+This should not live in a traditional help location (like a ? icon or separate help page).
+Instead:
+👉 It should live inside the experience, not outside of it.
+Accessible from the “For You” screen
+Potentially introduced subtly on first visit
+Can be revisited via a small, non-intrusive entry point (not a primary nav item)
+Goal:
+👉 It should feel like guidance, not support documentation
+2. Structure (Steps)
+Your instinct is right on keeping it short and focused.
+Let’s define it as:
+“A Simple Walkthrough” (4–5 short moments)
+Talk It Through
+This is where everything begins
+Share what you’re facing — no pressure, no perfect words needed
+How the Response Works
+The app responds personally using scripture, reflection, and guidance
+It’s built around what the user shares
+Your Journey
+The app can create a Bible-based path forward
+Not just a one-time response, but something ongoing
+Listen Feature
+Everything can be listened to
+Designed to feel like someone speaking directly to you
+Journal / Save
+Users can keep what matters
+Track what they’re going through over time
+(We can lightly mention Pro at the end, but it should not interrupt the flow)
+3. Scripted vs AI Agent
+👉 Go scripted walkthrough for this
+Reason:
+Faster
+More consistent
+Keeps tone controlled and intentional
+Avoids unnecessary complexity and cost
+This is not meant to be a conversation — it’s a guided introduction
+Additional Direction (Important)
+This should feel like:
+Calm
+Personal
+Reassuring
+NOT:
+Instructional
+Over-explained
+Technical
+Tone Guidance
+Think:
+“Let me show you how this works”
+Not:
+“Here’s how to use the app”
+Final Framing
+This is not a help feature.
+👉 This is a guided entry into the experience
+If we get this right:
+Users understand the value faster
+They engage deeper
+They feel more confident using the app
+Let me know if you want this to be:
+fully voice-led
+or voice + light visual cues
+My instinct is primarily voice-led with minimal UI distraction.
+This version keeps you:
+decisive ✅
+aligned with their thinking ✅
+still clearly leading the vision ✅

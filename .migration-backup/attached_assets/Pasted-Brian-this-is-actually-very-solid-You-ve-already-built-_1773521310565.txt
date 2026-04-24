@@ -1,0 +1,112 @@
+Brian — this is actually very solid. You’ve already built far more than most faith apps launch with. What you posted is essentially a feature inventory, but it can be turned into something much more powerful for Stripe setup, influencers, and your website messaging.
+Right now the most important thing is clarifying the paid tier, because Stripe subscriptions need to match the value.
+Shepherd’s Path — Refined Structure (Important for Stripe + Influencers)
+Free Tier (Everyone gets this)
+This is your viral engine.
+Daily Devotional
+AI-generated devotional every day
+Scripture + reflection + prayer
+Audio playback
+Share devotional
+Bible Journeys
+Guided Bible studies
+Progress tracking
+Scripture Study
+Ask questions about any verse
+AI pastoral explanation
+Prayer Requests
+Submit prayer
+Receive Scripture-based prayer
+Journal
+Private faith reflections
+PWA Install
+Install on phone like an app
+Shepherd’s Path PRO (Stripe Subscription)
+This is what Stripe will charge for.
+Suggested Price
+$9 / month
+or
+$79 / year
+Pro Features
+Unlimited AI Scripture Study
+Free tier:
+limited
+Pro:
+unlimited
+Unlimited Prayer Guidance
+Free:
+limited prayers
+Pro:
+unlimited
+Advanced Bible Journeys
+Longer study paths
+exclusive content
+Personalized Devotionals
+AI adapts to:
+prayer requests
+journaling themes
+study patterns
+Daily SMS Scripture & Prayer
+Text message ministry
+Premium Notification Reminders
+Morning devotion
+Midday encouragement
+Evening reflection
+This is why your app is actually strong
+Most faith apps have ONE thing:
+• devotionals
+• Bible reading
+• journaling
+You have ALL of them plus AI.
+Your stack is basically:
+Devotional AI
++
+Bible Study AI
++
+Prayer AI
++
+Journal
++
+SMS ministry
++
+Installable app
+That combination is rare in the Christian app space.
+One thing I strongly recommend adding
+Influencers will ask this question immediately:
+“Is this biblically safe?”
+So add one visible line:
+"All AI responses are grounded in Scripture and designed to reflect historic Christian teaching."
+This builds trust instantly.
+The next step for Stripe
+On the Subscription screen you opened:
+Create this:
+Product Name
+Shepherd’s Path Pro
+Price
+$9.99
+Billing
+Monthly
+After you create it
+Stripe will generate something like:
+price_1abcxyz
+That Price ID is what your app uses to charge.
+Send me that when it appears.
+Important: One thing you built that most founders miss
+Your SMS prayer system.
+That is extremely powerful for:
+• church influencers
+• pastors
+• ministries
+This could become the viral entry point.
+Next thing I recommend (after Stripe)
+Not influencers yet.
+The single most powerful thing you can add before launch is this:
+A share loop
+Inside the devotional page:
+Share today’s devotional
+Invite a friend
+Earn 7-day Pro access
+That alone can drive thousands of installs.
+If you want, I can also show you something very strategic:
+How to make Shepherd’s Path spread through Christian TikTok extremely fast.
+It’s a trick most startups miss.

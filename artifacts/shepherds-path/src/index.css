@@ -1,0 +1,226 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Instrument+Serif:ital@0;1&family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+  /* Android: prevent text auto-scaling on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Remove Android tap highlight flash on all interactive elements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Faster tap response on Android (removes 300ms delay) */
+button, a, input, textarea, select, [role="button"] {
+  touch-action: manipulation;
+}
+
+@layer base {
+  :root {
+    /* Shepherd's Path — warm parchment base, brand purple primary, soft gold accent */
+    --background: 38 38% 95%;
+    --foreground: 224 22% 14%;
+
+    --card: 38 35% 97.5%;
+    --card-foreground: 224 22% 14%;
+
+    --popover: 38 25% 99%;
+    --popover-foreground: 224 22% 14%;
+
+    /* Brand purple — vivid warm magenta-purple, matches app icon exactly */
+    --primary: 292 98% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Warm amber-gold — warmth, reverence */
+    --secondary: 37 85% 52%;
+    --secondary-foreground: 224 28% 10%;
+
+    --muted: 38 20% 91%;
+    --muted-foreground: 220 10% 48%;
+
+    --accent: 37 35% 92%;
+    --accent-foreground: 224 22% 14%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 38 18% 86%;
+    --input: 38 18% 86%;
+    --ring: 292 98% 28%;
+
+    --radius: 0.875rem;
+
+    --font-sans: 'Plus Jakarta Sans', sans-serif;
+    --font-serif: 'Instrument Serif', serif;
+    --font-reading: 'Literata', Georgia, serif;
+    --font-decorative: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .dark {
+    /* Shepherd's Path dark — deep near-black with warm purple cast */
+    --background: 292 30% 5%;
+    --foreground: 38 22% 93%;
+
+    --card: 292 38% 10%;
+    --card-foreground: 38 22% 93%;
+
+    --popover: 292 38% 10%;
+    --popover-foreground: 38 22% 93%;
+
+    /* Brand purple — bright vivid warm purple for dark mode readability */
+    --primary: 292 90% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 37 90% 57%;
+    --secondary-foreground: 224 28% 10%;
+
+    --muted: 292 30% 14%;
+    --muted-foreground: 292 12% 68%;
+
+    --accent: 292 30% 14%;
+    --accent-foreground: 38 22% 93%;
+
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 38 22% 93%;
+
+    --border: 292 28% 18%;
+    --input: 292 28% 18%;
+    --ring: 292 90% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.75;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+  /* Headings — confident but not loud */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    @apply text-foreground;
+  }
+  /* Scripture/verse text — generous, unhurried, sacred */
+  .verse-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    line-height: 2.0;
+    font-weight: 400;
+    color: hsl(var(--foreground) / 0.88);
+    letter-spacing: 0.01em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Glass-morphism card for layered UI */
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/50;
+  }
+
+  /* Strong glass for hero overlays */
+  .glass-dark {
+    background: rgba(10, 10, 20, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Inset hero image with overlay gradient — deeper, more sacred */
+  .hero-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 8, 26, 0.52) 0%,
+      rgba(10, 8, 26, 0.28) 40%,
+      rgba(10, 8, 26, 0.72) 100%
+    );
+  }
+
+  /* Bold display number style */
+  .display-number {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  /* Shimmer effect for loading */
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.4) 50%,
+      rgba(255,255,255,0) 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Bible reading typography */
+  .reading-text {
+    font-family: var(--font-reading);
+    font-size: 1.5rem;
+    line-height: 2.0;
+    letter-spacing: 0.005em;
+    font-weight: 400;
+    font-optical-sizing: auto;
+  }
+
+  .reading-verse-num {
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: hsl(37 75% 48% / 0.7);
+    vertical-align: super;
+    line-height: 0;
+    margin-right: 0.2em;
+    user-select: none;
+  }
+
+  .reading-chapter-title {
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  /* Gradient text utility */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(37 95% 53%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Selection color */
+::selection {
+  background: hsl(249 58% 40% / 0.18);
+  color: hsl(249 58% 30%);
+}

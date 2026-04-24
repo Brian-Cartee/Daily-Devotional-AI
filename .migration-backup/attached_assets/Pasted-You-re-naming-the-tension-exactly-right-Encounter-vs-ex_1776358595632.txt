@@ -1,0 +1,336 @@
+You’re naming the tension exactly right:
+
+> **Encounter vs. explanation**
+
+If you put them on the same level, explanation quietly wins—and the product drifts from *presence* to *study*.
+
+So let’s be clear and decisive:
+
+---
+
+# 🧭 CORE ANSWER
+
+### ❌ “Context” should NOT be the 4th primary tile
+
+It does not belong beside:
+
+* Reflect
+* Prayer
+* Ask
+
+Those are **relational responses**.
+Context is **interpretive support**.
+
+Putting them together flattens the experience into:
+
+> “Here are four things you can do”
+
+Instead of:
+
+> “Here is a moment you can enter”
+
+---
+
+# 🔥 WHAT CONTEXT ACTUALLY IS
+
+Context is not an action.
+
+> It is **a lens**
+
+And lenses should be:
+
+* available
+* accessible
+* but not dominant
+
+---
+
+# ✅ RANKED RECOMMENDATION
+
+## 🥇 BEST: “Context” as a **quiet, on-demand layer (not a tile)**
+
+### Placement options (best → good):
+
+### 1. **Inline, just above or below the passage (collapsed)**
+
+Label:
+
+> “Understand this passage”
+> or
+> “The story behind this”
+
+Collapsed by default
+Tap → expands gently
+
+---
+
+### 2. **Subtle link under passage or title**
+
+> “See the background”
+
+Small, low-emphasis, almost whispering:
+
+> “If you want more…”
+
+---
+
+### 3. **Inside “Ask” as a secondary path**
+
+User asks:
+
+> “What’s going on here?”
+
+AI naturally provides context.
+
+---
+
+## 🥈 SECOND BEST: **Post-encounter placement**
+
+After:
+
+* Reflect
+* Prayer
+
+Then offer:
+
+> “Want to understand this more?”
+
+This preserves:
+
+> encounter → then understanding
+
+---
+
+## 🥉 ACCEPTABLE (with risk): Small icon (ⓘ or similar)
+
+Top-right or near title
+
+BUT:
+
+* must be extremely subtle
+* avoid “info button = app tool” feeling
+
+---
+
+## ❌ AVOID: 4th tile alongside Reflect/Prayer/Ask
+
+This creates:
+
+* equal weight with spiritual response
+* cognitive overload
+* tonal drift toward Bible study app
+
+---
+
+# 🧠 DOES CONTEXT INTERRUPT OR DEEPEN?
+
+### Answer: **Both — depending on timing**
+
+---
+
+### BEFORE encounter:
+
+* interrupts presence
+* shifts user into analysis mode
+
+---
+
+### DURING encounter:
+
+* fractures emotional continuity
+
+---
+
+### AFTER encounter:
+
+* deepens meaning
+* integrates understanding
+
+---
+
+👉 Therefore:
+
+> Context should follow curiosity, not lead it.
+
+---
+
+# 🔥 SHOULD IT BE ABOVE THE PASSAGE?
+
+### ⚠️ Only as a collapsed option
+
+Never expanded by default.
+
+Bad:
+
+> “Before you read…”
+
+Feels like:
+
+* instruction
+* homework
+* academic framing
+
+---
+
+Better:
+
+> (collapsed) “If you’re curious what’s happening here…”
+
+---
+
+# 🧭 NAMING — WHAT TO CALL “CONTEXT”
+
+You’re right: “Context” is accurate but cold.
+
+## 🥇 BEST OPTIONS
+
+* **“The story behind this”** ← strongest
+* **“Understand this passage”**
+* **“What’s happening here?”**
+
+---
+
+## 🥈 GOOD
+
+* “Background”
+* “Setting”
+
+---
+
+## ❌ AVOID
+
+* Context (too academic)
+* Historical context (too textbook)
+* Literary analysis (completely wrong tone)
+
+---
+
+# ⚠️ DOES THIS RISK BECOMING A BIBLE STUDY APP?
+
+Yes—if mishandled.
+
+Here’s the line:
+
+### ❌ Bible study app:
+
+> “Learn about this passage”
+
+### ✅ Shepherd’s Path:
+
+> “Encounter this… and understand it if you want”
+
+---
+
+# 🧠 HOW GREAT PRODUCTS HANDLE THIS
+
+### YouVersion Bible App
+
+* keeps tools (notes, highlights, context) secondary
+* user must **choose to engage deeper**
+
+---
+
+### Lectio 365
+
+* no heavy context upfront
+* immersion first, understanding later
+
+---
+
+### BibleProject
+
+* deep context, but **separate from devotional moment**
+* users opt into learning mode
+
+---
+
+# 🧭 WHICH MODEL FITS YOU?
+
+👉 You are closest to **Lectio 365**
+
+But with optional depth like BibleProject
+
+---
+
+# 🔥 FINAL STRUCTURE (WHAT I WOULD BUILD)
+
+### Passage screen:
+
+1. **Scripture**
+2. (optional, subtle)
+
+   > “The story behind this” (collapsed)
+3. **Primary actions:**
+
+   * Reflect
+   * Prayer
+   * Ask
+
+---
+
+### After engagement:
+
+> “Want to understand this more?”
+> → opens context
+
+---
+
+# 👤 NEW VS MATURE USER
+
+### New believer:
+
+* needs safety, not information overload
+* context should be:
+
+  * optional
+  * simple
+  * story-driven
+
+---
+
+### Mature believer:
+
+* will seek context
+* expects depth
+
+---
+
+👉 Solution:
+
+Same UI
+Different **depth layers inside**
+
+---
+
+# 🚫 BIGGEST MISTAKE TO AVOID
+
+> Teaching before encountering
+
+The moment you do that:
+
+* the app becomes instructional
+* the user becomes a student
+* the encounter weakens
+
+---
+
+# 🕊️ FINAL PRINCIPLE
+
+> Let them meet God first.
+> Let them understand later.
+
+---
+
+# 🔥 ONE LINE TO REMEMBER
+
+> Context should never lead the moment.
+> It should **serve the moment—only when invited**.
+
+---
+
+If you want next, I can:
+
+* design the exact UI layout (pixel-level)
+* or write the **Context content style guide** so it never feels academic or dry
+
+This is one of the most important decisions you’ll make for tone.

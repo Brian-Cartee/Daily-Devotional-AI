@@ -1,0 +1,410 @@
+
+Library
+
+Other
+Documents
+
+Open a new tab to test authentication and file uploads.
+Databases
+Development Database
+29.6MB / 20GB
+Production Database
+29.31MB / 100GB
+Billing Period
+Renews monthly, Apr 5
+Hours of Compute Used
+1.15 hours
+
+npm run dev
+26m
+ • 
+27 minutes ago
+Port :5000 opened on
+Production
+Status
+Brian published about 21 hours ago
+Visibility
+Public
+Domain
+https://daily-devotional-ai.replit.app
+https://www.shepherdspathai.com
+Type
+Reserved VM
+(0.5 vCPU / 2 GiB RAM)
+Database
+Production database connected
+Your production database is ready! Your app can now save and manage live user data securely.
+5938f5bf
+BC
+briancartee
+Brian
+published about 23 hours ago
+46a32def
+BC
+briancartee
+Brian
+published about 23 hours ago
+95016770
+BC
+briancartee
+Brian
+published 1 day ago
+95e73c05
+BC
+briancartee
+Brian
+published 1 day ago
+95e73c05
+BC
+briancartee
+Brian
+published 1 day ago
+24fc43b9
+BC
+briancartee
+Brian
+published 2 days ago
+cb5281a2
+BC
+briancartee
+Brian
+published 2 days ago
+e68565b8
+BC
+briancartee
+Brian
+published 3 days ago
+ae1d4836
+BC
+briancartee
+Brian
+published 3 days ago
+d168674b
+BC
+briancartee
+Brian
+published 3 days ago
+341c398d
+BC
+briancartee
+Brian
+published 4 days ago
+3ecf1915
+BC
+briancartee
+Brian
+published 4 days ago
+efb92368
+BC
+briancartee
+Brian
+published 4 days ago
+76c4e326
+BC
+briancartee
+Brian
+published 5 days ago
+5e7954f2
+BC
+briancartee
+Brian
+published 5 days ago
+Shepherd's Path — Master Reference Document
+
+As of: March 11, 2026 Update the date above each time this document is revised.
+
+1. Product Identity
+
+Field	Value
+App Name	Shepherd's Path
+Tagline	"Your daily walk with Jesus."
+Domain	ShepherdPathAI.com
+Support Email	support@shepherdspathai.com
+App Store Name	Shepherd's Path
+PWA Theme Color	#3b1f7a (deep purple)
+2. Pricing & Plans
+
+Subscription Tiers
+
+Plan	Price	AI Uses	Notes
+Free	$0	10 AI generations per day	Resets at midnight local time
+Pro Monthly	$5.99 / month	Unlimited	Billed monthly via Stripe
+Pro Annual	$44.99 / year	Unlimited	~37% savings vs monthly
+What "AI Uses" Counts
+
+Each tap of Reflect, Prayer, or a chat message in the Devotional or Study section counts as one AI use. Generating a new reflection and generating a prayer are two separate uses.
+
+Pro Benefits (vs Free)
+
+Unlimited AI reflections, prayers, and chat
+No daily usage cap
+Priority voice (same voices, no throttle)
+Streak-based "Thank You" message instead of tip prompt
+3. One-Time Tips (Support the Mission)
+
+Users can optionally leave a tip to support the app. Shown after streak milestones.
+
+Amount	Label
+$3	Small offering
+$5	Generous gift
+$10	Partner-level support
+Processed via Stripe one-time checkout
+Tip prompt appears after streak milestones: 7, 14, 30, 60, and 100 days
+90-day cooldown between tip prompts (stored in localStorage)
+Pro users see a thank-you message instead of a tip prompt
+After successful tip, user is redirected to /devotional?tip=thank-you which shows a confirmation toast
+4. Streak Milestones & Achievements
+
+Streak	Achievement ID	Reward
+7 days	streak_7	Achievement card + tip prompt eligibility
+14 days	streak_14	Achievement card + tip prompt eligibility
+30 days	streak_30	Achievement card + tip prompt eligibility
+60 days	streak_60	Achievement card + tip prompt eligibility
+100 days	streak_100	Achievement card + tip prompt eligibility
+5. Navigation Structure
+
+Six sections accessible from the bottom navigation bar:
+
+Section	Route	Description
+Devotional	/devotional	Daily verse, AI reflection & prayer, chat
+Journey	/journey	Streak tracking, achievements, growth stats
+Read	/read	Full Bible reading with AI companion
+Study	/study	Topic-based Bible study with AI
+Journal	/journal	Personal spiritual journal entries
+(Landing)	/	Marketing homepage
+Pricing	/pricing	Plan comparison page
+Bookmark system: All 5 sections save progress to localStorage. NavBar shows amber dots on sections with saved progress. Read/Study/Journey show a "Resume" banner. Journal auto-restores last-viewed tab. Devotional silently saves.
+
+LocalStorage Key	Section
+sp_bm_read	Read Bible
+sp_bm_study	Quick Study
+sp_bm_journey	Understand/Journey
+sp_bm_devotional	Devotional
+sp_bm_journal	Journal
+6. AI System
+
+Model
+
+Model: gpt-4o-mini (used across all AI features)
+Streaming: Yes — responses stream token by token for a natural feel
+AI Endpoints
+
+Endpoint	Purpose
+POST /api/ai/generate	Generates reflection or prayer for daily verse
+POST /api/ai/chat	Follow-up conversation anchored to daily verse
+POST /api/chat/passage	AI companion for Bible reading (Read/Study pages)
+POST /api/tts	Text-to-speech audio generation
+POST /api/sms/webhook	Inbound SMS handler (Twilio)
+POST /api/sms/voice	Inbound call handler — plays voice greeting (Twilio)
+GET /api/sms/greeting.mp3	OpenAI TTS voice greeting audio (cached)
+Voice System
+
+Users choose their preferred AI voice during onboarding (2-step name → voice preview flow).
+
+Voice	OpenAI Voice ID	Character
+Voice A	onyx	Deep & warm (default)
+Voice B	nova	Gentle & clear
+Voice preference is stored in localStorage under key sp_voice. No gender framing — users preview and choose by sound.
+
+SMS & Voice greeting voice: onyx (same as app default, for consistency)
+
+AI Character & Guardrails
+
+The AI is instructed to be a deeply thoughtful spiritual companion — a trusted friend who knows the Bible well and speaks plainly. It is explicitly instructed never to:
+
+Give bulleted lists
+Use spiritual clichés ("lean into," "unpack," "let go and let God," "walk in His truth")
+Tell users what they "should" or "must" do
+Open with hollow affirmations ("Great question!", "What a beautiful verse!")
+Be preachy
+Invent or misquote Bible verses (prefer NKJV, ESV, or Amplified wording in AI-generated text)
+Crisis Detection
+
+A built-in crisis detection function (detectCrisis()) scans every user message for keywords indicating self-harm or crisis. When triggered, it bypasses the AI model and returns a fixed compassionate response with crisis resources (988 Lifeline + 911). This applies to both the app and the SMS channel. Cannot be disabled.
+
+Relationship Tiers (AI voice adapts by usage age)
+
+Days in App	Tier
+1–3 days	New — welcoming, no assumed familiarity
+4–14 days	Building — attentive, learning who they are
+15–30 days	Established — real rapport, genuine warmth
+31+ days	Trusted companion — speaks with earned intimacy
+7. Bible Versions
+
+Only three versions are available in the app's Bible reader:
+
+Abbreviation	Full Name
+KJV	King James Version
+WEB	World English Bible
+ASV	American Standard Version
+These are public-domain translations served via bible-api.com. No licensing fees apply.
+
+AI-generated text (reflections, SMS responses) may quote NKJV, ESV, or Amplified since those are generated text, not API-fetched.
+
+8. Daily Verse System
+
+Daily verse is set via the admin Google Sheet integration
+Verse includes: reference, text, and reflectionPrompt
+If no verse is found in the sheet, a fallback verse is used: Philippians 4:6–7 (WEB)
+The daily email is sent each morning and includes today's verse + a link to the app
+9. Notifications & Email
+
+Push Notifications
+
+Browser-based push via Web Push API (VAPID keys stored as environment secrets)
+Users opt in from the Devotional page
+Welcome notification fires on first opt-in
+Daily Email
+
+Powered by Resend (email provider integration)
+Users subscribe via the landing page or devotional page
+Email includes: today's verse, encouragement, and a deep link into the app
+Unsubscribe is handled via Resend
+SMS Channel (Twilio)
+
+Phone number: +1 (833) 962-9341
+Provider: Twilio (Trial account — upgrade to Pay-as-you-go before running ads)
+Inbound webhook: POST /api/sms/webhook
+Voice greeting webhook: POST /api/sms/voice
+SMS Commands (texters can send these)
+
+Command	Response
+Anything (e.g. "Pray", "I'm anxious")	AI conversation response with scripture + reflection + prayer
+VERSE	Today's verse, formatted cleanly
+DEVOTIONAL	AI-generated full morning devotional (verse + reflection + prayer, no follow-up question)
+HELP	Lists available commands + remaining free messages today
+STOP / UNSUBSCRIBE	Opts out of all messages
+START / UNSTOP	Re-opts in and welcomes back
+SMS Limits
+
+Free: 10 AI replies per day per phone number (VERSE and HELP don't count)
+When limit is hit: directed to ShepherdPathAI.com for Pro upgrade
+Pro SMS tier: Not yet built (Phase 2)
+Daily Morning Devotional SMS
+
+Sent automatically at 8:00 AM Eastern (13:00 UTC) every day
+Everyone who has ever texted in is enrolled automatically
+Sends today's verse + AI-written reflection to all opted-in numbers
+STOP command removes them; START re-enrolls them
+Scheduler: server/smsScheduler.ts
+Voice Greeting (when someone calls the number)
+
+Plays an OpenAI TTS greeting using the onyx voice
+Message: "You've reached Shepherd's Path — your daily walk with Jesus. To receive scripture, prayer, and spiritual encouragement right now, just text this number anything on your heart. You can also visit ShepherdPathAI.com for daily devotionals, guided Bible journeys, and more. May God bless you today."
+Audio is cached in memory after first generation
+Gracefully ends the call after playing
+Conversion Strategy
+
+First text: warm AI response, no sales pitch
+Second exchange: natural CTA appended: "Daily devotionals & more await you free at ShepherdPathAI.com"
+CTA is sent only once per phone number (ctaSent flag in DB)
+10. Refund Policy
+
+Refunds can be requested through the app (Settings → Subscription → Request Refund)
+Processed via Stripe
+Funds appear in 5–10 business days
+Subscription is cancelled at time of refund
+11. Key Local Storage Keys (Technical Reference)
+
+Key	Purpose
+sp_user_name	User's display name
+sp_voice	Chosen TTS voice (onyx or nova)
+sp_ai_usage	Daily AI usage count + last-reset date
+sp_tip_dismissed	Timestamp of last tip prompt dismissal (90-day cooldown)
+sp_session_id	Anonymous session identifier for journal memory
+sp_start_date	Date user first opened the app (for relationship tier calculation)
+sp_bm_read	Read Bible bookmark (book + chapter)
+sp_bm_study	Study bookmark (track ID + label)
+sp_bm_journey	Journey bookmark (journey ID + label)
+sp_bm_devotional	Devotional bookmark (date + label)
+sp_bm_journal	Journal bookmark (active tab)
+12. Design & Brand
+
+Fonts
+
+Role	Font
+UI / Body	Plus Jakarta Sans
+Headings / Serif accent	Instrument Serif
+Bible reading	Literata
+Decorative / Display	Cormorant Garamond
+Primary Color
+
+Brand purple: #3b1f7a / HSL 263 56% 46%
+13. Monetization Notes (Future)
+
+The following have been discussed but not yet built:
+
+SMS Pro tier — unlimited SMS AI replies, Pro status linked to phone number, SUBSCRIBE command sends Stripe payment link. Family-gifted option (family member pays via web, links parent's phone).
+White label for churches — custom branding, group pricing (contact via support email)
+Influencer referral program — discussed; to be built as formal feature later
+Annual price lock guarantee — users who subscribe annually lock in their rate
+/pray landing page — dedicated ad campaign landing page for Meta ads
+14. Key Secrets & Integrations (Do Not Share Publicly)
+
+All secrets are stored as Replit environment variables. Never commit to code.
+
+Secret	Purpose
+OPENAI_API_KEY	AI reflections, prayers, chat, TTS
+STRIPE_SECRET_KEY	Subscriptions, tips, refunds
+SESSION_SECRET	Session security
+TWILIO_ACCOUNT_SID	SMS + Voice (Twilio)
+TWILIO_AUTH_TOKEN	SMS webhook signature validation
+TWILIO_PHONE_NUMBER	Outbound SMS sender number (+18339629341)
+VAPID public/private keys	Web push notifications
+Resend API key	Transactional + daily emails
+Google Sheet integration	Daily verse management
+15. Beta Testing Plan
+
+Testers: 2–3 people, 2 weeks, minimal instructions
+Key feedback questions:
+How did the AI responses feel? Warm and human, or robotic?
+Would you pay $5.99/month for this? Why or why not?
+What made you come back a second time?
+SMS testers: Add their numbers as verified contacts in Twilio Trial account (up to 5)
+To update this document: edit SHEPHERDS_PATH_REFERENCE.md in the project root, update the "As of" date at the top.
+Add a visual tracker for daily progress and streaks
+okay,
+Before the app is ready...could we run a potentially viral meta AD. Free "Pray" with Shepherd's Path. Pre-app release launch for insight into the next transformation faith based app. For a limited time everything is FREE. Not thisexactly but something similar and see if this can RAMP up use?
+I was never albe to actually find that docuemnt btw
+Shepherd's Path — Master Reference Document (March 11, 2026)
+Text
+# Shepherd's Path — Master Reference Document **As of: March 11, 2026**...
+Thank you!
+I'm also curious, could this SMS channel additionally include a way to spread group prayers easliy. in a preferred manor....
+do you have a suggestion?
+yes please do....
+so you think doing a well crafted Meta ad prior to app launch is a good idea with certian language or calls to action?
+will the landing page be accessible from the homepage?
+okay, keep it seperate...
+thank you!
+me ask a question, could you insert the purple logo "very small" into the top right corner "Share App" button?
+i'm talking about this one maybe in a circle?
+it looks okay but you can't really see the logo that well....
+anyway to make it more visible?
+i'll need to check it on mobile later...
+here's a copy of a tracker by my churches app....shows day completed and days missed in a the tracker....displayed well for easy viewing...FYI
+Please make this the case for the entire site and any new futrue releases too just to have a standard. Important editing rule for all scripture, devotionals, prayers, and commentary:
+
+Only capitalize pronouns such as He, Him, His, You, Your, and Yours when they clearly and directly refer to God, Jesus Christ, the Holy Spirit, or the Lord.
+
+Do NOT capitalize pronouns when they refer to:
+
+a human being
+a generic person
+a reader
+a parent, child, pastor, king, prophet, disciple, or narrator
+an unclear or ambiguous subject
+anyone in a Bible story unless the reference is unmistakably to God, Jesus, or the Holy Spirit
+If there is any doubt, leave the pronoun lowercase.
+
+Examples:
+
+“Jesus said He is the way” → capitalize “He”
+“David said he would go” → lowercase “he”
+“When a father loves his son” → lowercase “his”
+“Trust in the Lord with all your heart” → lowercase “your” unless directly addressing God in prayer
+In prayer to God: “Lord, You are faithful and Your mercy endures forever” → capitalize “You” and “Your”
+Priority rule:
+Accuracy is more important than stylistic capitalization. Never capitalize a pronoun unless the reference is clearly divine.
+
+Please review the existing text and correct any wrongly capitalized pronouns so only divine references remain capitalized.

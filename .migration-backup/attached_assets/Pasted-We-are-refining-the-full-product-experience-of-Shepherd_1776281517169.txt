@@ -1,0 +1,276 @@
+We are refining the full product experience of Shepherd’s Path.
+
+This is not a feature-by-feature optimization.
+
+This is a unification of voice, tone, and emotional experience across the entire app.
+
+---
+
+## CORE PRODUCT IDENTITY
+
+Shepherd’s Path is not:
+
+* a Bible app
+* a content platform
+* a productivity tool
+* a self-help system
+
+Shepherd’s Path is:
+
+a quiet, consistent presence that meets someone where they are and gently walks with them toward truth.
+
+---
+
+## THE EXPERIENCE STANDARD
+
+Every screen, message, and interaction must feel like:
+
+* calm, not urgent
+* present, not instructive
+* personal, not generalized
+* invitational, not directive
+
+The app should never feel like it is:
+
+* telling the user what to do
+* explaining itself
+* asking for effort
+* requiring decisions
+
+Instead, it should feel like:
+
+“you can begin here”
+
+---
+
+## THE FIVE CORE MODES (UNIFIED)
+
+The app has five functional areas:
+
+1. Devotional
+2. Guidance (Talk It Through)
+3. Study
+4. Journeys
+5. Journal
+
+They must NOT feel like separate tools.
+
+They must feel like:
+
+different moments within the same relationship.
+
+---
+
+## MODE DEFINITIONS
+
+Devotional:
+A daily anchor — something received, not chosen.
+
+Guidance:
+A conversation — something expressed and responded to.
+
+Study:
+Exploration — something understood, not searched.
+
+Journeys:
+Continuation — something walked, not selected.
+
+Journal:
+Reflection — something remembered, not stored.
+
+---
+
+## CRITICAL RULE — NO MODE BREAKS
+
+At no point should the user feel like they are:
+
+* switching tools
+* entering a new system
+* starting over
+
+Transitions must feel like:
+
+a natural continuation of the same moment.
+
+---
+
+## VOICE & LANGUAGE RULES
+
+1. REMOVE ALL SYSTEM LANGUAGE
+
+Avoid:
+
+* “saved”
+* “no items yet”
+* “your data”
+* “this feature”
+* “how it works”
+
+Replace with:
+language that reflects meaning, not mechanics.
+
+---
+
+2. REMOVE ALL PRODUCT LANGUAGE
+
+Avoid:
+
+* “plans”
+* “tracks”
+* “program”
+* “content”
+* “library”
+
+Replace with:
+
+* path
+* moment
+* place
+* step
+* beginning
+
+---
+
+3. REMOVE ALL URGENCY
+
+Avoid:
+
+* “start now”
+* “don’t miss”
+* “quick”
+* “in seconds”
+
+Replace with:
+
+* “begin”
+* “when you’re ready”
+* silence (no pressure language at all)
+
+---
+
+4. SPEAK TO THE PERSON, NOT THE FEATURE
+
+Every piece of copy should reflect:
+
+* what the user may be feeling
+* what they may be carrying
+* what they may be wondering
+
+NOT:
+
+* what the feature does
+
+---
+
+5. QUIET CONFIDENCE
+
+The app should feel:
+
+* grounded
+* assured
+* not trying to impress
+* not trying to convert
+
+---
+
+## THE INVISIBLE HANDOFF (MOST IMPORTANT)
+
+The app must feel like a single continuous experience across:
+
+Guidance → Devotional → Study → Journeys → Journal
+
+Examples:
+
+If a user shares something in Guidance:
+→ Devotional should feel relevant, not random
+
+If a user reads something meaningful:
+→ Journal should feel like a natural place to hold it
+
+If a user is exploring in Study:
+→ Journeys should feel like a next step, not a separate decision
+
+---
+
+There should never be a moment where the user thinks:
+
+“What should I do next?”
+
+The app should gently make that obvious without stating it directly.
+
+---
+
+## EMPTY STATE STANDARD
+
+Empty states must NEVER feel like:
+
+* absence
+* failure
+* inactivity
+
+They should feel like:
+
+* something that will become meaningful
+* a place waiting to be filled over time
+
+---
+
+## ENGAGEMENT PRINCIPLE
+
+We are not optimizing for:
+
+* clicks
+* time spent
+* feature usage
+
+We are optimizing for:
+
+* return
+* trust
+* emotional connection
+
+---
+
+## FINAL EVALUATION TEST
+
+For every screen, ask:
+
+Does this feel like:
+
+“I am using an app”
+
+OR:
+
+“I am returning to something familiar”
+
+If it feels like an app → revise
+If it feels like a place → keep
+
+---
+
+## TASK
+
+Review the Shepherd’s Path experience holistically.
+
+Identify:
+
+1. Where the experience breaks (feels like a tool, feature, or system)
+2. Where language becomes mechanical or product-driven
+3. Where transitions feel like switching instead of continuing
+4. Where decisions are being asked instead of invitations being made
+
+Then provide:
+
+* Specific copy refinements
+* Structural adjustments (only if they support emotional flow)
+* Suggestions to strengthen continuity between sections
+
+Do NOT suggest:
+
+* adding features
+* increasing complexity
+* gamification or metrics
+
+All recommendations must:
+
+protect simplicity, deepen meaning, and preserve the core identity.

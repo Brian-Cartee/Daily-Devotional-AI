@@ -1,0 +1,182 @@
+You are helping improve an existing Christian AI app called Shepherd’s Path.
+
+IMPORTANT DEVELOPMENT RULES:
+Do not rebuild the app from scratch.
+Do not replace working systems unless absolutely necessary.
+Do not remove existing features unless explicitly told to do so.
+Do not introduce unnecessary complexity.
+Preserve all functioning code, UI patterns, routing, database structure, and current feature flows wherever possible.
+
+Your job is to carefully improve, refine, and elevate the existing app while minimizing regressions, broken features, or side effects.
+
+PRIMARY GOAL:
+Make Shepherd’s Path feel deeply engaging, spiritually powerful, emotionally resonant, peaceful, premium, and naturally habit-forming in a healthy way.
+
+The experience should feel transformative — not gimmicky, not overly “techy,” not robotic, and not generic.
+It should feel like a trusted daily spiritual companion that people are naturally drawn to return to every day.
+
+CORE PRODUCT VISION:
+Shepherd’s Path is not just a Bible app.
+It is an AI-powered spiritual companion that helps users:
+- receive personalized biblical encouragement
+- pray through real-life struggles
+- reflect daily
+- feel seen, guided, and comforted
+- grow closer to Jesus in a practical daily rhythm
+
+DESIRED USER EXPERIENCE:
+Every interaction should feel:
+- warm
+- deeply personal
+- biblically grounded
+- emotionally intelligent
+- peaceful
+- elegant
+- trustworthy
+- premium
+- simple and clear
+
+The app should create the feeling:
+“This app helps me reconnect with God.”
+“This understands what I’m carrying today.”
+“I want to come back tomorrow.”
+“This is becoming part of my daily life.”
+
+AVOID:
+- robotic wording
+- cold or generic AI responses
+- cluttered design
+- overly complicated navigation
+- cheesy religious clichés
+- harsh gamification
+- manipulative engagement tactics
+- anything that feels spammy, juvenile, or shallow
+
+INSTEAD PRIORITIZE:
+- calm beauty
+- spiritual depth
+- emotional warmth
+- ease of use
+- graceful flow
+- personalized encouragement
+- clear next steps for the user
+- shareable moments that feel authentic
+
+MAIN IMPROVEMENT PRIORITIES:
+
+1. PROTECT WHAT ALREADY WORKS
+Before making changes, inspect the current project structure and preserve existing working functionality.
+When editing code:
+- make surgical improvements
+- avoid unnecessary rewrites
+- change only what is needed
+- keep components modular
+- do not create regressions
+- maintain backward compatibility where possible
+
+2. IMPROVE THE AI EXPERIENCE
+Refine the AI interaction so responses feel:
+- pastoral but not preachy
+- compassionate but not soft or vague
+- wise, biblical, and specific
+- encouraging and practical
+- emotionally aware
+- natural and human
+
+AI responses should often include:
+- a short empathetic opening
+- relevant biblical encouragement
+- one fitting scripture
+- a thoughtful prayer or next step
+- a tone that feels grounded and comforting
+
+3. CREATE A MORE TRANSFORMATIVE DAILY EXPERIENCE
+Strengthen the daily-return loop in healthy ways through:
+- a beautifully presented daily verse
+- personalized daily guidance
+- prayer prompts
+- reflection prompts
+- faith journey progress
+- saved moments, prayers, or insights
+- gentle reminders and continuity from prior activity
+
+The app should feel like a daily meeting place, not just a utility.
+
+4. IMPROVE ENGAGEMENT WITHOUT MANIPULATION
+Make the experience naturally magnetic by increasing:
+- beauty
+- clarity
+- emotional relevance
+- sense of progress
+- personalization
+- spiritual usefulness
+
+Do not use cheap dopamine tactics.
+Do use:
+- continuity
+- ritual
+- reflection
+- personalization
+- saved history
+- meaningful streak concepts only if done subtly and gracefully
+
+5. UPGRADE THE UI / UX
+Refine the interface to feel:
+- modern
+- minimal
+- premium
+- calm
+- faith-centered
+- highly readable
+- mobile-friendly
+
+Design direction:
+- soft elegant spacing
+- beautiful typography
+- card-based sections where useful
+- subtle depth and polish
+- warm, inviting visual hierarchy
+- uncluttered layouts
+- gentle accent colors consistent with the brand
+- strong focus on readability and emotional tone
+
+6. MAKE SHARING FEEL NATURAL AND BEAUTIFUL
+Any sharing feature should feel like sharing faith, not promoting an app.
+Shared content should be visually beautiful and emotionally meaningful.
+Branding should be subtle and tasteful.
+
+7. CREATE A SENSE OF RELATIONSHIP WITH THE APP
+The app should feel like a spiritual companion users build trust with over time.
+Support features like:
+- remembering recent prayer themes
+- continuing reflection from prior days
+- personalized follow-up prompts
+- saved prayers or journals
+- a sense that the app is walking with the user
+
+TECHNICAL EXECUTION RULES:
+- First inspect the codebase and summarize the current architecture before making major changes.
+- Then propose a staged improvement plan.
+- Then implement improvements carefully in small, safe steps.
+- After each major change, verify that existing functionality still works.
+- Prefer editing existing components over creating duplicate systems.
+- Keep code clean, maintainable, and modular.
+- Comment clearly where helpful.
+- Preserve current environment configuration and deployment flow.
+
+DELIVERABLES I WANT FROM YOU:
+1. Audit the current app and identify the highest-impact improvements.
+2. Recommend the safest sequence of changes that will improve engagement and spiritual depth without breaking existing functionality.
+3. Implement those improvements incrementally.
+4. Flag any risky areas before changing them.
+5. Improve both user experience and AI response quality.
+6. Keep the app stable while making it feel significantly more compelling and transformative.
+
+SPECIFIC EXPERIENCE GOAL:
+When a user opens Shepherd’s Path, it should feel like opening a sacred, calming, intelligent place that helps them breathe, reflect, pray, and reconnect with God.
+
+FINAL STANDARD:
+Every change should answer this question:
+“Does this make Shepherd’s Path more spiritually meaningful, more beautiful, more trustworthy, and more naturally compelling to return to?”
+
+If not, do not add it.

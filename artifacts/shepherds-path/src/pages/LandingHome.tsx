@@ -1,0 +1,1743 @@
+import { useState, useRef, useEffect } from "react";
+import { isIOS, isAndroid } from "@/lib/platform";
+import { Link, useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sun, Sunrise, Swords, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon, HelpCircle, Wind } from "lucide-react";
+import { DailyArtCard } from "@/components/DailyArtCard";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
+import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
+import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
+import { useQuery } from "@tanstack/react-query";
+import { getSessionId } from "@/lib/session";
+import { getRelationshipAge } from "@/lib/relationship";
+import { useDemoMode } from "@/components/DemoProvider";
+import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { AiPauseModal } from "@/components/AiPauseModal";
+import { streamAI } from "@/lib/streamAI";
+import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
+import {
+  getRhythm, markFirstAction, hasFirstAction,
+  getRhythmDismissed, incrementRhythmDismissed,
+  getRecommendedJourneyId, getJourneyName, getDailyVerse, getPrayerPrompt,
+  FOCUS_LABELS, type FaithRhythm,
+} from "@/lib/faithRhythm";
+import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
+import { GuidedWalkthrough, shouldShowWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
+import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
+import {
+  GreetingHeader, ReturningUserCard, GratitudePromptCard,
+  CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
+  FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
+  WalkMilestoneCard, TheReturnCard,
+} from "@/components/EngagementCards";
+import { setLastOpenDate } from "@/lib/engagementCards";
+import { isLateNight } from "@/lib/nightMode";
+import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
+import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
+import { GoDeepCard } from "@/components/AdditionalSermonsSection";
+
+const logoSmall = "/logo-mark-white.png";
+const logoWhite = "/logo-mark-white.png";
+const logoLarge = "/logo-mark-white.png";
+
+const sections = [
+  {
+    href: "/understand",
+    icon: Compass,
+    pillText: "Choose Your Journey",
+    title: "Bible Journeys",
+    description: "Guided paths through Scripture — the Psalms, the Life of Jesus, Lent, the Sermon on the Mount, and more. Each one takes you deeper.",
+    cta: "Explore Journeys",
+    testid: "card-understand",
+    imageBg: "bg-gradient-to-br from-indigo-500/10 to-violet-500/5",
+    border: "border-indigo-900/10",
+    iconColor: "text-indigo-500",
+    pillClass: "bg-indigo-500/10 text-indigo-600",
+    accentGradient: "bg-gradient-to-b from-indigo-400 to-violet-500",
+    iconBg: "bg-gradient-to-br from-indigo-100 to-violet-50",
+    iconShadow: "shadow-indigo-200/60",
+    photo: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=700&q=70&auto=format&fit=crop",
+  },
+  {
+    href: "/read",
+    icon: BookOpen,
+    pillText: "Full Bible",
+    title: "Read the Bible",
+    description: "Read Genesis to Revelation in KJV, WEB, or ASV — with meaning, context, and reflection always within reach.",
+    cta: "Start Reading",
+    testid: "card-read",
+    imageBg: "bg-gradient-to-br from-amber-500/10 to-orange-500/5",
+    border: "border-amber-900/10",
+    iconColor: "text-amber-500",
+    pillClass: "bg-amber-500/10 text-amber-600",
+    accentGradient: "bg-gradient-to-b from-amber-400 to-orange-500",
+    iconBg: "bg-gradient-to-br from-amber-100 to-orange-50",
+    iconShadow: "shadow-amber-200/60",
+    photo: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=700&q=70&auto=format&fit=crop",
+  },
+];
+
+function formatVisitDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const d = new Date(year, month - 1, day);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const todayStr = today.toISOString().split("T")[0];
+  const yestStr = yesterday.toISOString().split("T")[0];
+  if (dateStr === todayStr) return "Today";
+  if (dateStr === yestStr) return "Yesterday";
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+
+function HeroAIPrompt() {
+  const [query, setQuery] = useState("");
+  const [, navigate] = useLocation();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [placeholderVisible, setPlaceholderVisible] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const dayPlaceholders = [
+    "I'm going through a divorce and I don't know how to move forward…",
+    "I just lost someone I love and I'm struggling to find peace…",
+    "I'm battling anxiety and my faith feels weak right now…",
+    "My marriage is falling apart and I don't know where to turn…",
+    "I feel distant from God and I'm not sure why…",
+    "I'm facing a health diagnosis and I'm scared…",
+    "I lost my job and I'm not sure what God is doing…",
+    "I'm carrying grief that no one around me seems to understand…",
+  ];
+  const nightPlaceholders = [
+    "I can't sleep — something is weighing on me tonight…",
+    "It's late and I feel completely alone right now…",
+    "I don't know how to pray, but I need something tonight…",
+    "Something is keeping me up and I don't know where else to go…",
+    "My mind won't stop — I'm looking for some peace…",
+    "I'm scared and it's late and I just need some comfort…",
+  ];
+  const placeholders = isLateNight() ? nightPlaceholders : dayPlaceholders;
+
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderVisible(false);
+      setTimeout(() => {
+        setPlaceholderIndex(i => (i + 1) % placeholders.length);
+        setPlaceholderVisible(true);
+      }, 400);
+    }, 3800);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    function handler(e: CustomEvent<{ text: string }>) {
+      setQuery(e.detail.text);
+      setTimeout(() => {
+        const input = document.querySelector<HTMLElement>('[data-testid="hero-ai-input"]');
+        input?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => inputRef.current?.focus(), 300);
+      }, 80);
+    }
+    window.addEventListener("sp-fill-prompt", handler as EventListener);
+    return () => window.removeEventListener("sp-fill-prompt", handler as EventListener);
+  }, []);
+
+  const toggleVoice = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setQuery(transcript);
+      if (event.results[event.results.length - 1].isFinal) {
+        inputRef.current?.focus();
+      }
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    markFirstAction();
+    navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (query.trim()) navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      className="relative rounded-2xl overflow-hidden mb-1 shadow-lg shadow-primary/15 border border-primary/20"
+    >
+      {/* Colored header band */}
+      <div className="px-6 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(292 98% 28%), hsl(292 85% 36%))" }}>
+        <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+          <Sparkles className="w-3.5 h-3.5 text-white/90" />
+        </div>
+        <span className="text-[14px] font-bold text-white" style={{ letterSpacing: "0.01em" }}>Talk It Through</span>
+      </div>
+
+      <div className="px-6 pt-4 pb-5 bg-card">
+
+
+        {/* Section 1 — open question */}
+        <form onSubmit={handleSubmit}>
+          <div className="relative rounded-xl border border-amber-400/30 bg-background focus-within:ring-2 focus-within:ring-amber-400/40 focus-within:border-amber-400/70 transition-all overflow-hidden shadow-sm">
+            {/* Textarea */}
+            <textarea
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              spellCheck
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              autoComplete="off"
+              ref={inputRef}
+              data-testid="hero-ai-input"
+              rows={4}
+              className="w-full bg-transparent px-4 pt-3 pb-2 text-[15px] text-foreground outline-none resize-none leading-relaxed"
+            />
+            {/* Animated placeholder overlay */}
+            {!query && (
+              <span
+                className="absolute left-4 top-3 text-[15px] text-muted-foreground pointer-events-none leading-relaxed transition-opacity duration-300"
+                style={{ opacity: placeholderVisible ? 1 : 0, right: "0.75rem" }}
+              >
+                {placeholders[placeholderIndex]}
+              </span>
+            )}
+            {/* Bottom toolbar */}
+            <div className="flex items-center justify-between px-2 pb-2">
+              {hasSpeechSupport ? (
+                <button
+                  type="button"
+                  onClick={toggleVoice}
+                  data-testid="button-voice-input"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
+                  style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                >
+                  {isListening
+                    ? <MicOff className="w-4 h-4" />
+                    : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />
+                  }
+                  {isListening && (
+                    <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />
+                  )}
+                </button>
+              ) : <span />}
+              <button
+                type="submit"
+                disabled={!query.trim()}
+                data-testid="hero-ai-submit"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 disabled:opacity-50 transition-all shadow-md shadow-amber-400/50"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* Situation chips — secondary helper, not the preferred path */}
+        <div className="mt-3">
+          <p className="text-[11px] text-muted-foreground/70 mb-2 px-0.5">
+            Not sure where to start? Tap one to fill in a starting point — then make it your own.
+          </p>
+          <div className="relative">
+            <div
+              className="flex gap-2 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+            {[
+              { label: "I'm carrying grief",         fill: "I'm grieving the loss of someone I love and I don't know how to process the pain…" },
+              { label: "I'm facing something in my marriage",    fill: "My marriage is struggling and I don't know where to turn…" },
+              { label: "I feel distant from God", fill: "I feel distant from God lately and I'm not sure why…" },
+              { label: "I'm struggling with anxiety",      fill: "I'm battling anxiety and my faith feels weak right now…" },
+              { label: "I'm facing something with my health",      fill: "I'm facing a health challenge and I'm scared about what comes next…" },
+              { label: "I'm searching for direction",        fill: "I need direction for my life and I'm not sure which way to go…" },
+              { label: "I'm under financial pressure",       fill: "I'm going through financial difficulty and I'm stressed and worried…" },
+              { label: "I feel lost",          fill: "I feel lost and I'm struggling to find my purpose right now…" },
+            ].map(({ label, fill }) => (
+              <button
+                key={label}
+                type="button"
+                data-testid={`chip-situation-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                onClick={() => {
+                  setQuery(fill);
+                  inputRef.current?.focus();
+                }}
+                className="shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-foreground/60 hover:bg-primary/10 hover:text-foreground/80 hover:border-primary/35 active:scale-95 transition-all"
+              >
+                {label}
+              </button>
+            ))}
+            {/* Trailing spacer — must be >= fade overlay width (w-14) to clear it */}
+            <div className="w-14 flex-shrink-0" />
+            </div>
+            {/* Fade + chevron — signals more chips to the right */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
+              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 70%)" }}>
+              <ChevronRight className="w-5 h-5 text-foreground/65 mr-0.5" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </motion.div>
+  );
+}
+
+function DevotionalCard() {
+  const sessionId = getSessionId();
+  const { data } = useQuery<{ currentStreak: number; longestStreak: number; visitDates: string[] }>({
+    queryKey: ["/api/streak", sessionId],
+    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  const weekDates = getCurrentWeekDates();
+  const todayIdx = getTodayIndex();
+  const visitDates: string[] = data?.visitDates ?? [];
+  const streak = data?.currentStreak ?? 0;
+
+  // Build the visit set. If streak > stored dates (data gap from before visitDates was tracked),
+  // infer the missing prior days by counting back from today.
+  const visitSet = new Set(visitDates);
+  if (streak > visitSet.size) {
+    for (let i = 0; i < streak; i++) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().split("T")[0];
+      visitSet.add(d);
+    }
+  }
+  const visitedToday = visitSet.has(weekDates[todayIdx]);
+
+  return (
+    <Link href="/devotional">
+      <div
+        data-testid="card-devotional"
+        className="group relative rounded-2xl border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
+      >
+        <img
+          src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=700&q=70&auto=format&fit=crop"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.32] pointer-events-none select-none"
+          style={{ filter: "saturate(0.75) brightness(1.05)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/8 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-transparent to-transparent pointer-events-none" />
+        {/* Left accent strip */}
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
+        <div className="relative z-10 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-teal-100 to-emerald-50 shadow-sm shadow-teal-200/60">
+            <Sun className="w-5 h-5 text-teal-500" />
+          </div>
+          <div className="flex-1 min-w-0 py-0.5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-500 border border-teal-400/40 shadow-sm">
+                Daily
+              </span>
+              {visitedToday && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
+                  <Check className="w-3 h-3" strokeWidth={3} /> Done today
+                </span>
+              )}
+            </div>
+            <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+              Daily Devotional
+            </h2>
+            <p className="text-[15px] text-foreground/80 leading-relaxed">
+              Each day brings a new scripture, a personal reflection, and an AI-guided moment to hear from God — grounded in the actual passage, shaped for your real life. Open it, sit with it, let it speak.
+            </p>
+            <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
+              {visitedToday ? "Continue today's devotional" : "Sit with today's message"}
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Horizontal week tracker */}
+        <div className="relative z-10 mt-4 pt-3 border-t border-teal-900/8">
+          <div className="flex items-end justify-center gap-3">
+            <div className="flex items-end gap-2.5">
+              {WEEK_LABELS.map((label, i) => {
+                const date = weekDates[i];
+                const visited = visitSet.has(date);
+                const isToday = i === todayIdx;
+                const isFuture = i > todayIdx;
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <span className={`text-[9px] font-bold uppercase leading-none ${isToday ? "text-teal-600 dark:text-teal-400" : visited ? "text-teal-500/60" : "text-muted-foreground/25"}`}>
+                      {label}
+                    </span>
+                    <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all ${
+                      visited && isToday
+                        ? "bg-teal-500 shadow-sm shadow-teal-400/50"
+                        : visited
+                        ? "bg-teal-50 dark:bg-teal-900/30 border border-teal-300/70 dark:border-teal-700/50"
+                        : isToday
+                        ? "border-2 border-teal-400/60 bg-teal-50/50"
+                        : isFuture
+                        ? "border border-muted-foreground/10"
+                        : "border border-muted-foreground/12 bg-muted/10"
+                    }`}>
+                      {visited && isToday && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                      {visited && !isToday && <Check className="w-2.5 h-2.5 text-teal-400" strokeWidth={3} />}
+                      {isToday && !visited && <div className="w-1.5 h-1.5 rounded-full bg-teal-400/50" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {streak > 0 && (
+              <div className="flex items-center gap-1 pb-0.5">
+                {streak >= 7
+                  ? <Flame className="w-3.5 h-3.5 text-amber-500" />
+                  : <span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />
+                }
+                <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400">{streak}d</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+const COMMITMENT_POINTS = [
+  "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit — trusting that the Holy Spirit is a living Person who opens Scripture to you as you read",
+  "AI is here to illuminate the passage being studied — never to reinterpret, replace, or stand beside Scripture",
+  "Grounded in historic, orthodox Christian faith across centuries and traditions — the same faith passed down through every generation",
+  "Built for showing up — whenever you're able, however you're able",
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "What is Shepherd's Path?",
+    a: "It's a quiet companion for your faith. Not a Bible app or a content platform — a place designed to meet you where you are and walk with you toward a deeper relationship with God. Each part of the app serves a different moment: something to receive, something to express, something to understand.",
+  },
+  {
+    q: "Do I need to know anything about the Bible to start?",
+    a: "Not at all. Many people who find their way here are curious, skeptical, or returning after a long time away. You don't need any background. There's no entry requirement — just begin where you are.",
+  },
+  {
+    q: "Is it free?",
+    a: "Yes. The Daily Devotional, Talk It Through, Bible reading, Journeys, and Journal are all free. A Pro option exists for those who want to go deeper — but the core experience is and will remain free.",
+  },
+  {
+    q: "What is the Daily Devotional?",
+    a: "Each day, a verse is waiting for you. Not a lecture — something to sit with. You can read it, listen to it, or simply let it rest in you. It's the same for everyone that day. It takes as long as you need.",
+  },
+  {
+    q: "What is Talk It Through?",
+    a: "A quiet place to bring what's on your heart. You share what's weighing on you — honestly, without filtering — and receive scripture and a written prayer shaped for that moment. It's not advice. It's presence.",
+  },
+  {
+    q: "What are Journeys?",
+    a: "Guided paths through Scripture shaped around seasons of life, questions you're carrying, and themes that matter. You don't choose a program — you step into something and walk through it at your own pace. Each journey is 7 passages long.",
+  },
+  {
+    q: "What is the Journal for?",
+    a: "A private place to hold what God is doing in your life. Prayers you've prayed, things that have spoken to you, words you don't want to forget. It's not designed to be productive — it's designed to be personal. It becomes more meaningful over time.",
+  },
+  {
+    q: 'What does "Explore Scripture" do?',
+    a: "Bring any question, passage, or thing you're wondering about — and it will find what Scripture says about it. It's understanding, not searching. You can type something as open as 'I feel like I've failed' or as specific as a chapter and verse.",
+  },
+  {
+    q: 'What is "Your Walk"?',
+    a: "A personalized path through Scripture built around where you actually are — exploring faith for the first time, returning after time away, growing deeper, or struggling and needing something to hold onto. Two quick questions, and your path is ready.",
+  },
+  {
+    q: "Do I need to create an account?",
+    a: "No. Shepherd's Path doesn't require a login. Your experience — your journal, your progress, your preferences — is saved privately to your device. Nothing is tied to a name, email, or profile unless you choose to subscribe to the daily verse.",
+  },
+  {
+    q: "Is my journal private?",
+    a: "Yes. Your prayers and reflections are stored locally on your device. We cannot read them, and they are never sent to our servers. What you write stays with you.",
+  },
+  {
+    q: "What is Pro?",
+    a: "Pro unlocks deeper access — more Talk It Through conversations, expanded Journeys, and the ability to listen to any passage. It supports the work of keeping the app free for everyone else. There's no pressure to upgrade; the free experience is complete on its own.",
+  },
+  {
+    q: "Is there a mobile app?",
+    a: 'Yes. Shepherd\'s Path is available on iOS through the App Store. An Android version is coming soon. You can also add it to your home screen from your browser — tap the share button and choose "Add to Home Screen" — for a native app feel.',
+  },
+  {
+    q: "Where do I begin?",
+    a: "Wherever feels right. Most people start with the Devotional — it's the gentlest entry point. Or open Talk It Through. Or step into a Journey. There's no wrong door. The app is designed so any place you start is the right place.",
+  },
+];
+
+const FAQ_INITIAL_COUNT = 5;
+
+function FaqItem({ item, index, open, setOpen }: { item: { q: string; a: string }; index: number; open: number | null; setOpen: (i: number | null) => void }) {
+  return (
+    <div className="border border-border/40 rounded-2xl overflow-hidden bg-card/40">
+      <button
+        data-testid={`faq-toggle-${index}`}
+        onClick={() => setOpen(open === index ? null : index)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+      >
+        <span className="text-[13px] font-semibold text-foreground leading-snug">{item.q}</span>
+        <motion.div
+          animate={{ rotate: open === index ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0"
+        >
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {open === index && (
+          <motion.div
+            key="answer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <p
+              data-testid={`faq-answer-${index}`}
+              className="px-4 pb-4 text-[13px] text-foreground/80 leading-relaxed"
+            >
+              {item.a}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const remaining = FAQ_ITEMS.length - FAQ_INITIAL_COUNT;
+
+  return (
+    <div className="px-0 mb-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+        <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/80 shrink-0">Questions people ask</p>
+        <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/60 to-transparent" />
+      </div>
+      <div className="space-y-1">
+        {FAQ_ITEMS.slice(0, FAQ_INITIAL_COUNT).map((item, i) => (
+          <FaqItem key={i} item={item} index={i} open={open} setOpen={setOpen} />
+        ))}
+
+        <AnimatePresence initial={false}>
+          {showAll && FAQ_ITEMS.slice(FAQ_INITIAL_COUNT).map((item, i) => (
+            <motion.div
+              key={FAQ_INITIAL_COUNT + i}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, delay: i * 0.04 }}
+            >
+              <FaqItem item={item} index={FAQ_INITIAL_COUNT + i} open={open} setOpen={setOpen} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {!showAll && (
+        <button
+          data-testid="button-faq-show-more"
+          onClick={() => setShowAll(true)}
+          className="mt-3 w-full py-3 rounded-2xl border border-border/40 bg-card/30 text-[13px] text-muted-foreground/80 hover:text-foreground hover:bg-card/60 transition-colors flex items-center justify-center gap-1.5"
+        >
+          <ChevronDown className="w-3.5 h-3.5" />
+          {remaining} more questions
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ClosingManifesto() {
+  return (
+    <div className="relative w-full mt-10 mb-2">
+      {/* Atmospheric violet bloom — bleeds freely, no clip */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(122,1,141,0.16) 0%, rgba(122,1,141,0.05) 60%, transparent 85%)",
+        }}
+      />
+      {/* Top fade into page background */}
+      <div
+        className="absolute inset-x-0 top-0 h-12 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, hsl(var(--background)), transparent)" }}
+      />
+      {/* Bottom fade into page background */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
+        style={{ background: "linear-gradient(to top, hsl(var(--background)), transparent)" }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center text-center px-4 py-8">
+        {/* App icon — brand seal, larger now that it anchors the whole closing */}
+        <div className="flex items-center gap-3 mb-7">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
+          <img
+            src="/sp-icon.png"
+            alt="Shepherd's Path"
+            className="w-16 h-16 rounded-[14px] flex-shrink-0"
+            style={{ boxShadow: "0 0 20px rgba(122,1,141,0.55)" }}
+          />
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
+        </div>
+
+        {/* The three lines — ascending scale, each one landing harder */}
+        <p
+          className="text-[18px] leading-snug mb-3 text-white/70"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
+        >
+          The path is here.
+        </p>
+        <p
+          className="text-[28px] leading-snug mb-4 text-white/88"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
+        >
+          Start where you are.
+        </p>
+        <p
+          className="text-[36px] leading-tight text-white"
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", textShadow: "0 2px 24px rgba(139,92,246,0.65)" }}
+        >
+          Walking it is up to you.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Deterministic arch data mirroring the Chris Harrison Bible cross-reference visualization
+// Colors shift blue → green → red based on span (distance between referenced books)
+const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
+  const out: { left: number; right: number; t: number }[] = [];
+  for (let i = 0; i < 160; i++) {
+    const s1 = (Math.sin(i * 127.1) * 0.5 + 0.5);
+    const s2 = (Math.sin(i * 311.7 + 1.3) * 0.5 + 0.5);
+    const x1 = 6 + s1 * 388;
+    const x2 = 6 + s2 * 388;
+    const left = Math.min(x1, x2);
+    const right = Math.max(x1, x2);
+    if (right - left < 4) continue;
+    out.push({ left, right, t: (right - left) / 388 });
+  }
+  return out;
+})();
+
+export default function LandingHome() {
+  const [, navigate] = useLocation();
+  const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
+  const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
+  const [expanded, setExpanded] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
+  const [showRhythmSetup, setShowRhythmSetup] = useState(false);
+  const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
+  const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
+  const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+  const [showWalkthrough, setShowWalkthrough] = useState(() => shouldShowWalkthrough());
+  useEffect(() => { recordWalkthroughVisit(); }, []);
+  const [nameInput, setNameInput] = useState("");
+  const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());
+  useEffect(() => {
+    if (sessionStorage.getItem('scrollToExplore')) {
+      sessionStorage.removeItem('scrollToExplore');
+      const scrollToIt = () => {
+        const el = document.getElementById('explore-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+      // Two-pass: attempt at 200ms then confirm at 500ms in case layout is still settling
+      setTimeout(scrollToIt, 200);
+      setTimeout(scrollToIt, 500);
+    }
+  }, []);
+  // Passage finder state
+  const [passageQuery, setPassageQuery] = useState("");
+  const [passageResult, setPassageResult] = useState("");
+  const [passageLoading, setPassageLoading] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
+  const [somethingElseOpen, setSomethingElseOpen] = useState(false);
+  const [somethingElseText, setSomethingElseText] = useState("");
+  const [commitmentOpen, setCommitmentOpen] = useState(true);
+
+  const findPassage = async () => {
+    const desc = passageQuery.trim();
+    if (!desc || passageLoading) return;
+    if (!canUseAi()) { setShowAiPause(true); return; }
+    recordAiUsage();
+    setPassageLoading(true);
+    setPassageResult("");
+    try {
+      const result = await streamAI(
+        "/api/chat/passage",
+        {
+          passageRef: "story-finder",
+          passageText: desc,
+          userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          messages: [{
+            role: "user",
+            content: `A user is trying to find a Bible story, passage, or verse they remember. They described it as:\n\n"${desc}"\n\nYour job is to identify the scripture(s) that best match this description. For each match, provide:\n- **Story/Passage Name** (the common title)\n- **Reference** (e.g. John 6:1–14; also note parallel passages)\n- **Why it matches** (1 sentence)\n- **Key Verse** (the single most memorable line)\n\nProvide 1–3 matches. Be warm, clear, and helpful. End with an encouraging sentence.`,
+          }],
+        },
+        (text) => setPassageResult(text),
+      );
+      setPassageResult(result);
+    } catch {
+      setPassageResult("Sorry, we couldn't search right now. Please try again.");
+    }
+    setPassageLoading(false);
+  };
+  const demo = useDemoMode();
+
+  const sessionId = getSessionId();
+  const { data: streakData } = useQuery<{ currentStreak: number; visitDates: string[] }>({
+    queryKey: ["/api/streak", sessionId],
+    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  const hasAction = hasFirstAction() || (streakData?.visitDates?.length ?? 0) > 0;
+  const showNudge = !rhythm && hasAction && rhythmDismissCount < 2;
+
+  const handleRhythmDone = () => {
+    setRhythm(getRhythm());
+    setShowRhythmSetup(false);
+  };
+
+  const handleRhythmDismiss = () => {
+    incrementRhythmDismissed();
+    setRhythmDismissCount((c) => c + 1);
+    setShowRhythmSetup(false);
+  };
+
+  const handleNudgeDismiss = () => {
+    incrementRhythmDismissed();
+    setRhythmDismissCount((c) => c + 1);
+  };
+
+  const streak = streakData?.currentStreak ?? 0;
+  const isPro = isProVerifiedLocally();
+  const showProNudge = !!rhythm && streak >= 3 && !isPro && !proNudgeHidden && !demo?.config.isDemo;
+
+  useEffect(() => { setLastOpenDate(); }, []);
+
+  const handleProNudgeDismiss = () => {
+    dismissProNudge();
+    setProNudgeHidden(true);
+  };
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: "Shepherd's Path",
+      text: "Your daily walk with Jesus — AI-guided devotionals, Bible journeys, prayer & more.",
+      url: "https://www.shepherdspathai.com",
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+      }
+      setShared(true);
+      setTimeout(() => setShared(false), 2500);
+    } catch { }
+  };
+
+  const focusHeroInput = () => {
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="hero-ai-input"]');
+      input?.scrollIntoView({ behavior: "smooth", block: "center" });
+      input?.focus();
+    }, 600);
+  };
+
+  const handleDismissWelcome = () => {
+    dismissWelcome();
+    markEntryShown();
+    setShowEntryScreen(false);
+    focusHeroInput();
+  };
+
+  return (
+    <div className="min-h-screen relative" style={{ background: "hsl(var(--background))" }}>
+      <AnimatePresence>
+        {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+      </AnimatePresence>
+      {showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      <AnimatePresence>
+        {showRhythmSetup && (
+          <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
+        )}
+      </AnimatePresence>
+
+      {/* Desktop side vignette — frames the content column on wide screens only */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 hidden xl:block"
+        style={{
+          background: "linear-gradient(to right, rgba(0,0,0,0.55) 0%, transparent calc(50% - 480px), transparent calc(50% + 480px), rgba(0,0,0,0.55) 100%)",
+          zIndex: 3,
+        }}
+      />
+
+      {/* Hero section */}
+      <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
+        <img
+          src="/hero-landing.webp"
+          alt="A road cresting a green hill toward golden light"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center center" }}
+        />
+        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background)) 4%, transparent 42%)" }} />
+
+        {/* Share — top right of hero */}
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20">
+          <button
+            onClick={handleShareApp}
+            data-testid="btn-share-hero"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white/85 hover:bg-black/45 active:scale-95 transition-all"
+          >
+            {shared
+              ? <Check className="w-3.5 h-3.5 text-green-400" />
+              : <Share2 className="w-3.5 h-3.5" />
+            }
+          </button>
+        </div>
+
+        {/* Hero text */}
+        <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14 pb-14 sm:pb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="flex flex-col items-start leading-none mb-3 select-none">
+              <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
+              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
+            </div>
+            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.1rem, 4vw, 1.65rem)", letterSpacing: "0.01em" }}>
+              You don't have to walk this alone.
+            </p>
+
+            {demo?.config.isDemo && (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
+                <span className="text-white/60 text-[10px] uppercase tracking-wider font-semibold">For</span>
+                <span className="text-white text-[12px] font-bold">{demo.config.churchName}</span>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Ambient grass — blurred hero image bleeds into side margins on wide screens */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none absolute inset-x-0 bottom-0 overflow-hidden"
+        style={{ top: "56vh", zIndex: 1 }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "url('/hero-landing.webp')",
+            backgroundSize: "cover",
+            backgroundPosition: "center 18%",
+            filter: "blur(5px)",
+            opacity: 0.48,
+            transform: "scale(1.06)",
+            maskImage: "linear-gradient(to bottom, transparent 0%, black 35%)",
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 35%)",
+          }}
+        />
+      </div>
+
+      {/* Section cards */}
+      <div className="max-w-xl md:max-w-4xl mx-auto px-3 pb-20 relative z-10 -mt-16 sm:-mt-20">
+
+        {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
+        <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
+          <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
+        </div>
+        <div className="hidden xl:block absolute pointer-events-none select-none" style={{ right: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
+          <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col gap-3"
+        >
+          {/* Time-aware greeting */}
+          <GreetingHeader />
+
+          {/* Name prompt — shown once for returning users who haven't set their name */}
+          {!getUserName() && !nameDismissed && streak >= 1 && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-primary/8 border border-primary/15">
+              <input
+                data-testid="input-name-prompt"
+                type="text"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && nameInput.trim()) {
+                    setUserName(nameInput.trim());
+                    setNameDismissed(true);
+                  }
+                }}
+                placeholder="What should we call you?"
+                className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none"
+              />
+              {nameInput.trim() && (
+                <button
+                  data-testid="btn-name-submit"
+                  onClick={() => { setUserName(nameInput.trim()); setNameDismissed(true); }}
+                  className="text-[12px] font-semibold text-primary px-2 py-0.5 rounded-lg hover:bg-primary/10 transition-colors"
+                >
+                  Save
+                </button>
+              )}
+              <button
+                data-testid="btn-name-dismiss"
+                onClick={() => { markNamePrompted(); setNameDismissed(true); }}
+                className="text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors text-[16px] leading-none"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Streak whisper — quiet acknowledgment of consistency */}
+          {streak >= 2 && !isLateNight() && (
+            <div className="flex items-center gap-1.5 px-0.5 -mt-0.5">
+              <Flame className="w-3 h-3 text-amber-400" />
+              <span className="text-[11px] font-semibold tracking-wide" style={{ color: "rgba(251,191,36,0.7)" }}>
+                Day {streak} in a row
+              </span>
+            </div>
+          )}
+
+          {/* ══ FOR YOU ══ */}
+          <div className="flex flex-col gap-3">
+
+          {/* Guided walkthrough — passive entry, shows for first few visits */}
+          <AnimatePresence>
+            {showWalkthrough && (
+              <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
+            )}
+          </AnimatePresence>
+
+          {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
+          <LateNightBannerCard />
+
+          {/* Walk milestone — grounding acknowledgment at 30/60/100 days */}
+          <WalkMilestoneCard daysWithApp={getRelationshipAge()} />
+
+          {/* Returning-user grace card */}
+          <ReturningUserCard />
+
+          {/* Notification nudge — shown once to users who haven't enabled reminders */}
+          <NotificationNudgeCard />
+
+          {/* ── Daily Verse anchor — scripture before anything else ── */}
+          {!isLateNight() && (() => {
+            const ANCHOR_VERSES = [
+              { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
+              { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13" },
+              { text: "Come to me, all you who are weary and burdened, and I will give you rest.", ref: "Matthew 11:28" },
+              { text: "For God so loved the world that He gave His one and only Son.", ref: "John 3:16" },
+              { text: "Trust in the Lord with all your heart and lean not on your own understanding.", ref: "Proverbs 3:5" },
+              { text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you.", ref: "Joshua 1:9" },
+              { text: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.", ref: "Psalm 34:18" },
+              { text: "Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.", ref: "Philippians 4:6" },
+              { text: "For I know the plans I have for you, declares the Lord — plans to prosper you and not to harm you.", ref: "Jeremiah 29:11" },
+              { text: "And we know that in all things God works for the good of those who love Him.", ref: "Romans 8:28" },
+              { text: "Cast all your anxiety on Him because He cares for you.", ref: "1 Peter 5:7" },
+              { text: "The Lord himself goes before you and will be with you; He will never leave you nor forsake you.", ref: "Deuteronomy 31:8" },
+              { text: "Even though I walk through the darkest valley, I will fear no evil, for You are with me.", ref: "Psalm 23:4" },
+              { text: "My grace is sufficient for you, for My power is made perfect in weakness.", ref: "2 Corinthians 12:9" },
+              { text: "In Him we have redemption through His blood, the forgiveness of sins.", ref: "Ephesians 1:7" },
+              { text: "God is our refuge and strength, an ever-present help in trouble.", ref: "Psalm 46:1" },
+              { text: "The steadfast love of the Lord never ceases; His mercies never come to an end.", ref: "Lamentations 3:22-23" },
+              { text: "Ask and it will be given to you; seek and you will find; knock and the door will be opened.", ref: "Matthew 7:7" },
+              { text: "He gives strength to the weary and increases the power of the weak.", ref: "Isaiah 40:29" },
+              { text: "Peace I leave with you; My peace I give you. I do not give as the world gives.", ref: "John 14:27" },
+              { text: "Your word is a lamp to my feet and a light to my path.", ref: "Psalm 119:105" },
+              { text: "But those who hope in the Lord will renew their strength.", ref: "Isaiah 40:31" },
+              { text: "Greater is He who is in you than he who is in the world.", ref: "1 John 4:4" },
+              { text: "If God is for us, who can be against us?", ref: "Romans 8:31" },
+              { text: "The Lord bless you and keep you; the Lord make His face shine on you.", ref: "Numbers 6:24-25" },
+              { text: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.", ref: "Psalm 121:1-2" },
+              { text: "He heals the brokenhearted and binds up their wounds.", ref: "Psalm 147:3" },
+              { text: "Give thanks to the Lord, for He is good; His love endures forever.", ref: "Psalm 107:1" },
+              { text: "Come near to God and He will come near to you.", ref: "James 4:8" },
+              { text: "This is the day that the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" },
+            ];
+            const dayIndex = Math.floor(Date.now() / 86_400_000) % ANCHOR_VERSES.length;
+            const verse = ANCHOR_VERSES[dayIndex];
+            return (
+              <Link href="/devotional">
+                <div
+                  data-testid="card-daily-verse-anchor"
+                  className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
+                  style={{ background: "linear-gradient(135deg, rgba(100,0,120,0.45) 0%, rgba(60,0,80,0.55) 100%)", border: "1px solid rgba(160,0,180,0.25)" }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(to right, #7A018D, #a855f7, #f59e0b)" }} />
+                  <div className="px-5 pt-4 pb-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(192,132,252,0.9)" }}>Today's Verse</p>
+                    <p className="leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", fontSize: "17px", color: "rgba(255,255,255,0.90)" }}>
+                      "{verse.text}"
+                    </p>
+                    <p className="text-[12px] font-semibold" style={{ color: "rgba(192,132,252,0.9)" }}>— {verse.ref}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })()}
+
+          {/* ── The Return — time-aware daily prompt (midday / evening / close) ── */}
+          {!isLateNight() && <TheReturnCard />}
+
+          {/* ── HERO: Talk It Through prompt — primary entry point ── */}
+          <HeroAIPrompt />
+
+          {/* Quick-select chips — horizontal scroll strip */}
+          {!isLateNight() && (
+            <div className="relative rounded-2xl border border-primary/15 bg-card overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/40 via-violet-500/40 to-primary/40" />
+              <div className="px-4 pt-3.5 pb-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60 mb-2.5">
+                  Where are you today?
+                </p>
+
+                {/* Scrollable chip row — no emojis, icon + label pills */}
+                <div className="relative">
+                <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                  {([
+                    { icon: <Zap  className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anxiety",      query: "I'm feeling anxious and overwhelmed and need God's peace" },
+                    { icon: <Heart className="w-3.5 h-3.5 flex-shrink-0" />, label: "Grief",       query: "I'm grieving a loss and need God's comfort right now" },
+                    { icon: <Moon className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Loneliness", query: "I'm feeling deeply lonely and disconnected and need God's presence" },
+                    { icon: <Flame className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anger",       query: "I'm struggling with anger and frustration and need God's guidance" },
+                    { icon: <Wind className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Fear",        query: "I'm living with fear and I need God's courage and peace to carry me through" },
+                    { icon: <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />, label: "Doubt", query: "I'm struggling with doubt and I'm not sure what I believe — help me find solid ground" },
+                    { icon: <Sunrise className="w-3.5 h-3.5 flex-shrink-0" />, label: "Hope",     query: "I need hope — help me find God's promises for the season I'm in" },
+                    { icon: <Users className="w-3.5 h-3.5 flex-shrink-0" />, label: "Relationship",query: "I'm struggling in an important relationship and need wisdom from God" },
+                  ] as const).map(({ icon, label, query }) => (
+                    <button
+                      key={label}
+                      data-testid={`emotion-card-${label.toLowerCase()}`}
+                      onClick={() => { markFirstAction(); navigate(`/guidance?situation=${encodeURIComponent(query)}`); }}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-primary/20 bg-muted/30 hover:bg-primary/10 hover:border-primary/45 active:scale-[0.97] transition-all whitespace-nowrap flex-shrink-0 text-primary/75 hover:text-primary"
+                    >
+                      {icon}
+                      <span className="text-[13px] font-semibold">{label}</span>
+                    </button>
+                  ))}
+                  {/* Something else — expands inline input */}
+                  <button
+                    data-testid="emotion-card-something-else"
+                    onClick={() => setSomethingElseOpen(v => !v)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border transition-all whitespace-nowrap flex-shrink-0 ${
+                      somethingElseOpen
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-primary/20 bg-muted/30 hover:bg-primary/10 hover:border-primary/45 text-primary/75 hover:text-primary"
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="text-[13px] font-semibold">Something else</span>
+                  </button>
+                  {/* Trailing spacer — must be >= fade overlay width (w-14) to clear it */}
+                  <div className="w-14 flex-shrink-0" />
+                </div>
+                {/* Fade + chevron — signals more chips to the right */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
+                  style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 70%)" }}>
+                  <ChevronRight className="w-5 h-5 text-foreground/65 mr-0.5" />
+                </div>
+                </div>
+
+                {/* Inline input — appears when "Something else" is tapped */}
+                <AnimatePresence>
+                  {somethingElseOpen && (
+                    <motion.div
+                      key="something-else-input"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden mt-3"
+                    >
+                      <div className="flex gap-2 items-end">
+                        <textarea
+                          autoFocus
+                          value={somethingElseText}
+                          onChange={e => setSomethingElseText(e.target.value)}
+                          placeholder="Describe what you're carrying…"
+                          rows={2}
+                          data-testid="input-something-else"
+                          className="flex-1 resize-none rounded-xl border border-primary/30 bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 leading-relaxed"
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && !e.shiftKey && somethingElseText.trim()) {
+                              e.preventDefault();
+                              markFirstAction();
+                              navigate(`/guidance?situation=${encodeURIComponent(somethingElseText.trim())}`);
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (!somethingElseText.trim()) return;
+                            markFirstAction();
+                            navigate(`/guidance?situation=${encodeURIComponent(somethingElseText.trim())}`);
+                          }}
+                          disabled={!somethingElseText.trim()}
+                          data-testid="button-something-else-submit"
+                          className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-md shadow-amber-400/30 transition-all"
+                        >
+                          <ArrowRight className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Devotional */}
+          <DevotionalCard />
+
+          {/* First Steps seeker card — shown to new users (days 1–7) */}
+          <FirstStepsCard daysWithApp={getRelationshipAge()} />
+
+
+          {/* Today's Rhythm card — shown once rhythm is set up */}
+          {rhythm && (() => {
+            const verse = getDailyVerse(rhythm.focus);
+            const prayer = getPrayerPrompt(rhythm.focus);
+            const journeyId = getRecommendedJourneyId(rhythm);
+            const journeyName = getJourneyName(journeyId);
+            const focusLabel = FOCUS_LABELS[rhythm.focus];
+            return (
+              <div className="relative rounded-2xl border border-primary/20 bg-card overflow-hidden shadow-sm">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-primary to-violet-500 opacity-70 rounded-l-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/4 via-violet-500/3 to-transparent pointer-events-none" />
+                <div className="relative z-10 px-5 pt-4 pb-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-primary/12 flex items-center justify-center">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <span className="text-[12px] font-bold uppercase tracking-widest text-primary/70">Your Rhythm Today</span>
+                    </div>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/8 text-primary border border-primary/15">
+                      Focused on {focusLabel}
+                    </span>
+                  </div>
+
+                  {/* Today's verse */}
+                  <div className="mb-3 px-3.5 py-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <p className="text-[13px] font-bold uppercase tracking-widest text-primary/50 mb-1.5">Today's Word</p>
+                    <p className="text-[14px] text-foreground leading-relaxed italic mb-1.5">
+                      "{verse.text}"
+                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-[12px] font-bold text-primary/60">— {verse.ref}</p>
+                      <ShareVerseButton verseText={verse.text} verseRef={verse.ref} />
+                    </div>
+                  </div>
+
+                  {/* Prayer + Journey — two columns */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+                    <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <HandHeart className="w-3.5 h-3.5 text-primary/60" />
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bring to Prayer</p>
+                      </div>
+                      <p className="text-[12px] text-foreground/75 leading-snug italic">
+                        {prayer}
+                      </p>
+                    </div>
+                    <Link href={`/understand?j=${journeyId}`}>
+                      <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60 hover:border-primary/25 hover:bg-primary/4 transition-all cursor-pointer h-full group">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <BookMarked className="w-3.5 h-3.5 text-primary/60" />
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Your Journey</p>
+                        </div>
+                        <p className="text-[12px] text-foreground/75 leading-snug font-semibold group-hover:text-primary transition-colors">
+                          {journeyName} →
+                        </p>
+                      </div>
+                    </Link>
+                  </div>
+
+                  {/* Footer — adjust */}
+                  <button
+                    data-testid="btn-adjust-rhythm"
+                    onClick={() => setShowRhythmSetup(true)}
+                    className="text-[11px] text-muted-foreground hover:text-primary transition-colors font-medium"
+                  >
+                    Adjust my rhythm
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Pro conversion nudge — shown at day 3+ streak, rhythm set, free user */}
+          {showProNudge && (
+            <div
+              data-testid="card-pro-nudge"
+              className="relative rounded-2xl overflow-hidden border border-amber-300/30 bg-card shadow-sm"
+            >
+              {/* Warm gradient top bar */}
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-400 opacity-70 rounded-l-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 via-orange-400/3 to-transparent pointer-events-none" />
+
+              <div className="relative z-10 px-5 pt-4 pb-4">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Flame className="w-4 h-4 text-amber-500" />
+                      <span className="text-[12px] font-bold uppercase tracking-widest text-amber-600/80">
+                        {streak} morning{streak !== 1 ? "s" : ""} with God
+                      </span>
+                    </div>
+                    <h3 className="text-[16px] font-extrabold text-foreground leading-tight tracking-tight">
+                      You're building something real.
+                    </h3>
+                    <p className="text-[13px] text-muted-foreground leading-snug mt-0.5">
+                      Don't let anything interrupt it.
+                    </p>
+                  </div>
+                  <button
+                    data-testid="btn-pro-nudge-dismiss"
+                    onClick={handleProNudgeDismiss}
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    <span className="text-lg leading-none">×</span>
+                  </button>
+                </div>
+
+                {/* Feature bullets */}
+                <div className="flex flex-col gap-1.5 mb-4">
+                  {[
+                    "No daily limits — AI guidance whenever you need it",
+                    "Streak protection — miss a day, keep your streak",
+                    "Full access to all devotional themes",
+                  ].map((point) => (
+                    <div key={point} className="flex items-start gap-2">
+                      <Check className="w-3.5 h-3.5 text-amber-500 mt-[2px] shrink-0" strokeWidth={3} />
+                      <span className="text-[13px] text-foreground/80 leading-snug">{point}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <Link href="/pricing">
+                  <div
+                    data-testid="btn-pro-nudge-cta"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[14px] font-bold shadow-sm shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    See what Pro gives you
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </Link>
+
+                <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+                  Starts at $3.75/month · Billed annually
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Personal reflection cards — daily/weekly touchpoints ── */}
+          <CheckinCard />
+          <GratitudePromptCard sessionId={sessionId} />
+          <WeeklyReflectionCard />
+          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
+
+          {/* ── Take a moment — closing grace note for the daily visit ── */}
+          <div className="flex items-center gap-3 mt-4 px-0.5">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
+            <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Take a moment</p>
+            <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
+          </div>
+          <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
+            <DailyArtCard />
+          </div>
+
+          {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}
+          {new Date().getHours() >= 17 && <Link href="/alignment">
+            <div
+              data-testid="card-walk-today-entry"
+              className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+              style={{ background: "linear-gradient(130deg, hsl(240 20% 10%), hsl(30 18% 12%))", border: "1px solid rgba(251,191,36,0.18)" }}
+            >
+              {/* Glowing top edge */}
+              <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(251,191,36,0.5), transparent)" }} />
+              <div className="px-5 py-4">
+                {/* Path dots decoration */}
+                <div className="flex items-center gap-1.5 mb-3">
+                  {[0.2, 0.45, 0.65, 0.8, 1].map((o, i) => (
+                    <div key={i} className="flex items-center gap-1.5 flex-1 last:flex-none">
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: `rgba(251,191,36,${o})`, boxShadow: o > 0.6 ? `0 0 6px rgba(251,191,36,${o * 0.6})` : "none" }}
+                      />
+                      {i < 4 && <div className="flex-1 h-px bg-amber-400/12" />}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-amber-400/60 mb-1">End of day</p>
+                    <p className="text-[17px] font-bold text-white leading-tight">Your Walk Today</p>
+                    <p className="text-[12px] text-white/40 mt-0.5">Not perfection. Alignment.</p>
+                  </div>
+                  <div className="mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.25)" }}>
+                    <ArrowRight className="w-4 h-4 text-amber-400/80" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-white/28 mt-3">Faith · Obedience · Love · Surrender · Endurance</p>
+              </div>
+            </div>
+          </Link>}
+
+          {/* ── Explore — all features ── */}
+          <div id="explore-section" className="mt-2">
+            <div className="flex items-center gap-3 mb-3 px-0.5">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
+              <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Explore</p>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {([
+                { href: "/salvation",    Icon: Sunrise,    label: "Beginning with Jesus",    desc: "Meet Jesus without pressure",               color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-salvation" },
+                { href: "/understand",   Icon: Compass,    label: "Bible Journeys",          desc: "Let Scripture meet you where you are",       color: "text-indigo-400",  bg: "border-indigo-500/20 bg-indigo-500/6",  testid: "explore-understand" },
+                { href: "/calling",        Icon: Share2, label: "Our Calling",              desc: "Carry the hope forward — share the path",    color: "text-orange-400",  bg: "border-orange-500/20 bg-orange-500/6",  testid: "explore-calling" },
+                { href: "/journal",      Icon: BookMarked, label: "Prayer Journal",          desc: "A place for what you don't want to lose",    color: "text-teal-400",    bg: "border-teal-500/20   bg-teal-500/6",    testid: "explore-journal" },
+                { href: "/iron-circle",  Icon: Swords,     label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",             color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
+                { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift someone up today",                      color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
+                { href: "/reading-plans",Icon: Star,       label: "Your Walk",               desc: "A path through Scripture made for where you are", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
+                { href: "/study",        Icon: Sparkles,   label: "Explore Scripture",       desc: "A question, a passage, or something on your mind", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-study" },
+                { href: "/read",         Icon: BookOpen,   label: "Read the Bible",          desc: "KJV, WEB, and ASV",                          color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-read" },
+                { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",                  color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
+                { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "A simple way to engage Scripture",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
+                { href: "/prayer-portrait", Icon: Heart,  label: "Prayer Portrait",         desc: "A prayer spoken over your life",              color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-prayer-portrait" },
+              ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
+                <Link key={href} href={href}>
+                  <div
+                    data-testid={`card-${testid}`}
+                    className={`rounded-2xl border ${bg} p-3.5 cursor-pointer hover:brightness-110 active:scale-[0.97] transition-all h-full`}
+                  >
+                    <Icon className={`w-5 h-5 ${color} mb-2`} />
+                    <p className="text-[13px] font-bold text-foreground leading-tight">{label}</p>
+                    <p className="text-[11px] text-muted-foreground/65 mt-0.5 leading-snug">{desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Go Deeper — sermon search for scrollers ready to explore */}
+          {!isLateNight() && <GoDeepCard />}
+
+          {/* ── 63,779 Scripture Unity Card ── */}
+          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(120,60,200,0.22)" }}>
+            {/* SVG arch visualization — simplified Chris Harrison style */}
+            <div style={{ background: "linear-gradient(180deg, #06030f 0%, #0d0620 100%)" }}>
+              <svg viewBox="0 0 400 110" className="w-full" style={{ height: "110px", display: "block" }} preserveAspectRatio="none">
+                {/* Baseline */}
+                <line x1="0" y1="104" x2="400" y2="104" stroke="rgba(255,255,255,0.10)" strokeWidth="0.8" />
+                {/* 66 book tick marks */}
+                {Array.from({ length: 66 }, (_, i) => {
+                  const x = 6 + (i / 65) * 388;
+                  return <line key={i} x1={x} y1="99" x2={x} y2="105" stroke="rgba(255,255,255,0.22)" strokeWidth="0.6" />;
+                })}
+                {/* Arch curves — rainbow colored by span like the original visualization */}
+                {BIBLE_ARCHES.map(({ left, right, t }, i) => {
+                  const cx = (left + right) / 2;
+                  const height = t * 95 + 4;
+                  const cy = 104 - height;
+                  const hue = Math.round(240 - t * 240);
+                  const opacity = 0.28 + t * 0.22;
+                  return (
+                    <path
+                      key={i}
+                      d={`M ${left} 104 Q ${cx} ${cy} ${right} 104`}
+                      fill="none"
+                      stroke={`hsla(${hue},88%,62%,${opacity})`}
+                      strokeWidth="0.75"
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* Content body */}
+            <div className="px-5 pt-5 pb-6" style={{ background: "linear-gradient(135deg, rgba(8,4,22,0.98) 0%, rgba(18,8,40,0.98) 100%)" }}>
+              <p className="text-[10.5px] font-black uppercase tracking-[0.24em] mb-3" style={{ color: "rgba(192,132,252,0.6)" }}>One Unified Story</p>
+
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-[44px] font-extrabold leading-none" style={{ color: "rgba(255,255,255,0.96)", letterSpacing: "-0.02em" }}>63,779</span>
+              </div>
+              <p className="text-[14px] mb-5" style={{ color: "rgba(255,255,255,0.50)" }}>cross-references woven through one Book</p>
+
+              {/* Three stats */}
+              <div className="flex gap-0 mb-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                {[
+                  { value: "66", label: "books" },
+                  { value: "~40", label: "authors" },
+                  { value: "1,500", label: "years written" },
+                ].map(({ value, label }, i) => (
+                  <div key={i} className="flex-1 text-center py-3.5" style={{ borderRight: i < 2 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
+                    <p className="text-[22px] font-extrabold leading-none mb-1" style={{ color: "rgba(192,132,252,0.95)" }}>{value}</p>
+                    <p className="text-[10.5px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.38)" }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* The argument */}
+              <p className="text-[13.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+                "Shepherds, kings, fishermen — 40 authors who never met, writing across 15 centuries. Yet every thread points to the same story. No committee planned this."
+              </p>
+              <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.42)" }}>
+                Each arc above represents a real cross-reference in Scripture — short arcs in blue, long-range connections in red. The visualization was created by Chris Harrison and Christoph Römhild.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Our Commitment to Scripture ── */}
+          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(160,80,200,0.25)" }}>
+
+            {/* Bible hero image — acts as the toggle header */}
+            <button
+              data-testid="toggle-commitment"
+              onClick={() => setCommitmentOpen(v => !v)}
+              className="relative w-full block text-left focus:outline-none"
+              style={{ height: "128px" }}
+            >
+              <img
+                src="https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=700&q=72"
+                alt="Open Bible"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: "center 38%" }}
+              />
+              {/* Dark gradient so header text is legible */}
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,3,22,0.35) 0%, rgba(8,3,22,0.82) 100%)" }} />
+              {/* Header text + chevron */}
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 pb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(192,132,252,0.85)" }} />
+                  <p className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: "rgba(255,255,255,0.90)" }}>Our Commitment to Scripture</p>
+                </div>
+                <motion.div animate={{ rotate: commitmentOpen ? 180 : 0 }} transition={{ duration: 0.22 }}>
+                  <ChevronDown className="w-4 h-4" style={{ color: "rgba(255,255,255,0.55)" }} />
+                </motion.div>
+              </div>
+            </button>
+
+            {/* Collapsible body */}
+            <AnimatePresence initial={false}>
+              {commitmentOpen && (
+                <motion.div
+                  key="commitment-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                  style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)" }}
+                >
+                  <div className="px-5 pt-4 pb-5">
+                    <div className="space-y-2.5">
+                      {[
+                        "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit",
+                        "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word",
+                        "Shaped by the historic, orthodox Christian faith — not cultural opinion",
+                        "Built to lead people to Christ, making it easier to immerse yourself in Scripture without embarrassment",
+                        "An honest, open place to encounter God — in a way that fits where you actually are",
+                      ].map((line, i) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: "rgba(192,132,252,0.7)" }} />
+                          <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>{line}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[14px] italic mt-4 pt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.80)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
+                      "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Testimonials ── */}
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4 px-0.5">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">What people are saying</p>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mr-5 pr-5 snap-x snap-proximity scrollbar-none">
+              {[
+                {
+                  quote: "I hadn't opened a Bible in fifteen years. This app doesn't make you feel behind. It just meets you. I've used it every morning for three months now.",
+                  name: "Rachel M.",
+                  descriptor: "Returning to faith",
+                  stars: 5,
+                },
+                {
+                  quote: "Talk It Through changed how I pray. I type what I'm actually feeling — even when I'm angry — and what comes back is scripture that fits. It's not a search engine. It's something else.",
+                  name: "Marcus T.",
+                  descriptor: "Daily user, 6 months",
+                  stars: 5,
+                },
+                {
+                  quote: "My husband passed in January. I found this app a week later. I don't have words for what it's meant to me during that time. It felt like someone was there.",
+                  name: "Diane L.",
+                  descriptor: "Pro subscriber",
+                  stars: 5,
+                },
+                {
+                  quote: "I'm skeptical of Christian apps. Most feel like a product. This one feels like it actually cares about where you are. I recommended it to my whole small group.",
+                  name: "James K.",
+                  descriptor: "Small group leader",
+                  stars: 5,
+                },
+              ].map(({ quote, name, descriptor, stars }, i) => (
+                <div
+                  key={i}
+                  data-testid={`testimonial-${i}`}
+                  className="rounded-2xl border border-border/40 bg-card/40 px-4 py-4 shrink-0 w-[78vw] max-w-[300px] snap-start"
+                >
+                  <div className="flex items-center gap-0.5 mb-2.5">
+                    {Array.from({ length: stars }).map((_, s) => (
+                      <svg key={s} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="text-[13.5px] text-foreground/90 leading-relaxed mb-3 italic">"{quote}"</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                      {name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-semibold text-foreground leading-none">{name}</p>
+                      <p className="text-[11px] text-muted-foreground/70 leading-none mt-0.5">{descriptor}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Daily Scripture Sign-Up ── */}
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4 px-0.5">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Start your morning with Scripture</p>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
+            </div>
+            <InlineSubscribeToggle />
+          </div>
+
+          </div>
+
+        </motion.div>
+
+
+        {/* Footer */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          className="mt-8 pb-2"
+        >
+          {/* Brand pills — smaller so 2 fit per row on mobile */}
+          <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-2 mb-4">
+            {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
+              <span key={tag} className="text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border border-border/60 bg-card/60 text-foreground/75">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <FaqSection />
+
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
+
+          {/* Links — 8 key destinations, 2-col */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs text-foreground/65 text-center mb-3 px-4">
+            <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="link-pricing-footer">
+              Plans & Pricing
+            </Link>
+            <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about-footer">
+              About
+            </Link>
+            <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-500/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
+              Beginning with Jesus
+            </Link>
+            <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
+              The Greatest Gift
+            </Link>
+            <Link href="/prayer-wall" className="hover:text-foreground transition-colors" data-testid="link-prayer-wall-footer">
+              Prayer Wall
+            </Link>
+            <Link href="/how-to-use" className="hover:text-foreground transition-colors" data-testid="link-how-to-use-footer">
+              How to Use
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy-footer">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
+              Terms
+            </Link>
+          </div>
+
+          {/* Contact + Share — inline row */}
+          <div className="flex items-center justify-center gap-5 text-xs text-foreground/55 mb-1">
+            <Link href="/support" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
+              Contact Support
+            </Link>
+            <span className="text-border/60">·</span>
+            <button
+              onClick={handleShareApp}
+              data-testid="btn-share-app-footer"
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              {shared
+                ? <><Check className="w-3 h-3 text-green-500" /> Copied!</>
+                : <><Share2 className="w-3 h-3" /> Share App</>
+              }
+            </button>
+          </div>
+
+          {/* ── Closing sequence: Manifesto → Scripture → Download ── */}
+          <ClosingManifesto />
+
+          {/* Psalm 119:105 — bridge between manifesto and CTA */}
+          <div className="flex flex-col items-center gap-1.5 px-6 -mt-2 mb-8">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/40">A reminder for the path</p>
+            <p
+              className="text-[15px] text-foreground/65 italic text-center leading-relaxed"
+              style={{ fontFamily: "var(--font-serif)" }}
+            >
+              "Your word is a lamp to my feet and a light to my path."
+            </p>
+            <p className="text-[12px] text-foreground/40 tracking-wide">— Psalm 119:105</p>
+          </div>
+
+          {/* Download buttons — clean, no card border */}
+          <div className="flex flex-col items-center gap-3 px-4 mb-2">
+            <p className="text-[12px] text-foreground/50 tracking-wide">If you want it with you —</p>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              {!isAndroid() && (
+                <a
+                  href="https://apps.apple.com/app/shepherds-path/id6760953522"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="btn-appstore-cta"
+                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl bg-foreground text-background font-semibold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                  </svg>
+                  View on the App Store
+                </a>
+              )}
+              {!isIOS() && (
+                <a
+                  href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="btn-googleplay-cta"
+                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[14px] hover:bg-primary/15 active:scale-[0.98] transition-all"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
+                    <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
+                  </svg>
+                  View on Google Play
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="flex flex-col items-center gap-1 mt-6 pb-4">
+            <p className="text-[12px] text-foreground/40 text-center">
+              © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
+            </p>
+            <a
+              href="https://www.shepherdspathai.com"
+              className="text-[11px] text-foreground/30 hover:text-foreground/55 transition-colors tracking-wide"
+            >
+              shepherdspathai.com
+            </a>
+          </div>
+        </motion.div>
+      </div>
+
+      {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
+    </div>
+  );
+}

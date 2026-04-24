@@ -1,0 +1,296 @@
+We are refining the “Journeys” (Bible reading paths) experience in Shepherd’s Path.
+
+This is not:
+a library of plans.
+
+This is:
+an invitation to walk through something with God.
+
+-----------------------------------
+CORE EXPERIENCE PRINCIPLE
+-----------------------------------
+
+This screen should feel like:
+
+- “There’s a path here for me”
+- “I can begin where I am”
+- “I don’t have to choose perfectly”
+
+NOT:
+
+- “I need to pick the right program”
+- “I’m committing to a plan”
+- “I should evaluate options”
+
+-----------------------------------
+HERO SECTION
+-----------------------------------
+
+Current:
+“Choose Your Path”
+“Guided reading plans through the heart of Scripture”
+
+Problem:
+Too decision-oriented.
+Too structured.
+
+Refinement:
+
+Option 1:
+“Start where you are”
+
+Subtext:
+“There’s a path for this moment.”
+
+Option 2:
+“A path for where you are”
+
+Subtext:
+“You don’t have to figure it out — just begin.”
+
+-----------------------------------
+“LIFE SEASON” SECTION
+-----------------------------------
+
+Current:
+“Navigate a Life Season”
+
+Problem:
+Sounds like a tool or feature.
+
+Refinement:
+
+“Start with what you’re walking through”
+
+Subtext:
+“Tell us what’s been on your heart — we’ll guide you.”
+
+-----------------------------------
+
+Card refinement:
+
+Current:
+“AI-crafted · 7 passages”
+
+Refine tone to:
+
+“7 passages, shaped for where you are”
+
+-----------------------------------
+SECTION HEADINGS (CRITICAL)
+-----------------------------------
+
+Current:
+STARTING POINT  
+FOUNDATIONS  
+LIFE OF JESUS  
+SEASONAL  
+KNOW GOD DEEPER  
+HEART & LIFE  
+
+Problem:
+These feel like categories.
+
+Refinement:
+
+Make them feel like movement:
+
+-----------------------------------
+
+Instead of “STARTING POINT”:
+“Begin here”
+
+-----------------------------------
+
+Instead of “FOUNDATIONS”:
+“Build something steady”
+
+-----------------------------------
+
+Instead of “LIFE OF JESUS”:
+“Walk with Jesus”
+
+-----------------------------------
+
+Instead of “SEASONAL”:
+“This season”
+
+-----------------------------------
+
+Instead of “KNOW GOD DEEPER”:
+“Know Him more”
+
+-----------------------------------
+
+Instead of “HEART & LIFE”:
+“What you’re carrying”
+
+-----------------------------------
+
+Key principle:
+Each section should feel like:
+a doorway, not a category
+
+-----------------------------------
+CARD COPY REFINEMENT
+-----------------------------------
+
+Your actual card descriptions are STRONG.
+
+But they lean slightly explanatory.
+
+We want slightly more invitational tone.
+
+-----------------------------------
+
+Example:
+
+First Steps:
+
+Current:
+“No church background required…”
+
+Refine:
+
+“You don’t need to know anything to begin.”
+
+-----------------------------------
+
+30-Day Foundation:
+
+Current:
+“The essential storyline of the entire Bible…”
+
+Refine:
+
+“See the whole story come together.”
+
+-----------------------------------
+
+Psalms:
+
+Current:
+“Twelve essential psalms covering…”
+
+Refine:
+
+“These are the prayers people return to.”
+
+-----------------------------------
+
+Anxiety & Peace:
+
+Current:
+“These 8 passages are for the anxious…”
+
+Refine:
+
+“If your mind won’t slow down, start here.”
+
+-----------------------------------
+
+Forgiveness & Grace:
+
+Refine:
+
+“If something is hard to let go of, begin here.”
+
+-----------------------------------
+
+Key principle:
+Speak to the person’s condition, not the content.
+
+-----------------------------------
+BADGES / LABELS
+-----------------------------------
+
+Current:
+“7 passages”
+“New to faith”
+
+These are useful — keep them.
+
+But visually:
+they should feel secondary, not primary.
+
+Meaning:
+- smaller
+- softer
+- not leading the card
+
+-----------------------------------
+EMAIL CAPTURE (AGAIN)
+-----------------------------------
+
+Same issue as Study.
+
+Refinement:
+
+“Receive the daily verse”
+
+Subtext:
+“A quiet reminder each morning.”
+
+CTA:
+“Send it to me”
+
+-----------------------------------
+OVERALL EXPERIENCE SHIFT
+-----------------------------------
+
+Right now:
+Browse → Compare → Choose
+
+We want:
+Recognize → Feel → Begin
+
+-----------------------------------
+
+IMPORTANT:
+
+User should not feel like:
+“I need to pick the right one”
+
+User should feel like:
+“This one feels right”
+
+-----------------------------------
+GLOBAL TONE RULES
+-----------------------------------
+
+1. NO PROGRAM LANGUAGE
+- no “plans”
+- no “tracks”
+- no “curriculum”
+
+2. INVITATION OVER DECISION
+- “start”
+- “begin”
+- “walk”
+
+NOT:
+- “choose”
+- “select”
+- “compare”
+
+3. SPEAK TO THE PERSON
+- their season
+- their emotion
+- their question
+
+NOT:
+- content summaries
+
+-----------------------------------
+FINAL STANDARD
+
+Ask:
+
+Does this feel like:
+“I’m selecting something to complete”
+
+Or:
+“I’m stepping into something I need”
+
+If it feels like selection → rewrite
+If it feels like stepping into → keep

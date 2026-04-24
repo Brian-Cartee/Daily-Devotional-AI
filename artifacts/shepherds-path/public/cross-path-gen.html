@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head><title>Cross + Path Generator</title></head>
+<body style="background:#888;display:flex;flex-direction:column;align-items:center;padding:40px;font-family:sans-serif;">
+<h2 style="color:white;">Cross + Path — Transparent PNG</h2>
+<canvas id="c" width="1024" height="1024" style="width:300px;height:300px;border:2px solid white;background:repeating-conic-gradient(#aaa 0% 25%, #ccc 0% 50%) 0 0/20px 20px;"></canvas>
+<br>
+<button onclick="dl()" style="margin-top:20px;padding:14px 40px;font-size:18px;background:#442f74;color:white;border:none;border-radius:8px;cursor:pointer;">⬇ Download transparent PNG</button>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 1024, H = 1024;
+
+ctx.clearRect(0, 0, W, H);
+
+// Draw the cross + path shape in white
+ctx.fillStyle = 'white';
+ctx.strokeStyle = 'white';
+ctx.lineJoin = 'round';
+ctx.lineCap = 'round';
+
+// Define the unified cross + curving path shape as a single path
+const path = new Path2D();
+
+// Cross measurements
+const crossCenterX = 360;
+const armTop = 60;
+const armWidth = 280;  // half-width of horizontal arm
+const armLeft = crossCenterX - 130;
+const armRight = crossCenterX + 150;
+const barTop = 200;
+const barBottom = 310;
+const stemLeft = crossCenterX - 65;
+const stemRight = crossCenterX + 65;
+
+// Path/road at bottom — curves from stem bottom to bottom-right
+// The stem meets the curve around y=730
+const stemBottom = 730;
+
+// Build the shape outline clockwise
+path.moveTo(crossCenterX - 130, armTop);         // top-left of vertical stem (above crossbar)
+path.lineTo(crossCenterX + 130, armTop);         // top-right of vertical stem
+path.lineTo(crossCenterX + 130, barTop);         // right side of stem down to crossbar top
+path.lineTo(crossCenterX + armWidth, barTop);    // top-right of crossbar
+path.lineTo(crossCenterX + armWidth, barBottom); // bottom-right of crossbar
+path.lineTo(crossCenterX + 130, barBottom);      // back to stem, bottom of crossbar right
+path.lineTo(stemRight, stemBottom);              // stem narrows toward curve
+
+// Now curve into the path — sweeping right and widening
+// Right side of path curves to bottom-right corner
+path.bezierCurveTo(
+  stemRight + 20, stemBottom + 80,
+  crossCenterX + 250, stemBottom + 150,
+  crossCenterX + 500, H - 30
+);
+
+// Bottom of path (right edge)
+path.lineTo(crossCenterX + 650, H - 30);
+
+// Left edge of path curves back
+path.bezierCurveTo(
+  crossCenterX + 300, H - 30,
+  crossCenterX + 80, stemBottom + 200,
+  stemLeft - 20, stemBottom + 80
+);
+
+path.lineTo(stemLeft, stemBottom);
+path.lineTo(crossCenterX - 130, barBottom);      // left side down to crossbar bottom
+path.lineTo(crossCenterX - armWidth, barBottom); // bottom-left of crossbar
+path.lineTo(crossCenterX - armWidth, barTop);    // top-left of crossbar
+path.lineTo(crossCenterX - 130, barTop);         // back to stem top-left
+path.closePath();
+
+ctx.fill(path);
+
+function dl() {
+  const link = document.createElement('a');
+  link.download = 'cross-path-transparent.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+</script>
+</body>
+</html>

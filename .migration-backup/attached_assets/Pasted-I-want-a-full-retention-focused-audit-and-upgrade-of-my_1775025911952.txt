@@ -1,0 +1,87 @@
+I want a full retention-focused audit and upgrade of my app. This is not just about fixing bugs — this is about building a daily habit experience that keeps users coming back every day.
+
+Context:
+This is a faith-based app where users seek guidance, scripture, and encouragement. The success of the product depends on DAILY RETURN USAGE.
+
+Primary Goal:
+Increase Day 1 → Day 7 → Day 30 retention by improving habit formation, emotional engagement, and user flow.
+
+Your responsibilities:
+
+1. IDENTIFY THE CORE HABIT LOOP
+   Map the current user flow:
+   Trigger → Action → Reward → Return
+
+Then:
+
+* Identify where the loop is weak or broken
+* Recommend improvements to strengthen daily engagement
+
+2. CREATE A “DAILY CHECK-IN” SYSTEM
+   Implement or improve a simple daily entry point:
+
+* Example: “How are you feeling today?”
+* Must be fast, intuitive, and emotionally engaging
+* Should lead immediately to value (scripture, guidance, prayer)
+
+3. INSTANT VALUE DELIVERY (CRITICAL)
+
+* Ensure user gets meaningful output within 1–2 seconds
+* No delays, no confusion
+* First interaction must feel powerful and relevant
+
+4. BUILD RETURN TRIGGERS
+   Add features that bring users back:
+
+* Streak system (daily engagement tracking)
+* Gentle reminders or notifications (if applicable)
+* “Continue your journey” prompts
+
+5. PERSONALIZATION
+
+* Track user behavior (feelings selected, topics viewed)
+* Use that to suggest more relevant content over time
+* Make the app feel like it “knows” the user
+
+6. SAVE + PROGRESS SYSTEM
+
+* Allow users to save scriptures, responses, or prayers
+* Create a simple “My Journey” or “Saved” section
+* Reinforce emotional ownership
+
+7. ELIMINATE FRICTION
+   Audit all flows and remove anything that:
+
+* Slows the user down
+* Confuses the next step
+* Causes drop-off
+
+8. MICRO-ENGAGEMENT IMPROVEMENTS
+
+* Add small feedback elements (animations, confirmations)
+* Ensure every tap has a visible response
+* No dead states or unclear actions
+
+9. SESSION EXTENSION
+   Encourage users to stay longer:
+
+* Suggest next actions after each response
+* Example: “Want to explore more on this?” or “Listen to this”
+
+10. DEFINE SUCCESS METRICS
+    Identify and track:
+
+* Daily active users (DAU)
+* Retention (Day 1, Day 7)
+* Session length
+* Feature usage (audio, saved content, etc.)
+
+Deliverables:
+
+* List of retention gaps found
+* Specific features or improvements implemented
+* Updated user flow
+* Recommendations for further increasing daily engagement
+
+Final Standard:
+The app should feel like a daily companion — something users naturally return to without needing to be reminded aggressively.

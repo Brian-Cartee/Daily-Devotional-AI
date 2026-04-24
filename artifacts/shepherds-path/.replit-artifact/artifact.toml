@@ -1,0 +1,32 @@
+kind = "web"
+  previewPath = "/"
+  title = "Shepherd's Path"
+  version = "1.0.0"
+  id = "artifacts/shepherds-path"
+  router = "path"
+
+  [[integratedSkills]]
+  name = "react-vite"
+  version = "1.0.0"
+
+  [[services]]
+  name = "web"
+  paths = [ "/" ]
+  localPort = 22182
+
+  [services.development]
+  run = "pnpm --filter @workspace/shepherds-path run dev"
+
+  [services.production]
+  build = [ "pnpm", "--filter", "@workspace/shepherds-path", "run", "build" ]
+  publicDir = "artifacts/shepherds-path/dist/public"
+  serve = "static"
+
+  [[services.production.rewrites]]
+  from = "/*"
+  to = "/index.html"
+
+  [services.env]
+  PORT = "22182"
+  BASE_PATH = "/"
+  
