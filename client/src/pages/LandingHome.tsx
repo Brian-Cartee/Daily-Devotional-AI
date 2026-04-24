@@ -601,12 +601,12 @@ function ClosingManifesto() {
       />
       {/* Top fade into page background */}
       <div
-        className="absolute inset-x-0 top-0 h-12 pointer-events-none"
+        className="absolute inset-x-0 top-0 h-4 pointer-events-none"
         style={{ background: "linear-gradient(to bottom, hsl(var(--background)), transparent)" }}
       />
       {/* Bottom fade into page background */}
       <div
-        className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
+        className="absolute inset-x-0 bottom-0 h-4 pointer-events-none"
         style={{ background: "linear-gradient(to top, hsl(var(--background)), transparent)" }}
       />
 

@@ -439,7 +439,7 @@ export default function CallingPage() {
                       style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
                     >
                       {loading === "gen-purple" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                      Purple Card
+                      Verse Card
                     </button>
                     <button
                       onClick={() => handleArtShare(generated, "gen")}
@@ -453,7 +453,7 @@ export default function CallingPage() {
                       }}
                     >
                       {loading === "gen-art" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      Landscape
+                      Photo Verse
                     </button>
                   </div>
 
@@ -562,7 +562,7 @@ export default function CallingPage() {
                 style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
               >
                 {loading === `${card.id}-purple` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                Purple Card
+                Verse Card
               </button>
               <button
                 onClick={() => handleArtShare(card, String(card.id))}
@@ -576,7 +576,7 @@ export default function CallingPage() {
                 }}
               >
                 {loading === `${card.id}-art` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                Landscape
+                Photo Verse
               </button>
             </div>
           </motion.div>
