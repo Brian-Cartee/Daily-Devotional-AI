@@ -295,6 +295,39 @@ export default function CallingPage() {
 
   return (
     <div className="min-h-screen bg-[#0d0a1a]" style={{ paddingBottom: "env(safe-area-inset-bottom, 24px)" }}>
+      <style>{`
+        @keyframes sp-orb-float-a {
+          0%, 100% { transform: translate(0px, 0px) scale(1); opacity: 0.55; }
+          33% { transform: translate(12px, -22px) scale(1.08); opacity: 0.85; }
+          66% { transform: translate(-8px, -10px) scale(0.95); opacity: 0.65; }
+        }
+        @keyframes sp-orb-float-b {
+          0%, 100% { transform: translate(0px, 0px) scale(1); opacity: 0.45; }
+          40% { transform: translate(-14px, 18px) scale(1.1); opacity: 0.75; }
+          70% { transform: translate(8px, 8px) scale(0.92); opacity: 0.55; }
+        }
+        @keyframes sp-orb-float-c {
+          0%, 100% { transform: translate(0px, 0px) scale(1); opacity: 0.35; }
+          50% { transform: translate(10px, -15px) scale(1.12); opacity: 0.6; }
+        }
+        @keyframes sp-pulse-ring {
+          0% { transform: scale(1); opacity: 0.55; }
+          65% { transform: scale(1.08); opacity: 0; }
+          100% { transform: scale(1.08); opacity: 0; }
+        }
+        @keyframes sp-cross-shimmer {
+          0%, 100% { opacity: 0.25; }
+          50% { opacity: 0.55; }
+        }
+        .sp-pulse-ring::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: linear-gradient(135deg, #7A018D, #442f74);
+          animation: sp-pulse-ring 2.4s ease-out infinite;
+        }
+      `}</style>
 
       <BackButton
         onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); setLocation("/"); }}
@@ -308,10 +341,25 @@ export default function CallingPage() {
           src={artUrl}
           alt="Daily art"
           className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ filter: "brightness(0.75)" }}
+          style={{ filter: "brightness(0.72)" }}
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG; }}
         />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 30%, rgba(13,10,26,0.72) 72%, rgba(13,10,26,1) 100%)" }} />
+        {/* Deep cinematic gradient */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 28%, rgba(13,10,26,0.65) 68%, rgba(13,10,26,1) 100%)" }} />
+
+        {/* Floating ambient orbs */}
+        <div
+          className="absolute pointer-events-none"
+          style={{ width: 280, height: 280, top: "8%", left: "-12%", background: "radial-gradient(circle, rgba(122,1,141,0.25) 0%, transparent 70%)", filter: "blur(40px)", animation: "sp-orb-float-a 8s ease-in-out infinite" }}
+        />
+        <div
+          className="absolute pointer-events-none"
+          style={{ width: 220, height: 220, top: "38%", right: "-8%", background: "radial-gradient(circle, rgba(68,47,116,0.28) 0%, transparent 70%)", filter: "blur(35px)", animation: "sp-orb-float-b 11s ease-in-out infinite" }}
+        />
+        <div
+          className="absolute pointer-events-none"
+          style={{ width: 160, height: 160, bottom: "22%", left: "20%", background: "radial-gradient(circle, rgba(180,80,220,0.15) 0%, transparent 70%)", filter: "blur(28px)", animation: "sp-orb-float-c 9s ease-in-out infinite 1s" }}
+        />
 
         <div className="absolute bottom-0 left-0 right-0 px-7 pb-14 text-center">
           <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
@@ -320,39 +368,76 @@ export default function CallingPage() {
           </motion.p>
           <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             className="text-white font-light leading-tight mb-3"
-            style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(1.75rem, 6vw, 2.5rem)" }}>
+            style={{ fontFamily: "'Georgia', serif", fontSize: "clamp(1.75rem, 6vw, 2.5rem)", textShadow: "0 2px 30px rgba(0,0,0,0.7)" }}>
             This Is More<br />Than an App
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-            className="text-white/55 text-[15px] leading-relaxed"
+            className="text-white/60 text-[15px] leading-relaxed"
             style={{ fontFamily: "'Georgia', serif" }}>
             You carry something someone needs.<br />Sharing it is the calling.
           </motion.p>
+          {/* Scroll indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.6 }}
+            className="mt-8 flex flex-col items-center gap-1.5"
+          >
+            <div className="w-px h-6 bg-gradient-to-b from-white/40 to-transparent" />
+            <div className="w-1 h-1 rounded-full bg-white/30" />
+          </motion.div>
         </div>
       </div>
 
       {/* INTRO VERSE */}
-      <div className="px-7 pt-10 pb-8 text-center">
-        <p className="text-white/30 text-[11px] tracking-[0.2em] uppercase mb-5">The Calling</p>
-        <p className="text-white leading-relaxed mb-3" style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem" }}>
-          "Go and make disciples of all nations."
-        </p>
-        <p className="text-white/40 text-sm" style={{ fontFamily: "'Georgia', serif" }}>— Matthew 28:19</p>
-        <div className="w-8 h-px mx-auto mt-8 bg-white/10" />
+      <div className="px-7 pt-10 pb-8 text-center relative">
+        <p className="text-white/30 text-[11px] tracking-[0.2em] uppercase mb-7">The Calling</p>
+        {/* Decorative oversized quote mark */}
+        <div className="relative inline-block">
+          <span
+            className="absolute -top-4 -left-3 text-6xl leading-none select-none pointer-events-none"
+            style={{ fontFamily: "'Georgia', serif", color: "rgba(122,1,141,0.30)", lineHeight: 1 }}
+            aria-hidden="true"
+          >
+            &ldquo;
+          </span>
+          <p className="text-white leading-relaxed mb-3 relative z-10 px-4" style={{ fontFamily: "'Georgia', serif", fontSize: "1.15rem" }}>
+            Go and make disciples of all nations.
+          </p>
+          <span
+            className="absolute -bottom-6 -right-3 text-6xl leading-none select-none pointer-events-none"
+            style={{ fontFamily: "'Georgia', serif", color: "rgba(122,1,141,0.30)", lineHeight: 1 }}
+            aria-hidden="true"
+          >
+            &rdquo;
+          </span>
+        </div>
+        <p className="text-white/40 text-sm mt-2" style={{ fontFamily: "'Georgia', serif" }}>— Matthew 28:19</p>
+        {/* Decorative cross divider */}
+        <div className="flex items-center justify-center gap-3 mt-8">
+          <div className="h-px w-12 bg-white/10" />
+          <div className="relative w-4 h-4 flex items-center justify-center" style={{ animation: "sp-cross-shimmer 3s ease-in-out infinite" }}>
+            <div className="absolute w-px h-full bg-white/30" />
+            <div className="absolute h-px w-full bg-white/30" />
+          </div>
+          <div className="h-px w-12 bg-white/10" />
+        </div>
       </div>
 
       {/* ── CREATE YOUR OWN MOMENT ── */}
       <div className="px-5 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="rounded-2xl overflow-hidden"
+          animate={{ opacity: 1, y: 0, boxShadow: ["0 0 0px rgba(122,1,141,0)", "0 0 28px rgba(122,1,141,0.22)", "0 0 0px rgba(122,1,141,0)"] }}
+          transition={{ opacity: { duration: 0.5, delay: 0.4 }, y: { duration: 0.5, delay: 0.4 }, boxShadow: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 } }}
+          className="rounded-2xl overflow-hidden relative"
           style={{
             background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(68,47,116,0.22) 60%, rgba(13,10,26,0.8) 100%)",
-            border: "1px solid rgba(180,80,220,0.22)",
+            border: "1px solid rgba(180,80,220,0.25)",
           }}
         >
+          {/* Animated top glow bar */}
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, rgba(180,80,220,0.7), rgba(122,1,141,0.9), rgba(180,80,220,0.7), transparent)" }} />
           <div className="px-5 pt-5 pb-4">
             <div className="flex items-center gap-2.5 mb-1.5">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(122,1,141,0.4)" }}>
@@ -439,7 +524,7 @@ export default function CallingPage() {
                       style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
                     >
                       {loading === "gen-purple" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                      Purple Card
+                      Verse Card
                     </button>
                     <button
                       onClick={() => handleArtShare(generated, "gen")}
@@ -453,7 +538,7 @@ export default function CallingPage() {
                       }}
                     >
                       {loading === "gen-art" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      Landscape
+                      Photo Verse
                     </button>
                   </div>
 
@@ -475,7 +560,15 @@ export default function CallingPage() {
 
       {/* SECTION DIVIDER */}
       <div className="px-7 pb-6 text-center">
-        <p className="text-white/20 text-[11px] tracking-[0.2em] uppercase">Or share one of these</p>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-px flex-1 bg-white/8" />
+          <div className="relative w-3 h-3 flex items-center justify-center opacity-30">
+            <div className="absolute w-px h-full bg-white" />
+            <div className="absolute h-px w-full bg-white" />
+          </div>
+          <div className="h-px flex-1 bg-white/8" />
+        </div>
+        <p className="text-white/22 text-[10px] tracking-[0.2em] uppercase">Or share one of these</p>
       </div>
 
       {/* TODAY'S VERSE */}
@@ -543,69 +636,109 @@ export default function CallingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-30px" }}
             transition={{ duration: 0.45, delay: i * 0.04 }}
-            className="rounded-2xl px-5 py-5"
+            className="rounded-2xl overflow-hidden relative"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             data-testid={`card-calling-${card.id}`}
           >
-            <p className="text-white leading-snug mb-2" style={{ fontFamily: "'Georgia', serif", fontSize: "1rem" }}>
-              {card.message}
-            </p>
-            <p className="text-white/35 text-[11px] tracking-wide mb-3">— {card.scripture}</p>
-            <p className="text-white/50 text-[13px] leading-relaxed">{card.meaning}</p>
+            {/* Subtle top accent glow — alternates purple/gold */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[1.5px]"
+              style={{
+                background: i % 2 === 0
+                  ? "linear-gradient(90deg, transparent, rgba(122,1,141,0.6), rgba(180,80,220,0.5), transparent)"
+                  : "linear-gradient(90deg, transparent, rgba(68,47,116,0.5), rgba(122,1,141,0.55), transparent)"
+              }}
+            />
+            <div className="px-5 py-5">
+              <p className="text-white leading-snug mb-2" style={{ fontFamily: "'Georgia', serif", fontSize: "1rem" }}>
+                {card.message}
+              </p>
+              <p className="text-white/35 text-[11px] tracking-wide mb-3">— {card.scripture}</p>
+              <p className="text-white/50 text-[13px] leading-relaxed">{card.meaning}</p>
 
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-              <button
-                onClick={() => handlePurpleShare(card, String(card.id))}
-                disabled={loading !== null}
-                data-testid={`button-calling-share-purple-${card.id}`}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
-                style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
-              >
-                {loading === `${card.id}-purple` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                Purple Card
-              </button>
-              <button
-                onClick={() => handleArtShare(card, String(card.id))}
-                disabled={loading !== null}
-                data-testid={`button-calling-share-art-${card.id}`}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
-                style={{
-                  background: artLoaded ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.07)",
-                  border: artLoaded ? "1px solid rgba(251,191,36,0.38)" : "1px solid rgba(255,255,255,0.12)",
-                  color: artLoaded ? "rgba(255,210,80,0.95)" : "rgba(255,255,255,0.60)",
-                }}
-              >
-                {loading === `${card.id}-art` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                Landscape
-              </button>
+              <div className="grid grid-cols-2 gap-2 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <button
+                  onClick={() => handlePurpleShare(card, String(card.id))}
+                  disabled={loading !== null}
+                  data-testid={`button-calling-share-purple-${card.id}`}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
+                  style={{ background: "rgba(122,1,141,0.28)", border: "1px solid rgba(180,80,220,0.35)", color: "rgba(220,170,255,0.95)" }}
+                >
+                  {loading === `${card.id}-purple` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+                  Verse Card
+                </button>
+                <button
+                  onClick={() => handleArtShare(card, String(card.id))}
+                  disabled={loading !== null}
+                  data-testid={`button-calling-share-art-${card.id}`}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
+                  style={{
+                    background: artLoaded ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.07)",
+                    border: artLoaded ? "1px solid rgba(251,191,36,0.38)" : "1px solid rgba(255,255,255,0.12)",
+                    color: artLoaded ? "rgba(255,210,80,0.95)" : "rgba(255,255,255,0.60)",
+                  }}
+                >
+                  {loading === `${card.id}-art` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Photo Verse
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}
       </div>
 
       {/* MID QUOTE */}
-      <div className="px-7 py-10 text-center">
-        <div className="w-8 h-px mx-auto mb-8 bg-white/10" />
-        <p className="text-white/55 leading-relaxed" style={{ fontFamily: "'Georgia', serif", fontSize: "1.05rem" }}>
-          Someone needs what you're about to share.
-        </p>
-        <p className="text-white/25 text-sm mt-2">You never know who's waiting for it.</p>
-        <div className="w-8 h-px mx-auto mt-8 bg-white/10" />
+      <div className="px-7 py-12 text-center relative">
+        {/* Ambient glow */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-32 pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(122,1,141,0.08) 0%, transparent 70%)" }} />
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-7">
+            <div className="h-px flex-1 bg-white/8" />
+            <div className="relative w-3 h-3 flex items-center justify-center" style={{ opacity: 0.35, animation: "sp-cross-shimmer 3.5s ease-in-out infinite" }}>
+              <div className="absolute w-px h-full bg-white" />
+              <div className="absolute h-px w-full bg-white" />
+            </div>
+            <div className="h-px flex-1 bg-white/8" />
+          </div>
+          <p className="text-white/60 leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem" }}>
+            Someone needs what you're about to share.
+          </p>
+          <p className="text-white/28 text-[14px] mt-2 leading-relaxed" style={{ fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+            You never know who's waiting for it.
+          </p>
+          <div className="flex items-center gap-3 mt-7">
+            <div className="h-px flex-1 bg-white/8" />
+            <div className="relative w-3 h-3 flex items-center justify-center" style={{ opacity: 0.35, animation: "sp-cross-shimmer 3.5s ease-in-out infinite 1.5s" }}>
+              <div className="absolute w-px h-full bg-white" />
+              <div className="absolute h-px w-full bg-white" />
+            </div>
+            <div className="h-px flex-1 bg-white/8" />
+          </div>
+        </div>
       </div>
 
       {/* BOTTOM CTAs */}
       <div className="px-5 pb-14 space-y-3">
-        <p className="text-center text-white/30 text-[11px] tracking-[0.2em] uppercase mb-5">One Action. One Person.</p>
+        <p className="text-center text-white/25 text-[10px] tracking-[0.22em] uppercase mb-6">One Action. One Person.</p>
 
-        <button
-          onClick={handleShareApp}
-          data-testid="button-calling-share-app"
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-[15px] active:scale-[0.98] transition-all"
-          style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", boxShadow: "0 8px 28px rgba(122,1,141,0.28)" }}
-        >
-          <Share2 className="w-5 h-5" />
-          Share Shepherd's Path
-        </button>
+        {/* Main share button with pulse ring */}
+        <div className="relative">
+          <motion.div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{ background: "linear-gradient(135deg, #7A018D, #442f74)" }}
+            animate={{ scale: [1, 1.06, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <button
+            onClick={handleShareApp}
+            data-testid="button-calling-share-app"
+            className="relative w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-[15px] active:scale-[0.98] transition-all"
+            style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", boxShadow: "0 10px 36px rgba(122,1,141,0.35)" }}
+          >
+            <Share2 className="w-5 h-5" />
+            Share Shepherd's Path
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <button

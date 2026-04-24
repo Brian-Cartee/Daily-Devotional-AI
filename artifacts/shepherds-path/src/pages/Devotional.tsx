@@ -38,12 +38,20 @@ import { DailySermonCard } from "@/components/DailySermonCard";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
 import { ScriptureContext } from "@/components/ScriptureContext";
 
-function StepLabel({ number: _number, label }: { number: number; label: string }) {
+function StepLabel({ number, label }: { number: number; label: string }) {
   return (
-    <div className="flex items-center gap-4 mb-5">
-      <div className="h-px w-5 bg-border/70" />
-      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/85">{label}</span>
-      <div className="h-px flex-1 bg-border/40" />
+    <div className="flex items-center gap-3 mb-6">
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{
+          background: "linear-gradient(135deg, hsl(var(--primary)/0.9), hsl(var(--primary)/0.55))",
+          boxShadow: "0 0 12px hsl(var(--primary)/0.30), 0 2px 6px rgba(0,0,0,0.15)",
+        }}
+      >
+        <span className="text-[11px] font-bold text-primary-foreground leading-none">{number}</span>
+      </div>
+      <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground/70">{label}</span>
+      <div className="h-px flex-1" style={{ background: "linear-gradient(to right, hsl(var(--primary)/0.25), transparent)" }} />
     </div>
   );
 }
@@ -1001,9 +1009,12 @@ export default function Devotional() {
 
               {/* ── Full Devotional Listen Mode ──────────────────── */}
               {(reflectionContent || prayerContent) && (
-                <div className="mx-4 mb-4 mt-1 rounded-xl bg-gradient-to-r from-primary/8 to-violet-500/5 border border-primary/15 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="mx-4 mb-4 mt-1 rounded-xl border border-primary/18 px-4 py-3 flex items-center justify-between gap-3 overflow-hidden relative" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.07) 0%, hsl(var(--primary)/0.03) 100%)" }}>
+                  {/* Subtle top line */}
+                  <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary)/0.35), transparent)" }} />
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${listenSection || ttsListen.loading ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${listenSection || ttsListen.loading ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 text-primary"}`}
+                      style={listenSection || ttsListen.loading ? { boxShadow: "0 0 10px hsl(var(--primary)/0.35)" } : {}}>
                       {ttsListen.loading
                         ? <Loader2 className="w-4 h-4 animate-spin" />
                         : <Headphones className="w-4 h-4" />
@@ -1029,7 +1040,18 @@ export default function Devotional() {
                       ) : listenSection ? (
                         <>
                           <p className="text-[12px] font-bold text-primary leading-none">Now playing</p>
-                          <p className="text-[11px] text-muted-foreground capitalize mt-0.5 leading-none">{listenSection}</p>
+                          {/* Waveform bars */}
+                          <div className="flex items-end gap-[2px] mt-1.5" style={{ height: 14 }}>
+                            {[0, 70, 140, 210, 280, 350, 420].map((delay, idx) => (
+                              <motion.div
+                                key={idx}
+                                className="rounded-full flex-shrink-0"
+                                style={{ width: 2, background: "hsl(var(--primary)/0.7)" }}
+                                animate={{ height: ["4px", idx % 2 === 0 ? "12px" : "8px", "4px"] }}
+                                transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: delay / 1000 }}
+                              />
+                            ))}
+                          </div>
                         </>
                       ) : (
                         <>
@@ -1044,11 +1066,12 @@ export default function Devotional() {
                     data-testid="button-full-devotional-listen"
                     className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
                       ttsListen.blocked
-                        ? "bg-amber-500 text-white hover:bg-amber-400 shadow-sm"
+                        ? "bg-amber-500 text-white shadow-sm"
                         : listenSection || ttsListen.loading
-                        ? "bg-primary/20 text-primary hover:bg-primary/30"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-primary text-primary-foreground shadow-sm"
                     }`}
+                    style={!listenSection && !ttsListen.loading && !ttsListen.blocked ? { boxShadow: "0 4px 14px hsl(var(--primary)/0.28)" } : {}}
                   >
                     {ttsListen.blocked ? (
                       <><Headphones className="w-3 h-3" /> Tap to play</>
@@ -1313,51 +1336,80 @@ export default function Devotional() {
 
           {/* Reflection → Prayer connector — only shown after reflection loads */}
           {reflectionContent && (
-            <div className="flex items-center gap-4 px-2">
-              <div className="h-px flex-1 bg-border/30" />
-              <span className="text-[11px] text-muted-foreground/70 italic tracking-wide select-none">carry it into prayer</span>
-              <div className="h-px flex-1 bg-border/30" />
-            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="flex items-center gap-3 px-2"
+            >
+              <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, hsl(var(--primary)/0.22))" }} />
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="relative w-4 h-4 flex items-center justify-center"
+                  style={{ opacity: 0.5 }}
+                >
+                  <div className="absolute w-px h-full rounded-full" style={{ background: "hsl(var(--primary)/0.7)" }} />
+                  <div className="absolute h-px w-full rounded-full" style={{ background: "hsl(var(--primary)/0.7)", marginTop: "-30%" }} />
+                </div>
+                <span className="text-[10px] text-muted-foreground/60 italic tracking-widest select-none uppercase">carry it into prayer</span>
+              </div>
+              <div className="h-px flex-1" style={{ background: "linear-gradient(to left, transparent, hsl(var(--primary)/0.22))" }} />
+            </motion.div>
           )}
 
           {/* STEP 3: PRAYER */}
-          <div className="rounded-2xl px-5 py-8 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.6) 100%)", border: "1px solid hsl(258 45% 55% / 0.2)" }}>
-            <StepLabel number={3} label="Prayer" />
-            <AnimatePresence mode="wait">
-              {prayerLoading && !prayerContent && (
-                <motion.div key="pray-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
-                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-full" />
-                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-5/6" />
-                  <div className="h-3.5 bg-muted animate-pulse rounded-full w-2/3" />
-                </motion.div>
-              )}
-              {prayerContent && (
-                <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                  <p className="text-[12px] text-muted-foreground/80 italic mb-5 leading-relaxed">
-                    You can take this as your own — or let it guide your words.
-                  </p>
-                  <PrayerText text={prayerContent} />
-                  <p className="text-[12px] text-muted-foreground/65 italic mt-6 leading-relaxed">
-                    Stay here for a moment if you need to.
-                  </p>
-                  {!prayerLoading && (
-                    <div className="mt-4 flex items-center gap-4">
-                      <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
-                      <ListenButton text={prayerContent} label="Listen quietly" />
-                    </div>
-                  )}
-                </motion.div>
-              )}
-              {prayerError && (
-                <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
-                  Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionContent || undefined)} className="underline text-primary">Try again</button>
-                </motion.p>
-              )}
-            </AnimatePresence>
+          <div className="relative">
+            {/* Ambient candle glow behind prayer card */}
+            <motion.div
+              className="absolute inset-x-4 bottom-0 h-24 pointer-events-none rounded-b-2xl"
+              style={{ background: "radial-gradient(ellipse at center bottom, hsl(258 70% 45% / 0.15) 0%, transparent 75%)", filter: "blur(16px)" }}
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <div className="relative rounded-2xl px-5 py-8 shadow-sm overflow-hidden" style={{ background: "linear-gradient(160deg, hsl(var(--background)) 0%, hsl(258 40% 8% / 0.6) 100%)", border: "1px solid hsl(258 45% 55% / 0.22)" }}>
+              {/* Top shimmer line */}
+              <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary)/0.5), transparent)" }} />
+              <StepLabel number={3} label="Prayer" />
+              <AnimatePresence mode="wait">
+                {prayerLoading && !prayerContent && (
+                  <motion.div key="pray-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
+                    <div className="h-3.5 bg-muted animate-pulse rounded-full w-full" />
+                    <div className="h-3.5 bg-muted animate-pulse rounded-full w-5/6" />
+                    <div className="h-3.5 bg-muted animate-pulse rounded-full w-2/3" />
+                  </motion.div>
+                )}
+                {prayerContent && (
+                  <motion.div key="pray-content" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
+                    <p className="text-[12px] text-muted-foreground/80 italic mb-5 leading-relaxed">
+                      You can take this as your own — or let it guide your words.
+                    </p>
+                    <PrayerText text={prayerContent} />
+                    <p className="text-[12px] text-muted-foreground/65 italic mt-6 leading-relaxed">
+                      Stay here for a moment if you need to.
+                    </p>
+                    {!prayerLoading && (
+                      <div className="mt-4 flex items-center gap-4">
+                        <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
+                        <ListenButton text={prayerContent} label="Listen quietly" />
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+                {prayerError && (
+                  <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
+                    Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionContent || undefined)} className="underline text-primary">Try again</button>
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* STEP 4: THANK HIM */}
-          <div className="bg-card border border-border/60 rounded-2xl px-7 py-6 shadow-sm">
+          <div className="relative overflow-hidden rounded-2xl px-7 py-7 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(38 80% 6% / 0.5) 0%, hsl(var(--card)) 100%)", border: "1px solid hsl(38 70% 55% / 0.22)" }}>
+            {/* Top warm glow line */}
+            <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(217,119,6,0.6), rgba(234,88,12,0.6), transparent)" }} />
+            {/* Subtle warm ambient glow top-right */}
+            <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.10) 0%, transparent 70%)", filter: "blur(20px)" }} />
             <StepLabel number={4} label="Thank Him" />
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
               What feels like a gift today?
@@ -1369,34 +1421,55 @@ export default function Devotional() {
               spellCheck
               rows={3}
               data-testid="input-gratitude"
-              className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3.5 text-[16px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 resize-none placeholder:text-muted-foreground/65 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3.5 text-[16px] leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/30 resize-none placeholder:text-muted-foreground/65 transition-all"
             />
             <div className="mt-3">
-              <button
-                onClick={handleGratitudePrayer}
-                disabled={gratitudePrayerLoading}
-                data-testid="button-generate-gratitude-prayer"
-                className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
-                style={{ background: "linear-gradient(135deg, #d97706, #ea580c)" }}
-              >
-                {gratitudePrayerLoading
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
-                  : <><Heart className="w-3.5 h-3.5" /> Close with a prayer</>
-                }
-              </button>
+              <div className="relative">
+                {/* Warm pulse ring on the gratitude prayer button */}
+                {!gratitudePrayerLoading && gratitudeInput.trim() && !gratitudePrayer && (
+                  <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    style={{ background: "linear-gradient(135deg, #d97706, #ea580c)" }}
+                    animate={{ scale: [1, 1.05, 1], opacity: [0.4, 0, 0.4] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
+                <button
+                  onClick={handleGratitudePrayer}
+                  disabled={gratitudePrayerLoading}
+                  data-testid="button-generate-gratitude-prayer"
+                  className="relative w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
+                  style={{ background: "linear-gradient(135deg, #d97706, #ea580c)", boxShadow: gratitudeInput.trim() ? "0 6px 22px rgba(217,119,6,0.28)" : undefined }}
+                >
+                  {gratitudePrayerLoading
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
+                    : <><Heart className="w-3.5 h-3.5" /> Close with a prayer</>
+                  }
+                </button>
+              </div>
             </div>
 
             <AnimatePresence>
               {gratitudePrayer && (
                 <motion.div
                   key="gratitude-prayer"
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.9, ease: "easeOut" }}
-                  className="mt-6 pt-5 border-t border-border/40"
+                  transition={{ duration: 1.0, ease: "easeOut" }}
+                  className="mt-7 pt-6"
+                  style={{ borderTop: "1px solid rgba(217,119,6,0.2)" }}
                 >
+                  {/* Small amen cross above the closing prayer */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, rgba(217,119,6,0.3))" }} />
+                    <div className="relative w-3.5 h-3.5 flex items-center justify-center opacity-50">
+                      <div className="absolute w-px h-full rounded-full bg-amber-500" />
+                      <div className="absolute h-px w-full rounded-full bg-amber-500" style={{ marginTop: "-35%" }} />
+                    </div>
+                    <div className="h-px flex-1" style={{ background: "linear-gradient(to left, transparent, rgba(217,119,6,0.3))" }} />
+                  </div>
                   <PrayerText text={gratitudePrayer} />
-                  <p className="text-[12px] text-muted-foreground/45 italic mt-4 leading-relaxed">
+                  <p className="text-[12px] text-amber-600/50 dark:text-amber-400/40 italic mt-5 leading-relaxed">
                     Hold onto that.
                   </p>
                   <div className="mt-3 flex items-center gap-4 flex-wrap">
@@ -1418,17 +1491,27 @@ export default function Devotional() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.1, delay: 0.3, ease: "easeOut" }}
-              className="text-center px-4 py-2"
+              className="text-center px-4 py-4"
               data-testid="devotional-benediction"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1 bg-border/25" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
-                  {streak && streak.currentStreak > 1 ? `Day ${streak.currentStreak} complete` : "Day 1 complete"}
-                </span>
-                <div className="h-px flex-1 bg-border/25" />
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, hsl(var(--primary)/0.20))" }} />
+                <div className="flex items-center gap-2.5">
+                  <div className="relative w-3 h-3 flex items-center justify-center opacity-40">
+                    <div className="absolute w-px h-full rounded-full" style={{ background: "hsl(var(--primary))" }} />
+                    <div className="absolute h-px w-full rounded-full" style={{ background: "hsl(var(--primary))", marginTop: "-35%" }} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/45 select-none">
+                    {streak && streak.currentStreak > 1 ? `Day ${streak.currentStreak} complete` : "Day 1 complete"}
+                  </span>
+                  <div className="relative w-3 h-3 flex items-center justify-center opacity-40">
+                    <div className="absolute w-px h-full rounded-full" style={{ background: "hsl(var(--primary))" }} />
+                    <div className="absolute h-px w-full rounded-full" style={{ background: "hsl(var(--primary))", marginTop: "-35%" }} />
+                  </div>
+                </div>
+                <div className="h-px flex-1" style={{ background: "linear-gradient(to left, transparent, hsl(var(--primary)/0.20))" }} />
               </div>
-              <p className="text-[13px] text-muted-foreground/70 leading-relaxed italic">
+              <p className="text-[14px] text-muted-foreground/75 leading-relaxed italic" style={{ fontFamily: "'Georgia', serif" }}>
                 {streak && streak.currentStreak >= 7
                   ? "You've walked this path faithfully. The Word has been working in you longer than you know."
                   : streak && streak.currentStreak >= 3
