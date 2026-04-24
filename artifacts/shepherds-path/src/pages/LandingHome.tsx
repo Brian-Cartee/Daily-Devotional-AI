@@ -599,16 +599,6 @@ function ClosingManifesto() {
           background: "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(122,1,141,0.16) 0%, rgba(122,1,141,0.05) 60%, transparent 85%)",
         }}
       />
-      {/* Top fade into page background */}
-      <div
-        className="absolute inset-x-0 top-0 h-12 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, hsl(var(--background)), transparent)" }}
-      />
-      {/* Bottom fade into page background */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
-        style={{ background: "linear-gradient(to top, hsl(var(--background)), transparent)" }}
-      />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 py-8">
@@ -626,7 +616,7 @@ function ClosingManifesto() {
 
         {/* The three lines — ascending scale, each one landing harder */}
         <p
-          className="text-[18px] leading-snug mb-3 text-white/70"
+          className="text-[24px] leading-snug mb-3 text-white/90"
           style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
         >
           The path is here.
