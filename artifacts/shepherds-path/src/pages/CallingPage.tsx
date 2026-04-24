@@ -900,21 +900,23 @@ export default function CallingPage() {
                     maxHeight: previewFormat === "story" ? 360 : undefined,
                   }}
                 />
-                {/* Refresh scene button */}
-                <button
-                  onClick={handleRefreshScene}
-                  disabled={regenerating}
-                  data-testid="button-refresh-calling-scene"
-                  title="New scene"
-                  className="absolute bottom-6 right-7 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90 active:scale-95 transition-all disabled:opacity-40"
-                  style={{ background: "rgba(0,0,0,0.52)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.15)" }}
-                >
-                  {regenerating
-                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : <RefreshCw className="w-3 h-3" />
-                  }
-                  New scene
-                </button>
+                {/* Refresh scene button — only for landscape/photo cards, not purple branded card */}
+                {preview.cardType !== "purple" && (
+                  <button
+                    onClick={handleRefreshScene}
+                    disabled={regenerating}
+                    data-testid="button-refresh-calling-scene"
+                    title="New scene"
+                    className="absolute bottom-6 right-7 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90 active:scale-95 transition-all disabled:opacity-40"
+                    style={{ background: "rgba(0,0,0,0.52)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.15)" }}
+                  >
+                    {regenerating
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <RefreshCw className="w-3 h-3" />
+                    }
+                    New scene
+                  </button>
+                )}
 
               </div>
 
