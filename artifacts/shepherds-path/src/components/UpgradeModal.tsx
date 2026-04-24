@@ -4,7 +4,7 @@ import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartph
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
-import { markProVerified } from "@/lib/proStatus";
+import { markProVerified, activateProCode } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
 import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
 import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
@@ -28,14 +28,20 @@ const PLAY_SKUS = {
 interface UpgradeModalProps {
   onClose: () => void;
   onProActivated?: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
-export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
+export function UpgradeModal({ onClose, onProActivated, title, subtitle }: UpgradeModalProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<"monthly" | "annual">("annual");
   const [loading, setLoading] = useState(false);
   const [playPrices, setPlayPrices] = useState<{ monthly?: string; annual?: string }>({});
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+  const [activatingCode, setActivatingCode] = useState(false);
 
   const platform = getPaymentPlatform();
 
@@ -111,6 +117,21 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
 
   const handleCheckout = platform === "play" ? handlePlayCheckout : handleStripeCheckout;
 
+  const handleActivateCode = async () => {
+    if (!promoCode.trim() || activatingCode) return;
+    setActivatingCode(true);
+    setPromoError("");
+    const result = await activateProCode(promoCode.trim());
+    if (result.success) {
+      toast({ title: "Pro activated!", description: "Welcome to Shepherd's Path Pro." });
+      onProActivated?.();
+      onClose();
+    } else {
+      setPromoError(result.message);
+    }
+    setActivatingCode(false);
+  };
+
   const priceDisplay = platform === "play"
     ? {
         annual: playPrices.annual ?? "$44.99/year",
@@ -153,20 +174,22 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
             </div>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-3">
-              <Sparkles className="w-3 h-3" /> You're Going Deep Today
+              <Sparkles className="w-3 h-3" /> {title ? "Shepherd's Path Pro" : "You're Going Deep Today"}
             </div>
 
             <h2 className="text-xl font-extrabold text-white tracking-tight">
-              You've used your {AI_FREE_LIMIT} free AI responses
+              {title ?? `You've used your ${AI_FREE_LIMIT} free AI responses`}
             </h2>
             <p className="text-white/80 text-sm mt-2 leading-snug">
-              That's a sign of real engagement with God's Word. Go Pro to keep the conversation going — no limits, ever.
+              {subtitle ?? "That's a sign of real engagement with God's Word. Go Pro to keep the conversation going — no limits, ever."}
             </p>
 
-            <div className="flex items-center justify-center gap-1.5 mt-3 text-white/60 text-xs">
-              <RefreshCw className="w-3 h-3" />
-              Free responses reset in {resetTime}
-            </div>
+            {!title && (
+              <div className="flex items-center justify-center gap-1.5 mt-3 text-white/60 text-xs">
+                <RefreshCw className="w-3 h-3" />
+                Free responses reset in {resetTime}
+              </div>
+            )}
           </div>
 
           {/* Pull-up card */}
@@ -341,8 +364,8 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
               </a>
             </div>
 
-            {/* Already have Pro */}
-            <div className="border-t border-border pt-3 text-center">
+            {/* Already have Pro + Promo code */}
+            <div className="border-t border-border pt-3 space-y-2 text-center">
               <a
                 href="/restore"
                 data-testid="btn-already-pro"
@@ -351,6 +374,45 @@ export function UpgradeModal({ onClose, onProActivated }: UpgradeModalProps) {
                 <RefreshCw className="w-3 h-3" />
                 Already subscribed? Restore access
               </a>
+
+              {showPromoInput ? (
+                <div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                      onKeyDown={e => { if (e.key === "Enter") handleActivateCode(); }}
+                      placeholder="ENTER CODE"
+                      data-testid="input-promo-code"
+                      className="flex-1 rounded-lg px-3 py-2 text-sm tracking-widest outline-none border border-border bg-muted text-foreground placeholder:text-muted-foreground/40"
+                    />
+                    <button
+                      onClick={handleActivateCode}
+                      disabled={activatingCode || !promoCode.trim()}
+                      data-testid="button-apply-promo"
+                      className="px-3 py-2 rounded-lg text-xs font-semibold text-primary-foreground bg-primary disabled:opacity-40"
+                    >
+                      {activatingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                    </button>
+                  </div>
+                  {promoError && <p className="text-destructive text-[11px] mt-1.5">{promoError}</p>}
+                  <button onClick={() => { setShowPromoInput(false); setPromoCode(""); setPromoError(""); }}
+                    className="text-[11px] text-muted-foreground/50 mt-1">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    onClick={() => setShowPromoInput(true)}
+                    data-testid="button-have-promo"
+                    className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors underline underline-offset-2"
+                  >
+                    Have a promo code?
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

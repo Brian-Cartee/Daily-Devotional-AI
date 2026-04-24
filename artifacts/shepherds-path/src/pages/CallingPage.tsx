@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download, RefreshCw, Lock } from "lucide-react";
-import { isProVerifiedLocally, activateProCode } from "@/lib/proStatus";
+import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download, RefreshCw } from "lucide-react";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage } from "@/lib/shareImage";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 
@@ -100,11 +101,7 @@ export default function CallingPage() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [previewFormat, setPreviewFormat] = useState<"square" | "story">("square");
   const [regenerating, setRegenerating] = useState(false);
-  const [showImageLimitModal, setShowImageLimitModal] = useState(false);
-  const [showPromoInput, setShowPromoInput] = useState(false);
-  const [promoCode, setPromoCode] = useState("");
-  const [promoError, setPromoError] = useState("");
-  const [activatingCode, setActivatingCode] = useState(false);
+  const [showShareUpgrade, setShowShareUpgrade] = useState(false);
 
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -137,7 +134,6 @@ export default function CallingPage() {
   };
 
   const closePreview = () => {
-    setShowImageLimitModal(false);
     if (preview) URL.revokeObjectURL(preview.url);
     setPreview(null);
   };
@@ -185,23 +181,8 @@ export default function CallingPage() {
     setRegenerating(false);
   };
 
-  const handleActivateCode = async () => {
-    if (!promoCode.trim() || activatingCode) return;
-    setActivatingCode(true);
-    setPromoError("");
-    const result = await activateProCode(promoCode.trim());
-    if (result.success) {
-      setShowImageLimitModal(false);
-      setShowPromoInput(false);
-      setPromoCode("");
-    } else {
-      setPromoError(result.message);
-    }
-    setActivatingCode(false);
-  };
-
   const handleNativeShare = async () => {
-    if (!isProVerifiedLocally()) { setShowImageLimitModal(true); return; }
+    if (!isProVerifiedLocally()) { setShowShareUpgrade(true); return; }
     if (!preview) return;
     try {
       const file = new File([preview.blob], "shepherds-path.png", { type: "image/png" });
@@ -919,61 +900,6 @@ export default function CallingPage() {
                   New scene
                 </button>
 
-                {/* Share gate upgrade overlay */}
-                {showImageLimitModal && (
-                  <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center text-center px-6 py-8 z-10"
-                    style={{ background: "rgba(10,5,20,0.92)", backdropFilter: "blur(10px)" }}>
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
-                      style={{ background: "rgba(122,1,141,0.25)", border: "1px solid rgba(180,80,220,0.35)" }}>
-                      <Lock className="w-5 h-5 text-violet-300" />
-                    </div>
-                    <p className="text-white font-bold text-[15px] mb-1">You've created something beautiful today</p>
-                    <p className="text-white/55 text-[12px] mb-5 leading-relaxed">
-                      Browse any scene freely.<br />Pro members can share it into the world.
-                    </p>
-                    <button
-                      onClick={() => { setShowImageLimitModal(false); navigate("/pricing"); }}
-                      className="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white mb-3"
-                      style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.9) 0%, rgba(139,92,246,0.9) 100%)" }}
-                    >
-                      Unlock Pro — Start Sharing
-                    </button>
-                    {showPromoInput ? (
-                      <div className="w-full mb-2">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={promoCode}
-                            onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                            onKeyDown={e => { if (e.key === "Enter") handleActivateCode(); }}
-                            placeholder="ENTER CODE"
-                            className="flex-1 rounded-lg px-3 py-2 text-white text-[13px] tracking-widest outline-none placeholder:text-white/25"
-                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
-                          />
-                          <button
-                            onClick={handleActivateCode}
-                            disabled={activatingCode || !promoCode.trim()}
-                            className="px-3 py-2 rounded-lg text-[12px] font-semibold text-white disabled:opacity-40"
-                            style={{ background: "rgba(122,1,141,0.7)" }}
-                          >
-                            {activatingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
-                          </button>
-                        </div>
-                        {promoError && <p className="text-red-400/80 text-[11px] mt-1.5">{promoError}</p>}
-                      </div>
-                    ) : (
-                      <button onClick={() => setShowPromoInput(true)} className="text-[11px] text-white/30 underline underline-offset-2 mb-2">
-                        Have a promo code?
-                      </button>
-                    )}
-                    <button
-                      onClick={() => { setShowImageLimitModal(false); setShowPromoInput(false); setPromoCode(""); setPromoError(""); }}
-                      className="text-[12px] text-white/25 py-1"
-                    >
-                      Maybe later
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Primary actions */}
@@ -1031,6 +957,16 @@ export default function CallingPage() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showShareUpgrade && (
+          <UpgradeModal
+            onClose={() => setShowShareUpgrade(false)}
+            title="You've created something beautiful today"
+            subtitle="Browse any scene freely. Pro unlocks sharing — send this image into the world."
+          />
         )}
       </AnimatePresence>
 
