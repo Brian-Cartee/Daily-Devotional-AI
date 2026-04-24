@@ -315,6 +315,15 @@ export const userProfiles = pgTable("user_profiles", {
 
 export type UserProfile = typeof userProfiles.$inferSelect;
 
+// ── Mobile IAP Subscriptions (RevenueCat sync) ────────────────────────────────
+export const mobileSubscriptions = pgTable("mobile_subscriptions", {
+  sessionId: text("session_id").primaryKey(),
+  isPro: boolean("is_pro").default(false).notNull(),
+  expiresAt: timestamp("expires_at"),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+export type MobileSubscription = typeof mobileSubscriptions.$inferSelect;
+
 // ── User Memory (emotional + spiritual pattern tracking) ──────────────────────
 export type EmotionPattern = { count: number; lastSeen: string };
 
