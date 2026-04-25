@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mail, MessageCircle, Bell, Users, RefreshCw, LogOut, CheckCircle, XCircle, Shield, Activity, BookOpen, Heart, TrendingUp, Crown, Flame } from "lucide-react";
+import { Mail, MessageCircle, Bell, Users, RefreshCw, LogOut, CheckCircle, XCircle, Shield, Activity, BookOpen, Heart, TrendingUp, Crown, Flame, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -396,6 +396,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"usage" | "email" | "sms" | "health">("usage");
+  const [sbpDone, setSbpDone] = useState(() => localStorage.getItem("sp-admin-sbp-enrolled") === "true");
 
   const fetchOverview = async (t: string) => {
     setLoading(true);
@@ -459,6 +460,52 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-5 py-8 space-y-6">
+
+        {/* ── Apple Small Business Program reminder ─────────────────────── */}
+        {!sbpDone && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative rounded-xl border px-5 py-4 flex items-start gap-4"
+            style={{ background: "hsl(var(--primary)/0.07)", borderColor: "hsl(var(--primary)/0.25)" }}
+          >
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "hsl(var(--primary)/0.15)" }}>
+              <Crown className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Enroll in Apple's Small Business Program</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Cut Apple's commission from 30% → 15%, doubling revenue per subscriber. Requires your first TestFlight build to be submitted first.
+              </p>
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                <a
+                  href="https://developer.apple.com/app-store/small-business-program/enroll/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Open enrollment page <ExternalLink className="w-3 h-3" />
+                </a>
+                <button
+                  onClick={() => { setSbpDone(true); localStorage.setItem("sp-admin-sbp-enrolled", "true"); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="button-sbp-mark-done"
+                >
+                  Mark as enrolled ✓
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => { setSbpDone(true); localStorage.setItem("sp-admin-sbp-enrolled", "true"); }}
+              className="text-muted-foreground/50 hover:text-muted-foreground transition-colors flex-shrink-0"
+              aria-label="Dismiss"
+              data-testid="button-sbp-dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3 text-sm text-destructive">
             {error}
