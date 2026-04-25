@@ -34,6 +34,7 @@ import {
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
+import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 
@@ -658,6 +659,16 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
 export default function LandingHome() {
   const [, navigate] = useLocation();
   const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("onboarding")) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("onboarding");
+      window.history.replaceState({}, "", url.toString());
+      return true;
+    }
+    return shouldShowOnboarding();
+  });
   const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
@@ -799,9 +810,14 @@ export default function LandingHome() {
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>
       <AnimatePresence>
-        {showWelcome && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+        {showOnboarding && (
+          <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
+        )}
       </AnimatePresence>
-      {showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      <AnimatePresence>
+        {showWelcome && !showOnboarding && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+      </AnimatePresence>
+      {showEntryScreen && !showOnboarding && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
