@@ -69,12 +69,19 @@ export function WhyThisExistsPanel() {
         className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer gap-1"
         style={{ height: 38, paddingTop: 8, background: "transparent", border: "none" }}
       >
-        <motion.div
+        <motion.svg
           animate={{ opacity: [0.35, 0.65, 0.35] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          className="rounded-full"
-          style={{ width: 36, height: 3, background: "rgba(255,255,255,0.75)" }}
-        />
+          width="34" height="11" viewBox="0 0 34 11" fill="none"
+        >
+          <path
+            d="M1 10 L8 1 L26 1 L33 10"
+            stroke="rgba(255,255,255,0.85)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </motion.svg>
         <motion.p
           animate={{ opacity: [0.22, 0.42, 0.22] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
@@ -160,9 +167,8 @@ export function WhyThisExistsPanel() {
           {/* ── Scrollable paragraphs ─────────────────────────────────── */}
           <div
             ref={scrollRef}
-            onPointerDownCapture={(e) => e.stopPropagation()}
             className="overflow-y-auto flex-1 px-8"
-            style={{ WebkitOverflowScrolling: "touch" }}
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
             <div className="flex flex-col pb-4">
               {PARAGRAPHS.map((p, i) => (
