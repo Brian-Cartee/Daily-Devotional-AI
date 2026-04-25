@@ -59,10 +59,10 @@ apple:
     primary: LIFESTYLE
     secondary: BOOKS
   review:
-    firstName: "First"           # TODO: replace with your name
-    lastName: "Last"             # TODO: replace with your name
-    phoneNumber: "+1-555-000-0000"   # TODO: replace with your phone number
-    email: "YOUR_EMAIL@example.com"  # TODO: replace with your email
+    firstName: "Brian"
+    lastName: "Cartee"
+    phoneNumber: "+1-404-988-9512"
+    email: "briancartee@gmail.com"
     notes: |
       This app includes in-app purchases (monthly and annual Pro subscriptions).
       RevenueCat is used to manage subscriptions. Apple IAP sandbox testing can
