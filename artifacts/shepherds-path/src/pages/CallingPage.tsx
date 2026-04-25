@@ -453,36 +453,36 @@ export default function CallingPage() {
 
       {/* INTRO VERSE */}
       <div className="px-7 pt-10 pb-8 text-center relative">
-        <p className="text-white/30 text-[11px] tracking-[0.2em] uppercase mb-7">The Calling</p>
+        <p className="text-white/70 text-[11px] tracking-[0.2em] uppercase mb-7">The Calling</p>
         {/* Decorative oversized quote mark */}
         <div className="relative inline-block">
           <span
             className="absolute -top-4 -left-3 text-6xl leading-none select-none pointer-events-none"
-            style={{ fontFamily: "'Georgia', serif", color: "rgba(122,1,141,0.30)", lineHeight: 1 }}
+            style={{ fontFamily: "'Georgia', serif", color: "rgba(180,100,255,0.70)", lineHeight: 1 }}
             aria-hidden="true"
           >
             &ldquo;
           </span>
-          <p className="text-white leading-relaxed mb-3 relative z-10 px-4" style={{ fontFamily: "'Georgia', serif", fontSize: "1.15rem" }}>
+          <p className="text-white leading-relaxed mb-3 relative z-10 px-4" style={{ fontFamily: "'Georgia', serif", fontSize: "1.18rem" }}>
             Go and make disciples of all nations.
           </p>
           <span
             className="absolute -bottom-6 -right-3 text-6xl leading-none select-none pointer-events-none"
-            style={{ fontFamily: "'Georgia', serif", color: "rgba(122,1,141,0.30)", lineHeight: 1 }}
+            style={{ fontFamily: "'Georgia', serif", color: "rgba(180,100,255,0.70)", lineHeight: 1 }}
             aria-hidden="true"
           >
             &rdquo;
           </span>
         </div>
-        <p className="text-white/40 text-sm mt-2" style={{ fontFamily: "'Georgia', serif" }}>— Matthew 28:19</p>
+        <p className="text-white/75 text-sm mt-2" style={{ fontFamily: "'Georgia', serif" }}>— Matthew 28:19</p>
         {/* Decorative cross divider */}
         <div className="flex items-center justify-center gap-3 mt-8">
-          <div className="h-px w-12 bg-white/10" />
+          <div className="h-px w-12 bg-white/25" />
           <div className="relative w-4 h-4 flex items-center justify-center" style={{ animation: "sp-cross-shimmer 3s ease-in-out infinite" }}>
-            <div className="absolute w-px h-full bg-white/30" />
-            <div className="absolute h-px w-full bg-white/30" />
+            <div className="absolute w-px h-full bg-white/55" />
+            <div className="absolute h-px w-full bg-white/55" />
           </div>
-          <div className="h-px w-12 bg-white/10" />
+          <div className="h-px w-12 bg-white/25" />
         </div>
       </div>
 
