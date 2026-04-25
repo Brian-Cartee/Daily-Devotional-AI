@@ -10,6 +10,7 @@ import {
   Platform,
   Animated,
   Dimensions,
+  ImageBackground,
 } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -121,23 +122,36 @@ export default function HomeScreen() {
     >
       {/* Hero verse image */}
       <Animated.View style={[styles.heroContainer, { transform: [{ scale: pulseAnim }] }]}>
-        <Image
-          source={{ uri: dailyArt.imageUrl }}
-          style={styles.heroImage}
-          contentFit="cover"
-          testID="img-daily-art"
-        />
+        {dailyArt.imageUrl ? (
+          <Image
+            source={{ uri: dailyArt.imageUrl }}
+            style={styles.heroImage}
+            contentFit="cover"
+            testID="img-daily-art"
+          />
+        ) : (
+          <View style={[styles.heroImage, styles.heroImageFallback]} testID="img-daily-art-fallback" />
+        )}
         <View style={styles.heroDarkWash} />
         <View style={styles.heroContent}>
-          <Text style={styles.heroBrand}>SHEPHERD'S PATH</Text>
-          <Text style={styles.heroDate}>
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          <View style={styles.heroBrandRow}>
+            <Text style={styles.heroBrand}>TODAY'S WORD</Text>
+            <Text style={styles.heroDateChip}>
+              {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }).toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.heroVerse} testID="text-verse">
+            "{dailyArt.verse || "The Lord is my shepherd; I shall not want."}"
           </Text>
-          <Text style={styles.heroVerse} testID="text-verse">"{dailyArt.verse}"</Text>
           <View style={styles.heroRefRow}>
             <Feather name="book-open" size={13} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.heroRef} testID="text-reference">{dailyArt.reference}</Text>
+            <Text style={styles.heroRef} testID="text-reference">
+              {dailyArt.reference || "Psalm 23:1"}
+            </Text>
           </View>
+          {!!dailyArt.reflection && (
+            <Text style={styles.heroReflection}>{dailyArt.reflection}</Text>
+          )}
         </View>
       </Animated.View>
 
@@ -241,7 +255,7 @@ function makeStyles(colors: any, insets: any) {
     },
     heroContainer: {
       width: SCREEN_WIDTH,
-      height: 420,
+      height: 440,
       position: "relative",
       overflow: "hidden",
     },
@@ -249,45 +263,61 @@ function makeStyles(colors: any, insets: any) {
       width: "100%",
       height: "100%",
     },
+    heroImageFallback: {
+      backgroundColor: "#1a2a3a",
+    },
     heroDarkWash: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.52)",
+      backgroundColor: "rgba(0,0,0,0.50)",
     },
     heroContent: {
       ...StyleSheet.absoluteFillObject,
       justifyContent: "flex-end",
       padding: 24,
-      paddingBottom: 32,
+      paddingBottom: 36,
+    },
+    heroBrandRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 14,
     },
     heroBrand: {
       color: "rgba(255,255,255,0.55)",
       fontSize: 10,
       letterSpacing: 3,
       fontFamily: "Inter_600SemiBold",
-      marginBottom: 8,
     },
-    heroDate: {
-      color: "rgba(255,255,255,0.65)",
-      fontSize: 13,
+    heroDateChip: {
+      color: "rgba(255,255,255,0.55)",
+      fontSize: 10,
+      letterSpacing: 1.5,
       fontFamily: "Inter_400Regular",
-      marginBottom: 12,
     },
     heroVerse: {
       color: "#ffffff",
       fontSize: 22,
       fontFamily: "Inter_500Medium",
-      lineHeight: 32,
-      marginBottom: 12,
+      lineHeight: 33,
+      marginBottom: 14,
     },
     heroRefRow: {
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
+      marginBottom: 10,
     },
     heroRef: {
       color: "rgba(255,255,255,0.7)",
       fontSize: 13,
       fontFamily: "Inter_400Regular",
+    },
+    heroReflection: {
+      color: "rgba(255,255,255,0.55)",
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      fontStyle: "italic",
+      marginTop: 2,
     },
     streakCard: {
       flexDirection: "row",

@@ -80,14 +80,17 @@ export default function DevotionalScreen() {
           <>
             <View style={styles.verseTopBar} />
             <Text style={styles.verseText} testID="text-devotional-verse">
-              "{dailyArt?.verse ?? "The Lord is my shepherd; I shall not want."}"
+              "{dailyArt?.verse || "The Lord is my shepherd; I shall not want."}"
             </Text>
             <View style={styles.verseRefRow}>
               <Feather name="book-open" size={14} color={colors.primary} />
               <Text style={styles.verseRef} testID="text-devotional-ref">
-                {dailyArt?.reference ?? "Psalm 23:1"}
+                {dailyArt?.reference || "Psalm 23:1"}
               </Text>
             </View>
+            {!!dailyArt?.reflection && (
+              <Text style={styles.verseReflection}>{dailyArt.reflection}</Text>
+            )}
           </>
         )}
       </View>
@@ -175,6 +178,14 @@ function makeStyles(colors: any, insets: any) {
     },
     verseRefRow: { flexDirection: "row", alignItems: "center", gap: 6 },
     verseRef: { fontSize: 14, color: colors.primary, fontFamily: "Inter_600SemiBold" },
+    verseReflection: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      fontFamily: "Inter_400Regular",
+      fontStyle: "italic",
+      lineHeight: 20,
+      marginTop: 4,
+    },
     stepsHeader: {
       fontSize: 16,
       fontFamily: "Inter_600SemiBold",

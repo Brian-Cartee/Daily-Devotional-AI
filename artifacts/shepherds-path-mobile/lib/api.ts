@@ -6,10 +6,20 @@ export async function fetchBible(): Promise<{ reference: string; text: string; v
   return res.json();
 }
 
-export async function fetchDailyArt(): Promise<{ imageUrl: string; reference: string; verse: string }> {
+export async function fetchDailyArt(): Promise<{ imageUrl: string | null; reference: string; verse: string; reflection: string }> {
   const res = await fetch(`${API_BASE}/api/daily-art`);
   if (!res.ok) throw new Error("Failed to fetch daily art");
-  return res.json();
+  const data = await res.json();
+  // Normalize field names and make imageUrl absolute
+  const imageUrl = data.imageUrl
+    ? (data.imageUrl.startsWith("http") ? data.imageUrl : `${API_BASE}${data.imageUrl}`)
+    : null;
+  return {
+    ...data,
+    imageUrl,
+    verse: data.verse ?? data.scripture ?? "",
+    reflection: data.reflection ?? "",
+  };
 }
 
 export async function fetchStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number }> {

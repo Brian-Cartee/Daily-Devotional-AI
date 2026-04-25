@@ -282,6 +282,7 @@ export function useTTS() {
         blobUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
         clearSlowTimer();
         if (!blobUrl || chainCancelRef.current) {
+          setLoading(false);
           if (!chainCancelRef.current) setError(true);
           break;
         }

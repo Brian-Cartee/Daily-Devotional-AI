@@ -325,8 +325,8 @@ export async function registerRoutes(
       res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
     } catch (err: any) {
-      console.error("TTS error:", err);
-      if (!res.headersSent) res.status(500).json({ message: "TTS failed" });
+      const isQuota = err?.code === "insufficient_quota" || err?.code === "billing_hard_limit_reached" || err?.status === 429;
+      if (!res.headersSent) res.status(isQuota ? 503 : 500).json({ message: isQuota ? "Audio temporarily unavailable" : "TTS failed" });
     }
   });
 
@@ -342,8 +342,8 @@ export async function registerRoutes(
       res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
     } catch (err: any) {
-      console.error("TTS error:", err);
-      if (!res.headersSent) res.status(500).json({ message: "TTS failed" });
+      const isQuota = err?.code === "insufficient_quota" || err?.code === "billing_hard_limit_reached" || err?.status === 429;
+      if (!res.headersSent) res.status(isQuota ? 503 : 500).json({ message: isQuota ? "Audio temporarily unavailable" : "TTS failed" });
     }
   });
 

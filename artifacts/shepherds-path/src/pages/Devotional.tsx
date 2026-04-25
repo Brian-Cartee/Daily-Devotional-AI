@@ -147,30 +147,16 @@ export default function Devotional() {
     staleTime: 60 * 60 * 1000,
   });
 
-  // Check if today's verse art has already been generated (cached on server)
-  // If not cached, auto-generate it — verse art is now the primary card image
+  // Check if today's verse art is already cached on the server — use it if so.
+  // We do NOT auto-generate: dailyArtBg (Unsplash photo) is the primary background.
   const verseDate = verse?.date ?? "";
-  const autoGeneratingRef = useRef(false);
   useQuery({
     queryKey: ["/api/verse-art", verseDate],
     queryFn: async () => {
       if (!verseDate) return null;
       const res = await fetch(`/api/verse-art/${verseDate}`);
       const data = await res.json();
-      if (data.imageUrl) {
-        setVerseArtUrl(data.imageUrl);
-      } else if (!data.cached && verse && !autoGeneratingRef.current) {
-        // No cached art — auto-generate in the background (silent, no toast)
-        autoGeneratingRef.current = true;
-        fetch("/api/verse-art/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ verseDate: verse.date, verseText: verse.text, verseReference: verse.reference }),
-        })
-          .then(r => r.json())
-          .then(d => { if (d.imageUrl) setVerseArtUrl(d.imageUrl); })
-          .catch(() => {}); // silent — dailyArtBg shows in the meantime
-      }
+      if (data.imageUrl) setVerseArtUrl(data.imageUrl);
       return data;
     },
     enabled: !!verseDate && !!verse,
@@ -1078,6 +1064,11 @@ export default function Devotional() {
                         <>
                           <p className="text-[12px] font-bold text-amber-500 leading-none">Tap to play</p>
                           <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Your device needs a tap first</p>
+                        </>
+                      ) : ttsListen.error ? (
+                        <>
+                          <p className="text-[12px] font-bold text-muted-foreground leading-none">Audio temporarily unavailable</p>
+                          <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-none">Read the devotional below</p>
                         </>
                       ) : ttsListen.loading ? (
                         <>
