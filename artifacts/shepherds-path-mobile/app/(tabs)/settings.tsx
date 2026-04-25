@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -97,17 +98,25 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* Privacy */}
+      {/* Legal */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Legal</Text>
-        <View style={styles.row}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL("https://shepherdspathai.com/privacy"); }}
+          testID="button-privacy-policy"
+        >
           <Text style={styles.rowLabel}>Privacy Policy</Text>
           <Feather name="external-link" size={14} color={colors.mutedForeground} />
-        </View>
-        <View style={styles.row}>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL("https://shepherdspathai.com/terms"); }}
+          testID="button-terms-of-use"
+        >
           <Text style={styles.rowLabel}>Terms of Use</Text>
           <Feather name="external-link" size={14} color={colors.mutedForeground} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.footer}>
