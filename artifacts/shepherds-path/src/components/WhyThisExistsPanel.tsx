@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 
 const PARAGRAPHS = [
@@ -26,6 +26,7 @@ export function WhyThisExistsPanel() {
   const [mounted, setMounted] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
   const controls = useAnimation();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const open = () => {
     setMounted(true);
@@ -48,6 +49,7 @@ export function WhyThisExistsPanel() {
       transition: { type: "spring", damping: 32, stiffness: 310 },
     });
     setMounted(false);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   };
 
   const snapBack = () => {
@@ -64,15 +66,29 @@ export function WhyThisExistsPanel() {
         onClick={open}
         data-testid="button-why-handle"
         aria-label="Why this exists"
-        className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer"
-        style={{ height: 22, paddingTop: 7, background: "transparent", border: "none" }}
+        className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer gap-1"
+        style={{ height: 38, paddingTop: 8, background: "transparent", border: "none" }}
       >
         <motion.div
-          animate={{ opacity: [0.28, 0.52, 0.28] }}
+          animate={{ opacity: [0.35, 0.65, 0.35] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
           className="rounded-full"
-          style={{ width: 32, height: 3, background: "rgba(255,255,255,0.7)" }}
+          style={{ width: 36, height: 3, background: "rgba(255,255,255,0.75)" }}
         />
+        <motion.p
+          animate={{ opacity: [0.22, 0.42, 0.22] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+          style={{
+            fontSize: 9,
+            letterSpacing: "0.20em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.9)",
+            fontWeight: 600,
+            lineHeight: 1,
+          }}
+        >
+          Why This Exists
+        </motion.p>
       </button>
 
       {/* ── Backdrop ───────────────────────────────────────────────────── */}
@@ -106,19 +122,20 @@ export function WhyThisExistsPanel() {
               snapBack();
             }
           }}
-          className="fixed top-0 left-0 right-0 z-[79] overflow-hidden"
+          className="fixed top-0 left-0 right-0 z-[79] flex flex-col"
           style={{
             background: PANEL_BG,
             borderBottomLeftRadius: 24,
             borderBottomRightRadius: 24,
             boxShadow: "0 20px 60px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.06)",
+            maxHeight: "92vh",
           }}
         >
           {/* Safe area spacer */}
-          <div style={{ height: "max(env(safe-area-inset-top, 0px), 12px)" }} />
+          <div style={{ height: "max(env(safe-area-inset-top, 0px), 12px)", flexShrink: 0 }} />
 
-          {/* Drag affordance — top of panel */}
-          <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing select-none">
+          {/* Drag affordance — top of panel (fixed, not scrolling) */}
+          <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing select-none" style={{ flexShrink: 0 }}>
             <div
               className="rounded-full"
               style={{ width: 36, height: 4, background: "rgba(255,255,255,0.20)" }}
@@ -127,8 +144,9 @@ export function WhyThisExistsPanel() {
 
           {/* App label */}
           <p
-            className="text-center mt-4 mb-6"
+            className="text-center mt-4 mb-5"
             style={{
+              flexShrink: 0,
               fontSize: 10,
               letterSpacing: "0.24em",
               textTransform: "uppercase",
@@ -139,37 +157,44 @@ export function WhyThisExistsPanel() {
             Shepherd&rsquo;s Path
           </p>
 
-          {/* Paragraphs */}
-          <div className="px-8 pb-2 flex flex-col">
-            {PARAGRAPHS.map((p, i) => (
-              <motion.p
-                key={i}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: panelVisible ? 1 : 0, y: panelVisible ? 0 : 6 }}
-                transition={{ duration: 0.45, delay: 0.08 + i * 0.055 }}
-                style={{
-                  fontFamily: "'Georgia', serif",
-                  fontSize: p.weight === "strong" ? "1.075rem" : "0.975rem",
-                  lineHeight: 1.75,
-                  color:
-                    p.weight === "strong"
-                      ? "rgba(255,255,255,0.95)"
-                      : "rgba(255,255,255,0.72)",
-                  marginBottom: i < PARAGRAPHS.length - 1 ? "0.95rem" : 0,
-                  fontStyle: p.weight === "normal" ? "normal" : "normal",
-                  letterSpacing: p.weight === "strong" ? "-0.005em" : "0",
-                }}
-              >
-                {p.text}
-              </motion.p>
-            ))}
+          {/* ── Scrollable paragraphs ─────────────────────────────────── */}
+          <div
+            ref={scrollRef}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            className="overflow-y-auto flex-1 px-8"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            <div className="flex flex-col pb-4">
+              {PARAGRAPHS.map((p, i) => (
+                <motion.p
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: panelVisible ? 1 : 0, y: panelVisible ? 0 : 6 }}
+                  transition={{ duration: 0.45, delay: 0.08 + i * 0.055 }}
+                  style={{
+                    fontFamily: "'Georgia', serif",
+                    fontSize: p.weight === "strong" ? "1.075rem" : "0.975rem",
+                    lineHeight: 1.75,
+                    color:
+                      p.weight === "strong"
+                        ? "rgba(255,255,255,0.95)"
+                        : "rgba(255,255,255,0.72)",
+                    marginBottom: i < PARAGRAPHS.length - 1 ? "0.95rem" : 0,
+                    letterSpacing: p.weight === "strong" ? "-0.005em" : "0",
+                  }}
+                >
+                  {p.text}
+                </motion.p>
+              ))}
+            </div>
           </div>
 
-          {/* Bottom drag handle + dismiss hint */}
+          {/* Bottom drag handle + dismiss hint (fixed, not scrolling) */}
           <div
             className="flex flex-col items-center gap-2 cursor-grab active:cursor-grabbing select-none"
             style={{
-              paddingTop: 20,
+              flexShrink: 0,
+              paddingTop: 16,
               paddingBottom: "max(28px, calc(16px + env(safe-area-inset-bottom, 0px)))",
             }}
           >
@@ -178,7 +203,7 @@ export function WhyThisExistsPanel() {
                 fontSize: 10,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "rgba(255,255,255,0.22)",
+                color: "rgba(255,255,255,0.28)",
               }}
             >
               swipe up to close
