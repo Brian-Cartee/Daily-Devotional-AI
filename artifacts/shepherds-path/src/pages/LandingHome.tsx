@@ -35,6 +35,7 @@ import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
+import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 
@@ -823,6 +824,8 @@ export default function LandingHome() {
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
         )}
       </AnimatePresence>
+
+      <WhyThisExistsPanel />
 
       {/* Desktop side vignette — frames the content column on wide screens only */}
       <div

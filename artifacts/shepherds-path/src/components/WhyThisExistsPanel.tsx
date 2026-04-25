@@ -1,0 +1,195 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
+
+const PARAGRAPHS = [
+  { text: "This wasn't built for when life feels put together.", weight: "strong" },
+  { text: "It was built for the quiet moments—when something feels heavy and you don't know what to do with it.", weight: "normal" },
+  { text: "You don't need the right words here.", weight: "normal" },
+  { text: "Just honesty.", weight: "strong" },
+  { text: "When you share what's on your mind, Scripture meets you in it—not randomly, but with care.", weight: "normal" },
+  { text: "Not just a verse to read… but something to sit with.", weight: "normal" },
+  { text: "Something that helps you understand where you are—and what to do next.", weight: "normal" },
+  { text: "This isn't about reading more.", weight: "normal" },
+  { text: "It's about not walking through things alone.", weight: "strong" },
+  { text: "The path is here.", weight: "normal" },
+  { text: "Walking it is up to you.", weight: "strong" },
+];
+
+const PANEL_BG = [
+  "radial-gradient(ellipse 72% 60% at 60% 48%, rgba(148,12,188,0.44) 0%, transparent 60%)",
+  "radial-gradient(ellipse 50% 45% at 22% 30%, rgba(80,32,162,0.30) 0%, transparent 62%)",
+  "radial-gradient(ellipse at 50% -6%, rgba(255,255,255,0.10) 0%, transparent 46%)",
+  "linear-gradient(158deg, #5c1e98 0%, #390f70 42%, #130635 100%)",
+].join(", ");
+
+export function WhyThisExistsPanel() {
+  const [mounted, setMounted] = useState(false);
+  const [panelVisible, setPanelVisible] = useState(false);
+  const controls = useAnimation();
+
+  const open = () => {
+    setMounted(true);
+  };
+
+  useEffect(() => {
+    if (!mounted) return;
+    controls.start({
+      y: "0%",
+      transition: { type: "spring", damping: 34, stiffness: 300, restDelta: 0.5 },
+    });
+    const t = setTimeout(() => setPanelVisible(true), 60);
+    return () => clearTimeout(t);
+  }, [mounted]);
+
+  const close = async () => {
+    setPanelVisible(false);
+    await controls.start({
+      y: "-102%",
+      transition: { type: "spring", damping: 32, stiffness: 310 },
+    });
+    setMounted(false);
+  };
+
+  const snapBack = () => {
+    controls.start({
+      y: "0%",
+      transition: { type: "spring", damping: 28, stiffness: 280 },
+    });
+  };
+
+  return (
+    <>
+      {/* ── Handle — fixed at very top of viewport ─────────────────────── */}
+      <button
+        onClick={open}
+        data-testid="button-why-handle"
+        aria-label="Why this exists"
+        className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer"
+        style={{ height: 22, paddingTop: 7, background: "transparent", border: "none" }}
+      >
+        <motion.div
+          animate={{ opacity: [0.28, 0.52, 0.28] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+          className="rounded-full"
+          style={{ width: 32, height: 3, background: "rgba(255,255,255,0.7)" }}
+        />
+      </button>
+
+      {/* ── Backdrop ───────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {mounted && (
+          <motion.div
+            key="why-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: panelVisible ? 1 : 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.38 }}
+            onClick={close}
+            className="fixed inset-0 z-[78]"
+            style={{ background: "rgba(4,2,14,0.62)", backdropFilter: "blur(5px)" }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Panel ──────────────────────────────────────────────────────── */}
+      {mounted && (
+        <motion.div
+          initial={{ y: "-102%" }}
+          animate={controls}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0.6, bottom: 0.04 }}
+          onDragEnd={(_, info) => {
+            if (info.velocity.y < -320 || info.offset.y < -65) {
+              close();
+            } else {
+              snapBack();
+            }
+          }}
+          className="fixed top-0 left-0 right-0 z-[79] overflow-hidden"
+          style={{
+            background: PANEL_BG,
+            borderBottomLeftRadius: 24,
+            borderBottomRightRadius: 24,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.06)",
+          }}
+        >
+          {/* Safe area spacer */}
+          <div style={{ height: "max(env(safe-area-inset-top, 0px), 12px)" }} />
+
+          {/* Drag affordance — top of panel */}
+          <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing select-none">
+            <div
+              className="rounded-full"
+              style={{ width: 36, height: 4, background: "rgba(255,255,255,0.20)" }}
+            />
+          </div>
+
+          {/* App label */}
+          <p
+            className="text-center mt-4 mb-6"
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.24em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.26)",
+              fontWeight: 600,
+            }}
+          >
+            Shepherd&rsquo;s Path
+          </p>
+
+          {/* Paragraphs */}
+          <div className="px-8 pb-2 flex flex-col">
+            {PARAGRAPHS.map((p, i) => (
+              <motion.p
+                key={i}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: panelVisible ? 1 : 0, y: panelVisible ? 0 : 6 }}
+                transition={{ duration: 0.45, delay: 0.08 + i * 0.055 }}
+                style={{
+                  fontFamily: "'Georgia', serif",
+                  fontSize: p.weight === "strong" ? "1.075rem" : "0.975rem",
+                  lineHeight: 1.75,
+                  color:
+                    p.weight === "strong"
+                      ? "rgba(255,255,255,0.95)"
+                      : "rgba(255,255,255,0.72)",
+                  marginBottom: i < PARAGRAPHS.length - 1 ? "0.95rem" : 0,
+                  fontStyle: p.weight === "normal" ? "normal" : "normal",
+                  letterSpacing: p.weight === "strong" ? "-0.005em" : "0",
+                }}
+              >
+                {p.text}
+              </motion.p>
+            ))}
+          </div>
+
+          {/* Bottom drag handle + dismiss hint */}
+          <div
+            className="flex flex-col items-center gap-2 cursor-grab active:cursor-grabbing select-none"
+            style={{
+              paddingTop: 20,
+              paddingBottom: "max(28px, calc(16px + env(safe-area-inset-bottom, 0px)))",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.22)",
+              }}
+            >
+              swipe up to close
+            </p>
+            <div
+              className="rounded-full"
+              style={{ width: 32, height: 3, background: "rgba(255,255,255,0.18)" }}
+            />
+          </div>
+        </motion.div>
+      )}
+    </>
+  );
+}
