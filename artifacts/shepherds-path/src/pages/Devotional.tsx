@@ -553,7 +553,7 @@ export default function Devotional() {
     if (!verse || sharingImage) return;
     setSharingImage(true);
     try {
-      const blob = await createShareImage(verse.text, verse.reference, verseArtUrl);
+      const blob = await createShareImage(verse.text, verse.reference, verseArtUrl ?? dailyArtBg);
       const url = URL.createObjectURL(blob);
       // Clean up any previous preview URL
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
@@ -607,9 +607,10 @@ export default function Devotional() {
     if (!verse || fmt === sharePreviewFormat || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
+      const activeBg = verseArtUrl ?? dailyArtBg;
       const blob = fmt === "story"
-        ? await createStoryShareImage(verse.text, verse.reference, verseArtUrl)
-        : await createShareImage(verse.text, verse.reference, verseArtUrl);
+        ? await createStoryShareImage(verse.text, verse.reference, activeBg)
+        : await createShareImage(verse.text, verse.reference, activeBg);
       const url = URL.createObjectURL(blob);
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
       setSharePreviewBlob(blob);
@@ -623,11 +624,14 @@ export default function Devotional() {
     if (!verse || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
-      const currentBg = sharePreviewUrl
-        ? null
-        : verseArtUrl;
-      const others = PHOTO_POOL.filter(u => u !== verseArtUrl && u !== currentBg);
-      const pool = others.length > 0 ? others : PHOTO_POOL;
+      // Build full pool: today's real photo + the curated fallback set
+      const activeBg = verseArtUrl ?? dailyArtBg;
+      const extendedPool = [
+        ...(dailyArtBg ? [dailyArtBg] : []),
+        ...PHOTO_POOL,
+      ];
+      const others = extendedPool.filter(u => u !== activeBg);
+      const pool = others.length > 0 ? others : extendedPool;
       const randomUrl = pool[Math.floor(Math.random() * pool.length)];
       const blob = sharePreviewFormat === "story"
         ? await createStoryShareImage(verse.text, verse.reference, randomUrl)

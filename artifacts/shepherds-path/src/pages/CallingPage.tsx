@@ -22,7 +22,7 @@ const openLink = (url: string) => {
 };
 
 const APP_URL = "https://www.shepherdspathai.com";
-const FALLBACK_IMG = "/daily-art/natural-sunset.jpg";
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop";
 
 const CALLING_CARDS = [
   {
