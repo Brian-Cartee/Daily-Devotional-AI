@@ -64,11 +64,21 @@ async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
   // 2. Disk cache (fast, survives restarts)
   const diskHit = readDiskCache(cacheKey);
   if (diskHit) { ttsCache.set(cacheKey, diskHit); return diskHit; }
-  // 3. Generate via OpenAI (slow, then cache both places)
-  const mp3 = await openaiTTS.audio.speech.create({
-    model: "tts-1", voice: voice as any, input: text.slice(0, 4096), speed: 0.92,
-  });
-  const buffer = Buffer.from(await mp3.arrayBuffer());
+  // 3. Generate via Replit AI proxy using gpt-audio chat completions (no separate billing key needed)
+  const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
+  const safeVoice = allowedVoices.includes(voice) ? voice : "onyx";
+  const response = await openai.chat.completions.create({
+    model: "gpt-audio",
+    modalities: ["text", "audio"],
+    audio: { voice: safeVoice as any, format: "mp3" },
+    messages: [
+      { role: "system", content: "You are a calm, warm narrator performing text-to-speech for a devotional app. Read the text exactly as given, with natural pacing and reverence." },
+      { role: "user", content: text.slice(0, 4096) },
+    ],
+  } as any);
+  const audioData = (response.choices[0]?.message as any)?.audio?.data ?? "";
+  if (!audioData) throw new Error("No audio data returned from gpt-audio");
+  const buffer = Buffer.from(audioData, "base64");
   // Evict oldest entry when cache is full
   if (ttsCache.size >= MAX_TTS_CACHE) {
     const firstKey = ttsCache.keys().next().value;
