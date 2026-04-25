@@ -1950,163 +1950,142 @@ Return JSON: { "action": "...", "scripture": "..." }`
   const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");
   if (!fs.existsSync(DAILY_ART_DIR)) fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
 
-  // Serve daily-art images explicitly so they work in both dev and production
   app.use("/daily-art", express.static(DAILY_ART_DIR, { maxAge: "1d" }));
 
-  const ART_THEMES = [
-    "A breathtaking mountain peak at golden sunrise, divine rays of light breaking through storm clouds above, misty valleys below, cinematic and awe-inspiring",
-    "An ancient cathedral forest with towering trees, shafts of golden light streaming through the canopy, moss-covered ground, peaceful and sacred",
-    "A vast ocean at dawn, massive waves with golden light on the water, dramatic clouds, powerful and serene",
-    "A desert landscape at night under a breathtaking Milky Way, silhouetted dunes, shooting stars, profound stillness",
-    "Rolling green hills in spring with wildflowers, a winding path disappearing into golden light on the horizon, hopeful and beautiful",
-    "A lone ancient olive tree on a hillside at dusk, warm amber light, vast landscape behind it, timeless and still",
-    "A frozen waterfall with ice formations catching morning light, mist rising, winter forest surroundings, majestic",
-    "Autumn forest with fiery red and gold canopy, a shaft of light illuminating a mossy stone path, peaceful",
-    "A storm clearing over a mountain lake, rainbow emerging, still water reflecting dramatic clouds, renewal",
-    "High Alpine meadow at sunset, golden hour light on wildflowers, snow-capped peaks behind, vast and open",
-    "A lighthouse on dramatic cliffs at stormy sea, golden light in the window, powerful waves below, steadfast",
-    "Misty morning valley with a river winding through green fields, soft golden light, peaceful and still",
-    "Ancient stone archway looking out to a vast sea at sunset, warm amber light, timeless and wonder-filled",
-    "Northern lights over a snow-covered pine forest, vivid greens and purples in the sky, profound and mysterious",
-    "A sun-drenched lavender field stretching to the horizon, a single cypress tree, dramatic clouds above, peaceful",
-    "Rocky coastline at golden hour, tide pools reflecting sky, warm amber light on ancient boulders, still and beautiful",
-    "A single candle flame in darkness with its warm light glowing on an open book, intimate and sacred",
-    "A bird's eye view of a river winding through an autumn forest, aerial, stunning colors, golden light",
-    "An old stone bridge over a rushing mountain stream, autumn colors, golden afternoon light, timeless",
-    "Dramatic sea cliffs at sunrise with golden light on crashing waves, powerful and majestic",
-    "A lone figure standing on a hilltop at sunset, silhouetted against an enormous golden sky, contemplative",
-    "Cherry blossom trees in full bloom with petals falling in golden light, renewal and beauty",
-    "Sunset over a calm lake with a wooden dock, perfect reflection in the water, peaceful and still",
-    "Snow-covered mountains reflected in a perfectly still alpine lake, crisp winter morning, pristine beauty",
-    "A vast wheat field at sunset with dramatic storm clouds breaking to golden light, harvest and hope",
-    "Ancient ruins overgrown with vines at golden hour, nature reclaiming, peaceful and timeless",
-    "A shepherd and flock silhouetted against a dramatic sunset sky on rolling hills, pastoral and sacred",
-    "A waterfall cascading into a crystal pool in a tropical forest, light filtering through mist, Eden-like",
-    "The Milky Way reflected in a still mountain lake, complete stillness, infinite beauty",
-    "A lone tree on a cliff edge over the sea at golden hour, wind in its branches, steadfast and beautiful",
+  // 50 curated verse + Unsplash/Pexels search query pairs.
+  // Rotates by day-of-year — no repeat for ~7 weeks.
+  const VERSE_POOL = [
+    { scripture: "The Lord is my light and my salvation — whom shall I fear?", reference: "Psalm 27:1", reflection: "Light breaks through every darkness. Morning always comes.", query: "mountain sunrise golden rays light" },
+    { scripture: "Be still, and know that I am God.", reference: "Psalm 46:10", reflection: "The forest knows how to be still. We are still learning.", query: "cathedral forest light rays peaceful" },
+    { scripture: "He stilled the storm to a whisper; the waves of the sea were hushed.", reference: "Psalm 107:29", reflection: "The One who calms the sea can quiet what rages in you.", query: "dramatic ocean sunset waves" },
+    { scripture: "He determines the number of the stars and calls them each by name.", reference: "Psalm 147:4", reflection: "By name. Every one. You are not unknown.", query: "milky way stars night sky mountain" },
+    { scripture: "Your word is a lamp for my feet, a light on my path.", reference: "Psalm 119:105", reflection: "The path lights only one step at a time. That is enough.", query: "autumn forest golden path light" },
+    { scripture: "As the deer pants for streams of water, so my soul pants for you, my God.", reference: "Psalm 42:1", reflection: "The soul knows its Source. Follow the thirst.", query: "mountain waterfall stream forest" },
+    { scripture: "He leads me beside quiet waters, he refreshes my soul.", reference: "Psalm 23:2-3", reflection: "Stillness is not emptiness. It is where restoration begins.", query: "alpine lake reflection snow mountain" },
+    { scripture: "The heavens declare the glory of God; the skies proclaim the work of his hands.", reference: "Psalm 19:1", reflection: "The northern lights need no words. Neither does glory.", query: "aurora borealis northern lights mountain" },
+    { scripture: "The Lord is my rock, my fortress and my deliverer.", reference: "Psalm 18:2", reflection: "A lighthouse does not move. Neither does His faithfulness.", query: "lighthouse cliffs stormy sea dramatic" },
+    { scripture: "Even in darkness light dawns for the upright.", reference: "Psalm 112:4", reflection: "The desert holds beauty the rushing world never sees.", query: "desert canyon sunrise golden light" },
+    { scripture: "See, I am doing a new thing! Now it springs up; do you not perceive it?", reference: "Isaiah 43:19", reflection: "Bloom is always coming. Waiting is not wasted.", query: "cherry blossom spring pink bloom" },
+    { scripture: "Consider how the wild flowers grow. They do not labor or spin.", reference: "Luke 12:27", reflection: "Beauty without striving. A sermon in every petal.", query: "lavender field sunset purple landscape" },
+    { scripture: "The steadfast love of the Lord never ceases; his mercies never come to an end.", reference: "Lamentations 3:22-23", reflection: "Mercy comes like morning — quiet, faithful, impossible to stop.", query: "misty valley morning fog light" },
+    { scripture: "He is the Maker of heaven and earth, the sea, and everything in them.", reference: "Psalm 146:6", reflection: "Power that formed the cosmos holds you gently.", query: "lightning storm dramatic sky landscape" },
+    { scripture: "Cast all your anxiety on him because he cares for you.", reference: "1 Peter 5:7", reflection: "The tide takes what you release. Let go.", query: "peaceful ocean beach waves shore" },
+    { scripture: "Though your sins are like scarlet, they shall be as white as snow.", reference: "Isaiah 1:18", reflection: "White. Clean. Completely new.", query: "snow covered pine forest winter" },
+    { scripture: "I am the resurrection and the life. Whoever believes in me will live.", reference: "John 11:25", reflection: "Life breaks through rock. Always.", query: "wildflower meadow mountain spring bloom" },
+    { scripture: "The Lord is my shepherd; I shall not want.", reference: "Psalm 23:1", reflection: "Abundance is less about having and more about trusting.", query: "golden wheat field sunset harvest" },
+    { scripture: "Trust in the Lord with all your heart and lean not on your own understanding.", reference: "Proverbs 3:5", reflection: "Roots run deep where storms have come before.", query: "ancient olive tree hillside golden" },
+    { scripture: "My grace is sufficient for you, for my power is made perfect in weakness.", reference: "2 Corinthians 12:9", reflection: "The stone was shaped by every wave that broke against it.", query: "rocky coastline golden hour waves" },
+    { scripture: "Those who hope in the Lord will renew their strength. They will soar on wings like eagles.", reference: "Isaiah 40:31", reflection: "Waiting is not the pause before life. It is how the wings grow strong.", query: "eagle soaring mountain sky majestic" },
+    { scripture: "In the morning, Lord, you hear my voice; in the morning I lay my requests before you.", reference: "Psalm 5:3", reflection: "Morning is a threshold. Cross it with intention.", query: "sunrise calm lake mirror reflection" },
+    { scripture: "For now we see only a reflection as in a mirror; but then face to face.", reference: "1 Corinthians 13:12", reflection: "The fog does not mean nothing is there. Faith knows what sight cannot see.", query: "fog mountain valley morning mist" },
+    { scripture: "He tends his flock like a shepherd: He gathers the lambs in his arms.", reference: "Isaiah 40:11", reflection: "You are the lamb he gathered. Not the one that got away.", query: "green rolling hills pastoral countryside" },
+    { scripture: "Where can I go from your Spirit? Where can I flee from your presence?", reference: "Psalm 139:7", reflection: "The infinite sky makes one thing clear — you are never alone.", query: "starry night desert vast sky" },
+    { scripture: "He who began a good work in you will carry it on to completion.", reference: "Philippians 1:6", reflection: "Growth is quieter than we expect. And steadier.", query: "tropical waterfall lush rainforest green" },
+    { scripture: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.", reference: "Psalm 121:1-2", reflection: "The mountains have always pointed upward. So does the soul, when it is still.", query: "dramatic mountain peaks clouds majestic" },
+    { scripture: "Delight yourself in the Lord, and he will give you the desires of your heart.", reference: "Psalm 37:4", reflection: "What the soul most wants is what it was made for.", query: "autumn lake reflection golden trees" },
+    { scripture: "This is the day the Lord has made; let us rejoice and be glad in it.", reference: "Psalm 118:24", reflection: "Not the day you planned. The day you were given. Rejoice anyway.", query: "golden morning light window chapel" },
+    { scripture: "For I know the plans I have for you, declares the Lord, plans to prosper you.", reference: "Jeremiah 29:11", reflection: "The horizon is not the end. It is where the next chapter begins.", query: "cliffs edge ocean vast horizon" },
+    { scripture: "The Lord will fight for you; you need only to be still.", reference: "Exodus 14:14", reflection: "The sea opened when they stopped running. So does every impossible thing.", query: "dramatic sunrise sea parting dawn" },
+    { scripture: "I can do all this through him who gives me strength.", reference: "Philippians 4:13", reflection: "Not in your strength. In His. That changes everything.", query: "mountain summit sunrise peak climber" },
+    { scripture: "Come to me, all you who are weary and burdened, and I will give you rest.", reference: "Matthew 11:28", reflection: "The invitation is always open. Always.", query: "peaceful meadow stream gentle morning" },
+    { scripture: "Do not be anxious about anything, but in every situation, present your requests to God.", reference: "Philippians 4:6", reflection: "Prayer is not a last resort. It is the first door.", query: "morning garden dew sunrise peaceful" },
+    { scripture: "In him we live and move and have our being.", reference: "Acts 17:28", reflection: "Every breath is borrowed grace.", query: "forest canopy sunlight breathing green" },
+    { scripture: "The Lord bless you and keep you; the Lord make his face shine on you.", reference: "Numbers 6:24-25", reflection: "A blessing spoken over you since before you knew you needed it.", query: "golden countryside light pastoral warm" },
+    { scripture: "You hem me in behind and before, and you lay your hand upon me.", reference: "Psalm 139:5", reflection: "Surrounded. Held. Before you even asked.", query: "ancient forest path morning light" },
+    { scripture: "God is our refuge and strength, an ever-present help in trouble.", reference: "Psalm 46:1", reflection: "The fortress was built before the storm arrived.", query: "rainbow clearing storm mountain dramatic" },
+    { scripture: "He makes me lie down in green pastures.", reference: "Psalm 23:2", reflection: "The rest was never wasted time. It was always part of the plan.", query: "lush green valley pastoral hills" },
+    { scripture: "I am the light of the world. Whoever follows me will never walk in darkness.", reference: "John 8:12", reflection: "One light is all it takes. You are not lost.", query: "single candle flame dark sacred" },
+    { scripture: "If God is for us, who can be against us?", reference: "Romans 8:31", reflection: "Not bravado. Just truth. God's side is always the majority.", query: "sunrise breaking storm clouds light" },
+    { scripture: "He fills my life with good things, so that I stay young and strong like an eagle.", reference: "Psalm 103:5", reflection: "Renewal is not reserved for the young. It is the eagle's inheritance — and yours.", query: "eagle flight dawn wild sky" },
+    { scripture: "The name of the Lord is a fortified tower; the righteous run to it and are safe.", reference: "Proverbs 18:10", reflection: "Ancient towers were built to outlast every siege. So is this name.", query: "ancient stone tower hilltop golden sunset" },
+    { scripture: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you.", reference: "Joshua 1:9", reflection: "Not a feeling. A fact. He is with you.", query: "lone figure vast landscape horizon light" },
+    { scripture: "He reached down from on high and took hold of me; he drew me out of deep waters.", reference: "Psalm 18:16", reflection: "Rescue is never late when the Rescuer stands outside of time.", query: "dramatic ocean waves rescue sunlight" },
+    { scripture: "The Lord your God is in your midst, a mighty one who will save; he will rejoice over you.", reference: "Zephaniah 3:17", reflection: "He is not watching from a distance. He is here, and He rejoices.", query: "sunrise still water joyful dawn light" },
+    { scripture: "Your faithfulness reaches to the skies.", reference: "Psalm 36:5", reflection: "Higher than the clouds. Further than sight can follow.", query: "dramatic cloudscape aerial sky high" },
+    { scripture: "He gives strength to the weary and increases the power of the weak.", reference: "Isaiah 40:29", reflection: "Not more willpower. Borrowed strength. Ask for it.", query: "rushing mountain river powerful stream" },
+    { scripture: "Fear not, for I have redeemed you; I have summoned you by name; you are mine.", reference: "Isaiah 43:1", reflection: "By name. Redeemed. Yours. Three truths that change everything.", query: "misty mountain valley dawn breaking" },
+    { scripture: "The eternal God is your refuge, and underneath are the everlasting arms.", reference: "Deuteronomy 33:27", reflection: "You cannot fall further than His arms reach.", query: "vast canyon ancient rock sunrise" },
   ];
 
-  // Curated natural photos rotate in to keep the daily art grounded and real
-  // Schedule: each photo appears exactly 2x per week (~57% natural, ~43% AI)
-  const NATURAL_PHOTO_SCHEDULE: Record<number, { file: string; scripture: string; reference: string; reflection: string }> = {
-    0: { // Sunday
-      file: "natural-sunset.jpg",
-      scripture: "The heavens declare the glory of God; the skies proclaim the work of his hands.",
-      reference: "Psalm 19:1",
-      reflection: "When the sky blazes with color, creation is singing its Maker's name.",
-    },
-    2: { // Tuesday
-      file: "natural-mountain.jpg",
-      scripture: "He leads me beside quiet waters, he refreshes my soul.",
-      reference: "Psalm 23:2-3",
-      reflection: "In still water, the soul finds what it was always searching for.",
-    },
-    3: { // Wednesday
-      file: "natural-sunset.jpg",
-      scripture: "Be still, and know that I am God.",
-      reference: "Psalm 46:10",
-      reflection: "The burning sky asks nothing. Only that you stop, and witness.",
-    },
-    4: { // Thursday
-      file: "natural-sunset.jpg",
-      scripture: "The heavens declare the glory of God; the skies proclaim the work of his hands.",
-      reference: "Psalm 19:1",
-      reflection: "When the skies ignite with color, creation bows before its Maker in silent worship.",
-    },
-    5: { // Friday
-      file: "natural-mountain.jpg",
-      scripture: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.",
-      reference: "Psalm 121:1-2",
-      reflection: "The mountains have always pointed upward. So does the soul, when it is still.",
-    },
-  };
+  async function fetchUnsplashPhoto(query: string): Promise<string | null> {
+    const key = process.env.UNSPLASH_ACCESS_KEY;
+    if (!key) return null;
+    try {
+      const res = await fetch(
+        `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&orientation=landscape&content_filter=high&client_id=${key}`
+      );
+      if (!res.ok) return null;
+      const data = await res.json() as any;
+      return data.urls?.regular ?? null;
+    } catch { return null; }
+  }
+
+  async function fetchPexelsPhoto(query: string): Promise<string | null> {
+    const key = process.env.PEXELS_API_KEY;
+    if (!key) return null;
+    try {
+      const page = Math.floor(Math.random() * 4) + 1;
+      const res = await fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&page=${page}&orientation=landscape`,
+        { headers: { Authorization: key } }
+      );
+      if (!res.ok) return null;
+      const data = await res.json() as any;
+      const photos: any[] = data.photos ?? [];
+      if (!photos.length) return null;
+      const photo = photos[Math.floor(Math.random() * photos.length)];
+      return photo.src?.large2x ?? photo.src?.large ?? null;
+    } catch { return null; }
+  }
 
   app.get("/api/daily-art", async (req, res) => {
     try {
-      // Use US Eastern Time (UTC-5) so new art rolls over at midnight ET
-      // — which lands 12am–3am across US timezones (low-traffic window)
+      // Roll over at midnight US Eastern (UTC-5)
       const nowET = new Date(Date.now() - 5 * 60 * 60 * 1000);
       const today = nowET.toISOString().split("T")[0];
       const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
       const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
 
-      // Check if today is a curated natural photo day
-      const dayOfWeekET = nowET.getDay();
-      const naturalPhoto = NATURAL_PHOTO_SCHEDULE[dayOfWeekET];
-      if (naturalPhoto) {
-        if (fs.existsSync(metaFile)) {
-          const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
-          return res.json({ imageUrl: `/daily-art/${naturalPhoto.file}`, ...meta });
-        }
-        const { file, ...scriptureData } = naturalPhoto;
-        fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
-        return res.json({ imageUrl: `/daily-art/${naturalPhoto.file}`, ...scriptureData });
-      }
-
-      // Return cached AI art if already generated today
+      // Serve cached result if already fetched today
       if (fs.existsSync(imgFile) && fs.existsSync(metaFile)) {
         const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
         return res.json({ imageUrl: `/daily-art/${today}.jpg`, ...meta });
       }
 
-      const openai = new OpenAI();
+      // Pick verse for today — deterministic by day-of-year, no AI needed
+      const dayOfYear = Math.floor(
+        (nowET.getTime() - new Date(nowET.getFullYear(), 0, 0).getTime()) / 86_400_000
+      );
+      const { query, ...scriptureData } = VERSE_POOL[dayOfYear % VERSE_POOL.length];
 
-      // Pick theme for today based on ET date seed
-      const dayOfYear = Math.floor((nowET.getTime() - new Date(nowET.getFullYear(), 0, 0).getTime()) / 86400000);
-      const theme = ART_THEMES[dayOfYear % ART_THEMES.length];
+      // If only metadata is cached (image fetch may have failed previously), return text fallback
+      if (fs.existsSync(metaFile) && !fs.existsSync(imgFile)) {
+        const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
+        return res.json({ imageUrl: null, ...meta });
+      }
 
-      // Generate companion scripture/message via AI
-      const msgRes = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        temperature: 0.7,
-        max_tokens: 120,
-        messages: [
-          {
-            role: "system",
-            content: "You pair a Bible scripture with a beautiful nature scene. Return ONLY valid JSON: { \"scripture\": \"exact scripture text (short, 10-20 words)\", \"reference\": \"Book Chapter:Verse\", \"reflection\": \"One sentence — a brief, quiet reflection on how this scene echoes this truth. Poetic, not preachy. Under 18 words.\" }"
-          },
-          {
-            role: "user",
-            content: `The daily art image theme is: "${theme}". Choose the single most fitting Bible verse for this scene and write a brief reflection.`
-          }
-        ]
-      });
+      // Fetch photo — Unsplash first, Pexels as fallback
+      let photoUrl = await fetchUnsplashPhoto(query);
+      if (!photoUrl) photoUrl = await fetchPexelsPhoto(query);
 
-      let scriptureData = { scripture: "The heavens declare the glory of God.", reference: "Psalm 19:1", reflection: "Creation speaks what words cannot." };
-      try {
-        const raw = msgRes.choices[0].message.content?.trim() ?? "{}";
-        scriptureData = JSON.parse(raw.replace(/```json|```/g, "").trim());
-      } catch { /* use defaults */ }
+      if (!photoUrl) {
+        // Both APIs unavailable — return text-only fallback
+        fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
+        return res.json({ imageUrl: null, ...scriptureData });
+      }
 
-      // Generate image with DALL-E 3
-      // Thursday (4) and Sunday (0) use an artistic/painterly style; all other days are natural photography
-      const dayOfWeek = new Date().getDay();
-      const isArtisticDay = dayOfWeek === 0 || dayOfWeek === 4;
-      const stylePrompt = isArtisticDay
-        ? `${theme}. Cinematic oil painting style with expressive painterly brushstrokes, rich warm tones, atmospheric depth, spiritual mood. No text, no watermarks, no people. Pure nature only.`
-        : `${theme}. Ultra-high quality photorealistic landscape photography, shot on Canon 5D Mark IV, National Geographic quality, natural lighting, no digital artifacts, no HDR over-processing. No text, no watermarks, no people. Pure nature photography.`;
-      const imageRes = await openai.images.generate({
-        model: "gpt-image-1",
-        prompt: stylePrompt,
-        n: 1,
-        size: "1536x1024",
-        quality: "medium",
-      } as any);
-
-      const b64Image = imageRes.data?.[0]?.b64_json;
-      if (!b64Image) return res.json({ imageUrl: null, ...scriptureData });
-
-      // Decode b64 directly — no external fetch needed
-      const imgBuffer = Buffer.from(b64Image, "base64");
+      // Download and cache the image
+      const imgRes = await fetch(photoUrl);
+      if (!imgRes.ok) throw new Error(`Photo download failed: ${imgRes.status}`);
+      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
       fs.writeFileSync(imgFile, imgBuffer);
-      // Compress to mobile-friendly size (900px wide, ~70KB)
+
+      // Compress to mobile-friendly size
       try {
         execSync(`magick "${imgFile}" -resize 900x -quality 78 -strip "${imgFile}"`, { timeout: 15000 });
-      } catch (compressErr) {
-        console.warn("Image compression failed, keeping original:", compressErr);
-      }
-      fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
+      } catch { /* keep original if ImageMagick unavailable */ }
 
+      fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
       res.json({ imageUrl: `/daily-art/${today}.jpg`, ...scriptureData });
     } catch (err) {
       console.error("daily art error:", err);
