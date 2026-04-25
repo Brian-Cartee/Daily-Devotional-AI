@@ -2048,6 +2048,17 @@ Return JSON: { "action": "...", "scripture": "..." }`
     } catch { return null; }
   }
 
+  // ── Serve daily-art image through /api path (works in all deployment routing) ──
+  app.get("/api/daily-art/image", (req, res) => {
+    const nowET = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    const today = nowET.toISOString().split("T")[0];
+    const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
+    if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "not ready" });
+    res.set("Cache-Control", "public, max-age=86400");
+    res.set("Content-Type", "image/jpeg");
+    fs.createReadStream(imgFile).pipe(res);
+  });
+
   app.get("/api/daily-art", async (req, res) => {
     try {
       // Roll over at midnight US Eastern (UTC-5)
@@ -2059,7 +2070,7 @@ Return JSON: { "action": "...", "scripture": "..." }`
       // Serve cached result if already fetched today
       if (fs.existsSync(imgFile) && fs.existsSync(metaFile)) {
         const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
-        return res.json({ imageUrl: `/daily-art/${today}.jpg`, ...meta });
+        return res.json({ imageUrl: `/api/daily-art/image`, ...meta });
       }
 
       // Pick verse for today — deterministic by day-of-year, no AI needed
@@ -2096,7 +2107,7 @@ Return JSON: { "action": "...", "scripture": "..." }`
       } catch { /* keep original if ImageMagick unavailable */ }
 
       fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
-      res.json({ imageUrl: `/daily-art/${today}.jpg`, ...scriptureData });
+      res.json({ imageUrl: `/api/daily-art/image`, ...scriptureData });
     } catch (err) {
       console.error("daily art error:", err);
       res.json({ imageUrl: null, scripture: "The heavens declare the glory of God.", reference: "Psalm 19:1", reflection: "Creation speaks what words cannot." });

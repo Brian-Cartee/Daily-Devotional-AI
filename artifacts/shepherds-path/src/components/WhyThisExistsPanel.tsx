@@ -75,7 +75,7 @@ export function WhyThisExistsPanel() {
           width="34" height="11" viewBox="0 0 34 11" fill="none"
         >
           <path
-            d="M1 10 L8 1 L26 1 L33 10"
+            d="M1 1 L8 10 L26 10 L33 1"
             stroke="rgba(255,255,255,0.85)"
             strokeWidth="2"
             strokeLinecap="round"

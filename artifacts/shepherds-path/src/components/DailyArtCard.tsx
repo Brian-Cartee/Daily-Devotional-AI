@@ -57,7 +57,7 @@ export function DailyArtCard() {
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
-    const cacheKey = `sp-daily-art-${today}`;
+    const cacheKey = `sp-daily-art-v2-${today}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       const parsed: DailyArt = JSON.parse(cached);
