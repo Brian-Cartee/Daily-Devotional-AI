@@ -32,7 +32,10 @@
       "ios": {
         "appleId": "briancartee@gmail.com",
         "ascAppId": "6760953522",
-        "appleTeamId": "D5X4W5F62Y"
+        "appleTeamId": "D5X4W5F62Y",
+        "ascApiKeyIssuerId": "2787b8ca-4e36-4112-9a35-875f90ed0169",
+        "ascApiKeyId": "3DD2747FYX",
+        "ascApiKeyPath": "/tmp/asc-key/AuthKey_3DD2747FYX.p8"
       }
     }
   }
