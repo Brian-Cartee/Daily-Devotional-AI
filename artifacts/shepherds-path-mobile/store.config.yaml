@@ -38,8 +38,8 @@ apple:
         your App Store settings. Subscription auto-renews unless cancelled at
         least 24 hours before the end of the current period.
 
-        Privacy Policy: https://YOUR_DOMAIN/privacy   # TODO: replace with real URL
-        Terms of Service: https://YOUR_DOMAIN/terms   # TODO: replace with real URL
+        Privacy Policy: https://shepherdspathai.com/privacy
+        Terms of Service: https://shepherdspathai.com/terms
       keywords:
         - Bible
         - devotional
@@ -52,9 +52,9 @@ apple:
         - worship
         - spiritual growth
       releaseNotes: "Initial release of Shepherd's Path — daily devotionals, AI Bible study, and community prayer."
-      marketingUrl: "https://YOUR_DOMAIN"                   # TODO: replace with real URL
-      supportUrl: "https://YOUR_DOMAIN/support"             # TODO: replace with real URL
-      privacyPolicyUrl: "https://YOUR_DOMAIN/privacy"       # TODO: replace with real URL (required by Apple)
+      marketingUrl: "https://shepherdspathai.com"
+      supportUrl: "https://shepherdspathai.com/support"
+      privacyPolicyUrl: "https://shepherdspathai.com/privacy"
   categories:
     primary: LIFESTYLE
     secondary: BOOKS
