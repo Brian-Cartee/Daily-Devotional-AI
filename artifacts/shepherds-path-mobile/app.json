@@ -70,8 +70,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID_FROM_expo.dev"
+        "projectId": "b916bb13-03ee-45a4-86a4-cbe7a11c34a7"
       }
-    }
+    },
+    "owner": "shepherdspath"
   }
 }
