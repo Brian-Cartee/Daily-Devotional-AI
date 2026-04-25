@@ -494,6 +494,9 @@ export default function AdminPage() {
                   Mark as enrolled ✓
                 </button>
               </div>
+              <p className="text-[10px] text-muted-foreground/50 mt-2">
+                This is a personal reminder only — enrollment must be completed directly on Apple's developer portal and is not verified here.
+              </p>
             </div>
             <button
               onClick={() => { setSbpDone(true); localStorage.setItem("sp-admin-sbp-enrolled", "true"); }}
