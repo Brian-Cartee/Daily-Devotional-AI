@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { swState } from "./lib/sw-state";
 import "./index.css";
 
 if ("serviceWorker" in navigator) {
@@ -35,7 +36,7 @@ if ("serviceWorker" in navigator) {
 
       // Only reload when the user explicitly triggered an update (not on first SW activation)
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if ((window as any).__swUpdateInitiated) {
+        if (swState.updateInitiated) {
           window.location.reload();
         }
       });

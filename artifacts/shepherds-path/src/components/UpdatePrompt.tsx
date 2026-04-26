@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { swState } from "@/lib/sw-state";
 
 export function UpdatePrompt() {
   const [waitingReg, setWaitingReg] = useState<ServiceWorkerRegistration | null>(null);
@@ -19,7 +20,7 @@ export function UpdatePrompt() {
   const applyUpdate = useCallback(() => {
     if (!waitingReg?.waiting) return;
     // Signal main.tsx that the reload is user-initiated (not first-time SW activation)
-    (window as any).__swUpdateInitiated = true;
+    swState.updateInitiated = true;
     waitingReg.waiting.postMessage({ type: "SKIP_WAITING" });
     // reload is handled by the controllerchange listener in main.tsx
   }, [waitingReg]);
