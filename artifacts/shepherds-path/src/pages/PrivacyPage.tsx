@@ -49,6 +49,10 @@ export default function PrivacyPage() {
               body: "Pro subscriptions are processed by third-party payment providers depending on your platform: Stripe (web), Google Play Billing (Android app), or Apple App Store (iOS app). Each provider's privacy policy governs how your payment data is handled. We receive confirmation of your subscription status but never your full card details. You can manage or cancel subscriptions through the platform you used to subscribe.",
             },
             {
+              heading: "Push notifications",
+              body: "If you grant notification permissions on iOS or Android, Shepherd's Path may send you daily scripture reminders and devotional prompts. These notifications are delivered via Expo's push notification service. We do not use push tokens for advertising or share them with third parties. You can revoke notification permission at any time in your device settings.",
+            },
+            {
               heading: "Analytics and tracking",
               body: "We do not use third-party advertising trackers. We may collect anonymous usage data (pages visited, features used) solely to improve the app. This data is never tied to your identity.",
             },
