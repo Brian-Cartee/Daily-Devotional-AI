@@ -33,9 +33,11 @@ if ("serviceWorker" in navigator) {
 
       }).catch(() => {});
 
-      // When SKIP_WAITING completes and the new SW takes control, reload once
+      // Only reload when the user explicitly triggered an update (not on first SW activation)
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        window.location.reload();
+        if ((window as any).__swUpdateInitiated) {
+          window.location.reload();
+        }
       });
 
     } else {
