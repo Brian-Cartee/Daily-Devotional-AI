@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 const rawPort = process.env.PORT;
@@ -25,11 +26,56 @@ if (!basePath) {
   );
 }
 
+// Generate a stable version string for this build. Using a timestamp so every
+// production build gets a unique cache name, which triggers the activate
+// handler to delete all previous caches.
+const SW_CACHE_VERSION = `v${Date.now()}`;
+
+function swCacheVersionPlugin() {
+  return {
+    name: "sw-cache-version",
+
+    // In dev mode: intercept GET /sw.js and serve a replaced version
+    configureServer(server: import("vite").ViteDevServer) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url !== "/sw.js") return next();
+        const swPath = path.resolve(import.meta.dirname, "public/sw.js");
+        try {
+          const content = fs.readFileSync(swPath, "utf-8").replace(
+            /__SW_CACHE_VERSION__/g,
+            SW_CACHE_VERSION,
+          );
+          res.setHeader("Content-Type", "application/javascript");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(content);
+        } catch {
+          next();
+        }
+      });
+    },
+
+    // In production: post-process the copied sw.js in the output dir
+    closeBundle() {
+      const outSwPath = path.resolve(
+        import.meta.dirname,
+        "dist/public/sw.js",
+      );
+      if (!fs.existsSync(outSwPath)) return;
+      const content = fs.readFileSync(outSwPath, "utf-8").replace(
+        /__SW_CACHE_VERSION__/g,
+        SW_CACHE_VERSION,
+      );
+      fs.writeFileSync(outSwPath, content, "utf-8");
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    swCacheVersionPlugin(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
