@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { swState } from "./lib/sw-state";
+import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
 
 if ("serviceWorker" in navigator) {
@@ -11,7 +11,7 @@ if ("serviceWorker" in navigator) {
 
         const notifyWaiting = (reg: ServiceWorkerRegistration) => {
           window.dispatchEvent(
-            new CustomEvent("sw-update-waiting", { detail: reg })
+            new CustomEvent(SW_UPDATE_EVENT, { detail: reg })
           );
         };
 

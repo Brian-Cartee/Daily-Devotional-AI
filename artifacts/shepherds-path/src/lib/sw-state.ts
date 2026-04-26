@@ -6,3 +6,9 @@
 export const swState = {
   updateInitiated: false,
 };
+
+/**
+ * Custom window event dispatched when a new service worker is waiting to activate.
+ * The event detail is the ServiceWorkerRegistration that holds the waiting worker.
+ */
+export const SW_UPDATE_EVENT = "sw-update-waiting" as const;

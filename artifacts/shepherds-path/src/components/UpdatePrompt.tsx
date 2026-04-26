@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { swState } from "@/lib/sw-state";
+import { swState, SW_UPDATE_EVENT } from "@/lib/sw-state";
 
 export function UpdatePrompt() {
   const [waitingReg, setWaitingReg] = useState<ServiceWorkerRegistration | null>(null);
@@ -18,8 +18,8 @@ export function UpdatePrompt() {
       setWaitingReg(reg);
       setDismissed(false);
     };
-    window.addEventListener("sw-update-waiting", handler);
-    return () => window.removeEventListener("sw-update-waiting", handler);
+    window.addEventListener(SW_UPDATE_EVENT, handler);
+    return () => window.removeEventListener(SW_UPDATE_EVENT, handler);
   }, []);
 
   const applyUpdate = useCallback(() => {
