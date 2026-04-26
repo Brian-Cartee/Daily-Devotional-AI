@@ -52,7 +52,7 @@ export function UpdatePrompt() {
     setDismissed(true);
   }, [waitingReg]);
 
-  const visible = !!waitingReg && !dismissed;
+  const visible = Boolean(waitingReg?.waiting) && !dismissed;
 
   return (
     <AnimatePresence>
