@@ -30,3 +30,63 @@ id = "5MSFzDah5k2itxstUESLm"
 uri = "file://screenshots/appstore-5-pro.jpg"
 type = "image"
 title = "Screenshot 5 — Pro Subscription"
+
+[[outputs]]
+id = "DCQmy2OZx3CYDcu8YtjMS"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.9/01-home.jpg"
+type = "image"
+title = "6.9\" — Screen 1: Home"
+
+[[outputs]]
+id = "5osT9C83JdcWtCbFgpbGm"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.9/02-devotional.jpg"
+type = "image"
+title = "6.9\" — Screen 2: Devotional"
+
+[[outputs]]
+id = "97bk3cjC8EWwSihmaEfQw"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.9/03-prayer.jpg"
+type = "image"
+title = "6.9\" — Screen 3: Prayer"
+
+[[outputs]]
+id = "0QbowIJ3lms_C2yMvVIIt"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.9/04-guidance.jpg"
+type = "image"
+title = "6.9\" — Screen 4: Guidance"
+
+[[outputs]]
+id = "f3ul5M1R9H6241elFcSYc"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.9/05-pro.jpg"
+type = "image"
+title = "6.9\" — Screen 5: Pro"
+
+[[outputs]]
+id = "aC5pwN2GpwBv_4-43CveE"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.7/01-home.jpg"
+type = "image"
+title = "6.7\" — Screen 1: Home"
+
+[[outputs]]
+id = "3J3jzkMf_WFv6BDE-KMnR"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.7/02-devotional.jpg"
+type = "image"
+title = "6.7\" — Screen 2: Devotional"
+
+[[outputs]]
+id = "YHWIppiGwjn8negzB6acR"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.7/03-prayer.jpg"
+type = "image"
+title = "6.7\" — Screen 3: Prayer"
+
+[[outputs]]
+id = "ZOVnyWuIp3jQvLcuMZiqT"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.7/04-guidance.jpg"
+type = "image"
+title = "6.7\" — Screen 4: Guidance"
+
+[[outputs]]
+id = "tHptutzgOjTXngQyUUEfT"
+uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.7/05-pro.jpg"
+type = "image"
+title = "6.7\" — Screen 5: Pro"
