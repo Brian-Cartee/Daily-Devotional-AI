@@ -1,0 +1,32 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "xD8IfzztyMqjXghYxdsjb"
+uri = "file://screenshots/appstore-1-home.jpg"
+type = "image"
+title = "Screenshot 1 — Daily Scripture (Home)"
+
+[[outputs]]
+id = "k0Ak3Pji7LemYdNI_qfXL"
+uri = "file://screenshots/appstore-2-devotional.jpg"
+type = "image"
+title = "Screenshot 2 — Devotional Guide"
+
+[[outputs]]
+id = "pk6L6NlvqK2uyPYwVqX6e"
+uri = "file://screenshots/appstore-3-prayer.jpg"
+type = "image"
+title = "Screenshot 3 — Community Prayer Wall"
+
+[[outputs]]
+id = "k8_45kZuH1bUV_-vcCeUG"
+uri = "file://screenshots/appstore-4-guidance.jpg"
+type = "image"
+title = "Screenshot 4 — Pastoral Guidance (AI)"
+
+[[outputs]]
+id = "5MSFzDah5k2itxstUESLm"
+uri = "file://screenshots/appstore-5-pro.jpg"
+type = "image"
+title = "Screenshot 5 — Pro Subscription"

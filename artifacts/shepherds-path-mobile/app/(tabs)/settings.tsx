@@ -89,7 +89,7 @@ export default function SettingsScreen() {
 
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Version</Text>
-          <Text style={styles.rowValue}>1.0.0</Text>
+          <Text style={styles.rowValue}>2.0.0</Text>
         </View>
 
         <View style={styles.row}>
