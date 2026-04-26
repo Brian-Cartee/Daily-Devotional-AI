@@ -141,26 +141,33 @@ export default function Screenshot5Pro() {
       {/* Ministry mission banner */}
       <div style={{
         margin: "20px 48px 0",
-        background: `linear-gradient(135deg, rgba(192,78,232,0.12) 0%, rgba(224,154,26,0.10) 100%)`,
-        borderRadius: 18,
-        border: `1px solid rgba(192,78,232,0.3)`,
-        padding: "22px 28px",
-        display: "flex",
-        gap: 18,
-        alignItems: "flex-start",
+        background: `linear-gradient(135deg, rgba(224,154,26,0.13) 0%, rgba(192,78,232,0.10) 100%)`,
+        borderRadius: 20,
+        border: `1px solid rgba(224,154,26,0.45)`,
+        padding: "26px 30px",
         flexShrink: 0,
       }}>
-        <div style={{ flexShrink: 0, marginTop: 2 }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={gold} strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill={gold} fillOpacity="0.2"/>
-          </svg>
-        </div>
-        <div>
-          <p style={{ color: gold, fontSize: 21, fontWeight: 700, margin: "0 0 6px", letterSpacing: 0.5 }}>Your subscription fuels the ministry</p>
-          <p style={{ color: muted, fontSize: 19, margin: 0, lineHeight: 1.5 }}>
-            Pro members make it possible to keep Shepherd's Path free for the thousands who need it most. Your generosity extends the reach of this ministry.
+        {/* Header row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+            background: "rgba(224,154,26,0.18)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={gold} strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill={gold} fillOpacity="0.25"/>
+            </svg>
+          </div>
+          <p style={{ color: gold, fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: 0.3 }}>
+            You're funding the mission
           </p>
         </div>
+        <p style={{ color: fg, fontSize: 21, margin: "0 0 10px", lineHeight: 1.55, fontWeight: 500 }}>
+          Pro subscribers are the reason Shepherd's Path stays <span style={{ color: gold, fontWeight: 700 }}>completely free</span> for the thousands who need it most.
+        </p>
+        <p style={{ color: muted, fontSize: 19, margin: 0, lineHeight: 1.5 }}>
+          Every subscription directly supports this ministry — extending its reach to people who could never pay for it.
+        </p>
       </div>
 
       {/* Pricing */}
