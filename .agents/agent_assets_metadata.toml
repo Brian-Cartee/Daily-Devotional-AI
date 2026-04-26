@@ -90,3 +90,9 @@ id = "tHptutzgOjTXngQyUUEfT"
 uri = "file://artifacts/shepherds-path-mobile/store-assets/screenshots/6.7/05-pro.jpg"
 type = "image"
 title = "6.7\" — Screen 5: Pro"
+
+[[outputs]]
+id = "sytuTNyJL_aF5WGTp9OGg"
+uri = "file://shepherds-path-mobile.tar.gz"
+type = "unspecified"
+title = "Shepherd's Path Mobile Project"
