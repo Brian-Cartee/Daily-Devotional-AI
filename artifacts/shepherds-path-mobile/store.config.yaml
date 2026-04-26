@@ -1,6 +1,18 @@
 # EAS Metadata — used by `eas metadata:push` to populate the App Store listing.
 # Run: eas metadata:push --profile production
 #
+# SCREENSHOTS
+# All screenshots are stored in store-assets/screenshots/:
+#   6.7/  → iPhone 15 Pro Max (1290×2796 px)  — required for App Store
+#   6.5/  → iPhone 14 Plus    (1242×2688 px)  — required for App Store
+#
+# Screenshots must be uploaded manually via App Store Connect:
+#   1. Log in → Apps → Shepherd's Path → App Store tab
+#   2. Scroll to "App Previews and Screenshots"
+#   3. Upload all five 6.7" shots, then all five 6.5" shots
+#
+# Order: 01-home · 02-devotional · 03-prayer · 04-guidance · 05-pro
+#
 # BEFORE SUBMITTING — replace every placeholder marked with TODO:
 #   - YOUR_DOMAIN  →  your live domain (e.g. shepherdspath.app)
 #   - YOUR_EMAIL   →  App Review contact email
