@@ -6,9 +6,9 @@ export const modules: ModuleMap = {
   "./components/mockups/screenshot-3-prayer.tsx": () => import("../components/mockups/screenshot-3-prayer.tsx"),
   "./components/mockups/screenshot-4-guidance.tsx": () => import("../components/mockups/screenshot-4-guidance.tsx"),
   "./components/mockups/screenshot-5-pro.tsx": () => import("../components/mockups/screenshot-5-pro.tsx"),
-  "./components/mockups/explore/CurrentGrid.tsx": () => import("../components/mockups/explore/CurrentGrid.tsx"),
-  "./components/mockups/explore/GroupedGrid.tsx": () => import("../components/mockups/explore/GroupedGrid.tsx"),
   "./components/mockups/home-concepts/HeartEntry.tsx": () => import("../components/mockups/home-concepts/HeartEntry.tsx"),
   "./components/mockups/home-concepts/TheWhisper.tsx": () => import("../components/mockups/home-concepts/TheWhisper.tsx"),
-  "./components/mockups/home-concepts/YourLetter.tsx": () => import("../components/mockups/home-concepts/YourLetter.tsx")
+  "./components/mockups/home-concepts/YourLetter.tsx": () => import("../components/mockups/home-concepts/YourLetter.tsx"),
+  "./components/mockups/explore/CurrentGrid.tsx": () => import("../components/mockups/explore/CurrentGrid.tsx"),
+  "./components/mockups/explore/GroupedGrid.tsx": () => import("../components/mockups/explore/GroupedGrid.tsx")
 };
