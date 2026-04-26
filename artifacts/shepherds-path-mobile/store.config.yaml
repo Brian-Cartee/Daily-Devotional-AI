@@ -3,13 +3,15 @@
 #
 # SCREENSHOTS
 # All screenshots are stored in store-assets/screenshots/:
-#   6.7/  → iPhone 15 Pro Max (1290×2796 px)  — required for App Store
-#   6.5/  → iPhone 14 Plus    (1242×2688 px)  — required for App Store
+#   6.9/  → iPhone 16 Pro Max (1320×2868 px)  — PRIMARY required size (App Store)
+#   6.5/  → iPhone 14 Plus    (1242×2688 px)  — secondary (ASC can inherit from 6.9")
+#   6.7/  → iPhone 15 Pro Max (1290×2796 px)  — kept as backup / legacy
 #
 # Screenshots must be uploaded manually via App Store Connect:
-#   1. Log in → Apps → Shepherd's Path → App Store tab
-#   2. Scroll to "App Previews and Screenshots"
-#   3. Upload all five 6.7" shots, then all five 6.5" shots
+#   1. Log in → Apps → Shepherd's Path → Distribution tab → App Store tab
+#   2. Click "Media Manager" (or scroll to "App Previews and Screenshots")
+#   3. Under "iPhone 6.9" Display" upload all five shots from store-assets/screenshots/6.9/
+#   4. The 6.5" slot can be left to inherit, or upload the 6.5/ folder shots separately
 #
 # Order: 01-home · 02-devotional · 03-prayer · 04-guidance · 05-pro
 #
