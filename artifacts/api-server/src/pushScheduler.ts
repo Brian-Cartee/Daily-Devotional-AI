@@ -1,8 +1,11 @@
 import webpush from "web-push";
+import { Expo } from "expo-server-sdk";
 import { storage } from "./storage";
 import { db } from "./db";
 import { streaks } from "@workspace/db";
 import { eq } from "drizzle-orm";
+
+const expo = new Expo();
 
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -204,6 +207,47 @@ export async function sendPrayerReminderNotifications() {
   }
 }
 
+async function sendExpoDailyVerseNotifications() {
+  try {
+    const now = new Date();
+    const hour = now.getUTCHours();
+    const minute = now.getUTCMinutes();
+    const tokens = await storage.getExpoPushTokensForHourMinute(hour, minute);
+    if (tokens.length === 0) return;
+
+    const today = now.toISOString().split("T")[0];
+    const verse = await storage.getVerseByDate(today);
+    const title = "Your Daily Scripture";
+    const body = verse
+      ? `${verse.reference} — "${verse.text.length > 120 ? verse.text.slice(0, 117) + "…" : verse.text}"`
+      : "Open Shepherd's Path for today's verse.";
+
+    const messages = tokens
+      .filter(t => Expo.isExpoPushToken(t.token))
+      .map(t => ({
+        to: t.token,
+        sound: "default" as const,
+        title,
+        body,
+        data: { screen: "devotional" },
+      }));
+
+    if (messages.length === 0) return;
+
+    const chunks = expo.chunkPushNotifications(messages);
+    for (const chunk of chunks) {
+      try {
+        await expo.sendPushNotificationsAsync(chunk);
+      } catch (err) {
+        console.error("[expo-push] chunk send error:", err);
+      }
+    }
+    console.log(`[expo-push] Sent daily verse to ${messages.length} device(s) at UTC ${hour}:${String(minute).padStart(2, "0")}`);
+  } catch (err) {
+    console.error("[expo-push] sendExpoDailyVerseNotifications error:", err);
+  }
+}
+
 export function schedulePushNotifications() {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     console.log("[push] VAPID keys not configured, skipping push scheduler");
@@ -259,4 +303,20 @@ export function schedulePushNotifications() {
     }, delay);
   };
   scheduleSundaySummary();
+}
+
+export function scheduleExpoPushNotifications() {
+  console.log("[expo-push] Expo push notification scheduler starting (per-minute check)...");
+
+  const scheduleNextMinute = () => {
+    const now = new Date();
+    const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 100;
+    setTimeout(async () => {
+      await sendExpoDailyVerseNotifications();
+      scheduleNextMinute();
+    }, msUntilNextMinute);
+  };
+
+  sendExpoDailyVerseNotifications().catch(() => {});
+  scheduleNextMinute();
 }

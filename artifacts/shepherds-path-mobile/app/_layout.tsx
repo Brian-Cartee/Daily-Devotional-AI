@@ -8,16 +8,33 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as Notifications from "expo-notifications";
 import React, { useEffect } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
+import {
+  loadNotificationPrefs,
+  enableNotifications,
+} from "@/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
+
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 const queryClient = new QueryClient();
 
@@ -25,6 +42,15 @@ try {
   initializeRevenueCat();
 } catch (err: any) {
   Alert.alert("RevenueCat Unavailable", err?.message ?? "Unknown error");
+}
+
+async function rescheduleNotifications() {
+  if (Platform.OS === "web") return;
+  try {
+    const prefs = await loadNotificationPrefs();
+    if (!prefs.enabled) return;
+    await enableNotifications(prefs);
+  } catch {}
 }
 
 function RootLayoutNav() {
@@ -48,6 +74,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      rescheduleNotifications();
     }
   }, [fontsLoaded, fontError]);
 

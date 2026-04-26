@@ -344,3 +344,17 @@ export const userMemory = pgTable("user_memory", {
 });
 
 export type UserMemoryRow = typeof userMemory.$inferSelect;
+
+export const expoPushTokens = pgTable("expo_push_tokens", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull().unique(),
+  token: text("token").notNull(),
+  hour: integer("hour").default(7).notNull(),
+  minute: integer("minute").default(0).notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export type ExpoPushToken = typeof expoPushTokens.$inferSelect;
+export type InsertExpoPushToken = typeof expoPushTokens.$inferInsert;

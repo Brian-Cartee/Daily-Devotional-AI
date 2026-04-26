@@ -61,3 +61,24 @@ export async function prayForEntry(id: number, sessionId: string): Promise<any> 
   if (!res.ok) throw new Error("Failed to pray for entry");
   return res.json();
 }
+
+export async function registerExpoPushToken(
+  sessionId: string,
+  token: string,
+  hour: number,
+  minute: number
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/expo-push-token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, token, hour, minute }),
+  });
+  if (!res.ok) throw new Error(`Failed to register push token: ${res.status}`);
+}
+
+export async function unregisterExpoPushToken(sessionId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/expo-push-token/${sessionId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Failed to unregister push token: ${res.status}`);
+}

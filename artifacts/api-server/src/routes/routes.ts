@@ -20,7 +20,7 @@ import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText, buildWelcomeEmailHtml, buildWelcomeEmailText } from "../resend";
 import { scheduleDailyEmails } from "../emailScheduler";
-import { schedulePushNotifications } from "../pushScheduler";
+import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
@@ -486,8 +486,47 @@ ${transcription.text.slice(0, 8000)}`,
     }
   });
 
+  // Register Expo push token for mobile daily verse notifications
+  app.post("/api/expo-push-token", async (req, res) => {
+    const { sessionId, token, hour, minute } = req.body as {
+      sessionId: string;
+      token: string;
+      hour: number;
+      minute: number;
+    };
+    if (!sessionId || !token || hour === undefined || minute === undefined) {
+      return res.status(400).json({ message: "sessionId, token, hour, and minute are required" });
+    }
+    const h = Number(hour);
+    const m = Number(minute);
+    if (!Number.isInteger(h) || h < 0 || h > 23 || !Number.isInteger(m) || m < 0 || m > 59) {
+      return res.status(400).json({ message: "hour must be 0–23 and minute must be 0–59" });
+    }
+    try {
+      const row = await storage.upsertExpoPushToken(sessionId, token, h, m);
+      res.json({ ok: true, id: row.id });
+    } catch (err) {
+      console.error("[expo-push] register token error:", err);
+      res.status(500).json({ message: "Could not register push token" });
+    }
+  });
+
+  // Unregister Expo push token
+  app.delete("/api/expo-push-token/:sessionId", async (req, res) => {
+    try {
+      await storage.deleteExpoPushToken(req.params.sessionId);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[expo-push] delete token error:", err);
+      res.status(500).json({ message: "Could not remove push token" });
+    }
+  });
+
   // Start push scheduler (email scheduler started separately)
   schedulePushNotifications();
+
+  // Start Expo mobile push scheduler (runs per-minute, no VAPID required)
+  scheduleExpoPushNotifications();
 
   // Start SMS daily devotional scheduler
   scheduleDailySms().catch(console.error);

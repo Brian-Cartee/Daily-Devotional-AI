@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern } from "@workspace/db";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken } from "@workspace/db";
 import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
 
 export interface IStorage {
@@ -62,6 +62,9 @@ export interface IStorage {
   setUserProfileName(sessionId: string, name: string): Promise<void>;
   getUserMemory(sessionId: string): Promise<UserMemoryRow | undefined>;
   upsertUserMemory(sessionId: string, data: Partial<Omit<UserMemoryRow, "sessionId" | "updatedAt">>): Promise<UserMemoryRow>;
+  upsertExpoPushToken(sessionId: string, token: string, hour: number, minute: number): Promise<ExpoPushToken>;
+  deleteExpoPushToken(sessionId: string): Promise<void>;
+  getExpoPushTokensForHourMinute(hour: number, minute: number): Promise<ExpoPushToken[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -529,6 +532,29 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return row;
+  }
+
+  async upsertExpoPushToken(sessionId: string, token: string, hour: number, minute: number): Promise<ExpoPushToken> {
+    const [row] = await db
+      .insert(expoPushTokens)
+      .values({ sessionId, token, hour, minute, enabled: true, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: expoPushTokens.sessionId,
+        set: { token, hour, minute, enabled: true, updatedAt: new Date() },
+      })
+      .returning();
+    return row;
+  }
+
+  async deleteExpoPushToken(sessionId: string): Promise<void> {
+    await db.delete(expoPushTokens).where(eq(expoPushTokens.sessionId, sessionId));
+  }
+
+  async getExpoPushTokensForHourMinute(hour: number, minute: number): Promise<ExpoPushToken[]> {
+    return db
+      .select()
+      .from(expoPushTokens)
+      .where(and(eq(expoPushTokens.hour, hour), eq(expoPushTokens.minute, minute), eq(expoPushTokens.enabled, true)));
   }
 }
 
