@@ -106,10 +106,10 @@ export default function Screenshot5Pro() {
           </div>
           <p style={{ color: muted, fontSize: 20, margin: "16px 0 8px", textTransform: "uppercase", letterSpacing: 1.5 }}>Annual</p>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ color: fg, fontSize: 52, fontWeight: 800 }}>$34</span>
+            <span style={{ color: fg, fontSize: 52, fontWeight: 800 }}>$44.99</span>
             <span style={{ color: muted, fontSize: 24 }}>/year</span>
           </div>
-          <p style={{ color: primary, fontSize: 20, margin: "4px 0 0", fontWeight: 600 }}>$2.83/month — save 53%</p>
+          <p style={{ color: primary, fontSize: 20, margin: "4px 0 0", fontWeight: 600 }}>$3.75/month — save 37%</p>
         </div>
 
         {/* Monthly */}
