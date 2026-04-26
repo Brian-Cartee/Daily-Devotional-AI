@@ -1,35 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { swState } from "@/lib/sw-state";
 
-const DISMISSED_KEY_PREFIX = "sw-dismissed-";
-
-function isDismissedForVersion(scriptURL: string): boolean {
-  try {
-    return sessionStorage.getItem(`${DISMISSED_KEY_PREFIX}${scriptURL}`) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function markDismissedForVersion(scriptURL: string): void {
-  try {
-    sessionStorage.setItem(`${DISMISSED_KEY_PREFIX}${scriptURL}`, "1");
-  } catch {
-    // sessionStorage unavailable — silently ignore
-  }
-}
-
 export function UpdatePrompt() {
   const [waitingReg, setWaitingReg] = useState<ServiceWorkerRegistration | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  // Track which waiting SW the user dismissed so a *newer* waiting SW still shows
+  const dismissedWorkerRef = useRef<ServiceWorker | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
       const reg = (e as CustomEvent<ServiceWorkerRegistration>).detail;
-      const scriptURL = reg.waiting?.scriptURL ?? "";
-      if (isDismissedForVersion(scriptURL)) return;
+      if (!reg.waiting) return;
+      // If the arriving waiting worker is the exact same one the user dismissed, skip
+      if (reg.waiting === dismissedWorkerRef.current) return;
       setWaitingReg(reg);
       setDismissed(false);
     };
@@ -46,9 +31,8 @@ export function UpdatePrompt() {
   }, [waitingReg]);
 
   const handleDismiss = useCallback(() => {
-    if (waitingReg?.waiting?.scriptURL) {
-      markDismissedForVersion(waitingReg.waiting.scriptURL);
-    }
+    // Remember which worker was dismissed; a different/newer waiting worker will still show
+    dismissedWorkerRef.current = waitingReg?.waiting ?? null;
     setDismissed(true);
   }, [waitingReg]);
 
