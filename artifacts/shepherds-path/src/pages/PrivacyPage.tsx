@@ -46,7 +46,7 @@ export default function PrivacyPage() {
             },
             {
               heading: "Payments and subscriptions",
-              body: "Pro subscriptions are processed by third-party payment providers depending on your platform: Stripe (web), Google Play Billing (Android app), or Apple App Store (iOS app). Each provider's privacy policy governs how your payment data is handled. We receive confirmation of your subscription status but never your full card details. You can manage or cancel subscriptions through the platform you used to subscribe.",
+              body: "Pro subscriptions are processed by third-party payment providers depending on your platform: Stripe (web), Google Play Billing (Android app), or Apple App Store (iOS app). On iOS and Android, subscription state is managed by RevenueCat, which receives confirmation of your purchase from Apple or Google and communicates your entitlement status to the app. RevenueCat does not receive your full payment card details. Each provider's privacy policy governs how your payment data is handled. We receive confirmation of your subscription status but never your full card details. You can manage or cancel subscriptions through the platform you used to subscribe.",
             },
             {
               heading: "Push notifications",
