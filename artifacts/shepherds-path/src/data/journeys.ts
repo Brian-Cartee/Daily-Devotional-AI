@@ -1434,7 +1434,7 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-orange-600",
     pillBg: "bg-orange-500/10",
     pillText: "text-orange-700",
-    image: "https://images.unsplash.com/photo-1490750967868-88df5691cc9e?w=800&q=70&auto=format&fit=crop",
+    image: "https://images.pexels.com/photos/45209/purple-grapes-vineyard-napa-valley-napa-vineyard-45209.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop",
     entries: FRUIT_SPIRIT_PATH,
   },
   {
