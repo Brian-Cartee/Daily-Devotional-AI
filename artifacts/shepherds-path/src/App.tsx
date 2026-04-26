@@ -45,6 +45,7 @@ const IronCirclePage = lazy(() => import("@/pages/IronCirclePage"));
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ScrollToTop() {
@@ -158,6 +159,7 @@ function App() {
                 <FloatingAskAI />
                 <DemoFloatingBar />
                 <InstallPrompt />
+                <UpdatePrompt />
               </DemoProvider>
             </WouterRouter>
           </TooltipProvider>

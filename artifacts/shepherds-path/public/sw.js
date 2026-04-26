@@ -11,10 +11,17 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (e) => {
-  self.skipWaiting();
+  // Do NOT call skipWaiting here — the app will send SKIP_WAITING when the
+  // user confirms the update, giving us the chance to show the prompt first.
   e.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL).catch(() => {}))
   );
+});
+
+self.addEventListener("message", (e) => {
+  if (e.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (e) => {
