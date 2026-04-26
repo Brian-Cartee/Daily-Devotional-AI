@@ -3,6 +3,24 @@ import { RefreshCw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { swState } from "@/lib/sw-state";
 
+const DISMISSED_KEY_PREFIX = "sw-dismissed-";
+
+function isDismissedForVersion(scriptURL: string): boolean {
+  try {
+    return sessionStorage.getItem(`${DISMISSED_KEY_PREFIX}${scriptURL}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markDismissedForVersion(scriptURL: string): void {
+  try {
+    sessionStorage.setItem(`${DISMISSED_KEY_PREFIX}${scriptURL}`, "1");
+  } catch {
+    // sessionStorage unavailable — silently ignore
+  }
+}
+
 export function UpdatePrompt() {
   const [waitingReg, setWaitingReg] = useState<ServiceWorkerRegistration | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -10,6 +28,8 @@ export function UpdatePrompt() {
   useEffect(() => {
     const handler = (e: Event) => {
       const reg = (e as CustomEvent<ServiceWorkerRegistration>).detail;
+      const scriptURL = reg.waiting?.scriptURL ?? "";
+      if (isDismissedForVersion(scriptURL)) return;
       setWaitingReg(reg);
       setDismissed(false);
     };
@@ -23,6 +43,13 @@ export function UpdatePrompt() {
     swState.updateInitiated = true;
     waitingReg.waiting.postMessage({ type: "SKIP_WAITING" });
     // reload is handled by the controllerchange listener in main.tsx
+  }, [waitingReg]);
+
+  const handleDismiss = useCallback(() => {
+    if (waitingReg?.waiting?.scriptURL) {
+      markDismissedForVersion(waitingReg.waiting.scriptURL);
+    }
+    setDismissed(true);
   }, [waitingReg]);
 
   const visible = !!waitingReg && !dismissed;
@@ -65,7 +92,7 @@ export function UpdatePrompt() {
 
             <button
               data-testid="button-dismiss-update"
-              onClick={() => setDismissed(true)}
+              onClick={handleDismiss}
               aria-label="Dismiss update prompt"
               className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
             >
