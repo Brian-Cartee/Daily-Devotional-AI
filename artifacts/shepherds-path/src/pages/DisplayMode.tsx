@@ -258,7 +258,23 @@ export default function DisplayMode() {
       if (cancelled) return;
       setArt(artData);
 
-      let prayerText = FALLBACK_PRAYER;
+      // Build and show slides immediately with the fallback prayer — no waiting
+      const todayDateET = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const pastSlides: Slide[] = library
+        .filter(e => e.date !== todayDateET && e.imageUrl)
+        .map(e => ({
+          type: "image" as const,
+          content: e.scripture,
+          reference: e.reference,
+          imageUrl: e.imageUrl,
+        }));
+
+      const initialSlides = buildSlides(artData, FALLBACK_PRAYER);
+      setSlides([...initialSlides, ...pastSlides]);
+      setPrayer(FALLBACK_PRAYER);
+      setLoading(false); // Show content right away
+
+      // Silently fetch AI prayer in the background — update prayer slide if it arrives
       try {
         const prayerController = new AbortController();
         const prayerTimeout = setTimeout(() => prayerController.abort(), 8000);
@@ -278,29 +294,16 @@ export default function DisplayMode() {
         clearTimeout(prayerTimeout);
         if (prayerRes.ok) {
           const text = await prayerRes.text();
-          if (text.trim().length > 20) prayerText = text.trim();
+          if (!cancelled && text.trim().length > 20) {
+            const aiPrayer = text.trim();
+            setPrayer(aiPrayer);
+            // Swap the prayer slide in place so it updates seamlessly
+            setSlides(prev => prev.map(s =>
+              s.type === "prayer" ? { ...s, content: aiPrayer } : s
+            ));
+          }
         }
       } catch {}
-
-      if (cancelled) return;
-      setPrayer(prayerText);
-
-      // Build today's content slides (verse → reflection → prayer → today's image)
-      const todaySlides = buildSlides(artData, prayerText);
-
-      // Append past library images as additional image slides (newest first, skip today)
-      const todayDateET = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const pastSlides: Slide[] = library
-        .filter(e => e.date !== todayDateET && e.imageUrl)
-        .map(e => ({
-          type: "image" as const,
-          content: e.scripture,
-          reference: e.reference,
-          imageUrl: e.imageUrl,
-        }));
-
-      setSlides([...todaySlides, ...pastSlides]);
-      setLoading(false);
     }
 
     load();
