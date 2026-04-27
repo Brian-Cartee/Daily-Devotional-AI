@@ -320,9 +320,12 @@ export default function DisplayMode() {
 
       let prayerText = FALLBACK_PRAYER;
       try {
+        const prayerController = new AbortController();
+        const prayerTimeout = setTimeout(() => prayerController.abort(), 8000);
         const prayerRes = await fetch("/api/chat/passage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: prayerController.signal,
           body: JSON.stringify({
             passageRef: artData.reference,
             passageText: artData.scripture,
@@ -332,6 +335,7 @@ export default function DisplayMode() {
             }],
           }),
         });
+        clearTimeout(prayerTimeout);
         if (prayerRes.ok) {
           const text = await prayerRes.text();
           if (text.trim().length > 20) prayerText = text.trim();
