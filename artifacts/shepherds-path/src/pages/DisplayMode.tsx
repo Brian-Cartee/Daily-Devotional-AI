@@ -43,11 +43,8 @@ const FALLBACK_DATA: DailyArt = {
 };
 
 function buildSlides(art: DailyArt, prayer: string): Slide[] {
-  const slides: Slide[] = [
-    { type: "verse", content: art.scripture, reference: art.reference },
-    { type: "reflection", content: art.reflection, reference: art.reference },
-    { type: "prayer", content: prayer },
-  ];
+  const slides: Slide[] = [];
+  // Image first — immediate wow moment when the screen lights up
   if (art.imageUrl) {
     slides.push({
       type: "image",
@@ -56,6 +53,11 @@ function buildSlides(art: DailyArt, prayer: string): Slide[] {
       imageUrl: art.imageUrl,
     });
   }
+  slides.push(
+    { type: "verse", content: art.scripture, reference: art.reference },
+    { type: "reflection", content: art.reflection, reference: art.reference },
+    { type: "prayer", content: prayer },
+  );
   return slides;
 }
 
