@@ -16,6 +16,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="sermon">
+        <Icon sf={{ default: "waveform", selected: "waveform" }} />
+        <Label>Sermon</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="prayer">
         <Icon sf={{ default: "heart", selected: "heart.fill" }} />
         <Label>Prayer</Label>
@@ -70,6 +74,18 @@ function ClassicTabLayout() {
               <SymbolView name="house" tintColor={color} size={24} />
             ) : (
               <Feather name="home" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="sermon"
+        options={{
+          title: "Sermon",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="waveform" tintColor={color} size={24} />
+            ) : (
+              <Feather name="mic" size={22} color={color} />
             ),
         }}
       />

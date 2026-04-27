@@ -358,3 +358,20 @@ export const expoPushTokens = pgTable("expo_push_tokens", {
 
 export type ExpoPushToken = typeof expoPushTokens.$inferSelect;
 export type InsertExpoPushToken = typeof expoPushTokens.$inferInsert;
+
+// ── Sermon Mode Sessions (live in-service scripture detection) ─────────────────
+export const sermonSessions = pgTable("sermon_sessions", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  title: text("title").default("Untitled Sermon").notNull(),
+  startedAt: timestamp("started_at").default(sql`now()`).notNull(),
+  endedAt: timestamp("ended_at"),
+  scriptures: text("scriptures").array().default([]).notNull(),
+  transcript: text("transcript"),
+  keyPoints: text("key_points").array().default([]).notNull(),
+  application: text("application"),
+  durationSeconds: integer("duration_seconds"),
+});
+
+export type SermonSession = typeof sermonSessions.$inferSelect;
+export type InsertSermonSession = typeof sermonSessions.$inferInsert;

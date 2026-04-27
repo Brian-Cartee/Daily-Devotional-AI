@@ -93,9 +93,34 @@ EXPO_TOKEN=$EXPO_TOKEN eas submit --platform ios --id <BUILD_ID> --non-interacti
 - ASC Key ID: `3DD2747FYX`, Issuer ID: `2787b8ca-4e36-4112-9a35-875f90ed0169`, App ID: `6760953522`
 - Apple Team ID: `D5X4W5F62Y`
 
+## Sermon Mode (v1.5)
+
+Live in-service scripture detection feature. Mic records 20-second audio chunks → Whisper-1 transcription → GPT-4o-mini scripture extraction → scriptures appear on-screen with golden glow animation.
+
+**Screens (mobile)**:
+- `app/(tabs)/sermon.tsx` — Sermon tab: session history + "Start Listening" CTA
+- `app/sermon-live.tsx` — Live recording: dark background, pulsing gold mic, real-time scripture stream
+- `app/sermon-detail.tsx` — Session detail: scriptures, key points, transcript, AI Q&A
+
+**API endpoints**:
+- `POST /api/sermon/chunk` — audio chunk → Whisper → scripture refs (fast, per-chunk)
+- `POST /api/sermon/sessions` — save completed session
+- `GET /api/sermon/sessions?sessionId=&limit=` — list user's sessions
+- `GET /api/sermon/sessions/:id` — full session detail
+- `POST /api/sermon/sessions/:id/summarize` — Pro: generate AI key points/summary
+- `POST /api/sermon/ask` — Pro: Q&A about a specific session
+
+**Database**: `sermon_sessions` table (id, session_id, title, started_at, ended_at, scriptures[], transcript, key_points[], application, duration_seconds)
+
+**Freemium**:
+- Free: live mic + scripture detection, last 3 sessions saved (read-only)
+- Pro: full transcript, AI summary + key points, "Ask the Sermon" Q&A, unlimited history
+
+**Permissions**: `expo-av` added; iOS NSMicrophoneUsageDescription updated; expo-av plugin added to app.json for Android RECORD_AUDIO.
+
 ## External Services
 
-- OpenAI (AI responses + TTS)
+- OpenAI (AI responses + TTS + Whisper transcription)
 - Google Sheets (daily verse sync)
 - Stripe (Pro subscriptions)
 - RevenueCat (iOS in-app purchases)

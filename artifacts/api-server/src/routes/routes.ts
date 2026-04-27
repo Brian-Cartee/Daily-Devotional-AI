@@ -406,6 +406,188 @@ ${transcription.text.slice(0, 8000)}`,
     }
   });
 
+  // ── Sermon Mode ──────────────────────────────────────────────────────────────
+  // POST /api/sermon/chunk — fast scripture detection from a live audio chunk
+  const sermonChunkUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+  app.post("/api/sermon/chunk", sermonChunkUpload.single("audio"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No audio provided" });
+    try {
+      const audioFile = new File([req.file.buffer], req.file.originalname || "chunk.m4a", {
+        type: req.file.mimetype || "audio/mp4",
+      });
+      const transcription = await openaiTTS.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+      });
+      const text = transcription.text?.trim() || "";
+      if (!text) return res.json({ text: "", scriptures: [] });
+      const scriptureRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You extract Bible scripture references from text. Respond with valid JSON only." },
+          {
+            role: "user",
+            content: `Extract all Bible scripture references from this text. Return JSON with a single key "scriptures" containing an array of strings like ["John 3:16", "Psalm 23:1"]. If none, return {"scriptures":[]}.\n\nText: ${text}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+        max_tokens: 200,
+      });
+      let scriptures: string[] = [];
+      try {
+        const parsed = JSON.parse(scriptureRes.choices[0].message.content ?? "{}");
+        scriptures = Array.isArray(parsed.scriptures) ? parsed.scriptures : [];
+      } catch {}
+      res.json({ text, scriptures });
+    } catch (err: any) {
+      console.error("Sermon chunk error:", err);
+      res.status(500).json({ message: "Chunk processing failed" });
+    }
+  });
+
+  // POST /api/sermon/sessions — save a completed sermon session
+  app.post("/api/sermon/sessions", async (req, res) => {
+    const { sessionId, title, scriptures, transcript, keyPoints, application, durationSeconds } = req.body;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const { sermonSessions } = await import("@workspace/db");
+      const [session] = await db.insert(sermonSessions).values({
+        sessionId,
+        title: title || "Untitled Sermon",
+        scriptures: scriptures || [],
+        transcript: transcript || null,
+        keyPoints: keyPoints || [],
+        application: application || null,
+        durationSeconds: durationSeconds || null,
+        endedAt: new Date(),
+      }).returning();
+      res.json(session);
+    } catch (err: any) {
+      console.error("Save sermon session error:", err);
+      res.status(500).json({ message: "Failed to save sermon session" });
+    }
+  });
+
+  // GET /api/sermon/sessions — get sessions for a user (last 3 for free, all for Pro implied by caller)
+  app.get("/api/sermon/sessions", async (req, res) => {
+    const { sessionId, limit } = req.query;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const { sermonSessions } = await import("@workspace/db");
+      const { desc, eq } = await import("drizzle-orm");
+      const maxResults = limit ? Math.min(parseInt(limit as string), 50) : 50;
+      const sessions = await db.select({
+        id: sermonSessions.id,
+        title: sermonSessions.title,
+        startedAt: sermonSessions.startedAt,
+        endedAt: sermonSessions.endedAt,
+        scriptures: sermonSessions.scriptures,
+        durationSeconds: sermonSessions.durationSeconds,
+      })
+      .from(sermonSessions)
+      .where(eq(sermonSessions.sessionId, sessionId as string))
+      .orderBy(desc(sermonSessions.startedAt))
+      .limit(maxResults);
+      res.json(sessions);
+    } catch (err: any) {
+      console.error("Fetch sermon sessions error:", err);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  // GET /api/sermon/sessions/:id — get full detail for a single session
+  app.get("/api/sermon/sessions/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+    try {
+      const { sermonSessions } = await import("@workspace/db");
+      const { eq } = await import("drizzle-orm");
+      const [session] = await db.select().from(sermonSessions).where(eq(sermonSessions.id, id)).limit(1);
+      if (!session) return res.status(404).json({ message: "Not found" });
+      res.json(session);
+    } catch (err: any) {
+      console.error("Fetch sermon session error:", err);
+      res.status(500).json({ message: "Failed to fetch session" });
+    }
+  });
+
+  // POST /api/sermon/sessions/:id/summarize — Pro: generate AI summary for a saved session
+  app.post("/api/sermon/sessions/:id/summarize", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+    try {
+      const { sermonSessions } = await import("@workspace/db");
+      const { eq } = await import("drizzle-orm");
+      const [session] = await db.select().from(sermonSessions).where(eq(sermonSessions.id, id)).limit(1);
+      if (!session) return res.status(404).json({ message: "Not found" });
+      if (!session.transcript) return res.status(400).json({ message: "No transcript to summarize" });
+      const summaryRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You summarize sermons. Respond with valid JSON only, no markdown." },
+          {
+            role: "user",
+            content: `Analyze this sermon transcript and respond with JSON containing:
+- "title": suggested sermon title (4-8 words)
+- "keyPoints": array of 3-5 key points (each 1-2 sentences)
+- "scriptures": array of scripture references mentioned
+- "application": one sentence of personal application for the listener
+
+Transcript:
+${session.transcript.slice(0, 8000)}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      });
+      let summary: { title?: string; keyPoints?: string[]; scriptures?: string[]; application?: string } = {};
+      try { summary = JSON.parse(summaryRes.choices[0].message.content ?? "{}"); } catch {}
+      const [updated] = await db.update(sermonSessions).set({
+        title: summary.title || session.title,
+        keyPoints: summary.keyPoints || [],
+        scriptures: [...new Set([...session.scriptures, ...(summary.scriptures || [])])],
+        application: summary.application || null,
+      }).where(eq(sermonSessions.id, id)).returning();
+      res.json(updated);
+    } catch (err: any) {
+      console.error("Summarize sermon error:", err);
+      res.status(500).json({ message: "Summarization failed" });
+    }
+  });
+
+  // POST /api/sermon/ask — Pro: ask a question about a sermon session
+  app.post("/api/sermon/ask", async (req, res) => {
+    const { sessionId: sessionDbId, question } = req.body;
+    if (!sessionDbId || !question) return res.status(400).json({ message: "sessionId and question required" });
+    try {
+      const { sermonSessions } = await import("@workspace/db");
+      const { eq } = await import("drizzle-orm");
+      const [session] = await db.select().from(sermonSessions).where(eq(sermonSessions.id, parseInt(sessionDbId))).limit(1);
+      if (!session) return res.status(404).json({ message: "Session not found" });
+      const context = session.transcript
+        ? `Full transcript:\n${session.transcript.slice(0, 6000)}`
+        : `Scriptures mentioned: ${session.scriptures.join(", ")}\nKey points: ${session.keyPoints.join("; ")}`;
+      const askRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant answering questions about a church sermon. Be concise, faithful to the text, and spiritually encouraging. Keep answers to 2-4 sentences.",
+          },
+          { role: "user", content: `${context}\n\nQuestion: ${question}` },
+        ],
+        temperature: 0.4,
+        max_tokens: 300,
+      });
+      res.json({ answer: askRes.choices[0].message.content || "" });
+    } catch (err: any) {
+      console.error("Sermon ask error:", err);
+      res.status(500).json({ message: "Failed to answer question" });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────────
+
   // Push notification VAPID public key
   app.get("/api/push/vapid-key", (_req, res) => {
     res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || "" });
