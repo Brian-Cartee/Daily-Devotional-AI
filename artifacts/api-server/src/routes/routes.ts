@@ -114,6 +114,16 @@ function isRateLimited(key: string, maxRequests: number, windowMs: number): bool
   rateLimitStore.set(key, [...timestamps, now]);
   return false;
 }
+function getDailyLimit(daysWithApp: number): number {
+  return daysWithApp <= 14 ? 12 : 7;
+}
+
+function getDailyUsageCount(sessionId: string): number {
+  const now = Date.now();
+  const timestamps = (rateLimitStore.get(`daily:${sessionId}`) ?? []).filter(t => now - t < 86_400_000);
+  return timestamps.length;
+}
+
 // Prune the rate limit store every hour to prevent memory growth
 setInterval(() => {
   const cutoff = Date.now() - 3_600_000;
@@ -191,6 +201,16 @@ export async function registerRoutes(
   } else {
     console.log("[email] Scheduler skipped — not a production deployment. Set ENABLE_EMAIL_SCHEDULER=true to override.");
   }
+
+  // ── AI usage counter (per-session daily stats) ────────────────────────────
+  app.get("/api/ai-usage", (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    const daysWithApp = Math.max(1, Number(req.query.daysWithApp) || 1);
+    if (!sessionId) return res.json({ used: 0, limit: getDailyLimit(daysWithApp), remaining: getDailyLimit(daysWithApp) });
+    const used = getDailyUsageCount(sessionId);
+    const limit = getDailyLimit(daysWithApp);
+    return res.json({ used, limit, remaining: Math.max(0, limit - used) });
+  });
 
   // ── Health check ──────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
@@ -1390,8 +1410,9 @@ What you never do:
       res.end();
       return;
     }
-    if (passageSessionId && isRateLimited(`daily:${passageSessionId}`, 20, 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    const passageDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
+    if (passageSessionId && isRateLimited(`daily:${passageSessionId}`, getDailyLimit(passageDaysWithApp), 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
 
     const langInstruction: Record<string, string> = {
@@ -1400,7 +1421,6 @@ What you never do:
       pt: "Respond entirely in Portuguese (Português).",
     };
     const langNote = langInstruction[lang] ? ` ${langInstruction[lang]}` : "";
-    const passageDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
     const passageNameNote = userName ? ` The person you are speaking with is named ${userName}. Use their name naturally when appropriate.` : "";
     const { context: passageJournalCtx, count: passageEntryCount } = await getJournalContext(passageSessionId || "");
     const passageMemoryNote = passageJournalCtx
@@ -1875,8 +1895,8 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     if (sessionId && isRateLimited(`guidance:${sessionId}`, 20, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait a moment before trying again." });
     }
-    if (sessionId && isRateLimited(`daily:${sessionId}`, 20, 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    if (sessionId && isRateLimited(`daily:${sessionId}`, getDailyLimit(daysWithApp), 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
 
     if (detectCrisis(situation)) {
@@ -2140,12 +2160,13 @@ Rules:
     const { situation, userName, sessionId: sid } = req.body as {
       situation?: string; userName?: string; sessionId?: string;
     };
+    const vpDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (sid && isRateLimited(`vp:${sid}`, 12, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests" });
     }
-    if (sid && isRateLimited(`daily:${sid}`, 20, 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    if (sid && isRateLimited(`daily:${sid}`, getDailyLimit(vpDaysWithApp), 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
     if (detectCrisis(situation)) {
       return res.json({ verse: "", prayer: CRISIS_RESPONSE });
@@ -2525,11 +2546,12 @@ Return JSON: { "action": "...", "scripture": "..." }`
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
     const sessionIdJourney = (req.body as any).sessionId as string | undefined;
+    const journeyDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
     if (sessionIdJourney && isRateLimited(`journey:${sessionIdJourney}`, 10, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait before generating another journey." });
     }
-    if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, 20, 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏" });
+    if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, getDailyLimit(journeyDaysWithApp), 86_400_000)) {
+      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");

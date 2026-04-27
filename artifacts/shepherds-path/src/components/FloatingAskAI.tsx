@@ -6,6 +6,7 @@ import { getSessionId } from "@/lib/session";
 import { getUserName } from "@/lib/userName";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight } from "@/lib/nightMode";
+import { useAiUsage, refreshAiUsage } from "@/hooks/use-ai-usage";
 
 const HIDE_ON = ["/guidance", "/shepherd-admin", "/shepherd-admin/sermons", "/present", "/demo", "/display"];
 
@@ -64,6 +65,7 @@ export function FloatingAskAI() {
   const [response, setResponse] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const { usage } = useAiUsage();
   const inputRef = useRef<HTMLInputElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
   const expandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,6 +166,7 @@ export function FloatingAskAI() {
         setResponse(cleanResponse(accumulated));
       }
       setIsDone(true);
+      refreshAiUsage();
     } catch {
       setResponse("Something went wrong. Please try again.");
       setIsDone(true);
@@ -272,13 +275,48 @@ export function FloatingAskAI() {
                     <p className="text-[11px] text-muted-foreground mt-0.5">A quiet question deserves a faithful answer</p>
                   </div>
                 </div>
-                <button
-                  data-testid="button-close-ask-ai"
-                  onClick={handleClose}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {usage && (
+                    <div
+                      data-testid="text-ai-usage-counter"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full"
+                      style={{
+                        background: usage.remaining <= 2
+                          ? "rgba(220,38,38,0.12)"
+                          : usage.remaining <= 4
+                          ? "rgba(217,119,6,0.12)"
+                          : "rgba(255,255,255,0.07)",
+                        border: `1px solid ${
+                          usage.remaining <= 2
+                            ? "rgba(220,38,38,0.25)"
+                            : usage.remaining <= 4
+                            ? "rgba(217,119,6,0.25)"
+                            : "rgba(255,255,255,0.12)"
+                        }`,
+                      }}
+                    >
+                      <span
+                        className="text-[11px] font-semibold tabular-nums"
+                        style={{
+                          color: usage.remaining <= 2
+                            ? "rgba(248,113,113,0.9)"
+                            : usage.remaining <= 4
+                            ? "rgba(251,191,36,0.85)"
+                            : "rgba(255,255,255,0.55)",
+                        }}
+                      >
+                        {usage.remaining} of {usage.limit} left today
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    data-testid="button-close-ask-ai"
+                    onClick={handleClose}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div
