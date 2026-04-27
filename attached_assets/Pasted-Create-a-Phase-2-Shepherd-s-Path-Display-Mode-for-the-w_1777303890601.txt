@@ -1,0 +1,65 @@
+Create a Phase 2 “Shepherd’s Path Display Mode” for the web app.
+
+Goal:
+Build a simple, beautiful, fullscreen display experience that can run on a tablet, browser, or digital picture frame. This is NOT meant to be a full interactive app. It should feel like an ambient Christian devotional screen for a home, office, nightstand, or kitchen counter.
+
+Create a new route/page:
+
+/display
+
+Core behavior:
+1. Fullscreen responsive layout
+2. Designed for landscape and portrait screens
+3. No complex navigation
+4. Auto-rotates content every 45–60 seconds
+5. Auto-refreshes daily devotional/scripture content periodically
+6. Works well without touch interaction
+7. Optional tap/click anywhere to move to the next slide
+
+Content to show in rotation:
+- Daily scripture verse
+- Reference
+- Short devotional reflection
+- Prayer line
+- AI/generated devotional image if available
+- Shepherd’s Path branding in a subtle way
+
+Suggested slide types:
+1. Scripture Slide
+   - Large verse text
+   - Bible reference underneath
+   - Calm background image or gradient
+
+2. Reflection Slide
+   - Short devotional thought
+   - “Pause. Pray. Walk with Him.”
+
+3. Prayer Slide
+   - Short prayer based on the daily devotional
+   - Gentle, readable layout
+
+4. Image + Verse Slide
+   - Devotional image as the background
+   - Verse overlay with readable contrast
+
+Design direction:
+- Peaceful, premium, warm, minimal
+- Avoid clutter
+- Large readable text from across a room
+- Soft background
+- Subtle Shepherd’s Path logo/name
+- No aggressive buttons or app-like menus
+
+Technical requirements:
+- Use existing Shepherd’s Path devotional/scripture data if available
+- If existing devotional data is not available, create safe placeholder data for now
+- Use React components consistent with the current app
+- Make the page responsive with CSS
+- Add a simple array of display slides
+- Add timer-based slide rotation
+- Add click/tap handler to advance slide
+- Prevent screen from feeling static by rotating content
+- Make sure it does not break the existing app routes
+
+Important:
+This is an MVP proof-of-concept for a future “digital scripture frame” product. Keep it simple, stable, and visually beautiful. Do not build hardware integrations yet. The device should only need to open this URL in a browser.

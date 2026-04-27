@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
   BookMarked, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
-  Bookmark, BookmarkCheck, BookOpen, ArrowLeft,
+  Bookmark, BookmarkCheck, BookOpen, ArrowLeft, Lightbulb,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { BackButton } from "@/components/BackButton";
@@ -39,7 +39,7 @@ function usePassageText(apiRef: string, enabled: boolean) {
 
 function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   const [open, setOpen] = useState(false);
-  const [aiMode, setAiMode] = useState<"reflect" | "pray" | "chat" | null>(null);
+  const [aiMode, setAiMode] = useState<"reflect" | "pray" | "explain" | "chat" | null>(null);
   const [aiContent, setAiContent] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
@@ -56,7 +56,7 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
 
   const textQuery = usePassageText(chapter.apiRef, open);
 
-  const generateAI = async (type: "reflect" | "pray") => {
+  const generateAI = async (type: "reflect" | "pray" | "explain") => {
     if (!canUseAi()) { setShowAiPause(true); return; }
     recordAiUsage();
     setAiMode(type);
@@ -77,7 +77,9 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
           role: "user",
           content: type === "reflect"
             ? `Write a 2-paragraph devotional reflection on ${chapter.reference} that helps someone understand why this passage matters for their life today.`
-            : `Write a heartfelt prayer based on the themes of ${chapter.reference} — ${chapter.title}. Keep it personal, warm, and about 3 sentences.`,
+            : type === "pray"
+            ? `Write a heartfelt prayer based on the themes of ${chapter.reference} — ${chapter.title}. Keep it personal, warm, and about 3 sentences.`
+            : `In 2 short paragraphs, explain what is happening in ${chapter.reference} — ${chapter.title}. First, briefly describe the historical and cultural moment: who wrote it, to whom, and what was happening. Second, explain in plain language what the passage is actually saying and why it matters. Write as if speaking to someone who is curious but has never studied the Bible.`,
         }],
       });
       const text = await res.text();
@@ -300,30 +302,34 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                   <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Prayer</span>
                 </button>
 
-                {/* Ask */}
+                {/* Explain */}
                 <button
-                  onClick={() => { setAiMode("chat"); setChatMessages([]); }}
+                  onClick={() => generateAI("explain")}
                   disabled={isAiLoading}
+                  data-testid={`btn-explain-${chapter.id}`}
                   className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 disabled:opacity-40 transition-all group"
                 >
-                  <MessageCircle className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                  <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Ask</span>
+                  <Lightbulb className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-semibold text-foreground/70 group-hover:text-foreground leading-tight text-center">Explain</span>
                 </button>
 
               </div>
               {isAiLoading && !aiContent && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="w-4 h-4 animate-spin" /> Reflecting on {chapter.reference}...</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {aiMode === "explain" ? `Looking at the context of ${chapter.reference}…` : `Reflecting on ${chapter.reference}...`}
+                </div>
               )}
-              {aiContent && (aiMode === "reflect" || aiMode === "pray") && (
+              {aiContent && (aiMode === "reflect" || aiMode === "pray" || aiMode === "explain") && (
                 <div className="bg-white/50 dark:bg-slate-700/40 rounded-xl p-4 border border-white/20">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : <HeartHandshake className="w-4 h-4 text-primary" />}
-                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : "Prayer"}</span>
+                      {aiMode === "reflect" ? <Sparkles className="w-4 h-4 text-primary" /> : aiMode === "pray" ? <HeartHandshake className="w-4 h-4 text-primary" /> : <Lightbulb className="w-4 h-4 text-primary" />}
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">{aiMode === "reflect" ? "Reflection" : aiMode === "pray" ? "Prayer" : "Explanation"}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <ShareButton
-                        title={`${aiMode === "reflect" ? "Reflection" : "Prayer"} — ${chapter.reference}`}
+                        title={`${aiMode === "reflect" ? "Reflection" : aiMode === "pray" ? "Prayer" : "Explanation"} — ${chapter.reference}`}
                         text={aiContent}
                       />
                       <ListenButton text={aiContent} label="Listen instead" className="text-[11px]" />
@@ -383,6 +389,24 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                       >
                         Is there anything you want to ask about this? →
                       </button>
+                    )}
+                    {aiMode === "explain" && (
+                      <div className="flex flex-col gap-1.5">
+                        <button
+                          onClick={() => generateAI("reflect")}
+                          disabled={isAiLoading}
+                          className="w-full text-left text-[11px] text-muted-foreground/60 hover:text-primary/70 transition-colors italic"
+                        >
+                          Now sit with it — get a devotional reflection →
+                        </button>
+                        <button
+                          onClick={() => { setAiMode("chat"); setChatMessages([]); }}
+                          disabled={isAiLoading}
+                          className="w-full text-left text-[11px] text-muted-foreground/60 hover:text-primary/70 transition-colors italic"
+                        >
+                          Have a question about this? Ask →
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

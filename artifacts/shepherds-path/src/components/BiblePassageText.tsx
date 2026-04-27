@@ -157,7 +157,7 @@ export function BiblePassageText({ text, className, verseNumClassName, enableLoo
         {verses.map((v, i) => (
           <span key={i} className="inline">
             {v.num && (
-              <sup className={verseNumClassName ?? "text-[10px] font-semibold text-primary/30 mr-0.5 select-none"}>
+              <sup className={verseNumClassName ?? "text-[10px] font-semibold text-foreground/50 mr-0.5 select-none"}>
                 {v.num}
               </sup>
             )}
