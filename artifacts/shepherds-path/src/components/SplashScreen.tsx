@@ -88,7 +88,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
 
             {/* Tagline */}
             <motion.p
-              className="mt-2 text-white/90 text-[16px] tracking-wide"
+              className="mt-2 text-white/90 text-[20px] tracking-wide"
               style={{ fontFamily: "var(--font-decorative)", fontStyle: "italic" }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
