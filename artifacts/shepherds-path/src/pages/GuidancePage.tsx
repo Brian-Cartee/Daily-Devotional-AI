@@ -780,18 +780,18 @@ export default function GuidancePage() {
                   </div>
                 )}
                 {responseComplete && (
-                  <p className="text-[11px] text-muted-foreground/75 mt-4 flex items-center gap-1.5">
+                  <p className="text-[11px] text-muted-foreground mt-4 flex items-center gap-1.5">
                     <span>✝</span>
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                   </p>
                 )}
                 {responseComplete && (
-                  <p className="text-[12px] text-muted-foreground/45 mt-2 tracking-wide">
+                  <p className="text-[12px] text-muted-foreground/80 mt-2 tracking-wide">
                     This meets you—but it won't move you.
                   </p>
                 )}
                 {responseComplete && (
-                  <p className="text-[12px] text-muted-foreground/35 mt-1 tracking-wide">
+                  <p className="text-[12px] text-muted-foreground/70 mt-1 tracking-wide">
                     Walking it is up to you.
                   </p>
                 )}
