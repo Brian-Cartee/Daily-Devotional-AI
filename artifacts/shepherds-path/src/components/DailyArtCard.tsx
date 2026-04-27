@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Share2, Check, ChevronDown } from "lucide-react";
+import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
+import { saveMoment, removeMoment, isMomentSaved, updateMomentNote } from "@/lib/moments";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -18,6 +19,10 @@ function isHiddenThisSession(): boolean {
   return sessionStorage.getItem(SESSION_HIDDEN_KEY) === "true";
 }
 
+function todayKey(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
 export function DailyArtCard() {
   const [art, setArt] = useState<DailyArt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +31,10 @@ export function DailyArtCard() {
   const [expanded, setExpanded] = useState(false);
   const [hidden] = useState(() => isHiddenThisSession());
   const [shared, setShared] = useState(false);
+  const [saved, setSaved] = useState(() => isMomentSaved(todayKey()));
+  const [justSaved, setJustSaved] = useState(false);
+  const [note, setNote] = useState("");
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleShare = async () => {
     if (!art) return;
@@ -55,6 +64,29 @@ export function DailyArtCard() {
     } catch { }
   };
 
+  const handleSave = () => {
+    if (!art) return;
+    const date = todayKey();
+    if (saved) {
+      removeMoment(date);
+      setSaved(false);
+    } else {
+      saveMoment({ date, verse: art.scripture, reference: art.reference, imageUrl: art.imageUrl ?? null });
+      setSaved(true);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+      if (!expanded) setExpanded(true);
+    }
+  };
+
+  const handleNoteChange = (val: string) => {
+    setNote(val);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => {
+      updateMomentNote(todayKey(), val);
+    }, 600);
+  };
+
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     const cacheKey = `sp-daily-art-v2-${today}`;
@@ -81,9 +113,16 @@ export function DailyArtCard() {
       .catch(() => setLoading(false));
   }, []);
 
+  // sync saved state with storage events (tab sync)
+  useEffect(() => {
+    const sync = () => setSaved(isMomentSaved(todayKey()));
+    window.addEventListener("sp-moments-change", sync);
+    return () => window.removeEventListener("sp-moments-change", sync);
+  }, []);
+
   if (hidden) return null;
 
-  // Text-only fallback when image fails or is unavailable
+  // Text-only fallback
   if (!loading && (!art || !art.imageUrl || imageError)) {
     if (!art) return null;
     return (
@@ -122,7 +161,7 @@ export function DailyArtCard() {
       transition={{ duration: 0.8, delay: 0.15 }}
       className="w-full"
     >
-      {/* Image with always-visible verse overlay */}
+      {/* Image with verse overlay */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3" }}>
 
         {/* Loading shimmer */}
@@ -141,14 +180,12 @@ export function DailyArtCard() {
           )}
         </AnimatePresence>
 
-        {/* The photograph */}
         {art?.imageUrl && (
           <motion.img
             src={art.imageUrl}
             alt="Today's moment"
             onLoad={() => setImageLoaded(true)}
             onError={() => {
-              // Clear stale session cache so next render re-fetches a valid URL
               const today = new Date().toISOString().split("T")[0];
               sessionStorage.removeItem(`sp-daily-art-${today}`);
               setImageLoaded(false);
@@ -162,17 +199,50 @@ export function DailyArtCard() {
           />
         )}
 
-        {/* Deep gradient so verse is always readable */}
         {imageLoaded && (
           <div
             className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)"
-            }}
+            style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)" }}
           />
         )}
 
-        {/* Verse — always visible over the image */}
+        {/* Heart save button — top right */}
+        <AnimatePresence>
+          {imageLoaded && art && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+              onClick={handleSave}
+              data-testid="button-save-moment"
+              aria-label={saved ? "Remove from saved moments" : "Save this moment"}
+              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full transition-transform active:scale-90"
+              style={{ background: "rgba(0,0,0,0.32)", backdropFilter: "blur(6px)" }}
+            >
+              <Heart
+                className={`w-4 h-4 transition-all duration-300 ${saved ? "fill-red-400 text-red-400 scale-110" : "text-white/70"}`}
+              />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* "Saved" toast */}
+        <AnimatePresence>
+          {justSaved && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90"
+              style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}
+            >
+              <Check className="w-3 h-3 text-green-400" />
+              Saved to My Moments
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Verse overlay */}
         <AnimatePresence>
           {imageLoaded && art && (
             <motion.div
@@ -188,17 +258,13 @@ export function DailyArtCard() {
                 {art.reference}
               </p>
 
-              {/* Expand button */}
               <button
                 onClick={() => setExpanded(e => !e)}
                 data-testid="button-daily-art"
                 aria-label={expanded ? "Close reflection" : "Read today's reflection"}
                 className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/85 hover:text-white transition-colors bg-black/20 backdrop-blur-sm rounded-full px-3 py-1"
               >
-                <motion.div
-                  animate={{ rotate: expanded ? 180 : 0 }}
-                  transition={{ duration: 0.25 }}
-                >
+                <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.25 }}>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </motion.div>
                 <span>{expanded ? "Close" : "Today's reflection"}</span>
@@ -208,7 +274,7 @@ export function DailyArtCard() {
         </AnimatePresence>
       </div>
 
-      {/* Reflection panel — expands below the image */}
+      {/* Reflection + journal prompt */}
       <AnimatePresence>
         {expanded && art && (
           <motion.div
@@ -218,19 +284,38 @@ export function DailyArtCard() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="bg-primary/5 border-b border-primary/10 px-5 py-4 flex flex-col gap-3">
+            <div className="bg-primary/5 border-b border-primary/10 px-5 py-4 flex flex-col gap-4">
               <p className="text-[13px] text-muted-foreground leading-relaxed">
                 {art.reflection}
               </p>
-              <div className="pt-1 border-t border-primary/10 flex justify-end">
+
+              {/* Journal prompt — appears quietly after reflection */}
+              <div className="flex flex-col gap-2 pt-1 border-t border-primary/8">
+                <p className="text-[11px] italic text-muted-foreground/50 font-medium">
+                  What is God saying to you through this?
+                </p>
+                <textarea
+                  value={note}
+                  onChange={e => handleNoteChange(e.target.value)}
+                  placeholder="Write freely, just for you…"
+                  rows={3}
+                  data-testid="textarea-moment-note"
+                  className="w-full text-[13px] text-foreground/80 placeholder:text-muted-foreground/30 bg-transparent resize-none outline-none leading-relaxed"
+                />
+              </div>
+
+              <div className="pt-1 border-t border-primary/10 flex items-center justify-between">
+                <Link href="/moments">
+                  <span className="text-[12px] text-primary/50 hover:text-primary transition-colors">
+                    My Moments →
+                  </span>
+                </Link>
                 <button
                   onClick={handleShare}
                   data-testid="button-daily-art-share"
                   className="flex items-center gap-1.5 text-[12px] font-semibold text-primary/70 hover:text-primary transition-colors px-3 py-1.5 rounded-full hover:bg-primary/8 active:scale-95"
                 >
-                  {shared
-                    ? <><Check className="w-3.5 h-3.5" /> Copied!</>
-                    : <><Share2 className="w-3.5 h-3.5" /> Share this</>}
+                  {shared ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Share2 className="w-3.5 h-3.5" /> Share this</>}
                 </button>
               </div>
             </div>
@@ -238,7 +323,7 @@ export function DailyArtCard() {
         )}
       </AnimatePresence>
 
-      {/* Share row — always visible */}
+      {/* Bottom row */}
       {imageLoaded && art && (
         <div
           className="flex items-center justify-between px-4 py-3 gap-3"

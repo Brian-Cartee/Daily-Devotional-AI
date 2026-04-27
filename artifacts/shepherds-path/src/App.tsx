@@ -41,6 +41,7 @@ import TriviaPage from "@/pages/TriviaPage";
 // import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
 import ScripturalAlignment from "@/pages/ScripturalAlignment";
+import Moments from "@/pages/Moments";
 const ScreenshotGenerator = lazy(() => import("@/pages/ScreenshotGenerator"));
 const IronCirclePage = lazy(() => import("@/pages/IronCirclePage"));
 import { DemoProvider } from "@/components/DemoProvider";
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/read" component={ReadBible} />
       <Route path="/study" component={QuickStudyPage} />
       <Route path="/journal" component={Journal} />
+      <Route path="/moments" component={Moments} />
       <Route path="/pro-success" component={ProSuccess} />
       <Route path="/restore" component={RestorePage} />
       <Route path="/refund" component={RefundPage} />
