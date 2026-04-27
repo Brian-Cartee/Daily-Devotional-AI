@@ -10,6 +10,14 @@ interface DailyArt {
   reflection: string;
 }
 
+interface LibraryEntry {
+  date: string;
+  imageUrl: string;
+  scripture: string;
+  reference: string;
+  reflection?: string;
+}
+
 type SlideType = "verse" | "reflection" | "prayer" | "image";
 
 interface Slide {
@@ -213,10 +221,16 @@ export default function DisplayMode() {
     let cancelled = false;
 
     async function load() {
+      // Fetch today's art and the full library in parallel
       let artData: DailyArt = FALLBACK_DATA;
+      let library: LibraryEntry[] = [];
       try {
-        const res = await fetch("/api/daily-art");
-        if (res.ok) artData = await res.json();
+        const [artRes, libRes] = await Promise.all([
+          fetch("/api/daily-art"),
+          fetch("/api/daily-art/library"),
+        ]);
+        if (artRes.ok) artData = await artRes.json();
+        if (libRes.ok) library = await libRes.json();
       } catch {}
 
       if (cancelled) return;
@@ -245,8 +259,21 @@ export default function DisplayMode() {
       if (cancelled) return;
       setPrayer(prayerText);
 
-      const builtSlides = buildSlides(artData, prayerText);
-      setSlides(builtSlides);
+      // Build today's content slides (verse → reflection → prayer → today's image)
+      const todaySlides = buildSlides(artData, prayerText);
+
+      // Append past library images as additional image slides (newest first, skip today)
+      const todayDateET = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const pastSlides: Slide[] = library
+        .filter(e => e.date !== todayDateET && e.imageUrl)
+        .map(e => ({
+          type: "image" as const,
+          content: e.scripture,
+          reference: e.reference,
+          imageUrl: e.imageUrl,
+        }));
+
+      setSlides([...todaySlides, ...pastSlides]);
       setLoading(false);
     }
 
@@ -349,19 +376,32 @@ export default function DisplayMode() {
         </p>
       </div>
 
-      {/* Slide indicators — dots */}
+      {/* Slide indicators */}
       {slides.length > 1 && (
-        <div className="absolute bottom-12 sm:bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
-          {slides.map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-full transition-all duration-500 ${
-                i === index
-                  ? "w-5 h-1.5 bg-white/60"
-                  : "w-1.5 h-1.5 bg-white/20"
-              }`}
-            />
-          ))}
+        <div className="absolute bottom-12 sm:bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
+          {slides.length <= 8 ? (
+            <div className="flex items-center gap-2">
+              {slides.map((_, i) => (
+                <div
+                  key={i}
+                  className={`rounded-full transition-all duration-500 ${
+                    i === index
+                      ? "w-5 h-1.5 bg-white/60"
+                      : "w-1.5 h-1.5 bg-white/20"
+                  }`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] text-white/30 font-semibold tabular-nums tracking-widest uppercase">
+              {index + 1} / {slides.length}
+            </p>
+          )}
+          {slides.length > 4 && (
+            <p className="text-[9px] text-white/15 uppercase tracking-[0.2em]">
+              {slides.filter(s => s.type === "image").length} artworks · growing daily
+            </p>
+          )}
         </div>
       )}
 

@@ -2474,6 +2474,43 @@ Return JSON: { "action": "...", "scripture": "..." }`
     fs.createReadStream(imgFile).pipe(res);
   });
 
+  // ── Serve a past image by date ─────────────────────────────────────────────
+  app.get("/api/daily-art/image/:date", (req, res) => {
+    const { date } = req.params;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ message: "Invalid date format" });
+    const imgFile = path.join(DAILY_ART_DIR, `${date}.jpg`);
+    if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "Not found" });
+    res.set("Cache-Control", "public, max-age=2592000"); // 30 days — past images never change
+    res.set("Content-Type", "image/jpeg");
+    fs.createReadStream(imgFile).pipe(res);
+  });
+
+  // ── Growing art library — all saved images, newest first ─────────────────
+  app.get("/api/daily-art/library", (req, res) => {
+    try {
+      const files = fs.readdirSync(DAILY_ART_DIR);
+      const entries: { date: string; imageUrl: string; scripture: string; reference: string; reflection?: string }[] = [];
+
+      for (const file of files) {
+        if (!file.endsWith(".jpg")) continue;
+        const date = file.replace(".jpg", "");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+        const metaFile = path.join(DAILY_ART_DIR, `${date}.json`);
+        if (!fs.existsSync(metaFile)) continue;
+        try {
+          const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
+          entries.push({ date, imageUrl: `/api/daily-art/image/${date}`, ...meta });
+        } catch { /* skip malformed entries */ }
+      }
+
+      entries.sort((a, b) => b.date.localeCompare(a.date)); // newest first
+      res.json(entries);
+    } catch (err) {
+      console.error("[daily-art/library] error:", err);
+      res.status(500).json({ message: "Could not load library" });
+    }
+  });
+
   app.get("/api/daily-art", async (req, res) => {
     try {
       // Roll over at midnight US Eastern (UTC-5)
