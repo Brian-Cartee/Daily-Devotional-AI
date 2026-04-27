@@ -375,3 +375,20 @@ export const sermonSessions = pgTable("sermon_sessions", {
 
 export type SermonSession = typeof sermonSessions.$inferSelect;
 export type InsertSermonSession = typeof sermonSessions.$inferInsert;
+
+// ── Prayer Recordings (Live Prayer Mode) ─────────────────────────────────────
+export const prayerRecordings = pgTable("prayer_recordings", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  title: text("title").default("Prayer").notNull(),
+  themes: text("themes").array().default([]).notNull(),
+  scriptureRef: text("scripture_ref"),
+  scriptureText: text("scripture_text"),
+  reflection: text("reflection"),
+  transcript: text("transcript"),
+  durationSeconds: integer("duration_seconds"),
+  prayedAt: timestamp("prayed_at").default(sql`now()`).notNull(),
+});
+
+export type PrayerRecording = typeof prayerRecordings.$inferSelect;
+export type InsertPrayerRecording = typeof prayerRecordings.$inferInsert;

@@ -6,6 +6,7 @@ import fs from "fs";
 import { execSync } from "child_process";
 import { Readable } from "stream";
 import { storage } from "../storage";
+import { db } from "../db";
 import { api, chatRequestSchema, type ChatMessage } from "../sharedRoutes";
 import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema } from "@workspace/db";
 import { z } from "zod";
@@ -584,6 +585,129 @@ ${session.transcript.slice(0, 8000)}`,
     } catch (err: any) {
       console.error("Sermon ask error:", err);
       res.status(500).json({ message: "Failed to answer question" });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // ── Prayer Mode ───────────────────────────────────────────────────────────────
+  // POST /api/prayer/chunk — transcribe audio chunk + extract prayer themes
+  const prayerChunkUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+  app.post("/api/prayer/chunk", prayerChunkUpload.single("audio"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No audio provided" });
+    try {
+      const audioFile = new File([req.file.buffer], req.file.originalname || "chunk.m4a", {
+        type: req.file.mimetype || "audio/mp4",
+      });
+      const transcription = await openaiTTS.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+      });
+      const text = transcription.text?.trim() || "";
+      if (!text) return res.json({ text: "", themes: [] });
+      const themeRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You identify spiritual and emotional themes in prayers. Respond with valid JSON only." },
+          {
+            role: "user",
+            content: `Extract the main spiritual/emotional themes from this prayer text. Return JSON with a single key "themes" containing an array of 1-4 concise theme words (e.g., ["healing", "peace", "guidance", "gratitude"]). Focus on what the person is bringing to God.\n\nPrayer: ${text}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+        max_tokens: 100,
+      });
+      let themes: string[] = [];
+      try {
+        const parsed = JSON.parse(themeRes.choices[0].message.content ?? "{}");
+        themes = Array.isArray(parsed.themes) ? parsed.themes : [];
+      } catch {}
+      res.json({ text, themes });
+    } catch (err: any) {
+      console.error("Prayer chunk error:", err);
+      res.status(500).json({ message: "Prayer chunk processing failed" });
+    }
+  });
+
+  // POST /api/prayer/sessions — save a completed prayer with AI reflection
+  app.post("/api/prayer/sessions", async (req, res) => {
+    const { sessionId, transcript, themes = [], durationSeconds } = req.body;
+    if (!sessionId || !transcript) return res.status(400).json({ message: "sessionId and transcript required" });
+    try {
+      const { prayerRecordings } = await import("@workspace/db");
+      // Generate AI reflection + scripture
+      const reflectionRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a compassionate spiritual companion who reflects back what someone prayed. Respond with valid JSON only, no markdown.",
+          },
+          {
+            role: "user",
+            content: `This person just prayed aloud. Gently reflect it back to them. Respond with JSON containing:
+- "title": a 3-6 word title for this prayer (e.g., "Prayer for Family Healing")
+- "themes": array of 2-4 spiritual/emotional theme words
+- "scriptureRef": one Bible verse reference most relevant to this prayer (e.g., "Philippians 4:6-7")
+- "scriptureText": the text of that verse (ESV or NIV, brief)
+- "reflection": 2-3 warm, affirming sentences reflecting what they brought to God. Start with "God heard..." or "You brought..." — never preachy, always gentle.
+
+Prayer transcript:
+${transcript.slice(0, 3000)}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.5,
+      });
+      let reflection: {
+        title?: string; themes?: string[]; scriptureRef?: string; scriptureText?: string; reflection?: string;
+      } = {};
+      try { reflection = JSON.parse(reflectionRes.choices[0].message.content ?? "{}"); } catch {}
+
+      const [record] = await db.insert(prayerRecordings).values({
+        sessionId,
+        title: reflection.title || "Prayer",
+        themes: reflection.themes || themes,
+        scriptureRef: reflection.scriptureRef || null,
+        scriptureText: reflection.scriptureText || null,
+        reflection: reflection.reflection || null,
+        transcript,
+        durationSeconds: durationSeconds || null,
+      }).returning();
+      res.json(record);
+    } catch (err: any) {
+      console.error("Save prayer error:", err);
+      res.status(500).json({ message: "Failed to save prayer" });
+    }
+  });
+
+  // GET /api/prayer/sessions — get prayer history for a user
+  app.get("/api/prayer/sessions", async (req, res) => {
+    const { sessionId, limit } = req.query;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const { prayerRecordings } = await import("@workspace/db");
+      const { desc, eq } = await import("drizzle-orm");
+      const maxResults = limit ? Math.min(parseInt(limit as string), 50) : 50;
+      const records = await db.select({
+        id: prayerRecordings.id,
+        title: prayerRecordings.title,
+        themes: prayerRecordings.themes,
+        scriptureRef: prayerRecordings.scriptureRef,
+        scriptureText: prayerRecordings.scriptureText,
+        reflection: prayerRecordings.reflection,
+        transcript: prayerRecordings.transcript,
+        durationSeconds: prayerRecordings.durationSeconds,
+        prayedAt: prayerRecordings.prayedAt,
+      })
+      .from(prayerRecordings)
+      .where(eq(prayerRecordings.sessionId, sessionId as string))
+      .orderBy(desc(prayerRecordings.prayedAt))
+      .limit(maxResults);
+      res.json(records);
+    } catch (err: any) {
+      console.error("Fetch prayer sessions error:", err);
+      res.status(500).json({ message: "Failed to fetch prayers" });
     }
   });
   // ─────────────────────────────────────────────────────────────────────────────

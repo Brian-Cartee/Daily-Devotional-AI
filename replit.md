@@ -118,6 +118,31 @@ Live in-service scripture detection feature. Mic records 20-second audio chunks 
 
 **Permissions**: `expo-av` added; iOS NSMicrophoneUsageDescription updated; expo-av plugin added to app.json for Android RECORD_AUDIO.
 
+## Prayer Mode
+
+**Concept**: Users pray aloud → 20-second audio chunks → Whisper transcribes → AI extracts themes in real-time → after ending, GPT generates a full "God heard this" reflection with scripture + affirmation.
+
+**Screens (mobile)**:
+- `app/(tabs)/prayer.tsx` — Prayer tab: "Pray Now" CTA at top + personal prayer history + Community Prayer Wall below
+- `app/prayer-live.tsx` — Live prayer recording: deep-purple intimate design, breathing mic circle, live theme chips, reflection card with fade-in animation
+
+**API endpoints**:
+- `POST /api/prayer/chunk` — audio chunk → Whisper → prayer theme extraction (fast, per-chunk)
+- `POST /api/prayer/sessions` — save completed prayer + generate AI reflection (title, themes, scripture, affirmation)
+- `GET /api/prayer/sessions?sessionId=&limit=` — list user's prayer history
+
+**Database**: `prayer_recordings` table (id, session_id, title, themes[], scripture_ref, scripture_text, reflection, transcript, duration_seconds, prayed_at)
+
+**Freemium**:
+- Free: pray + full reflection + last 5 prayers saved
+- Pro: full transcript stored, unlimited history + pattern insights CTA
+
+## Spiritual Posture Selector (Home Screen)
+
+**Concept**: Four tap-to-select pills on the home screen — Grateful / Growing / Seeking / Heavy. Persisted in AsyncStorage. Changes the "Sit with this" reflection section copy to match the user's spiritual state, serving both thriving believers and those who need support.
+
+**Implementation**: `app/(tabs)/index.tsx` — `POSTURE_KEY = "sp_posture"`, `SpiritualPosture` type, 4 Feather-icon pills, `POSTURE_COPY` lookup table, toggle deselects.
+
 ## External Services
 
 - OpenAI (AI responses + TTS + Whisper transcription)

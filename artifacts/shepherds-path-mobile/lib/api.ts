@@ -164,3 +164,56 @@ export async function askSermon(sessionId: number, question: string): Promise<st
   const data = await res.json();
   return data.answer;
 }
+
+// ── Prayer Mode ───────────────────────────────────────────────────────────────
+
+export interface PrayerChunkResult {
+  text: string;
+  themes: string[];
+}
+
+export async function analyzePrayerChunk(audioUri: string, mimeType: string = "audio/mp4"): Promise<PrayerChunkResult> {
+  const formData = new FormData();
+  formData.append("audio", { uri: audioUri, name: "chunk.m4a", type: mimeType } as any);
+  const res = await fetch(`${API_BASE}/api/prayer/chunk`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Prayer chunk analysis failed");
+  return res.json();
+}
+
+export interface PrayerReflection {
+  id: number;
+  title: string;
+  themes: string[];
+  scriptureRef: string | null;
+  scriptureText: string | null;
+  reflection: string | null;
+  transcript: string | null;
+  durationSeconds: number | null;
+  prayedAt: string;
+}
+
+export async function savePrayerRecording(params: {
+  sessionId: string;
+  transcript: string;
+  themes: string[];
+  durationSeconds?: number;
+}): Promise<PrayerReflection> {
+  const res = await fetch(`${API_BASE}/api/prayer/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error("Failed to save prayer");
+  return res.json();
+}
+
+export async function fetchPrayerRecordings(sessionId: string, limit?: number): Promise<PrayerReflection[]> {
+  const params = new URLSearchParams({ sessionId });
+  if (limit) params.set("limit", String(limit));
+  const res = await fetch(`${API_BASE}/api/prayer/sessions?${params}`);
+  if (!res.ok) return [];
+  return res.json();
+}

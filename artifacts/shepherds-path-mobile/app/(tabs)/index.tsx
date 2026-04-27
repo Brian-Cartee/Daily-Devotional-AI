@@ -26,6 +26,35 @@ import { useSubscription } from "@/lib/revenuecat";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SESSION_ID_KEY = "sp_session_id";
+const POSTURE_KEY = "sp_posture";
+
+type SpiritualPosture = "Grateful" | "Growing" | "Seeking" | "Heavy";
+
+const POSTURES: { key: SpiritualPosture; icon: string; label: string }[] = [
+  { key: "Grateful", icon: "sun", label: "Grateful" },
+  { key: "Growing", icon: "trending-up", label: "Growing" },
+  { key: "Seeking", icon: "search", label: "Seeking" },
+  { key: "Heavy", icon: "cloud", label: "Heavy" },
+];
+
+const POSTURE_COPY: Record<SpiritualPosture, { title: string; body: string }> = {
+  Grateful: {
+    title: "Celebrate what He's done",
+    body: "Take a moment to name what God has been faithful in. Gratitude is the language of the surrendered heart — let it overflow in prayer and praise today.",
+  },
+  Growing: {
+    title: "Go deeper in the Word",
+    body: "A disciple is always a student. Let today's scripture stretch you, challenge you, and plant something new. Growth is rarely comfortable — it's always worth it.",
+  },
+  Seeking: {
+    title: "Ask, and it shall be given",
+    body: "Bring your questions to the One who has answers. Doubt and wonder are not enemies of faith — they are the beginning of it. Sit with the Word and listen.",
+  },
+  Heavy: {
+    title: "You are not alone in this",
+    body: "Whatever is weighing on you today, God holds it. Bring your burden to Him in prayer. The Word is not a formula — it is a presence, and He is with you now.",
+  },
+};
 
 function getOrCreateSessionId(): Promise<string> {
   return AsyncStorage.getItem(SESSION_ID_KEY).then((id) => {
@@ -43,11 +72,23 @@ export default function HomeScreen() {
   const { isSubscribed } = useSubscription();
   const [sessionId, setSessionId] = useState<string>("");
   const [refreshing, setRefreshing] = useState(false);
+  const [posture, setPosture] = useState<SpiritualPosture | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     getOrCreateSessionId().then(setSessionId);
+    AsyncStorage.getItem(POSTURE_KEY).then((saved) => {
+      if (saved) setPosture(saved as SpiritualPosture);
+    });
   }, []);
+
+  const handlePosture = (p: SpiritualPosture) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const next = posture === p ? null : p;
+    setPosture(next);
+    if (next) AsyncStorage.setItem(POSTURE_KEY, next);
+    else AsyncStorage.removeItem(POSTURE_KEY);
+  };
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -170,6 +211,36 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Spiritual posture selector */}
+      <View style={styles.postureRow}>
+        {POSTURES.map((p) => {
+          const active = posture === p.key;
+          return (
+            <TouchableOpacity
+              key={p.key}
+              style={[
+                styles.posturePill,
+                active && { backgroundColor: colors.primary, borderColor: colors.primary },
+              ]}
+              onPress={() => handlePosture(p.key)}
+              activeOpacity={0.8}
+              testID={`button-posture-${p.key.toLowerCase()}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Set posture to ${p.key}`}
+            >
+              <Feather
+                name={p.icon as any}
+                size={13}
+                color={active ? colors.primaryForeground : colors.mutedForeground}
+              />
+              <Text style={[styles.posturePillText, active && { color: colors.primaryForeground }]}>
+                {p.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       {/* Action buttons */}
       <View style={styles.actions}>
         <TouchableOpacity
@@ -202,13 +273,17 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Today's word section */}
+      {/* Today's word section — posture-aware */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Reflect on this</Text>
+        <Text style={styles.sectionTitle}>
+          {posture ? POSTURE_COPY[posture].title : "Sit with this"}
+        </Text>
         <Text style={styles.sectionBody}>
-          Take a moment to sit with today's verse. Let it speak into your morning, your challenges, and your gratitude.
+          {posture
+            ? POSTURE_COPY[posture].body
+            : "Take a moment with today's verse. Let it settle, stretch you, or surprise you — the Word meets you exactly where you are today."}
           {"\n\n"}
-          The Word is alive and active — sharper than any double-edged sword.
+          {!posture && "Tap a posture above to personalize today's reflection."}
         </Text>
       </View>
     </ScrollView>
@@ -354,12 +429,35 @@ function makeStyles(colors: any, insets: any) {
       color: colors.mutedForeground,
       fontFamily: "Inter_400Regular",
     },
+    postureRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginHorizontal: 16,
+      marginTop: 16,
+      flexWrap: "wrap",
+    },
+    posturePill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingVertical: 7,
+      paddingHorizontal: 13,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    posturePillText: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      fontFamily: "Inter_500Medium",
+    },
     actions: {
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 10,
       marginHorizontal: 16,
-      marginTop: 20,
+      marginTop: 16,
     },
     actionBtn: {
       flex: 1,
