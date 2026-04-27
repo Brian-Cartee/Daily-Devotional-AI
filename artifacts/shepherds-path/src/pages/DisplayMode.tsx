@@ -236,7 +236,9 @@ export default function DisplayMode() {
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
 
-    window.onYouTubeIframeAPIReady = () => {
+    const createPlayer = () => {
+      // Guard: element must exist (not shown when ProGate is rendering instead)
+      if (!document.getElementById("yt-ambient-player")) return;
       ytPlayer.current = new window.YT.Player("yt-ambient-player", {
         videoId: AMBIENT_VIDEOS[0],
         playerVars: {
@@ -254,6 +256,13 @@ export default function DisplayMode() {
         },
       });
     };
+
+    // If YT API already loaded (cached script from prior page load), create immediately
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = createPlayer;
+    }
 
     return () => {
       ytPlayer.current?.destroy?.();
