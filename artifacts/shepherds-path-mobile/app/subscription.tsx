@@ -20,11 +20,12 @@ import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
 
 const FEATURES = [
-  { icon: "book-open", text: "Daily devotional with guided prayer" },
-  { icon: "zap", text: "AI-powered Bible study companion" },
-  { icon: "users", text: "Community prayer wall" },
-  { icon: "heart", text: "Unlimited verse memorization" },
-  { icon: "bell", text: "Daily scripture reminders" },
+  { icon: "book-open", text: "Revisit and reflect on every sermon" },
+  { icon: "message-circle", text: "Ask questions, get summaries, and never lose what spoke to you" },
+  { icon: "activity", text: "See patterns in your prayers over time" },
+  { icon: "eye", text: "Discover what God may be doing beneath the surface" },
+  { icon: "anchor", text: "Scripture and reflection shaped around your real moments" },
+  { icon: "unlock", text: "Everything we build, unlocked — new features as they arrive" },
 ];
 
 export default function SubscriptionScreen() {
@@ -99,9 +100,9 @@ export default function SubscriptionScreen() {
         <View style={styles.iconCircle}>
           <Feather name="star" size={32} color={colors.primaryForeground} />
         </View>
-        <Text style={styles.heroTitle}>Shepherd's Path Pro</Text>
+        <Text style={styles.heroTitle}>Go Deeper in Your Walk</Text>
         <Text style={styles.heroSubtitle}>
-          Walk deeper in faith with daily devotionals, AI Bible study, and a community of prayer.
+          You've already started something meaningful. Shepherd's Path can walk with you further — with deeper guidance, reflection, and insight built just for you.
         </Text>
       </View>
 
@@ -117,6 +118,11 @@ export default function SubscriptionScreen() {
         ))}
       </View>
 
+      {/* Faith anchor */}
+      <Text style={styles.faithAnchor}>
+        This isn't about more features — it's about walking closer, with clarity and intention.
+      </Text>
+
       {/* Plan cards */}
       <Text style={styles.planHeader}>Choose your plan</Text>
 
@@ -131,14 +137,12 @@ export default function SubscriptionScreen() {
               testID="button-select-annual"
             >
               <View style={styles.bestValueBadge}>
-                <Text style={styles.bestValueText}>BEST VALUE</Text>
+                <Text style={styles.bestValueText}>SAVE 35%</Text>
               </View>
               <Text style={styles.planName}>Annual</Text>
               <Text style={styles.planPrice} testID="text-annual-price">{annualPkg.product.priceString}</Text>
-              <Text style={styles.planPer}>per year</Text>
-              <Text style={styles.planSavings}>
-                {monthlyPkg ? `Save vs. monthly` : "Best deal"}
-              </Text>
+              <Text style={styles.planPer}>per year · recommended</Text>
+              <Text style={styles.planSavings}>Best value</Text>
             </TouchableOpacity>
           )}
 
@@ -172,10 +176,13 @@ export default function SubscriptionScreen() {
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
           <Text style={styles.ctaBtnText}>
-            {selectedPkg ? `Subscribe${selectedPkg === "$rc_annual" ? " Annually" : " Monthly"}` : "Select a plan to continue"}
+            {selectedPkg ? "Continue with Pro" : "Select a plan to continue"}
           </Text>
         )}
       </TouchableOpacity>
+
+      {/* Social proof */}
+      <Text style={styles.socialProof}>Join others growing deeper in their faith each day</Text>
 
       {/* Restore */}
       <TouchableOpacity
@@ -262,6 +269,24 @@ function makeStyles(colors: any, insets: any) {
       justifyContent: "center",
     },
     featureText: { fontSize: 14, color: colors.foreground, fontFamily: "Inter_400Regular", flex: 1 },
+    faithAnchor: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+      textAlign: "center",
+      fontStyle: "italic",
+      lineHeight: 22,
+      paddingHorizontal: 8,
+      marginBottom: 24,
+    },
+    socialProof: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+      textAlign: "center",
+      marginBottom: 4,
+      marginTop: 4,
+    },
     planHeader: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 12 },
     plans: { flexDirection: "row", gap: 12, marginBottom: 20 },
     planCard: {
