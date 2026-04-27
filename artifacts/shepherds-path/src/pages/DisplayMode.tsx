@@ -1,124 +1,37 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Tv, Copy, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { isProVerifiedLocally, isOwnerPreviewActive, markOwnerPreview } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
-
-interface DailyArt {
-  imageUrl: string | null;
-  scripture: string;
-  reference: string;
-  reflection: string;
-}
 
 interface LibraryEntry {
   date: string;
   imageUrl: string;
   scripture: string;
   reference: string;
-  reflection?: string;
 }
 
-type SlideType = "verse" | "reflection" | "prayer" | "image";
-
 interface Slide {
-  type: SlideType;
+  imageUrl: string;
   content: string;
-  reference?: string;
-  imageUrl?: string | null;
+  reference: string;
 }
 
 const SLIDE_DURATION = 50_000;
 
-
-const FALLBACK_PRAYER =
-  "Lord, let Your Word take root in my heart today. Where I am weary, be my strength. Where I am lost, be my way. May this day be lived in the quiet awareness of Your presence. Amen.";
-
-const FALLBACK_DATA: DailyArt = {
-  imageUrl: null,
-  scripture: "The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.",
-  reference: "Psalm 23:1–3",
-  reflection:
-    "God's care for you is not distant or uncertain. He tends to you the way a good shepherd tends his flock — attentively, gently, with full knowledge of where you need to go.",
-};
-
-function buildSlides(art: DailyArt, prayer: string): Slide[] {
-  const slides: Slide[] = [];
-  // Image first — immediate wow moment when the screen lights up
-  if (art.imageUrl) {
-    slides.push({
-      type: "image",
-      content: art.scripture,
-      reference: art.reference,
-      imageUrl: art.imageUrl,
-    });
-  }
-  slides.push(
-    { type: "verse", content: art.scripture, reference: art.reference },
-    { type: "reflection", content: art.reflection, reference: art.reference },
-    { type: "prayer", content: prayer },
-  );
-  return slides;
-}
-
-function VerseSlide({ slide }: { slide: Slide }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-8 sm:px-16 lg:px-28 text-center space-y-8">
-      <div className="space-y-1">
-        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-amber-300/60">
-          Today's Scripture
-        </p>
-      </div>
-      <blockquote className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-light text-white leading-relaxed tracking-wide max-w-5xl">
-        "{slide.content}"
-      </blockquote>
-      <p className="text-base sm:text-lg lg:text-xl font-semibold text-amber-300/80 tracking-widest uppercase">
-        {slide.reference}
-      </p>
-    </div>
-  );
-}
-
-function ReflectionSlide({ slide }: { slide: Slide }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-8 sm:px-16 lg:px-28 text-center space-y-10">
-      <div className="w-12 h-0.5 bg-amber-300/30 rounded-full" />
-      <p className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-light text-white/90 leading-relaxed max-w-4xl">
-        {slide.content}
-      </p>
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-12 h-0.5 bg-amber-300/30 rounded-full" />
-        <p className="text-[11px] sm:text-sm font-semibold uppercase tracking-[0.3em] text-white/30 italic">
-          Pause. Pray. Walk with Him.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function PrayerSlide({ slide }: { slide: Slide }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-8 sm:px-16 lg:px-28 text-center space-y-8">
-      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-purple-300/60">
-        A Prayer for Today
-      </p>
-      <p className="text-xl sm:text-2xl lg:text-3xl xl:text-[2rem] font-light text-white/90 leading-relaxed max-w-4xl italic">
-        {slide.content}
-      </p>
-    </div>
-  );
-}
+const DISPLAY_URL = "shepherdspathai.com/display";
 
 function ImageSlide({ slide }: { slide: Slide }) {
   return (
     <div className="absolute inset-0">
       <img
-        src={slide.imageUrl ?? ""}
+        src={slide.imageUrl}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         loading="eager"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/10" />
       <div className="absolute inset-0 flex flex-col items-center justify-end pb-20 sm:pb-28 px-8 sm:px-16 lg:px-28 text-center space-y-4">
         <blockquote className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-light text-white leading-relaxed max-w-4xl drop-shadow-lg">
           "{slide.content}"
@@ -131,19 +44,90 @@ function ImageSlide({ slide }: { slide: Slide }) {
   );
 }
 
-function SlideContent({ slide }: { slide: Slide }) {
-  if (slide.type === "verse") return <VerseSlide slide={slide} />;
-  if (slide.type === "reflection") return <ReflectionSlide slide={slide} />;
-  if (slide.type === "prayer") return <PrayerSlide slide={slide} />;
-  if (slide.type === "image") return <ImageSlide slide={slide} />;
-  return null;
-}
+function CastModal({ onClose }: { onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
 
-function gradientForSlide(type: SlideType): string {
-  if (type === "verse")      return "from-[#1a0a2e] via-[#0f0620] to-[#0a0415]";
-  if (type === "reflection") return "from-[#1a0f00] via-[#120a00] to-[#0a0620]";
-  if (type === "prayer")     return "from-[#0a0a1a] via-[#0d0620] to-[#1a0828]";
-  return "from-black via-black to-black";
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText("https://" + DISPLAY_URL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 flex items-center justify-center z-50 bg-black/70 backdrop-blur-sm px-6"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ duration: 0.2 }}
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl p-6 text-center"
+        style={{ background: "rgba(15,6,32,0.97)", border: "1px solid rgba(255,255,255,0.12)" }}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="w-12 h-12 rounded-full bg-violet-500/15 border border-violet-400/20 flex items-center justify-center mx-auto mb-4">
+          <Tv className="w-5 h-5 text-violet-300/80" />
+        </div>
+
+        <h2 className="text-white text-lg font-semibold mb-1">Cast to your screen</h2>
+        <p className="text-white/50 text-sm mb-6 leading-relaxed">
+          Open this link on any TV, monitor, or smart display
+        </p>
+
+        {/* URL display + copy */}
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl mb-4"
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+        >
+          <span className="text-white/70 text-sm flex-1 text-left font-mono truncate">
+            {DISPLAY_URL}
+          </span>
+          <button
+            onClick={copyUrl}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            style={{ background: copied ? "rgba(74,222,128,0.15)" : "rgba(167,139,250,0.15)", color: copied ? "#4ade80" : "#c4b5fd" }}
+          >
+            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+
+        {/* Instructions */}
+        <div className="text-left space-y-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">How to display</p>
+          {[
+            { step: "iPhone / iPad", desc: "Swipe down → Screen Mirror → pick your Apple TV or AirPlay display" },
+            { step: "Smart TV", desc: "Open the browser on your TV and go to shepherdspathai.com/display" },
+            { step: "Chromecast / Mac", desc: "Use Chrome → Cast tab to your TV or second monitor" },
+          ].map(({ step, desc }) => (
+            <div key={step} className="flex gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400/50 mt-1.5 flex-shrink-0" />
+              <div>
+                <p className="text-white/70 text-xs font-semibold">{step}</p>
+                <p className="text-white/35 text-xs leading-snug">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 }
 
 function ProGate() {
@@ -166,7 +150,7 @@ function ProGate() {
         Scripture Display Mode
       </h1>
       <p className="text-white/60 text-base max-w-sm leading-relaxed mb-8">
-        Daily AI-generated devotional art with scripture, reflection, and prayer — designed for any screen in your home.
+        Daily AI-generated devotional art — designed to rotate on any screen in your home.
       </p>
       <Link href="/pricing">
         <button
@@ -201,13 +185,13 @@ export default function DisplayMode() {
   const hasAccess = isPro || isInTrial;
   const trialDaysLeft = Math.max(0, 14 - daysWithApp + 1);
 
-  const [art, setArt] = useState<DailyArt | null>(null);
-  const [prayer, setPrayer] = useState<string>("");
   const [slides, setSlides] = useState<Slide[]>([]);
   const [index, setIndex] = useState(0);
   const [showUI, setShowUI] = useState(true);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [showCast, setShowCast] = useState(false);
+
   const uiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -239,166 +223,119 @@ export default function DisplayMode() {
     };
   }, [resetUI]);
 
+  // Load art library — only image slides, newest first
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      // Fetch today's art and the full library in parallel
-      let artData: DailyArt = FALLBACK_DATA;
-      let library: LibraryEntry[] = [];
       try {
         const [artRes, libRes] = await Promise.all([
           fetch("/api/daily-art"),
           fetch("/api/daily-art/library"),
         ]);
-        if (artRes.ok) artData = await artRes.json();
-        if (libRes.ok) library = await libRes.json();
-      } catch {}
 
-      if (cancelled) return;
-      setArt(artData);
+        const todayDateET = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().split("T")[0];
+        const allSlides: Slide[] = [];
 
-      // Build and show slides immediately with the fallback prayer — no waiting
-      const todayDateET = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const pastSlides: Slide[] = library
-        .filter(e => e.date !== todayDateET && e.imageUrl)
-        .map(e => ({
-          type: "image" as const,
-          content: e.scripture,
-          reference: e.reference,
-          imageUrl: e.imageUrl,
-        }));
-
-      const initialSlides = buildSlides(artData, FALLBACK_PRAYER);
-      setSlides([...initialSlides, ...pastSlides]);
-      setPrayer(FALLBACK_PRAYER);
-      setLoading(false); // Show content right away
-
-      // Silently fetch AI prayer in the background — update prayer slide if it arrives
-      try {
-        const prayerController = new AbortController();
-        const prayerTimeout = setTimeout(() => prayerController.abort(), 8000);
-        const prayerRes = await fetch("/api/chat/passage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: prayerController.signal,
-          body: JSON.stringify({
-            passageRef: artData.reference,
-            passageText: artData.scripture,
-            messages: [{
-              role: "user",
-              content: `Write a single heartfelt closing prayer (3 sentences) based on "${artData.scripture}" — ${artData.reference}. Make it personal, warm, and suitable for quiet morning reflection.`,
-            }],
-          }),
-        });
-        clearTimeout(prayerTimeout);
-        if (prayerRes.ok) {
-          const text = await prayerRes.text();
-          if (!cancelled && text.trim().length > 20) {
-            const aiPrayer = text.trim();
-            setPrayer(aiPrayer);
-            // Swap the prayer slide in place so it updates seamlessly
-            setSlides(prev => prev.map(s =>
-              s.type === "prayer" ? { ...s, content: aiPrayer } : s
-            ));
+        // Today's image first
+        if (artRes.ok) {
+          const art = await artRes.json();
+          if (art.imageUrl) {
+            allSlides.push({ imageUrl: art.imageUrl, content: art.scripture, reference: art.reference });
           }
         }
-      } catch {}
+
+        // Past library images (newest to oldest, skip today)
+        if (libRes.ok) {
+          const library: LibraryEntry[] = await libRes.json();
+          library
+            .filter(e => e.date !== todayDateET && e.imageUrl)
+            .forEach(e => allSlides.push({ imageUrl: e.imageUrl, content: e.scripture, reference: e.reference }));
+        }
+
+        if (!cancelled) {
+          setSlides(allSlides);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     load();
     return () => { cancelled = true; };
   }, []);
 
+  // Auto-advance slides
   useEffect(() => {
-    if (!slides.length) return;
-
-    if (progressRef.current) clearInterval(progressRef.current);
+    if (loading || slides.length <= 1) return;
     if (slideTimer.current) clearTimeout(slideTimer.current);
+    slideTimer.current = setTimeout(() => advance(), SLIDE_DURATION);
+    return () => { if (slideTimer.current) clearTimeout(slideTimer.current); };
+  }, [index, loading, slides.length, advance]);
 
+  // Progress bar
+  useEffect(() => {
+    if (loading || slides.length === 0) return;
     setProgress(0);
-    const startTime = Date.now();
-
+    if (progressRef.current) clearInterval(progressRef.current);
+    const intervalMs = 250;
     progressRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      setProgress(Math.min((elapsed / SLIDE_DURATION) * 100, 100));
-    }, 250);
-
-    slideTimer.current = setTimeout(() => {
-      setIndex(i => (i + 1) % slides.length);
-      setProgress(0);
-    }, SLIDE_DURATION);
-
-    return () => {
-      if (progressRef.current) clearInterval(progressRef.current);
-      if (slideTimer.current) clearTimeout(slideTimer.current);
-    };
-  }, [index, slides]);
-
-  const handleClick = () => {
-    advance();
-    resetUI();
-  };
+      setProgress(p => {
+        if (p >= 100) { clearInterval(progressRef.current!); return 100; }
+        return p + (intervalMs / SLIDE_DURATION) * 100;
+      });
+    }, intervalMs);
+    return () => { if (progressRef.current) clearInterval(progressRef.current); };
+  }, [index, loading, slides.length]);
 
   if (!hasAccess) return <ProGate />;
 
   const currentSlide = slides[index] ?? null;
-  const gradient = currentSlide ? gradientForSlide(currentSlide.type) : "from-[#0a0415] to-black";
-  const isImageSlide = currentSlide?.type === "image";
 
   return (
     <div
-      className={`fixed inset-0 overflow-hidden select-none cursor-pointer`}
-      onClick={handleClick}
-      data-testid="display-screen"
+      className="fixed inset-0 bg-black overflow-hidden cursor-pointer select-none"
+      onClick={e => {
+        if (showCast) { setShowCast(false); return; }
+        advance();
+        resetUI();
+      }}
     >
-      <AnimatePresence mode="sync">
-        {!isImageSlide && (
-          <motion.div
-            key={gradient}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
-            className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Subtle grain texture overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* Main slide content */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Slides */}
+      <div className="absolute inset-0">
         {loading ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-            <p className="text-white/30 text-sm font-light tracking-widest uppercase">Preparing today's word…</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
+            </div>
+          </div>
+        ) : slides.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0415] text-center px-8">
+            <div>
+              <p className="text-white/30 text-sm">Today's artwork is being created.</p>
+              <p className="text-white/20 text-xs mt-2">Check back soon — the gallery grows daily.</p>
+            </div>
           </div>
         ) : (
           <AnimatePresence mode="wait">
             {currentSlide && (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, scale: 0.98 }}
+                initial={{ opacity: 0, scale: 1.02 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.01 }}
                 transition={{ duration: 0.9, ease: "easeInOut" }}
                 className="absolute inset-0"
               >
-                <SlideContent slide={currentSlide} />
+                <ImageSlide slide={currentSlide} />
               </motion.div>
             )}
           </AnimatePresence>
         )}
       </div>
 
-      {/* Branding — always visible, very subtle */}
+      {/* Branding */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 pointer-events-none">
         <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-white/20">
           Shepherd's Path
@@ -414,9 +351,7 @@ export default function DisplayMode() {
                 <div
                   key={i}
                   className={`rounded-full transition-all duration-500 ${
-                    i === index
-                      ? "w-5 h-1.5 bg-white/60"
-                      : "w-1.5 h-1.5 bg-white/20"
+                    i === index ? "w-5 h-1.5 bg-white/60" : "w-1.5 h-1.5 bg-white/20"
                   }`}
                 />
               ))}
@@ -426,11 +361,9 @@ export default function DisplayMode() {
               {index + 1} / {slides.length}
             </p>
           )}
-          {slides.length > 4 && (
-            <p className="text-[9px] text-white/15 uppercase tracking-[0.2em]">
-              {slides.filter(s => s.type === "image").length} artworks · growing daily
-            </p>
-          )}
+          <p className="text-[9px] text-white/15 uppercase tracking-[0.2em]">
+            {slides.length} {slides.length === 1 ? "artwork" : "artworks"} · growing daily
+          </p>
         </div>
       )}
 
@@ -445,7 +378,7 @@ export default function DisplayMode() {
         </div>
       )}
 
-      {/* UI overlay — fades in on interaction */}
+      {/* UI overlay */}
       <AnimatePresence>
         {showUI && !loading && (
           <motion.div
@@ -455,30 +388,25 @@ export default function DisplayMode() {
             transition={{ duration: 0.3 }}
             className="absolute inset-0 pointer-events-none"
           >
-            {/* Top bar: back link · slide label · trial badge */}
+            {/* Top bar */}
             <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-5">
-              {/* Back */}
               <Link href="/" className="pointer-events-auto">
                 <span className="text-[10px] text-white/25 uppercase tracking-widest font-semibold hover:text-white/50 transition-colors">
                   ← Home
                 </span>
               </Link>
 
-              {/* Slide type label */}
-              {currentSlide && (
-                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] px-3 py-1 rounded-full border ${
-                  currentSlide.type === "verse"      ? "text-amber-300/70 border-amber-300/20 bg-amber-300/5" :
-                  currentSlide.type === "reflection" ? "text-orange-300/70 border-orange-300/20 bg-orange-300/5" :
-                  currentSlide.type === "prayer"     ? "text-purple-300/70 border-purple-300/20 bg-purple-300/5" :
-                                                        "text-white/40 border-white/10 bg-white/5"
-                }`}>
-                  {currentSlide.type === "verse"      ? "Scripture" :
-                   currentSlide.type === "reflection" ? "Reflection" :
-                   currentSlide.type === "prayer"     ? "Prayer" : "Today's Image"}
-                </span>
-              )}
+              {/* Cast button */}
+              <button
+                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/40 hover:text-white/70 hover:border-white/20 transition-colors"
+                onClick={e => { e.stopPropagation(); setShowCast(true); resetUI(); }}
+                data-testid="btn-cast-display"
+              >
+                <Tv className="w-3 h-3" />
+                <span className="text-[10px] uppercase tracking-widest font-semibold">Cast</span>
+              </button>
 
-              {/* Trial badge (free users only) or Pro badge */}
+              {/* Trial / Pro badge */}
               {isInTrial ? (
                 <Link href="/upgrade" className="pointer-events-auto">
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-amber-400/20 bg-amber-400/5 text-amber-300/60 hover:text-amber-300/90 transition-colors">
@@ -502,6 +430,10 @@ export default function DisplayMode() {
         )}
       </AnimatePresence>
 
+      {/* Cast modal */}
+      <AnimatePresence>
+        {showCast && <CastModal onClose={() => setShowCast(false)} />}
+      </AnimatePresence>
     </div>
   );
 }
