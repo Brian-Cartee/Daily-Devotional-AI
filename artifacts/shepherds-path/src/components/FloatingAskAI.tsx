@@ -7,7 +7,7 @@ import { getUserName } from "@/lib/userName";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight } from "@/lib/nightMode";
 
-const HIDE_ON = ["/guidance", "/shepherd-admin", "/shepherd-admin/sermons", "/present", "/demo"];
+const HIDE_ON = ["/guidance", "/shepherd-admin", "/shepherd-admin/sermons", "/present", "/demo", "/display"];
 
 const EXPAND_INTERVALS = [4000, 45000, 90000];
 

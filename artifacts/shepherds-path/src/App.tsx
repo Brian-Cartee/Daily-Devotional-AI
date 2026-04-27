@@ -19,6 +19,7 @@ import RestorePage from "@/pages/RestorePage";
 import RefundPage from "@/pages/RefundPage";
 const PricingPage = lazy(() => import("@/pages/PricingPage"));
 import PresentMode from "@/pages/PresentMode";
+import DisplayMode from "@/pages/DisplayMode";
 import DemoCreate from "@/pages/DemoCreate";
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 import PrivacyPage from "@/pages/PrivacyPage";
@@ -96,6 +97,7 @@ function Router() {
       </Route>
       
       <Route path="/present" component={PresentMode} />
+      <Route path="/display" component={DisplayMode} />
       <Route path="/demo" component={DemoCreate} />
       <Route path="/about">
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
