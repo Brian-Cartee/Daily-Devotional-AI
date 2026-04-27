@@ -96,3 +96,9 @@ id = "sytuTNyJL_aF5WGTp9OGg"
 uri = "file://shepherds-path-mobile.tar.gz"
 type = "unspecified"
 title = "Shepherd's Path Mobile Project"
+
+[[outputs]]
+id = "l5TG_LSB7qJSY4upE-ny8"
+uri = "file://AuthKey_3DD2747FYX.tar.gz"
+type = "unspecified"
+title = "App Store Connect API Key"
