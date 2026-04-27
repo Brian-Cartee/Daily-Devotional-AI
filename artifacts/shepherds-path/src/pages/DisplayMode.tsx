@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { isProVerifiedLocally } from "@/lib/proStatus";
+import { isProVerifiedLocally, isOwnerPreviewActive, markOwnerPreview } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
 
 interface DailyArt {
@@ -162,10 +162,7 @@ function ProGate() {
   const isOwnerMode = new URLSearchParams(window.location.search).get("owner") === "true";
 
   const grantOwnerAccess = () => {
-    localStorage.setItem(
-      "sp_referral_pro_until",
-      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-    );
+    markOwnerPreview();
     window.location.reload();
   };
 
@@ -211,7 +208,7 @@ function ProGate() {
 
 export default function DisplayMode() {
   const daysWithApp = getRelationshipAge();
-  const isPro = isProVerifiedLocally();
+  const isPro = isProVerifiedLocally() || isOwnerPreviewActive();
   const isInTrial = !isPro && daysWithApp <= 14;
   const hasAccess = isPro || isInTrial;
   const trialDaysLeft = Math.max(0, 14 - daysWithApp + 1);

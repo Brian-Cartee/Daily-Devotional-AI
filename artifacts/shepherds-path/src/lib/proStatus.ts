@@ -3,7 +3,17 @@ const PRO_VERIFIED_KEY = "sp_pro_verified";
 const REFERRAL_PRO_KEY = "sp_referral_pro_until";
 const PRO_NUDGE_DISMISSED_KEY = "sp_pro_nudge_dismissed";
 const PRO_LAST_REVALIDATED_KEY = "sp_pro_last_revalidated";
+const OWNER_PREVIEW_KEY = "sp_owner_preview";
 const REVALIDATE_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+// Owner/developer preview access — never touched by server validation
+export function markOwnerPreview(): void {
+  localStorage.setItem(OWNER_PREVIEW_KEY, "true");
+}
+
+export function isOwnerPreviewActive(): boolean {
+  return localStorage.getItem(OWNER_PREVIEW_KEY) === "true";
+}
 
 export function isProNudgeDismissed(): boolean {
   return localStorage.getItem(PRO_NUDGE_DISMISSED_KEY) === "true";
