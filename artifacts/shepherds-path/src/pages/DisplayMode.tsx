@@ -230,44 +230,49 @@ export default function DisplayMode() {
 
   // Load YouTube IFrame API and create a hidden player for ambient audio
   useEffect(() => {
-    if (document.getElementById("yt-iframe-api")) return; // already loaded
-    const tag = document.createElement("script");
-    tag.id = "yt-iframe-api";
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
+    if (!hasAccess) return; // Don't set up audio when ProGate is showing
 
     const createPlayer = () => {
-      // Guard: element must exist (not shown when ProGate is rendering instead)
       if (!document.getElementById("yt-ambient-player")) return;
-      ytPlayer.current = new window.YT.Player("yt-ambient-player", {
-        videoId: AMBIENT_VIDEOS[0],
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          loop: 1,
-          playlist: AMBIENT_VIDEOS.join(","),
-          playsinline: 1,
-          rel: 0,
-          modestbranding: 1,
-          iv_load_policy: 3,
-        },
-        events: {
-          onReady: () => setPlayerReady(true),
-        },
-      });
+      try {
+        ytPlayer.current = new window.YT.Player("yt-ambient-player", {
+          videoId: AMBIENT_VIDEOS[0],
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            loop: 1,
+            playlist: AMBIENT_VIDEOS.join(","),
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1,
+            iv_load_policy: 3,
+          },
+          events: {
+            onReady: () => setPlayerReady(true),
+          },
+        });
+      } catch { /* silently ignore — music is optional */ }
     };
 
-    // If YT API already loaded (cached script from prior page load), create immediately
     if (window.YT && window.YT.Player) {
+      // API already loaded from a prior page visit
       createPlayer();
+    } else if (!document.getElementById("yt-iframe-api")) {
+      // First time — inject the script
+      const tag = document.createElement("script");
+      tag.id = "yt-iframe-api";
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+      window.onYouTubeIframeAPIReady = createPlayer;
     } else {
+      // Script tag exists but YT not ready yet — wait for it
       window.onYouTubeIframeAPIReady = createPlayer;
     }
 
     return () => {
       ytPlayer.current?.destroy?.();
     };
-  }, []);
+  }, [hasAccess]);
 
   const toggleSound = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
