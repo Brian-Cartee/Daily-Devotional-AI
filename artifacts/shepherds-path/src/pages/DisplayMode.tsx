@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { isProVerifiedLocally } from "@/lib/proStatus";
+import { getRelationshipAge } from "@/lib/relationship";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -28,6 +30,20 @@ interface Slide {
 }
 
 const SLIDE_DURATION = 50_000;
+
+// Curated long-form ambient Christian worship videos (3+ hours each)
+const AMBIENT_VIDEOS = [
+  "fOB73qRVGJs", // Alone With GOD — Piano Worship / Prayer & Meditation
+  "Xx1MjhzKcYw", // Bethel Music — Instrumental Soaking Worship
+  "imJZlhOsPKM", // God's Promises — Faith / Strength in Jesus
+];
+
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 
 const FALLBACK_PRAYER =
   "Lord, let Your Word take root in my heart today. Where I am weary, be my strength. Where I am lost, be my way. May this day be lived in the quiet awareness of Your presence. Amen.";
@@ -176,7 +192,11 @@ function ProGate() {
 }
 
 export default function DisplayMode() {
+  const daysWithApp = getRelationshipAge();
   const isPro = isProVerifiedLocally();
+  const isInTrial = !isPro && daysWithApp <= 14;
+  const hasAccess = isPro || isInTrial;
+  const trialDaysLeft = Math.max(0, 14 - daysWithApp + 1);
 
   const [art, setArt] = useState<DailyArt | null>(null);
   const [prayer, setPrayer] = useState<string>("");
@@ -185,10 +205,57 @@ export default function DisplayMode() {
   const [showUI, setShowUI] = useState(true);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [soundOn, setSoundOn] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
 
   const uiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ytPlayer = useRef<any>(null);
+
+  // Load YouTube IFrame API and create a hidden player for ambient audio
+  useEffect(() => {
+    if (document.getElementById("yt-iframe-api")) return; // already loaded
+    const tag = document.createElement("script");
+    tag.id = "yt-iframe-api";
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = () => {
+      ytPlayer.current = new window.YT.Player("yt-ambient-player", {
+        videoId: AMBIENT_VIDEOS[0],
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          loop: 1,
+          playlist: AMBIENT_VIDEOS.join(","),
+          playsinline: 1,
+          rel: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+        },
+        events: {
+          onReady: () => setPlayerReady(true),
+        },
+      });
+    };
+
+    return () => {
+      ytPlayer.current?.destroy?.();
+    };
+  }, []);
+
+  const toggleSound = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!playerReady) return;
+    if (soundOn) {
+      ytPlayer.current?.pauseVideo?.();
+    } else {
+      ytPlayer.current?.setVolume?.(35);
+      ytPlayer.current?.playVideo?.();
+    }
+    setSoundOn(prev => !prev);
+  }, [soundOn, playerReady]);
 
   const advance = useCallback((newSlides?: Slide[]) => {
     const list = newSlides ?? slides;
@@ -311,7 +378,7 @@ export default function DisplayMode() {
     resetUI();
   };
 
-  if (!isPro) return <ProGate />;
+  if (!hasAccess) return <ProGate />;
 
   const currentSlide = slides[index] ?? null;
   const gradient = currentSlide ? gradientForSlide(currentSlide.type) : "from-[#0a0415] to-black";
@@ -426,16 +493,17 @@ export default function DisplayMode() {
             transition={{ duration: 0.3 }}
             className="absolute inset-0 pointer-events-none"
           >
-            {/* Tap hint */}
-            <div className="absolute bottom-20 sm:bottom-24 right-6 sm:right-8">
-              <p className="text-[10px] text-white/20 uppercase tracking-widest font-semibold">
-                Tap to advance
-              </p>
-            </div>
+            {/* Top bar: back link · slide label · trial badge */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-5">
+              {/* Back */}
+              <Link href="/" className="pointer-events-auto">
+                <span className="text-[10px] text-white/25 uppercase tracking-widest font-semibold hover:text-white/50 transition-colors">
+                  ← Home
+                </span>
+              </Link>
 
-            {/* Slide type label */}
-            {currentSlide && (
-              <div className="absolute top-6 left-1/2 -translate-x-1/2">
+              {/* Slide type label */}
+              {currentSlide && (
                 <span className={`text-[10px] font-bold uppercase tracking-[0.25em] px-3 py-1 rounded-full border ${
                   currentSlide.type === "verse"      ? "text-amber-300/70 border-amber-300/20 bg-amber-300/5" :
                   currentSlide.type === "reflection" ? "text-orange-300/70 border-orange-300/20 bg-orange-300/5" :
@@ -446,11 +514,55 @@ export default function DisplayMode() {
                    currentSlide.type === "reflection" ? "Reflection" :
                    currentSlide.type === "prayer"     ? "Prayer" : "Today's Image"}
                 </span>
-              </div>
-            )}
+              )}
+
+              {/* Trial badge (free users only) or Pro badge */}
+              {isInTrial ? (
+                <Link href="/upgrade" className="pointer-events-auto">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-amber-400/20 bg-amber-400/5 text-amber-300/60 hover:text-amber-300/90 transition-colors">
+                    {trialDaysLeft === 1 ? "Last free day" : `${trialDaysLeft} free days left`}
+                  </span>
+                </Link>
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-purple-400/20 bg-purple-400/5 text-purple-300/50">
+                  Pro
+                </span>
+              )}
+            </div>
+
+            {/* Bottom-right: sound toggle + tap hint */}
+            <div className="absolute bottom-20 sm:bottom-24 right-6 sm:right-8 flex flex-col items-end gap-3">
+              <button
+                onClick={toggleSound}
+                className={`pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 ${
+                  soundOn
+                    ? "border-white/25 bg-white/10 text-white/70"
+                    : "border-white/10 bg-transparent text-white/25 hover:text-white/45"
+                } ${!playerReady ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                title={soundOn ? "Mute music" : "Play ambient worship music"}
+              >
+                {soundOn
+                  ? <Volume2 className="w-3 h-3" />
+                  : <VolumeX className="w-3 h-3" />
+                }
+                <span className="text-[10px] uppercase tracking-widest font-semibold">
+                  {soundOn ? "Music on" : "Music off"}
+                </span>
+              </button>
+              <p className="text-[10px] text-white/20 uppercase tracking-widest font-semibold">
+                Tap to advance
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden YouTube player — audio only, 1×1 pixel off-screen */}
+      <div
+        id="yt-ambient-player"
+        className="absolute -top-px -left-px opacity-0 pointer-events-none"
+        style={{ width: 1, height: 1 }}
+      />
     </div>
   );
 }
