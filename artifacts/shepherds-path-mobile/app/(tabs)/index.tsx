@@ -16,6 +16,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
+import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -23,10 +24,18 @@ import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { fetchDailyArt, recordStreak, fetchStreak } from "@/lib/api";
 import { useSubscription } from "@/lib/revenuecat";
+import {
+  requestNotificationPermissions,
+  enableNotifications,
+  loadNotificationPrefs,
+  saveNotificationPrefs,
+} from "@/lib/notifications";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SESSION_ID_KEY = "sp_session_id";
 const POSTURE_KEY = "sp_posture";
+const PUSH_ASKED_KEY = "sp_push_asked_v1";
+const OPEN_COUNT_KEY = "sp_open_count";
 
 type SpiritualPosture = "Grateful" | "Growing" | "Seeking" | "Heavy";
 
@@ -73,6 +82,8 @@ export default function HomeScreen() {
   const [sessionId, setSessionId] = useState<string>("");
   const [refreshing, setRefreshing] = useState(false);
   const [posture, setPosture] = useState<SpiritualPosture | null>(null);
+  const [showPushNudge, setShowPushNudge] = useState(false);
+  const [pushNudgeLoading, setPushNudgeLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -80,7 +91,47 @@ export default function HomeScreen() {
     AsyncStorage.getItem(POSTURE_KEY).then((saved) => {
       if (saved) setPosture(saved as SpiritualPosture);
     });
+    checkPushNudge();
   }, []);
+
+  async function checkPushNudge() {
+    if (Platform.OS === "web") return;
+    try {
+      const asked = await AsyncStorage.getItem(PUSH_ASKED_KEY);
+      if (asked) return;
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === "granted") return;
+      const countStr = await AsyncStorage.getItem(OPEN_COUNT_KEY);
+      const count = parseInt(countStr || "0", 10) + 1;
+      await AsyncStorage.setItem(OPEN_COUNT_KEY, String(count));
+      if (count >= 2) {
+        setShowPushNudge(true);
+      }
+    } catch {}
+  }
+
+  async function handlePushYes() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setPushNudgeLoading(true);
+    try {
+      const granted = await requestNotificationPermissions();
+      if (granted) {
+        const prefs = await loadNotificationPrefs();
+        const updatedPrefs = { ...prefs, enabled: true };
+        await saveNotificationPrefs(updatedPrefs);
+        await enableNotifications(updatedPrefs);
+      }
+    } catch {}
+    await AsyncStorage.setItem(PUSH_ASKED_KEY, "1");
+    setPushNudgeLoading(false);
+    setShowPushNudge(false);
+  }
+
+  async function handlePushDismiss() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await AsyncStorage.setItem(PUSH_ASKED_KEY, "1");
+    setShowPushNudge(false);
+  }
 
   const handlePosture = (p: SpiritualPosture) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -286,6 +337,43 @@ export default function HomeScreen() {
           {!posture && "Tap a posture above to personalize today's reflection."}
         </Text>
       </View>
+
+      {/* Push notification nudge — shown after 2nd visit if not yet asked */}
+      {showPushNudge && (
+        <View style={styles.pushNudge} testID="card-push-nudge">
+          <View style={styles.pushNudgeTop}>
+            <View style={styles.pushNudgeIconWrap}>
+              <Feather name="bell" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pushNudgeTitle}>Start your day with scripture</Text>
+              <Text style={styles.pushNudgeBody}>
+                Get today's verse delivered each morning — right when you wake up.
+              </Text>
+            </View>
+          </View>
+          <View style={styles.pushNudgeActions}>
+            <TouchableOpacity
+              style={styles.pushNudgeYes}
+              onPress={handlePushYes}
+              disabled={pushNudgeLoading}
+              testID="button-push-nudge-yes"
+            >
+              {pushNudgeLoading
+                ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                : <Text style={styles.pushNudgeYesText}>Yes, turn on</Text>
+              }
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pushNudgeNo}
+              onPress={handlePushDismiss}
+              testID="button-push-nudge-dismiss"
+            >
+              <Text style={styles.pushNudgeNoText}>Maybe later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -499,6 +587,70 @@ function makeStyles(colors: any, insets: any) {
       color: colors.mutedForeground,
       fontFamily: "Inter_400Regular",
       lineHeight: 24,
+    },
+    pushNudge: {
+      marginHorizontal: 16,
+      marginTop: 16,
+      padding: 18,
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 14,
+    },
+    pushNudgeTop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+    },
+    pushNudgeIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pushNudgeTitle: {
+      fontSize: 15,
+      color: colors.foreground,
+      fontFamily: "Inter_600SemiBold",
+      marginBottom: 4,
+    },
+    pushNudgeBody: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      fontFamily: "Inter_400Regular",
+      lineHeight: 19,
+    },
+    pushNudgeActions: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    pushNudgeYes: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 11,
+      alignItems: "center",
+    },
+    pushNudgeYesText: {
+      color: colors.primaryForeground,
+      fontFamily: "Inter_600SemiBold",
+      fontSize: 14,
+    },
+    pushNudgeNo: {
+      flex: 1,
+      borderRadius: 8,
+      paddingVertical: 11,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    pushNudgeNoText: {
+      color: colors.mutedForeground,
+      fontFamily: "Inter_400Regular",
+      fontSize: 14,
     },
   });
 }
