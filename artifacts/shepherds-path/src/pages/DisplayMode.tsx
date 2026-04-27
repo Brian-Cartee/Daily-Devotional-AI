@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { isProVerifiedLocally, isOwnerPreviewActive, markOwnerPreview } from "@/lib/proStatus";
@@ -31,19 +30,6 @@ interface Slide {
 
 const SLIDE_DURATION = 50_000;
 
-// Curated long-form ambient Christian worship videos (3+ hours each)
-const AMBIENT_VIDEOS = [
-  "fOB73qRVGJs", // Alone With GOD — Piano Worship / Prayer & Meditation
-  "Xx1MjhzKcYw", // Bethel Music — Instrumental Soaking Worship
-  "imJZlhOsPKM", // God's Promises — Faith / Strength in Jesus
-];
-
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
 
 const FALLBACK_PRAYER =
   "Lord, let Your Word take root in my heart today. Where I am weary, be my strength. Where I am lost, be my way. May this day be lived in the quiet awareness of Your presence. Amen.";
@@ -220,71 +206,9 @@ export default function DisplayMode() {
   const [showUI, setShowUI] = useState(true);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [soundOn, setSoundOn] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
-
   const uiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const ytPlayer = useRef<any>(null);
-
-  // Load YouTube IFrame API and create a hidden player for ambient audio
-  useEffect(() => {
-    if (!hasAccess) return; // Don't set up audio when ProGate is showing
-
-    const createPlayer = () => {
-      if (!document.getElementById("yt-ambient-player")) return;
-      try {
-        ytPlayer.current = new window.YT.Player("yt-ambient-player", {
-          videoId: AMBIENT_VIDEOS[0],
-          playerVars: {
-            autoplay: 0,
-            controls: 0,
-            loop: 1,
-            playlist: AMBIENT_VIDEOS.join(","),
-            playsinline: 1,
-            rel: 0,
-            modestbranding: 1,
-            iv_load_policy: 3,
-          },
-          events: {
-            onReady: () => setPlayerReady(true),
-          },
-        });
-      } catch { /* silently ignore — music is optional */ }
-    };
-
-    if (window.YT && window.YT.Player) {
-      // API already loaded from a prior page visit
-      createPlayer();
-    } else if (!document.getElementById("yt-iframe-api")) {
-      // First time — inject the script
-      const tag = document.createElement("script");
-      tag.id = "yt-iframe-api";
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.head.appendChild(tag);
-      window.onYouTubeIframeAPIReady = createPlayer;
-    } else {
-      // Script tag exists but YT not ready yet — wait for it
-      window.onYouTubeIframeAPIReady = createPlayer;
-    }
-
-    return () => {
-      ytPlayer.current?.destroy?.();
-    };
-  }, [hasAccess]);
-
-  const toggleSound = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!playerReady) return;
-    if (soundOn) {
-      ytPlayer.current?.pauseVideo?.();
-    } else {
-      ytPlayer.current?.setVolume?.(35);
-      ytPlayer.current?.playVideo?.();
-    }
-    setSoundOn(prev => !prev);
-  }, [soundOn, playerReady]);
 
   const advance = useCallback((newSlides?: Slide[]) => {
     const list = newSlides ?? slides;
@@ -563,25 +487,8 @@ export default function DisplayMode() {
               )}
             </div>
 
-            {/* Bottom-right: sound toggle + tap hint */}
-            <div className="absolute bottom-20 sm:bottom-24 right-6 sm:right-8 flex flex-col items-end gap-3">
-              <button
-                onClick={toggleSound}
-                className={`pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 ${
-                  soundOn
-                    ? "border-white/25 bg-white/10 text-white/70"
-                    : "border-white/10 bg-transparent text-white/25 hover:text-white/45"
-                } ${!playerReady ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
-                title={soundOn ? "Mute music" : "Play ambient worship music"}
-              >
-                {soundOn
-                  ? <Volume2 className="w-3 h-3" />
-                  : <VolumeX className="w-3 h-3" />
-                }
-                <span className="text-[10px] uppercase tracking-widest font-semibold">
-                  {soundOn ? "Music on" : "Music off"}
-                </span>
-              </button>
+            {/* Tap hint */}
+            <div className="absolute bottom-20 sm:bottom-24 right-6 sm:right-8">
               <p className="text-[10px] text-white/20 uppercase tracking-widest font-semibold">
                 Tap to advance
               </p>
@@ -590,12 +497,6 @@ export default function DisplayMode() {
         )}
       </AnimatePresence>
 
-      {/* Hidden YouTube player — audio only, 1×1 pixel off-screen */}
-      <div
-        id="yt-ambient-player"
-        className="absolute -top-px -left-px opacity-0 pointer-events-none"
-        style={{ width: 1, height: 1 }}
-      />
     </div>
   );
 }
