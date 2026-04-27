@@ -1,0 +1,8 @@
+attached_assets/
+.local/
+artifacts/mockup-sandbox/
+artifacts/shepherds-path/
+artifacts/api-server/
+.migration-backup/
+node_modules/
+.git/
