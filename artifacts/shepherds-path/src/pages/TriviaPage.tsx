@@ -72,6 +72,11 @@ export default function TriviaPage() {
   const [copied, setCopied] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [playCount, setPlayCount] = useState(0);
+  const [myPlayCount, setMyPlayCount] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    return parseInt(localStorage.getItem("sp_trivia_plays") ?? "0", 10);
+  });
+  const isVeteran = myPlayCount >= 3;
   const [playerName, setPlayerName] = useState(() =>
     typeof window !== "undefined" ? (localStorage.getItem("sp_display_name") || "") : ""
   );
@@ -110,7 +115,7 @@ export default function TriviaPage() {
       const playData = await playRes.json().catch(() => ({ count: 0 }));
       if (playData.count) setPlayCount(playData.count);
       if (!data.questions?.length) throw new Error("No questions");
-      setQuestions(data.questions);
+      setQuestions(isVeteran ? data.questions : data.questions.slice(0, 5));
       setCurrentIdx(0);
       setAnswers([]);
       setSelectedAnswer(null);
@@ -143,6 +148,18 @@ export default function TriviaPage() {
       setAnswers(newAnswers);
       setPhase("results");
       if (!challengeId) createChallenge(newAnswers, score);
+      // Track per-user play count for feature gating
+      if (!challengeId) {
+        const newCount = myPlayCount + 1;
+        setMyPlayCount(newCount);
+        localStorage.setItem("sp_trivia_plays", String(newCount));
+        if (newCount === 3) {
+          setTimeout(() => toast({
+            title: "Full challenge unlocked!",
+            description: "You now get 10-question rounds and difficulty modes.",
+          }), 1200);
+        }
+      }
     } else {
       setAnswers(newAnswers);
       setCurrentIdx(currentIdx + 1);
@@ -250,35 +267,39 @@ export default function TriviaPage() {
                 <p className="text-[14px] text-muted-foreground mt-1">Test your knowledge. Challenge a friend to beat your score.</p>
               </div>
 
-              {/* ── Difficulty toggle ───────────────────────────── */}
-              <div className="flex rounded-xl border border-border bg-muted/40 p-1 mb-4 gap-1">
-                <button
-                  data-testid="btn-difficulty-standard"
-                  onClick={() => setDifficulty("standard")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
-                    difficulty === "standard"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  📖 Standard
-                </button>
-                <button
-                  data-testid="btn-difficulty-challenging"
-                  onClick={() => setDifficulty("challenging")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
-                    difficulty === "challenging"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  🔥 Challenging
-                </button>
-              </div>
-              {difficulty === "challenging" && (
-                <p className="text-[11px] text-muted-foreground/70 text-center -mt-2 mb-3">
-                  Specific chapters, numbers &amp; deeper knowledge
-                </p>
+              {/* ── Difficulty toggle — unlocked after 3 plays ──────── */}
+              {isVeteran && (
+                <>
+                  <div className="flex rounded-xl border border-border bg-muted/40 p-1 mb-4 gap-1">
+                    <button
+                      data-testid="btn-difficulty-standard"
+                      onClick={() => setDifficulty("standard")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+                        difficulty === "standard"
+                          ? "bg-background shadow-sm text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      📖 Standard
+                    </button>
+                    <button
+                      data-testid="btn-difficulty-challenging"
+                      onClick={() => setDifficulty("challenging")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+                        difficulty === "challenging"
+                          ? "bg-background shadow-sm text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      🔥 Challenging
+                    </button>
+                  </div>
+                  {difficulty === "challenging" && (
+                    <p className="text-[11px] text-muted-foreground/70 text-center -mt-2 mb-3">
+                      Specific chapters, numbers &amp; deeper knowledge
+                    </p>
+                  )}
+                </>
               )}
 
               <div className="grid grid-cols-2 gap-3">
@@ -295,12 +316,31 @@ export default function TriviaPage() {
                     <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${cat.from} ${cat.to}`} />
                     <span className="text-2xl leading-none mb-2 block">{cat.emoji}</span>
                     <p className="text-[13px] font-bold text-foreground leading-snug">{cat.label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">10 questions</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{isVeteran ? "10 questions" : "5 questions"}</p>
                   </motion.button>
                 ))}
               </div>
 
-              <p className="text-center text-[11px] text-muted-foreground mt-5">
+              {!isVeteran && (
+                <div className="mt-4 rounded-xl border border-border bg-muted/30 px-4 py-3 flex items-center gap-3">
+                  <div className="flex gap-1 shrink-0">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full transition-colors ${i < myPlayCount ? "bg-primary" : "bg-border"}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[12px] text-muted-foreground leading-snug">
+                    {myPlayCount === 0
+                      ? "Play 3 rounds to unlock 10-question challenges and difficulty modes"
+                      : myPlayCount === 1
+                      ? "2 more rounds to unlock the full challenge experience"
+                      : "1 more round to unlock 10-question challenges and difficulty modes"}
+                  </p>
+                </div>
+              )}
+              <p className="text-center text-[11px] text-muted-foreground mt-4">
                 Questions refresh weekly • All categories are free
               </p>
             </motion.div>
