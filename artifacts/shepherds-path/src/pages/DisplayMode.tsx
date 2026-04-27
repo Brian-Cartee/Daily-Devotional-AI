@@ -159,6 +159,16 @@ function gradientForSlide(type: SlideType): string {
 }
 
 function ProGate() {
+  const isOwnerMode = new URLSearchParams(window.location.search).get("owner") === "true";
+
+  const grantOwnerAccess = () => {
+    localStorage.setItem(
+      "sp_referral_pro_until",
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+    );
+    window.location.reload();
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0d0620] text-white px-8 text-center">
       <div className="mb-6 w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
@@ -186,6 +196,14 @@ function ProGate() {
           Back to Shepherd's Path
         </p>
       </Link>
+      {isOwnerMode && (
+        <button
+          onClick={grantOwnerAccess}
+          className="mt-8 px-5 py-2 rounded-full text-xs font-semibold border border-white/10 text-white/30 hover:text-white/60 hover:border-white/25 transition-colors"
+        >
+          Owner Preview Access
+        </button>
+      )}
       <p className="absolute bottom-6 text-white/15 text-xs tracking-widest uppercase">Shepherd's Path</p>
     </div>
   );
