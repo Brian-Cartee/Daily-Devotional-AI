@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "wouter";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -132,7 +134,42 @@ function gradientForSlide(type: SlideType): string {
   return "from-black via-black to-black";
 }
 
+function ProGate() {
+  return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0d0620] text-white px-8 text-center">
+      <div className="mb-6 w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+        </svg>
+      </div>
+      <p className="text-amber-400 uppercase tracking-widest text-xs font-semibold mb-3">Pro Feature</p>
+      <h1 className="text-3xl font-light mb-4" style={{ fontFamily: "Lora, Georgia, serif" }}>
+        Scripture Display Mode
+      </h1>
+      <p className="text-white/60 text-base max-w-sm leading-relaxed mb-8">
+        Daily AI-generated devotional art with scripture, reflection, and prayer — designed for any screen in your home.
+      </p>
+      <Link href="/pricing">
+        <button
+          className="px-8 py-3 rounded-full text-sm font-semibold bg-amber-500 text-black hover:bg-amber-400 transition-colors"
+          data-testid="btn-display-upgrade"
+        >
+          Upgrade to Pro
+        </button>
+      </Link>
+      <Link href="/">
+        <p className="mt-4 text-white/30 text-xs hover:text-white/60 transition-colors cursor-pointer">
+          Back to Shepherd's Path
+        </p>
+      </Link>
+      <p className="absolute bottom-6 text-white/15 text-xs tracking-widest uppercase">Shepherd's Path</p>
+    </div>
+  );
+}
+
 export default function DisplayMode() {
+  const isPro = isProVerifiedLocally();
+
   const [art, setArt] = useState<DailyArt | null>(null);
   const [prayer, setPrayer] = useState<string>("");
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -246,6 +283,8 @@ export default function DisplayMode() {
     advance();
     resetUI();
   };
+
+  if (!isPro) return <ProGate />;
 
   const currentSlide = slides[index] ?? null;
   const gradient = currentSlide ? gradientForSlide(currentSlide.type) : "from-[#0a0415] to-black";

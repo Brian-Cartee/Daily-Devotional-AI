@@ -16,6 +16,7 @@ import Stripe from "stripe";
 import webpush from "web-push";
 import twilio from "twilio";
 import { getTodayVerseFromSheet, getRawSheetRows } from "../googleSheets";
+import { generateImageBuffer } from "../replit_integrations/image/client";
 import { updateMemory, getMemoryContext, buildMemoryPromptNote } from "../lib/userMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
@@ -2393,6 +2394,23 @@ Return JSON: { "action": "...", "scripture": "..." }`
     { scripture: "The eternal God is your refuge, and underneath are the everlasting arms.", reference: "Deuteronomy 33:27", reflection: "You cannot fall further than His arms reach.", query: "vast Grand Canyon sunrise ancient rock golden shadows" },
   ];
 
+  /**
+   * Build a rich cinematic prompt for gpt-image-1 daily devotional art.
+   * Produces painterly, gallery-quality landscape images with divine light and no text.
+   */
+  function buildDailyArtPrompt(scripture: string, reference: string, visualTheme: string): string {
+    return [
+      `Breathtaking devotional artwork: ${visualTheme}.`,
+      `Inspired by the scripture "${scripture}" (${reference}).`,
+      `Style: cinematic oil painting meets fine art photography — luminous, painterly brushwork with photorealistic detail.`,
+      `Lighting: warm divine golden light, god rays, ethereal glow that suggests transcendence and peace.`,
+      `Mood: deeply contemplative, sacred, emotionally moving — the kind of image that stops a viewer in silence.`,
+      `Composition: wide landscape format, rule-of-thirds, leading lines drawing the eye toward the light source.`,
+      `No people, no text, no watermarks, no logos, no borders.`,
+      `Museum quality. Award-winning nature and spiritual photography. 16:9 aspect ratio.`,
+    ].join(" ");
+  }
+
   async function fetchUnsplashPhoto(query: string): Promise<string | null> {
     const key = process.env.UNSPLASH_ACCESS_KEY;
     if (!key) return null;
@@ -2461,25 +2479,35 @@ Return JSON: { "action": "...", "scripture": "..." }`
         return res.json({ imageUrl: null, ...meta });
       }
 
-      // Fetch photo — Unsplash first, Pexels as fallback
-      let photoUrl = await fetchUnsplashPhoto(query);
-      if (!photoUrl) photoUrl = await fetchPexelsPhoto(query);
+      // Generate with gpt-image-1 (highest quality) — fallback to stock photos
+      let imgBuffer: Buffer | null = null;
+      try {
+        const aiPrompt = buildDailyArtPrompt(scriptureData.scripture, scriptureData.reference, query);
+        console.log("[daily-art] Generating AI image with gpt-image-1...");
+        imgBuffer = await generateImageBuffer(aiPrompt, "1536x1024", "high");
+        console.log("[daily-art] AI image generated successfully.");
+      } catch (aiErr) {
+        console.warn("[daily-art] AI generation failed, falling back to stock photo:", aiErr);
+        // Fallback: try Unsplash then Pexels
+        let photoUrl = await fetchUnsplashPhoto(query);
+        if (!photoUrl) photoUrl = await fetchPexelsPhoto(query);
+        if (photoUrl) {
+          const imgRes = await fetch(photoUrl);
+          if (imgRes.ok) imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+        }
+      }
 
-      if (!photoUrl) {
-        // Both APIs unavailable — return text-only fallback
+      if (!imgBuffer) {
+        // No image available — return text-only
         fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
         return res.json({ imageUrl: null, ...scriptureData });
       }
 
-      // Download and cache the image
-      const imgRes = await fetch(photoUrl);
-      if (!imgRes.ok) throw new Error(`Photo download failed: ${imgRes.status}`);
-      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
       fs.writeFileSync(imgFile, imgBuffer);
 
-      // Compress to mobile-friendly size
+      // Compress to web-friendly size if ImageMagick available
       try {
-        execSync(`magick "${imgFile}" -resize 900x -quality 78 -strip "${imgFile}"`, { timeout: 15000 });
+        execSync(`magick "${imgFile}" -resize 1536x -quality 85 -strip "${imgFile}"`, { timeout: 20000 });
       } catch { /* keep original if ImageMagick unavailable */ }
 
       fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
