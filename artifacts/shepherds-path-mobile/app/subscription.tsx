@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -32,10 +32,22 @@ export default function SubscriptionScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { offerings, isSubscribed, purchase, isPurchasing, restore, isRestoring } = useSubscription();
+  const { offerings, isSubscribed, purchase, isPurchasing, restore, isRestoring, isLoading } = useSubscription();
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
   const [confirmPkg, setConfirmPkg] = useState<PurchasesPackage | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isLoading) {
+      timeoutRef.current = setTimeout(() => setLoadTimedOut(true), 12000);
+    } else {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setLoadTimedOut(false);
+    }
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [isLoading]);
 
   const packages = offerings?.current?.availablePackages ?? [];
   const monthlyPkg = packages.find((p) => p.packageType === "MONTHLY" || p.identifier === "$rc_monthly");
@@ -127,7 +139,20 @@ export default function SubscriptionScreen() {
       <Text style={styles.planHeader}>Choose your plan</Text>
 
       {packages.length === 0 ? (
-        <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        loadTimedOut ? (
+          <View style={styles.offlineCard}>
+            <Feather name="wifi-off" size={28} color={colors.mutedForeground} />
+            <Text style={styles.offlineTitle}>Plans Unavailable</Text>
+            <Text style={styles.offlineBody}>
+              We could not load subscription options. Please check your connection and try again.
+            </Text>
+            <TouchableOpacity style={[styles.ctaBtn, { marginTop: 8, marginBottom: 0 }]} onPress={() => { setLoadTimedOut(false); }}>
+              <Text style={styles.ctaBtnText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        )
       ) : (
         <View style={styles.plans}>
           {annualPkg && (
@@ -330,6 +355,18 @@ function makeStyles(colors: any, insets: any) {
     alreadySubtitle: { fontSize: 15, color: colors.mutedForeground, fontFamily: "Inter_400Regular", textAlign: "center" },
     backBtn: { backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 },
     backBtnText: { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold", fontSize: 15 },
+    offlineCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 20,
+      alignItems: "center",
+      gap: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 20,
+    },
+    offlineTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: colors.foreground },
+    offlineBody: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 20 },
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.6)",
