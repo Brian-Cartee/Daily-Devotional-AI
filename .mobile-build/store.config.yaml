@@ -1,0 +1,88 @@
+# EAS Metadata — used by `eas metadata:push` to populate the App Store listing.
+# Run: eas metadata:push --profile production
+#
+# SCREENSHOTS
+# All screenshots are stored in store-assets/screenshots/:
+#   6.9/  → iPhone 16 Pro Max (1320×2868 px)  — PRIMARY required size (App Store)
+#   6.5/  → iPhone 14 Plus    (1242×2688 px)  — secondary (ASC can inherit from 6.9")
+#   6.7/  → iPhone 15 Pro Max (1290×2796 px)  — kept as backup / legacy
+#
+# Screenshots must be uploaded manually via App Store Connect:
+#   1. Log in → Apps → Shepherd's Path → Distribution tab → App Store tab
+#   2. Click "Media Manager" (or scroll to "App Previews and Screenshots")
+#   3. Under "iPhone 6.9" Display" upload all five shots from store-assets/screenshots/6.9/
+#   4. The 6.5" slot can be left to inherit, or upload the 6.5/ folder shots separately
+#
+# Order: 01-home · 02-devotional · 03-prayer · 04-guidance · 05-pro
+#
+# BEFORE SUBMITTING — replace every placeholder marked with TODO:
+#   - YOUR_DOMAIN  →  your live domain (e.g. shepherdspath.app)
+#   - YOUR_EMAIL   →  App Review contact email
+#   - First/Last   →  App Review contact name
+#   - +1-555-…     →  App Review contact phone number
+
+configVersion: 0
+apple:
+  info:
+    en-US:
+      title: "Shepherd's Path"
+      subtitle: "Daily Faith & Devotionals"
+      description: |
+        Shepherd's Path is your daily companion for growing deeper in faith.
+        Start every morning with a hand-curated devotional, guided prayer, and a
+        verse to carry with you through the day. When you need to dig deeper,
+        our AI-powered Bible study companion meets you right where you are —
+        answering questions, surfacing context, and making Scripture come alive.
+
+        FEATURES
+        • Daily Devotionals – Fresh, faith-filled readings every morning with
+          scripture, reflection, and a closing prayer.
+        • AI Bible Study – Ask any question about a passage, character, or theme
+          and receive thoughtful, contextually rich answers drawn from Scripture.
+        • Community Prayer Wall – Share prayer requests and lift up others in
+          your community, knowing you are never praying alone.
+        • Verse Memorization – Save and review your favourite verses with a
+          clean, distraction-free reader.
+        • Scripture Reminders – Receive a daily push notification with an
+          encouraging verse to anchor your morning.
+
+        PRO MEMBERSHIP
+        Unlock unlimited access to every feature with a Shepherd's Path Pro
+        subscription. Choose monthly or annual billing — cancel anytime from
+        your App Store settings. Subscription auto-renews unless cancelled at
+        least 24 hours before the end of the current period.
+
+        Privacy Policy: https://shepherdspathai.com/privacy
+        Terms of Service: https://shepherdspathai.com/terms
+      keywords:
+        - Bible
+        - devotional
+        - prayer
+        - faith
+        - Christian
+        - scripture
+        - Bible study
+        - daily devotional
+        - worship
+        - spiritual growth
+      releaseNotes: "Initial release of Shepherd's Path — daily devotionals, AI Bible study, and community prayer."
+      marketingUrl: "https://shepherdspathai.com"
+      supportUrl: "https://shepherdspathai.com/support"
+      privacyPolicyUrl: "https://shepherdspathai.com/privacy"
+  categories:
+    primary: LIFESTYLE
+    secondary: BOOKS
+  review:
+    firstName: "Brian"
+    lastName: "Cartee"
+    phoneNumber: "+1-404-988-9512"
+    email: "briancartee@gmail.com"
+    notes: |
+      This app includes in-app purchases (monthly and annual Pro subscriptions).
+      RevenueCat is used to manage subscriptions. Apple IAP sandbox testing can
+      be performed using an Apple sandbox test account. The subscription products
+      are configured in App Store Connect under In-App Purchases and synced via
+      RevenueCat.
+
+      There is no login wall — all free features are accessible without an account.
+      Pro features unlock after a successful subscription purchase.

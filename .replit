@@ -24,12 +24,12 @@ args = "Build iOS App (v1.4)"
 name = "Build iOS App (v1.4)"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd artifacts/shepherds-path-mobile && EXPO_TOKEN=$EXPO_TOKEN npx eas-cli build --platform ios --profile production --non-interactive"
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace/.mobile-build && EXPO_TOKEN=$EXPO_TOKEN npx eas-cli build --platform ios --profile production --non-interactive"
 
 [agent]
 stack = "PNPM_WORKSPACE"

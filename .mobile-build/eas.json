@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_fznKTWBRurIjZrjtAyyvVqVpZBL"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6760953522",
+        "ascApiKeyIssuerId": "2787b8ca-4e36-4112-9a35-875f90ed0169",
+        "ascApiKeyId": "3DD2747FYX",
+        "ascApiKeyPath": "/tmp/asc-key/AuthKey_3DD2747FYX.p8"
+      }
+    }
+  }
+}
