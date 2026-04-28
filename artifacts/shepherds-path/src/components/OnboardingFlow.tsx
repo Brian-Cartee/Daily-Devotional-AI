@@ -112,8 +112,16 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         ].join(", "),
       }}
     >
+      {/* App name — top center */}
+      <p
+        className="absolute top-0 left-0 right-0 text-center z-10 text-[11px] font-semibold tracking-[0.26em] uppercase pt-14"
+        style={{ color: "rgba(255,255,255,0.52)" }}
+      >
+        Shepherd&rsquo;s Path
+      </p>
+
       {/* Progress dots */}
-      <div className="absolute top-0 left-0 right-0 flex justify-center gap-1.5 pt-14 pointer-events-none z-10">
+      <div className="absolute top-0 left-0 right-0 flex justify-center gap-1.5 pt-[84px] pointer-events-none z-10">
         {SCREENS.map((_, i) => (
           <motion.div
             key={i}
@@ -130,14 +138,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           />
         ))}
       </div>
-
-      {/* App name — top left */}
-      <p
-        className="absolute top-14 left-6 z-10 text-[10px] font-semibold tracking-[0.22em] uppercase"
-        style={{ color: "rgba(255,255,255,0.28)" }}
-      >
-        Shepherd&rsquo;s Path
-      </p>
 
       {/* Skip button — top right — visible from screen 3 onward */}
       <AnimatePresence>
