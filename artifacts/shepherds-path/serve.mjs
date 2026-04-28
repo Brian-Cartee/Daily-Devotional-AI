@@ -4,8 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT;
-if (!PORT) throw new Error("PORT environment variable is required");
+const PORT = process.env.PORT || "3000";
 
 const distDir = path.join(__dirname, "dist/public");
 const indexPath = path.join(distDir, "index.html");
