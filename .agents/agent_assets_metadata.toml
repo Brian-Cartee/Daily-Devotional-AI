@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "bw05aehi6fiqcpdDEoGR2"
+uri = "file://attached_assets/shepherds_path_icon.png"
+type = "image"
+title = "shepherds path app icon"
 
 [[outputs]]
 id = "xD8IfzztyMqjXghYxdsjb"
@@ -102,3 +107,9 @@ id = "l5TG_LSB7qJSY4upE-ny8"
 uri = "file://AuthKey_3DD2747FYX.tar.gz"
 type = "unspecified"
 title = "App Store Connect API Key"
+
+[[outputs]]
+id = "7keXNDoM2YJflqiS3eUSX"
+uri = "file://attached_assets/shepherds_path_icon.png"
+type = "image"
+title = "Shepherd's Path App Icon"
