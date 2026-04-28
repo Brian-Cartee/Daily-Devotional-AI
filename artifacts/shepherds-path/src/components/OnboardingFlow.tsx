@@ -251,8 +251,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
       {/* Subtle bottom attribution */}
       <p
-        className="absolute bottom-8 left-0 right-0 text-center text-[10px] tracking-[0.16em] uppercase z-10"
-        style={{ color: "rgba(255,255,255,0.18)" }}
+        className="absolute bottom-8 left-0 right-0 text-center text-[11px] tracking-[0.16em] uppercase z-10"
+        style={{ color: "rgba(255,255,255,0.55)" }}
       >
         ✝ Rooted in Scripture
       </p>
