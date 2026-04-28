@@ -44,6 +44,26 @@ function ImageSlide({ slide }: { slide: Slide }) {
   );
 }
 
+// On iOS/mobile: navigator.share opens the native share sheet (AirPlay is right there).
+// On desktop: show a minimal copy-link modal.
+async function triggerCast(onShowModal: () => void) {
+  const fullUrl = "https://" + DISPLAY_URL;
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Shepherd's Path · Display Mode",
+        text: "Daily devotional art, rotating on any screen.",
+        url: fullUrl,
+      });
+    } catch (err) {
+      // AbortError = user cancelled — that's fine, no fallback needed
+      if ((err as Error).name !== "AbortError") onShowModal();
+    }
+  } else {
+    onShowModal();
+  }
+}
+
 function CastModal({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
 
@@ -52,9 +72,7 @@ function CastModal({ onClose }: { onClose: () => void }) {
       await navigator.clipboard.writeText("https://" + DISPLAY_URL);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopied(false);
-    }
+    } catch { setCopied(false); }
   };
 
   return (
@@ -74,10 +92,7 @@ function CastModal({ onClose }: { onClose: () => void }) {
         className="w-full max-w-sm rounded-2xl p-6 text-center"
         style={{ background: "rgba(15,6,32,0.97)", border: "1px solid rgba(255,255,255,0.12)" }}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors"
-        >
+        <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors">
           <X className="w-4 h-4" />
         </button>
 
@@ -86,18 +101,16 @@ function CastModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <h2 className="text-white text-lg font-semibold mb-1">Cast to your screen</h2>
-        <p className="text-white/50 text-sm mb-6 leading-relaxed">
-          Open this link on any TV, monitor, or smart display
+        <p className="text-white/50 text-sm mb-5 leading-relaxed">
+          Open this link in any browser — on your TV, Mac, or Chromecast
         </p>
 
-        {/* URL display + copy */}
+        {/* URL + copy */}
         <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl mb-4"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl mb-5"
           style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
         >
-          <span className="text-white/70 text-sm flex-1 text-left font-mono truncate">
-            {DISPLAY_URL}
-          </span>
+          <span className="text-white/70 text-sm flex-1 text-left font-mono truncate">{DISPLAY_URL}</span>
           <button
             onClick={copyUrl}
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
@@ -108,19 +121,19 @@ function CastModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* Instructions */}
+        {/* Desktop-only tips */}
         <div className="text-left space-y-3">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">How to display</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mb-2">Tips</p>
           {[
-            { step: "iPhone / iPad", desc: "Swipe down → Screen Mirror → pick your Apple TV or AirPlay display" },
-            { step: "Smart TV", desc: "Open the browser on your TV and go to shepherdspathai.com/display" },
-            { step: "Chromecast / Mac", desc: "Use Chrome → Cast tab to your TV or second monitor" },
+            { step: "Chromecast", desc: "In Chrome: menu → Cast → cast this tab to your TV" },
+            { step: "Smart TV browser", desc: "Open shepherdspathai.com/display directly on your TV" },
+            { step: "Second monitor", desc: "Drag the browser window to your other screen and go full screen" },
           ].map(({ step, desc }) => (
             <div key={step} className="flex gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400/50 mt-1.5 flex-shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400/40 mt-1.5 flex-shrink-0" />
               <div>
-                <p className="text-white/70 text-xs font-semibold">{step}</p>
-                <p className="text-white/35 text-xs leading-snug">{desc}</p>
+                <p className="text-white/65 text-xs font-semibold">{step}</p>
+                <p className="text-white/30 text-xs leading-snug">{desc}</p>
               </div>
             </div>
           ))}
@@ -399,7 +412,7 @@ export default function DisplayMode() {
               {/* Cast button */}
               <button
                 className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/40 hover:text-white/70 hover:border-white/20 transition-colors"
-                onClick={e => { e.stopPropagation(); setShowCast(true); resetUI(); }}
+                onClick={e => { e.stopPropagation(); resetUI(); triggerCast(() => setShowCast(true)); }}
                 data-testid="btn-cast-display"
               >
                 <Tv className="w-3 h-3" />
