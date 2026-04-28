@@ -1334,34 +1334,6 @@ export default function LandingHome() {
             <DailyArtCard />
           </div>
 
-          {/* ── Scripture Display Mode — TV / ambient screen entry ── */}
-          <Link href="/display">
-            <div
-              data-testid="card-display-mode-entry"
-              className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
-              style={{
-                background: "linear-gradient(130deg, hsl(280 40% 8%), hsl(260 30% 12%))",
-                border: "1px solid rgba(167,139,250,0.18)",
-              }}
-            >
-              <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(167,139,250,0.5), transparent)" }} />
-              <div className="px-5 py-4 flex items-center gap-4">
-                <div
-                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.22)" }}
-                >
-                  <Monitor className="w-5 h-5 text-violet-300/80" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-violet-400/60 mb-0.5">Pro Feature</p>
-                  <p className="text-[16px] font-bold text-white leading-tight">Scripture Display Mode</p>
-                  <p className="text-[11px] text-white/40 mt-0.5">Cast to your TV · Ambient devotional screen</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-violet-400/50 flex-shrink-0" />
-              </div>
-            </div>
-          </Link>
-
           {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}
           {new Date().getHours() >= 17 && <Link href="/alignment">
             <div
