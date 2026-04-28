@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
-import { saveMoment, removeMoment, isMomentSaved, updateMomentNote } from "@/lib/moments";
+import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments } from "@/lib/moments";
 
 interface DailyArt {
   imageUrl: string | null;
@@ -71,20 +71,29 @@ export function DailyArtCard() {
       removeMoment(date);
       setSaved(false);
     } else {
+      const isFirst = getMoments().length === 0;
       saveMoment({ date, verse: art.scripture, reference: art.reference, imageUrl: art.imageUrl ?? null });
       setSaved(true);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
       if (!expanded) setExpanded(true);
+      if (isFirst) window.dispatchEvent(new Event("sp-first-moment-saved"));
     }
   };
+
+  const noteNudgeFiredRef = useRef(false);
 
   const handleNoteChange = (val: string) => {
     setNote(val);
     if (noteTimer.current) clearTimeout(noteTimer.current);
     noteTimer.current = setTimeout(() => {
       updateMomentNote(todayKey(), val);
-    }, 600);
+      // Fire deep nudge once the note has substance
+      if (!noteNudgeFiredRef.current && val.trim().length >= 20) {
+        noteNudgeFiredRef.current = true;
+        window.dispatchEvent(new Event("sp-journal-note-written"));
+      }
+    }, 800);
   };
 
   useEffect(() => {

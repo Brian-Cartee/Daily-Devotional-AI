@@ -38,6 +38,7 @@ import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlo
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { GoDeepCard } from "@/components/AdditionalSermonsSection";
+import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -819,6 +820,8 @@ export default function LandingHome() {
         {showWelcome && !showOnboarding && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       {showEntryScreen && !showOnboarding && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      <SimpleNotifNudge />
+      <DeepNotifNudge />
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
