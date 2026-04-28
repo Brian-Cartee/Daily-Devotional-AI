@@ -4,4 +4,5 @@
 ../../dist/
 ../../artifacts/shepherds-path/
 ../../artifacts/api-server/
+../server/verse-art-cache/
 node_modules/
