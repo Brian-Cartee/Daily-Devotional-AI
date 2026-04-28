@@ -37,6 +37,7 @@ import PrayerWallPage from "@/pages/PrayerWallPage";
 import GreatestGiftPage from "@/pages/GreatestGiftPage";
 import SupportPage from "@/pages/SupportPage";
 import HowToUsePage from "@/pages/HowToUsePage";
+import FeedbackPage from "@/pages/FeedbackPage";
 import TriviaPage from "@/pages/TriviaPage";
 // import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
@@ -118,6 +119,7 @@ function Router() {
       <Route path="/greatest-gift" component={GreatestGiftPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/how-to-use" component={HowToUsePage} />
+      <Route path="/feedback" component={FeedbackPage} />
       <Route path="/trivia" component={TriviaPage} />
       <Route path="/trivia/:id" component={TriviaPage} />
       {/* <Route path="/sms" component={SmsPage} /> */}

@@ -392,3 +392,49 @@ export const prayerRecordings = pgTable("prayer_recordings", {
 
 export type PrayerRecording = typeof prayerRecordings.$inferSelect;
 export type InsertPrayerRecording = typeof prayerRecordings.$inferInsert;
+
+// ── AI Usage Logs (persistent, per-session feature tracking) ─────────────────
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  feature: text("feature").notNull(), // "passage_chat" | "guidance" | "verse_prayer" | "life_season"
+  platform: text("platform").default("web").notNull(), // "web" | "mobile"
+  daysWithApp: integer("days_with_app").default(0).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+export type InsertAiUsageLog = typeof aiUsageLogs.$inferInsert;
+
+// ── Beta Feedback ─────────────────────────────────────────────────────────────
+export const betaFeedback = pgTable("beta_feedback", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  name: text("name"),
+  email: text("email"),
+  overallRating: integer("overall_rating").notNull(), // 1-5
+  favoriteFeature: text("favorite_feature"),
+  improvementArea: text("improvement_area"),
+  suggestions: text("suggestions"),
+  wouldRecommend: boolean("would_recommend"),
+  platform: text("platform").default("web").notNull(),
+  submittedAt: timestamp("submitted_at").default(sql`now()`).notNull(),
+});
+
+export const insertBetaFeedbackSchema = createInsertSchema(betaFeedback).omit({
+  id: true,
+  submittedAt: true,
+}).extend({
+  sessionId: z.string().min(1),
+  overallRating: z.number().int().min(1).max(5),
+  name: z.string().max(80).optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  favoriteFeature: z.string().max(500).optional(),
+  improvementArea: z.string().max(500).optional(),
+  suggestions: z.string().max(2000).optional(),
+  wouldRecommend: z.boolean().optional(),
+  platform: z.enum(["web", "mobile"]).optional().default("web"),
+});
+
+export type BetaFeedback = typeof betaFeedback.$inferSelect;
+export type InsertBetaFeedback = z.infer<typeof insertBetaFeedbackSchema>;

@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken } from "@workspace/db";
-import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr } from "drizzle-orm";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback } from "@workspace/db";
+import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr, count, gte } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
@@ -65,6 +65,12 @@ export interface IStorage {
   upsertExpoPushToken(sessionId: string, token: string, hour: number, minute: number): Promise<ExpoPushToken>;
   deleteExpoPushToken(sessionId: string): Promise<void>;
   getExpoPushTokensForHourMinute(hour: number, minute: number): Promise<ExpoPushToken[]>;
+  logAiUsage(data: InsertAiUsageLog): Promise<void>;
+  getAiUsageLogs(limit?: number): Promise<AiUsageLog[]>;
+  getAiUsageBySession(sessionId: string): Promise<AiUsageLog[]>;
+  getAiUsageSummary(): Promise<{ feature: string; count: number }[]>;
+  submitBetaFeedback(data: InsertBetaFeedback): Promise<BetaFeedback>;
+  getAllBetaFeedback(): Promise<BetaFeedback[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -555,6 +561,35 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(expoPushTokens)
       .where(and(eq(expoPushTokens.hour, hour), eq(expoPushTokens.minute, minute), eq(expoPushTokens.enabled, true)));
+  }
+
+  async logAiUsage(data: InsertAiUsageLog): Promise<void> {
+    await db.insert(aiUsageLogs).values(data);
+  }
+
+  async getAiUsageLogs(limit = 500): Promise<AiUsageLog[]> {
+    return db.select().from(aiUsageLogs).orderBy(desc(aiUsageLogs.createdAt)).limit(limit);
+  }
+
+  async getAiUsageBySession(sessionId: string): Promise<AiUsageLog[]> {
+    return db.select().from(aiUsageLogs).where(eq(aiUsageLogs.sessionId, sessionId)).orderBy(desc(aiUsageLogs.createdAt));
+  }
+
+  async getAiUsageSummary(): Promise<{ feature: string; count: number }[]> {
+    const rows = await db
+      .select({ feature: aiUsageLogs.feature, count: count() })
+      .from(aiUsageLogs)
+      .groupBy(aiUsageLogs.feature);
+    return rows.map(r => ({ feature: r.feature, count: Number(r.count) }));
+  }
+
+  async submitBetaFeedback(data: InsertBetaFeedback): Promise<BetaFeedback> {
+    const [row] = await db.insert(betaFeedback).values(data).returning();
+    return row;
+  }
+
+  async getAllBetaFeedback(): Promise<BetaFeedback[]> {
+    return db.select().from(betaFeedback).orderBy(desc(betaFeedback.submittedAt));
   }
 }
 

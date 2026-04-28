@@ -1671,9 +1671,13 @@ export default function LandingHome() {
           </div>
 
           {/* Contact + Share — inline row */}
-          <div className="flex items-center justify-center gap-5 text-xs text-foreground/55 mb-1">
+          <div className="flex items-center justify-center gap-4 flex-wrap text-xs text-foreground/55 mb-1">
             <Link href="/support" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
               Contact Support
+            </Link>
+            <span className="text-border/60">·</span>
+            <Link href="/feedback" className="hover:text-foreground transition-colors font-medium" data-testid="link-feedback-footer">
+              Share Feedback
             </Link>
             <span className="text-border/60">·</span>
             <button

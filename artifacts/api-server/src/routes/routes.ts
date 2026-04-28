@@ -8,7 +8,7 @@ import { Readable } from "stream";
 import { storage } from "../storage";
 import { db } from "../db";
 import { api, chatRequestSchema, type ChatMessage } from "../sharedRoutes";
-import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema } from "@workspace/db";
+import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema, insertBetaFeedbackSchema } from "@workspace/db";
 import { z } from "zod";
 import OpenAI from "openai";
 import multer from "multer";
@@ -1414,6 +1414,7 @@ What you never do:
     if (passageSessionId && isRateLimited(`daily:${passageSessionId}`, getDailyLimit(passageDaysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
+    if (passageSessionId) storage.logAiUsage({ sessionId: passageSessionId, feature: "passage_chat", daysWithApp: passageDaysWithApp, platform: "web" }).catch(() => {});
 
     const langInstruction: Record<string, string> = {
       es: "Respond entirely in Spanish (Español).",
@@ -1898,6 +1899,7 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     if (sessionId && isRateLimited(`daily:${sessionId}`, getDailyLimit(daysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
+    if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => {});
 
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -2168,6 +2170,7 @@ Rules:
     if (sid && isRateLimited(`daily:${sid}`, getDailyLimit(vpDaysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
+    if (sid) storage.logAiUsage({ sessionId: sid, feature: "verse_prayer", daysWithApp: vpDaysWithApp, platform: "web" }).catch(() => {});
     if (detectCrisis(situation)) {
       return res.json({ verse: "", prayer: CRISIS_RESPONSE });
     }
@@ -2590,6 +2593,7 @@ Return JSON: { "action": "...", "scripture": "..." }`
     if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, getDailyLimit(journeyDaysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
+    if (sessionIdJourney) storage.logAiUsage({ sessionId: sessionIdJourney, feature: "life_season", daysWithApp: journeyDaysWithApp, platform: "web" }).catch(() => {});
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.write(CRISIS_RESPONSE);
@@ -3815,6 +3819,19 @@ ${historyNote}`;
     res.json({ count: triviaPlayCounts.get(todayKey()) ?? 0 });
   });
 
+  // ── Beta Feedback (public) ────────────────────────────────────────────────
+  app.post("/api/feedback", async (req, res) => {
+    const parsed = insertBetaFeedbackSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid feedback data", errors: parsed.error.issues });
+    try {
+      const result = await storage.submitBetaFeedback(parsed.data);
+      res.json({ ok: true, id: result.id });
+    } catch (err) {
+      console.error("[feedback] error:", err);
+      res.status(500).json({ message: "Failed to save feedback" });
+    }
+  });
+
   // ── Admin endpoints ────────────────────────────────────────────────────────
   function adminAuth(req: any, res: any): boolean {
     const password = process.env.ADMIN_PASSWORD;
@@ -3905,6 +3922,31 @@ ${historyNote}`;
     } catch (err) {
       console.error("[admin] analytics error:", err);
       res.status(500).json({ message: "Failed to load analytics." });
+    }
+  });
+
+  app.get("/api/admin/feedback", async (req, res) => {
+    if (!adminAuth(req, res)) return;
+    try {
+      const feedback = await storage.getAllBetaFeedback();
+      res.json({ feedback });
+    } catch (err) {
+      console.error("[admin] feedback error:", err);
+      res.status(500).json({ message: "Failed to load feedback." });
+    }
+  });
+
+  app.get("/api/admin/ai-usage", async (req, res) => {
+    if (!adminAuth(req, res)) return;
+    try {
+      const [logs, summary] = await Promise.all([
+        storage.getAiUsageLogs(1000),
+        storage.getAiUsageSummary(),
+      ]);
+      res.json({ logs, summary });
+    } catch (err) {
+      console.error("[admin] ai-usage error:", err);
+      res.status(500).json({ message: "Failed to load AI usage." });
     }
   });
 
