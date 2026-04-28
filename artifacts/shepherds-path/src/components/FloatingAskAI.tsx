@@ -285,13 +285,13 @@ export function FloatingAskAI() {
                           ? "rgba(220,38,38,0.12)"
                           : usage.remaining <= 4
                           ? "rgba(217,119,6,0.12)"
-                          : "rgba(255,255,255,0.07)",
+                          : "rgba(122,1,141,0.15)",
                         border: `1px solid ${
                           usage.remaining <= 2
                             ? "rgba(220,38,38,0.25)"
                             : usage.remaining <= 4
                             ? "rgba(217,119,6,0.25)"
-                            : "rgba(255,255,255,0.12)"
+                            : "rgba(122,1,141,0.35)"
                         }`,
                       }}
                     >
@@ -302,7 +302,7 @@ export function FloatingAskAI() {
                             ? "rgba(248,113,113,0.9)"
                             : usage.remaining <= 4
                             ? "rgba(251,191,36,0.85)"
-                            : "rgba(255,255,255,0.55)",
+                            : "rgba(200,150,215,0.9)",
                         }}
                       >
                         {usage.remaining} of {usage.limit} left today
