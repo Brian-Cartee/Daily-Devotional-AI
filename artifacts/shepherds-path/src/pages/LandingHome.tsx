@@ -1665,9 +1665,6 @@ export default function LandingHome() {
             <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
               Terms
             </Link>
-            <Link href="/display" className="hover:text-foreground transition-colors col-span-2" data-testid="link-display-footer">
-              Scripture Display Mode
-            </Link>
           </div>
 
           {/* Contact + Share — inline row */}
