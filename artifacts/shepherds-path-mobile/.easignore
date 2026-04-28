@@ -1,4 +1,7 @@
 ../../attached_assets/
 ../../.local/
 ../../.migration-backup/
+../../dist/
+../../artifacts/shepherds-path/
+../../artifacts/api-server/
 node_modules/
