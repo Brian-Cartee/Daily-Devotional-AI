@@ -619,20 +619,20 @@ function ClosingManifesto() {
 
         {/* The three lines — ascending scale, each one landing harder */}
         <p
-          className="text-[24px] leading-snug mb-3 text-white/90"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
+          className="text-[26px] leading-snug mb-3 text-white/90"
+          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
         >
           The path is here.
         </p>
         <p
-          className="text-[28px] leading-snug mb-4 text-white/88"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}
+          className="text-[30px] leading-snug mb-4 text-white/95"
+          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
         >
           Start where you are.
         </p>
         <p
-          className="text-[36px] leading-tight text-white"
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", textShadow: "0 2px 24px rgba(139,92,246,0.65)" }}
+          className="text-[40px] leading-tight text-white"
+          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500, textShadow: "0 2px 24px rgba(139,92,246,0.65)" }}
         >
           Walking it is up to you.
         </p>
