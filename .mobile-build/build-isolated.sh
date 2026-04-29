@@ -4,6 +4,17 @@ set -e
 SRC="/home/runner/workspace/.mobile-build"
 BUILD_DIR="/tmp/eas-isolated-build"
 
+echo "=== Pre-build: Verifying API connectivity ==="
+if curl -sf --max-time 10 "https://shepherdspathai.com/api/bible" > /dev/null; then
+  echo "✓ API reachable at https://shepherdspathai.com"
+else
+  echo ""
+  echo "ERROR: Cannot reach https://shepherdspathai.com/api/bible"
+  echo "The production server is not responding. Aborting build."
+  echo "Fix the server issue before submitting a new build to Apple."
+  exit 1
+fi
+
 echo "=== Cleaning old build dir ==="
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
