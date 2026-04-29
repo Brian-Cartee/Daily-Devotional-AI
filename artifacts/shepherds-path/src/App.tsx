@@ -141,6 +141,18 @@ function Router() {
   );
 }
 
+function BrandedDomainRedirect() {
+  useEffect(() => {
+    const host = window.location.hostname;
+    if (host === "daily-devotional-ai.replit.app") {
+      window.location.replace(
+        "https://shepherdspathai.com" + window.location.pathname + window.location.search
+      );
+    }
+  }, []);
+  return null;
+}
+
 function App() {
   const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
 
@@ -159,6 +171,7 @@ function App() {
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <DemoProvider>
                 <Toaster />
+                <BrandedDomainRedirect />
                 <ScrollToTop />
                 <ReferralCapture />
                 <Router />
