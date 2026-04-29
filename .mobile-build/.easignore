@@ -5,8 +5,10 @@
 ../../artifacts/shepherds-path/
 ../../artifacts/api-server/
 ../../server/verse-art-cache/
+../../server/tts-cache/
 ../../screenshots/
 ../attached_assets/
 ../server/verse-art-cache/
+../server/tts-cache/
 ../screenshots/
 node_modules/
