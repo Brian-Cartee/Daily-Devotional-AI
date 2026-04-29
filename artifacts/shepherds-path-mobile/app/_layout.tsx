@@ -53,7 +53,7 @@ async function rescheduleNotifications() {
   } catch {}
 }
 
-const API_HEALTH_URL = "https://shepherdspathai.com/api/bible";
+const API_HEALTH_URL = "https://www.shepherdspathai.com/api/daily-art";
 const HEALTH_CHECK_TIMEOUT_MS = 10000;
 
 async function checkApiReachable(): Promise<boolean> {

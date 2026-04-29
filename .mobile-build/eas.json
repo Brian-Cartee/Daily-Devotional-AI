@@ -24,7 +24,7 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://shepherdspathai.com",
+        "EXPO_PUBLIC_API_URL": "https://www.shepherdspathai.com",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_fznKTWBRurIjZrjtAyyvVqVpZBL"
       }
     }

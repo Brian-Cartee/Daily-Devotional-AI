@@ -1,4 +1,5 @@
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || "";
+import { Platform } from "react-native";
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || (Platform.OS !== "web" ? "https://www.shepherdspathai.com" : "");
 
 export async function fetchBible(): Promise<{ reference: string; text: string; verses?: any[] }> {
   const res = await fetch(`${API_BASE}/api/bible`);
