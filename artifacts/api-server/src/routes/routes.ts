@@ -2536,45 +2536,46 @@ Return JSON: { "action": "...", "scripture": "..." }`
       );
       const { query, ...scriptureData } = VERSE_POOL[dayOfYear % VERSE_POOL.length];
 
-      // If only metadata is cached (image fetch may have failed previously), return text fallback
+      // If only metadata is cached (image being generated in background), return text fallback immediately
       if (fs.existsSync(metaFile) && !fs.existsSync(imgFile)) {
         const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
         return res.json({ imageUrl: null, ...meta });
       }
 
-      // Generate with gpt-image-1 (highest quality) — fallback to stock photos
-      let imgBuffer: Buffer | null = null;
-      try {
-        const aiPrompt = buildDailyArtPrompt(scriptureData.scripture, scriptureData.reference, query);
-        console.log("[daily-art] Generating AI image with gpt-image-1...");
-        imgBuffer = await generateImageBuffer(aiPrompt, "1536x1024", "high");
-        console.log("[daily-art] AI image generated successfully.");
-      } catch (aiErr) {
-        console.warn("[daily-art] AI generation failed, falling back to stock photo:", aiErr);
-        // Fallback: try Unsplash then Pexels
-        let photoUrl = await fetchUnsplashPhoto(query);
-        if (!photoUrl) photoUrl = await fetchPexelsPhoto(query);
-        if (photoUrl) {
-          const imgRes = await fetch(photoUrl);
-          if (imgRes.ok) imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-        }
-      }
-
-      if (!imgBuffer) {
-        // No image available — return text-only
-        fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
-        return res.json({ imageUrl: null, ...scriptureData });
-      }
-
-      fs.writeFileSync(imgFile, imgBuffer);
-
-      // Compress to web-friendly size if ImageMagick available
-      try {
-        execSync(`magick "${imgFile}" -resize 1536x -quality 85 -strip "${imgFile}"`, { timeout: 20000 });
-      } catch { /* keep original if ImageMagick unavailable */ }
-
+      // Write metadata immediately so any parallel requests return fast while image generates
+      fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
       fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
-      res.json({ imageUrl: `/api/daily-art/image`, ...scriptureData });
+
+      // Return scripture text immediately — image generates in the background
+      res.json({ imageUrl: null, ...scriptureData });
+
+      // Generate image in background (non-blocking)
+      (async () => {
+        let imgBuffer: Buffer | null = null;
+        try {
+          const aiPrompt = buildDailyArtPrompt(scriptureData.scripture, scriptureData.reference, query);
+          console.log("[daily-art] Generating AI image with gpt-image-1...");
+          imgBuffer = await generateImageBuffer(aiPrompt, "1536x1024", "high");
+          console.log("[daily-art] AI image generated successfully.");
+        } catch (aiErr) {
+          console.warn("[daily-art] AI generation failed, falling back to stock photo:", aiErr);
+          let photoUrl = await fetchUnsplashPhoto(query);
+          if (!photoUrl) photoUrl = await fetchPexelsPhoto(query);
+          if (photoUrl) {
+            const imgRes = await fetch(photoUrl);
+            if (imgRes.ok) imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          }
+        }
+        if (imgBuffer) {
+          fs.writeFileSync(imgFile, imgBuffer);
+          try {
+            execSync(`magick "${imgFile}" -resize 1536x -quality 85 -strip "${imgFile}"`, { timeout: 20000 });
+          } catch { /* keep original if ImageMagick unavailable */ }
+          // Update meta to indicate image is now available
+          fs.writeFileSync(metaFile, JSON.stringify({ ...scriptureData, imageReady: true }));
+          console.log("[daily-art] Background image saved, subsequent requests will serve it.");
+        }
+      })();
     } catch (err) {
       console.error("daily art error:", err);
       res.json({ imageUrl: null, scripture: "The heavens declare the glory of God.", reference: "Psalm 19:1", reflection: "Creation speaks what words cannot." });
