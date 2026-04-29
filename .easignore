@@ -6,3 +6,7 @@ artifacts/api-server/
 .migration-backup/
 node_modules/
 .git/
+server/verse-art-cache/
+server/tts-cache/
+screenshots/
+.mobile-build/store-assets/
