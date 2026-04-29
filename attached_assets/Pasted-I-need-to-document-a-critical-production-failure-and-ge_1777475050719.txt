@@ -1,0 +1,39 @@
+I need to document a critical production failure and get a clear explanation, accountability, and a permanent fix.
+
+Context:
+I launched my iOS app, Shepherd’s Path, and it was live on the App Store (version 1.4). The app is currently non-functional for all users. Any feature that requires backend data (daily devotional, prayer wall, streak tracking) fails to load.
+
+Root cause (as identified):
+The production iOS build did not include the required environment variable (EXPO_PUBLIC_API_URL). As a result, the app was deployed without a valid backend server URL. When the backend infrastructure changed (domain moved to https://shepherdspathai.com), the app had no valid endpoint and all API requests fail at runtime.
+
+Business impact:
+
+* Paid advertising (Apple Search Ads) was actively running during this outage
+* Users installed a broken app, resulting in wasted ad spend
+* Significant risk of negative App Store reviews and long-term damage to conversion rates
+* Complete loss of trust in the reliability of the deployment workflow
+* I have no programming background and rely on this platform to prevent exactly this type of failure
+
+What I need from you:
+
+1. A clear explanation of how a production build was allowed to proceed without a required environment variable
+2. Why there were no safeguards, warnings, or validation checks before deployment
+3. A permanent solution to ensure this can NEVER happen again
+
+Specifically:
+
+* How can we enforce required environment variables at build time?
+* How can we implement a fallback system (hardcoded or config-based) that guarantees a valid API endpoint?
+* How can we add a pre-deployment validation step that tests connectivity to the production backend before submission to the App Store?
+* How can I preview or simulate a true production build (with real environment variables) BEFORE submitting to Apple?
+
+Additionally:
+I need guidance on best practices for managing production configuration going forward, given that I am not a developer and need a reliable, fail-safe workflow.
+
+This issue has caused real financial loss and reputational risk. I need a solution that prioritizes stability and removes hidden points of failure in the deployment process.
+
+Please respond with:
+
+* Root cause confirmation
+* Step-by-step permanent fix
+* Recommended deployment checklist moving forward
