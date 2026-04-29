@@ -33,7 +33,7 @@ import { NamePrompt } from "@/components/NamePrompt";
 import { hasBeenPrompted } from "@/lib/userName";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
-import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer } from "@/lib/devotionalSession";
+import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer, clearDevotionalSession } from "@/lib/devotionalSession";
 import { DailySermonCard } from "@/components/DailySermonCard";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
 import { ScriptureContext } from "@/components/ScriptureContext";
@@ -1455,7 +1455,7 @@ export default function Devotional() {
             {/* Subtle warm ambient glow top-right */}
             <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.10) 0%, transparent 70%)", filter: "blur(20px)" }} />
             <StepLabel number={4} label="Thank Him" />
-            <p className="text-[13px] italic mb-4 -mt-1" style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--primary) / 0.75)" }}>
+            <p className="text-[17px] italic mb-4 -mt-1" style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--primary) / 0.9)" }}>
               This completes your devotional for today.
             </p>
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
@@ -1709,7 +1709,14 @@ export default function Devotional() {
 
       <AnimatePresence>
         {showPostValueName && (
-          <NamePrompt onDone={() => setShowPostValueName(false)} />
+          <NamePrompt onDone={() => {
+            setShowPostValueName(false);
+            const name = getUserName();
+            if (name && verse) {
+              clearDevotionalSession();
+              generateReflection(verse.id, getStoredLang(), name);
+            }
+          }} />
         )}
       </AnimatePresence>
 

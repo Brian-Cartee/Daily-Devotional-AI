@@ -42,3 +42,9 @@ export function cacheReflection(text: string) {
 export function cachePrayer(text: string) {
   save({ prayer: text });
 }
+
+export function clearDevotionalSession() {
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {}
+}
