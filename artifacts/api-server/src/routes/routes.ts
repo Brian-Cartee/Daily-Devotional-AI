@@ -1380,7 +1380,9 @@ What you never do:
   app.get("/api/bible", async (req, res) => {
     const ref = req.query.ref as string;
     const translation = (req.query.translation as string) || "kjv";
-    if (!ref) return res.status(400).json({ message: "ref query param required" });
+    if (!ref) {
+      return res.json({ reference: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." });
+    }
     try {
       const url = `https://bible-api.com/${encodeURIComponent(ref)}?translation=${encodeURIComponent(translation)}`;
       const resp = await fetch(url);
