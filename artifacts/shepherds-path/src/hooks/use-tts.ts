@@ -303,26 +303,34 @@ export function useTTS() {
         prefetchPromise = fetchTTS(nextSection.text, nextVoice, chainCancelRef);
       }
 
-      const urlToPlay = blobUrl;
       const segStart = (i / sections.length) * 100;
       const segEnd = ((i + 1) / sections.length) * 100;
 
-      await new Promise<void>((resolve) => {
-        const audio = new Audio(urlToPlay);
-        audioRef.current = audio;
-        audio.ontimeupdate = () => {
-          if (audio.duration) {
-            setProgress(Math.round(segStart + (audio.currentTime / audio.duration) * (segEnd - segStart)));
-          }
-        };
-        audio.onended = () => { URL.revokeObjectURL(urlToPlay); resolve(); };
-        audio.onerror = () => { URL.revokeObjectURL(urlToPlay); resolve(); };
-        if (chainCancelRef.current) { URL.revokeObjectURL(urlToPlay); resolve(); return; }
-        audio.play().catch(() => {
-          URL.revokeObjectURL(urlToPlay);
-          resolve();
+      // Attempt playback — returns true if played cleanly, false on any error
+      const tryPlay = (urlToPlay: string): Promise<boolean> =>
+        new Promise<boolean>((resolve) => {
+          const audio = new Audio(urlToPlay);
+          audioRef.current = audio;
+          audio.ontimeupdate = () => {
+            if (audio.duration) {
+              setProgress(Math.round(segStart + (audio.currentTime / audio.duration) * (segEnd - segStart)));
+            }
+          };
+          audio.onended = () => { URL.revokeObjectURL(urlToPlay); resolve(true); };
+          audio.onerror = () => { URL.revokeObjectURL(urlToPlay); resolve(false); };
+          if (chainCancelRef.current) { URL.revokeObjectURL(urlToPlay); resolve(false); return; }
+          audio.play().catch(() => { URL.revokeObjectURL(urlToPlay); resolve(false); });
         });
-      });
+
+      const played = await tryPlay(blobUrl);
+
+      // On error, retry with a fresh fetch before skipping this section
+      if (!played && !chainCancelRef.current) {
+        const retryUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
+        if (retryUrl && !chainCancelRef.current) {
+          await tryPlay(retryUrl);
+        }
+      }
 
       if (prefetchPromise) {
         prefetchedUrl = await prefetchPromise;
