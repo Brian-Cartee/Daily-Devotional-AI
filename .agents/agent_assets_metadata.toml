@@ -113,3 +113,9 @@ id = "7keXNDoM2YJflqiS3eUSX"
 uri = "file://attached_assets/shepherds_path_icon.png"
 type = "image"
 title = "Shepherd's Path App Icon"
+
+[[outputs]]
+id = "XCJT32_sAhFGesy_D8PDR"
+uri = "file://shepherds-path-audit.pdf"
+type = "pdf"
+title = "Shepherd's Path — Environment & Dependency Audit"
