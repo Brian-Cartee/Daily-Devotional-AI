@@ -32,7 +32,7 @@ cd /tmp/eas-isolated-build
 
 EXPO_TOKEN=$EXPO_TOKEN npx eas-cli submit \
   --platform ios \
-  --id 05eef555-013f-4761-9661-aa06547743f1 \
+  --id f5e41d03-d1f5-497d-9ded-80528b4f1120 \
   --non-interactive \
   --verbose \
   --verbose-fastlane 2>&1
