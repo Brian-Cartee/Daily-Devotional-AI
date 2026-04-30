@@ -20,12 +20,12 @@ import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
 
 const FEATURES = [
-  { icon: "zap", text: "Unlimited daily AI conversations — no daily cap, ever" },
-  { icon: "book-open", text: "Full sermon history — revisit and reflect on every message" },
-  { icon: "mic", text: "Unlimited saved prayer recordings" },
-  { icon: "activity", text: "Deeper patterns in your prayers and spiritual growth over time" },
-  { icon: "anchor", text: "Scripture, reflection, and guidance shaped to your real moments" },
-  { icon: "unlock", text: "Every feature we build, unlocked as it arrives" },
+  { icon: "zap", text: "Unlimited guidance — no daily cap, ever" },
+  { icon: "book-open", text: "Never lose a message or sermon that spoke to you" },
+  { icon: "mic", text: "Never lose a prayer that mattered" },
+  { icon: "activity", text: "See how God has been working in your life over time" },
+  { icon: "anchor", text: "Scripture and guidance shaped to your real moments" },
+  { icon: "unlock", text: "Everything we build, unlocked the moment it arrives" },
 ];
 
 export default function SubscriptionScreen() {
@@ -112,9 +112,9 @@ export default function SubscriptionScreen() {
         <View style={styles.iconCircle}>
           <Feather name="star" size={32} color={colors.primaryForeground} />
         </View>
-        <Text style={styles.heroTitle}>Go Deeper in Your Walk</Text>
+        <Text style={styles.heroTitle}>Don't Lose What God Is Building in You</Text>
         <Text style={styles.heroSubtitle}>
-          You've had a generous start — explore freely for your first 30 days. Pro removes all limits and unlocks the full depth of what Shepherd's Path can do for your walk.
+          You've had a generous start. Pro removes all limits and unlocks the full depth of Shepherd's Path for your daily walk.
         </Text>
       </View>
 
@@ -132,7 +132,7 @@ export default function SubscriptionScreen() {
 
       {/* Faith anchor */}
       <Text style={styles.faithAnchor}>
-        The free plan is genuinely generous. Pro is for those who want to go further — without limits or interruption.
+        Free is genuinely generous. Pro is for those who want to go further — without limits.
       </Text>
 
       {/* Plan cards */}

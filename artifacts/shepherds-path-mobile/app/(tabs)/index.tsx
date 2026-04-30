@@ -36,6 +36,7 @@ const SESSION_ID_KEY = "sp_session_id";
 const POSTURE_KEY = "sp_posture";
 const PUSH_ASKED_KEY = "sp_push_asked_v1";
 const OPEN_COUNT_KEY = "sp_open_count";
+const PRO_NUDGE_KEY = "sp_pro_nudge_v1";
 
 type SpiritualPosture = "Grateful" | "Growing" | "Seeking" | "Heavy";
 
@@ -84,15 +85,34 @@ export default function HomeScreen() {
   const [posture, setPosture] = useState<SpiritualPosture | null>(null);
   const [showPushNudge, setShowPushNudge] = useState(false);
   const [pushNudgeLoading, setPushNudgeLoading] = useState(false);
+  const [showProNudge, setShowProNudge] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    getOrCreateSessionId().then(setSessionId);
+    getOrCreateSessionId().then((id) => {
+      setSessionId(id);
+      checkProNudge(id);
+    });
     AsyncStorage.getItem(POSTURE_KEY).then((saved) => {
       if (saved) setPosture(saved as SpiritualPosture);
     });
     checkPushNudge();
   }, []);
+
+  async function checkProNudge(id: string) {
+    if (isSubscribed) return;
+    try {
+      const seen = await AsyncStorage.getItem(PRO_NUDGE_KEY);
+      if (seen) return;
+      if (id.length < 13) return;
+      const ts = parseInt(id.slice(0, 13), 10);
+      if (isNaN(ts)) return;
+      const daysWithApp = Math.round((Date.now() - ts) / (1000 * 60 * 60 * 24));
+      if (daysWithApp >= 3 && daysWithApp <= 5) {
+        setShowProNudge(true);
+      }
+    } catch {}
+  }
 
   async function checkPushNudge() {
     if (Platform.OS === "web") return;
@@ -131,6 +151,19 @@ export default function HomeScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await AsyncStorage.setItem(PUSH_ASKED_KEY, "1");
     setShowPushNudge(false);
+  }
+
+  async function handleProNudgeDismiss() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await AsyncStorage.setItem(PRO_NUDGE_KEY, "1");
+    setShowProNudge(false);
+  }
+
+  function handleProNudgeUpgrade() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    AsyncStorage.setItem(PRO_NUDGE_KEY, "1");
+    setShowProNudge(false);
+    router.push("/subscription");
   }
 
   const handlePosture = (p: SpiritualPosture) => {
@@ -337,6 +370,39 @@ export default function HomeScreen() {
           {!posture && "Tap a posture above to personalize today's reflection."}
         </Text>
       </View>
+
+      {/* Day 3–5 Pro nudge — planted early, before users ever hit a limit */}
+      {showProNudge && !isSubscribed && (
+        <View style={styles.pushNudge} testID="card-pro-nudge">
+          <View style={styles.pushNudgeTop}>
+            <View style={[styles.pushNudgeIconWrap, { backgroundColor: colors.accent }]}>
+              <Feather name="anchor" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pushNudgeTitle}>You've already started something meaningful</Text>
+              <Text style={styles.pushNudgeBody}>
+                Pro keeps every step of your journey — your prayers, sermons, and reflections — without limits or interruption.
+              </Text>
+            </View>
+          </View>
+          <View style={styles.pushNudgeActions}>
+            <TouchableOpacity
+              style={styles.pushNudgeYes}
+              onPress={handleProNudgeUpgrade}
+              testID="button-pro-nudge-upgrade"
+            >
+              <Text style={styles.pushNudgeYesText}>See Pro</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pushNudgeNo}
+              onPress={handleProNudgeDismiss}
+              testID="button-pro-nudge-dismiss"
+            >
+              <Text style={styles.pushNudgeNoText}>Not now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Push notification nudge — shown after 2nd visit if not yet asked */}
       {showPushNudge && (

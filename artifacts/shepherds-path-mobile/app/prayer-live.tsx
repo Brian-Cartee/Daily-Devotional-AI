@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { analyzePrayerChunk, savePrayerRecording, type PrayerReflection } from "@/lib/api";
+import { useSubscription } from "@/lib/revenuecat";
 
 const { width: SW } = Dimensions.get("window");
 const CHUNK_MS = 20_000;
@@ -37,6 +38,7 @@ export default function PrayerLiveScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  const { isSubscribed } = useSubscription();
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -44,6 +46,7 @@ export default function PrayerLiveScreen() {
   const [fullTranscript, setFullTranscript] = useState("");
   const [reflection, setReflection] = useState<PrayerReflection | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeepNudge, setShowDeepNudge] = useState(false);
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const chunkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -207,6 +210,10 @@ export default function PrayerLiveScreen() {
       setPhase("reflection");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Animated.timing(reflectionFade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+      // Deep-session trigger: real prayer (>60s) by a free user
+      if (!isSubscribed && elapsedRef.current >= 60) {
+        setShowDeepNudge(true);
+      }
     } catch {
       Alert.alert("Error", "Could not save your prayer. Please try again.", [
         { text: "OK", onPress: () => router.back() },
@@ -379,6 +386,27 @@ export default function PrayerLiveScreen() {
               </View>
             )}
 
+            {/* Deep-session Pro nudge — contextual, after a real prayer */}
+            {showDeepNudge && (
+              <View style={styles.deepNudge}>
+                <Text style={styles.deepNudgeTitle}>This is exactly what Pro is built for.</Text>
+                <Text style={styles.deepNudgeBody}>
+                  Uninterrupted guidance and a complete record of every prayer moment — whenever you need it.
+                </Text>
+                <View style={styles.deepNudgeActions}>
+                  <TouchableOpacity
+                    style={styles.deepNudgeBtn}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowDeepNudge(false); router.push("/subscription"); }}
+                  >
+                    <Text style={styles.deepNudgeBtnText}>Go Pro</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowDeepNudge(false)}>
+                    <Text style={styles.deepNudgeDismiss}>Not now</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <TouchableOpacity
               style={styles.doneBtn}
               onPress={() => {
@@ -532,4 +560,23 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
   },
   doneBtnText: { color: "rgba(255,255,255,0.8)", fontSize: 16, fontWeight: "600" },
+  deepNudge: {
+    backgroundColor: "rgba(122, 1, 141, 0.18)",
+    borderRadius: 14,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(122, 1, 141, 0.35)",
+    gap: 10,
+  },
+  deepNudgeTitle: { color: "#ffffff", fontSize: 16, fontWeight: "700", textAlign: "center" },
+  deepNudgeBody: { color: "rgba(255,255,255,0.65)", fontSize: 14, lineHeight: 20, textAlign: "center" },
+  deepNudgeActions: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 20, marginTop: 4 },
+  deepNudgeBtn: {
+    backgroundColor: "#7A018D",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  deepNudgeBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
+  deepNudgeDismiss: { color: "rgba(255,255,255,0.4)", fontSize: 13 },
 });
