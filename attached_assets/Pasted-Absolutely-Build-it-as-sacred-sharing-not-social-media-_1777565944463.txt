@@ -1,0 +1,141 @@
+Absolutely. Build it as **“sacred sharing,” not social media.**
+
+## Shepherd’s Path Social/Sharing Rollout
+
+### Phase 1 — External Sharing First
+
+This should be implemented first.
+
+Core features:
+
+* Share daily verse image
+* Share AI scripture art
+* Share prayer card
+* Share devotional quote
+* Share “I needed this today” testimony card
+* One-tap share to text, Facebook, Instagram, TikTok, X
+
+Important rule:
+Do **not** build a public feed yet.
+
+Replit prompt:
+
+```text
+Implement a Shepherd’s Path sharing system focused on external sharing, not an internal social feed.
+
+Add share buttons to:
+1. Daily verse screen
+2. Prayer response screen
+3. AI image/devotional art screen
+4. Sermon/devotional summary screen
+
+Each share should generate a clean branded share card with:
+- Verse or short devotional text
+- Optional prayer excerpt
+- Shepherd’s Path logo
+- Soft purple gradient branding
+- App download CTA: “Find peace in the moment. Download Shepherd’s Path.”
+
+Allow sharing to native iOS/Android share sheet.
+
+Do not add likes, comments, follower counts, public profiles, or an internal feed.
+This should feel private, peaceful, ministry-centered, and non-performative.
+```
+
+---
+
+### Phase 2 — “You’re Not Alone” Layer
+
+This adds emotional depth without turning into social media.
+
+Features:
+
+* “312 people prayed today”
+* “Someone else is praying through grief today”
+* “You are not alone in this”
+* Anonymous prayer categories
+* No usernames
+* No comments
+* No public identity
+
+Replit prompt:
+
+```text
+Add a lightweight anonymous community encouragement layer called “You’re Not Alone.”
+
+Show gentle, aggregated spiritual activity such as:
+- “People prayed for peace today”
+- “Someone else is walking through anxiety”
+- “You’re not alone in this moment”
+- “Prayers lifted today: [count]”
+
+Do not show names, photos, profiles, comments, likes, or followers.
+
+Allow users to optionally tap:
+- “Pray with others”
+- “Add my prayer anonymously”
+- “I needed this today”
+
+Store only anonymous category-level prayer activity.
+Design must feel sacred, quiet, private, and emotionally safe.
+```
+
+---
+
+### Phase 3 — Private Circles
+
+Only add this after you have traction.
+
+Features:
+
+* Family prayer circle
+* Church small group
+* Invite-only circles
+* Shared prayer requests
+* Encouragement reactions only: 🙏 ❤️ “Praying”
+* No arguing, no comments at first
+
+Replit prompt:
+
+```text
+Create invite-only Private Prayer Circles.
+
+Users can create a private circle and invite others by link.
+
+Circle features:
+- Add prayer request
+- Mark request as private or shared
+- React with “Praying”, heart, or amen
+- Optional short encouragement message
+
+Do not create a public feed.
+Do not create follower counts.
+Do not recommend strangers.
+Keep everything invite-only and private by default.
+
+The purpose is spiritual support, not social media engagement.
+```
+
+---
+
+## The Rule That Protects the Brand
+
+Do **not** build:
+
+* Public profiles
+* Follower counts
+* Public feeds
+* Popularity rankings
+* Endless scrolling
+* Political/religious debate spaces
+* Open comments on public posts
+
+That turns Shepherd’s Path into noise.
+
+## The Best Version
+
+The best version is:
+
+> “A private faith companion that creates beautiful, shareable moments and gently reminds people they are not alone.”
+
+That is what increases value without damaging the mission.
