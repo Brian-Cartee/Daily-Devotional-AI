@@ -31,8 +31,7 @@ import {
   NotificationPrefs,
 } from "@/lib/notifications";
 
-const SESSION_ID_KEY = "shepherds_session_id";
-const DAYS_KEY = "shepherds_days_with_app";
+const SESSION_ID_KEY = "sp_session_id";
 
 type WeekDay = { date: string; dayName: string; count: number; limit: number };
 
@@ -64,8 +63,14 @@ export default function SettingsScreen() {
     async function loadUsage() {
       try {
         const sessionId = await AsyncStorage.getItem(SESSION_ID_KEY);
-        const daysRaw = await AsyncStorage.getItem(DAYS_KEY);
-        const daysWithApp = daysRaw ? Math.max(1, parseInt(daysRaw)) : 1;
+        // Derive days with app from session ID timestamp (first 13 chars = ms since epoch)
+        let daysWithApp = 1;
+        if (sessionId && sessionId.length >= 13) {
+          const ts = parseInt(sessionId.slice(0, 13), 10);
+          if (!isNaN(ts)) {
+            daysWithApp = Math.max(1, Math.round((Date.now() - ts) / (1000 * 60 * 60 * 24)));
+          }
+        }
         const params = sessionId
           ? `?sessionId=${sessionId}&daysWithApp=${daysWithApp}`
           : `?daysWithApp=${daysWithApp}`;

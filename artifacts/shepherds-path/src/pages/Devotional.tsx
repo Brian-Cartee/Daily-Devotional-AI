@@ -475,6 +475,9 @@ export default function Devotional() {
     if (ttsListen.playing || ttsListen.loading) { stopFullListen(); return; }
     if (!listenHintSeen) { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }
 
+    // Don't start if content is still generating — wait for at least reflection
+    if (reflectionLoading || (!reflectionContent && !prayerContent)) return;
+
     setShowListenReply(false);
     setListenReplySaved(false);
     setListenReply("");
