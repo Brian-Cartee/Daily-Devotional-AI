@@ -97,9 +97,7 @@ function ConnectionErrorScreen({ onRetry }: { onRetry: () => void }) {
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="devotional" options={{ presentation: "modal", headerShown: false }} />
-      <Stack.Screen name="subscription" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
     </Stack>
   );
 }

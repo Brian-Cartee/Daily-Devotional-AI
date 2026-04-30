@@ -38,7 +38,7 @@ cp    "$SRC/store.config.yaml" "$BUILD_DIR/" 2>/dev/null || true
 
 echo "=== Installing dependencies (so EAS can resolve plugins) ==="
 cd "$BUILD_DIR"
-pnpm install --frozen-lockfile
+pnpm install --no-frozen-lockfile
 
 echo "=== Initializing fresh git repo ==="
 git init

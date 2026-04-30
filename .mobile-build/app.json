@@ -2,7 +2,7 @@
   "expo": {
     "name": "Shepherd's Path",
     "slug": "shepherds-path-mobile",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
     "scheme": "shepherdspath",

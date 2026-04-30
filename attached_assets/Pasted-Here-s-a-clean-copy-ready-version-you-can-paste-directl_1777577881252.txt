@@ -1,0 +1,103 @@
+Here’s a clean, copy-ready version you can paste directly into Replit:
+
+---
+
+**Shepherd’s Path iOS Fix Plan — Immediate Action**
+
+Goal: Restore the correct Shepherd’s Path experience on iOS as quickly and safely as possible by wrapping the working web app ([https://shepherdspathai.com](https://shepherdspathai.com)) in a WebView and submitting a new App Store build.
+
+---
+
+**Plan:**
+
+We will replace the current incorrect Expo UI with a simple WebView that loads the live web app.
+
+---
+
+**Step 1 — Install WebView dependency**
+
+Run:
+
+```
+npx expo install react-native-webview
+```
+
+---
+
+**Step 2 — Replace App.js (or App.tsx) with this code**
+
+```
+import React from 'react';
+import { SafeAreaView, StatusBar } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+export default function App() {
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar barStyle="light-content" />
+      <WebView
+        source={{ uri: 'https://shepherdspathai.com' }}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+      />
+    </SafeAreaView>
+  );
+}
+```
+
+---
+
+**Step 3 — Ensure branding is correct**
+
+* App icon = Shepherd’s Path icon
+* Splash screen = dark purple (existing design)
+
+---
+
+**Step 4 — Build iOS app**
+
+If using EAS:
+
+```
+npx expo prebuild
+npx expo run:ios
+npx expo build:ios
+```
+
+(or use your existing EAS build process)
+
+---
+
+**Step 5 — Submit new App Store version**
+
+* Version: 1.7
+* What’s New:
+
+```
+Restored the original Shepherd’s Path experience and improved stability.
+```
+
+---
+
+**Expected timeline:**
+
+* Build + test: same day
+* Apple review: 24–48 hours
+
+---
+
+**Important notes:**
+
+* The web app (shepherdspathai.com) is now the source of truth
+* Do NOT attempt to rebuild native screens right now
+* This is the fastest and safest way to restore the correct app experience
+
+---
+
+**Objective:**
+Get the correct app back into users’ hands immediately, then improve architecture later.
+
+---
+
+If you want, I can also help you modify your existing `.mobile-build` instead of creating a new project (even faster).
