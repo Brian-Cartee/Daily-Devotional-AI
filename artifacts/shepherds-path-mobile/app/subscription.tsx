@@ -20,12 +20,12 @@ import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
 
 const FEATURES = [
-  { icon: "book-open", text: "Revisit and reflect on every sermon" },
-  { icon: "message-circle", text: "Ask questions, get summaries, and never lose what spoke to you" },
-  { icon: "activity", text: "See patterns in your prayers over time" },
-  { icon: "eye", text: "Discover what God may be doing beneath the surface" },
-  { icon: "anchor", text: "Scripture and reflection shaped around your real moments" },
-  { icon: "unlock", text: "Everything we build, unlocked — new features as they arrive" },
+  { icon: "zap", text: "Unlimited daily AI conversations — no daily cap, ever" },
+  { icon: "book-open", text: "Full sermon history — revisit and reflect on every message" },
+  { icon: "mic", text: "Unlimited saved prayer recordings" },
+  { icon: "activity", text: "Deeper patterns in your prayers and spiritual growth over time" },
+  { icon: "anchor", text: "Scripture, reflection, and guidance shaped to your real moments" },
+  { icon: "unlock", text: "Every feature we build, unlocked as it arrives" },
 ];
 
 export default function SubscriptionScreen() {
@@ -114,7 +114,7 @@ export default function SubscriptionScreen() {
         </View>
         <Text style={styles.heroTitle}>Go Deeper in Your Walk</Text>
         <Text style={styles.heroSubtitle}>
-          You've already started something meaningful. Shepherd's Path can walk with you further — with deeper guidance, reflection, and insight built just for you.
+          You've had a generous start — explore freely for your first 30 days. Pro removes all limits and unlocks the full depth of what Shepherd's Path can do for your walk.
         </Text>
       </View>
 
@@ -132,7 +132,7 @@ export default function SubscriptionScreen() {
 
       {/* Faith anchor */}
       <Text style={styles.faithAnchor}>
-        This isn't about more features — it's about walking closer, with clarity and intention.
+        The free plan is genuinely generous. Pro is for those who want to go further — without limits or interruption.
       </Text>
 
       {/* Plan cards */}

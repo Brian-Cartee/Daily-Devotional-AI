@@ -16,9 +16,11 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
+import { API_BASE } from "@/lib/api";
 import {
   loadNotificationPrefs,
   saveNotificationPrefs,
@@ -29,12 +31,20 @@ import {
   NotificationPrefs,
 } from "@/lib/notifications";
 
+const SESSION_ID_KEY = "shepherds_session_id";
+const DAYS_KEY = "shepherds_days_with_app";
+
+type WeekDay = { date: string; dayName: string; count: number; limit: number };
+
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isSubscribed, restore, isRestoring } = useSubscription();
   const [restoreSuccess, setRestoreSuccess] = useState(false);
+  const [weeklyUsage, setWeeklyUsage] = useState<WeekDay[]>([]);
+  const [dailyLimit, setDailyLimit] = useState(50);
+  const [usageLoading, setUsageLoading] = useState(true);
 
   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>({
     enabled: false,
@@ -48,6 +58,27 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     loadNotificationPrefs().then(setNotifPrefs);
+  }, []);
+
+  useEffect(() => {
+    async function loadUsage() {
+      try {
+        const sessionId = await AsyncStorage.getItem(SESSION_ID_KEY);
+        const daysRaw = await AsyncStorage.getItem(DAYS_KEY);
+        const daysWithApp = daysRaw ? Math.max(1, parseInt(daysRaw)) : 1;
+        const params = sessionId
+          ? `?sessionId=${sessionId}&daysWithApp=${daysWithApp}`
+          : `?daysWithApp=${daysWithApp}`;
+        const res = await fetch(`${API_BASE}/api/ai-usage/weekly${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setWeeklyUsage(data.days);
+          setDailyLimit(data.dailyLimit);
+        }
+      } catch (_) {}
+      setUsageLoading(false);
+    }
+    loadUsage();
   }, []);
 
   const handleRestore = async () => {
@@ -180,6 +211,53 @@ export default function SettingsScreen() {
             ? `You'll receive today's verse each day at ${formatTime(notifPrefs.hour, notifPrefs.minute)}.`
             : "Turn on to receive a daily scripture verse each morning."}
         </Text>
+      </View>
+
+      {/* Weekly Usage Chart */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Your Journey This Week</Text>
+        <Text style={styles.usageSubtitle}>AI conversations used each day</Text>
+
+        {usageLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 8 }} />
+        ) : (
+          <>
+            <View style={styles.chartRow}>
+              {weeklyUsage.map((day, i) => {
+                const isToday = i === weeklyUsage.length - 1;
+                const pct = Math.min(1, day.limit > 0 ? day.count / day.limit : 0);
+                const barH = Math.max(4, Math.round(pct * 56));
+                return (
+                  <View key={day.date} style={styles.chartCol}>
+                    <Text style={[styles.chartCount, { color: isToday ? colors.primary : colors.mutedForeground }]}>
+                      {day.count > 0 ? day.count : ""}
+                    </Text>
+                    <View style={styles.chartBarBg}>
+                      <View style={[
+                        styles.chartBarFill,
+                        {
+                          height: barH,
+                          backgroundColor: isToday ? colors.primary : colors.mutedForeground,
+                          opacity: isToday ? 1 : 0.45,
+                        }
+                      ]} />
+                    </View>
+                    <Text style={[styles.chartDay, isToday && { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+                      {day.dayName}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            {weeklyUsage.length > 0 && (
+              <Text style={styles.usageNote}>
+                {isSubscribed
+                  ? "Pro — unlimited conversations"
+                  : `Up to ${dailyLimit} conversations/day · resets at midnight`}
+              </Text>
+            )}
+          </>
+        )}
       </View>
 
       {/* Subscription status */}
@@ -558,6 +636,52 @@ function makeStyles(colors: any, insets: any) {
       fontSize: 15,
       fontFamily: "Inter_600SemiBold",
       color: colors.primaryForeground,
+    },
+    usageSubtitle: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+      marginBottom: 4,
+    },
+    chartRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      marginVertical: 8,
+    },
+    chartCol: {
+      flex: 1,
+      alignItems: "center",
+      gap: 4,
+    },
+    chartCount: {
+      fontSize: 10,
+      fontFamily: "Inter_500Medium",
+      minHeight: 14,
+    },
+    chartBarBg: {
+      width: 20,
+      height: 60,
+      backgroundColor: colors.muted,
+      borderRadius: 4,
+      justifyContent: "flex-end",
+      overflow: "hidden",
+    },
+    chartBarFill: {
+      width: "100%",
+      borderRadius: 4,
+    },
+    chartDay: {
+      fontSize: 10,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+    },
+    usageNote: {
+      fontSize: 11,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+      textAlign: "center",
+      marginTop: 4,
     },
   });
 }

@@ -214,6 +214,46 @@ export async function registerRoutes(
     return res.json({ used, limit, remaining: Math.max(0, limit - used) });
   });
 
+  // ── AI usage — last 7 days per session ───────────────────────────────────
+  app.get("/api/ai-usage/weekly", async (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    const daysWithApp = Math.max(1, Number(req.query.daysWithApp) || 1);
+    const dailyLimit = getDailyLimit(daysWithApp);
+
+    // Build a 7-element array: today at index 6, 6 days ago at index 0
+    const days: { date: string; dayName: string; count: number; limit: number }[] = [];
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      days.push({ date: dateStr, dayName: DAY_NAMES[d.getDay()], count: 0, limit: dailyLimit });
+    }
+
+    if (sessionId) {
+      try {
+        const { pool } = await import("../db");
+        const result = await pool.query(
+          `SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as day, COUNT(*)::int as count
+           FROM ai_usage_logs
+           WHERE session_id = $1 AND created_at >= NOW() - INTERVAL '7 days'
+           GROUP BY DATE(created_at)
+           ORDER BY day`,
+          [sessionId]
+        );
+        for (const row of result.rows) {
+          const entry = days.find(d => d.date === row.day);
+          if (entry) entry.count = row.count;
+        }
+      } catch (_e) {
+        // return zeros on error
+      }
+    }
+
+    return res.json({ days, dailyLimit });
+  });
+
   // ── Health check ──────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
     const services: Record<string, { ok: boolean; message: string }> = {};
