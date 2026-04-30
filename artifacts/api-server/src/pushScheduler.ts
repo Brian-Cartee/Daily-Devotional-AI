@@ -7,11 +7,13 @@ import { eq } from "drizzle-orm";
 
 const expo = new Expo();
 
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+const vapidEnabled = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+
+if (vapidEnabled) {
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || "mailto:admin@shepherdspathAI.com",
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
   );
 } else {
   console.log("[push] Push notifications disabled: missing VAPID keys");
@@ -32,6 +34,7 @@ function getStreakBadgeName(streak: number): string | null {
 }
 
 async function sendToSubscription(sub: { endpoint: string; p256dh: string; auth: string }, payload: NotifPayload): Promise<boolean> {
+  if (!vapidEnabled) return false;
   try {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
