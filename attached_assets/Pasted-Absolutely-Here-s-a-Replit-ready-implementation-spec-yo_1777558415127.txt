@@ -1,0 +1,365 @@
+Absolutely. Here’s a **Replit-ready implementation spec** you can paste in.
+
+---
+
+## Replit AI Prompt: Shepherd’s Path Social / Community Phase 2
+
+Build a controlled, faith-centered social component for Shepherd’s Path. This should **not** be a normal social media feed. No follower counts, no likes, no public comment battles, no vanity metrics. The goal is safe spiritual connection, prayer support, and encouragement while keeping the app private, reverent, and focused on God.
+
+### Core Product Positioning
+
+Shepherd’s Path is not a Christian social network. It is a personal spiritual companion with optional connection.
+
+The social system should feel like:
+
+> “You are not alone. Others are praying with you.”
+
+Not:
+
+> “Post content and get attention.”
+
+---
+
+# Feature Set
+
+## 1. Prayer Wall
+
+Create a Prayer Wall where users can post short prayer requests.
+
+### Prayer Request Fields
+
+Each prayer request should include:
+
+* id
+* user_id
+* display_name or anonymous flag
+* request_text
+* category
+* created_at
+* status: active / answered / hidden / removed
+* prayed_count
+* report_count
+* visibility: public / private_circle later
+* is_anonymous boolean
+
+### Prayer Categories
+
+Use these options:
+
+* Anxiety / Fear
+* Family
+* Healing
+* Grief
+* Marriage / Relationship
+* Direction / Decision
+* Financial Stress
+* Loneliness
+* Thanksgiving / Praise
+* Other
+
+---
+
+## 2. Encouragement Actions Only
+
+Do **not** add public comments yet.
+
+Instead, allow users to respond with simple spiritual encouragement buttons:
+
+* “I prayed for you”
+* “Standing with you”
+* “You’re not alone”
+* “God is near”
+
+Each action increments a count and stores the user action so the same user cannot spam the same request repeatedly.
+
+### Interaction Table
+
+Create:
+
+* id
+* prayer_request_id
+* user_id
+* action_type
+* created_at
+
+Allowed action_type:
+
+* prayed
+* standing_with_you
+* not_alone
+* god_is_near
+
+---
+
+## 3. Anonymous by Default
+
+When posting a prayer request, default to anonymous.
+
+User can choose:
+
+* Post anonymously
+* Show first name only
+
+Never show full name by default.
+
+---
+
+## 4. Answered Prayer
+
+Allow the original poster to mark a prayer as answered.
+
+When marked answered:
+
+* status changes to answered
+* user can optionally add a short answered prayer update
+* answered prayers may appear in a separate “Answered Prayers” section later
+
+Answered update fields:
+
+* answered_text
+* answered_at
+
+---
+
+## 5. Reporting / Moderation
+
+Each prayer request should have a report option.
+
+Report reasons:
+
+* Harmful or abusive
+* Spam
+* Inappropriate content
+* Theological argument / divisive
+* Personal information
+* Other
+
+When a prayer request receives 3 reports, automatically hide it pending review.
+
+### Report Table
+
+Create:
+
+* id
+* prayer_request_id
+* reporting_user_id
+* reason
+* created_at
+
+---
+
+# Free vs Pro Rules
+
+## Free Users
+
+Free users can:
+
+* View Prayer Wall
+* Post up to 1 prayer request per day
+* Tap “I prayed for you” up to 20 times per day
+* Mark their own prayers answered
+* Report inappropriate content
+
+## Pro Users
+
+Pro users can:
+
+* Post up to 5 prayer requests per day
+* Send unlimited encouragement actions
+* Save prayer requests privately
+* Access deeper prayer history and patterns later
+* Join private circles later
+
+Important: Do not make prayer feel “paywalled.” Pro should unlock deeper participation, not access to God or prayer.
+
+---
+
+# Upgrade Nudges
+
+Do not show aggressive popups.
+
+Use gentle nudges only when limits are reached.
+
+### Free user reaches daily prayer post limit:
+
+> You’ve shared today’s prayer request. Free members can post once per day. Pro gives you more room to share, reflect, and keep your prayer journey without interruption.
+
+Button:
+
+> Explore Pro
+
+Secondary:
+
+> Not now
+
+### Free user reaches encouragement limit:
+
+> You’ve encouraged many people today. Pro removes daily limits so you can keep praying with others whenever your heart feels led.
+
+Button:
+
+> Go Deeper with Pro
+
+---
+
+# Prayer Wall Screen Layout
+
+Create a screen called:
+
+**Prayer Wall**
+
+Subtitle:
+
+> Pray with others. Share what’s heavy. You’re not alone.
+
+Main buttons:
+
+* Share a Prayer
+* View Answered Prayers
+
+Each prayer card should show:
+
+* Category
+* Time posted
+* Prayer request text
+* Anonymous / First name
+* Encouragement counts
+* Buttons:
+
+  * I prayed for you
+  * Standing with you
+  * You’re not alone
+  * God is near
+* Report button
+* Mark Answered button only if current user owns the prayer
+
+Card tone should be clean, warm, minimal, and reverent.
+
+---
+
+# Share Prayer Flow
+
+Screen title:
+
+> Share a Prayer
+
+Intro copy:
+
+> You can share as much or as little as you want. This is a safe place to be prayed for.
+
+Fields:
+
+* Prayer request text box
+* Category dropdown
+* Anonymous toggle default ON
+* Submit button
+
+Placeholder text:
+
+> What would you like others to pray over?
+
+After submit success message:
+
+> Your prayer has been shared. Others can now stand with you in prayer.
+
+---
+
+# Safety Rules
+
+Before posting, block or flag content that includes:
+
+* threats of violence
+* self-harm language
+* explicit sexual content
+* hate speech
+* personal phone numbers
+* addresses
+* financial scams
+* spam links
+
+If self-harm language appears, show:
+
+> You are not alone, and your life matters. If you may hurt yourself or are in immediate danger, please call emergency services now. In the U.S., call or text 988 for the Suicide & Crisis Lifeline.
+
+Do not post that request publicly until reviewed.
+
+---
+
+# Future Phase: Private Prayer Circles
+
+Do not fully build yet, but structure the database so private circles can be added later.
+
+Future feature:
+
+* invite-only small groups
+* 3–10 people
+* church groups / families / accountability groups
+* private prayer requests
+* no public feed
+
+Prepare for a future `prayer_circles` table:
+
+* id
+* name
+* created_by
+* created_at
+
+And `circle_members`:
+
+* id
+* circle_id
+* user_id
+* role: owner / member
+* joined_at
+
+---
+
+# Design Tone
+
+The UI should feel:
+
+* calm
+* sacred
+* warm
+* emotionally safe
+* premium
+* not gamified
+* not social-media-like
+
+Avoid:
+
+* likes
+* follower counts
+* public comments
+* trending posts
+* leaderboards
+* badges for praying
+
+---
+
+# Success Metrics to Track
+
+Add analytics events for:
+
+* prayer_wall_viewed
+* prayer_request_created
+* prayer_action_tapped
+* prayer_marked_answered
+* prayer_reported
+* prayer_limit_reached
+* pro_nudge_viewed_from_prayer_wall
+* pro_upgrade_clicked_from_prayer_wall
+
+---
+
+# Final Goal
+
+Build this feature as a controlled spiritual support layer, not a social feed. The user should leave feeling:
+
+> “Someone is praying with me.”
+
+Not:
+
+> “I posted something online.”
+
+Implement this carefully with strong privacy defaults, gentle Pro nudges, moderation safeguards, and no public comments in this phase.
