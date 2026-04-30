@@ -36,7 +36,9 @@ if (Platform.OS !== "web") {
   });
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { networkMode: "always" } },
+});
 
 try {
   initializeRevenueCat();
