@@ -219,20 +219,47 @@ export const insertMemoryVerseSchema = createInsertSchema(memoryVerses).omit({ i
 export type MemoryVerse = typeof memoryVerses.$inferSelect;
 export type InsertMemoryVerse = z.infer<typeof insertMemoryVerseSchema>;
 
+export const PRAYER_CATEGORIES = [
+  "Anxiety / Fear",
+  "Family",
+  "Healing",
+  "Grief",
+  "Marriage / Relationship",
+  "Direction / Decision",
+  "Financial Stress",
+  "Loneliness",
+  "Thanksgiving / Praise",
+  "Other",
+] as const;
+export type PrayerCategory = typeof PRAYER_CATEGORIES[number];
+
+export const PRAYER_ENCOURAGEMENT_ACTIONS = ["prayed", "standing_with_you", "not_alone", "god_is_near"] as const;
+export type PrayerEncouragementAction = typeof PRAYER_ENCOURAGEMENT_ACTIONS[number];
+
 // App-based community prayer wall (web/mobile, sessionId-based, no phone required)
 export const prayerWall = pgTable("prayer_wall", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
   displayName: text("display_name"), // null = "Anonymous Believer"
+  isAnonymous: boolean("is_anonymous").default(true).notNull(),
   request: text("request").notNull(),
-  prayCount: integer("pray_count").default(0).notNull(),
+  category: text("category").default("Other").notNull(),
+  status: text("status").default("active").notNull(), // active | answered | hidden | removed
+  answeredText: text("answered_text"),
+  answeredAt: timestamp("answered_at"),
+  reportCount: integer("report_count").default(0).notNull(),
+  prayCount: integer("pray_count").default(0).notNull(), // legacy, kept for compat
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
-export const insertPrayerWallSchema = createInsertSchema(prayerWall).omit({ id: true, createdAt: true, prayCount: true }).extend({
+export const insertPrayerWallSchema = createInsertSchema(prayerWall).omit({
+  id: true, createdAt: true, prayCount: true, reportCount: true, status: true, answeredText: true, answeredAt: true,
+}).extend({
   sessionId: z.string().min(1),
-  request: z.string().min(10).max(280),
+  request: z.string().min(5).max(500),
   displayName: z.string().max(40).optional(),
+  isAnonymous: z.boolean().optional().default(true),
+  category: z.enum(PRAYER_CATEGORIES).optional().default("Other"),
 });
 
 export type PrayerWallEntry = typeof prayerWall.$inferSelect;
@@ -244,6 +271,44 @@ export const prayerWallPrays = pgTable("prayer_wall_prays", {
   sessionId: text("session_id").notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
   remindAt: timestamp("remind_at"),
+});
+
+// Encouragement actions (4 types) — replaces legacy single pray button
+export const prayerWallEncouragements = pgTable("prayer_wall_encouragements", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  actionType: text("action_type").notNull(), // prayed | standing_with_you | not_alone | god_is_near
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type PrayerWallEncouragement = typeof prayerWallEncouragements.$inferSelect;
+
+// Reports — auto-hide at 3
+export const prayerWallReports = pgTable("prayer_wall_reports", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  reason: text("reason").notNull(), // harmful | spam | inappropriate | divisive | personal_info | other
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type PrayerWallReport = typeof prayerWallReports.$inferSelect;
+
+// Prayer circles — scaffold for future private group feature
+export const prayerCircles = pgTable("prayer_circles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  createdBy: text("created_by").notNull(), // sessionId
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export const circleMembers = pgTable("circle_members", {
+  id: serial("id").primaryKey(),
+  circleId: integer("circle_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  role: text("role").default("member").notNull(), // owner | member
+  joinedAt: timestamp("joined_at").default(sql`now()`).notNull(),
 });
 
 // ── Bible Trivia ─────────────────────────────────────────────────────────────

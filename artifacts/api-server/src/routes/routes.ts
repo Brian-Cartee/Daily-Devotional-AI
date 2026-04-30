@@ -6,9 +6,9 @@ import fs from "fs";
 import { execSync } from "child_process";
 import { Readable } from "stream";
 import { storage } from "../storage";
-import { db } from "../db";
+import { db, pool } from "../db";
 import { api, chatRequestSchema, type ChatMessage } from "../sharedRoutes";
-import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema, insertBetaFeedbackSchema } from "@workspace/db";
+import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema, insertBetaFeedbackSchema, PRAYER_CATEGORIES, PRAYER_ENCOURAGEMENT_ACTIONS } from "@workspace/db";
 import { z } from "zod";
 import OpenAI from "openai";
 import multer from "multer";
@@ -233,7 +233,6 @@ export async function registerRoutes(
 
     if (sessionId) {
       try {
-        const { pool } = await import("../db");
         const result = await pool.query(
           `SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as day, COUNT(*)::int as count
            FROM ai_usage_logs
@@ -1719,29 +1718,262 @@ What you never do:
   // ── Journal Routes ──────────────────────────────────────────────────────────
 
   // ── Community Prayer Wall ──────────────────────────────────────────────────
-  app.get("/api/prayer-wall", async (req, res) => {
-    const sessionId = req.query.sessionId as string;
+
+  // Content safety check — keyword + OpenAI moderation
+  async function checkPrayerSafety(text: string): Promise<{ safe: boolean; selfHarm: boolean; reason?: string }> {
+    const lower = text.toLowerCase();
+    // Phone/email/link pattern check
+    if (/\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/.test(text)) return { safe: false, selfHarm: false, reason: "personal_info" };
+    if (/\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/.test(lower)) return { safe: false, selfHarm: false, reason: "personal_info" };
+    // Self-harm keywords — flag before moderation API for speed
+    const selfHarmWords = ["kill myself", "end my life", "suicide", "suicidal", "want to die", "hurting myself", "self harm", "self-harm"];
+    if (selfHarmWords.some(w => lower.includes(w))) return { safe: false, selfHarm: true };
     try {
-      const entries = await storage.getPrayerWallEntries();
-      // Attach whether current session has prayed for each entry
-      const withPrayed = await Promise.all(entries.map(async (e) => ({
-        ...e,
-        hasPrayed: sessionId ? await storage.hasPrayedFor(e.id, sessionId) : false,
-      })));
-      res.json(withPrayed);
-    } catch {
+      const mod = await openaiTTS.moderations.create({ input: text });
+      const r = mod.results[0];
+      if (r.flagged) {
+        const isSelfHarm = r.categories["self-harm" as keyof typeof r.categories] || r.categories["self-harm/intent" as keyof typeof r.categories];
+        return { safe: false, selfHarm: !!isSelfHarm, reason: "moderation" };
+      }
+    } catch { /* proceed if moderation API fails */ }
+    return { safe: true, selfHarm: false };
+  }
+
+  // In-memory daily prayer post counter (Free: 1/day, Pro: 5/day)
+  const prayerPostCounts = new Map<string, { date: string; count: number }>();
+  function getPrayerPostCount(sessionId: string): number {
+    const today = new Date().toISOString().split("T")[0];
+    const entry = prayerPostCounts.get(sessionId);
+    if (!entry || entry.date !== today) return 0;
+    return entry.count;
+  }
+  function incrementPrayerPostCount(sessionId: string): void {
+    const today = new Date().toISOString().split("T")[0];
+    const entry = prayerPostCounts.get(sessionId);
+    if (!entry || entry.date !== today) prayerPostCounts.set(sessionId, { date: today, count: 1 });
+    else entry.count++;
+  }
+
+  // In-memory daily encouragement counter (Free: 20/day, Pro: unlimited)
+  const encouragementCounts = new Map<string, { date: string; count: number }>();
+  function getEncouragementCount(sessionId: string): number {
+    const today = new Date().toISOString().split("T")[0];
+    const entry = encouragementCounts.get(sessionId);
+    if (!entry || entry.date !== today) return 0;
+    return entry.count;
+  }
+  function incrementEncouragementCount(sessionId: string): void {
+    const today = new Date().toISOString().split("T")[0];
+    const entry = encouragementCounts.get(sessionId);
+    if (!entry || entry.date !== today) encouragementCounts.set(sessionId, { date: today, count: 1 });
+    else entry.count++;
+  }
+
+  app.get("/api/prayer-wall", async (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    const category = req.query.category as string | undefined;
+    try {
+      let query = `
+        SELECT pw.*,
+          COALESCE(ec.prayed, 0)::int AS enc_prayed,
+          COALESCE(ec.standing_with_you, 0)::int AS enc_standing,
+          COALESCE(ec.not_alone, 0)::int AS enc_not_alone,
+          COALESCE(ec.god_is_near, 0)::int AS enc_god_is_near
+        FROM prayer_wall pw
+        LEFT JOIN (
+          SELECT request_id,
+            COUNT(CASE WHEN action_type = 'prayed' THEN 1 END) as prayed,
+            COUNT(CASE WHEN action_type = 'standing_with_you' THEN 1 END) as standing_with_you,
+            COUNT(CASE WHEN action_type = 'not_alone' THEN 1 END) as not_alone,
+            COUNT(CASE WHEN action_type = 'god_is_near' THEN 1 END) as god_is_near
+          FROM prayer_wall_encouragements GROUP BY request_id
+        ) ec ON ec.request_id = pw.id
+        WHERE pw.status IN ('active', 'answered')
+      `;
+      const params: any[] = [];
+      if (category && PRAYER_CATEGORIES.includes(category as any)) {
+        params.push(category);
+        query += ` AND pw.category = $${params.length}`;
+      }
+      query += ` ORDER BY pw.created_at DESC LIMIT 50`;
+      const result = await pool.query(query, params);
+
+      let myActions: Record<number, string[]> = {};
+      if (sessionId) {
+        const actRes = await pool.query(
+          `SELECT request_id, action_type FROM prayer_wall_encouragements WHERE session_id = $1`,
+          [sessionId]
+        );
+        for (const row of actRes.rows) {
+          if (!myActions[row.request_id]) myActions[row.request_id] = [];
+          myActions[row.request_id].push(row.action_type);
+        }
+      }
+
+      const entries = result.rows.map((e: any) => ({
+        id: e.id,
+        sessionId: e.session_id,
+        displayName: e.is_anonymous ? null : (e.display_name || null),
+        isAnonymous: e.is_anonymous,
+        request: e.request,
+        category: e.category,
+        status: e.status,
+        answeredText: e.answered_text,
+        answeredAt: e.answered_at,
+        createdAt: e.created_at,
+        isOwner: sessionId ? e.session_id === sessionId : false,
+        encouragements: {
+          prayed: e.enc_prayed,
+          standing_with_you: e.enc_standing,
+          not_alone: e.enc_not_alone,
+          god_is_near: e.enc_god_is_near,
+          total: e.enc_prayed + e.enc_standing + e.enc_not_alone + e.enc_god_is_near,
+        },
+        myActions: myActions[e.id] || [],
+      }));
+      res.json(entries);
+    } catch (err) {
       res.status(500).json({ message: "Failed to load prayer wall" });
+    }
+  });
+
+  app.get("/api/prayer-wall/answered", async (req, res) => {
+    try {
+      const result = await pool.query(
+        `SELECT id, display_name, is_anonymous, request, category, answered_text, answered_at, created_at
+         FROM prayer_wall WHERE status = 'answered' ORDER BY answered_at DESC LIMIT 20`
+      );
+      res.json(result.rows.map((e: any) => ({
+        id: e.id,
+        displayName: e.is_anonymous ? null : (e.display_name || null),
+        request: e.request,
+        category: e.category,
+        answeredText: e.answered_text,
+        answeredAt: e.answered_at,
+        createdAt: e.created_at,
+      })));
+    } catch {
+      res.status(500).json({ message: "Failed to load answered prayers" });
     }
   });
 
   app.post("/api/prayer-wall", async (req, res) => {
     const parsed = insertPrayerWallSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid request", errors: parsed.error.flatten() });
+    const { sessionId, request, category, isAnonymous, displayName } = parsed.data;
+
+    // Daily post limit check (isPro passed from client — honour-based; server side is free=1, pro=5)
+    const isPro = req.body.isPro === true;
+    const dailyLimit = isPro ? 5 : 1;
+    if (getPrayerPostCount(sessionId) >= dailyLimit) {
+      return res.status(429).json({
+        message: isPro
+          ? "You've shared your 5 prayer requests for today. Check back tomorrow."
+          : "free_limit",
+        limit: dailyLimit,
+      });
+    }
+
+    // Content safety
+    const safety = await checkPrayerSafety(request);
+    if (safety.selfHarm) {
+      return res.status(422).json({
+        message: "self_harm",
+        crisis: "You are not alone, and your life matters. If you may hurt yourself or are in immediate danger, please call emergency services now. In the U.S., call or text 988 for the Suicide & Crisis Lifeline.",
+      });
+    }
+    if (!safety.safe) {
+      return res.status(422).json({ message: "content_unsafe", reason: safety.reason });
+    }
+
     try {
-      const entry = await storage.createPrayerWallEntry(parsed.data);
-      res.json(entry);
+      const result = await pool.query(
+        `INSERT INTO prayer_wall (session_id, display_name, is_anonymous, request, category, status)
+         VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
+        [sessionId, isAnonymous ? null : (displayName || null), isAnonymous ?? true, request, category || "Other"]
+      );
+      incrementPrayerPostCount(sessionId);
+      res.json(result.rows[0]);
     } catch {
       res.status(500).json({ message: "Failed to submit prayer request" });
+    }
+  });
+
+  app.post("/api/prayer-wall/:id/encourage", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { sessionId, actionType, isPro } = req.body as { sessionId?: string; actionType?: string; isPro?: boolean };
+    if (!sessionId || isNaN(id) || !PRAYER_ENCOURAGEMENT_ACTIONS.includes(actionType as any)) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    // Daily encouragement limit (Free: 20/day)
+    if (!isPro && getEncouragementCount(sessionId) >= 20) {
+      return res.status(429).json({ message: "encouragement_limit" });
+    }
+    try {
+      // Check not already done this action on this request
+      const existing = await pool.query(
+        `SELECT id FROM prayer_wall_encouragements WHERE request_id = $1 AND session_id = $2 AND action_type = $3`,
+        [id, sessionId, actionType]
+      );
+      if (existing.rows.length > 0) return res.json({ ok: true, duplicate: true });
+      await pool.query(
+        `INSERT INTO prayer_wall_encouragements (request_id, session_id, action_type) VALUES ($1, $2, $3)`,
+        [id, sessionId, actionType]
+      );
+      incrementEncouragementCount(sessionId);
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Failed to record encouragement" });
+    }
+  });
+
+  app.post("/api/prayer-wall/:id/answer", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { sessionId, answeredText } = req.body as { sessionId?: string; answeredText?: string };
+    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
+    try {
+      const result = await pool.query(
+        `UPDATE prayer_wall SET status = 'answered', answered_text = $1, answered_at = NOW()
+         WHERE id = $2 AND session_id = $3 RETURNING id`,
+        [answeredText || null, id, sessionId]
+      );
+      if (result.rowCount === 0) return res.status(403).json({ message: "Not your prayer or not found" });
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Failed to mark prayer answered" });
+    }
+  });
+
+  app.post("/api/prayer-wall/:id/report", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { sessionId, reason } = req.body as { sessionId?: string; reason?: string };
+    const validReasons = ["harmful", "spam", "inappropriate", "divisive", "personal_info", "other"];
+    if (!sessionId || isNaN(id) || !validReasons.includes(reason || "")) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    try {
+      // One report per session per request
+      const existing = await pool.query(
+        `SELECT id FROM prayer_wall_reports WHERE request_id = $1 AND session_id = $2`,
+        [id, sessionId]
+      );
+      if (existing.rows.length > 0) return res.json({ ok: true, duplicate: true });
+      await pool.query(
+        `INSERT INTO prayer_wall_reports (request_id, session_id, reason) VALUES ($1, $2, $3)`,
+        [id, sessionId, reason]
+      );
+      // Increment report count and auto-hide at 3
+      const updated = await pool.query(
+        `UPDATE prayer_wall SET report_count = report_count + 1
+         WHERE id = $1 RETURNING report_count`,
+        [id]
+      );
+      if ((updated.rows[0]?.report_count ?? 0) >= 3) {
+        await pool.query(`UPDATE prayer_wall SET status = 'hidden' WHERE id = $1`, [id]);
+      }
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Failed to submit report" });
     }
   });
 
@@ -1754,19 +1986,6 @@ What you never do:
       res.json(result);
     } catch {
       res.status(500).json({ message: "Failed to record prayer" });
-    }
-  });
-
-  app.post("/api/prayer-wall/:id/remind", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const { sessionId, hoursFromNow = 24 } = req.body as { sessionId?: string; hoursFromNow?: number };
-    if (!sessionId || isNaN(id)) return res.status(400).json({ message: "Invalid request" });
-    try {
-      const remindAt = new Date(Date.now() + Math.min(hoursFromNow, 168) * 60 * 60 * 1000);
-      await storage.setReminderForPray(id, sessionId, remindAt);
-      res.json({ ok: true, remindAt });
-    } catch {
-      res.status(500).json({ message: "Failed to set reminder" });
     }
   });
 
@@ -3938,7 +4157,6 @@ ${historyNote}`;
   app.get("/api/admin/analytics", async (req, res) => {
     if (!adminAuth(req, res)) return;
     try {
-      const { pool } = await import("../db");
 
       const [sessionsRes, activeRes, journalDailyRes, prayerDailyRes, proRes, streakDistRes, journalTotalRes] = await Promise.all([
         pool.query(`SELECT COUNT(*) as total, AVG(current_streak)::numeric(4,1) as avg_streak, MAX(current_streak) as max_streak, MAX(longest_streak) as longest_ever FROM streaks`),

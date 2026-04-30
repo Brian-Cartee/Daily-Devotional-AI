@@ -37,19 +37,115 @@ export async function recordStreak(sessionId: string): Promise<void> {
   });
 }
 
-export async function fetchPrayerWall(sessionId: string): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/api/prayer-wall?sessionId=${sessionId}`);
+export const PRAYER_CATEGORIES = [
+  "Anxiety / Fear", "Family", "Healing", "Grief", "Marriage / Relationship",
+  "Direction / Decision", "Financial Stress", "Loneliness", "Thanksgiving / Praise", "Other",
+] as const;
+export type PrayerCategory = typeof PRAYER_CATEGORIES[number];
+
+export const ENCOURAGEMENT_ACTIONS = [
+  { key: "prayed", label: "I prayed for you" },
+  { key: "standing_with_you", label: "Standing with you" },
+  { key: "not_alone", label: "You're not alone" },
+  { key: "god_is_near", label: "God is near" },
+] as const;
+export type EncouragementAction = typeof ENCOURAGEMENT_ACTIONS[number]["key"];
+
+export interface PrayerWallItem {
+  id: number;
+  sessionId: string;
+  displayName: string | null;
+  isAnonymous: boolean;
+  request: string;
+  category: PrayerCategory;
+  status: "active" | "answered" | "hidden" | "removed";
+  answeredText: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+  isOwner: boolean;
+  encouragements: { prayed: number; standing_with_you: number; not_alone: number; god_is_near: number; total: number };
+  myActions: EncouragementAction[];
+}
+
+export interface AnsweredPrayer {
+  id: number;
+  displayName: string | null;
+  request: string;
+  category: PrayerCategory;
+  answeredText: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+}
+
+export async function fetchPrayerWall(sessionId: string, category?: string): Promise<PrayerWallItem[]> {
+  const params = new URLSearchParams({ sessionId });
+  if (category) params.set("category", category);
+  const res = await fetch(`${API_BASE}/api/prayer-wall?${params}`);
   if (!res.ok) return [];
   return res.json();
 }
 
-export async function submitPrayer(request: string, sessionId: string): Promise<any> {
+export async function fetchAnsweredPrayers(): Promise<AnsweredPrayer[]> {
+  const res = await fetch(`${API_BASE}/api/prayer-wall/answered`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function submitPrayer(params: {
+  request: string;
+  sessionId: string;
+  category?: PrayerCategory;
+  isAnonymous?: boolean;
+  displayName?: string;
+  isPro?: boolean;
+}): Promise<{ error?: string; crisis?: string; entry?: any }> {
   const res = await fetch(`${API_BASE}/api/prayer-wall`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ request, sessionId }),
+    body: JSON.stringify(params),
   });
-  if (!res.ok) throw new Error("Failed to submit prayer");
+  if (res.status === 422) {
+    const data = await res.json();
+    return { error: data.message, crisis: data.crisis };
+  }
+  if (res.status === 429) {
+    const data = await res.json();
+    return { error: data.message };
+  }
+  if (!res.ok) return { error: "submit_failed" };
+  return { entry: await res.json() };
+}
+
+export async function encouragePrayer(id: number, sessionId: string, actionType: EncouragementAction, isPro: boolean): Promise<any> {
+  const res = await fetch(`${API_BASE}/api/prayer-wall/${id}/encourage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, actionType, isPro }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw Object.assign(new Error("encourage_failed"), { code: data.message });
+  }
+  return res.json();
+}
+
+export async function markPrayerAnswered(id: number, sessionId: string, answeredText?: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/api/prayer-wall/${id}/answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, answeredText }),
+  });
+  if (!res.ok) throw new Error("Failed to mark prayer answered");
+  return res.json();
+}
+
+export async function reportPrayer(id: number, sessionId: string, reason: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/api/prayer-wall/${id}/report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, reason }),
+  });
+  if (!res.ok) throw new Error("Failed to report prayer");
   return res.json();
 }
 
