@@ -28,11 +28,11 @@ console.log('Lines: ' + pem.split('\n').length);
 "
 
 echo "=== Submitting build to App Store Connect ==="
-cd /tmp/eas-isolated-build
+cd /home/runner/workspace/.mobile-build
 
 EXPO_TOKEN=$EXPO_TOKEN npx eas-cli submit \
   --platform ios \
-  --id f5e41d03-d1f5-497d-9ded-80528b4f1120 \
+  --id a7f74252-5663-4c54-b723-501372980c0e \
   --non-interactive \
   --verbose \
   --verbose-fastlane 2>&1
