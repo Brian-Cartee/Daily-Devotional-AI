@@ -59,6 +59,8 @@
     "expo-build-properties": "^55.0.13",
     "expo-device": "^8.0.10",
     "expo-notifications": "^0.32.16",
-    "react-native-purchases": "9.7.2"
+    "expo-sharing": "^55.0.18",
+    "react-native-purchases": "9.7.2",
+    "react-native-view-shot": "^4.0.3"
   }
 }

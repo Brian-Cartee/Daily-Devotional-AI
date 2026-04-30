@@ -19,6 +19,8 @@ import * as Haptics from "expo-haptics";
 
 import { analyzePrayerChunk, savePrayerRecording, type PrayerReflection } from "@/lib/api";
 import { useSubscription } from "@/lib/revenuecat";
+import ShareCard, { SHARE_CARD_WIDTH } from "@/components/ShareCard";
+import { shareCard } from "@/lib/share";
 
 const { width: SW } = Dimensions.get("window");
 const CHUNK_MS = 20_000;
@@ -59,6 +61,20 @@ export default function PrayerLiveScreen() {
   const breatheAnim = useRef(new Animated.Value(1)).current;
   const breatheLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const reflectionFade = useRef(new Animated.Value(0)).current;
+  const shareCardRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
+
+  const handleShareReflection = async () => {
+    if (!reflection || sharing) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSharing(true);
+    await shareCard(shareCardRef, {
+      type: "prayer",
+      text: reflection.scriptureText || reflection.scriptureRef || "",
+      reference: reflection.scriptureRef || "",
+    });
+    setSharing(false);
+  };
 
   const startBreathe = () => {
     const loop = Animated.loop(
@@ -366,8 +382,28 @@ export default function PrayerLiveScreen() {
                 {reflection.scriptureText ? (
                   <Text style={styles.scriptureText}>"{reflection.scriptureText}"</Text>
                 ) : null}
+                <TouchableOpacity
+                  style={styles.shareBtn}
+                  onPress={handleShareReflection}
+                  disabled={sharing}
+                  testID="button-share-reflection"
+                >
+                  <Feather name={sharing ? "loader" : "share-2"} size={13} color="rgba(255,255,255,0.7)" />
+                  <Text style={styles.shareBtnText}>Share this scripture</Text>
+                </TouchableOpacity>
               </View>
             )}
+
+            {/* Off-screen share card */}
+            <View style={styles.offScreen} pointerEvents="none">
+              <View ref={shareCardRef} collapsable={false}>
+                <ShareCard
+                  type="prayer"
+                  mainText={reflection?.scriptureText || reflection?.scriptureRef || ""}
+                  reference={reflection?.scriptureRef || ""}
+                />
+              </View>
+            </View>
 
             {reflection?.reflection && (
               <Text style={styles.reflectionText}>{reflection.reflection}</Text>
@@ -543,6 +579,26 @@ const styles = StyleSheet.create({
   },
   scriptureRef: { color: GLOW_GOLD, fontSize: 13, fontWeight: "700", letterSpacing: 0.5 },
   scriptureText: { color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 26, fontStyle: "italic" },
+  shareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-end",
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  shareBtnText: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+  offScreen: {
+    position: "absolute",
+    left: -(SHARE_CARD_WIDTH + 200),
+    top: 0,
+    opacity: 0,
+  },
   reflectionText: {
     color: "rgba(255,255,255,0.75)",
     fontSize: 16,

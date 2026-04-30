@@ -30,6 +30,8 @@ import {
   loadNotificationPrefs,
   saveNotificationPrefs,
 } from "@/lib/notifications";
+import ShareCard, { SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT } from "@/components/ShareCard";
+import { shareCard } from "@/lib/share";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SESSION_ID_KEY = "sp_session_id";
@@ -87,6 +89,8 @@ export default function HomeScreen() {
   const [pushNudgeLoading, setPushNudgeLoading] = useState(false);
   const [showProNudge, setShowProNudge] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const shareCardRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     getOrCreateSessionId().then((id) => {
@@ -217,6 +221,18 @@ export default function HomeScreen() {
 
   const styles = makeStyles(colors, insets);
 
+  const handleShareVerse = async () => {
+    if (!dailyArt || sharing) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSharing(true);
+    await shareCard(shareCardRef, {
+      type: "verse",
+      text: dailyArt.verse || "",
+      reference: dailyArt.reference || "",
+    });
+    setSharing(false);
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -277,8 +293,30 @@ export default function HomeScreen() {
           {!!dailyArt.reflection && (
             <Text style={styles.heroReflection}>{dailyArt.reflection}</Text>
           )}
+          {/* Share button */}
+          <TouchableOpacity
+            style={styles.heroShareBtn}
+            onPress={handleShareVerse}
+            disabled={sharing}
+            accessibilityLabel="Share this verse"
+            testID="button-share-verse"
+          >
+            <Feather name={sharing ? "loader" : "share-2"} size={15} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.heroShareText}>Share</Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
+
+      {/* Off-screen share card — captured by ViewShot */}
+      <View style={styles.offScreen} pointerEvents="none">
+        <View ref={shareCardRef} collapsable={false}>
+          <ShareCard
+            type="verse"
+            mainText={dailyArt.verse || ""}
+            reference={dailyArt.reference || ""}
+          />
+        </View>
+      </View>
 
       {/* Streak card */}
       {!!sessionId && (
@@ -547,6 +585,30 @@ function makeStyles(colors: any, insets: any) {
       fontFamily: "Inter_400Regular",
       fontStyle: "italic",
       marginTop: 2,
+    },
+    heroShareBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      alignSelf: "flex-start",
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.3)",
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: "rgba(0,0,0,0.25)",
+    },
+    heroShareText: {
+      color: "rgba(255,255,255,0.85)",
+      fontSize: 12,
+      fontFamily: "Inter_600SemiBold",
+    },
+    offScreen: {
+      position: "absolute",
+      left: -(SHARE_CARD_WIDTH + 200),
+      top: 0,
+      opacity: 0,
     },
     streakCard: {
       flexDirection: "row",

@@ -191,7 +191,7 @@ export default function SubmitPrayerScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Post anonymously</Text>
           <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
-            {isAnonymous ? "Shows as "Anonymous Believer"" : "Shows your first name only"}
+            {isAnonymous ? 'Shows as "Anonymous Believer"' : "Shows your first name only"}
           </Text>
         </View>
         <Switch
