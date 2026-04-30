@@ -1,0 +1,47 @@
+Shepherd's Path — Free vs. Pro Feature Settings
+AI Conversations (server-enforced per session)
+Days Using App	Daily Limit
+Days 1–30	50 AI conversations/day
+Days 31–90	30/day
+Day 91+	20/day
+Pro	Unlimited
+The idea: new users get a full, generous experience. The limit tightens gradually and naturally over time so that longtime daily users feel the value of going Pro.
+
+Sermon History
+Free: Last 3 saved sermons only (no transcript, no AI Q&A)
+Pro: Up to 50 saved sermons, full transcripts, AI Q&A on any message, pattern insights
+A nudge appears when a free user hits 3 sermons: "Pro members keep every sermon — with transcripts, AI summaries, and the ability to ask questions about any message."
+
+Prayer Recordings History
+Free: 20 most recent recordings
+Pro: 50 most recent recordings + deeper pattern insights over time
+A nudge appears at 5+ prayer recordings: "Pro keeps your full prayer history + pattern insights."
+
+Subscription Screen Copy
+Hero title: "Go Deeper in Your Walk"
+
+Hero subtitle: "You've had a generous start — explore freely for your first 30 days. Pro removes all limits and unlocks the full depth of what Shepherd's Path can do for your walk."
+
+Features listed for Pro:
+
+Unlimited daily AI conversations — no daily cap, ever
+Full sermon history — revisit and reflect on every message
+Unlimited saved prayer recordings
+Deeper patterns in your prayers and spiritual growth over time
+Scripture, reflection, and guidance shaped to your real moments
+Every feature we build, unlocked as it arrives
+Faith anchor line (italic, below features): "The free plan is genuinely generous. Pro is for those who want to go further — without limits or interruption."
+
+Social proof line: "Join others growing deeper in their faith each day"
+
+Plans: Monthly / Annual (annual shows "SAVE 35%" badge, labeled "Best value")
+
+What's Always Free (No Gate)
+Daily verse, reflection, and prayer (auto-generated each morning)
+Full listen mode (verse → reflection → prayer audio)
+Scripture context and commentary
+Guidance conversations (within daily limit)
+Prayer wall (community)
+Streaks and app notifications
+Daily AI devotional journaling
+That's the complete picture. Good areas ChatGPT might weigh in on: whether the tier thresholds feel right, whether the features list is compelling and in the right order, and whether the copy strikes the right faith-forward tone without feeling pushy.
