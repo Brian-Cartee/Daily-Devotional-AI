@@ -97,7 +97,7 @@ export default function PrayerScreen() {
 
   const loadPrayerHistory = useCallback(async (sid: string) => {
     if (!sid) return;
-    const limit = isSubscribed ? 20 : 5;
+    const limit = isSubscribed ? 50 : 20;
     const history = await fetchPrayerRecordings(sid, limit);
     setPrayerHistory(history);
   }, [isSubscribed]);

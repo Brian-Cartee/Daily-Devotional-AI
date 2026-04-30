@@ -115,7 +115,9 @@ function isRateLimited(key: string, maxRequests: number, windowMs: number): bool
   return false;
 }
 function getDailyLimit(daysWithApp: number): number {
-  return daysWithApp <= 14 ? 12 : 7;
+  if (daysWithApp <= 30) return 50;   // First 30 days: very open, let them explore fully
+  if (daysWithApp <= 90) return 30;   // Days 31–90: still generous
+  return 20;                          // After 90 days: introduce Pro awareness naturally
 }
 
 function getDailyUsageCount(sessionId: string): number {
