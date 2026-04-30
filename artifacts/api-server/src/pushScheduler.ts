@@ -13,6 +13,8 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
+} else {
+  console.log("[push] Push notifications disabled: missing VAPID keys");
 }
 
 type NotifPayload = { title: string; body: string; tag?: string; url?: string };
