@@ -6,15 +6,12 @@ RUN corepack enable
 
 COPY . .
 
-# install everything
 RUN pnpm install --no-frozen-lockfile
 
-# 🔥 ONLY build the real server
+# 🔥 FIXED BUILD STEP
 RUN cd artifacts/api-server && pnpm build
-
-# run the real server
-WORKDIR /app/artifacts/api-server
 
 EXPOSE 3000
 
+# 🔥 FIXED START
 CMD ["node", "artifacts/api-server/dist/index.mjs"]
