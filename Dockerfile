@@ -8,7 +8,8 @@ COPY . .
 
 RUN pnpm install --no-frozen-lockfile
 
-RUN pnpm --filter @workspace/api-server build
+# ✅ ONLY build the REAL server
+RUN cd artifacts/api-server && pnpm install && pnpm build
 
 WORKDIR /app/artifacts/api-server
 
