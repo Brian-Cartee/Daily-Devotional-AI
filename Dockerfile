@@ -6,7 +6,9 @@ RUN corepack enable
 
 COPY . .
 
-RUN cd artifacts/api-server && pnpm install && pnpm build
+RUN pnpm install --frozen-lockfile
+
+RUN pnpm --filter ./artifacts/api-server build
 
 WORKDIR /app/artifacts/api-server
 
