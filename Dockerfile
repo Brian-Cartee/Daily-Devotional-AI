@@ -2,20 +2,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Enable pnpm
 RUN corepack enable
 
-# Copy EVERYTHING (required for workspace)
 COPY . .
 
-# Install ALL workspace dependencies
-RUN pnpm install --no-frozen-lockfile
-
-# Build ALL packages in workspace
 RUN cd artifacts/api-server && pnpm install && pnpm build
 
-# Expose port
+WORKDIR /app/artifacts/api-server
+
 EXPOSE 3000
 
-# Start app
-CMD ["node", "artifacts/api-server/dist/index.mjs"]
+CMD ["node", "dist/index.mjs"]
