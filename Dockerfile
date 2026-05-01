@@ -12,10 +12,10 @@ COPY . .
 RUN pnpm install --no-frozen-lockfile
 
 # Build ALL packages in workspace
-RUN pnpm -r build
+RUN pnpm --filter @workspace/api-server build
 
 # Expose port
 EXPOSE 3000
 
 # Start app
-CMD ["pnpm", "--filter", "@workspace/api-server", "start"]
+CMD ["pnpm", "--filter=@workspace/api-server", "start"]
