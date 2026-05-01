@@ -15,7 +15,7 @@ RUN pnpm install --no-frozen-lockfile
 COPY . .
 
 # Build if needed
-RUN pnpm run build || true
+RUN pnpm run build 
 
 EXPOSE 3000
 
