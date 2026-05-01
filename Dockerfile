@@ -18,4 +18,4 @@ RUN pnpm -r build
 EXPOSE 3000
 
 # Start app
-CMD ["pnpm", "start"]
+CMD ["pnpm", "--filter", "@workspace/api-server", "start"]
