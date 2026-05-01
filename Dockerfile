@@ -6,13 +6,13 @@ RUN corepack enable
 
 COPY . .
 
-# install deps (fix lockfile issue)
+# install everything
 RUN pnpm install --no-frozen-lockfile
 
-# build ONLY the real server
-RUN pnpm --filter @workspace/api-server build
+# 🔥 ONLY build the real server
+RUN cd artifacts/api-server && pnpm build
 
-# move into the correct runtime directory
+# run the real server
 WORKDIR /app/artifacts/api-server
 
 EXPOSE 3000
