@@ -14,10 +14,14 @@ RUN pnpm install --no-frozen-lockfile
 # Copy rest of app
 COPY . .
 
-# Build if needed
-RUN pnpm run build 
+# Build ONLY api-server (no typecheck explosion)
+RUN pnpm --filter @workspace/api-server run build
+
+# Railway uses PORT automatically
+ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]s
+# Start the built server directly
+CMD ["node", "artifacts/api-server/dist/index.mjs"]
 
