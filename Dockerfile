@@ -5,23 +5,17 @@ WORKDIR /app
 # Enable pnpm
 RUN corepack enable
 
-# Copy only package files first (better caching)
-COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
-
-# Copy rest of app
+# Copy EVERYTHING (required for workspace)
 COPY . .
 
-# Build ONLY api-server (no typecheck explosion)
-RUN pnpm --filter @workspace/api-server run build
+# Install ALL workspace dependencies
+RUN pnpm install --no-frozen-lockfile
 
-# Railway uses PORT automatically
-ENV PORT=3000
+# Build ALL packages in workspace
+RUN pnpm -r build
 
+# Expose port
 EXPOSE 3000
 
-# Start the built server directly
-CMD ["node", "artifacts/api-server/dist/index.mjs"]
-
+# Start app
+CMD ["pnpm", "start"]
