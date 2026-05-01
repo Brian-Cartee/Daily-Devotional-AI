@@ -1,0 +1,69 @@
+We are experiencing a production inconsistency issue between devices.
+
+Problem:
+The iOS app (Shepherd’s Path) is showing different behavior between two devices:
+- One device (fresh install) shows correct UI and functionality
+- Another device (developer device) shows outdated behavior or incorrect data
+
+We suspect:
+1. Environment variables are not correctly set in production builds
+2. The backend API URL (EXPO_PUBLIC_API_URL) may be missing, incorrect, or inconsistently applied
+3. The server may not be properly using process.env.PORT or environment configs in production
+4. The Docker build may not be including all dependencies or environment variables correctly
+5. There may be caching or build inconsistencies between deployments
+
+Your tasks:
+
+1. VERIFY SERVER CONFIGURATION
+- Ensure the server uses:
+  const port = Number(process.env.PORT) || 3000;
+- Ensure NO hard crashes occur if PORT is missing
+- Ensure server always starts in Railway environment
+
+2. VERIFY ENVIRONMENT VARIABLES
+- Confirm EXPO_PUBLIC_API_URL is properly defined and used
+- Ensure backend URL is consistent across all builds
+- Add logging on server startup to confirm environment variables:
+  console.log("PORT:", process.env.PORT);
+  console.log("API URL:", process.env.EXPO_PUBLIC_API_URL);
+
+3. FIX DOCKERFILE
+- Ensure all dependencies are installed correctly
+- Ensure TypeScript builds successfully
+- Fix missing types:
+  - install @types/node
+- Ensure build step does NOT fail if optional packages are missing
+- Ensure correct working directory and file copying
+
+4. FIX BUILD ERRORS
+Resolve these errors:
+- Cannot find type definition file for 'node'
+- Cannot find module 'pg'
+- Cannot find module 'drizzle-orm'
+- Cannot find module 'zod'
+- Cannot find module '@tanstack/react-query'
+
+Ensure all required dependencies are installed in package.json
+
+5. ENSURE CONSISTENT PRODUCTION BUILD
+- Make sure the same build is deployed to all users
+- Ensure no fallback or empty API URL is used
+- Remove any hardcoded or default localhost URLs
+
+6. ADD SAFE FALLBACK LOGIC
+- If environment variables are missing, log a warning instead of crashing
+- Ensure the app still starts
+
+7. OUTPUT
+- Provide corrected:
+  - index.ts (server entry)
+  - Dockerfile
+  - package.json fixes (dependencies)
+- Explain what was wrong and how it was fixed
+
+Goal:
+We want a stable production backend that:
+- Always starts
+- Uses correct environment variables
+- Builds successfully in Docker (Railway)
+- Serves the same behavior to all users consistently
