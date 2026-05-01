@@ -17,4 +17,4 @@ WORKDIR /app/artifacts/api-server
 
 EXPOSE 3000
 
-CMD ["node", "dist/index.mjs"]
+CMD ["node", "artifacts/api-server/dist/index.mjs"]
