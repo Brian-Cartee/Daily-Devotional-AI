@@ -4,20 +4,18 @@ WORKDIR /app
 
 RUN corepack enable
 
-# Copy backend ONLY
-COPY artifacts/api-server ./api-server
+# Copy entire repo (yes — but controlled)
+COPY . .
 
-WORKDIR /app/api-server
+# Install once (workspace aware)
+RUN pnpm install --frozen-lockfile
 
-# 🔥 IMPORTANT: remove workspace references before install
-RUN rm -rf node_modules pnpm-lock.yaml
+# Build ONLY backend package
+RUN pnpm --filter @workspace/api-server build
 
-# Install as standalone package (no workspace)
-RUN pnpm install --no-workspace --no-frozen-lockfile
-
-# Build
-RUN pnpm build
+# Move to backend
+WORKDIR /app/artifacts/api-server
 
 EXPOSE 3000
 
-CMD ["node", "dist/index.mjs"]
+CMD ["pnpm", "start"]
