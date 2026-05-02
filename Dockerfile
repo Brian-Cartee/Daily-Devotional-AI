@@ -6,13 +6,11 @@ RUN corepack enable
 
 COPY . .
 
-# Install all dependencies (workspace-aware)
 RUN pnpm install --no-frozen-lockfile
 
-# Move into the REAL backend
+# Move into backend ONLY
 WORKDIR /app/artifacts/api-server
 
-# Build only this service
 RUN pnpm build
 
 EXPOSE 3000
