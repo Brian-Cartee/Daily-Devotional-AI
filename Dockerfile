@@ -5,20 +5,20 @@ WORKDIR /app
 # Enable pnpm
 RUN corepack enable
 
-# Copy everything
+# Copy entire repo (needed for workspace)
 COPY . .
 
-# Install dependencies (workspace-aware)
+# Install all workspace dependencies
 RUN pnpm install --no-frozen-lockfile
 
-# Build ONLY the actual server
-RUN cd artifacts/api-server && pnpm build
+# Build ONLY the api server properly via workspace
+RUN pnpm --filter ./artifacts/api-server build
 
-# Move into server directory for runtime
+# Move into the backend
 WORKDIR /app/artifacts/api-server
 
-# Expose port
+# Expose Railway port
 EXPOSE 3000
 
-# Start server
-CMD ["node", "dist/index.mjs"]
+# Start using workspace script (NOT direct file)
+CMD ["pnpm", "start"]
