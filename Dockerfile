@@ -4,17 +4,16 @@ WORKDIR /app
 
 RUN corepack enable
 
-# Copy entire repo (yes — but controlled)
 COPY . .
 
-# Install once (workspace aware)
-RUN pnpm install --frozen-lockfile
+# Install all dependencies (workspace-aware)
+RUN pnpm install --no-frozen-lockfile
 
-# Build ONLY backend package
-RUN pnpm --filter @workspace/api-server build
-
-# Move to backend
+# Move into the REAL backend
 WORKDIR /app/artifacts/api-server
+
+# Build only this service
+RUN pnpm build
 
 EXPOSE 3000
 
