@@ -4,16 +4,19 @@ WORKDIR /app
 
 RUN corepack enable
 
-# Copy ONLY backend
-COPY artifacts/api-server ./api-server
+# Copy ONLY what backend needs
+COPY artifacts/api-server ./artifacts/api-server
+COPY lib ./lib
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-WORKDIR /app/api-server
-
-# Install ONLY backend deps
+# Install workspace deps properly
 RUN pnpm install --no-frozen-lockfile
 
-# Build backend
-RUN pnpm build
+# Build backend via workspace
+RUN pnpm --filter ./artifacts/api-server build
+
+# Move into backend
+WORKDIR /app/artifacts/api-server
 
 EXPOSE 3000
 
