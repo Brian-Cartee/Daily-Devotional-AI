@@ -4,15 +4,15 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY . .
+# copy only backend + minimal needed files
+COPY artifacts/api-server ./api-server
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+
+WORKDIR /app/api-server
 
 RUN pnpm install --no-frozen-lockfile
 
-# Move into backend ONLY
-WORKDIR /app/artifacts/api-server
-
-RUN pnpm build
-
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["node", "--loader", "ts-node/esm", "src/index.ts"]
