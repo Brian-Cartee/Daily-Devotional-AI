@@ -62,6 +62,10 @@ export default function MainScreen() {
             setError(true);
           }
         }}
+        onContentProcessDidTerminate={() => {
+          setLoading(true);
+          webviewRef.current?.reload();
+        }}
       />
       {loading && (
         <View style={styles.loadingOverlay}>
