@@ -53,7 +53,15 @@ echo "=== Build dir size (source only) ==="
 du -sh --exclude=node_modules "$BUILD_DIR" 2>/dev/null || du -sh "$BUILD_DIR"
 
 echo "=== Starting EAS Build ==="
-EXPO_TOKEN=$EXPO_TOKEN npx eas-cli build \
+BUILD_OUTPUT=$(EXPO_TOKEN=$EXPO_TOKEN npx eas-cli build \
   --platform ios \
   --profile production \
-  --non-interactive
+  --non-interactive 2>&1)
+echo "$BUILD_OUTPUT"
+
+NEW_BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP '(?<=builds/)[0-9a-f-]{36}' | tail -1)
+if [ -n "$NEW_BUILD_ID" ]; then
+  echo "=== Updating submit script with new build ID: $NEW_BUILD_ID ==="
+  sed -i "s|BUILD_ID=\"\${SUBMIT_BUILD_ID:-[0-9a-f-]*}\"|BUILD_ID=\"\${SUBMIT_BUILD_ID:-$NEW_BUILD_ID}\"|" "$SRC/submit-ios.sh"
+  echo "✓ submit-ios.sh updated"
+fi

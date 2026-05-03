@@ -83,7 +83,7 @@ CHECKEOF
 echo ""
 echo "=== Submitting to App Store Connect ==="
 # Latest completed build ID — update this when a new build is ready
-BUILD_ID="${SUBMIT_BUILD_ID:-86fd813f-cf2f-4198-a375-74b7a0c3af58}"
+BUILD_ID="${SUBMIT_BUILD_ID:-cbe22c1e-1f97-4371-84d2-10b32c621a55}"
 
 # eas-cli must run from a directory with eas.json
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
