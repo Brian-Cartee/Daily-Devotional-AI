@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,10 +12,57 @@ import { WebView } from "react-native-webview";
 
 const APP_URL = "https://www.shepherdspathai.com";
 
+// Runs BEFORE any web content — forces dark class immediately so there is
+// never a flash of the light (cream/white) theme during page bootstrap.
+const BEFORE_CONTENT_JS = `(function(){
+  try{
+    document.documentElement.classList.add('dark');
+    if(!localStorage.getItem('sp-theme')){
+      localStorage.setItem('sp-theme','dark');
+    }
+  }catch(e){}
+  true;
+})();`;
+
+// Runs AFTER the page has loaded — polls until React has mounted (#root has
+// children) then notifies the native shell so it can hide the loading overlay.
+// A hard 8-second failsafe fires regardless so the overlay never blocks forever.
+const AFTER_LOAD_JS = `(function(){
+  var sent=false;
+  function notify(){
+    if(sent)return;
+    sent=true;
+    try{window.ReactNativeWebView.postMessage(JSON.stringify({type:'app_ready'}));}catch(e){}
+  }
+  function check(){
+    var r=document.getElementById('root');
+    if(r&&r.children.length>0){notify();return;}
+    setTimeout(check,100);
+  }
+  check();
+  setTimeout(notify,8000);
+  true;
+})();`;
+
 export default function MainScreen() {
   const webviewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const failsafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (failsafeRef.current) clearTimeout(failsafeRef.current);
+    };
+  }, []);
+
+  const hideOverlay = () => {
+    if (failsafeRef.current) {
+      clearTimeout(failsafeRef.current);
+      failsafeRef.current = null;
+    }
+    setLoading(false);
+  };
 
   const reload = () => {
     setError(false);
@@ -53,9 +100,29 @@ export default function MainScreen() {
         domStorageEnabled
         allowsBackForwardNavigationGestures
         pullToRefreshEnabled
-        onLoadStart={() => { setLoading(true); setError(false); }}
-        onLoadEnd={() => setLoading(false)}
-        onError={() => { setLoading(false); setError(true); }}
+        injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
+        injectedJavaScript={AFTER_LOAD_JS}
+        onMessage={(e) => {
+          try {
+            const data = JSON.parse(e.nativeEvent.data);
+            if (data.type === "app_ready") hideOverlay();
+          } catch {}
+        }}
+        onLoadStart={() => {
+          setLoading(true);
+          setError(false);
+        }}
+        onLoadEnd={() => {
+          // Don't hide the overlay here — wait for the app_ready message from
+          // the web app instead. Start a 10-second failsafe in case the
+          // message never arrives (e.g. old website version, JS error).
+          if (failsafeRef.current) clearTimeout(failsafeRef.current);
+          failsafeRef.current = setTimeout(hideOverlay, 10000);
+        }}
+        onError={() => {
+          setLoading(false);
+          setError(true);
+        }}
         onHttpError={(e) => {
           if (e.nativeEvent.statusCode >= 500) {
             setLoading(false);

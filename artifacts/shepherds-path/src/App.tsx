@@ -160,6 +160,16 @@ function App() {
     applyTheme(theme);
   }, [theme]);
 
+  useEffect(() => {
+    try {
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "app_ready" })
+        );
+      }
+    } catch {}
+  }, []);
+
   const toggleTheme = () =>
     setTheme((t) => (t === "dark" ? "light" : "dark"));
 
