@@ -281,11 +281,10 @@ export function useTTS() {
       if (!blobUrl) {
         blobUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
         clearSlowTimer();
-        if (!blobUrl || chainCancelRef.current) {
-          setLoading(false);
-          if (!chainCancelRef.current) setError(true);
-          break;
-        }
+        if (chainCancelRef.current) break;
+        // If this section's fetch failed, skip it and move to the next one
+        // rather than stopping the whole chain.
+        if (!blobUrl) continue;
       } else {
         clearSlowTimer();
       }
@@ -306,25 +305,63 @@ export function useTTS() {
       const segStart = (i / sections.length) * 100;
       const segEnd = ((i + 1) / sections.length) * 100;
 
-      // Attempt playback — returns true if played cleanly, false on any error
+      // Attempt playback — returns true if played cleanly, false on any error.
+      // Includes a duration-based timeout so a missing onended never hangs the chain.
       const tryPlay = (urlToPlay: string): Promise<boolean> =>
         new Promise<boolean>((resolve) => {
+          let settled = false;
+          const done = (val: boolean) => {
+            if (settled) return;
+            settled = true;
+            resolve(val);
+          };
+
           const audio = new Audio(urlToPlay);
           audioRef.current = audio;
+
+          // Once duration is known, set a hard ceiling so onended hanging never
+          // blocks the chain forever (duration + 15 s buffer).
+          let durationTimeout: ReturnType<typeof setTimeout> | null = null;
+          audio.onloadedmetadata = () => {
+            if (audio.duration && isFinite(audio.duration)) {
+              durationTimeout = setTimeout(() => {
+                URL.revokeObjectURL(urlToPlay);
+                done(true);
+              }, (audio.duration + 15) * 1000);
+            }
+          };
+
           audio.ontimeupdate = () => {
             if (audio.duration) {
               setProgress(Math.round(segStart + (audio.currentTime / audio.duration) * (segEnd - segStart)));
             }
           };
-          audio.onended = () => { URL.revokeObjectURL(urlToPlay); resolve(true); };
-          audio.onerror = () => { URL.revokeObjectURL(urlToPlay); resolve(false); };
-          if (chainCancelRef.current) { URL.revokeObjectURL(urlToPlay); resolve(false); return; }
-          audio.play().catch(() => { URL.revokeObjectURL(urlToPlay); resolve(false); });
+          audio.onended = () => {
+            if (durationTimeout) clearTimeout(durationTimeout);
+            URL.revokeObjectURL(urlToPlay);
+            done(true);
+          };
+          audio.onerror = () => {
+            if (durationTimeout) clearTimeout(durationTimeout);
+            URL.revokeObjectURL(urlToPlay);
+            done(false);
+          };
+          if (chainCancelRef.current) {
+            if (durationTimeout) clearTimeout(durationTimeout);
+            URL.revokeObjectURL(urlToPlay);
+            done(false);
+            return;
+          }
+          audio.play().catch(() => {
+            if (durationTimeout) clearTimeout(durationTimeout);
+            URL.revokeObjectURL(urlToPlay);
+            done(false);
+          });
         });
 
       const played = await tryPlay(blobUrl);
 
-      // On error, retry with a fresh fetch before skipping this section
+      // On error, retry once with a fresh fetch before skipping this section
       if (!played && !chainCancelRef.current) {
         const retryUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
         if (retryUrl && !chainCancelRef.current) {
@@ -342,6 +379,7 @@ export function useTTS() {
     setPlaying(false);
     audioRef.current = null;
 
+    // Always complete gracefully unless the user explicitly stopped playback.
     if (!chainCancelRef.current) {
       setProgress(100);
       onComplete?.();
