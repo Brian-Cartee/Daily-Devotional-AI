@@ -60,6 +60,33 @@ async function main() {
     console.log(`  v${v.attributes.versionString}  ${emoji}`);
   });
 
+  // Read the version we're about to submit from app.json
+  const fs = require('fs');
+  let submitVersion = null;
+  try {
+    const appJson = JSON.parse(fs.readFileSync('/home/runner/workspace/.mobile-build/app.json', 'utf8'));
+    submitVersion = appJson?.expo?.version;
+    if (submitVersion) console.log(`Build version being submitted: ${submitVersion}`);
+  } catch(e) { console.log('Could not read app.json version'); }
+
+  // Block if this version is already LIVE on the App Store
+  if (submitVersion) {
+    const alreadyLive = (versions.data || []).find(v =>
+      v.attributes.versionString === submitVersion &&
+      v.attributes.appStoreState === 'READY_FOR_SALE'
+    );
+    if (alreadyLive) {
+      console.log('');
+      console.log('=======================================================');
+      console.log(`  BLOCKED: Version ${submitVersion} is already LIVE on the App Store.`);
+      console.log('  You cannot submit another binary for a version that');
+      console.log('  is already released. Bump the version in app.json');
+      console.log(`  (e.g. to ${submitVersion.replace(/(\d+)$/, n => +n+1)}) before submitting.`);
+      console.log('=======================================================');
+      process.exit(1);
+    }
+  }
+
   const pending = (versions.data || []).find(v =>
     ['IN_REVIEW','PENDING_APPLE_RELEASE','PENDING_DEVELOPER_RELEASE','WAITING_FOR_REVIEW','PREPARE_FOR_SUBMISSION'].includes(v.attributes.appStoreState)
   );
