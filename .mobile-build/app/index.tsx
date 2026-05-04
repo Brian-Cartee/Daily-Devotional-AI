@@ -12,32 +12,19 @@ import { WebView } from "react-native-webview";
 
 const APP_URL = "https://www.shepherdspathai.com";
 
-// Runs BEFORE any web content — forces dark class immediately so there is
-// never a flash of the light (cream/white) theme during page bootstrap.
-const BEFORE_CONTENT_JS = `(function(){
-  try{
-    document.documentElement.classList.add('dark');
-    if(!localStorage.getItem('sp-theme')){
-      localStorage.setItem('sp-theme','dark');
-    }
-  }catch(e){}
-  true;
-})();`;
-
-// Runs AFTER the page has loaded — polls until React has mounted (#root has
-// children) then notifies the native shell so it can hide the loading overlay.
-// A hard 8-second failsafe fires regardless so the overlay never blocks forever.
-const AFTER_LOAD_JS = `(function(){
+// Injected AFTER the page loads. Polls until React has mounted (#root has
+// children) then notifies the native shell to hide the loading overlay.
+// Hard 8s failsafe fires regardless so the overlay never blocks forever.
+const READY_JS = `(function(){
   var sent=false;
   function notify(){
-    if(sent)return;
-    sent=true;
+    if(sent)return; sent=true;
     try{window.ReactNativeWebView.postMessage(JSON.stringify({type:'app_ready'}));}catch(e){}
   }
   function check(){
     var r=document.getElementById('root');
     if(r&&r.children.length>0){notify();return;}
-    setTimeout(check,100);
+    setTimeout(check,150);
   }
   check();
   setTimeout(notify,8000);
@@ -48,21 +35,26 @@ export default function MainScreen() {
   const webviewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const failsafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (failsafeRef.current) clearTimeout(failsafeRef.current);
-    };
-  }, []);
+  const loadEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hideOverlay = () => {
-    if (failsafeRef.current) {
-      clearTimeout(failsafeRef.current);
-      failsafeRef.current = null;
+    if (loadEndTimerRef.current) {
+      clearTimeout(loadEndTimerRef.current);
+      loadEndTimerRef.current = null;
     }
     setLoading(false);
   };
+
+  // Absolute maximum: overlay always clears within 12 seconds of mount.
+  // This guarantees the spinner is never permanent even if the page hangs
+  // or the ready signal is never received.
+  useEffect(() => {
+    const absoluteMax = setTimeout(() => setLoading(false), 12000);
+    return () => {
+      clearTimeout(absoluteMax);
+      if (loadEndTimerRef.current) clearTimeout(loadEndTimerRef.current);
+    };
+  }, []);
 
   const reload = () => {
     setError(false);
@@ -100,8 +92,7 @@ export default function MainScreen() {
         domStorageEnabled
         allowsBackForwardNavigationGestures
         pullToRefreshEnabled
-        injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
-        injectedJavaScript={AFTER_LOAD_JS}
+        injectedJavaScript={READY_JS}
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
@@ -113,11 +104,10 @@ export default function MainScreen() {
           setError(false);
         }}
         onLoadEnd={() => {
-          // Don't hide the overlay here — wait for the app_ready message from
-          // the web app instead. Start a 10-second failsafe in case the
-          // message never arrives (e.g. old website version, JS error).
-          if (failsafeRef.current) clearTimeout(failsafeRef.current);
-          failsafeRef.current = setTimeout(hideOverlay, 10000);
+          // Secondary failsafe: if the app_ready message never comes,
+          // hide the overlay 8 seconds after the page finishes loading.
+          if (loadEndTimerRef.current) clearTimeout(loadEndTimerRef.current);
+          loadEndTimerRef.current = setTimeout(hideOverlay, 8000);
         }}
         onError={() => {
           setLoading(false);

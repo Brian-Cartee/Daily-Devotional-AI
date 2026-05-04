@@ -56,8 +56,12 @@ echo "=== Starting EAS Build ==="
 BUILD_OUTPUT=$(EXPO_TOKEN=$EXPO_TOKEN npx eas-cli build \
   --platform ios \
   --profile production \
-  --non-interactive 2>&1)
+  --non-interactive 2>&1) || true
 echo "$BUILD_OUTPUT"
+
+if echo "$BUILD_OUTPUT" | grep -qi "limit\|quota\|exceeded\|403\|unauthorized\|error"; then
+  echo "=== EAS Build may have failed — see output above ==="
+fi
 
 NEW_BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP '(?<=builds/)[0-9a-f-]{36}' | tail -1)
 if [ -n "$NEW_BUILD_ID" ]; then
