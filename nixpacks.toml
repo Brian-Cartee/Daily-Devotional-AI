@@ -1,8 +1,5 @@
-# Railway / Nixpacks build config — only affects Railway, ignored by Replit
-
 [phases.setup]
-nixPkgs = ["nodejs_22"]
-cmds = ["npm install -g pnpm@10"]
+nixPkgs = ["nodejs", "pnpm"]
 
 [phases.install]
 cmds = ["pnpm install --no-frozen-lockfile"]
@@ -12,3 +9,4 @@ cmds = ["pnpm --filter @workspace/api-server run build"]
 
 [start]
 cmd = "node --enable-source-maps artifacts/api-server/dist/index.mjs"
+
