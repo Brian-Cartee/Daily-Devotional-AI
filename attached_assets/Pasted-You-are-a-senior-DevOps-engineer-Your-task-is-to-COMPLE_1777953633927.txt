@@ -1,0 +1,66 @@
+You are a senior DevOps engineer. Your task is to COMPLETE a Railway deployment for this Node.js monorepo using pnpm. The deployment is currently failing in a loop due to Nixpacks using `pnpm install --frozen-lockfile`.
+
+CRITICAL CONTEXT:
+
+* Repo uses pnpm workspaces
+* Build target: @workspace/api-server
+* Start file: artifacts/api-server/dist/index.mjs
+* Railway is using Nixpacks and forcing `--frozen-lockfile`
+* Error: ERR_PNPM_LOCKFILE_CONFIG_MISMATCH
+* We already verified `pnpm install --no-frozen-lockfile` works locally
+* We need Railway to STOP using frozen lockfile OR bypass Nixpacks entirely
+
+YOUR OBJECTIVE:
+Force a successful Railway deployment that:
+
+1. Installs dependencies correctly
+2. Builds the API server
+3. Starts the Node process successfully
+
+DO NOT:
+
+* Suggest general debugging steps
+* Suggest retrying the same config
+* Loop on nixpacks tweaks without guaranteeing override
+* Assume Dockerfile exists unless you create it
+
+YOU MUST CHOOSE ONE WORKING PATH AND COMPLETE IT:
+
+OPTION A (Preferred if supported):
+Fix nixpacks.toml so Railway DEFINITIVELY runs:
+
+* pnpm install --no-frozen-lockfile
+* pnpm --filter @workspace/api-server run build
+* node artifacts/api-server/dist/index.mjs
+
+AND ensure Railway actually uses it (not defaults)
+
+OPTION B (Fallback — if ANY doubt about Nixpacks override):
+Create a Dockerfile that:
+
+* Uses node:18-alpine
+* Installs pnpm
+* Runs `pnpm install --no-frozen-lockfile`
+* Builds the project
+* Starts the server
+
+Then:
+
+* Ensure Railway uses Dockerfile instead of Nixpacks
+* Confirm required file paths exist
+
+OUTPUT REQUIREMENTS:
+
+* Show EXACT file contents (nixpacks.toml OR Dockerfile)
+* Show EXACT git commands to commit + push
+* Show EXACT Railway settings (if needed)
+* Include verification steps: what logs should say when it's working
+
+SUCCESS CRITERIA:
+
+* Deployment reaches "Deploy" phase (not failing at install)
+* Server starts without crash
+* No frozen-lockfile error appears
+
+FINAL NOTE:
+This is NOT a theory task. You must produce a working deployment path that eliminates the loop and completes successfully.
