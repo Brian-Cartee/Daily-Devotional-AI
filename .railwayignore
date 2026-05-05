@@ -25,6 +25,10 @@ node_modules/
 # Source maps (large, not needed at build time)
 **/*.map
 
+# Stray npm/yarn lockfiles that could cause Railway to switch package managers
+**/package-lock.json
+**/yarn.lock
+
 # OS and editor noise
 .DS_Store
 *.log
