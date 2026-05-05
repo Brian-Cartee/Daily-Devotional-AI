@@ -109,8 +109,20 @@ CHECKEOF
 
 echo ""
 echo "=== Submitting to App Store Connect ==="
-# Latest completed build ID — update this when a new build is ready
-BUILD_ID="${SUBMIT_BUILD_ID:-936ff0eb-7c6e-4994-83cd-999eca3ada9c}"
+# Build ID is set automatically by build-isolated.sh after a successful build.
+# NEVER hardcode a build ID here — if it's stale it will submit the wrong version to Apple.
+BUILD_ID="${SUBMIT_BUILD_ID:-}"
+
+if [ -z "$BUILD_ID" ]; then
+  echo "=======================================================";
+  echo "  BLOCKED: No build ID available.";
+  echo "  SUBMIT_BUILD_ID is not set. This usually means the";
+  echo "  most recent EAS build failed or was rate-limited.";
+  echo "  Do NOT run this workflow manually until a new build";
+  echo "  has succeeded and updated this script.";
+  echo "=======================================================";
+  exit 1;
+fi
 
 # eas-cli must run from a directory with eas.json
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
