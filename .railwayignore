@@ -1,15 +1,30 @@
-node_modules
-.git
-.gitignore
+# Railway deployment ignore file
+# Excludes large directories not needed for the API server build
+
+# iOS build infrastructure
+.mobile-build/
+
+# Replit agent working files
+.local/
+attached_assets/
+
+# Old migration backup
+.migration-backup/
+
+# Pre-built frontend output (not needed — Railway only runs the API)
+artifacts/shepherds-path/dist/
+artifacts/shepherds-path/node_modules/
+artifacts/shepherds-path-mobile/dist/
+artifacts/shepherds-path-mobile/node_modules/
+artifacts/mockup-sandbox/dist/
+artifacts/mockup-sandbox/node_modules/
+
+# Root node_modules (Railway reinstalls from scratch)
+node_modules/
+
+# Source maps (large, not needed at build time)
+**/*.map
+
+# OS and editor noise
+.DS_Store
 *.log
-*.tar.gz
-*.zip
-*.pdf
-*.mp4
-*.mov
-*.png
-*.jpg
-dist
-build
-.tmp
-.caches
