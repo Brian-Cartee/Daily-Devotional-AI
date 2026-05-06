@@ -1,13 +1,42 @@
-node_modules
+# Dependencies — always reinstalled inside Docker
+**/node_modules
+
+# Git history — not needed in image
 .git
+**/.git
 .gitignore
-dist
-build
+
+# Other artifacts — not needed for api-server build
+artifacts/shepherds-path
+artifacts/shepherds-path-mobile
+artifacts/mockup-sandbox
+
+# Build outputs that will be regenerated
+**/dist
+**/build
+**/*.tsbuildinfo
+
+# Mobile / Expo build infrastructure
 .mobile-build
 .expo
 .expo-shared
+
+# Replit internals
+.local
+.cache
+attached_assets
+
+# Legacy backup
+.migration-backup
+
+# Runtime caches (large, not needed at build time)
+server/tts-cache
+server/verse-art-cache
+
+# Misc
 *.log
 tmp
-.cache
 coverage
-artifacts/mockup-sandbox
+.DS_Store
+Thumbs.db
+scripts
