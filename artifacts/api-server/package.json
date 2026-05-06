@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@workspace/api-zod": "file:../../lib/api-zod",
-    "@workspace/db": "file:../../lib/db"
+    "@workspace/db": "file:../../lib/db",
     "cookie-parser": "^1.4.7",
     "cors": "^2"
     "drizzle-orm": "^0.30.10",
