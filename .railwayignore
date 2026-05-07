@@ -80,3 +80,18 @@ artifacts/*
 
 !lib/
 !lib/**
+# Exclude large binary/cache files
+artifacts/api-server/**/*.mp3
+artifacts/api-server/**/*.wav
+artifacts/api-server/**/*.ogg
+artifacts/api-server/**/*.m4a
+artifacts/api-server/**/*.jpg
+artifacts/api-server/**/*.jpeg
+artifacts/api-server/**/*.png
+artifacts/api-server/**/*.webp
+artifacts/api-server/**/*.gif
+artifacts/api-server/**/*.zip
+artifacts/api-server/**/*.cache
+artifacts/api-server/**/cache/
+artifacts/api-server/**/tmp/
+artifacts/api-server/**/temp/
