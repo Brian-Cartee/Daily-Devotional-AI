@@ -1,34 +1,76 @@
-# Railway deployment ignore file
-# Excludes large directories not needed for the API server build
+# dependencies
+node_modules
+**/node_modules
 
-# iOS build infrastructure
-.mobile-build/
+# expo / react native
+.expo
+.expo-shared
+ios
+android
 
-# Replit agent working files
-.local/
-attached_assets/
+# git
+.git
+.github
 
-# Old migration backup
-.migration-backup/
+# caches
+.cache
+tmp
+temp
+coverage
 
-# Pre-built frontend output (not needed — Railway only runs the API)
-artifacts/shepherds-path/dist/
-artifacts/shepherds-path/node_modules/
-artifacts/shepherds-path-mobile/dist/
-artifacts/shepherds-path-mobile/node_modules/
-artifacts/mockup-sandbox/dist/
-artifacts/mockup-sandbox/node_modules/
-
-# Root node_modules (Railway reinstalls from scratch)
-node_modules/
-
-# Source maps (large, not needed at build time)
-**/*.map
-
-# Stray npm/yarn lockfiles that could cause Railway to switch package managers
-**/package-lock.json
-**/yarn.lock
-
-# OS and editor noise
-.DS_Store
+# logs
 *.log
+
+# builds
+dist
+build
+
+# macOS
+.DS_Store
+
+# uploads/assets
+*.mp4
+*.mov
+*.zip
+*.tar
+*.gz
+
+# large artifact folders
+.mobile-build
+artifacts/mockup-sandbox
+artifacts/screenshots
+artifacts/videos
+
+# IMPORTANT
+package-lock.json
+**/package-lock.json
+node_modules
+**/node_modules
+
+attached_assets
+artifacts/*
+!artifacts/api-server/
+!artifacts/api-server/**
+
+.expo
+.expo-shared
+ios
+android
+
+.git
+.github
+
+*.tar.gz
+*.zip
+*.mov
+*.mp4
+
+dist
+build
+coverage
+.cache
+tmp
+temp
+
+package-lock.json
+**/package-lock.json
