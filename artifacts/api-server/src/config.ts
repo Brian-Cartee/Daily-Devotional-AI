@@ -1,8 +1,8 @@
 import "./env";
 
 function env(name: string): string | undefined {
-  const value = process.env[name];
-  return value === "" ? undefined : value;
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
 }
 
 function envBool(name: string): boolean {

@@ -6,16 +6,16 @@
   "scripts": {
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs",
-    "start:prod": "NODE_ENV=production node --enable-source-maps ./dist/index.mjs",
+    "start": "node --enable-source-maps --env-file=.env ./dist/index.mjs",
+    "start:prod": "NODE_ENV=production node --enable-source-maps --env-file=.env ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/api-zod": "file:../../lib/api-zod",
     "@workspace/db": "file:../../lib/db",
     "cookie-parser": "^1.4.7",
-    "dotenv": "^16.5.0",
     "cors": "^2",
+    "dotenv": "^16.5.0",
     "drizzle-orm": "^0.30.10",
     "expo-server-sdk": "^6.1.0",
     "express": "^5",
@@ -42,6 +42,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^20.11.30",
+    "@types/pg": "^8.20.0",
     "esbuild": "^0.25.4",
     "esbuild-plugin-pino": "^2.3.3",
     "pino-pretty": "^13",

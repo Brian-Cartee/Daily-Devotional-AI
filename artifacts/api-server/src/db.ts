@@ -1,7 +1,7 @@
 import { requireDatabaseUrl } from "./config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import * as schema from "@workspace/db";
+import * as schema from "@workspace/db/schema";
 
 const { Pool } = pg;
 
@@ -12,7 +12,7 @@ export const pool = new Pool({
   connectionTimeoutMillis: 3_000,
 });
 
-pool.on("error", (err) => {
+pool.on("error", (err: Error) => {
   console.error("[db] Unexpected pool error:", err.message);
 });
 

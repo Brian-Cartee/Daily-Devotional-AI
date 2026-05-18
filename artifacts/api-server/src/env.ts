@@ -67,6 +67,7 @@ if (loaded.length > 0) {
   console.log(`[env] Loaded ${loaded.join(", ")}`);
 } else if (!explicitPath) {
   console.warn(
-    "[env] No .env file found; using shell/system environment only. Copy .env.example to .env on your VPS.",
+    `[env] No .env file found. Searched:\n  ${envFileCandidates().join("\n  ")}\n` +
+      "Copy .env.example to .env in artifacts/api-server and set DATABASE_URL.",
   );
 }
