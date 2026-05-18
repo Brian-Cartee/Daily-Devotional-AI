@@ -1,3 +1,4 @@
+import { config } from "../config";
 import express from "express";
 import type { Express } from "express";
 import type { Server } from "http";
@@ -25,7 +26,7 @@ import { scheduleDailyEmails } from "../emailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
+const stripe = new Stripe(config.stripeSecretKey!, { apiVersion: "2026-02-25.clover" });
 
 // Daily sermon cache — key: "YYYY-MM-DD:verseId", value: sermon result object
 // One sermon per verse per day; cleared on server restart (fine — sessionStorage handles client-side persistence)
@@ -92,13 +93,13 @@ async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: config.aiIntegrationsOpenaiApiKey,
+  baseURL: config.aiIntegrationsOpenaiBaseUrl,
 });
 
 // Separate client for TTS — uses direct OpenAI key (integration proxy doesn't support audio)
 const openaiTTS = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: config.openaiApiKey,
 });
 
 // ── Per-session rate limiter ──────────────────────────────────────────────────
@@ -197,11 +198,10 @@ export async function registerRoutes(
   // Start the daily email scheduler — only in the deployed production environment.
   // Skipped in dev to prevent duplicate sends when both environments share the same
   // subscriber email addresses but maintain separate databases.
-  const isDeployedProduction = process.env.REPLIT_DEPLOYMENT === '1';
-  if (isDeployedProduction || process.env.ENABLE_EMAIL_SCHEDULER === 'true') {
+  if (config.shouldRunSchedulers) {
     scheduleDailyEmails().catch(console.error);
   } else {
-    console.log("[email] Scheduler skipped — not a production deployment. Set ENABLE_EMAIL_SCHEDULER=true to override.");
+    console.log("[email] Scheduler skipped. Set ENABLE_EMAIL_SCHEDULER=true on your VPS to enable.");
   }
 
   // ── AI usage counter (per-session daily stats) ────────────────────────────

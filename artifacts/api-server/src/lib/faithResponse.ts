@@ -13,11 +13,12 @@
  */
 
 import OpenAI from "openai";
+import { config } from "../config";
 import { withGuardrails, validateResponse } from "./responseGuardrails";
 import { getVoiceProfile, buildVoicePromptNote } from "./voiceProfile";
 import type { SpiritualState } from "./userMemory";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: config.openaiApiKey });
 
 export interface FaithResponseInput {
   userInput: string;

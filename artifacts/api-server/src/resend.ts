@@ -1,5 +1,6 @@
 // Resend email integration via Replit Connectors
 import { Resend } from 'resend';
+import { config } from './config';
 
 let connectionSettings: any;
 

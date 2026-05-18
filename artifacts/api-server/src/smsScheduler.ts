@@ -1,9 +1,10 @@
 import twilio from "twilio";
+import { config } from "./config";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import { hasSmsSentToday, markSmsSentToday } from "./schedulerState";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: config.openaiApiKey });
 
 async function sendDailyDevotionalSms() {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;

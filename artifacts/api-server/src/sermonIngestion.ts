@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { config } from "./config";
 import { YoutubeTranscript } from "youtube-transcript";
 import { db } from "./db";
 import { sermonVideos, sermonSegments } from "@workspace/db";

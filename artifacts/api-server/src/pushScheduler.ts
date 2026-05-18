@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { Expo } from "expo-server-sdk";
+import { config } from "./config";
 import { storage } from "./storage";
 import { db } from "./db";
 import { streaks } from "@workspace/db";

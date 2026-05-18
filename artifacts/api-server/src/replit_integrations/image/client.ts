@@ -1,10 +1,11 @@
 import fs from "node:fs";
 import OpenAI, { toFile } from "openai";
 import { Buffer } from "node:buffer";
+import { config } from "../../config";
 
 export const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: config.aiIntegrationsOpenaiApiKey,
+  baseURL: config.aiIntegrationsOpenaiBaseUrl,
 });
 
 /**

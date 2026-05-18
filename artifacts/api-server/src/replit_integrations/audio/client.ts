@@ -1,4 +1,5 @@
 import OpenAI, { toFile } from "openai";
+import { config } from "../../config";
 import { Buffer } from "node:buffer";
 import { spawn } from "child_process";
 import { writeFile, unlink, readFile } from "fs/promises";
