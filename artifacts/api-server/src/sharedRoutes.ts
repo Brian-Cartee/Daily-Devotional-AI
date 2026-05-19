@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { insertVerseSchema, verses, generateRequestSchema, generateResponseSchema } from '@workspace/db';
+import {
+  insertVerseSchema,
+  verses,
+  generateRequestSchema,
+  generateResponseSchema,
+  type Verse,
+  type GenerateRequest,
+  type GenerateResponse,
+} from '@workspace/db';
 
 export const errorSchemas = {
   validation: z.object({
@@ -75,6 +83,6 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
   return url;
 }
 
-export type VerseResponse = z.infer<typeof api.verses.getDaily.responses[200]>;
-export type GenerateRequestInput = z.infer<typeof api.ai.generate.input>;
-export type GenerateResponseResult = z.infer<typeof api.ai.generate.responses[200]>;
+export type VerseResponse = Verse;
+export type GenerateRequestInput = GenerateRequest;
+export type GenerateResponseResult = GenerateResponse;

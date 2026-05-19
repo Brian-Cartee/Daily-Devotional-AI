@@ -32,7 +32,7 @@ async function getAccessToken() {
       },
     }
   )
-    .then((res) => res.json())
+    .then((res) => res.json() as Promise<{ items?: unknown[] }>)
     .then((data) => data.items?.[0]);
 
   const accessToken =

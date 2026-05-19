@@ -178,7 +178,7 @@ export async function findMatchingSegments(
 
   // Score each segment by how many emotion tags overlap
   const scored = all.map(seg => {
-    const overlap = seg.emotionTags.filter(t => emotionTags.includes(t)).length;
+    const overlap = seg.emotionTags.filter((t: string) => emotionTags.includes(t)).length;
     return { ...seg, score: overlap };
   }).filter(s => s.score > 0);
 

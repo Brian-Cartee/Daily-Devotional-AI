@@ -9,7 +9,7 @@ import { Readable } from "stream";
 import { storage } from "../storage";
 import { db, pool } from "../db";
 import { api, chatRequestSchema, type ChatMessage } from "../sharedRoutes";
-import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema, insertBetaFeedbackSchema, PRAYER_CATEGORIES, PRAYER_ENCOURAGEMENT_ACTIONS } from "@workspace/db";
+import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema, insertBetaFeedbackSchema, PRAYER_CATEGORIES, PRAYER_ENCOURAGEMENT_ACTIONS, type SmsMessage } from "@workspace/db";
 import { z } from "zod";
 import OpenAI from "openai";
 import multer from "multer";
@@ -26,7 +26,7 @@ import { scheduleDailyEmails } from "../emailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 
-const stripe = new Stripe(config.stripeSecretKey!, { apiVersion: "2026-02-25.clover" });
+const stripe = new Stripe(config.stripeSecretKey!, { apiVersion: "2026-04-22.dahlia" });
 
 // Daily sermon cache — key: "YYYY-MM-DD:verseId", value: sermon result object
 // One sermon per verse per day; cleared on server restart (fine — sessionStorage handles client-side persistence)
@@ -1083,16 +1083,22 @@ Voice authenticity (internal constraint — never cite these rules in output):
         {
           sessionId: "sp-shepherd",
           displayName: "Maria",
+          isAnonymous: false,
+          category: "Healing" as const,
           request: "Please pray for my mom — she was just diagnosed with cancer. I'm scared and I keep reminding myself that God is still good, but I need help holding on to that right now.",
         },
         {
           sessionId: "sp-shepherd",
           displayName: "Anonymous Believer",
+          isAnonymous: true,
+          category: "Loneliness" as const,
           request: "Struggling with loneliness after moving to a new city. I'm trying to trust that God brought me here for a reason. Would appreciate prayers for community and peace.",
         },
         {
           sessionId: "sp-shepherd",
           displayName: "James",
+          isAnonymous: false,
+          category: "Direction / Decision" as const,
           request: "Job interview tomorrow for a position I really need. Praying for clarity and calm, and that God's will would be done. Thank you for standing with me.",
         },
       ];
@@ -3815,7 +3821,7 @@ ${historyNote}`;
 
     // ── DEVOTIONAL command or AI conversation ─────────────────────────────────
     try {
-      const priorMessages = (convo?.messages ?? []).slice(-8).map(m => ({ role: m.role, content: m.content }));
+      const priorMessages = (convo?.messages ?? []).slice(-8).map((m: SmsMessage) => ({ role: m.role, content: m.content }));
       const exchangeCount = convo?.exchangeCount ?? 0;
       const ctaSent = convo?.ctaSent ?? false;
 
@@ -4740,7 +4746,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
       }
 
       // ── STEP 1: Try to match from pre-processed sermon library ────────────
-      const { findMatchingSegments } = await import("./sermonIngestion");
+      const { findMatchingSegments } = await import("../sermonIngestion");
       const emotionTags: string[] = analysis.emotionTags || [];
       const dbSegments = emotionTags.length > 0 ? await findMatchingSegments(emotionTags, 3) : [];
 
@@ -4901,7 +4907,7 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
       if (!youtubeId || !title || !preacher) {
         return res.status(400).json({ error: "youtubeId, title, and preacher are required" });
       }
-      const { ingestSermon } = await import("./sermonIngestion");
+      const { ingestSermon } = await import("../sermonIngestion");
       const result = await ingestSermon(youtubeId, title, preacher, thumbnailUrl);
       return res.json(result);
     } catch (err) {

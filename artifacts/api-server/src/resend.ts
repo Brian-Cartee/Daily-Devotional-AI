@@ -34,7 +34,7 @@ async function getCredentials() {
       },
     }
   )
-    .then((res) => res.json())
+    .then((res) => res.json() as Promise<{ items?: unknown[] }>)
     .then((data) => data.items?.[0]);
 
   if (!connectionSettings || !connectionSettings.settings.api_key) {

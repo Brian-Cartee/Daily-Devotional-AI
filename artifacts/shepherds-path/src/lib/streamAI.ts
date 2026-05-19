@@ -1,10 +1,12 @@
+import { apiUrl } from "@/lib/api";
+
 export async function streamAI(
   url: string,
   body: object,
   onUpdate: (text: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
