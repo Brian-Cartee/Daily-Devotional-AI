@@ -4,8 +4,8 @@ import { Buffer } from "node:buffer";
 import { config } from "../../config";
 
 export const openai = new OpenAI({
-  apiKey: config.aiIntegrationsOpenaiApiKey,
-  baseURL: config.aiIntegrationsOpenaiBaseUrl,
+  apiKey: config.openaiApiKey,
+  // baseURL: config.aiIntegrationsOpenaiBaseUrl,
 });
 
 /**

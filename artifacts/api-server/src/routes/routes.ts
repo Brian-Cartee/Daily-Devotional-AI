@@ -93,13 +93,12 @@ async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
 }
 
 const openai = new OpenAI({
-  apiKey: config.aiIntegrationsOpenaiApiKey,
-  baseURL: config.aiIntegrationsOpenaiBaseUrl,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 // Separate client for TTS — uses direct OpenAI key (integration proxy doesn't support audio)
 const openaiTTS = new OpenAI({
-  apiKey: config.openaiApiKey,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 // ── Per-session rate limiter ──────────────────────────────────────────────────
@@ -278,7 +277,7 @@ export async function registerRoutes(
     }
 
     // 3. OpenAI
-    const hasOpenAI = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY);
+    const hasOpenAI = !!(process.env.OPENAI_API_KEY);
     services.openai = hasOpenAI
       ? { ok: true, message: "API key configured" }
       : { ok: false, message: "No API key found" };
@@ -455,7 +454,7 @@ ${transcription.text.slice(0, 8000)}`,
         temperature: 0.3,
       });
       let summary: { title?: string; keyPoints?: string[]; scriptures?: string[]; application?: string } = {};
-      try { summary = JSON.parse(summaryRes.choices[0].message.content ?? "{}"); } catch {}
+      try { summary = JSON.parse(summaryRes.choices[0].message.content ?? "{}"); } catch { }
       res.json({
         transcript: transcription.text,
         title: summary.title ?? "Sermon Notes",
@@ -501,7 +500,7 @@ ${transcription.text.slice(0, 8000)}`,
       try {
         const parsed = JSON.parse(scriptureRes.choices[0].message.content ?? "{}");
         scriptures = Array.isArray(parsed.scriptures) ? parsed.scriptures : [];
-      } catch {}
+      } catch { }
       res.json({ text, scriptures });
     } catch (err: any) {
       console.error("Sermon chunk error:", err);
@@ -548,10 +547,10 @@ ${transcription.text.slice(0, 8000)}`,
         scriptures: sermonSessions.scriptures,
         durationSeconds: sermonSessions.durationSeconds,
       })
-      .from(sermonSessions)
-      .where(eq(sermonSessions.sessionId, sessionId as string))
-      .orderBy(desc(sermonSessions.startedAt))
-      .limit(maxResults);
+        .from(sermonSessions)
+        .where(eq(sermonSessions.sessionId, sessionId as string))
+        .orderBy(desc(sermonSessions.startedAt))
+        .limit(maxResults);
       res.json(sessions);
     } catch (err: any) {
       console.error("Fetch sermon sessions error:", err);
@@ -605,7 +604,7 @@ ${session.transcript.slice(0, 8000)}`,
         temperature: 0.3,
       });
       let summary: { title?: string; keyPoints?: string[]; scriptures?: string[]; application?: string } = {};
-      try { summary = JSON.parse(summaryRes.choices[0].message.content ?? "{}"); } catch {}
+      try { summary = JSON.parse(summaryRes.choices[0].message.content ?? "{}"); } catch { }
       const [updated] = await db.update(sermonSessions).set({
         title: summary.title || session.title,
         keyPoints: summary.keyPoints || [],
@@ -683,7 +682,7 @@ ${session.transcript.slice(0, 8000)}`,
       try {
         const parsed = JSON.parse(themeRes.choices[0].message.content ?? "{}");
         themes = Array.isArray(parsed.themes) ? parsed.themes : [];
-      } catch {}
+      } catch { }
       res.json({ text, themes });
     } catch (err: any) {
       console.error("Prayer chunk error:", err);
@@ -724,7 +723,7 @@ ${transcript.slice(0, 3000)}`,
       let reflection: {
         title?: string; themes?: string[]; scriptureRef?: string; scriptureText?: string; reflection?: string;
       } = {};
-      try { reflection = JSON.parse(reflectionRes.choices[0].message.content ?? "{}"); } catch {}
+      try { reflection = JSON.parse(reflectionRes.choices[0].message.content ?? "{}"); } catch { }
 
       const [record] = await db.insert(prayerRecordings).values({
         sessionId,
@@ -762,10 +761,10 @@ ${transcript.slice(0, 3000)}`,
         durationSeconds: prayerRecordings.durationSeconds,
         prayedAt: prayerRecordings.prayedAt,
       })
-      .from(prayerRecordings)
-      .where(eq(prayerRecordings.sessionId, sessionId as string))
-      .orderBy(desc(prayerRecordings.prayedAt))
-      .limit(maxResults);
+        .from(prayerRecordings)
+        .where(eq(prayerRecordings.sessionId, sessionId as string))
+        .orderBy(desc(prayerRecordings.prayedAt))
+        .limit(maxResults);
       res.json(records);
     } catch (err: any) {
       console.error("Fetch prayer sessions error:", err);
@@ -803,7 +802,7 @@ ${transcript.slice(0, 3000)}`,
         await webpush.sendNotification(
           { endpoint: subscription.endpoint, keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth } },
           JSON.stringify({ title: "A quiet place is here.", body: "Whenever you're ready, there's a moment waiting for you.", tag: "welcome", url: "/devotional" })
-        ).catch(() => {});
+        ).catch(() => { });
       }
 
       res.json(row);
@@ -1236,7 +1235,7 @@ Voice authenticity (internal constraint — never cite these rules in output):
 
       if (input.type === "reflection") {
         systemPrompt =
-`You are a deeply thoughtful spiritual companion — the kind of trusted friend who has walked with God for years and reads the Bible not as a textbook but as a living letter written to real people in real struggle and real joy.
+          `You are a deeply thoughtful spiritual companion — the kind of trusted friend who has walked with God for years and reads the Bible not as a textbook but as a living letter written to real people in real struggle and real joy.
 
 Write a brief devotional reflection on the provided verse. Two short paragraphs at most — this is read on a phone screen, so every sentence must earn its place.
 
@@ -1267,7 +1266,7 @@ Purpose of this reflection: You are not the destination. The Word is. This refle
         }
       } else if (input.type === "prayer") {
         systemPrompt =
-`You are a deeply thoughtful spiritual companion writing a prayer on behalf of the person who will pray these words today.
+          `You are a deeply thoughtful spiritual companion writing a prayer on behalf of the person who will pray these words today.
 
 A good prayer sounds like someone actually talking to God — not reciting. Write in first person so the person can pray it as their own. Be specific to this verse. Carry the emotional weight of what this scripture actually says. It might hold honesty, longing, gratitude, surrender, or confession — follow where the verse leads.
 
@@ -1339,7 +1338,7 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
       const chatRelationshipNote = buildRelationshipNote(chatDaysWithApp, chatEntryCount);
 
       const systemPrompt =
-`You are a deeply thoughtful spiritual companion. The person you are speaking with has been reflecting on this verse:
+        `You are a deeply thoughtful spiritual companion. The person you are speaking with has been reflecting on this verse:
 
 "${verse.text}" — ${verse.reference}
 
@@ -1415,7 +1414,7 @@ What you never do:
       });
       const raw = response.choices[0].message.content?.trim() ?? "{}";
       let parsed: { type?: string; summary?: string } = {};
-      try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch {}
+      try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch { }
       res.json({ term, type: parsed.type ?? "person", summary: parsed.summary ?? "No information found." });
     } catch (err) {
       console.error("bible lookup error:", err);
@@ -1463,7 +1462,7 @@ What you never do:
     if (passageSessionId && isRateLimited(`daily:${passageSessionId}`, getDailyLimit(passageDaysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
-    if (passageSessionId) storage.logAiUsage({ sessionId: passageSessionId, feature: "passage_chat", daysWithApp: passageDaysWithApp, platform: "web" }).catch(() => {});
+    if (passageSessionId) storage.logAiUsage({ sessionId: passageSessionId, feature: "passage_chat", daysWithApp: passageDaysWithApp, platform: "web" }).catch(() => { });
 
     const langInstruction: Record<string, string> = {
       es: "Respond entirely in Spanish (Español).",
@@ -1479,7 +1478,7 @@ What you never do:
     const passageRelationshipNote = buildRelationshipNote(passageDaysWithApp, passageEntryCount);
 
     const systemPrompt =
-`You are a deeply thoughtful Bible companion helping someone study ${passageRef}. The passage they are reading:
+      `You are a deeply thoughtful Bible companion helping someone study ${passageRef}. The passage they are reading:
 
 ${passageText}
 
@@ -2168,7 +2167,7 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     if (sessionId && isRateLimited(`daily:${sessionId}`, getDailyLimit(daysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
-    if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => {});
+    if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
 
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -2439,7 +2438,7 @@ Rules:
     if (sid && isRateLimited(`daily:${sid}`, getDailyLimit(vpDaysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
-    if (sid) storage.logAiUsage({ sessionId: sid, feature: "verse_prayer", daysWithApp: vpDaysWithApp, platform: "web" }).catch(() => {});
+    if (sid) storage.logAiUsage({ sessionId: sid, feature: "verse_prayer", daysWithApp: vpDaysWithApp, platform: "web" }).catch(() => { });
     if (detectCrisis(situation)) {
       return res.json({ verse: "", prayer: CRISIS_RESPONSE });
     }
@@ -2852,6 +2851,7 @@ Return JSON: { "action": "...", "scripture": "..." }`
   // ── Life Season Journey ──────────────────────────────────────────────────────
 
   app.post("/api/journey/life-season", async (req, res) => {
+    console.log("life-season+++", req.body)
     const { situation } = req.body as { situation?: string };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
@@ -2863,104 +2863,104 @@ Return JSON: { "action": "...", "scripture": "..." }`
     if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, getDailyLimit(journeyDaysWithApp), 86_400_000)) {
       return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
     }
-    if (sessionIdJourney) storage.logAiUsage({ sessionId: sessionIdJourney, feature: "life_season", daysWithApp: journeyDaysWithApp, platform: "web" }).catch(() => {});
+    if (sessionIdJourney) storage.logAiUsage({ sessionId: sessionIdJourney, feature: "life_season", daysWithApp: journeyDaysWithApp, platform: "web" }).catch(() => { });
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.write(CRISIS_RESPONSE);
       return res.end();
     }
-    try {
-      const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
+//     try {
+//       const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
 
-Your journeys are specific, honest, emotionally real, and scripturally grounded. You never rush past someone's pain to get to hope. You let the journey breathe — beginning in honest acknowledgment or lament before moving toward comfort, then courage, then hope.
+// Your journeys are specific, honest, emotionally real, and scripturally grounded. You never rush past someone's pain to get to hope. You let the journey breathe — beginning in honest acknowledgment or lament before moving toward comfort, then courage, then hope.
 
-What you never do:
-— Use spiritual clichés: "trust the process," "His timing is perfect," "let go and let God," "finding peace in uncertainty," "God has a plan."
-— Soften the title. If someone's marriage is ending, the title names that — it doesn't call it "navigating life's transitions."
-— Give whyItMatters that could work for any situation. Every sentence must be specific to exactly what this person shared.
-— Skip the hard parts. Start in the real emotional place they are in. Lament is biblical. Confusion is biblical. Anger at God is biblical.
-— Choose generic comfort passages when raw, honest ones exist. Psalm 88 over Psalm 23 when someone is in the pit, not the valley.
+// What you never do:
+// — Use spiritual clichés: "trust the process," "His timing is perfect," "let go and let God," "finding peace in uncertainty," "God has a plan."
+// — Soften the title. If someone's marriage is ending, the title names that — it doesn't call it "navigating life's transitions."
+// — Give whyItMatters that could work for any situation. Every sentence must be specific to exactly what this person shared.
+// — Skip the hard parts. Start in the real emotional place they are in. Lament is biblical. Confusion is biblical. Anger at God is biblical.
+// — Choose generic comfort passages when raw, honest ones exist. Psalm 88 over Psalm 23 when someone is in the pit, not the valley.
 
-The journey arc must feel like a real emotional progression: honest acknowledgment of pain → God meeting them there → truth that holds → strength for the next step → forward movement and hope. Not a shortcut to resolution.`;
+// The journey arc must feel like a real emotional progression: honest acknowledgment of pain → God meeting them there → truth that holds → strength for the next step → forward movement and hope. Not a shortcut to resolution.`;
 
-      const userPrompt = `A person shared this about what they are going through: "${situation.trim()}"
+//       const userPrompt = `A person shared this about what they are going through: "${situation.trim()}"
 
-Build a 7-chapter personal Bible journey for exactly this situation. Return ONLY valid JSON:
-{
-  "title": "A title that names their specific pain honestly (5 words max — do not soften it)",
-  "subtitle": "A subtitle that speaks directly to what they are experiencing",
-  "description": "2 sentences: what this journey will do for this person, speaking to their exact situation",
-  "pastoralIntro": "A warm, personal opening message — 3 to 4 sentences spoken directly to this person. Sentence 1: Acknowledge what they shared and tell them they are in the right place (name their situation in your own words). Sentence 2: Tell them what this journey will walk them through — briefly name the emotional arc (not the chapter titles, but what they will experience: e.g. 'from lament and raw honesty, through God's presence in the pain, to truth that holds, courage, and hope'). Sentence 3: Something true and warm about Shepherd's Path's mission — that there is no healer like Jesus, and we are here to help them place their full trust in Him through this. Keep it to 3-4 sentences total. Speak like a warm pastor, not a wellness app. Do not use the phrase 'You are in the right place' literally — find your own words.",
-  "spotlightIndex": 0,
-  "spotlightReason": "One sentence explaining why THIS specific chapter is the best place for this person to begin — referencing their exact situation. Be specific, not generic.",
-  "chapters": [
-    {
-      "theme": "One-word theme",
-      "title": "Chapter title that speaks to where they are emotionally at this point in the journey",
-      "reference": "Book Chapter:Verses",
-      "apiRef": "book chapter (lowercase, e.g. 'psalm 46' or 'john 14')",
-      "summary": "2-3 sentences: what this passage says AND how it speaks to someone in exactly their situation",
-      "whyItMatters": "2 sentences written directly to this person, referencing their specific situation — not generic. Echo back what they shared."
-    }
-  ]
-}
+// Build a 7-chapter personal Bible journey for exactly this situation. Return ONLY valid JSON:
+// {
+//   "title": "A title that names their specific pain honestly (5 words max — do not soften it)",
+//   "subtitle": "A subtitle that speaks directly to what they are experiencing",
+//   "description": "2 sentences: what this journey will do for this person, speaking to their exact situation",
+//   "pastoralIntro": "A warm, personal opening message — 3 to 4 sentences spoken directly to this person. Sentence 1: Acknowledge what they shared and tell them they are in the right place (name their situation in your own words). Sentence 2: Tell them what this journey will walk them through — briefly name the emotional arc (not the chapter titles, but what they will experience: e.g. 'from lament and raw honesty, through God's presence in the pain, to truth that holds, courage, and hope'). Sentence 3: Something true and warm about Shepherd's Path's mission — that there is no healer like Jesus, and we are here to help them place their full trust in Him through this. Keep it to 3-4 sentences total. Speak like a warm pastor, not a wellness app. Do not use the phrase 'You are in the right place' literally — find your own words.",
+//   "spotlightIndex": 0,
+//   "spotlightReason": "One sentence explaining why THIS specific chapter is the best place for this person to begin — referencing their exact situation. Be specific, not generic.",
+//   "chapters": [
+//     {
+//       "theme": "One-word theme",
+//       "title": "Chapter title that speaks to where they are emotionally at this point in the journey",
+//       "reference": "Book Chapter:Verses",
+//       "apiRef": "book chapter (lowercase, e.g. 'psalm 46' or 'john 14')",
+//       "summary": "2-3 sentences: what this passage says AND how it speaks to someone in exactly their situation",
+//       "whyItMatters": "2 sentences written directly to this person, referencing their specific situation — not generic. Echo back what they shared."
+//     }
+//   ]
+// }
 
-Rules:
-- Choose passages that actually speak to their pain — including lament psalms, Job, Lamentations if appropriate
-- Arc: honest lament or acknowledgment → God present in the pain → truth that holds → strength → forward movement → hope
-- apiRef must be just book + chapter number, lowercase (e.g. "isaiah 40" not "isaiah 40:1-8")
-- whyItMatters must reference their actual words and situation — if they said "divorce," use that word
-- Return ONLY the JSON object, no markdown, no explanation`;
+// Rules:
+// - Choose passages that actually speak to their pain — including lament psalms, Job, Lamentations if appropriate
+// - Arc: honest lament or acknowledgment → God present in the pain → truth that holds → strength → forward movement → hope
+// - apiRef must be just book + chapter number, lowercase (e.g. "isaiah 40" not "isaiah 40:1-8")
+// - whyItMatters must reference their actual words and situation — if they said "divorce," use that word
+// - Return ONLY the JSON object, no markdown, no explanation`;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.85,
-      });
+//       const completion = await openai.chat.completions.create({
+//         model: "gpt-4o-mini",
+//         messages: [
+//           { role: "system", content: systemPrompt },
+//           { role: "user", content: userPrompt },
+//         ],
+//         response_format: { type: "json_object" },
+//         temperature: 0.85,
+//       });
 
-      const raw = completion.choices[0]?.message?.content ?? "{}";
-      const parsed = JSON.parse(raw);
+//       const raw = completion.choices[0]?.message?.content ?? "{}";
+//       const parsed = JSON.parse(raw);
+//       console.log("raw", raw);
+//       const chapters = parsed.chapters ?? [];
+//       const spotlightIdx = Math.min(Math.max(parseInt(parsed.spotlightIndex ?? "0") || 0, 0), chapters.length - 1);
 
-      const chapters = parsed.chapters ?? [];
-      const spotlightIdx = Math.min(Math.max(parseInt(parsed.spotlightIndex ?? "0") || 0, 0), chapters.length - 1);
+//       const journey = {
+//         id: `life-season-${Date.now()}`,
+//         title: parsed.title ?? "Your Personal Journey",
+//         subtitle: parsed.subtitle ?? "A journey crafted for this season",
+//         description: parsed.description ?? "",
+//         pastoralIntro: parsed.pastoralIntro ?? "",
+//         spotlightIndex: spotlightIdx,
+//         spotlightReason: parsed.spotlightReason ?? "",
+//         length: chapters.length,
+//         category: "Life Season",
+//         colorFrom: "from-violet-500/10",
+//         colorTo: "to-indigo-500/10",
+//         borderColor: "border-violet-200/60",
+//         iconColor: "text-violet-600",
+//         pillBg: "bg-violet-100",
+//         pillText: "text-violet-700",
+//         entries: chapters.map((ch: Record<string, string>, i: number) => ({
+//           id: `life-season-ch-${i + 1}`,
+//           order: i + 1,
+//           theme: ch.theme ?? "Reflection",
+//           title: ch.title ?? `Day ${i + 1}`,
+//           reference: ch.reference ?? "",
+//           apiRef: ch.apiRef ?? ch.reference ?? "",
+//           summary: ch.summary ?? "",
+//           whyItMatters: ch.whyItMatters ?? "",
+//         })),
+//       };
 
-      const journey = {
-        id: `life-season-${Date.now()}`,
-        title: parsed.title ?? "Your Personal Journey",
-        subtitle: parsed.subtitle ?? "A journey crafted for this season",
-        description: parsed.description ?? "",
-        pastoralIntro: parsed.pastoralIntro ?? "",
-        spotlightIndex: spotlightIdx,
-        spotlightReason: parsed.spotlightReason ?? "",
-        length: chapters.length,
-        category: "Life Season",
-        colorFrom: "from-violet-500/10",
-        colorTo: "to-indigo-500/10",
-        borderColor: "border-violet-200/60",
-        iconColor: "text-violet-600",
-        pillBg: "bg-violet-100",
-        pillText: "text-violet-700",
-        entries: chapters.map((ch: Record<string, string>, i: number) => ({
-          id: `life-season-ch-${i + 1}`,
-          order: i + 1,
-          theme: ch.theme ?? "Reflection",
-          title: ch.title ?? `Day ${i + 1}`,
-          reference: ch.reference ?? "",
-          apiRef: ch.apiRef ?? ch.reference ?? "",
-          summary: ch.summary ?? "",
-          whyItMatters: ch.whyItMatters ?? "",
-        })),
-      };
-
-      res.json(journey);
-    } catch (err) {
-      console.error("life-season error:", err);
-      res.status(500).json({ message: "Failed to generate journey" });
-    }
+//       res.json(journey);
+//     } catch (err) {
+//       console.error("life-season error:", err);
+//       res.status(500).json({ message: "Failed to generate journey" });
+//     }
   });
 
   // ── Devotional for Two ───────────────────────────────────────────────────────
@@ -3603,8 +3603,8 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
     const historyNote = exchangeCount === 0
       ? "This is their very first message to you. Make them feel immediately heard and cared for."
       : exchangeCount === 1
-      ? "This person has texted you once before. They've engaged — deepen the warmth and remember what they shared."
-      : `This person has texted you ${exchangeCount} times. You have a growing connection. Be more personal and less introductory.`;
+        ? "This person has texted you once before. They've engaged — deepen the warmth and remember what they shared."
+        : `This person has texted you ${exchangeCount} times. You have a growing connection. Be more personal and less introductory.`;
 
     return `You are Shepherd's Path — a warm, trusted Christian companion responding by text. Someone has just reached out. Your one job: make them feel genuinely heard and cared for.
 
@@ -3650,233 +3650,233 @@ ${historyNote}`;
     }
     next();
   }, async (req, res) => {
-  try {
-    const from = (req.body.From as string | undefined)?.trim();
-    const rawBody = (req.body.Body as string | undefined)?.trim() ?? "";
-    const cmd = rawBody.toUpperCase().trim();
+    try {
+      const from = (req.body.From as string | undefined)?.trim();
+      const rawBody = (req.body.Body as string | undefined)?.trim() ?? "";
+      const cmd = rawBody.toUpperCase().trim();
 
-    if (!from) { res.type("text/xml").send(smsXml("")); return; }
+      if (!from) { res.type("text/xml").send(smsXml("")); return; }
 
-    // Crisis always takes priority
-    if (detectCrisis(rawBody)) {
-      res.type("text/xml").send(smsXml(SMS_CRISIS_RESPONSE));
-      return;
-    }
-
-    const convo = await storage.getSmsConversation(from);
-    const today = new Date().toISOString().split("T")[0];
-
-    // ── STOP command ─────────────────────────────────────────────────────────
-    if (cmd === "STOP" || cmd === "UNSUBSCRIBE" || cmd === "QUIT") {
-      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { optedOut: true, enrolledForDaily: false });
-      res.type("text/xml").send(smsXml("You've been unsubscribed from Shepherd's Path daily messages. Text START any time to return. God bless you."));
-      return;
-    }
-
-    // ── Check opted out ───────────────────────────────────────────────────────
-    if (convo?.optedOut && cmd !== "START") {
-      res.type("text/xml").send(smsXml("You're currently unsubscribed. Text START to receive messages again."));
-      return;
-    }
-
-    // ── START command ─────────────────────────────────────────────────────────
-    if (cmd === "START" || cmd === "UNSTOP") {
-      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { optedOut: false, enrolledForDaily: true });
-      res.type("text/xml").send(smsXml("Welcome back to Shepherd's Path. Text anything on your heart, VERSE for today's scripture, or DEVOTIONAL for your daily reflection. We're glad you're here."));
-      return;
-    }
-
-    // ── JOIN PRAYER command ───────────────────────────────────────────────────
-    if (cmd === "JOIN PRAYER") {
-      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { joinedPrayerNetwork: true });
-      res.type("text/xml").send(smsXml(
-        "You've joined the Shepherd's Path Prayer Chain. When someone shares a prayer need, you'll receive it and can reply AMEN-[number] to stand with them.\n\nTo request prayer yourself, text: PRAY FOR [your need]\n\nText LEAVE PRAYER to stop."
-      ));
-      return;
-    }
-
-    // ── LEAVE PRAYER command ──────────────────────────────────────────────────
-    if (cmd === "LEAVE PRAYER") {
-      await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { joinedPrayerNetwork: false });
-      res.type("text/xml").send(smsXml("You've left the prayer chain. Text JOIN PRAYER any time to rejoin. You'll still receive your daily morning devotional."));
-      return;
-    }
-
-    // ── AMEN command ──────────────────────────────────────────────────────────
-    const amenMatch = cmd.match(/^AMEN[- ](\d+)$/);
-    if (amenMatch) {
-      const requestId = parseInt(amenMatch[1], 10);
-      const prayerReq = await storage.getPrayerRequest(requestId);
-      if (!prayerReq) {
-        res.type("text/xml").send(smsXml("That prayer request wasn't found. Text HELP to see available commands."));
+      // Crisis always takes priority
+      if (detectCrisis(rawBody)) {
+        res.type("text/xml").send(smsXml(SMS_CRISIS_RESPONSE));
         return;
       }
-      const newCount = await storage.addAmen(requestId, from);
-      res.type("text/xml").send(smsXml(`Amen. Your prayer has been counted. ${newCount} ${newCount === 1 ? "person is" : "people are"} praying with them.`));
-      // Notify the requester (fire and forget)
-      const sid = process.env.TWILIO_ACCOUNT_SID;
-      const auth = process.env.TWILIO_AUTH_TOKEN;
-      const fromNum = process.env.TWILIO_PHONE_NUMBER;
-      if (sid && auth && fromNum && prayerReq.requesterPhone !== from) {
-        twilio(sid, auth).messages.create({
-          body: `${newCount} ${newCount === 1 ? "person is" : "people are"} praying with you right now. You are not alone. \uD83D\uDE4F`,
-          from: fromNum,
-          to: prayerReq.requesterPhone,
-        }).catch(() => {});
+
+      const convo = await storage.getSmsConversation(from);
+      const today = new Date().toISOString().split("T")[0];
+
+      // ── STOP command ─────────────────────────────────────────────────────────
+      if (cmd === "STOP" || cmd === "UNSUBSCRIBE" || cmd === "QUIT") {
+        await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { optedOut: true, enrolledForDaily: false });
+        res.type("text/xml").send(smsXml("You've been unsubscribed from Shepherd's Path daily messages. Text START any time to return. God bless you."));
+        return;
       }
-      return;
-    }
 
-    // ── Daily limit check (for AI responses only) ────────────────────────────
-    const isAiCommand = cmd !== "HELP" && cmd !== "VERSE";
-    const prevDate = convo?.dailyCountDate ?? "";
-    const prevCount = (prevDate === today) ? (convo?.dailyCount ?? 0) : 0;
+      // ── Check opted out ───────────────────────────────────────────────────────
+      if (convo?.optedOut && cmd !== "START") {
+        res.type("text/xml").send(smsXml("You're currently unsubscribed. Text START to receive messages again."));
+        return;
+      }
 
-    if (isAiCommand && prevCount >= SMS_FREE_DAILY_LIMIT) {
-      res.type("text/xml").send(smsXml(`You've reached today's limit of ${SMS_FREE_DAILY_LIMIT} free messages. Text again tomorrow, or visit ShepherdPathAI.com for unlimited conversations with Pro.`));
-      return;
-    }
+      // ── START command ─────────────────────────────────────────────────────────
+      if (cmd === "START" || cmd === "UNSTOP") {
+        await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { optedOut: false, enrolledForDaily: true });
+        res.type("text/xml").send(smsXml("Welcome back to Shepherd's Path. Text anything on your heart, VERSE for today's scripture, or DEVOTIONAL for your daily reflection. We're glad you're here."));
+        return;
+      }
 
-    // ── HELP command ──────────────────────────────────────────────────────────
-    if (cmd === "HELP") {
-      const remaining = SMS_FREE_DAILY_LIMIT - prevCount;
-      res.type("text/xml").send(smsXml(
-        `Shepherd's Path — what you can text:\n\nAnything → scripture + prayer\nVERSE → today's verse\nDEVOTIONAL → morning reflection\nPRAY FOR [need] → share to prayer chain\nJOIN PRAYER → join the prayer chain\nAMEN-[#] → pray with someone\nSTOP / START → daily messages\n\n${remaining} free messages left today.\nShepherdPathAI.com for unlimited.`
-      ));
-      return;
-    }
+      // ── JOIN PRAYER command ───────────────────────────────────────────────────
+      if (cmd === "JOIN PRAYER") {
+        await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { joinedPrayerNetwork: true });
+        res.type("text/xml").send(smsXml(
+          "You've joined the Shepherd's Path Prayer Chain. When someone shares a prayer need, you'll receive it and can reply AMEN-[number] to stand with them.\n\nTo request prayer yourself, text: PRAY FOR [your need]\n\nText LEAVE PRAYER to stop."
+        ));
+        return;
+      }
 
-    // ── VERSE command ─────────────────────────────────────────────────────────
-    if (cmd === "VERSE") {
-      try {
-        const verse = await storage.getVerseByDate(today);
-        if (verse) {
-          res.type("text/xml").send(smsXml(
-            `Today's verse — ${verse.reference}\n\n"${verse.text}"\n\nText DEVOTIONAL for a full reflection, or share anything on your heart.`
-          ));
-        } else {
-          res.type("text/xml").send(smsXml(`"Your word is a lamp to my feet and a light to my path." — Psalm 119:105\n\nText DEVOTIONAL for a full reflection, or share anything on your heart.`));
+      // ── LEAVE PRAYER command ──────────────────────────────────────────────────
+      if (cmd === "LEAVE PRAYER") {
+        await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { joinedPrayerNetwork: false });
+        res.type("text/xml").send(smsXml("You've left the prayer chain. Text JOIN PRAYER any time to rejoin. You'll still receive your daily morning devotional."));
+        return;
+      }
+
+      // ── AMEN command ──────────────────────────────────────────────────────────
+      const amenMatch = cmd.match(/^AMEN[- ](\d+)$/);
+      if (amenMatch) {
+        const requestId = parseInt(amenMatch[1], 10);
+        const prayerReq = await storage.getPrayerRequest(requestId);
+        if (!prayerReq) {
+          res.type("text/xml").send(smsXml("That prayer request wasn't found. Text HELP to see available commands."));
+          return;
         }
-      } catch {
-        res.type("text/xml").send(smsXml("Text anything on your heart and I'll share scripture and prayer with you."));
-      }
-      return;
-    }
-
-    // ── PRAY FOR command ──────────────────────────────────────────────────────
-    if (cmd.startsWith("PRAY FOR ")) {
-      const prayerText = rawBody.slice(9).trim();
-      if (!prayerText) {
-        res.type("text/xml").send(smsXml("Please include your prayer need after PRAY FOR. Example: PRAY FOR my mother's healing."));
-        return;
-      }
-      try {
-        // AI formats the request with pastoral warmth and anonymity
-        const formatCompletion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: "You format prayer requests for a Christian prayer chain. Take the raw request and write a single sentence that is warm, specific, and anonymous — no names, no identifying details. It should move people to genuinely pray. Under 120 characters. Start with 'Please pray for' or 'Please lift up'. No quotes." },
-            { role: "user", content: prayerText },
-          ],
-          max_tokens: 60,
-          temperature: 0.7,
-        });
-        const formattedRequest = formatCompletion.choices[0].message.content?.trim() ?? `Please pray for someone who needs God's comfort and strength right now.`;
-
-        // Save to DB and broadcast to prayer network
-        const prayerRecord = await storage.createPrayerRequest(from, prayerText, formattedRequest);
-        await storage.markPrayerBroadcast(prayerRecord.id);
-
-        const network = await storage.getPrayerNetworkNumbers();
-        const networkWithoutRequester = network.filter(n => n.phone !== from);
-
+        const newCount = await storage.addAmen(requestId, from);
+        res.type("text/xml").send(smsXml(`Amen. Your prayer has been counted. ${newCount} ${newCount === 1 ? "person is" : "people are"} praying with them.`));
+        // Notify the requester (fire and forget)
         const sid = process.env.TWILIO_ACCOUNT_SID;
         const auth = process.env.TWILIO_AUTH_TOKEN;
         const fromNum = process.env.TWILIO_PHONE_NUMBER;
+        if (sid && auth && fromNum && prayerReq.requesterPhone !== from) {
+          twilio(sid, auth).messages.create({
+            body: `${newCount} ${newCount === 1 ? "person is" : "people are"} praying with you right now. You are not alone. \uD83D\uDE4F`,
+            from: fromNum,
+            to: prayerReq.requesterPhone,
+          }).catch(() => { });
+        }
+        return;
+      }
 
-        if (sid && auth && fromNum && networkWithoutRequester.length > 0) {
-          const broadcastMsg = `Shepherd's Path Prayer Chain\n\n${formattedRequest}\n\nReply AMEN-${prayerRecord.id} to pray with them.`;
-          const twilioClient = twilio(sid, auth);
-          for (const member of networkWithoutRequester) {
-            twilioClient.messages.create({ body: broadcastMsg, from: fromNum, to: member.phone }).catch(() => {});
+      // ── Daily limit check (for AI responses only) ────────────────────────────
+      const isAiCommand = cmd !== "HELP" && cmd !== "VERSE";
+      const prevDate = convo?.dailyCountDate ?? "";
+      const prevCount = (prevDate === today) ? (convo?.dailyCount ?? 0) : 0;
+
+      if (isAiCommand && prevCount >= SMS_FREE_DAILY_LIMIT) {
+        res.type("text/xml").send(smsXml(`You've reached today's limit of ${SMS_FREE_DAILY_LIMIT} free messages. Text again tomorrow, or visit ShepherdPathAI.com for unlimited conversations with Pro.`));
+        return;
+      }
+
+      // ── HELP command ──────────────────────────────────────────────────────────
+      if (cmd === "HELP") {
+        const remaining = SMS_FREE_DAILY_LIMIT - prevCount;
+        res.type("text/xml").send(smsXml(
+          `Shepherd's Path — what you can text:\n\nAnything → scripture + prayer\nVERSE → today's verse\nDEVOTIONAL → morning reflection\nPRAY FOR [need] → share to prayer chain\nJOIN PRAYER → join the prayer chain\nAMEN-[#] → pray with someone\nSTOP / START → daily messages\n\n${remaining} free messages left today.\nShepherdPathAI.com for unlimited.`
+        ));
+        return;
+      }
+
+      // ── VERSE command ─────────────────────────────────────────────────────────
+      if (cmd === "VERSE") {
+        try {
+          const verse = await storage.getVerseByDate(today);
+          if (verse) {
+            res.type("text/xml").send(smsXml(
+              `Today's verse — ${verse.reference}\n\n"${verse.text}"\n\nText DEVOTIONAL for a full reflection, or share anything on your heart.`
+            ));
+          } else {
+            res.type("text/xml").send(smsXml(`"Your word is a lamp to my feet and a light to my path." — Psalm 119:105\n\nText DEVOTIONAL for a full reflection, or share anything on your heart.`));
           }
+        } catch {
+          res.type("text/xml").send(smsXml("Text anything on your heart and I'll share scripture and prayer with you."));
+        }
+        return;
+      }
+
+      // ── PRAY FOR command ──────────────────────────────────────────────────────
+      if (cmd.startsWith("PRAY FOR ")) {
+        const prayerText = rawBody.slice(9).trim();
+        if (!prayerText) {
+          res.type("text/xml").send(smsXml("Please include your prayer need after PRAY FOR. Example: PRAY FOR my mother's healing."));
+          return;
+        }
+        try {
+          // AI formats the request with pastoral warmth and anonymity
+          const formatCompletion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: "You format prayer requests for a Christian prayer chain. Take the raw request and write a single sentence that is warm, specific, and anonymous — no names, no identifying details. It should move people to genuinely pray. Under 120 characters. Start with 'Please pray for' or 'Please lift up'. No quotes." },
+              { role: "user", content: prayerText },
+            ],
+            max_tokens: 60,
+            temperature: 0.7,
+          });
+          const formattedRequest = formatCompletion.choices[0].message.content?.trim() ?? `Please pray for someone who needs God's comfort and strength right now.`;
+
+          // Save to DB and broadcast to prayer network
+          const prayerRecord = await storage.createPrayerRequest(from, prayerText, formattedRequest);
+          await storage.markPrayerBroadcast(prayerRecord.id);
+
+          const network = await storage.getPrayerNetworkNumbers();
+          const networkWithoutRequester = network.filter(n => n.phone !== from);
+
+          const sid = process.env.TWILIO_ACCOUNT_SID;
+          const auth = process.env.TWILIO_AUTH_TOKEN;
+          const fromNum = process.env.TWILIO_PHONE_NUMBER;
+
+          if (sid && auth && fromNum && networkWithoutRequester.length > 0) {
+            const broadcastMsg = `Shepherd's Path Prayer Chain\n\n${formattedRequest}\n\nReply AMEN-${prayerRecord.id} to pray with them.`;
+            const twilioClient = twilio(sid, auth);
+            for (const member of networkWithoutRequester) {
+              twilioClient.messages.create({ body: broadcastMsg, from: fromNum, to: member.phone }).catch(() => { });
+            }
+          }
+
+          const partnerCount = networkWithoutRequester.length;
+          const confirmMsg = partnerCount > 0
+            ? `Your prayer has been shared with ${partnerCount} prayer ${partnerCount === 1 ? "partner" : "partners"}. You'll hear back as they pray with you. God hears every word. \uD83D\uDE4F`
+            : `Your prayer has been received. Text JOIN PRAYER to connect with others who will pray with you.`;
+
+          // Update daily count
+          const newCount = prevCount + 1;
+          await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { dailyCount: newCount, dailyCountDate: today });
+
+          res.type("text/xml").send(smsXml(confirmMsg));
+        } catch (err) {
+          console.error("[sms] PRAY FOR error:", err);
+          res.type("text/xml").send(smsXml("Your prayer request was received. God hears you."));
+        }
+        return;
+      }
+
+      // ── DEVOTIONAL command or AI conversation ─────────────────────────────────
+      try {
+        const priorMessages = (convo?.messages ?? []).slice(-8).map((m: SmsMessage) => ({ role: m.role, content: m.content }));
+        const exchangeCount = convo?.exchangeCount ?? 0;
+        const ctaSent = convo?.ctaSent ?? false;
+
+        let systemPrompt: string;
+        if (cmd === "DEVOTIONAL") {
+          const verse = await storage.getVerseByDate(today);
+          const verseText = verse ? `Today's verse: ${verse.reference} — "${verse.text}"` : "";
+          systemPrompt = `You are Shepherd's Path, sending a morning devotional by text message. ${verseText}\n\nWrite a devotional message in one flowing paragraph (no headers or labels). Include the verse reference and text, 2 warm sentences of reflection, and a short 1-sentence prayer. Keep total under 400 characters. No follow-up question — this is a gift, not a conversation starter. Warm, pastoral, no clichés.\n\nPronoun rule: capitalize He, Him, His only when referring to God or Jesus directly. In the prayer sentence, capitalize You, Your when addressing God. Never capitalize "you" or "your" when addressing the reader.`;
+        } else {
+          systemPrompt = buildSmsSystemPrompt(exchangeCount);
         }
 
-        const partnerCount = networkWithoutRequester.length;
-        const confirmMsg = partnerCount > 0
-          ? `Your prayer has been shared with ${partnerCount} prayer ${partnerCount === 1 ? "partner" : "partners"}. You'll hear back as they pray with you. God hears every word. \uD83D\uDE4F`
-          : `Your prayer has been received. Text JOIN PRAYER to connect with others who will pray with you.`;
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...priorMessages,
+            { role: "user", content: rawBody },
+          ],
+          max_tokens: 200,
+          temperature: 0.88,
+        });
 
-        // Update daily count
-        const newCount = prevCount + 1;
-        await storage.upsertSmsConversation(from, convo?.messages ?? [], convo?.exchangeCount ?? 0, convo?.ctaSent ?? false, { dailyCount: newCount, dailyCountDate: today });
+        let aiText = completion.choices[0].message.content?.trim()
+          ?? "Isaiah 41:10 says, 'Do not fear, for I am with you.' You are not walking this alone. What's on your heart?";
 
-        res.type("text/xml").send(smsXml(confirmMsg));
+        // CTA on 2nd+ exchange (conversation only, not DEVOTIONAL command)
+        let newCtaSent = ctaSent;
+        if (!ctaSent && exchangeCount >= 1 && cmd !== "DEVOTIONAL") {
+          aiText += "\n\nDaily devotionals & more await you free at ShepherdPathAI.com";
+          newCtaSent = true;
+        }
+
+        const ts = new Date().toISOString();
+        const newMessages = [
+          ...(convo?.messages ?? []),
+          { role: "user" as const, content: rawBody, ts },
+          { role: "assistant" as const, content: aiText, ts },
+        ];
+
+        await storage.upsertSmsConversation(from, newMessages, exchangeCount + 1, newCtaSent, {
+          dailyCount: prevCount + 1,
+          dailyCountDate: today,
+          enrolledForDaily: true,
+        });
+
+        res.type("text/xml").send(smsXml(aiText));
       } catch (err) {
-        console.error("[sms] PRAY FOR error:", err);
-        res.type("text/xml").send(smsXml("Your prayer request was received. God hears you."));
+        console.error("[SMS webhook error]", err);
+        if (!res.headersSent) res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
       }
-      return;
-    }
-
-    // ── DEVOTIONAL command or AI conversation ─────────────────────────────────
-    try {
-      const priorMessages = (convo?.messages ?? []).slice(-8).map((m: SmsMessage) => ({ role: m.role, content: m.content }));
-      const exchangeCount = convo?.exchangeCount ?? 0;
-      const ctaSent = convo?.ctaSent ?? false;
-
-      let systemPrompt: string;
-      if (cmd === "DEVOTIONAL") {
-        const verse = await storage.getVerseByDate(today);
-        const verseText = verse ? `Today's verse: ${verse.reference} — "${verse.text}"` : "";
-        systemPrompt = `You are Shepherd's Path, sending a morning devotional by text message. ${verseText}\n\nWrite a devotional message in one flowing paragraph (no headers or labels). Include the verse reference and text, 2 warm sentences of reflection, and a short 1-sentence prayer. Keep total under 400 characters. No follow-up question — this is a gift, not a conversation starter. Warm, pastoral, no clichés.\n\nPronoun rule: capitalize He, Him, His only when referring to God or Jesus directly. In the prayer sentence, capitalize You, Your when addressing God. Never capitalize "you" or "your" when addressing the reader.`;
-      } else {
-        systemPrompt = buildSmsSystemPrompt(exchangeCount);
-      }
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...priorMessages,
-          { role: "user", content: rawBody },
-        ],
-        max_tokens: 200,
-        temperature: 0.88,
-      });
-
-      let aiText = completion.choices[0].message.content?.trim()
-        ?? "Isaiah 41:10 says, 'Do not fear, for I am with you.' You are not walking this alone. What's on your heart?";
-
-      // CTA on 2nd+ exchange (conversation only, not DEVOTIONAL command)
-      let newCtaSent = ctaSent;
-      if (!ctaSent && exchangeCount >= 1 && cmd !== "DEVOTIONAL") {
-        aiText += "\n\nDaily devotionals & more await you free at ShepherdPathAI.com";
-        newCtaSent = true;
-      }
-
-      const ts = new Date().toISOString();
-      const newMessages = [
-        ...(convo?.messages ?? []),
-        { role: "user" as const, content: rawBody, ts },
-        { role: "assistant" as const, content: aiText, ts },
-      ];
-
-      await storage.upsertSmsConversation(from, newMessages, exchangeCount + 1, newCtaSent, {
-        dailyCount: prevCount + 1,
-        dailyCountDate: today,
-        enrolledForDaily: true,
-      });
-
-      res.type("text/xml").send(smsXml(aiText));
     } catch (err) {
-      console.error("[SMS webhook error]", err);
+      console.error("[SMS webhook unhandled error]", err);
       if (!res.headersSent) res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
     }
-  } catch (err) {
-    console.error("[SMS webhook unhandled error]", err);
-    if (!res.headersSent) res.type("text/xml").send(smsXml("Something went wrong on our end. Please try again in a moment."));
-  }
   });
 
   // Digital Asset Links — required for Android TWA

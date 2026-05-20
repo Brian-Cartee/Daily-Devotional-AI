@@ -5,8 +5,9 @@ import { routeParam } from "../../lib/routeParams";
 import { chatStorage } from "./storage";
 
 const openai = new OpenAI({
-  apiKey: config.aiIntegrationsOpenaiApiKey,
-  baseURL: config.aiIntegrationsOpenaiBaseUrl,
+  //apiKey: config.aiIntegrationsOpenaiApiKey,
+  //baseURL: config.aiIntegrationsOpenaiBaseUrl,
+  apiKey: config.openaiApiKey,
 });
 
 export function registerChatRoutes(app: Express): void {
