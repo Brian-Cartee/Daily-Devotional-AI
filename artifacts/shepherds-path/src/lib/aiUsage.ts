@@ -1,8 +1,8 @@
 import { isProVerifiedLocally } from "@/lib/proStatus";
 
 const AI_USAGE_KEY = "sp_ai_usage";
-export const AI_FREE_LIMIT = 5;
-export const AI_GRACE_LIMIT = 7; // soft cap (5) + grace buffer (2)
+export const AI_FREE_LIMIT = 20;
+export const AI_GRACE_LIMIT = 25; // soft cap (5) + grace buffer (2)
 
 interface AiUsageData {
   date: string;

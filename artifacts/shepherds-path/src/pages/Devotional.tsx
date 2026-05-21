@@ -8,6 +8,7 @@ import { createShareImage, createStoryShareImage, getDailyVersePhoto, PHOTO_POOL
 import { isProVerifiedLocally, activateProCode } from "@/lib/proStatus";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
+import { useDailyArt } from "@/hooks/use-daily-art";
 import { streamAI } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
@@ -134,29 +135,38 @@ export default function Devotional() {
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
-  // Rotating daily background art
+  // Daily + verse background art (gpt-image-1 on server)
   const [dailyArtBg, setDailyArtBg] = useState<string | null>(null);
-  useQuery({
-    queryKey: ["/api/daily-art"],
-    queryFn: async () => {
-      const res = await fetch("/api/daily-art");
-      const data = await res.json();
-      if (data.imageUrl) setDailyArtBg(data.imageUrl);
-      return data;
-    },
-    staleTime: 60 * 60 * 1000,
-  });
+  const { imageUrl: polledDailyArt } = useDailyArt(url => setDailyArtBg(url));
+  useEffect(() => {
+    if (polledDailyArt) setDailyArtBg(polledDailyArt);
+  }, [polledDailyArt]);
 
-  // Check if today's verse art is already cached on the server — use it if so.
-  // We do NOT auto-generate: dailyArtBg (Unsplash photo) is the primary background.
   const verseDate = verse?.date ?? "";
+  const autoGeneratingVerseArtRef = useRef(false);
   useQuery({
     queryKey: ["/api/verse-art", verseDate],
     queryFn: async () => {
       if (!verseDate) return null;
       const res = await fetch(`/api/verse-art/${verseDate}`);
       const data = await res.json();
-      if (data.imageUrl) setVerseArtUrl(data.imageUrl);
+      if (data.imageUrl) {
+        setVerseArtUrl(data.imageUrl);
+      } else if (!data.cached && verse && !autoGeneratingVerseArtRef.current) {
+        autoGeneratingVerseArtRef.current = true;
+        fetch("/api/verse-art/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            verseDate: verse.date,
+            verseText: verse.text,
+            verseReference: verse.reference,
+          }),
+        })
+          .then(r => r.json())
+          .then(d => { if (d.imageUrl) setVerseArtUrl(d.imageUrl); })
+          .catch(() => {});
+      }
       return data;
     },
     enabled: !!verseDate && !!verse,

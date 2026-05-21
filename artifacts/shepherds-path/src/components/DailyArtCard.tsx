@@ -3,13 +3,7 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
 import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments } from "@/lib/moments";
-
-interface DailyArt {
-  imageUrl: string | null;
-  scripture: string;
-  reference: string;
-  reflection: string;
-}
+import { useDailyArt } from "@/hooks/use-daily-art";
 
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
@@ -24,8 +18,7 @@ function todayKey(): string {
 }
 
 export function DailyArtCard() {
-  const [art, setArt] = useState<DailyArt | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { art, imageUrl, loading: artLoading } = useDailyArt();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -36,13 +29,23 @@ export function DailyArtCard() {
   const [note, setNote] = useState("");
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const displayUrl = imageUrl ?? art?.imageUrl ?? null;
+  const loading = artLoading && !displayUrl;
+
+  useEffect(() => {
+    if (displayUrl) {
+      setImageError(false);
+      setImageLoaded(false);
+    }
+  }, [displayUrl]);
+
   const handleShare = async () => {
     if (!art) return;
     const shareText = `"${art.scripture}" — ${art.reference}${art.reflection ? `\n\n${art.reflection}` : ""}\n\nvia Shepherd's Path`;
 
-    if (navigator.share && art.imageUrl) {
+    if (navigator.share && displayUrl) {
       try {
-        const fullUrl = `${window.location.origin}${art.imageUrl}`;
+        const fullUrl = `${window.location.origin}${displayUrl}`;
         const response = await fetch(fullUrl);
         const blob = await response.blob();
         const file = new File([blob], "moment-of-beauty.jpg", { type: "image/jpeg" });
@@ -72,7 +75,7 @@ export function DailyArtCard() {
       setSaved(false);
     } else {
       const isFirst = getMoments().length === 0;
-      saveMoment({ date, verse: art.scripture, reference: art.reference, imageUrl: art.imageUrl ?? null });
+      saveMoment({ date, verse: art.scripture, reference: art.reference, imageUrl: displayUrl });
       setSaved(true);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
@@ -88,7 +91,6 @@ export function DailyArtCard() {
     if (noteTimer.current) clearTimeout(noteTimer.current);
     noteTimer.current = setTimeout(() => {
       updateMomentNote(todayKey(), val);
-      // Fire deep nudge once the note has substance
       if (!noteNudgeFiredRef.current && val.trim().length >= 20) {
         noteNudgeFiredRef.current = true;
         window.dispatchEvent(new Event("sp-journal-note-written"));
@@ -97,33 +99,6 @@ export function DailyArtCard() {
   };
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const cacheKey = `sp-daily-art-v2-${today}`;
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      const parsed: DailyArt = JSON.parse(cached);
-      if (parsed.imageUrl) {
-        setArt(parsed);
-        setLoading(false);
-        return;
-      }
-      sessionStorage.removeItem(cacheKey);
-    }
-
-    fetch("/api/daily-art")
-      .then(r => r.json())
-      .then((data: DailyArt) => {
-        setArt(data);
-        if (data.imageUrl) {
-          sessionStorage.setItem(cacheKey, JSON.stringify(data));
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  // sync saved state with storage events (tab sync)
-  useEffect(() => {
     const sync = () => setSaved(isMomentSaved(todayKey()));
     window.addEventListener("sp-moments-change", sync);
     return () => window.removeEventListener("sp-moments-change", sync);
@@ -131,8 +106,7 @@ export function DailyArtCard() {
 
   if (hidden) return null;
 
-  // Text-only fallback
-  if (!loading && (!art || !art.imageUrl || imageError)) {
+  if (!loading && (!art || !displayUrl || imageError)) {
     if (!art) return null;
     return (
       <motion.div
@@ -158,6 +132,12 @@ export function DailyArtCard() {
               {art.reflection}
             </p>
           )}
+          {loading && (
+            <p className="text-[12px] text-muted-foreground/50 text-center mt-4 flex items-center justify-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Preparing today's artwork…
+            </p>
+          )}
         </div>
       </motion.div>
     );
@@ -170,17 +150,14 @@ export function DailyArtCard() {
       transition={{ duration: 0.8, delay: 0.15 }}
       className="w-full"
     >
-      {/* Image with verse overlay */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3" }}>
-
-        {/* Loading shimmer */}
         <AnimatePresence>
-          {(loading || (art?.imageUrl && !imageLoaded)) && (
+          {(loading || (displayUrl && !imageLoaded)) && (
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
-              className="absolute inset-0 flex items-center justify-center gap-2 text-white/60"
+              className="absolute inset-0 flex items-center justify-center gap-2 text-white/60 z-10"
               style={{ background: "linear-gradient(160deg, hsl(258 30% 18%) 0%, hsl(38 25% 22%) 100%)" }}
             >
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -189,14 +166,12 @@ export function DailyArtCard() {
           )}
         </AnimatePresence>
 
-        {art?.imageUrl && (
+        {displayUrl && (
           <motion.img
-            src={art.imageUrl}
+            src={displayUrl}
             alt="Today's moment"
             onLoad={() => setImageLoaded(true)}
             onError={() => {
-              const today = new Date().toISOString().split("T")[0];
-              sessionStorage.removeItem(`sp-daily-art-${today}`);
               setImageLoaded(false);
               setImageError(true);
             }}
@@ -215,7 +190,6 @@ export function DailyArtCard() {
           />
         )}
 
-        {/* Heart save button — top right */}
         <AnimatePresence>
           {imageLoaded && art && (
             <motion.button
@@ -225,7 +199,7 @@ export function DailyArtCard() {
               onClick={handleSave}
               data-testid="button-save-moment"
               aria-label={saved ? "Remove from saved moments" : "Save this moment"}
-              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full transition-transform active:scale-90"
+              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full transition-transform active:scale-90 z-20"
               style={{ background: "rgba(0,0,0,0.32)", backdropFilter: "blur(6px)" }}
             >
               <Heart
@@ -235,14 +209,13 @@ export function DailyArtCard() {
           )}
         </AnimatePresence>
 
-        {/* "Saved" toast */}
         <AnimatePresence>
           {justSaved && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90"
+              className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90 z-20"
               style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}
             >
               <Check className="w-3 h-3 text-green-400" />
@@ -251,14 +224,13 @@ export function DailyArtCard() {
           )}
         </AnimatePresence>
 
-        {/* Verse overlay */}
         <AnimatePresence>
           {imageLoaded && art && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-3"
+              className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-3 z-10"
             >
               <p className="text-[15px] text-white/95 font-medium leading-snug drop-shadow-sm">
                 &ldquo;{art.scripture}&rdquo;
@@ -283,7 +255,6 @@ export function DailyArtCard() {
         </AnimatePresence>
       </div>
 
-      {/* Reflection + journal prompt */}
       <AnimatePresence>
         {expanded && art && (
           <motion.div
@@ -298,7 +269,6 @@ export function DailyArtCard() {
                 {art.reflection}
               </p>
 
-              {/* Journal prompt — appears quietly after reflection */}
               <div className="flex flex-col gap-2 pt-1 border-t border-primary/8">
                 <p className="text-[11px] italic text-muted-foreground/50 font-medium">
                   What is God saying to you through this?
@@ -332,7 +302,6 @@ export function DailyArtCard() {
         )}
       </AnimatePresence>
 
-      {/* Bottom row */}
       {imageLoaded && art && (
         <div
           className="flex items-center justify-between px-4 py-3 gap-3"
