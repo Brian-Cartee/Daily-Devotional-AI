@@ -65,7 +65,7 @@ async function buildAll() {
       "@opentelemetry/*",
       "@google-cloud/*",
       "@google/*",
-      "googleapis",
+      // googleapis is bundled (not external) so Lightsail deploy does not need a fragile node_modules path
       "firebase-admin",
       "@parcel/watcher",
       "@sentry/profiling-node",
