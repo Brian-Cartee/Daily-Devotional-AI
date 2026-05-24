@@ -15,6 +15,8 @@ logger.info(
     OPENAI_KEY: config.openaiApiKey ? "set" : "MISSING",
     STRIPE_KEY: config.stripeSecretKey ? "set" : "MISSING",
     RESEND_KEY: config.resendApiKey ? "set" : "MISSING",
+    GOOGLE_SHEETS: config.googleServiceAccountJson ? "set" : "MISSING (daily verse uses fallback)",
+    APP_URL: config.appUrl ?? "not set",
     VAPID: config.vapidPublicKey ? "set" : "not set (push disabled)",
     SCHEDULERS: config.shouldRunSchedulers,
   },

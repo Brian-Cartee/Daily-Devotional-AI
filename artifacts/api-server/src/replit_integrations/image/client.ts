@@ -10,7 +10,7 @@ export const openai = new OpenAI({
 
 /**
  * Generate an image and return as Buffer.
- * Uses gpt-image-1 model via Replit AI Integrations.
+ * Uses gpt-image-1 via OPENAI_API_KEY (direct OpenAI).
  * Supports landscape (1536x1024), portrait (1024x1536), or square (1024x1024).
  * Quality: "high" for best results (daily devotional art), "medium" or "low" for faster/cheaper.
  */
@@ -31,7 +31,7 @@ export async function generateImageBuffer(
 
 /**
  * Edit/combine multiple images into a composite.
- * Uses gpt-image-1 model via Replit AI Integrations.
+ * Uses gpt-image-1 via OPENAI_API_KEY (direct OpenAI).
  */
 export async function editImages(
   imageFiles: string[],

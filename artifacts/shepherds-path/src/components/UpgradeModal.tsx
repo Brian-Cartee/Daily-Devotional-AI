@@ -202,7 +202,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                 <p className="text-[12px] text-muted-foreground leading-relaxed">
                   To subscribe on iOS, please visit{" "}
                   <a
-                    href="https://daily-devotional-ai.replit.app/pricing"
+                    href="https://www.shepherdspathai.com/pricing"
                     className="font-semibold text-blue-600 dark:text-blue-400 underline"
                   >
                     shepherdspathai.com

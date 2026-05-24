@@ -13,8 +13,9 @@ function isHiddenThisSession(): boolean {
   return sessionStorage.getItem(SESSION_HIDDEN_KEY) === "true";
 }
 
+/** Eastern date — matches server daily-art / verse cache */
 function todayKey(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
 
 export function DailyArtCard() {
@@ -105,9 +106,10 @@ export function DailyArtCard() {
   }, []);
 
   if (hidden) return null;
+  if (!loading && !art) return null;
 
-  if (!loading && (!art || !displayUrl || imageError)) {
-    if (!art) return null;
+  // Show scripture while image loads or if image fails
+  if (!loading && art && (!displayUrl || imageError)) {
     return (
       <motion.div
         initial={{ opacity: 0 }}

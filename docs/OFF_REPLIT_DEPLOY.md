@@ -21,15 +21,14 @@ Production API lives in **`artifacts/api-server`** on your Lightsail server.
 3. Share your spreadsheet with the service account email (Viewer).
 4. Set `GOOGLE_SERVICE_ACCOUNT_JSON` to the full JSON (one line) in `.env`.
 
-## Deploy on server (after `git pull`)
+## Deploy on server (one command)
 
 ```bash
 cd ~/Daily-Devotional-AI
-git pull
-cd artifacts/api-server
-npm run build
-pm2 restart api-server
+bash scripts/deploy-lightsail.sh
 ```
+
+Or manually: `git pull` → build `artifacts/api-server` → `pm2 restart api-server`.
 
 ## Verify
 

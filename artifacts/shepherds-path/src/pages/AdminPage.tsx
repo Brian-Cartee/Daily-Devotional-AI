@@ -312,7 +312,7 @@ function HealthTab() {
         <p className="font-semibold text-foreground text-[13px] mb-2">External uptime monitoring</p>
         <p>For 24/7 alerts, connect this URL to a free service like <strong>UptimeRobot</strong> or <strong>Better Uptime</strong>:</p>
         <code className="block mt-2 bg-background border border-border rounded-lg px-3 py-2 text-[11px] font-mono break-all select-all">
-          https://daily-devotional-ai.replit.app/api/health
+          https://www.shepherdspathai.com/api/health
         </code>
         <p className="mt-2">Set it to ping every 5 minutes and alert you by email or SMS if status is not 200.</p>
       </div>

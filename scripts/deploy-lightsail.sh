@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# One-command deploy on AWS Lightsail (run from repo root on the server).
+# Usage: bash scripts/deploy-lightsail.sh
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_ROOT"
+
+echo "==> Pulling latest from GitHub..."
+git fetch origin
+git reset --hard origin/main
+
+echo "==> Building API (artifacts/api-server)..."
+cd "$REPO_ROOT/artifacts/api-server"
+if command -v pnpm >/dev/null 2>&1 && [[ -f ../../pnpm-lock.yaml ]]; then
+  pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+  pnpm run build
+else
+  npm install
+  npm run build
+fi
+
+echo "==> Restarting api-server..."
+if pm2 describe api-server >/dev/null 2>&1; then
+  pm2 restart api-server
+else
+  pm2 start dist/index.mjs --name api-server --cwd "$REPO_ROOT/artifacts/api-server" \
+    --env production -i 1
+fi
+
+echo "==> Building frontend (artifacts/shepherds-path)..."
+cd "$REPO_ROOT/artifacts/shepherds-path"
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm install 2>/dev/null || true
+  pnpm run build
+else
+  npm install
+  npm run build
+fi
+
+echo "==> Restarting frontend (production static server)..."
+if pm2 describe frontend >/dev/null 2>&1; then
+  pm2 delete frontend 2>/dev/null || true
+fi
+FRONTEND_PORT="${FRONTEND_PORT:-5000}"
+PORT="$FRONTEND_PORT" pm2 start serve.mjs --name frontend \
+  --cwd "$REPO_ROOT/artifacts/shepherds-path"
+
+pm2 save 2>/dev/null || true
+
+echo ""
+echo "==> Verify:"
+echo "  grep -c GOOGLE_SERVICE_ACCOUNT_JSON artifacts/api-server/src/googleSheets.ts"
+echo "  curl -s http://127.0.0.1:3000/api/health | head -c 400"
+echo "  curl -s http://127.0.0.1:3000/api/verses/daily | head -c 200"
+echo "  pm2 status"
+echo ""
+echo "Done. If daily verse is still Philippians fallback, set GOOGLE_SERVICE_ACCOUNT_JSON in artifacts/api-server/.env"

@@ -10,6 +10,10 @@ export interface DailyArtData {
 const POLL_MS = 8_000;
 const MAX_POLLS = 20;
 
+function easternDateKey(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+}
+
 /** Check if today's JPEG exists on the server (background gpt-image-1 may still be running). */
 async function probeDailyArtImage(): Promise<boolean> {
   try {
@@ -49,7 +53,9 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
         setArt(data);
 
         if (data.imageUrl) {
-          applyImageUrl(data.imageUrl);
+          const bust =
+            data.imageUrl.includes("?") ? data.imageUrl : `${data.imageUrl}?d=${easternDateKey()}`;
+          applyImageUrl(bust);
           setLoading(false);
           return;
         }
