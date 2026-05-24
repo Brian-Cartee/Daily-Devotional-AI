@@ -57,6 +57,8 @@ export function useTTS() {
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
+  /** Text that produced blobUrlRef — prevents playing verse audio for reflection, etc. */
+  const blobTextRef = useRef<string | null>(null);
   const preloadingRef = useRef(false);
   const chainCancelRef = useRef(false);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,6 +89,7 @@ export function useTTS() {
       URL.revokeObjectURL(blobUrlRef.current);
       blobUrlRef.current = null;
     }
+    blobTextRef.current = null;
   }, [clearSlowTimer]);
 
   const stop = useCallback(() => {
@@ -126,7 +129,10 @@ export function useTTS() {
     const selectedVoice = voice ?? getUserVoice();
     try {
       const url = await fetchTTS(text, selectedVoice, chainCancelRef);
-      if (url) blobUrlRef.current = url;
+      if (url) {
+        blobUrlRef.current = url;
+        blobTextRef.current = text;
+      }
     } catch {
       // silently ignore — user can still tap Listen and it'll fetch fresh
     } finally {
@@ -145,6 +151,7 @@ export function useTTS() {
         // iOS / browser autoplay policy blocked playback — store the URL so
         // the UI can show a "tap to play" button and resume.
         blobUrlRef.current = blobUrl;
+        blobTextRef.current = text;
         setBlocked(true);
         setLoading(false);
         setPlaying(false);
@@ -176,10 +183,11 @@ export function useTTS() {
     const selectedVoice = voice ?? getUserVoice();
     notifyStart();
 
-    // Fast path: use preloaded blob if available (sub-100ms start)
-    if (blobUrlRef.current) {
+    // Fast path: use preloaded blob only when it matches this exact text
+    if (blobUrlRef.current && blobTextRef.current === text) {
       const url = blobUrlRef.current;
       blobUrlRef.current = null;
+      blobTextRef.current = null;
       const audio = new Audio(url);
       audioRef.current = audio;
       setLoading(false);

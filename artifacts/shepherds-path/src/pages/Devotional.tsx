@@ -81,18 +81,18 @@ function PrayerText({ text }: { text: string }) {
 export default function Devotional() {
   const [, navigate] = useLocation();
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
-  const [reflectionContent, setReflectionContent] = useState(() => getCachedReflection());
+  const [reflectionContent, setReflectionContent] = useState("");
   const [primarySermonChannel, setPrimarySermonChannel] = useState<string>("");
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [reflectionError, setReflectionError] = useState(false);
-  const [prayerContent, setPrayerContent] = useState(() => getCachedPrayer());
+  const [prayerContent, setPrayerContent] = useState("");
   const [prayerLoading, setPrayerLoading] = useState(false);
   const [prayerError, setPrayerError] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const [sharingImage, setSharingImage] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
-  const [entryTriggered, setEntryTriggered] = useState(() => !!getCachedReflection());
+  const [entryTriggered, setEntryTriggered] = useState(false);
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
@@ -100,6 +100,8 @@ export default function Devotional() {
   const pendingStreakAchievementRef = useRef<Achievement | null>(null);
   const reflectionAbortRef = useRef<AbortController | null>(null);
   const prayerAbortRef = useRef<AbortController | null>(null);
+  const generationStartedRef = useRef(false);
+  const hydratedVerseIdRef = useRef<number | null>(null);
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [gratitudePrayer, setGratitudePrayer] = useState("");
   const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
@@ -318,15 +320,28 @@ export default function Devotional() {
     }
   }, [verse]);
 
+  // Hydrate reflection/prayer from session only when they match today's verse
+  useEffect(() => {
+    if (!verse?.id) return;
+    if (hydratedVerseIdRef.current === verse.id) return;
+    hydratedVerseIdRef.current = verse.id;
+    generationStartedRef.current = false;
+
+    const cachedRefl = getCachedReflection(verse.id);
+    const cachedPryr = getCachedPrayer(verse.id);
+    setReflectionContent(cachedRefl);
+    setPrayerContent(cachedPryr);
+    if (cachedRefl) setEntryTriggered(true);
+  }, [verse?.id]);
+
   // Effect 2: Generate reflection/prayer once the user begins (or auto-triggers after 3s)
-  const generationStartedRef = useRef(false);
   useEffect(() => {
     if (!verse || !entryTriggered || generationStartedRef.current) return;
     generationStartedRef.current = true;
     const lang = getStoredLang();
     const userName = getUserName() ?? undefined;
-    const cachedRefl = getCachedReflection();
-    const cachedPryr = getCachedPrayer();
+    const cachedRefl = getCachedReflection(verse.id);
+    const cachedPryr = getCachedPrayer(verse.id);
     if (cachedRefl && cachedPryr) {
       // Both already cached today — skip generation entirely
     } else if (cachedRefl && !cachedPryr) {
@@ -374,7 +389,7 @@ export default function Devotional() {
       if (!controller.signal.aborted) {
         const finalText = capitalizeDivinePronouns(result);
         setReflectionContent(finalText);
-        cacheReflection(finalText);
+        cacheReflection(finalText, verseId);
         // Prewarm TTS cache so Listen is near-instant when user taps it
         prewarmTTS(finalText, getUserVoice());
         // Prayer generates sequentially so it can emerge from the same emotional space
@@ -403,7 +418,7 @@ export default function Devotional() {
       if (!controller.signal.aborted) {
         const finalPrayer = capitalizeDivinePronouns(result);
         setPrayerContent(finalPrayer);
-        cachePrayer(finalPrayer);
+        cachePrayer(finalPrayer, verseId);
         // Prewarm prayer with nova voice — matches the "Pray This Aloud" experience
         const cleaned = finalPrayer.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
         prewarmTTS(cleaned, "nova");
@@ -1259,7 +1274,7 @@ export default function Devotional() {
                   {!reflectionLoading && (
                     <div className="mt-4 flex items-center gap-4">
                       <ShareButton title={`Reflection — ${verse.reference}`} text={reflectionContent} className="text-[12px] font-semibold" />
-                      <ListenButton text={reflectionContent} label="Listen to this" />
+                      <ListenButton key={`reflection-tts-${verse.id}-${reflectionContent.length}`} text={reflectionContent} label="Listen to this" />
                     </div>
                   )}
                   {!reflectionLoading && (

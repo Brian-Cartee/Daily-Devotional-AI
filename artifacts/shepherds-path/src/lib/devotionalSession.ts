@@ -2,6 +2,7 @@ const todayKey = () => new Date().toISOString().slice(0, 10); // "2026-04-15"
 
 interface DevotionalCache {
   date: string;
+  verseId?: number;
   reflection?: string;
   prayer?: string;
 }
@@ -27,20 +28,27 @@ function save(data: Partial<Omit<DevotionalCache, "date">>) {
   } catch {}
 }
 
-export function getCachedReflection(): string {
-  return load()?.reflection ?? "";
+/** Returns cached reflection only when it belongs to today's verse (if verseId provided). */
+export function getCachedReflection(verseId?: number): string {
+  const cached = load();
+  if (!cached?.reflection) return "";
+  if (verseId != null && cached.verseId != null && cached.verseId !== verseId) return "";
+  return cached.reflection;
 }
 
-export function getCachedPrayer(): string {
-  return load()?.prayer ?? "";
+export function getCachedPrayer(verseId?: number): string {
+  const cached = load();
+  if (!cached?.prayer) return "";
+  if (verseId != null && cached.verseId != null && cached.verseId !== verseId) return "";
+  return cached.prayer;
 }
 
-export function cacheReflection(text: string) {
-  save({ reflection: text });
+export function cacheReflection(text: string, verseId: number) {
+  save({ reflection: text, verseId });
 }
 
-export function cachePrayer(text: string) {
-  save({ prayer: text });
+export function cachePrayer(text: string, verseId: number) {
+  save({ prayer: text, verseId });
 }
 
 export function clearDevotionalSession() {

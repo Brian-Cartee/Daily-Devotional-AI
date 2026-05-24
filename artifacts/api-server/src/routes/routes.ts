@@ -4,6 +4,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { execSync } from "child_process";
 import { Readable } from "stream";
 import { storage } from "../storage";
@@ -47,9 +48,7 @@ const scriptureContextCache = new Map<string, any>();
 const MAX_TTS_CACHE = 120;
 const ttsCache = new Map<string, Buffer>();
 function ttsCacheKey(text: string, voice: string) {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) { hash = (Math.imul(31, hash) + text.charCodeAt(i)) | 0; }
-  return `${voice}_${Math.abs(hash)}`;
+  return crypto.createHash("sha256").update(`${voice}\0${text}`).digest("hex").slice(0, 40);
 }
 
 // Disk cache — persists across server restarts
@@ -67,27 +66,23 @@ function writeDiskCache(key: string, buffer: Buffer): void {
 }
 
 async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
-  const cacheKey = ttsCacheKey(text, voice);
+  const input = text.trim();
+  if (!input) throw new Error("Empty TTS text");
+  const cacheKey = ttsCacheKey(input, voice);
   // 1. Memory cache (instant)
   if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey)!;
   // 2. Disk cache (fast, survives restarts)
   const diskHit = readDiskCache(cacheKey);
   if (diskHit) { ttsCache.set(cacheKey, diskHit); return diskHit; }
-  // 3. Generate via Replit AI proxy using gpt-audio chat completions (no separate billing key needed)
+  // 3. OpenAI speech API — reads input verbatim (unlike gpt-audio chat)
   const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
   const safeVoice = allowedVoices.includes(voice) ? voice : "onyx";
-  const response = await openai.chat.completions.create({
-    model: "gpt-audio",
-    modalities: ["text", "audio"],
-    audio: { voice: safeVoice as any, format: "mp3" },
-    messages: [
-      { role: "system", content: "You are a calm, warm narrator performing text-to-speech for a devotional app. Read the text exactly as given, with natural pacing and reverence." },
-      { role: "user", content: text.slice(0, 4096) },
-    ],
-  } as any);
-  const audioData = (response.choices[0]?.message as any)?.audio?.data ?? "";
-  if (!audioData) throw new Error("No audio data returned from gpt-audio");
-  const buffer = Buffer.from(audioData, "base64");
+  const speech = await openaiTTS.audio.speech.create({
+    model: "tts-1",
+    voice: safeVoice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
+    input: input.slice(0, 4096),
+  });
+  const buffer = Buffer.from(await speech.arrayBuffer());
   // Evict oldest entry when cache is full
   if (ttsCache.size >= MAX_TTS_CACHE) {
     const firstKey = ttsCache.keys().next().value;
