@@ -6,6 +6,7 @@ export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
   getVerseById(id: number): Promise<Verse | undefined>;
   createVerse(verse: InsertVerse): Promise<Verse>;
+  deleteVerseByDate(date: string): Promise<void>;
   getAllActiveSubscribers(): Promise<Subscriber[]>;
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
@@ -87,6 +88,10 @@ export class DatabaseStorage implements IStorage {
   async createVerse(insertVerse: InsertVerse): Promise<Verse> {
     const [verse] = await db.insert(verses).values(insertVerse).returning();
     return verse;
+  }
+
+  async deleteVerseByDate(date: string): Promise<void> {
+    await db.delete(verses).where(eq(verses.date, date));
   }
 
   async getAllActiveSubscribers(): Promise<Subscriber[]> {

@@ -349,7 +349,10 @@ export async function registerRoutes(
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
     try {
-      const today = (req.query.date as string) || new Date().toISOString().split("T")[0];
+      const today = (req.query.date as string) || getEasternDateString();
+      if (req.query.refresh === "1") {
+        await storage.deleteVerseByDate(today);
+      }
       let verse = await storage.getVerseByDate(today);
 
       // If not cached yet, try syncing on-demand
