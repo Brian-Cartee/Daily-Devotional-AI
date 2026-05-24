@@ -10,14 +10,28 @@ echo "==> Pulling latest from GitHub..."
 git fetch origin
 git reset --hard origin/main
 
+echo "==> Installing dependencies (monorepo root — required for googleapis, etc.)..."
+cd "$REPO_ROOT"
+if command -v pnpm >/dev/null 2>&1 && [[ -f pnpm-lock.yaml ]]; then
+  pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+else
+  echo "WARN: pnpm not found; trying npm in api-server only"
+fi
+
 echo "==> Building API (artifacts/api-server)..."
 cd "$REPO_ROOT/artifacts/api-server"
-if command -v pnpm >/dev/null 2>&1 && [[ -f ../../pnpm-lock.yaml ]]; then
-  pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm install 2>/dev/null || true
   pnpm run build
 else
   npm install
   npm run build
+fi
+
+if [[ ! -f node_modules/googleapis/package.json ]] && [[ ! -L node_modules/googleapis ]]; then
+  echo "ERROR: googleapis missing in artifacts/api-server/node_modules"
+  echo "Run from repo root: cd $REPO_ROOT && pnpm install"
+  exit 1
 fi
 
 echo "==> Restarting api-server..."
@@ -51,8 +65,13 @@ pm2 save 2>/dev/null || true
 echo ""
 echo "==> Verify:"
 echo "  grep -c GOOGLE_SERVICE_ACCOUNT_JSON artifacts/api-server/src/googleSheets.ts"
-echo "  curl -s http://127.0.0.1:3000/api/health | head -c 400"
-echo "  curl -s http://127.0.0.1:3000/api/verses/daily | head -c 200"
+API_PORT="${PORT:-3000}"
+if [[ -f "$REPO_ROOT/artifacts/api-server/.env" ]]; then
+  _p=$(grep -E '^PORT=' "$REPO_ROOT/artifacts/api-server/.env" | cut -d= -f2 | tr -d ' "' || true)
+  [[ -n "$_p" ]] && API_PORT="$_p"
+fi
+echo "  curl -s http://127.0.0.1:${API_PORT}/api/health | head -c 400"
+echo "  curl -s http://127.0.0.1:${API_PORT}/api/verses/daily | head -c 200"
 echo "  pm2 status"
 echo ""
 echo "Done. If daily verse is still Philippians fallback, set GOOGLE_SERVICE_ACCOUNT_JSON in artifacts/api-server/.env"
