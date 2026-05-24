@@ -44,7 +44,7 @@ echo "==> Restarting frontend (production static server)..."
 if pm2 describe frontend >/dev/null 2>&1; then
   pm2 delete frontend 2>/dev/null || true
 fi
-FRONTEND_PORT="${FRONTEND_PORT:-5000}"
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 PORT="$FRONTEND_PORT" pm2 start serve.mjs --name frontend \
   --cwd "$REPO_ROOT/artifacts/shepherds-path"
 
