@@ -1,59 +1,12 @@
 import { google } from 'googleapis';
 
-// Google Sheets integration via Replit Connectors
-let connectionSettings: any;
+const SPREADSHEET_ID =
+  process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '1Zhg_rL3i-eIyBNWOpB8Vld0awv6e-l9UoG6lvY3r4jI';
 
-async function getAccessToken() {
-  if (
-    connectionSettings &&
-    connectionSettings.settings.expires_at &&
-    new Date(connectionSettings.settings.expires_at).getTime() > Date.now()
-  ) {
-    return connectionSettings.settings.access_token;
-  }
-
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? 'repl ' + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL
-    : null;
-
-  if (!xReplitToken) {
-    throw new Error('X-Replit-Token not found for repl/depl');
-  }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-sheet',
-    {
-      headers: {
-        Accept: 'application/json',
-        'X-Replit-Token': xReplitToken,
-      },
-    }
-  )
-    .then((res) => res.json() as Promise<{ items?: unknown[] }>)
-    .then((data) => data.items?.[0]);
-
-  const accessToken =
-    connectionSettings?.settings?.access_token ||
-    connectionSettings?.settings?.oauth?.credentials?.access_token;
-
-  if (!connectionSettings || !accessToken) {
-    throw new Error('Google Sheet not connected');
-  }
-  return accessToken;
+/** Eastern calendar date (YYYY-MM-DD), DST-safe — used for daily verse rows */
+export function getEasternDateString(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 }
-
-// WARNING: Never cache this client. Tokens expire.
-export async function getUncachableGoogleSheetClient() {
-  const accessToken = await getAccessToken();
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: accessToken });
-  return google.sheets({ version: 'v4', auth: oauth2Client });
-}
-
-const SPREADSHEET_ID = '1Zhg_rL3i-eIyBNWOpB8Vld0awv6e-l9UoG6lvY3r4jI';
 
 export interface SheetVerse {
   date: string;
@@ -63,10 +16,93 @@ export interface SheetVerse {
   reflectionPrompt: string;
 }
 
-/**
- * Fetch all rows from the sheet to inspect column layout.
- * Returns raw row arrays.
- */
+function parseServiceAccount(): object | null {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!raw?.trim()) return null;
+  try {
+    return JSON.parse(raw) as object;
+  } catch (err) {
+    console.error('[sheets] GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON:', err);
+    return null;
+  }
+}
+
+/** Preferred on AWS/Lightsail — no Replit connector */
+async function getSheetsClientFromServiceAccount() {
+  const credentials = parseServiceAccount();
+  if (!credentials) return null;
+
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  });
+  const authClient = await auth.getClient();
+  return google.sheets({ version: 'v4', auth: authClient });
+}
+
+// Legacy Replit Connectors fallback (optional)
+let connectionSettings: any;
+
+async function getAccessTokenFromReplitConnector(): Promise<string> {
+  if (
+    connectionSettings?.settings?.expires_at &&
+    new Date(connectionSettings.settings.expires_at).getTime() > Date.now()
+  ) {
+    return connectionSettings.settings.access_token;
+  }
+
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+      ? 'depl ' + process.env.WEB_REPL_RENEWAL
+      : null;
+
+  if (!xReplitToken || !hostname) {
+    throw new Error(
+      'Google Sheets not configured — set GOOGLE_SERVICE_ACCOUNT_JSON (recommended) or Replit connector env vars',
+    );
+  }
+
+  connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-sheet',
+    {
+      headers: {
+        Accept: 'application/json',
+        'X-Replit-Token': xReplitToken,
+      },
+    },
+  )
+    .then((res) => res.json())
+    .then((data) => data.items?.[0]);
+
+  const accessToken =
+    connectionSettings?.settings?.access_token ||
+    connectionSettings?.settings?.oauth?.credentials?.access_token;
+
+  if (!accessToken) {
+    throw new Error('Google Sheet connector returned no access token');
+  }
+  return accessToken;
+}
+
+async function getSheetsClientFromReplitConnector() {
+  const accessToken = await getAccessTokenFromReplitConnector();
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: accessToken });
+  return google.sheets({ version: 'v4', auth: oauth2Client });
+}
+
+export async function getUncachableGoogleSheetClient() {
+  const fromServiceAccount = await getSheetsClientFromServiceAccount();
+  if (fromServiceAccount) return fromServiceAccount;
+
+  console.warn(
+    '[sheets] GOOGLE_SERVICE_ACCOUNT_JSON not set — falling back to Replit connector (deprecated for AWS deploy)',
+  );
+  return getSheetsClientFromReplitConnector();
+}
+
 export async function getRawSheetRows(): Promise<string[][]> {
   const sheets = await getUncachableGoogleSheetClient();
   const response = await sheets.spreadsheets.values.get({
@@ -91,11 +127,11 @@ export async function getTodayVerseFromSheet(): Promise<SheetVerse | null> {
   const sheets = await getUncachableGoogleSheetClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Sheet1!A2:M1000', // skip header row, fetch enough columns
+    range: 'Sheet1!A2:M1000',
   });
 
   const rows = (response.data.values as string[][]) || [];
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = getEasternDateString();
 
   for (const row of rows) {
     const rawDate = row[0]?.trim() || '';
@@ -105,14 +141,13 @@ export async function getTodayVerseFromSheet(): Promise<SheetVerse | null> {
         date: today,
         verseText: row[1]?.trim() || '',
         reference: row[2]?.trim() || '',
-        encouragement: row[5]?.trim() || '',   // col 5: Takeaway/Encouragement
-        reflectionPrompt: row[6]?.trim() || '', // col 6: Reflection Prompt
+        encouragement: row[5]?.trim() || '',
+        reflectionPrompt: row[6]?.trim() || '',
       };
     }
   }
 
-  // If no exact match today, return the most recent past row as fallback
-  const pastRows = rows.filter(row => {
+  const pastRows = rows.filter((row) => {
     const d = normalizeDateString(row[0]?.trim() || '');
     return d && d <= today;
   });
@@ -133,9 +168,7 @@ export async function getTodayVerseFromSheet(): Promise<SheetVerse | null> {
 
 function normalizeDateString(raw: string): string {
   if (!raw) return '';
-  // If already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  // Try parsing M/D/YYYY or MM/DD/YYYY
   const parsed = new Date(raw);
   if (!isNaN(parsed.getTime())) {
     return parsed.toISOString().split('T')[0];

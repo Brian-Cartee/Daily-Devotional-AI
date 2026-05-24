@@ -156,9 +156,7 @@ export async function sendDailyEmailsToAllSubscribers() {
       return;
     }
 
-    const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-    const appUrl = process.env.APP_URL
-      || (replitDomain ? `https://${replitDomain}` : "https://shepherdspath.app");
+    const appUrl = process.env.APP_URL || "https://www.shepherdspathai.com";
     const { client, fromEmail } = await getUncachableResendClient();
 
     // Fetch today's daily art image URL (if generated)

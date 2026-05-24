@@ -65,11 +65,15 @@ export const config = {
   },
 
   get hasOpenAI() {
-    return !!(this.aiIntegrationsOpenaiApiKey || this.openaiApiKey);
+    return !!this.openaiApiKey;
   },
 
   get hasResend() {
-    return !!(this.replitConnectorsHostname || this.resendApiKey);
+    return !!this.resendApiKey;
+  },
+
+  get hasGoogleSheets() {
+    return !!this.googleServiceAccountJson;
   },
 
   get hasVapid() {
@@ -84,9 +88,9 @@ export const config = {
     );
   },
 
-  /** Run background schedulers on AWS VPS when ENABLE_EMAIL_SCHEDULER=true. */
+  /** Run background schedulers on AWS VPS when NODE_ENV=production or ENABLE_EMAIL_SCHEDULER=true. */
   get shouldRunSchedulers() {
-    return this.isReplitDeployment || this.enableEmailScheduler;
+    return this.isProduction || this.enableEmailScheduler;
   },
 } as const;
 

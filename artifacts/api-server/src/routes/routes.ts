@@ -16,7 +16,7 @@ import multer from "multer";
 import Stripe from "stripe";
 import webpush from "web-push";
 import twilio from "twilio";
-import { getTodayVerseFromSheet, getRawSheetRows } from "../googleSheets";
+import { getTodayVerseFromSheet, getRawSheetRows, getEasternDateString } from "../googleSheets";
 import { generateImageBuffer } from "../replit_integrations/image/client";
 import { updateMemory, getMemoryContext, buildMemoryPromptNote } from "../lib/userMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
@@ -138,7 +138,7 @@ setInterval(() => {
 
 async function syncTodayVerseFromSheet(): Promise<void> {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getEasternDateString();
     const existing = await storage.getVerseByDate(today);
     if (existing) return; // Already have today's verse cached
 
@@ -169,7 +169,7 @@ async function syncTodayVerseFromSheet(): Promise<void> {
     console.error("Error syncing verse from Google Sheet:", err);
     // Google Sheets is unreachable — store the fallback verse so users aren't left stranded
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getEasternDateString();
       const existing = await storage.getVerseByDate(today);
       if (!existing) {
         await storage.createVerse({
@@ -267,7 +267,7 @@ export async function registerRoutes(
 
     // 2. Today's verse cached in DB
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getEasternDateString();
       const verse = await storage.getVerseByDate(today);
       services.dailyVerse = verse
         ? { ok: true, message: "Today's verse available" }
@@ -283,10 +283,10 @@ export async function registerRoutes(
       : { ok: false, message: "No API key found" };
 
     // 4. Email — Resend (via Replit integration connector)
-    const hasResend = !!(process.env.REPLIT_CONNECTORS_HOSTNAME || process.env.RESEND_API_KEY);
+    const hasResend = !!process.env.RESEND_API_KEY;
     services.email = hasResend
-      ? { ok: true, message: "Resend connected" }
-      : { ok: false, message: "Resend not connected" };
+      ? { ok: true, message: "RESEND_API_KEY configured" }
+      : { ok: false, message: "RESEND_API_KEY not set" };
 
     // 5. Push notifications — VAPID
     const hasPush = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
@@ -1655,9 +1655,7 @@ What you never do:
       }
 
       // Always use APP_URL or the canonical domain — never req.headers.host (causes broken logos)
-      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const appUrl = process.env.APP_URL
-        || (replitDomain ? `https://${replitDomain}` : "https://shepherdspath.app");
+      const appUrl = process.env.APP_URL || "https://www.shepherdspathai.com";
       const { client, fromEmail } = await getUncachableResendClient();
 
       let sent = 0;
