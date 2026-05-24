@@ -1,6 +1,7 @@
 // Resend email integration via Replit Connectors
 import { Resend } from 'resend';
 import { config } from './config';
+import { getEmailLogoSrc } from './emailLogo';
 
 let connectionSettings: any;
 
@@ -72,6 +73,7 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
   const formattedDate = new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
+  const logoSrc = getEmailLogoSrc(data.appUrl);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -89,11 +91,10 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
         <!-- HEADER — brand purple with cross icon -->
         <tr>
           <td style="background-color:#2d1b5e;background-image:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-            <!-- SP cross+path logo — served from the app's own domain -->
-            <img src="${data.appUrl}/sp-cross-logo.png"
+            <img src="${logoSrc}"
                  alt="Shepherd's Path"
-                 width="84" height="84"
-                 style="display:block;margin:0 auto 14px;width:84px;height:84px;object-fit:contain;" />
+                 width="80" height="80"
+                 style="display:block;margin:0 auto 14px;width:80px;height:80px;border-radius:18px;object-fit:cover;" />
             <p style="margin:10px 0 0;font-family:Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.88);">
               Shepherd&rsquo;s Path
             </p>
@@ -226,6 +227,7 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
   const firstName = data.name?.split(" ")[0] ?? null;
   const greeting = firstName ? `${firstName},` : "Friend,";
   const videoUrl = data.videoUrl || null;
+  const logoSrc = getEmailLogoSrc(data.appUrl);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -243,9 +245,9 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
         <!-- HEADER -->
         <tr>
           <td style="background:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:40px 32px 32px;text-align:center;">
-            <img src="${data.appUrl}/sp-cross-logo.png"
-                 alt="Shepherd's Path" width="84" height="84"
-                 style="display:block;margin:0 auto 16px;width:84px;height:84px;object-fit:contain;" />
+            <img src="${logoSrc}"
+                 alt="Shepherd's Path" width="80" height="80"
+                 style="display:block;margin:0 auto 16px;width:80px;height:80px;border-radius:18px;object-fit:cover;" />
             <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.6);">
               Shepherd&rsquo;s Path
             </p>
