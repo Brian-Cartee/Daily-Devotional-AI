@@ -303,9 +303,11 @@ export async function registerRoutes(
     // 7. Google Sheets — if today's verse loaded, sheets is working
     services.googleSheets = services.dailyVerse?.ok
       ? { ok: true, message: "Syncing successfully" }
-      : !!(process.env.GOOGLE_SERVICE_ACCOUNT_JSON)
-        ? { ok: true, message: "Service account configured" }
-        : { ok: false, message: "GOOGLE_SERVICE_ACCOUNT_JSON not set" };
+      : process.env.GOOGLE_SHEET_WEB_APP_URL
+        ? { ok: true, message: "GOOGLE_SHEET_WEB_APP_URL configured" }
+        : process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+          ? { ok: true, message: "Service account configured" }
+          : { ok: false, message: "Set GOOGLE_SHEET_WEB_APP_URL or GOOGLE_SERVICE_ACCOUNT_JSON" };
 
     const allOk = Object.values(services).every(s => s.ok);
     const criticalOk = services.database?.ok && services.openai?.ok;
