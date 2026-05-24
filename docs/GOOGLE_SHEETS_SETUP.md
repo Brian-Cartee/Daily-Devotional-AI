@@ -2,6 +2,8 @@
 
 You only do this **once**. After that, the app pulls today’s verse from your spreadsheet automatically.
 
+> **Google blocked your JSON key download?** Use **[GOOGLE_SHEETS_APPS_SCRIPT.md](./GOOGLE_SHEETS_APPS_SCRIPT.md)** instead (no service account key required).
+
 ## What you need
 
 - Access to [Google Cloud Console](https://console.cloud.google.com/)

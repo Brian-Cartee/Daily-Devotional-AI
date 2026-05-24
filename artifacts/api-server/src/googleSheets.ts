@@ -16,6 +16,33 @@ export interface SheetVerse {
   reflectionPrompt: string;
 }
 
+/** When Google blocks JSON keys, use a Sheet Apps Script web app URL (no service account). */
+async function getTodayVerseFromWebApp(): Promise<SheetVerse | null> {
+  const url = process.env.GOOGLE_SHEET_WEB_APP_URL?.trim();
+  if (!url) return null;
+
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) {
+      console.error('[sheets] Web app returned', res.status, await res.text().catch(() => ''));
+      return null;
+    }
+    const data = (await res.json()) as Partial<SheetVerse>;
+    const today = getEasternDateString();
+    if (!data.verseText && !data.reference) return null;
+    return {
+      date: data.date || today,
+      verseText: data.verseText?.trim() || '',
+      reference: data.reference?.trim() || '',
+      encouragement: data.encouragement?.trim() || '',
+      reflectionPrompt: data.reflectionPrompt?.trim() || '',
+    };
+  } catch (err) {
+    console.error('[sheets] GOOGLE_SHEET_WEB_APP_URL fetch failed:', err);
+    return null;
+  }
+}
+
 function parseServiceAccount(): object | null {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!raw?.trim()) return null;
@@ -124,6 +151,9 @@ export async function getRawSheetRows(): Promise<string[][]> {
  *   6: Reflection Prompt
  */
 export async function getTodayVerseFromSheet(): Promise<SheetVerse | null> {
+  const fromWebApp = await getTodayVerseFromWebApp();
+  if (fromWebApp) return fromWebApp;
+
   const sheets = await getUncachableGoogleSheetClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
