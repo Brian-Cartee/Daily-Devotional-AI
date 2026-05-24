@@ -19,20 +19,8 @@ else
 fi
 
 echo "==> Building API (artifacts/api-server)..."
+bash "$REPO_ROOT/scripts/fix-api-server.sh"
 cd "$REPO_ROOT/artifacts/api-server"
-if command -v pnpm >/dev/null 2>&1; then
-  pnpm install 2>/dev/null || true
-  pnpm run build
-else
-  npm install
-  npm run build
-fi
-
-if [[ ! -f node_modules/googleapis/package.json ]] && [[ ! -L node_modules/googleapis ]]; then
-  echo "ERROR: googleapis missing in artifacts/api-server/node_modules"
-  echo "Run from repo root: cd $REPO_ROOT && pnpm install"
-  exit 1
-fi
 
 echo "==> Restarting api-server..."
 if pm2 describe api-server >/dev/null 2>&1; then
