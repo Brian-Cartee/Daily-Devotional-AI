@@ -57,6 +57,16 @@ const PASTORAL_BUTTONS = [
   { key: "crossref", label: "Where else does Scripture speak to this?" },
 ];
 
+function PastoralInsightActions({ text, title }: { text: string; title: string }) {
+  if (!text.trim()) return null;
+  return (
+    <div className="pt-2 mt-2 border-t border-white/20 dark:border-slate-600/30 flex items-center justify-between gap-3">
+      <ListenButton text={text} label="Listen" className="text-[11px]" size="sm" />
+      <ShareButton title={title} text={text} />
+    </div>
+  );
+}
+
 async function streamPassageResponse(
   passageRef: string,
   passageText: string,
@@ -523,6 +533,10 @@ export default function ReadBible() {
                           {aiResult ? (
                             <div className="bg-white/60 dark:bg-slate-700/50 rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2 max-h-80 overflow-y-auto">
                               {aiResult.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
+                              <PastoralInsightActions
+                                text={aiResult}
+                                title={`${selectedBook} ${selectedChapter} — Pastoral Insight`}
+                              />
                             </div>
                           ) : (
                             <p className="text-xs text-muted-foreground/70 py-4">Reflecting on {selectedBook} {selectedChapter}...</p>
@@ -532,12 +546,10 @@ export default function ReadBible() {
                       {aiResult && activePanel && activePanel !== "chat" && !isAiLoading && (
                         <motion.div key={activePanel} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-white/60 dark:bg-slate-700/50 rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2 max-h-80 overflow-y-auto">
                           {aiResult.split("\n").map((p, i) => p.trim() ? <p key={i}>{p}</p> : null)}
-                          <div className="pt-2 border-t border-white/20">
-                            <ShareButton
-                              title={`${selectedBook} ${selectedChapter} — Pastoral Insight`}
-                              text={aiResult}
-                            />
-                          </div>
+                          <PastoralInsightActions
+                            text={aiResult}
+                            title={`${selectedBook} ${selectedChapter} — Pastoral Insight`}
+                          />
                         </motion.div>
                       )}
                       {activePanel === "chat" && (
@@ -555,6 +567,12 @@ export default function ReadBible() {
                                     ? m.content.split("\n").map((p, j) => p.trim() ? <p key={j}>{p}</p> : null)
                                     : <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse rounded-sm" />
                                   }
+                                  {m.content && (
+                                    <PastoralInsightActions
+                                      text={m.content}
+                                      title={`${selectedBook} ${selectedChapter} — Pastoral Insight`}
+                                    />
+                                  )}
                                 </div>
                               )
                             )}
