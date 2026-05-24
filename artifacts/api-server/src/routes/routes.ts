@@ -25,6 +25,12 @@ import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEma
 import { scheduleDailyEmails } from "../emailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleDailySms } from "../smsScheduler";
+import {
+  PASTOR_TIER_AI_GUIDE,
+  resolvePastorYouTubeVideo,
+  fetchYouTubeSearchItems,
+  buildYouTubeSearchUrl,
+} from "../pastorTiers";
 
 const stripe = new Stripe(config.stripeSecretKey!, { apiVersion: "2026-04-22.dahlia" });
 
@@ -4252,7 +4258,7 @@ ${historyNote}`;
             content: `You are curating a single short video message (5–10 minutes) for someone who just completed their daily devotional. Return JSON:
 {
   "theme": "2–4 words describing the message theme (e.g. 'identity in Christ', 'trusting God while waiting')",
-  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query to find shorter content. Choose one preacher whose voice fits the emotional tone of this verse — use this tiered guide: Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels. Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes. Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas. Default to Tier 1 unless the verse calls for engagement or encouragement.",
+  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query. ${PASTOR_TIER_AI_GUIDE}",
   "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
 }`,
           },
@@ -4270,61 +4276,26 @@ ${historyNote}`;
       const ytKey = process.env.YOUTUBE_API_KEY;
       if (!ytKey) return res.json({ found: false });
 
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=10&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=medium&videoEmbeddable=true`;
-      const ytRes = await fetch(searchUrl);
-      const ytData = (await ytRes.json()) as any;
-
-      if (!ytData.items?.length) return res.json({ found: false });
-
-      // Trusted channel IDs — exact match (tier 1). Add UCxxx IDs here once confirmed.
-      const TRUSTED_CHANNEL_IDS: string[] = [
-        // Tier 1 — Core
-        "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
-        "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
-        "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
-        "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
-        "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
-        "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
-        // Tier 2 — Strong
-        "UChxJPnZ0x9I8iYrm4jjuo0w", // Free Chapel (Jentezen Franklin) ✓
-        "UCjQbTcszB-gRhDByY9WhySw", // The Potter's House (T.D. Jakes) ✓
-        // Tier 3 — Cultural Bridge
-        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
-        "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
-        "UCZRjT2mSmOVE5ROt51ifIyg", // VOUS Church (Rich Wilkerson Jr) ✓
-        "UC1d28mrBqCQliL_N48tZZiw", // ET The Hip Hop Preacher (Eric Thomas) ✓
-      ];
-      // Trusted channel name fragments — string match fallback (tier 2)
-      const trustedChannelNames = [
-        // Tier 1 — Core (Truth + Conviction + Scripture Authority)
-        "phillip mitchell", "2819 church",
-        "tony evans", "urban alternative",
-        "matt chandler", "village church",
-        "jack hibbs", "real life with jack hibbs",
-        "allen jackson", "allen jackson ministries",
-        "dharius daniels", "change church",
-        // Tier 2 — Strong but Stylistically Different
-        "jentezen franklin", "free chapel",
-        "td jakes", "t.d. jakes", "potter's house", "potters house",
-        // Tier 3 — Cultural Bridge / Engagement
-        "michael todd", "transformation church",
-        "tim ross", "the basement",
-        "rich wilkerson", "vous church",
-        "eric thomas", "hip hop preacher",
-      ];
-      const ranked = [...ytData.items].sort((a: any, b: any) => {
-        const aId = a.snippet?.channelId || "";
-        const bId = b.snippet?.channelId || "";
-        const aName = (a.snippet?.channelTitle || "").toLowerCase();
-        const bName = (b.snippet?.channelTitle || "").toLowerCase();
-        const aScore = TRUSTED_CHANNEL_IDS.includes(aId) ? 0 : trustedChannelNames.some(c => aName.includes(c)) ? 1 : 2;
-        const bScore = TRUSTED_CHANNEL_IDS.includes(bId) ? 0 : trustedChannelNames.some(c => bName.includes(c)) ? 1 : 2;
-        return aScore - bScore;
+      const searchUrl = buildYouTubeSearchUrl(analysis.searchQuery, ytKey, {
+        maxResults: 10,
+        videoDuration: "medium",
       });
+      const initialItems = await fetchYouTubeSearchItems(searchUrl);
 
-      const video = ranked[0];
+      const video = await resolvePastorYouTubeVideo(
+        initialItems,
+        ytKey,
+        {
+          verseReference: verse.reference,
+          themeHint: analysis.theme || analysis.searchQuery,
+          pastorHint: analysis.preacher,
+        },
+        { videoDuration: "medium", allowNonListedFallback: false },
+      );
+      if (!video?.id?.videoId) return res.json({ found: false });
+
       const videoId = video.id.videoId;
-      const snippet = video.snippet;
+      const snippet = video.snippet!;
 
       // Step 3: Get duration
       const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
@@ -4412,9 +4383,7 @@ Examples of good extraction:
 - "addiction is ruining my life" → theme: addiction, freedom → searchQuery: "Michael Todd addiction freedom teaching"
 
 Choose 2 preachers from different tiers who speak WELL on this specific theme.
-Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels.
-Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes.
-Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas.
+${PASTOR_TIER_AI_GUIDE}
 
 For each searchQuery: use pastor name + the CLEAN EXTRACTED THEME + "sermon" or "teaching". Do NOT put the user's raw emotional phrase in the search query. Target 5–15 min content.`
         : `You are curating 2 additional short sermon clips for someone who just completed a devotional. Return JSON:
@@ -4425,9 +4394,7 @@ For each searchQuery: use pastor name + the CLEAN EXTRACTED THEME + "sermon" or 
   ]
 }
 Choose 2 preachers from different tiers to give range of voice and perspective.
-Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels.
-Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes.
-Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas.
+${PASTOR_TIER_AI_GUIDE}
 Each clip should approach the verse theme from a different angle than the other.
 Avoid repeating: ${primaryPastor || "none"}.
 Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`;
@@ -4449,43 +4416,28 @@ Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`;
       const analysis = JSON.parse(aiRes.choices[0]?.message?.content || "{}");
       if (!analysis.clips?.length) return res.json({ found: false, sermons: [] });
 
-      const TRUSTED_IDS = [
-        "UCrPGIKiPtgQ25TaW1fLdR0Q", "UCRZweRCzcK5ObXPCNKvdMOQ",
-        "UC5tzTmPEue1OMqkT9CIAP0g", "UCzvq_2THJhueXOP8JdAO2-A",
-        "UCmJ_L35KPnDoIfzbe4sfRQA", "UCexLpWnpWeHGlrlqywU3bWA",
-        "UChxJPnZ0x9I8iYrm4jjuo0w", "UCjQbTcszB-gRhDByY9WhySw",
-        "UCYv-siSKd3Gn9IsliO95gIw", "UCqzgGwRrOLH20OIc8bM_VAg",
-        "UCZRjT2mSmOVE5ROt51ifIyg", "UC1d28mrBqCQliL_N48tZZiw",
-      ];
-      const TRUSTED_NAMES = [
-        "phillip mitchell", "2819 church", "tony evans", "urban alternative",
-        "matt chandler", "village church", "jack hibbs", "allen jackson",
-        "dharius daniels", "change church", "jentezen franklin", "free chapel",
-        "td jakes", "t.d. jakes", "potter's house", "potters house",
-        "michael todd", "transformation church", "tim ross", "the basement",
-        "rich wilkerson", "vous church", "eric thomas", "hip hop preacher",
-      ];
-
       // Run both searches in parallel
       const sermonPromises = analysis.clips.slice(0, 2).map(async (clip: any) => {
-        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(clip.searchQuery)}&type=video&maxResults=10&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=medium&videoEmbeddable=true`;
-        const ytRes = await fetch(searchUrl);
-        const ytData = (await ytRes.json()) as any;
-        if (!ytData.items?.length) return null;
-
-        const ranked = [...ytData.items].sort((a: any, b: any) => {
-          const aId = a.snippet?.channelId || "";
-          const bId = b.snippet?.channelId || "";
-          const aName = (a.snippet?.channelTitle || "").toLowerCase();
-          const bName = (b.snippet?.channelTitle || "").toLowerCase();
-          const aScore = TRUSTED_IDS.includes(aId) ? 0 : TRUSTED_NAMES.some(n => aName.includes(n)) ? 1 : 2;
-          const bScore = TRUSTED_IDS.includes(bId) ? 0 : TRUSTED_NAMES.some(n => bName.includes(n)) ? 1 : 2;
-          return aScore - bScore;
+        const searchUrl = buildYouTubeSearchUrl(clip.searchQuery, ytKey, {
+          maxResults: 10,
+          videoDuration: "medium",
         });
+        const initialItems = await fetchYouTubeSearchItems(searchUrl);
 
-        const video = ranked[0];
+        const video = await resolvePastorYouTubeVideo(
+          initialItems,
+          ytKey,
+          {
+            verseReference: verse?.reference,
+            themeHint: clip.searchQuery,
+            pastorHint: clip.pastor,
+          },
+          { videoDuration: "medium", allowNonListedFallback: true },
+        );
+        if (!video?.id?.videoId) return null;
+
         const videoId = video.id.videoId;
-        const snippet = video.snippet;
+        const snippet = video.snippet!;
 
         // Get duration
         const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
@@ -4724,7 +4676,7 @@ Only return shouldSuggest: true when ALL of these are true:
 
 If shouldSuggest is true:
 - emotionTags: array of 2–5 lowercase single-word emotion states from this list: grief, loss, anxiety, fear, hopelessness, depression, anger, loneliness, doubt, confusion, shame, guilt, identity, purpose, direction, hope, gratitude, forgiveness, marriage, prodigal, addiction, suffering, healing, trust, surrender, waiting, courage, failure, rejection, betrayal, comparison, envy, pride, control, worth, relationship
-- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. Choose one preacher whose tone matches this person's emotional state — Tier 1 (truth, conviction, scripture authority): Phillip Mitchell, Tony Evans, Matt Chandler, Jack Hibbs, Allen Jackson, Dharius Daniels. Tier 2 (structured, biblical depth): Jentezen Franklin, T.D. Jakes. Tier 3 (cultural bridge, engagement): Michael Todd, Tim Ross, Rich Wilkerson Jr, Eric Thomas. Default to Tier 1 for grief, doubt, shame, surrender — use Tier 3 for motivation, identity, or cultural resonance.
+- searchQuery: a precise YouTube search targeting SHORT sermon clips (2–6 minutes). Include "clip" or "short" in the query. ${PASTOR_TIER_AI_GUIDE} Default to Tier 1 for grief, doubt, shame, surrender — use Tier 3 for motivation, identity, or cultural resonance.
 - preacher: the specific teacher you are targeting (e.g. "Michael Todd")
 - momentTitle: a specific, compelling 4–8 word title for what this moment addresses (e.g. "On carrying grief no one can see")
 - leadIn: 2 warm, personal sentences framing WHY this moment is relevant to their exact situation. Begin with "There's a moment from [preacher]..." — make it feel like someone who just listened to this conversation and found something specifically for them. Never say "video" — say "moment" or "message."
@@ -4804,63 +4756,31 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
       }
 
       const ytKey = process.env.YOUTUBE_API_KEY;
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(analysis.searchQuery)}&type=video&maxResults=8&relevanceLanguage=en&safeSearch=strict&key=${ytKey}&order=relevance&videoDuration=short`;
+      const searchUrl = buildYouTubeSearchUrl(analysis.searchQuery, ytKey, {
+        maxResults: 8,
+        videoDuration: "short",
+      });
+      const initialItems = await fetchYouTubeSearchItems(searchUrl);
 
-      const ytRes = await fetch(searchUrl);
-      const ytData = (await ytRes.json()) as any;
-
-      if (!ytData.items || ytData.items.length === 0) {
+      if (!initialItems.length) {
         return res.json({ shouldSuggest: false });
       }
 
-      // Prefer videos from trusted ministry channels — tier 1: exact channel ID, tier 2: name fragment
-      const TRUSTED_CHANNEL_IDS_G: string[] = [
-        // Tier 1 — Core
-        "UCrPGIKiPtgQ25TaW1fLdR0Q", // 2819 Church (Phillip Mitchell) ✓
-        "UCRZweRCzcK5ObXPCNKvdMOQ", // The Urban Alternative (Tony Evans) ✓
-        "UC5tzTmPEue1OMqkT9CIAP0g", // The Village Church (Matt Chandler) ✓
-        "UCzvq_2THJhueXOP8JdAO2-A", // Real Life with Jack Hibbs ✓
-        "UCmJ_L35KPnDoIfzbe4sfRQA", // Allen Jackson Ministries ✓
-        "UCexLpWnpWeHGlrlqywU3bWA", // Dharius Daniels TV — Change Church ✓
-        // Tier 2 — Strong
-        "UChxJPnZ0x9I8iYrm4jjuo0w", // Free Chapel (Jentezen Franklin) ✓
-        "UCjQbTcszB-gRhDByY9WhySw", // The Potter's House (T.D. Jakes) ✓
-        // Tier 3 — Cultural Bridge
-        "UCYv-siSKd3Gn9IsliO95gIw", // Transformation Church (Michael Todd) ✓
-        "UCqzgGwRrOLH20OIc8bM_VAg", // The Basement with Tim Ross ✓
-        "UCZRjT2mSmOVE5ROt51ifIyg", // VOUS Church (Rich Wilkerson Jr) ✓
-        "UC1d28mrBqCQliL_N48tZZiw", // ET The Hip Hop Preacher (Eric Thomas) ✓
-      ];
-      const trustedChannelNamesG = [
-        // Tier 1 — Core (Truth + Conviction + Scripture Authority)
-        "phillip mitchell", "2819 church",
-        "tony evans", "urban alternative",
-        "matt chandler", "village church",
-        "jack hibbs", "real life with jack hibbs",
-        "allen jackson", "allen jackson ministries",
-        "dharius daniels", "change church",
-        // Tier 2 — Strong but Stylistically Different
-        "jentezen franklin", "free chapel",
-        "td jakes", "t.d. jakes", "potter's house", "potters house",
-        // Tier 3 — Cultural Bridge / Engagement
-        "michael todd", "transformation church",
-        "tim ross", "the basement",
-        "rich wilkerson", "vous church",
-        "eric thomas", "hip hop preacher",
-      ];
-      const ranked = [...ytData.items].sort((a: any, b: any) => {
-        const aId = a.snippet?.channelId || "";
-        const bId = b.snippet?.channelId || "";
-        const aName = (a.snippet?.channelTitle || "").toLowerCase();
-        const bName = (b.snippet?.channelTitle || "").toLowerCase();
-        const aScore = TRUSTED_CHANNEL_IDS_G.includes(aId) ? 0 : trustedChannelNamesG.some(c => aName.includes(c)) ? 1 : 2;
-        const bScore = TRUSTED_CHANNEL_IDS_G.includes(bId) ? 0 : trustedChannelNamesG.some(c => bName.includes(c)) ? 1 : 2;
-        return aScore - bScore;
-      });
+      const video = await resolvePastorYouTubeVideo(
+        initialItems,
+        ytKey,
+        {
+          themeHint: analysis.searchQuery,
+          pastorHint: analysis.preacher,
+        },
+        { videoDuration: "short", allowNonListedFallback: true },
+      );
+      if (!video?.id?.videoId) {
+        return res.json({ shouldSuggest: false });
+      }
 
-      const video = ranked[0];
       const videoId = video.id.videoId;
-      const snippet = video.snippet;
+      const snippet = video.snippet!;
 
       // Get video duration
       const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
