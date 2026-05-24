@@ -7,7 +7,14 @@ import "./index.css";
 
 installApiFetch();
 
+const isNativeWebView = typeof window !== "undefined" && !!(window as any).ReactNativeWebView;
+
 if ("serviceWorker" in navigator) {
+  if (isNativeWebView) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((r) => r.unregister());
+    }).catch(() => {});
+  } else {
   window.addEventListener("load", () => {
     if (import.meta.env.PROD) {
       navigator.serviceWorker.register("/sw.js").then((registration) => {
@@ -50,6 +57,7 @@ if ("serviceWorker" in navigator) {
       });
     }
   });
+  }
 }
 
 createRoot(document.getElementById("root")!).render(

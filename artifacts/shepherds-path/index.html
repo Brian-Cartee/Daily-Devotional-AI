@@ -41,6 +41,17 @@
   <script>
     (function(){try{var t=localStorage.getItem('sp-theme');if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}})();
   </script>
+  <script>
+    (function(){
+      try {
+        if (window.ReactNativeWebView && navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          });
+        }
+      } catch (e) {}
+    })();
+  </script>
   </head>
   <body style="background-color:#0d0612;margin:0;padding:0;">
     <div id="root"></div>

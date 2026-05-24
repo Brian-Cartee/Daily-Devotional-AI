@@ -55,7 +55,7 @@ async function rescheduleNotifications() {
   } catch {}
 }
 
-const API_HEALTH_URL = "https://www.shepherdspathai.com/api/daily-art";
+const API_HEALTH_URL = "https://www.shepherdspathai.com/api/health";
 const HEALTH_CHECK_TIMEOUT_MS = 10000;
 const FAILSAFE_TIMEOUT_MS = 4000;
 
@@ -178,7 +178,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <SubscriptionProvider>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
                 <RootLayoutNav />
               </KeyboardProvider>

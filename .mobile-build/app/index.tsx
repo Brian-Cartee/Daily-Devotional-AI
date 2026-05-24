@@ -31,6 +31,8 @@ const READY_JS = `(function(){
   true;
 })();`;
 
+const BEFORE_CONTENT_JS = `document.documentElement.style.backgroundColor='#0d0612';document.body.style.backgroundColor='#0d0612';true;`;
+
 export default function MainScreen() {
   const webviewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
@@ -92,6 +94,7 @@ export default function MainScreen() {
         domStorageEnabled
         allowsBackForwardNavigationGestures
         pullToRefreshEnabled
+        injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         injectedJavaScript={READY_JS}
         onMessage={(e) => {
           try {

@@ -9,8 +9,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -55,8 +55,9 @@ async function rescheduleNotifications() {
   } catch {}
 }
 
-const API_HEALTH_URL = "https://www.shepherdspathai.com/api/daily-art";
+const API_HEALTH_URL = "https://www.shepherdspathai.com/api/health";
 const HEALTH_CHECK_TIMEOUT_MS = 10000;
+const FAILSAFE_TIMEOUT_MS = 4000;
 
 async function checkApiReachable(): Promise<boolean> {
   if (Platform.OS === "web") return true;
@@ -69,6 +70,15 @@ async function checkApiReachable(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function LoadingScreen({ message }: { message: string }) {
+  return (
+    <View style={styles.loadingScreen}>
+      <ActivityIndicator size="large" color="#7A018D" />
+      <Text style={styles.loadingText}>{message}</Text>
+    </View>
+  );
 }
 
 function ConnectionErrorScreen({ onRetry }: { onRetry: () => void }) {
@@ -113,10 +123,22 @@ export default function RootLayout() {
   });
 
   const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "error">("checking");
+  const failsafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const runHealthCheck = useCallback(async () => {
     setApiStatus("checking");
+
+    failsafeRef.current = setTimeout(() => {
+      setApiStatus((current) => (current === "checking" ? "ok" : current));
+    }, FAILSAFE_TIMEOUT_MS);
+
     const reachable = await checkApiReachable();
+
+    if (failsafeRef.current) {
+      clearTimeout(failsafeRef.current);
+      failsafeRef.current = null;
+    }
+
     setApiStatus(reachable ? "ok" : "error");
   }, []);
 
@@ -128,8 +150,19 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError, runHealthCheck]);
 
-  if (!fontsLoaded && !fontError) return null;
-  if (apiStatus === "checking") return null;
+  useEffect(() => {
+    return () => {
+      if (failsafeRef.current) clearTimeout(failsafeRef.current);
+    };
+  }, []);
+
+  if (!fontsLoaded && !fontError) {
+    return <LoadingScreen message="Loading..." />;
+  }
+
+  if (apiStatus === "checking") {
+    return <LoadingScreen message="Preparing your experience..." />;
+  }
 
   if (apiStatus === "error") {
     return (
@@ -144,7 +177,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <SubscriptionProvider>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
                 <RootLayoutNav />
               </KeyboardProvider>
@@ -157,6 +190,18 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: "#0d0612",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#c0a8cc",
+    textAlign: "center",
+  },
   connectionError: {
     flex: 1,
     backgroundColor: "#1a0a1e",
