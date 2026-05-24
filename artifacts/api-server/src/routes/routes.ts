@@ -26,6 +26,7 @@ import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEma
 import { scheduleDailyEmails } from "../emailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleDailySms } from "../smsScheduler";
+import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
 import {
   PASTOR_TIER_AI_GUIDE,
   resolvePastorYouTubeVideo,
@@ -2855,7 +2856,6 @@ Return JSON: { "action": "...", "scripture": "..." }`
   // ── Life Season Journey ──────────────────────────────────────────────────────
 
   app.post("/api/journey/life-season", async (req, res) => {
-    console.log("life-season+++", req.body)
     const { situation } = req.body as { situation?: string };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
@@ -2869,103 +2869,18 @@ Return JSON: { "action": "...", "scripture": "..." }`
     }
     if (sessionIdJourney) storage.logAiUsage({ sessionId: sessionIdJourney, feature: "life_season", daysWithApp: journeyDaysWithApp, platform: "web" }).catch(() => { });
     if (detectCrisis(situation)) {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.write(CRISIS_RESPONSE);
-      return res.end();
+      return res.json(buildCrisisJourney(CRISIS_RESPONSE));
     }
-//     try {
-//       const systemPrompt = `You are a pastoral guide who builds deeply personal Bible journeys for people in real pain. You understand that someone coming to scripture during grief, fear, confusion, or crisis doesn't need platitudes — they need to feel genuinely met where they actually are.
 
-// Your journeys are specific, honest, emotionally real, and scripturally grounded. You never rush past someone's pain to get to hope. You let the journey breathe — beginning in honest acknowledgment or lament before moving toward comfort, then courage, then hope.
-
-// What you never do:
-// — Use spiritual clichés: "trust the process," "His timing is perfect," "let go and let God," "finding peace in uncertainty," "God has a plan."
-// — Soften the title. If someone's marriage is ending, the title names that — it doesn't call it "navigating life's transitions."
-// — Give whyItMatters that could work for any situation. Every sentence must be specific to exactly what this person shared.
-// — Skip the hard parts. Start in the real emotional place they are in. Lament is biblical. Confusion is biblical. Anger at God is biblical.
-// — Choose generic comfort passages when raw, honest ones exist. Psalm 88 over Psalm 23 when someone is in the pit, not the valley.
-
-// The journey arc must feel like a real emotional progression: honest acknowledgment of pain → God meeting them there → truth that holds → strength for the next step → forward movement and hope. Not a shortcut to resolution.`;
-
-//       const userPrompt = `A person shared this about what they are going through: "${situation.trim()}"
-
-// Build a 7-chapter personal Bible journey for exactly this situation. Return ONLY valid JSON:
-// {
-//   "title": "A title that names their specific pain honestly (5 words max — do not soften it)",
-//   "subtitle": "A subtitle that speaks directly to what they are experiencing",
-//   "description": "2 sentences: what this journey will do for this person, speaking to their exact situation",
-//   "pastoralIntro": "A warm, personal opening message — 3 to 4 sentences spoken directly to this person. Sentence 1: Acknowledge what they shared and tell them they are in the right place (name their situation in your own words). Sentence 2: Tell them what this journey will walk them through — briefly name the emotional arc (not the chapter titles, but what they will experience: e.g. 'from lament and raw honesty, through God's presence in the pain, to truth that holds, courage, and hope'). Sentence 3: Something true and warm about Shepherd's Path's mission — that there is no healer like Jesus, and we are here to help them place their full trust in Him through this. Keep it to 3-4 sentences total. Speak like a warm pastor, not a wellness app. Do not use the phrase 'You are in the right place' literally — find your own words.",
-//   "spotlightIndex": 0,
-//   "spotlightReason": "One sentence explaining why THIS specific chapter is the best place for this person to begin — referencing their exact situation. Be specific, not generic.",
-//   "chapters": [
-//     {
-//       "theme": "One-word theme",
-//       "title": "Chapter title that speaks to where they are emotionally at this point in the journey",
-//       "reference": "Book Chapter:Verses",
-//       "apiRef": "book chapter (lowercase, e.g. 'psalm 46' or 'john 14')",
-//       "summary": "2-3 sentences: what this passage says AND how it speaks to someone in exactly their situation",
-//       "whyItMatters": "2 sentences written directly to this person, referencing their specific situation — not generic. Echo back what they shared."
-//     }
-//   ]
-// }
-
-// Rules:
-// - Choose passages that actually speak to their pain — including lament psalms, Job, Lamentations if appropriate
-// - Arc: honest lament or acknowledgment → God present in the pain → truth that holds → strength → forward movement → hope
-// - apiRef must be just book + chapter number, lowercase (e.g. "isaiah 40" not "isaiah 40:1-8")
-// - whyItMatters must reference their actual words and situation — if they said "divorce," use that word
-// - Return ONLY the JSON object, no markdown, no explanation`;
-
-//       const completion = await openai.chat.completions.create({
-//         model: "gpt-4o-mini",
-//         messages: [
-//           { role: "system", content: systemPrompt },
-//           { role: "user", content: userPrompt },
-//         ],
-//         response_format: { type: "json_object" },
-//         temperature: 0.85,
-//       });
-
-//       const raw = completion.choices[0]?.message?.content ?? "{}";
-//       const parsed = JSON.parse(raw);
-//       console.log("raw", raw);
-//       const chapters = parsed.chapters ?? [];
-//       const spotlightIdx = Math.min(Math.max(parseInt(parsed.spotlightIndex ?? "0") || 0, 0), chapters.length - 1);
-
-//       const journey = {
-//         id: `life-season-${Date.now()}`,
-//         title: parsed.title ?? "Your Personal Journey",
-//         subtitle: parsed.subtitle ?? "A journey crafted for this season",
-//         description: parsed.description ?? "",
-//         pastoralIntro: parsed.pastoralIntro ?? "",
-//         spotlightIndex: spotlightIdx,
-//         spotlightReason: parsed.spotlightReason ?? "",
-//         length: chapters.length,
-//         category: "Life Season",
-//         colorFrom: "from-violet-500/10",
-//         colorTo: "to-indigo-500/10",
-//         borderColor: "border-violet-200/60",
-//         iconColor: "text-violet-600",
-//         pillBg: "bg-violet-100",
-//         pillText: "text-violet-700",
-//         entries: chapters.map((ch: Record<string, string>, i: number) => ({
-//           id: `life-season-ch-${i + 1}`,
-//           order: i + 1,
-//           theme: ch.theme ?? "Reflection",
-//           title: ch.title ?? `Day ${i + 1}`,
-//           reference: ch.reference ?? "",
-//           apiRef: ch.apiRef ?? ch.reference ?? "",
-//           summary: ch.summary ?? "",
-//           whyItMatters: ch.whyItMatters ?? "",
-//         })),
-//       };
-
-//       res.json(journey);
-//     } catch (err) {
-//       console.error("life-season error:", err);
-//       res.status(500).json({ message: "Failed to generate journey" });
-//     }
+    try {
+      const journey = await generateLifeSeasonJourney(situation.trim());
+      res.json(journey);
+    } catch (err) {
+      console.error("life-season error:", err);
+      res.status(500).json({ message: "Failed to generate journey" });
+    }
   });
+
 
   // ── Devotional for Two ───────────────────────────────────────────────────────
 

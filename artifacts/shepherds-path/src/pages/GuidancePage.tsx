@@ -128,6 +128,7 @@ export default function GuidancePage() {
 
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(() => !!situation.trim());
+  const [journeyError, setJourneyError] = useState(false);
 
   const [verse, setVerse] = useState<VerseResult | null>(null);
   const [prayer, setPrayer] = useState<string | null>(null);
@@ -212,24 +213,42 @@ export default function GuidancePage() {
     document.body.scrollTop = 0;
   }, []);
 
+  const fetchJourney = () => {
+    if (!situation.trim()) return;
+    setJourneyError(false);
+    setJourneyLoading(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 55_000);
+    fetch("/api/journey/life-season", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId() }),
+      signal: controller.signal,
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("journey request failed");
+        const j = (await r.json()) as Journey;
+        if (!j?.title) throw new Error("invalid journey");
+        return j;
+      })
+      .then((j) => {
+        sessionStorage.setItem("sp-guidance-journey", JSON.stringify(j));
+        setJourney(j);
+      })
+      .catch(() => setJourneyError(true))
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+        setJourneyLoading(false);
+      });
+  };
+
   const startGuidanceFlow = () => {
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
     setTimeout(() => setIsReflecting(false), 2500);
 
-    fetch("/api/journey/life-season", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId() }),
-    })
-      .then(r => r.json())
-      .then((j: Journey) => {
-        sessionStorage.setItem("sp-guidance-journey", JSON.stringify(j));
-        setJourney(j);
-        setJourneyLoading(false);
-      })
-      .catch(() => setJourneyLoading(false));
+    fetchJourney();
 
     fetch("/api/guidance/verse-and-prayer", {
       method: "POST",
@@ -1213,7 +1232,7 @@ export default function GuidancePage() {
 
           {/* Journey card */}
           <AnimatePresence>
-            {responseComplete && revealStage >= 4 && (journeyLoading || journey) && (
+            {responseComplete && revealStage >= 4 && (journeyLoading || journey || journeyError) && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1275,6 +1294,23 @@ export default function GuidancePage() {
                       </div>
                     </div>
                   </button>
+                ) : journeyError ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-7 pt-6 pb-5"
+                  >
+                    <p className="text-sm text-muted-foreground mb-3">
+                      We couldn't shape your journey just yet — worth trying once more.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={fetchJourney}
+                      className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500"
+                    >
+                      Try again
+                    </button>
+                  </motion.div>
                 ) : null}
               </motion.div>
             )}
