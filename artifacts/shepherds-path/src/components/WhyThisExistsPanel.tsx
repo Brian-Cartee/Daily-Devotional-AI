@@ -1,18 +1,32 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { ArrowRight, X } from "lucide-react";
 
-const PARAGRAPHS = [
-  { text: "This wasn't built for when life feels put together.", weight: "strong" },
-  { text: "It was built for the quiet moments—when something feels heavy and you don't know what to do with it.", weight: "normal" },
-  { text: "You don't need the right words here.", weight: "normal" },
-  { text: "Just honesty.", weight: "strong" },
-  { text: "When you share what's on your mind, Scripture meets you in it—not randomly, but with care.", weight: "normal" },
-  { text: "Not just a verse to read… but something to sit with.", weight: "normal" },
-  { text: "Something that helps you understand where you are—and what to do next.", weight: "normal" },
-  { text: "This isn't about reading more.", weight: "normal" },
-  { text: "It's about not walking through things alone.", weight: "strong" },
-  { text: "The path is here.", weight: "normal" },
-  { text: "Walking it is up to you.", weight: "strong" },
+/** Six beats — enough soul, not a wall of text */
+const PARAGRAPHS: { text: string; strong?: boolean }[] = [
+  {
+    text: "This wasn't built for when life feels put together.",
+    strong: true,
+  },
+  {
+    text: "It was built for the quiet moments — when something feels heavy and you don't know what to do with it.",
+  },
+  {
+    text: "You don't need the right words. Just honesty.",
+    strong: true,
+  },
+  {
+    text: "Talk It Through meets you with Scripture and prayer shaped for your situation — not random verses, not generic advice.",
+  },
+  {
+    text: "This isn't about reading more. It's about not walking through things alone.",
+    strong: true,
+  },
+  {
+    text: "The path is here. Walking it is up to you.",
+    strong: true,
+  },
 ];
 
 const PANEL_BG = [
@@ -28,9 +42,7 @@ export function WhyThisExistsPanel() {
   const controls = useAnimation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const open = () => {
-    setMounted(true);
-  };
+  const open = () => setMounted(true);
 
   useEffect(() => {
     if (!mounted) return;
@@ -40,7 +52,7 @@ export function WhyThisExistsPanel() {
     });
     const t = setTimeout(() => setPanelVisible(true), 60);
     return () => clearTimeout(t);
-  }, [mounted]);
+  }, [mounted, controls]);
 
   const close = async () => {
     setPanelVisible(false);
@@ -61,44 +73,38 @@ export function WhyThisExistsPanel() {
 
   return (
     <>
-      {/* ── Handle — fixed at very top of viewport ─────────────────────── */}
       <button
         onClick={open}
         data-testid="button-why-handle"
         aria-label="Why this exists"
         className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer gap-1"
-        style={{ height: 38, paddingTop: 8, background: "transparent", border: "none" }}
+        style={{ height: 42, paddingTop: 10, background: "transparent", border: "none" }}
       >
         <motion.svg
-          animate={{ opacity: [0.35, 0.65, 0.35] }}
+          animate={{ opacity: [0.4, 0.75, 0.4] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          width="34" height="11" viewBox="0 0 34 11" fill="none"
+          width="36"
+          height="12"
+          viewBox="0 0 34 11"
+          fill="none"
         >
           <path
             d="M1 1 L8 10 L26 10 L33 1"
-            stroke="rgba(255,255,255,0.85)"
+            stroke="rgba(255,255,255,0.9)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </motion.svg>
         <motion.p
-          animate={{ opacity: [0.22, 0.42, 0.22] }}
+          animate={{ opacity: [0.35, 0.55, 0.35] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          style={{
-            fontSize: 9,
-            letterSpacing: "0.20em",
-            textTransform: "uppercase",
-            color: "rgba(255,255,255,0.9)",
-            fontWeight: 600,
-            lineHeight: 1,
-          }}
+          className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/90 leading-none"
         >
-          Why This Exists
+          Why this exists
         </motion.p>
       </button>
 
-      {/* ── Backdrop ───────────────────────────────────────────────────── */}
       <AnimatePresence>
         {mounted && (
           <motion.div
@@ -114,7 +120,6 @@ export function WhyThisExistsPanel() {
         )}
       </AnimatePresence>
 
-      {/* ── Panel ──────────────────────────────────────────────────────── */}
       {mounted && (
         <motion.div
           initial={{ y: "-102%" }}
@@ -135,84 +140,93 @@ export function WhyThisExistsPanel() {
             borderBottomLeftRadius: 24,
             borderBottomRightRadius: 24,
             boxShadow: "0 20px 60px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.06)",
-            maxHeight: "92vh",
+            maxHeight: "min(82vh, 720px)",
           }}
         >
-          {/* Safe area spacer */}
           <div style={{ height: "max(env(safe-area-inset-top, 0px), 12px)", flexShrink: 0 }} />
 
-          {/* Drag affordance — top of panel (fixed, not scrolling) */}
-          <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing select-none" style={{ flexShrink: 0 }}>
+          <div
+            className="flex items-center justify-between px-5 pt-2 pb-1 shrink-0"
+            style={{ flexShrink: 0 }}
+          >
+            <div className="w-9" />
             <div
-              className="rounded-full"
-              style={{ width: 36, height: 4, background: "rgba(255,255,255,0.20)" }}
+              className="rounded-full cursor-grab active:cursor-grabbing"
+              style={{ width: 36, height: 4, background: "rgba(255,255,255,0.22)" }}
             />
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Close"
+              data-testid="button-why-close"
+              className="w-9 h-9 flex items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* App label */}
-          <p
-            className="text-center mt-4 mb-5"
-            style={{
-              flexShrink: 0,
-              fontSize: 10,
-              letterSpacing: "0.24em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.26)",
-              fontWeight: 600,
-            }}
-          >
-            Shepherd&rsquo;s Path
-          </p>
-
-          {/* ── Scrollable paragraphs ─────────────────────────────────── */}
           <div
             ref={scrollRef}
-            className="overflow-y-auto flex-1 px-8"
+            className="overflow-y-auto flex-1 px-6 sm:px-8"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
-            <div className="flex flex-col pb-4">
+            <div className="max-w-md mx-auto flex flex-col py-2 pb-6">
+              <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white/40 mb-6">
+                Shepherd&apos;s Path
+              </p>
+
               {PARAGRAPHS.map((p, i) => (
                 <motion.p
                   key={i}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: panelVisible ? 1 : 0, y: panelVisible ? 0 : 6 }}
-                  transition={{ duration: 0.45, delay: 0.08 + i * 0.055 }}
-                  style={{
-                    fontFamily: "'Georgia', serif",
-                    fontSize: p.weight === "strong" ? "1.075rem" : "0.975rem",
-                    lineHeight: 1.75,
-                    color:
-                      p.weight === "strong"
-                        ? "rgba(255,255,255,0.95)"
-                        : "rgba(255,255,255,0.72)",
-                    marginBottom: i < PARAGRAPHS.length - 1 ? "0.95rem" : 0,
-                    letterSpacing: p.weight === "strong" ? "-0.005em" : "0",
-                  }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: panelVisible ? 1 : 0, y: panelVisible ? 0 : 8 }}
+                  transition={{ duration: 0.4, delay: 0.06 + i * 0.07 }}
+                  className={`text-center leading-[1.65] mb-5 last:mb-0 ${
+                    p.strong
+                      ? "text-[19px] sm:text-[21px] text-white font-semibold tracking-tight"
+                      : "text-[17px] sm:text-[18px] text-white/80"
+                  }`}
+                  style={p.strong ? { fontFamily: "Georgia, serif" } : undefined}
                 >
                   {p.text}
                 </motion.p>
               ))}
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: panelVisible ? 1 : 0, y: panelVisible ? 0 : 10 }}
+                transition={{ duration: 0.45, delay: 0.5 }}
+                className="mt-8 flex flex-col gap-3"
+              >
+                <Link href="/guidance" onClick={close}>
+                  <span
+                    data-testid="btn-why-talk-through"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[16px] font-semibold text-white bg-white/15 border border-white/20 hover:bg-white/20 transition-colors"
+                  >
+                    Try Talk It Through
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={close}
+                  className="text-[14px] font-medium text-white/45 hover:text-white/70 transition-colors py-1"
+                >
+                  Return to home
+                </button>
+              </motion.div>
             </div>
           </div>
 
-          {/* Bottom drag handle + dismiss hint (fixed, not scrolling) */}
           <div
-            className="flex flex-col items-center gap-2 cursor-grab active:cursor-grabbing select-none"
+            className="flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none shrink-0"
             style={{
-              flexShrink: 0,
-              paddingTop: 16,
-              paddingBottom: "max(28px, calc(16px + env(safe-area-inset-bottom, 0px)))",
+              paddingTop: 12,
+              paddingBottom: "max(20px, calc(12px + env(safe-area-inset-bottom, 0px)))",
             }}
           >
-            <p
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,0.28)",
-              }}
-            >
-              swipe up to close
+            <p className="text-[10px] tracking-[0.16em] uppercase text-white/30 font-medium">
+              Swipe up to close
             </p>
             <div
               className="rounded-full"
