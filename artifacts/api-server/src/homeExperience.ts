@@ -25,6 +25,15 @@ export type WeeklyWeatherPayload = {
   journalCount?: number;
 };
 
+function getEasternHour(date = new Date()): number {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    hour12: false,
+  }).format(date);
+  return parseInt(hour, 10);
+}
+
 function daysSince(isoDate: string): number {
   const then = new Date(isoDate).getTime();
   if (Number.isNaN(then)) return 999;
@@ -77,7 +86,7 @@ export async function buildThresholdPayload(
   daysWithApp: number,
   isPro = false,
 ): Promise<ThresholdPayload> {
-  const hour = new Date().getHours();
+  const hour = getEasternHour();
   const listenFirstSuggested = hour >= 21 || hour < 5;
 
   let streak = 0;
@@ -133,10 +142,23 @@ export async function buildThresholdPayload(
   if (hour >= 23 || hour < 5) {
     return {
       headline: "Still awake?",
-      subtext: "You don't have to figure it out tonight. Bring what's heavy — or let today's verse hold you.",
+      subtext: "You don't have to figure it out tonight. Talk It Through meets you with Scripture and prayer — or let today's verse hold you quietly.",
       primaryCta: { label: "Talk it through", href: "/guidance" },
       secondaryCta: { label: "Listen to today's verse", href: "/devotional" },
       phase: "latenight",
+      daysWithApp,
+      streak,
+      listenFirstSuggested: true,
+    };
+  }
+
+  if (hour >= 22) {
+    return {
+      headline: "Good evening.",
+      subtext: "The day is winding down. If something is still with you, bring it into Talk It Through — grounded in God's Word, not generic advice.",
+      primaryCta: { label: "Talk it through", href: "/guidance" },
+      secondaryCta: { label: "Today's devotional", href: "/devotional" },
+      phase: "late-evening",
       daysWithApp,
       streak,
       listenFirstSuggested: true,
@@ -158,10 +180,11 @@ export async function buildThresholdPayload(
 
   if (hour >= 17 && hour < 22) {
     return {
-      headline: "How did today land on your soul?",
-      subtext: "Before the day closes, take a breath with God — alignment, gratitude, or whatever is true.",
-      primaryCta: { label: "Evening alignment", href: "/alignment" },
-      secondaryCta: { label: "Talk it through", href: "/guidance" },
+      headline: hour >= 20 ? "Good evening — what's still with you?" : "How did today land on your soul?",
+      subtext:
+        "Talk It Through is your Scripture-grounded companion: one honest sentence in, and prayerful conversation that follows you — not a chatbot, a pastoral walk.",
+      primaryCta: { label: "Talk it through", href: "/guidance" },
+      secondaryCta: { label: "Evening alignment", href: "/alignment" },
       phase: "evening",
       daysWithApp,
       streak,

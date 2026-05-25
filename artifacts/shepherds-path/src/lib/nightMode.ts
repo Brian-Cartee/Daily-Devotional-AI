@@ -3,24 +3,22 @@
 // When someone opens this app between 11 PM and 5 AM, we know something
 // brought them here at this hour. We respond differently.
 
+import { getEasternHour, getEasternTimeLabel } from "@/lib/timeOfDay";
+
+/** 10pm–5am Eastern — crisis-hour UX */
 export function isLateNight(): boolean {
-  const hour = new Date().getHours();
-  return hour >= 23 || hour < 5;
+  const hour = getEasternHour();
+  return hour >= 22 || hour < 5;
 }
 
 export function getNightTimeLabel(): string {
-  const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes().toString().padStart(2, "0");
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  const ampm = hour < 12 ? "AM" : "PM";
-  return `${displayHour}:${minute} ${ampm}`;
+  return getEasternTimeLabel();
 }
 
 // A gentle, quiet opening for the late-night context —
 // used in the home screen banner and check-in prompts.
 export function getNightGreeting(name: string | null): string {
-  const hour = new Date().getHours();
+  const hour = getEasternHour();
   if (name) {
     if (hour >= 0 && hour < 2) return `${name}, we're here.`;
     if (hour >= 2 && hour < 5) return `We see you, ${name}.`;

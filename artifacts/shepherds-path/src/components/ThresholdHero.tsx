@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Headphones } from "lucide-react";
+import { Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
@@ -10,6 +10,7 @@ import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listen
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { apiSessionExtras } from "@/lib/requestExtras";
+import { TalkItThroughHeroPrompt } from "@/components/TalkItThroughHeroPrompt";
 
 export type ThresholdData = {
   headline: string;
@@ -73,9 +74,11 @@ export function ThresholdHero() {
     setListenFirstPreference(next);
   };
 
+  const showTalkPrompt = !thresholdLoading;
+
   return (
     <div
-      className="relative min-h-[52vh] flex flex-col justify-end overflow-hidden"
+      className="relative min-h-[56vh] flex flex-col justify-end overflow-hidden"
       style={{
         background: "linear-gradient(175deg, #1e0d50 0%, #130636 38%, #09031e 88%)",
       }}
@@ -96,81 +99,80 @@ export function ThresholdHero() {
             "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(120,60,220,0.25) 0%, transparent 65%), linear-gradient(to top, #09031e 0%, transparent 55%)",
         }}
       />
-      <div className="relative z-10 max-w-xl mx-auto w-full px-5 pt-16 pb-8 sm:pb-10">
+      <div className="relative z-10 max-w-xl mx-auto w-full px-5 pt-14 pb-8 sm:pb-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-violet-300/55 mb-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-violet-200/70 mb-3">
             Shepherd&apos;s Path
           </p>
           <h1
-            className="text-white font-bold leading-tight mb-3"
-            style={{ fontSize: "clamp(1.5rem, 5.5vw, 2rem)" }}
+            className="text-white font-bold leading-[1.15] mb-3 tracking-tight"
+            style={{ fontSize: "clamp(1.75rem, 6vw, 2.35rem)" }}
             data-testid="text-threshold-headline"
           >
             {thresholdLoading ? "…" : threshold?.headline ?? "What's on your heart?"}
           </h1>
-          <p className="text-[15px] text-white/65 leading-relaxed max-w-md mb-3">
+          <p className="text-[17px] sm:text-[18px] text-white/82 leading-relaxed max-w-md mb-4 font-medium">
             {thresholdLoading ? "…" : threshold?.subtext}
           </p>
           {threshold?.continuityLine && (
             <p
-              className="text-[13px] text-violet-200/70 leading-relaxed max-w-md mb-5 pl-3 border-l border-violet-400/30"
+              className="text-[15px] text-violet-100/85 leading-relaxed max-w-md mb-5 pl-3.5 border-l-2 border-violet-400/40"
               data-testid="text-threshold-continuity"
             >
               {threshold.continuityLine}
             </p>
           )}
-          {!threshold?.continuityLine && <div className="mb-2" />}
+
+          {showTalkPrompt && !thresholdLoading && (
+            <div className="mb-5">
+              <TalkItThroughHeroPrompt phase={threshold?.phase} />
+            </div>
+          )}
 
           {verse && !verseLoading && (
             <Link href="/devotional">
               <div
                 data-testid="card-daily-verse-threshold"
-                className="mb-5 rounded-2xl border border-violet-500/20 bg-black/25 backdrop-blur-sm px-4 py-3.5 active:scale-[0.99] transition-transform"
+                className="mb-4 rounded-2xl border border-violet-500/25 bg-black/35 backdrop-blur-sm px-4 py-4 active:scale-[0.99] transition-transform"
               >
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-300/70 mb-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-200/80 mb-2">
                   Today&apos;s verse
                 </p>
                 {verseFrame && (
-                  <p className="text-[12px] text-white/50 mb-2 leading-snug">{verseFrame}</p>
+                  <p className="text-[14px] text-white/65 mb-2.5 leading-snug">{verseFrame}</p>
                 )}
                 <p
-                  className="text-[15px] leading-relaxed text-white/88 mb-1"
+                  className="text-[17px] sm:text-[18px] leading-relaxed text-white/92 mb-2"
                   style={{ fontFamily: "Georgia, serif", fontStyle: "italic" }}
                 >
-                  &ldquo;{verse.text.length > 160 ? `${verse.text.slice(0, 160)}…` : verse.text}&rdquo;
+                  &ldquo;{verse.text.length > 180 ? `${verse.text.slice(0, 180)}…` : verse.text}&rdquo;
                 </p>
-                <p className="text-[12px] font-semibold text-violet-300/85">— {verse.reference}</p>
+                <p className="text-[14px] font-semibold text-violet-200/90">— {verse.reference}</p>
               </div>
             </Link>
           )}
 
-          <div className="flex flex-col gap-2.5">
-            {threshold?.primaryCta && (
-              <Link href={threshold.primaryCta.href}>
-                <span
-                  data-testid="btn-threshold-primary"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-[15px] text-white bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-colors"
-                >
-                  {threshold.primaryCta.label}
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              </Link>
-            )}
-            {threshold?.secondaryCta && (
+          {threshold?.secondaryCta && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <Link href={threshold.secondaryCta.href}>
                 <span
                   data-testid="btn-threshold-secondary"
-                  className="flex items-center justify-center w-full py-3 rounded-xl font-semibold text-[14px] text-white/75 border border-white/15 hover:bg-white/5 transition-colors"
+                  className="text-[15px] font-semibold text-violet-200/90 hover:text-white underline-offset-4 hover:underline transition-colors"
                 >
-                  {threshold.secondaryCta.label}
+                  {threshold.secondaryCta.label} →
                 </span>
               </Link>
-            )}
-          </div>
+              <Link href="/devotional">
+                <span className="text-[14px] text-white/50 hover:text-white/70 transition-colors">
+                  Open devotional
+                </span>
+              </Link>
+            </div>
+          )}
 
           {(threshold?.listenFirstSuggested || listenFirst || !isProVerifiedLocally()) && (
             isProVerifiedLocally() ? (
@@ -178,20 +180,20 @@ export function ThresholdHero() {
                 type="button"
                 onClick={toggleListenFirst}
                 data-testid="btn-listen-first-pref"
-                className={`mt-4 flex items-center gap-2 text-[12px] font-medium transition-colors ${
-                  listenFirst ? "text-violet-300" : "text-white/40 hover:text-white/60"
+                className={`mt-5 flex items-center gap-2 text-[13px] font-medium transition-colors ${
+                  listenFirst ? "text-violet-300" : "text-white/45 hover:text-white/65"
                 }`}
               >
-                <Headphones className="w-3.5 h-3.5" />
+                <Headphones className="w-4 h-4" />
                 {listenFirst ? "Listen-first mode on" : "Prefer to listen instead of read"}
               </button>
             ) : (
               <Link href="/pricing">
                 <span
                   data-testid="btn-listen-first-pro"
-                  className="mt-4 flex items-center gap-2 text-[12px] font-medium text-white/40 hover:text-white/60 transition-colors"
+                  className="mt-5 flex items-center gap-2 text-[13px] font-medium text-white/45 hover:text-white/65 transition-colors"
                 >
-                  <Headphones className="w-3.5 h-3.5" />
+                  <Headphones className="w-4 h-4" />
                   Pro: mornings start with listen
                 </span>
               </Link>
