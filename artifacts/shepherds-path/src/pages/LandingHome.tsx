@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, SlidersHorizontal, BookMarked, HandHeart } from "lucide-react";
+import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, BookMarked, HandHeart } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -654,10 +654,8 @@ export default function LandingHome() {
                 <div className="relative z-10 px-5 pt-4 pb-4">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-xl bg-primary/12 flex items-center justify-center">
-                        <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
-                      </div>
+                    <div className="flex items-center gap-2.5">
+                      <ShortcutPathIcon variant="pathways" size="sm" />
                       <span className="text-[12px] font-bold uppercase tracking-widest text-primary/70">Your Rhythm Today</span>
                     </div>
                     <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/8 text-primary border border-primary/15">
@@ -777,13 +775,16 @@ export default function LandingHome() {
             >
               <div className="relative z-10 px-4 py-3.5">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <ShortcutPathIcon variant="streak" size="sm" />
+                    <div className="min-w-0">
                     <p className="text-[12px] font-semibold text-foreground leading-snug">
                       {streak} morning{streak !== 1 ? "s" : ""} with God — Pro keeps the walk when life gets loud.
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
                       Archive search, listen-first, streak grace — optional, never required.
                     </p>
+                    </div>
                   </div>
                   <button
                     data-testid="btn-pro-nudge-dismiss"

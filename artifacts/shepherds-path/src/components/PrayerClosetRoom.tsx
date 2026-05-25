@@ -15,7 +15,6 @@ type Props = {
   dailyArtThumb?: string | null;
   canPinVerse?: boolean;
   onPinVerse?: () => void;
-  onCandleChange: (level: number) => void;
 };
 
 /** Enclosed prayer closet — framed wall art, vision board, bean bag, candle glow */
@@ -30,7 +29,6 @@ export function PrayerClosetRoom({
   dailyArtThumb,
   canPinVerse,
   onPinVerse,
-  onCandleChange,
 }: Props) {
   const glow = 0.35 + candleLevel * 0.55;
   const roomBrightness = 0.72 + candleLevel * 0.22;
@@ -191,10 +189,10 @@ export function PrayerClosetRoom({
           </div>
         </div>
 
-        {/* Candle shelf */}
+        {/* Candle — upper left, away from worship controls below */}
         <div
-          className="absolute z-[7] flex flex-col items-center"
-          style={{ right: "12%", top: "22%" }}
+          className="absolute z-[7] flex flex-col items-center pointer-events-none"
+          style={{ left: "10%", top: "18%" }}
         >
           <div
             className="w-12 h-1 rounded-full bg-white/10 mb-1"
@@ -282,26 +280,6 @@ export function PrayerClosetRoom({
           </motion.h1>
         </div>
 
-        {/* Candle control — minimal, inside room floor line */}
-        <div className="absolute inset-x-4 bottom-3 z-20 flex items-center justify-center gap-2 min-h-[36px] pointer-events-auto">
-          <Flame className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
-          <input
-            type="range"
-            min={10}
-            max={100}
-            step={1}
-            value={Math.round(candleLevel * 100)}
-            data-testid="closet-candle"
-            onInput={(e) => onCandleChange(Number(e.currentTarget.value) / 100)}
-            onChange={(e) => onCandleChange(Number(e.currentTarget.value) / 100)}
-            className="worship-volume-slider flex-1 max-w-[180px]"
-            style={{
-              touchAction: "pan-x",
-              ["--worship-vol" as string]: `${Math.round(candleLevel * 100)}%`,
-            }}
-            aria-label="Candle light"
-          />
-        </div>
       </div>
     </div>
   );

@@ -319,3 +319,56 @@ button, a, input, textarea, select, [role="button"] {
   border: 2px solid rgb(139 92 246);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
+
+/* Prayer closet room light — amber track, distinct from worship volume */
+.closet-candle-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.closet-candle-slider::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgb(251 191 36) 0%,
+    rgb(251 191 36) var(--candle-level, 50%),
+    rgba(255 255 255 / 0.18) var(--candle-level, 50%),
+    rgba(255 255 255 / 0.18) 100%
+  );
+}
+
+.closet-candle-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7.5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgb(251 191 36);
+}
+
+.closet-candle-slider::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255 255 255 / 0.18);
+}
+
+.closet-candle-slider::-moz-range-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(251 191 36);
+}
+
+.closet-candle-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgb(251 191 36);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+}

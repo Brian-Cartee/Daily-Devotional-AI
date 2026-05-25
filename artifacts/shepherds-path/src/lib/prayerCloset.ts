@@ -98,6 +98,14 @@ export function markClosetVisit(): void {
   }
 }
 
+export function hasVisitedCloset(): boolean {
+  try {
+    return !!localStorage.getItem(CLOSET_VISIT_KEY);
+  } catch {
+    return false;
+  }
+}
+
 export function closetDisplayName(settings: ClosetSettings, fallback = "My prayer closet"): string {
   const n = settings.name.trim();
   if (!n) return fallback;

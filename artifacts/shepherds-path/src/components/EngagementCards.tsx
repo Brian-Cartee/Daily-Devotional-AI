@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon, Sun, Wind } from "lucide-react";
-import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
+import { X, BarChart3, Share2, Copy, Check, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon } from "lucide-react";
+import { ShortcutPathIcon, returnCardIconVariant } from "@/components/ShortcutPathIcon";
 import { getReturnPhase, type DayPhase } from "@/lib/returnFlow";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight, getNightTimeLabel, getNightGreeting } from "@/lib/nightMode";
@@ -116,7 +116,9 @@ export function LateNightBannerCard() {
               data-testid="button-night-banner-guidance"
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600/50 hover:bg-indigo-600/70 text-[12px] font-bold text-white/90 border border-indigo-500/30 transition-all"
             >
-              <Compass className="w-3.5 h-3.5" />
+              <span className="inline-flex scale-[0.82] origin-left -ml-0.5">
+                <ShortcutPathIcon variant="pathways" size="sm" />
+              </span>
               Seek guidance
             </button>
           </Link>
@@ -249,18 +251,23 @@ export function ReturningUserCard() {
         >
           <X className="w-4 h-4" />
         </button>
-        <p className="text-[15px] font-semibold text-foreground leading-snug mb-1 pr-6">
-          {content.line1}
-        </p>
-        <p className="text-[13px] text-foreground/70 leading-relaxed">
-          {content.line2}
-        </p>
-        {content.line3 && (
-          <p className="text-[13px] text-foreground/55 leading-relaxed mt-0.5 mb-3">
-            {content.line3}
-          </p>
-        )}
-        {!content.line3 && <div className="mb-3" />}
+        <div className="flex items-start gap-3 pr-6 mb-2">
+          <ShortcutPathIcon variant={returnCardIconVariant(content.scenario)} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-semibold text-foreground leading-snug mb-1">
+              {content.line1}
+            </p>
+            <p className="text-[13px] text-foreground/70 leading-relaxed">
+              {content.line2}
+            </p>
+            {content.line3 && (
+              <p className="text-[13px] text-foreground/55 leading-relaxed mt-0.5">
+                {content.line3}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="mb-3" />
         <Link href={content.ctaHref} onClick={dismiss}>
           <button
             data-testid="button-returning-cta"
@@ -395,9 +402,12 @@ export function GratitudePromptCard({ sessionId }: GratitudePromptCardProps) {
         >
           <X className="w-4 h-4" />
         </button>
-        <p className="text-[12px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">
-          {copy.header}
-        </p>
+        <div className="flex items-center gap-2.5 mb-2">
+          <ShortcutPathIcon variant="journal" size="sm" />
+          <p className="text-[12px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
+            {copy.header}
+          </p>
+        </div>
         <p className="text-[14px] text-foreground/85 leading-relaxed mb-3">
           {copy.prompt}
         </p>
@@ -459,9 +469,7 @@ export function TipCard() {
           <X className="w-4 h-4" />
         </button>
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
-            <Lightbulb className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-          </div>
+          <ShortcutPathIcon variant="insight" size="sm" />
           <div>
             <p className="text-[12px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1">
               Did you know?
@@ -737,12 +745,7 @@ export function FirstStepsCard({ daysWithApp }: FirstStepsCardProps) {
         <div className="px-4 pt-4 pb-4">
           {/* Header */}
           <div className="flex items-start gap-3 mb-3.5">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-              style={{ background: "rgba(245,158,11,0.18)", border: "1px solid rgba(245,158,11,0.25)" }}
-            >
-              <Compass className="w-[18px] h-[18px] text-amber-400" />
-            </div>
+            <ShortcutPathIcon variant="pathways" size="sm" />
             <div>
               <p className="text-[13px] font-bold text-white/90 leading-snug">
                 New here?
@@ -1028,9 +1031,7 @@ export function NotificationNudgeCard() {
           </div>
         ) : (
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700/40 flex items-center justify-center shrink-0 mt-0.5">
-              <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" style={{ width: 17, height: 17 }} />
-            </div>
+            <ShortcutPathIcon variant="reminder" size="sm" />
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-bold text-foreground leading-snug mb-0.5">Never miss a morning with God.</p>
               <p className="text-[12px] text-foreground/60 leading-relaxed mb-3">
@@ -1147,12 +1148,17 @@ export function WalkMilestoneCard({ daysWithApp }: { daysWithApp: number }) {
         >
           <X className="w-4 h-4" />
         </button>
-        <p className={`text-[12px] font-bold uppercase tracking-widest mb-1.5 pr-6 ${content.labelColor}`}>
-          {content.label}
-        </p>
-        <p className="text-[15px] font-bold text-foreground leading-snug mb-1">
-          {content.headline}
-        </p>
+        <div className="flex items-start gap-3 pr-6 mb-2">
+          <ShortcutPathIcon variant="streak" size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className={`text-[12px] font-bold uppercase tracking-widest mb-1 ${content.labelColor}`}>
+              {content.label}
+            </p>
+            <p className="text-[15px] font-bold text-foreground leading-snug">
+              {content.headline}
+            </p>
+          </div>
+        </div>
         <p className="text-[13px] text-foreground/70 leading-relaxed">
           {content.body}
         </p>
@@ -1361,12 +1367,10 @@ export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
 
 // ── The Return — time-aware daily prompt card ────────────────────────────────
 
-const PHASE_ICON: Record<DayPhase, React.ReactNode> = {
-  morning:   <Sun  className="w-3.5 h-3.5" />,
-  midday:    <Sun  className="w-3.5 h-3.5" />,
-  evening:   <Moon className="w-3.5 h-3.5" />,
-  close:     <Moon className="w-3.5 h-3.5" />,
-  latenight: <Wind className="w-3.5 h-3.5" />,
+const PHASE_TILE: Partial<Record<DayPhase, "devotional" | "evening">> = {
+  midday: "devotional",
+  evening: "evening",
+  close: "evening",
 };
 
 const PHASE_COLORS: Record<DayPhase, { border: string; bg: string; eyebrow: string; top: string }> = {
@@ -1392,9 +1396,13 @@ export function TheReturnCard() {
       >
         <div className="h-[2px]" style={{ background: colors.top }} />
         <div className="px-5 py-4">
-          <div className="flex items-center gap-1.5 mb-2.5" style={{ color: colors.eyebrow }}>
-            {PHASE_ICON[phase.phase]}
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase">{phase.eyebrow}</p>
+          <div className="flex items-center gap-2.5 mb-2.5">
+            {PHASE_TILE[phase.phase] && (
+              <ShortcutPathIcon variant={PHASE_TILE[phase.phase]!} size="sm" />
+            )}
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: colors.eyebrow }}>
+              {phase.eyebrow}
+            </p>
           </div>
           <p className="text-[17px] font-bold text-foreground leading-snug mb-1">
             {phase.headline}

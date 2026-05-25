@@ -13,6 +13,7 @@ import {
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
 import { ClosetDoorwayFrame } from "@/components/ClosetDoorwayFrame";
+import { ClosetCandleControl } from "@/components/ClosetCandleControl";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import {
   WorshipBedControls,
@@ -202,9 +203,15 @@ export default function PrayerClosetPage() {
               dailyArtThumb={settings.backgroundId !== "daily-art" ? dailyArtThumb : null}
               canPinVerse={!!(dailyVerse && !settings.pinnedText)}
               onPinVerse={pinTodayVerse}
-              onCandleChange={(candleLevel) => patchSettings({ candleLevel })}
             />
           </ClosetDoorwayFrame>
+
+          <div className="mt-2 px-0.5">
+            <ClosetCandleControl
+              level={settings.candleLevel}
+              onChange={(candleLevel) => patchSettings({ candleLevel })}
+            />
+          </div>
 
           <p
             className="path-reminder-quote text-center text-[15px] text-white/70 leading-relaxed mt-4 px-2"
