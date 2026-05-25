@@ -29,6 +29,7 @@ import {
   FLOATER_PEEK_SESSION_KEY,
   FLOATER_USED_KEY,
   getPathAiPageContext,
+  type PathAiPrompt,
   shouldHidePathAiFloater,
 } from "@/lib/pathAiFloater";
 
@@ -215,6 +216,15 @@ export function FloatingAskAI() {
   const handlePreset = (prompt: string) => {
     setQuestion(prompt);
     handleSend(prompt);
+  };
+
+  const handlePrompt = (p: PathAiPrompt) => {
+    if (p.navigateTo) {
+      handleClose();
+      navigate(p.navigateTo);
+      return;
+    }
+    handlePreset(p.label);
   };
 
   const handleReset = () => {
@@ -479,8 +489,12 @@ export function FloatingAskAI() {
                         <button
                           key={p.testId ?? i}
                           data-testid={p.testId ? `btn-preset-${p.testId}` : `btn-preset-prompt-${i}`}
-                          onClick={() => handlePreset(p.label)}
-                          className="text-left px-3.5 py-3 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/50 active:scale-[0.98] transition-all"
+                          onClick={() => handlePrompt(p)}
+                          className={`text-left px-3.5 py-3 rounded-xl border active:scale-[0.98] transition-all ${
+                            p.navigateTo
+                              ? "border-primary/35 bg-primary/8 hover:bg-primary/12"
+                              : "border-border/60 bg-muted/30 hover:bg-muted/50"
+                          }`}
                         >
                           <span className="text-base leading-none block mb-1.5">{p.icon}</span>
                           <span className="text-[13px] text-foreground/90 leading-snug">{p.label}</span>
@@ -510,8 +524,12 @@ export function FloatingAskAI() {
                             {extraPrompts.map((p, i) => (
                               <button
                                 key={`extra-${i}`}
-                                onClick={() => handlePreset(p.label)}
-                                className="text-left px-3.5 py-2.5 rounded-xl border border-border/50 bg-muted/20 text-[13px] text-foreground/85"
+                                onClick={() => handlePrompt(p)}
+                                className={`text-left px-3.5 py-2.5 rounded-xl border text-[13px] text-foreground/85 ${
+                                  p.navigateTo
+                                    ? "border-primary/35 bg-primary/8"
+                                    : "border-border/50 bg-muted/20"
+                                }`}
                               >
                                 {p.icon} {p.label}
                               </button>

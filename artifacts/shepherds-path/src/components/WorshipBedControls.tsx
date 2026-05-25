@@ -5,7 +5,7 @@ import type { WorshipBedSource } from "@/lib/worshipBedSource";
 import { isYoutubeSideVolumeDevice } from "@/lib/device";
 import { WORSHIP_TRACKS, type WorshipTrackId } from "@/lib/worshipTracks";
 import {
-  WORSHIP_YOUTUBE_MIXES,
+  groupWorshipYoutubeMixesByStyle,
   type WorshipYoutubeMixId,
 } from "@/lib/worshipYouTubeMixes";
 
@@ -56,7 +56,7 @@ export function WorshipBedControls({
           <div className="min-w-0">
             <p className="text-[13px] font-bold text-white">Worship bed</p>
             <p className="text-[11px] text-white/50 leading-snug">
-              Optional music while you pray · stays low
+              Optional music · pick a mood that fits you
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export function WorshipBedControls({
                 isYoutube ? "bg-violet-600/80 text-white" : "text-white/50 hover:text-white/70"
               }`}
             >
-              YouTube mixes
+              YouTube (many styles)
             </button>
             <button
               type="button"
@@ -94,24 +94,37 @@ export function WorshipBedControls({
           </div>
 
           {isYoutube ? (
-            <div className="flex flex-col gap-2 mb-3">
-              {WORSHIP_YOUTUBE_MIXES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  data-testid={`worship-youtube-${m.id}`}
-                  onClick={() => onYoutubeMixChange(m.id)}
-                  className={`rounded-lg px-2.5 py-2 text-left transition-colors border w-full ${
-                    youtubeMixId === m.id
-                      ? "border-violet-400/50 bg-violet-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
-                  }`}
-                >
-                  <p className="text-[12px] font-semibold text-white/90 leading-snug">{m.title}</p>
-                  <p className="text-[10px] text-white/45">
-                    {m.channel} · {m.durationLabel} · {m.mood}
+            <div className="flex flex-col gap-3 mb-3">
+              <p className="text-[10px] text-white/45 leading-snug px-0.5">
+                Not everyone prays the same way — quiet piano, familiar songs, gospel, or upbeat
+                praise house. Choose what helps you meet God, not what overwhelms you.
+              </p>
+              {groupWorshipYoutubeMixesByStyle().map(({ style, label, mixes }) => (
+                <div key={style} className="space-y-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-violet-200/55 px-0.5">
+                    {label}
                   </p>
-                </button>
+                  {mixes.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      data-testid={`worship-youtube-${m.id}`}
+                      onClick={() => onYoutubeMixChange(m.id)}
+                      className={`rounded-lg px-2.5 py-2 text-left transition-colors border w-full ${
+                        youtubeMixId === m.id
+                          ? "border-violet-400/50 bg-violet-500/20"
+                          : "border-white/10 bg-white/5 hover:bg-white/10"
+                      }`}
+                    >
+                      <p className="text-[12px] font-semibold text-white/90 leading-snug">
+                        {m.title}
+                      </p>
+                      <p className="text-[10px] text-white/45">
+                        {m.channel} · {m.durationLabel} · {m.mood}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               ))}
               <div
                 id={WORSHIP_YOUTUBE_PLAYER_ID}

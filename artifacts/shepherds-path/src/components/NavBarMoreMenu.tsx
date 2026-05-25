@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe,
   Headphones,
+  HandHeart,
   HelpCircle,
   Mail,
   Moon,
@@ -194,6 +195,14 @@ export function NavBarMoreMenu({
             hint="Walkthrough of every path"
             href="/how-to-use"
             testId="nav-how-to-use"
+            onClick={onClose}
+          />
+          <MenuRow
+            icon={HandHeart}
+            label="Support the mission"
+            hint="Why gifts & Pro help — no pressure"
+            href="/how-to-use#ministry-support-heading"
+            testId="nav-ministry-support"
             onClick={onClose}
           />
           <MenuRow

@@ -33,7 +33,7 @@ export const WORSHIP_TRACKS: WorshipTrack[] = [
   {
     id: "hope-rise",
     title: "Hope rise",
-    mood: "Praise house · gentle",
+    mood: "Gentle uplift · soft",
     src: "/worship/hope-rise.mp3",
   },
   {

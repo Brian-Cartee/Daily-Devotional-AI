@@ -8,6 +8,11 @@ import {
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { BRAND_ICON } from "@/lib/brand";
+import {
+  MINISTRY_SUPPORT_CLOSING,
+  MINISTRY_SUPPORT_HEADLINE,
+  MINISTRY_SUPPORT_PARAGRAPHS,
+} from "@/lib/ministrySupportCopy";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 18 },
@@ -262,13 +267,13 @@ export default function AboutPage() {
                   </div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">Support the Mission</p>
                 </div>
-                <h3 className="text-white font-bold text-[20px] leading-snug mb-3">A movement, not just an app.</h3>
-                <p className="text-white/55 text-[13px] leading-relaxed mb-3">
-                  Shepherd's Path exists for the person at 3am who has no pastor, no church, and nowhere to turn — a faithful, Bible-grounded guide in their pocket.
-                </p>
-                <p className="text-white/55 text-[13px] leading-relaxed mb-5">
-                  Every subscription helps keep the app free for someone who can't afford it. If this has meant something to you — consider being part of what makes it possible for someone else.
-                </p>
+                <h3 className="text-white font-bold text-[20px] leading-snug mb-3">{MINISTRY_SUPPORT_HEADLINE}</h3>
+                {MINISTRY_SUPPORT_PARAGRAPHS.map((p, i) => (
+                  <p key={i} className="text-white/55 text-[13px] leading-relaxed mb-3 last:mb-5">
+                    {p}
+                  </p>
+                ))}
+                <p className="text-white/40 text-[12px] italic leading-relaxed mb-5">{MINISTRY_SUPPORT_CLOSING}</p>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Give a one-time gift</p>
                 <div className="flex gap-3 mb-4">
                   {DONATION_AMOUNTS.map(({ label, cents }) => (

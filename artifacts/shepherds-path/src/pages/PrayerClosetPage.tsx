@@ -311,7 +311,7 @@ export default function PrayerClosetPage() {
             enabled={settings.worshipEnabled}
             source={settings.worshipSource ?? "youtube"}
             trackId={settings.worshipTrackId}
-            youtubeMixId={settings.worshipYoutubeMixId ?? "holy-voltage-ep1"}
+            youtubeMixId={settings.worshipYoutubeMixId ?? "soaking-moment-with-god"}
             volume={settings.worshipVolume}
             usingGenerated={usingGenerated}
             youtubeReady={youtubeReady}

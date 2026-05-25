@@ -50,7 +50,7 @@ export const DEFAULT_CLOSET_SETTINGS: ClosetSettings = {
   worshipEnabled: false,
   worshipSource: "youtube",
   worshipTrackId: "morning-stillness",
-  worshipYoutubeMixId: "holy-voltage-ep1",
+  worshipYoutubeMixId: "soaking-moment-with-god",
   worshipVolume: 0.35,
 };
 

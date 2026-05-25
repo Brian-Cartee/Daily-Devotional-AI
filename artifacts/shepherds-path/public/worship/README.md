@@ -6,7 +6,7 @@ Place royalty-free MP3 files here (Pixabay Content License or your own licenses)
 |------|----------|
 | `morning-stillness.mp3` | Soft ambient prayer |
 | `soaking-prayer.mp3` | Warm soaking pads |
-| `hope-rise.mp3` | Gentle uplifting house / worship EDM |
+| `hope-rise.mp3` | Gentle uplift (optional soft energy) |
 | `night-rest.mp3` | Evening rest |
 
 The app plays these in **Prayer closet** when worship bed is on. If a file is missing, a quiet generated stillness tone is used until you add tracks.

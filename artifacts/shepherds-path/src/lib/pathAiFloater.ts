@@ -29,6 +29,20 @@ export interface PathAiPrompt {
   label: string;
   icon: string;
   testId?: string;
+  /** Opens a page instead of sending a question to Path AI */
+  navigateTo?: string;
+}
+
+export const PATH_AI_HOW_TO_USE_PROMPT: PathAiPrompt = {
+  label: "How does this app work?",
+  icon: "📱",
+  testId: "how-app-works",
+  navigateTo: "/how-to-use",
+};
+
+function withAppGuidePrompt(prompts: PathAiPrompt[]): PathAiPrompt[] {
+  const rest = prompts.filter((p) => p.testId !== PATH_AI_HOW_TO_USE_PROMPT.testId);
+  return [PATH_AI_HOW_TO_USE_PROMPT, ...rest];
 }
 
 export interface PathAiPageContext {
@@ -45,14 +59,32 @@ const UNIVERSAL_PROMPTS: PathAiPrompt[] = [
   { label: "I need encouragement right now", icon: "🌄" },
 ];
 
+function finishContext(ctx: PathAiPageContext): PathAiPageContext {
+  return { ...ctx, prompts: withAppGuidePrompt(ctx.prompts) };
+}
+
 export function getPathAiPageContext(
   path: string,
   opts?: { verseReference?: string | null },
 ): PathAiPageContext {
   const ref = opts?.verseReference?.trim();
 
+  if (path.startsWith("/how-to-use")) {
+    return finishContext({
+      pageId: "default",
+      chipLabel: "App guide",
+      greeting: "Questions about the app?",
+      subline: "Path AI can still help — or browse the full guide on this page",
+      prompts: [
+        { label: "What's the best place to start each morning?", icon: "🌅" },
+        { label: "What's the difference between Path AI and Talk it through?", icon: "💬" },
+        ...UNIVERSAL_PROMPTS.slice(0, 1),
+      ],
+    });
+  }
+
   if (path.startsWith("/devotional")) {
-    return {
+    return finishContext({
       pageId: "devotional",
       chipLabel: ref ? `Today's verse · ${ref}` : "Today's devotional",
       greeting: ref ? `Ask about ${ref}` : "Ask about today's devotional",
@@ -76,11 +108,11 @@ export function getPathAiPageContext(
         { label: "I need a short prayer before I go on with my day", icon: "🕊️" },
         ...UNIVERSAL_PROMPTS.slice(0, 2),
       ],
-    };
+    });
   }
 
   if (path.startsWith("/journal")) {
-    return {
+    return finishContext({
       pageId: "journal",
       chipLabel: "Your journal",
       greeting: "Process what you've been carrying",
@@ -91,11 +123,11 @@ export function getPathAiPageContext(
         { label: "I'm stuck — help me find the next honest step", icon: "🌿" },
         ...UNIVERSAL_PROMPTS.slice(0, 1),
       ],
-    };
+    });
   }
 
   if (path.startsWith("/read") || path.startsWith("/study")) {
-    return {
+    return finishContext({
       pageId: path.startsWith("/study") ? "study" : "read",
       chipLabel: path.startsWith("/study") ? "Quick study" : "Bible reading",
       greeting: "Understand what you're reading",
@@ -106,11 +138,11 @@ export function getPathAiPageContext(
         { label: "How do I apply this to my life this week?", icon: "🌿" },
         { label: "I have a question about a word or culture in the Bible", icon: "🔍" },
       ],
-    };
+    });
   }
 
   if (path.startsWith("/understand")) {
-    return {
+    return finishContext({
       pageId: "journey",
       chipLabel: "Bible journey",
       greeting: "Go deeper on this journey",
@@ -121,11 +153,11 @@ export function getPathAiPageContext(
         { label: "I'm doubting — meet me with Scripture", icon: "🕊️" },
         ...UNIVERSAL_PROMPTS.slice(0, 1),
       ],
-    };
+    });
   }
 
   if (path.startsWith("/alignment")) {
-    return {
+    return finishContext({
       pageId: "alignment",
       chipLabel: "Walk Today",
       greeting: "Continue your Walk Today",
@@ -135,11 +167,11 @@ export function getPathAiPageContext(
         { label: "What Scripture speaks to where I struggled?", icon: "📖" },
         { label: "I want to surrender one thing before tonight", icon: "🕊️" },
       ],
-    };
+    });
   }
 
   if (path === "/" || path.startsWith("/moments")) {
-    return {
+    return finishContext({
       pageId: path === "/" ? "home" : "moments",
       chipLabel: "Shepherd's Path",
       greeting: "What's on your heart?",
@@ -150,16 +182,16 @@ export function getPathAiPageContext(
         { label: "Help me understand a Bible verse", icon: "📖" },
         { label: "I have a difficult decision to make", icon: "🕊️" },
       ],
-    };
+    });
   }
 
-  return {
+  return finishContext({
     pageId: "default",
     chipLabel: "Path AI",
     greeting: "Ask Path AI",
     subline: "Grounded in Scripture · guided with care",
     prompts: [...UNIVERSAL_PROMPTS, { label: "I want to grow closer to God", icon: "✝️" }],
-  };
+  });
 }
 
 export function buildTodayWalkMessage(): string | null {

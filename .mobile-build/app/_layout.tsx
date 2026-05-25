@@ -55,9 +55,9 @@ async function rescheduleNotifications() {
   } catch {}
 }
 
-const API_HEALTH_URL = "https://www.shepherdspathai.com/api/health";
-const HEALTH_CHECK_TIMEOUT_MS = 10000;
-const FAILSAFE_TIMEOUT_MS = 4000;
+const API_HEALTH_URL = "https://www.shepherdspathai.com/api/healthz";
+const HEALTH_CHECK_TIMEOUT_MS = 8000;
+const FONT_LOAD_TIMEOUT_MS = 3500;
 
 async function checkApiReachable(): Promise<boolean> {
   if (Platform.OS === "web") return true;
@@ -120,57 +120,31 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "error">("checking");
-  const failsafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [fontsTimedOut, setFontsTimedOut] = useState(false);
+  const [apiUnreachable, setApiUnreachable] = useState(false);
+
+  const fontsReady = fontsLoaded || fontError || fontsTimedOut;
 
   const runHealthCheck = useCallback(async () => {
-    setApiStatus("checking");
-
-    failsafeRef.current = setTimeout(() => {
-      setApiStatus((current) => {
-        if (current === "checking") return "ok";
-        return current;
-      });
-    }, FAILSAFE_TIMEOUT_MS);
-
     const reachable = await checkApiReachable();
-
-    if (failsafeRef.current) {
-      clearTimeout(failsafeRef.current);
-      failsafeRef.current = null;
-    }
-
-    setApiStatus(reachable ? "ok" : "error");
+    setApiUnreachable(!reachable);
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    const fontTimer = setTimeout(() => setFontsTimedOut(true), FONT_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(fontTimer);
+  }, []);
+
+  useEffect(() => {
+    if (fontsReady) {
       SplashScreen.hideAsync();
       rescheduleNotifications();
       runHealthCheck();
     }
-  }, [fontsLoaded, fontError, runHealthCheck]);
+  }, [fontsReady, runHealthCheck]);
 
-  useEffect(() => {
-    return () => {
-      if (failsafeRef.current) clearTimeout(failsafeRef.current);
-    };
-  }, []);
-
-  if (!fontsLoaded && !fontError) {
+  if (!fontsReady) {
     return <LoadingScreen message="Loading..." />;
-  }
-
-  if (apiStatus === "checking") {
-    return <LoadingScreen message="Preparing your experience..." />;
-  }
-
-  if (apiStatus === "error") {
-    return (
-      <SafeAreaProvider>
-        <ConnectionErrorScreen onRetry={runHealthCheck} />
-      </SafeAreaProvider>
-    );
   }
 
   return (
@@ -180,6 +154,13 @@ export default function RootLayout() {
           <SubscriptionProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
+                {apiUnreachable ? (
+                  <View style={styles.apiBanner} pointerEvents="none">
+                    <Text style={styles.apiBannerText}>
+                      Limited connection — the app may still load. Pull down to refresh.
+                    </Text>
+                  </View>
+                ) : null}
                 <RootLayoutNav />
               </KeyboardProvider>
             </GestureHandlerRootView>
@@ -245,5 +226,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginTop: 8,
+  },
+  apiBanner: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: "rgba(120, 40, 140, 0.92)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  apiBannerText: {
+    fontSize: 11,
+    color: "#f3e8ff",
+    textAlign: "center",
   },
 });

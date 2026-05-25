@@ -82,7 +82,7 @@ export default function MainScreen() {
   }, []);
 
   useEffect(() => {
-    const absoluteMax = setTimeout(() => setLoading(false), 12000);
+    const absoluteMax = setTimeout(() => setLoading(false), 6000);
     return () => {
       clearTimeout(absoluteMax);
       if (loadEndTimerRef.current) clearTimeout(loadEndTimerRef.current);
@@ -160,7 +160,14 @@ export default function MainScreen() {
         }}
         onLoadEnd={() => {
           if (loadEndTimerRef.current) clearTimeout(loadEndTimerRef.current);
-          loadEndTimerRef.current = setTimeout(hideOverlay, 8000);
+          // Page HTML/JS loaded — hide dark overlay soon (don't wait 8s after load)
+          loadEndTimerRef.current = setTimeout(hideOverlay, 350);
+        }}
+        onLoadProgress={({ nativeEvent }) => {
+          if (nativeEvent.progress >= 0.85) {
+            if (loadEndTimerRef.current) clearTimeout(loadEndTimerRef.current);
+            loadEndTimerRef.current = setTimeout(hideOverlay, 200);
+          }
         }}
         onError={() => {
           setLoading(false);
@@ -181,9 +188,15 @@ export default function MainScreen() {
           : {})}
       />
       {loading && (
-        <View style={styles.loadingOverlay} pointerEvents="none">
+        <View style={styles.loadingOverlay} pointerEvents="box-none">
           <ActivityIndicator size="large" color="#7A018D" />
           <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
+          <Pressable
+            onPress={hideOverlay}
+            style={({ pressed }) => [styles.skipOverlayBtn, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Text style={styles.skipOverlayText}>Taking a while? Tap to continue</Text>
+          </Pressable>
         </View>
       )}
     </SafeAreaView>
@@ -209,6 +222,16 @@ const styles = StyleSheet.create({
   loadingHint: {
     fontSize: 14,
     color: "#c0a8cc",
+  },
+  skipOverlayBtn: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  skipOverlayText: {
+    fontSize: 13,
+    color: "#a78bba",
+    textDecorationLine: "underline",
   },
   errorContainer: {
     flex: 1,

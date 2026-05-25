@@ -1,7 +1,66 @@
 import { motion } from "framer-motion";
-import { Sun, Sparkles, NotebookPen, BookOpen, Compass, Users, HelpCircle, ChevronRight, Heart } from "lucide-react";
+import {
+  Sun,
+  Sparkles,
+  NotebookPen,
+  BookOpen,
+  Compass,
+  Users,
+  HelpCircle,
+  ChevronRight,
+  DoorOpen,
+  MessageCircle,
+  Bell,
+  LayoutGrid,
+  Smartphone,
+  ArrowRight,
+} from "lucide-react";
 import { NavBar } from "@/components/NavBar";
+import { MinistrySupportSection } from "@/components/MinistrySupportSection";
 import { Link } from "wouter";
+
+const fade = (delay = 0) => ({
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
+});
+
+const quickStarts = [
+  {
+    href: "/devotional",
+    icon: Sun,
+    title: "Morning with God",
+    desc: "Today's verse, reflection, prayer, and gratitude — about five minutes.",
+    testId: "how-to-quick-devotional",
+    accent: "border-amber-500/25 bg-amber-500/8",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    href: "/guidance",
+    icon: MessageCircle,
+    title: "Something heavy today",
+    desc: "Talk it through — Scripture and prayer shaped for what you typed.",
+    testId: "how-to-quick-guidance",
+    accent: "border-violet-500/25 bg-violet-500/8",
+    iconColor: "text-violet-600 dark:text-violet-400",
+  },
+  {
+    href: "/prayer-closet",
+    icon: DoorOpen,
+    title: "Quiet before God",
+    desc: "Your prayer closet — worship, stillness, and a private journal.",
+    testId: "how-to-quick-closet",
+    accent: "border-indigo-500/25 bg-indigo-500/8",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
+  },
+];
+
+const bottomNav = [
+  { label: "For You", desc: "Home — devotional, shortcuts, and your path" },
+  { label: "Guidance", desc: "Talk it through (full pastoral conversation)" },
+  { label: "Journey", desc: "Bible journeys and guided pathways" },
+  { label: "Journal", desc: "Prayers and reflections you save" },
+];
 
 const steps = [
   {
@@ -9,89 +68,123 @@ const steps = [
     icon: Sun,
     color: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
     iconColor: "text-amber-600 dark:text-amber-400",
-    title: "Start with your Daily Devotional",
-    where: 'Tap "Devotional" in the menu',
+    title: "Daily Devotional",
+    where: "For You home → Today's devotional, or Devotional in the top menu",
     description:
-      "This is the best place to begin every day. You will see a Bible verse chosen just for today. Read it slowly — there is no rush. Then tap the button to receive a short reflection written just for you. After that, you can listen to a prayer, and finally close with a moment of gratitude. The whole thing takes about five minutes.",
-    tip: "Come back to the same Devotional page every morning. It changes each day.",
+      "Each day opens with a Bible verse chosen for today. Read it without rushing, receive a short reflection written for you, listen to a prayer if you like, and close with gratitude. Most people anchor their morning here.",
+    tip: "The home screen may show a \"Your path\" card for your first few days — step one is this devotional.",
   },
   {
     number: "2",
     icon: Sparkles,
-    color: "bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800/50",
-    iconColor: "text-violet-600 dark:text-violet-400",
-    title: "Ask for Guidance when you need it",
-    where: 'Tap "Seek Guidance" on the home screen',
+    color: "bg-fuchsia-50 dark:bg-fuchsia-950/30 border-fuchsia-200 dark:border-fuchsia-800/50",
+    iconColor: "text-fuchsia-600 dark:text-fuchsia-400",
+    title: "Path AI (quick help)",
+    where: "Purple Path AI button — bottom-right on most screens",
     description:
-      'If you are going through something difficult — grief, fear, loneliness, a hard decision — this is where you go. Type what is on your heart in your own words. There is no wrong way to say it. You will receive a thoughtful, Scripture-rooted response that speaks to exactly what you shared. Think of it as a pastoral conversation available any time of day or night.',
-    tip: 'You can find "Seek Guidance" right on the home screen, or tap the compass icon.',
+      "Path AI gives a faithful, Scripture-grounded answer in one exchange — great for a verse question, a short prayer, or when you need clarity fast. Tap a suggested starter or type your own. You can save the answer to your journal or go deeper in Talk it through.",
+    tip: "Tap \"How does this app work?\" in Path AI anytime to return to this guide.",
   },
   {
     number: "3",
-    icon: NotebookPen,
-    color: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50",
-    iconColor: "text-sky-600 dark:text-sky-400",
-    title: "Write in your Journal",
-    where: 'Tap "Journal" in the menu',
+    icon: MessageCircle,
+    color: "bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800/50",
+    iconColor: "text-violet-600 dark:text-violet-400",
+    title: "Talk it through",
+    where: "Bottom tab Guidance, or the Talk it through shortcut on For You",
     description:
-      "The Journal is your private space. You can write your prayers, your thoughts, what God showed you today, or anything you want to remember. No one else can see it — it is just between you and God. Even one sentence is worth keeping.",
-    tip: "There are no rules here. Write as much or as little as you like.",
+      "When life is heavy — grief, fear, a hard decision, loneliness — bring it in your own words. There is no wrong way to say it. You receive Scripture, reflection, and prayer that follow the conversation, like pastoral care available day or night.",
+    tip: "Path AI is the quick stop; Talk it through is where the conversation can go as deep as you need.",
   },
   {
     number: "4",
-    icon: BookOpen,
-    color: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-    title: "Read the Bible",
-    where: 'Tap "Bible" in the menu',
+    icon: DoorOpen,
+    color: "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/50",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
+    title: "Prayer closet",
+    where: "Prayer closet card on For You, or More paths → Prayer closet",
     description:
-      "The full Bible is right here in the app. You can read any book or chapter you like. If you are not sure where to start, the Psalms are a wonderful place — they are prayers and poems written by people who felt exactly what you feel. Proverbs is another great starting point for practical wisdom.",
-    tip: "Tap any verse to highlight it or save it.",
+      "A quiet room on the screen: soft light, optional worship music, today's verse, and a private journal just for this space. It is not performance — it is a place to be still, listen, and write what you do not want to lose.",
+    tip: "On iPhone, YouTube worship volume uses the side buttons; that is normal in the app and in Safari.",
   },
   {
     number: "5",
-    icon: Compass,
-    color: "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50",
-    iconColor: "text-rose-600 dark:text-rose-400",
-    title: "Markers Along the Way",
-    where: 'Tap "Journey" in the menu',
+    icon: NotebookPen,
+    color: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50",
+    iconColor: "text-sky-600 dark:text-sky-400",
+    title: "Journal",
+    where: "Bottom tab Journal",
     description:
-      "The Journey page shows how many days you have shown up. Every few days, you will receive a milestone named after a verse from Psalm 23 — Green Pastures, Still Waters, Restored, and so on. These are not rewards for performance. They are a quiet record of where you have been.",
-    tip: "Each milestone is tied to a verse from Psalm 23. Read it when it arrives.",
+      "Your private space for prayers, reflections, and what God showed you. No one else sees it. Even one honest sentence is worth keeping — especially on days when showing up felt hard.",
+    tip: "Path AI can save a conversation into your journal with one tap after an answer.",
   },
   {
     number: "6",
+    icon: Compass,
+    color: "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50",
+    iconColor: "text-rose-600 dark:text-rose-400",
+    title: "Journey & guided pathways",
+    where: "Bottom tab Journey",
+    description:
+      "Multi-day walks through Scripture for seasons like grief, anxiety, or returning to faith. Milestones along the way (Green Pastures, Still Waters, and so on) are a quiet record of showing up — not a scoreboard.",
+    tip: "On For You, open More paths → Guided Pathways for focused 7-day topics.",
+  },
+  {
+    number: "7",
+    icon: BookOpen,
+    color: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    title: "Bible & study",
+    where: "Top menu: Bible and Study, or More paths on For You",
+    description:
+      "Read the full Bible (KJV, WEB, ASV) or explore a passage with study tools. The Psalms are a gentle starting place — prayers from people who felt what you feel.",
+    tip: "Tap a verse to highlight or bookmark it for later.",
+  },
+  {
+    number: "8",
     icon: Users,
     color: "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50",
     iconColor: "text-orange-600 dark:text-orange-400",
-    title: "Pray for Others on the Prayer Wall",
-    where: 'Tap "Stories" then scroll to Prayer Wall',
+    title: "Prayer Wall & community",
+    where: "For You → More paths → Prayer Wall",
     description:
-      'The Prayer Wall is where people share what they are carrying and ask for prayer. You can post your own request, or simply tap the "Praying" button next to someone else\'s. That one tap sends them a notification that someone is standing with them. It is a small act of kindness that can mean everything to someone in a hard moment.',
-    tip: "You do not need to write a long prayer — just letting someone know you are praying is enough.",
+      "Share what you are carrying or tap Praying beside someone else's request. One tap can tell them they are not alone. Stories and other paths live under the same More paths section.",
+    tip: "You do not need a long comment — \"I'm praying\" is enough.",
   },
 ];
 
 const faqs = [
   {
-    q: "Do I need to create an account?",
-    a: "No. Shepherd's Path works without an account. Your progress is saved on your device automatically.",
+    q: "Do I need an account?",
+    a: "No login required. Your progress is tied to this device automatically so you can start immediately.",
   },
   {
     q: "Is it free?",
-    a: "Yes — the Daily Devotional, Bible, Journal, and most features are completely free. There is an optional Pro upgrade that unlocks unlimited guided conversations and a few extras, but you never have to pay to use this app.",
+    a: "Yes — devotional, Bible, journal, prayer closet, Talk it through, and most journeys are free. Pro is optional (unlimited AI, full journal history, and a few extras). You never have to pay to meet God in this app.",
+  },
+  {
+    q: "What's the difference between Path AI and Talk it through?",
+    a: "Path AI is a quick, faithful answer from the floating button — one exchange, starters, save to journal. Talk it through (Guidance tab) is the full conversation when you want Scripture and prayer to unfold over several back-and-forths.",
+  },
+  {
+    q: "App Store app vs Safari?",
+    a: "Both use the same website. The App Store app is a simple shell around shepherdspathai.com — pull down to refresh after updates. In Safari you can also add to Home Screen; the app skips install banners.",
+  },
+  {
+    q: "Reminders?",
+    a: "Tap the bell at the top for push or email reminders (morning devotional, evening reflection, and more). Allow notifications when your phone asks — you can change times anytime in that panel.",
   },
   {
     q: "What if I miss a day?",
-    a: "That is okay. Your streak will reset, but your journal and everything else is still here. The door is always open. Just come back.",
+    a: "Your streak may reset, but your journal and paths remain. The door stays open — come back when you can.",
   },
   {
-    q: "Can I use this on my phone?",
-    a: 'Yes. You can add Shepherd\'s Path to your phone\'s home screen so it opens like any other app. On iPhone, tap the Share button in Safari and choose "Add to Home Screen." On Android, tap the three dots in Chrome and choose "Add to Home Screen."',
+    q: "Why do you ask for support or gifts?",
+    a: "Servers, audio, and Bible-grounded AI cost real money. The core app stays free; Pro and one-time gifts are optional ways to keep it open for someone who cannot pay. No pressure.",
   },
   {
     q: "Is my journal private?",
-    a: "Yes. Your journal entries are stored privately and are only visible to you.",
+    a: "Yes. Your entries are private to you on this device.",
   },
 ];
 
@@ -101,28 +194,117 @@ export default function HowToUsePage() {
       <NavBar />
 
       <div className="max-w-2xl mx-auto px-4 pt-20 pb-32">
-
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center pt-8 pb-10"
-        >
+        <motion.div {...fade(0)} className="text-center pt-8 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/8 border border-primary/20 mb-5">
             <HelpCircle className="w-3.5 h-3.5 text-primary/70" />
-            <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">How to Use</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">
+              How to Use
+            </span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-3">
-            Welcome to Shepherd's Path
+            Your map of Shepherd&apos;s Path
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
-            This guide walks you through everything, one step at a time. There is no rush. 
-            Start wherever feels right.
+            One app, many paths — all Bible-first. Start with one step below; you do not need to
+            learn everything today.
           </p>
         </motion.div>
 
-        {/* Steps */}
+        {/* Quick start */}
+        <motion.div {...fade(0.06)} className="mb-10">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-3 px-0.5">
+            Start here
+          </p>
+          <div className="grid gap-2.5">
+            {quickStarts.map(({ href, icon: Icon, title, desc, testId, accent, iconColor }) => (
+              <Link key={href} href={href}>
+                <div
+                  data-testid={testId}
+                  className={`flex items-center gap-3 rounded-2xl border p-4 active:scale-[0.99] transition-transform ${accent}`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-background/80 flex items-center justify-center shrink-0 border border-border/40">
+                    <Icon className={`w-5 h-5 ${iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-bold text-foreground leading-tight">{title}</p>
+                    <p className="text-[13px] text-muted-foreground leading-snug mt-0.5">{desc}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Navigation */}
+        <motion.div
+          {...fade(0.12)}
+          className="mb-10 rounded-2xl border border-border/60 bg-muted/25 p-5"
+          data-testid="how-to-navigation"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <LayoutGrid className="w-4 h-4 text-primary/70" />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
+              Find your way around
+            </p>
+          </div>
+          <p className="text-[14px] text-foreground/85 leading-relaxed mb-4">
+            On your phone, the <strong className="font-semibold">bottom bar</strong> is home base.
+            The <strong className="font-semibold">⋯ menu</strong> (top right) has Bible, Study,
+            How to use, and more. The <strong className="font-semibold">bell</strong> sets
+            reminders.
+          </p>
+          <ul className="space-y-2.5 mb-4">
+            {bottomNav.map((item) => (
+              <li key={item.label} className="flex gap-2 text-[13px]">
+                <span className="font-bold text-foreground shrink-0 w-[4.5rem]">{item.label}</span>
+                <span className="text-muted-foreground leading-snug">{item.desc}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[13px] text-muted-foreground leading-relaxed flex items-start gap-2">
+            <Bell className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
+            <span>
+              Scroll For You to <strong className="font-medium text-foreground/80">More paths</strong>{" "}
+              for Prayer Wall, reading plans, salvation, and dozens of other doors.
+            </span>
+          </p>
+        </motion.div>
+
+        {/* Path AI vs Talk */}
+        <motion.div
+          {...fade(0.16)}
+          className="mb-10 rounded-2xl border border-primary/20 bg-primary/[0.05] p-5"
+          data-testid="how-to-path-ai-vs-guidance"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-primary/80">
+              Two kinds of help
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3 text-[13px] leading-relaxed">
+            <div className="rounded-xl border border-border/50 bg-background/70 p-3.5">
+              <p className="font-bold text-foreground mb-1">Path AI</p>
+              <p className="text-muted-foreground">
+                Fast answer, suggested starters, one screen. Floating button almost everywhere.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-background/70 p-3.5">
+              <p className="font-bold text-foreground mb-1">Talk it through</p>
+              <p className="text-muted-foreground">
+                Longer conversation, prayer chains, your words carried forward. Guidance tab.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Walkthrough steps */}
+        <motion.div {...fade(0.2)}>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-3 px-0.5">
+            Everything else, step by step
+          </p>
+        </motion.div>
         <div className="space-y-5">
           {steps.map((step, i) => {
             const Icon = step.icon;
@@ -131,37 +313,38 @@ export default function HowToUsePage() {
                 key={step.number}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.5, delay: 0.22 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
                 className={`rounded-2xl border p-5 ${step.color}`}
                 data-testid={`how-to-step-${step.number}`}
               >
-                {/* Step header */}
                 <div className="flex items-start gap-3 mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white/70 dark:bg-black/20 border border-white/60 dark:border-white/10`}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white/70 dark:bg-black/20 border border-white/60 dark:border-white/10">
                     <Icon className={`w-5 h-5 ${step.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[11px] font-bold uppercase tracking-widest ${step.iconColor} opacity-70`}>Step {step.number}</span>
-                    </div>
+                    <span
+                      className={`text-[11px] font-bold uppercase tracking-widest ${step.iconColor} opacity-70`}
+                    >
+                      Step {step.number}
+                    </span>
                     <h2 className="text-[17px] font-bold text-foreground leading-snug mt-0.5">
                       {step.title}
                     </h2>
-                    <div className="flex items-center gap-1 mt-1">
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-                      <span className="text-[12px] text-muted-foreground font-medium">{step.where}</span>
+                    <div className="flex items-start gap-1 mt-1">
+                      <ChevronRight className="w-3 h-3 text-muted-foreground/60 shrink-0 mt-0.5" />
+                      <span className="text-[12px] text-muted-foreground font-medium leading-snug">
+                        {step.where}
+                      </span>
                     </div>
                   </div>
                 </div>
-
-                {/* Description */}
                 <p className="text-[15px] text-foreground/80 leading-relaxed mb-3">
                   {step.description}
                 </p>
-
-                {/* Tip */}
                 <div className="flex items-start gap-2 bg-white/50 dark:bg-black/10 rounded-xl px-3.5 py-2.5 border border-white/60 dark:border-white/5">
-                  <span className="text-[13px] font-bold text-muted-foreground/60 shrink-0 mt-px">TIP</span>
+                  <span className="text-[13px] font-bold text-muted-foreground/60 shrink-0 mt-px">
+                    TIP
+                  </span>
                   <p className="text-[13px] text-muted-foreground leading-snug">{step.tip}</p>
                 </div>
               </motion.div>
@@ -169,18 +352,16 @@ export default function HowToUsePage() {
           })}
         </div>
 
-        {/* FAQ */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-12"
-        >
-          <h2 className="text-xl font-bold text-foreground mb-5 text-center">Common Questions</h2>
+        <motion.div {...fade(0.55)} className="mt-12" id="ministry-support-heading">
+          <MinistrySupportSection theme="light" />
+        </motion.div>
+
+        <motion.div {...fade(0.6)} className="mt-12">
+          <h2 className="text-xl font-bold text-foreground mb-5 text-center">Common questions</h2>
           <div className="space-y-3">
             {faqs.map((faq, i) => (
               <div
-                key={i}
+                key={faq.q}
                 className="rounded-2xl border border-border/60 bg-muted/30 px-5 py-4"
                 data-testid={`faq-item-${i}`}
               >
@@ -191,18 +372,13 @@ export default function HowToUsePage() {
           </div>
         </motion.div>
 
-        {/* Closing + CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-12 text-center space-y-4"
-        >
+        <motion.div {...fade(0.7)} className="mt-12 text-center space-y-4">
           <div className="rounded-2xl border border-primary/20 bg-primary/5 px-6 py-6">
-            <Heart className="w-6 h-6 text-primary/60 mx-auto mb-3" />
+            <Smartphone className="w-6 h-6 text-primary/60 mx-auto mb-3" />
             <p className="text-[15px] text-foreground/80 leading-relaxed max-w-sm mx-auto">
-              You do not need to figure this out all at once. Start with the Daily Devotional 
-              tomorrow morning. That one step is enough.
+              Open Path AI on For You and tap{" "}
+              <span className="font-semibold text-foreground">How does this app work?</span> anytime
+              you want this guide again.
             </p>
           </div>
 
@@ -212,7 +388,7 @@ export default function HowToUsePage() {
             className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-primary-foreground font-bold text-[15px] hover:opacity-90 transition-opacity"
           >
             <Sun className="w-4 h-4" />
-            Open Today's Devotional
+            Open today&apos;s devotional
           </Link>
 
           <div className="pt-2">
@@ -221,11 +397,10 @@ export default function HowToUsePage() {
               data-testid="how-to-link-support"
               className="text-[13px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
             >
-              Still have questions? Reach out for support
+              Still stuck? Contact support
             </Link>
           </div>
         </motion.div>
-
       </div>
     </div>
   );
