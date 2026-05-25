@@ -25,11 +25,11 @@ import {
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 import { GuidedWalkthrough, shouldShowWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
 import {
-  GreetingHeader, ReturningUserCard, GratitudePromptCard,
-  CheckinCard, ShareVerseButton, SundaySummaryCard,
-  FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
+  GreetingHeader, ReturningUserCard, ShareVerseButton, SundaySummaryCard,
+  FirstStepsCard, NotificationNudgeCard, LateNightBannerCard,
   WalkMilestoneCard, TheReturnCard,
 } from "@/components/EngagementCards";
+import { HomeDailyTouchpoint } from "@/components/HomeDailyTouchpoint";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
@@ -367,20 +367,20 @@ function ClosingManifesto() {
         </div>
 
         <p
-          className="text-[1.625rem] sm:text-[26px] leading-snug mb-3 text-white/90"
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
+          className="manifesto-line text-white/95 mb-3"
+          style={{ fontSize: "clamp(1.5rem, 4.8vw, 1.625rem)" }}
         >
           The path is here.
         </p>
         <p
-          className="text-[1.875rem] sm:text-[30px] leading-snug mb-4 text-white/95"
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
+          className="manifesto-line text-white mb-4"
+          style={{ fontSize: "clamp(1.7rem, 5.4vw, 1.875rem)" }}
         >
           Start where you are.
         </p>
         <p
-          className="text-[2.125rem] sm:text-[40px] leading-tight text-white max-w-[16ch] sm:max-w-none"
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500, textShadow: "0 2px 24px rgba(139,92,246,0.65)" }}
+          className="manifesto-line manifesto-line--emphasis text-white max-w-[16ch] sm:max-w-none"
+          style={{ fontSize: "clamp(1.95rem, 6.2vw, 2.5rem)" }}
         >
           Walking it is up to you.
         </p>
@@ -667,8 +667,8 @@ export default function LandingHome() {
                   {/* Today's verse */}
                   <div className="mb-3 px-3.5 py-3 rounded-xl bg-primary/5 border border-primary/10">
                     <p className="text-[13px] font-bold uppercase tracking-widest text-primary/50 mb-1.5">Today's Word</p>
-                    <p className="text-[14px] text-foreground leading-relaxed italic mb-1.5">
-                      "{verse.text}"
+                    <p className="path-reminder-quote text-[14px] text-foreground mb-1.5">
+                      &ldquo;{verse.text}&rdquo;
                     </p>
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-[12px] font-bold text-primary/60">— {verse.ref}</p>
@@ -713,10 +713,8 @@ export default function LandingHome() {
             );
           })()}
 
-          {/* ── Personal reflection cards — daily/weekly touchpoints ── */}
-          <CheckinCard />
-          <GratitudePromptCard sessionId={sessionId} />
-          <WeeklyReflectionCard />
+          {/* ── One reflection touchpoint per day ── */}
+          <HomeDailyTouchpoint sessionId={sessionId} />
           <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
 
           {/* ── Take a moment — closing grace note for the daily visit ── */}
@@ -877,7 +875,7 @@ export default function LandingHome() {
               </div>
 
               {/* The argument */}
-              <p className="text-[13.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}>
+              <p className="path-reminder-quote text-[13.5px]" style={{ color: "rgba(255,255,255,0.72)" }}>
                 "Shepherds, kings, fishermen — 40 authors who never met, writing across 15 centuries. Yet every thread points to the same story. No committee planned this."
               </p>
               <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.42)" }}>
@@ -943,7 +941,7 @@ export default function LandingHome() {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[14px] italic mt-4 pt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.80)", borderTop: "1px solid rgba(255,255,255,0.15)", fontFamily: "'Georgia', serif" }}>
+                    <p className="path-reminder-quote text-[14px] mt-4 pt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.80)", borderTop: "1px solid rgba(255,255,255,0.15)" }}>
                       "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
                     </p>
                   </div>
@@ -1113,15 +1111,12 @@ export default function LandingHome() {
           {/* ── Closing sequence: Manifesto → Scripture → Download ── */}
           <ClosingManifesto />
 
-          <div className="flex flex-col items-center gap-2 px-5 sm:px-8 -mt-2 mb-8 sm:mb-10 max-w-lg mx-auto">
-            <p className="text-xs sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground/55">A reminder for the path</p>
-            <p
-              className="text-[16px] sm:text-[17px] text-foreground/75 italic text-center leading-relaxed"
-              style={{ fontFamily: "var(--font-serif)" }}
-            >
-              "Your word is a lamp to my feet and a light to my path."
+          <div className="flex flex-col items-center gap-2 px-5 sm:px-8 pr-14 sm:pr-8 -mt-2 mb-8 sm:mb-10 max-w-lg mx-auto">
+            <p className="text-xs sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground/60">A reminder for the path</p>
+            <p className="path-reminder-quote text-[17px] sm:text-[18px] text-foreground/82 text-center">
+              &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo;
             </p>
-            <p className="text-[13px] sm:text-sm text-foreground/50 tracking-wide">— Psalm 119:105</p>
+            <p className="text-[13px] sm:text-sm text-foreground/55 tracking-wide font-medium">— Psalm 119:105</p>
           </div>
 
           <div className="flex flex-col items-center gap-4 px-4 mb-2 max-w-md mx-auto w-full">

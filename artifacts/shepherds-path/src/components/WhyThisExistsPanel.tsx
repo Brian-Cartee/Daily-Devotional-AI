@@ -183,10 +183,9 @@ export function WhyThisExistsPanel() {
                   transition={{ duration: 0.4, delay: 0.06 + i * 0.07 }}
                   className={`text-center leading-[1.65] mb-5 last:mb-0 ${
                     p.strong
-                      ? "text-[19px] sm:text-[21px] text-white font-semibold tracking-tight"
+                      ? "manifesto-line text-[19px] sm:text-[21px] text-white font-semibold tracking-tight"
                       : "text-[17px] sm:text-[18px] text-white/80"
                   }`}
-                  style={p.strong ? { fontFamily: "Georgia, serif" } : undefined}
                 >
                   {p.text}
                 </motion.p>

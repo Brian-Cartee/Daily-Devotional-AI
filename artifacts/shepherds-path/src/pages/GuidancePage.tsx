@@ -88,6 +88,13 @@ function getHeroHeadingCompact(situation: string, isFirstVisit: boolean): string
   return "You don't have to carry this alone";
 }
 
+const GUIDANCE_PLACEHOLDERS = [
+  "I can't quiet my mind tonight…",
+  "Something from today is still heavy…",
+  "I need Scripture for what I'm facing…",
+  "Help me pray honestly about this…",
+];
+
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -99,6 +106,7 @@ export default function GuidancePage() {
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
   const [heartInput, setHeartInput] = useState("");
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [heartListening, setHeartListening] = useState(false);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -117,6 +125,13 @@ export default function GuidancePage() {
 
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setPlaceholderIdx((i) => (i + 1) % GUIDANCE_PLACEHOLDERS.length);
+    }, 5500);
+    return () => clearInterval(t);
+  }, []);
 
   const [guidanceMode, setGuidanceModeState] = useState<GuidanceMode>(() => getGuidanceMode());
 
@@ -565,73 +580,72 @@ export default function GuidancePage() {
       <NavBar />
       <main className="min-h-screen bg-background pb-32">
         {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
-        <div className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${!situation && !streamingText ? "min-h-[330px]" : ""}`}>
-
-          {/* Background image — daily AI landscape, fades out once conversation is active */}
+        <div
+          className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${
+            !situation && !streamingText ? "min-h-[248px] sm:min-h-[268px]" : ""
+          }`}
+        >
           <img
             src={heroArtUrl}
             alt=""
             aria-hidden="true"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ filter: "brightness(0.70) saturate(1.65)", transform: "scale(1.12)", transformOrigin: "50% top" }}
+            className={`absolute inset-0 w-full h-full object-cover object-[center_40%] transition-opacity duration-700 ${
+              !situation && !streamingText ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.05)", transformOrigin: "50% top" }}
             onError={e => { (e.target as HTMLImageElement).src = "/hero-guidance.jpg"; }}
           />
 
-          {/* Depth gradient — bleeds photo into app background at bottom */}
           <div
-            className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(13,8,32,0.55) 55%, hsl(var(--background)) 100%)" }}
+            className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
+              !situation && !streamingText ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(8,4,18,0.2) 0%, rgba(8,4,18,0.05) 35%, rgba(9,3,30,0.45) 72%, hsl(var(--background)) 100%)",
+            }}
           />
-
-          {/* Purple soul glow — matches welcome overlay interior */}
-          <div
-            className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${!situation && !streamingText ? "opacity-100" : "opacity-0"}`}
-            style={{ background: "radial-gradient(ellipse 85% 65% at 50% 45%, rgba(120,60,220,0.42) 0%, transparent 70%)" }}
-          />
-
 
           <AnimatePresence mode="wait">
             {!situation && !streamingText ? (
-              /* ── EXPANDED: full invitation ── */
               <motion.div
                 key="hero-expanded"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-10 flex flex-col items-center justify-center min-h-[278px] text-center px-6 pb-8"
+                className="relative z-10 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[240px] text-center px-5 pb-6"
               >
-                <div className="flex flex-col items-center gap-3 mb-5">
-                  <BrandIcon size={56} className="drop-shadow-lg" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/65 select-none">
+                <div className="flex flex-col items-center gap-2.5 mb-4">
+                  <BrandIcon size={48} className="drop-shadow-lg" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80 select-none">
                     Talk It Through
                   </p>
                 </div>
                 <h1
-                  className="text-[2.5rem] leading-[1.18] text-white text-balance mb-3"
+                  className="text-[2rem] sm:text-[2.5rem] leading-[1.18] text-white text-balance"
                   style={{
                     fontFamily: "var(--font-serif)",
-                    textShadow: "0 2px 24px rgba(0,0,0,0.65)",
+                    textShadow: "0 2px 20px rgba(0,0,0,0.6)",
                   }}
                 >
                   {getHeroHeading(situation, isFirstVisit)}
                 </h1>
                 <p
-                  className="text-[11px] text-white/40 tracking-wide mt-4"
-                  style={{ textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
+                  className="text-[14px] text-white/75 font-medium mt-3 max-w-[28ch] leading-snug"
+                  style={{ textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}
                 >
                   The path is already here.
                 </p>
               </motion.div>
             ) : (
-              /* ── COMPACT: icon + heading strip ── */
               <motion.div
                 key="hero-compact"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="relative z-10 max-w-2xl mx-auto px-5 pt-8 pb-7"
+                className="relative z-10 max-w-2xl mx-auto px-3 sm:px-5 pt-8 pb-7"
                 style={{ background: "linear-gradient(180deg, hsl(265 60% 8% / 0.85) 0%, transparent 100%)" }}
               >
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Talk It Through</p>
@@ -643,7 +657,7 @@ export default function GuidancePage() {
           </AnimatePresence>
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 pt-5 pb-8">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 -mt-5 relative z-20 pt-1 pb-8">
 
           {/* Header — pastoral welcome */}
           <motion.div
@@ -662,79 +676,71 @@ export default function GuidancePage() {
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mb-6">
-                    {isFirstVisit
-                      ? "The real answer — not the cleaned-up version. Whatever is weighing on you, bring it here exactly as it is."
-                      : "Whatever weighs on your heart — a worry, a fear, a grief you can't quite name — bring it here. You are more seen and more loved than you may feel right now."}
-                  </p>
-
-                  {/* PRIMARY INPUT — type what's on your heart */}
                   <div
-                    className="rounded-2xl px-4 pt-4 pb-3 flex flex-col gap-3 transition-all mb-6 focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.18)]"
-                    style={{ background: "rgba(255,255,255,0.055)", border: "2px solid rgba(139,92,246,0.45)", boxShadow: "0 2px 16px rgba(0,0,0,0.25)" }}
+                    className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/25 mb-6 focus-within:ring-2 focus-within:ring-violet-400/35 transition-shadow"
+                    data-testid="card-guidance-entry"
                   >
-                    <p className="text-[11px] text-foreground/35 italic tracking-wide -mb-1">
-                      Start where you are.
+                    <p className="text-[15px] sm:text-[16px] text-white/80 leading-relaxed mb-4">
+                      {isFirstVisit
+                        ? "Bring what's weighing on you — exactly as it is. Scripture and prayer meet you here."
+                        : "Whatever weighs on your heart, bring it here. You are more seen and more loved than you may feel right now."}
                     </p>
+
+                    <label className="sr-only" htmlFor="input-guidance-heart">
+                      What&apos;s on your heart
+                    </label>
                     <textarea
+                      id="input-guidance-heart"
                       value={heartInput}
                       onChange={e => setHeartInput(e.target.value)}
                       onKeyDown={handleHeartKeyDown}
                       spellCheck
                       autoCapitalize="sentences"
                       autoCorrect="on"
-                      placeholder="What are you carrying that you haven't said out loud yet?"
-                      rows={4}
+                      placeholder={GUIDANCE_PLACEHOLDERS[placeholderIdx]}
+                      rows={3}
                       data-testid="input-guidance-heart"
-                      className="w-full resize-none bg-transparent text-[17px] text-foreground placeholder:text-foreground/60 outline-none leading-relaxed"
+                      className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3.5 text-[17px] text-white placeholder:text-white/45 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
                     />
-                    <div className="flex flex-col gap-2.5 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                      {/* Primary CTA — full width */}
+
+                    <button
+                      type="button"
+                      onClick={handleHeartSubmit}
+                      disabled={!heartInput.trim()}
+                      data-testid="button-guidance-heart-submit"
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+                    >
+                      Begin with Scripture
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    {hasSpeechSupport && (
                       <button
-                        onClick={handleHeartSubmit}
-                        disabled={!heartInput.trim()}
-                        data-testid="button-guidance-heart-submit"
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-[15px] transition-all disabled:opacity-45 disabled:cursor-not-allowed active:scale-[0.97]"
-                        style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", boxShadow: heartInput.trim() ? "0 4px 18px rgba(245,158,11,0.45)" : "none" }}
+                        type="button"
+                        onClick={toggleHeartVoice}
+                        data-testid="button-guidance-heart-voice"
+                        className="mt-2.5 flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-medium text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-colors relative"
                       >
-                        Talk It Through
-                        <ArrowRight className="w-4 h-4" />
+                        {heartListening ? (
+                          <>
+                            <MicOff className="w-4 h-4 text-red-400" />
+                            <span>Stop listening</span>
+                            <span className="absolute inset-0 rounded-xl animate-ping bg-red-400/10" />
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="w-4 h-4" />
+                            <span>Speak instead</span>
+                          </>
+                        )}
                       </button>
-                      {/* Secondary — speak option, smaller + centered */}
-                      {hasSpeechSupport && (
-                        <button
-                          type="button"
-                          onClick={toggleHeartVoice}
-                          data-testid="button-guidance-heart-voice"
-                          className="flex items-center justify-center gap-2 py-2 rounded-xl text-[13px] font-semibold transition-all relative"
-                          style={{
-                            color: heartListening ? "rgb(248,113,113)" : "rgba(255,255,255,0.55)",
-                            background: heartListening ? "rgba(239,68,68,0.10)" : "transparent",
-                            border: heartListening ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.08)",
-                          }}
-                        >
-                          {heartListening ? (
-                            <>
-                              <MicOff className="w-4 h-4" />
-                              <span>Stop listening</span>
-                              <span className="absolute inset-0 rounded-xl animate-ping bg-red-400/10" />
-                            </>
-                          ) : (
-                            <>
-                              <Mic className="w-4 h-4" />
-                              <span>Speak instead</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                    )}
+
+                    <p className="mt-3 text-center text-[12px] text-white/50 leading-relaxed">
+                      Private · grounded in the Bible · no perfect words required
+                    </p>
                   </div>
 
-                  <p className="text-[12px] text-muted-foreground/80 italic text-center mb-5 -mt-1">
-                    You can be honest here.
-                  </p>
-
-                  {/* Divider */}
                   <div className="flex items-center gap-3 mb-5">
                     <div className="flex-1 h-px bg-border/55" />
                     <span className="text-[10px] font-semibold text-muted-foreground/65 uppercase tracking-[0.2em]">or begin with today</span>

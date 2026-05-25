@@ -402,10 +402,7 @@ export function FloatingAskAI() {
                     <p className="text-[15px] font-semibold text-foreground leading-snug">
                       {pageContext.greeting}
                     </p>
-                    <p
-                      className="text-[13px] text-muted-foreground mt-2 leading-relaxed italic"
-                      style={{ fontFamily: "Georgia, serif" }}
-                    >
+                    <p className="path-reminder-quote text-[13px] text-muted-foreground mt-2 leading-relaxed">
                       &ldquo;Ask and it will be given to you; seek and you will find.&rdquo;
                       <span className="block not-italic text-[10px] font-semibold uppercase tracking-widest text-primary/60 mt-1.5">
                         Matthew 7:7

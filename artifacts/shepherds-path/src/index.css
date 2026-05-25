@@ -127,6 +127,32 @@ button, a, input, textarea, select, [role="button"] {
     color: hsl(var(--foreground) / 0.88);
     letter-spacing: 0.01em;
   }
+
+  /* Home closing manifesto — Instrument Serif renders sharper on mobile than Cormorant */
+  .manifesto-line {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.22;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-wrap: balance;
+  }
+
+  .manifesto-line--emphasis {
+    text-shadow: 0 1px 16px rgba(139, 92, 246, 0.45);
+  }
+
+  /* Footer scripture reminder — Literata is tuned for on-screen reading */
+  .path-reminder-quote {
+    font-family: var(--font-reading);
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.55;
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-wrap: balance;
+  }
 }
 
 @layer utilities {

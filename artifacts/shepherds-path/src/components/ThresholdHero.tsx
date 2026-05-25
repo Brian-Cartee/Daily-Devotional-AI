@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Headphones } from "lucide-react";
+import { Headphones, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { isIntroFlowComplete } from "@/lib/introState";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listenFirst";
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
 import { isProVerifiedLocally } from "@/lib/proStatus";
-import { apiSessionExtras } from "@/lib/requestExtras";
 import { TalkItThroughHeroPrompt } from "@/components/TalkItThroughHeroPrompt";
-import { BrandIcon } from "@/components/BrandIcon";
 
 export type ThresholdData = {
   headline: string;
@@ -33,8 +32,8 @@ export function ThresholdHero() {
   const sessionId = getSessionId();
   const daysWithApp = getRelationshipAge();
   const { data: verse, isLoading: verseLoading } = useDailyVerse();
-  const [verseFrame, setVerseFrame] = useState<string | null>(null);
   const [listenFirst, setListenFirst] = useState(() => getListenFirstPreference());
+  const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
 
   const isPro = isProVerifiedLocally();
 
@@ -52,26 +51,6 @@ export function ThresholdHero() {
 
   const threshold = thresholdRes?.threshold;
 
-  useEffect(() => {
-    if (!verse?.reference || !verse?.text) return;
-    const key = `sp_verse_frame_${verse.date}`;
-    const cached = sessionStorage.getItem(key);
-    if (cached) {
-      setVerseFrame(cached);
-      return;
-    }
-    fetch(
-      `/api/home/verse-frame?reference=${encodeURIComponent(verse.reference)}&text=${encodeURIComponent(verse.text.slice(0, 300))}&sessionId=${encodeURIComponent(apiSessionExtras().sessionId)}&isPro=${apiSessionExtras().isPro}`,
-    )
-      .then((r) => r.json())
-      .then((d: { frame?: string }) => {
-        const frame = d.frame || "One word for today — let it walk with you.";
-        sessionStorage.setItem(key, frame);
-        setVerseFrame(frame);
-      })
-      .catch(() => setVerseFrame("One word for today — let it walk with you."));
-  }, [verse?.reference, verse?.text, verse?.date]);
-
   const toggleListenFirst = () => {
     if (!canUseListenFirstAuto()) return;
     const next = !listenFirst;
@@ -85,7 +64,11 @@ export function ThresholdHero() {
     <div className="relative bg-[#09031e]">
       {/* ── Cinematic photo band — road & hill visible (original homepage feel) ── */}
       <div
-        className="relative w-full overflow-hidden h-[46vh] min-h-[260px] max-h-[400px] sm:h-[44vh] sm:max-h-[440px]"
+        className={`relative w-full overflow-hidden max-h-[400px] sm:max-h-[440px] ${
+          showPhotoTaglines
+            ? "h-[46vh] min-h-[260px] sm:h-[44vh]"
+            : "h-[38vh] min-h-[220px] sm:h-[36vh]"
+        }`}
         aria-hidden={false}
       >
         <img
@@ -102,55 +85,49 @@ export function ThresholdHero() {
               "linear-gradient(to bottom, rgba(8,4,18,0.35) 0%, rgba(8,4,18,0.05) 28%, rgba(8,4,18,0.0) 50%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
           }}
         />
-        {/* Brand promise on the sky — matches legacy hero */}
-        <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center text-center px-6 pt-[3.75rem] sm:pt-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="text-white font-bold leading-[1.2] tracking-tight max-w-[18ch] drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)]"
-            style={{ fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)" }}
-          >
-            {BRAND_TAGLINE}
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-2 text-[15px] sm:text-base text-white/90 font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]"
-          >
-            {BRAND_TAGLINE_SUB}
-          </motion.p>
-        </div>
-        {/* Brand mark at base of photo */}
-        <div className="absolute bottom-4 inset-x-0 z-10 flex items-center justify-center gap-2.5">
-          <BrandIcon size={32} className="drop-shadow-md" />
-          <span className="text-[15px] font-bold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
-            Shepherd&apos;s Path
-          </span>
-        </div>
+        {showPhotoTaglines && (
+          <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center text-center px-6 pt-[3.75rem] sm:pt-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="manifesto-line text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] max-w-[18ch]"
+              style={{ fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)" }}
+            >
+              {BRAND_TAGLINE}
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-2 text-[15px] sm:text-base text-white/90 font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]"
+            >
+              {BRAND_TAGLINE_SUB}
+            </motion.p>
+          </div>
+        )}
       </div>
 
       {/* ── Personal threshold + actions (dark band below the path) ── */}
-      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-5 sm:pt-6 pb-8 sm:pb-10">
+      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-4 sm:pt-5 pb-6 sm:pb-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
           <h1
-            className="text-white font-bold leading-[1.15] mb-3 tracking-tight"
-            style={{ fontSize: "clamp(1.65rem, 5.5vw, 2.25rem)" }}
+            className="text-white font-bold leading-[1.15] mb-2 tracking-tight"
+            style={{ fontSize: "clamp(1.5rem, 5vw, 2.1rem)" }}
             data-testid="text-threshold-headline"
           >
             {thresholdLoading ? "…" : threshold?.headline ?? "What's on your heart?"}
           </h1>
-          <p className="text-[17px] sm:text-[18px] text-white/82 leading-relaxed mb-4 font-medium">
+          <p className="text-[16px] sm:text-[17px] text-white/80 leading-snug mb-3 font-medium line-clamp-2 sm:line-clamp-none sm:leading-relaxed">
             {thresholdLoading ? "…" : threshold?.subtext}
           </p>
           {threshold?.continuityLine && (
             <p
-              className="text-[15px] text-violet-100/85 leading-relaxed mb-5 pl-3.5 border-l-2 border-violet-400/40"
+              className="hidden sm:block text-[15px] text-violet-100/85 leading-relaxed mb-4 pl-3.5 border-l-2 border-violet-400/40"
               data-testid="text-threshold-continuity"
             >
               {threshold.continuityLine}
@@ -158,7 +135,7 @@ export function ThresholdHero() {
           )}
 
           {showTalkPrompt && !thresholdLoading && (
-            <div className="mb-5">
+            <div className="mb-3 sm:mb-4">
               <TalkItThroughHeroPrompt phase={threshold?.phase} />
             </div>
           )}
@@ -167,38 +144,30 @@ export function ThresholdHero() {
             <Link href="/devotional">
               <div
                 data-testid="card-daily-verse-threshold"
-                className="mb-4 rounded-2xl border border-violet-500/25 bg-black/35 backdrop-blur-sm px-4 py-4 active:scale-[0.99] transition-transform"
+                className="mb-3 rounded-xl border border-violet-500/20 bg-black/30 backdrop-blur-sm px-3.5 py-3 active:scale-[0.99] transition-transform flex items-start gap-2"
               >
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-200/80 mb-2">
-                  Today&apos;s verse
-                </p>
-                {verseFrame && (
-                  <p className="text-[14px] text-white/65 mb-2.5 leading-snug">{verseFrame}</p>
-                )}
-                <p
-                  className="text-[17px] sm:text-[18px] leading-relaxed text-white/92 mb-2"
-                  style={{ fontFamily: "Georgia, serif", fontStyle: "italic" }}
-                >
-                  &ldquo;{verse.text.length > 180 ? `${verse.text.slice(0, 180)}…` : verse.text}&rdquo;
-                </p>
-                <p className="text-[14px] font-semibold text-violet-200/90">— {verse.reference}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-200/70 mb-1">
+                    Today&apos;s verse
+                  </p>
+                  <p className="path-reminder-quote text-[15px] text-white/88 line-clamp-2 leading-snug">
+                    &ldquo;{verse.text}&rdquo;
+                  </p>
+                  <p className="text-[13px] font-semibold text-violet-200/85 mt-1">— {verse.reference}</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-violet-300/60 shrink-0 mt-4" aria-hidden />
               </div>
             </Link>
           )}
 
-          {threshold?.secondaryCta && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {threshold?.secondaryCta && daysWithApp < 3 && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
               <Link href={threshold.secondaryCta.href}>
                 <span
                   data-testid="btn-threshold-secondary"
-                  className="text-[15px] font-semibold text-violet-200/90 hover:text-white underline-offset-4 hover:underline transition-colors"
+                  className="text-[14px] font-semibold text-violet-200/80 hover:text-white underline-offset-4 hover:underline transition-colors"
                 >
                   {threshold.secondaryCta.label} →
-                </span>
-              </Link>
-              <Link href="/devotional">
-                <span className="text-[14px] text-white/50 hover:text-white/70 transition-colors">
-                  Open devotional
                 </span>
               </Link>
             </div>

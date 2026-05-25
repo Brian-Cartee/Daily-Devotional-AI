@@ -109,10 +109,7 @@ export function SpiritualWeatherCard() {
               </div>
               <p className="text-[13px] text-white/45 mb-4">{weather.weekLabel}</p>
               {isProWeather && weather.seasonLetter && (
-                <p
-                  className="text-[15px] text-white/88 leading-relaxed mb-4 italic"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
+                <p className="path-reminder-quote text-[15px] text-white/88 leading-relaxed mb-4">
                   {weather.seasonLetter}
                 </p>
               )}

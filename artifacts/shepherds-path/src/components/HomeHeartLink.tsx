@@ -1,8 +1,20 @@
 import { Link } from "wouter";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { getRelationshipAge } from "@/lib/relationship";
 
-/** Quiet doorway to Guidance — replaces the large emotion chip grid on home */
+function shouldHideDuplicateTalkCta(): boolean {
+  try {
+    if (localStorage.getItem("sp_guidance_visited")) return true;
+    return getRelationshipAge() >= 3;
+  } catch {
+    return false;
+  }
+}
+
+/** Quiet doorway to Guidance — hidden once Talk It Through is familiar */
 export function HomeHeartLink() {
+  if (shouldHideDuplicateTalkCta()) return null;
+
   return (
     <Link href="/guidance">
       <div
