@@ -28,7 +28,7 @@ import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pus
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
-import { resolveDailyArtDir, writeDailyArtImageFile } from "../dailyArtUtil";
+import { resolveDailyArtDir, writeDailyArtImageFile, ensureDailyArtImageFile } from "../dailyArtUtil";
 import { buildThresholdPayload, buildWeeklyWeather, buildVerseFrame } from "../homeExperience";
 import { buildJournalArchive } from "../journalArchive";
 import {
@@ -2891,6 +2891,9 @@ Return JSON: { "action": "...", "scripture": "..." }`
   app.get("/api/daily-art/image", (req, res) => {
     const today = getEasternDateString();
     const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
+    if (!fs.existsSync(imgFile)) {
+      ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
+    }
     if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "not ready" });
     res.set("Cache-Control", "public, max-age=86400");
     res.set("Content-Type", "image/jpeg");
@@ -2902,6 +2905,9 @@ Return JSON: { "action": "...", "scripture": "..." }`
     const { date } = req.params;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ message: "Invalid date format" });
     const imgFile = path.join(DAILY_ART_DIR, `${date}.jpg`);
+    if (!fs.existsSync(imgFile) && date === getEasternDateString()) {
+      ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
+    }
     if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "Not found" });
     res.set("Cache-Control", "public, max-age=2592000"); // 30 days — past images never change
     res.set("Content-Type", "image/jpeg");
@@ -2957,12 +2963,13 @@ Return JSON: { "action": "...", "scripture": "..." }`
           scriptureData.scripture,
           scriptureData.reference,
         );
+        ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
       }
 
       const meta = fs.existsSync(metaFile)
         ? JSON.parse(fs.readFileSync(metaFile, "utf-8"))
         : scriptureData;
-      const imageUrl = fs.existsSync(imgFile) ? `/api/daily-art/image` : null;
+      const imageUrl = fs.existsSync(imgFile) ? `/api/daily-art/image/${today}` : null;
       return res.json({ imageUrl, ...meta });
     } catch (err) {
       console.error("daily art error:", err);

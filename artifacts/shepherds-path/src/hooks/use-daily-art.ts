@@ -8,8 +8,8 @@ export interface DailyArtData {
   reflection: string;
 }
 
-const POLL_MS = 5_000;
-const MAX_POLLS = 24;
+const POLL_MS = 4_000;
+const MAX_POLLS = 30;
 
 /**
  * Fetches /api/daily-art. When the API reports an image, expose a cache-busted URL

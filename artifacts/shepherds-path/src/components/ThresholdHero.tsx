@@ -11,6 +11,7 @@ import { canUseListenFirstAuto } from "@/lib/listenPolicy";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { apiSessionExtras } from "@/lib/requestExtras";
 import { TalkItThroughHeroPrompt } from "@/components/TalkItThroughHeroPrompt";
+import { BrandIcon } from "@/components/BrandIcon";
 
 export type ThresholdData = {
   headline: string;
@@ -23,6 +24,10 @@ export type ThresholdData = {
   listenFirstSuggested: boolean;
   continuityLine?: string;
 };
+
+/** Classic brand lines — live on the photo, like the original homepage hero */
+const BRAND_TAGLINE = "Find your way back to God";
+const BRAND_TAGLINE_SUB = "one moment at a time.";
 
 export function ThresholdHero() {
   const sessionId = getSessionId();
@@ -77,50 +82,75 @@ export function ThresholdHero() {
   const showTalkPrompt = !thresholdLoading;
 
   return (
-    <div
-      className="relative min-h-[56vh] flex flex-col justify-end overflow-hidden"
-      style={{
-        background: "linear-gradient(175deg, #1e0d50 0%, #130636 38%, #09031e 88%)",
-      }}
-    >
+    <div className="relative bg-[#09031e]">
+      {/* ── Cinematic photo band — road & hill visible (original homepage feel) ── */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-40"
-        style={{
-          backgroundImage: "url('/hero-landing.webp')",
-          backgroundSize: "cover",
-          backgroundPosition: "center 30%",
-          filter: "blur(2px)",
-        }}
-      />
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(120,60,220,0.25) 0%, transparent 65%), linear-gradient(to top, #09031e 0%, transparent 55%)",
-        }}
-      />
-      <div className="relative z-10 max-w-xl mx-auto w-full px-5 pt-14 pb-8 sm:pb-10">
+        className="relative w-full overflow-hidden h-[46vh] min-h-[260px] max-h-[400px] sm:h-[44vh] sm:max-h-[440px]"
+        aria-hidden={false}
+      >
+        <img
+          src="/hero-landing.webp"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[center_42%] sm:object-[center_38%]"
+          decoding="async"
+        />
+        {/* Light top scrim for “Why this exists” handle legibility */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(8,4,18,0.35) 0%, rgba(8,4,18,0.05) 28%, rgba(8,4,18,0.0) 50%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
+          }}
+        />
+        {/* Brand promise on the sky — matches legacy hero */}
+        <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center text-center px-6 pt-[3.75rem] sm:pt-16">
+          <motion.h2
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="text-white font-bold leading-[1.2] tracking-tight max-w-[18ch] drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)]"
+            style={{ fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)" }}
+          >
+            {BRAND_TAGLINE}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-2 text-[15px] sm:text-base text-white/90 font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]"
+          >
+            {BRAND_TAGLINE_SUB}
+          </motion.p>
+        </div>
+        {/* Brand mark at base of photo */}
+        <div className="absolute bottom-4 inset-x-0 z-10 flex items-center justify-center gap-2.5">
+          <BrandIcon size={32} className="drop-shadow-md" />
+          <span className="text-[15px] font-bold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+            Shepherd&apos;s Path
+          </span>
+        </div>
+      </div>
+
+      {/* ── Personal threshold + actions (dark band below the path) ── */}
+      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-5 sm:pt-6 pb-8 sm:pb-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-violet-200/70 mb-3">
-            Shepherd&apos;s Path
-          </p>
           <h1
             className="text-white font-bold leading-[1.15] mb-3 tracking-tight"
-            style={{ fontSize: "clamp(1.75rem, 6vw, 2.35rem)" }}
+            style={{ fontSize: "clamp(1.65rem, 5.5vw, 2.25rem)" }}
             data-testid="text-threshold-headline"
           >
             {thresholdLoading ? "…" : threshold?.headline ?? "What's on your heart?"}
           </h1>
-          <p className="text-[17px] sm:text-[18px] text-white/82 leading-relaxed max-w-md mb-4 font-medium">
+          <p className="text-[17px] sm:text-[18px] text-white/82 leading-relaxed mb-4 font-medium">
             {thresholdLoading ? "…" : threshold?.subtext}
           </p>
           {threshold?.continuityLine && (
             <p
-              className="text-[15px] text-violet-100/85 leading-relaxed max-w-md mb-5 pl-3.5 border-l-2 border-violet-400/40"
+              className="text-[15px] text-violet-100/85 leading-relaxed mb-5 pl-3.5 border-l-2 border-violet-400/40"
               data-testid="text-threshold-continuity"
             >
               {threshold.continuityLine}
@@ -174,8 +204,8 @@ export function ThresholdHero() {
             </div>
           )}
 
-          {(threshold?.listenFirstSuggested || listenFirst || !isProVerifiedLocally()) && (
-            isProVerifiedLocally() ? (
+          {(threshold?.listenFirstSuggested || listenFirst || !isProVerifiedLocally()) &&
+            (isProVerifiedLocally() ? (
               <button
                 type="button"
                 onClick={toggleListenFirst}
@@ -197,8 +227,7 @@ export function ThresholdHero() {
                   Pro: mornings start with listen
                 </span>
               </Link>
-            )
-          )}
+            ))}
         </motion.div>
       </div>
     </div>

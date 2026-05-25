@@ -37,7 +37,7 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
 
   return (
     <div
-      className="rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/20"
+      className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/20 max-sm:rounded-[1.125rem]"
       data-testid="card-talk-it-through-hero"
     >
       <div className="flex items-start gap-3 mb-4">
@@ -80,7 +80,7 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
         }}
         rows={2}
         placeholder={PLACEHOLDERS[placeholderIdx]}
-        className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-4 py-3.5 text-[17px] leading-relaxed text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30 transition-shadow"
+        className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30 transition-shadow"
       />
 
       <button

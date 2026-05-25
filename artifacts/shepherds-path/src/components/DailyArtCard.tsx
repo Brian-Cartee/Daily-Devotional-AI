@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
 import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments } from "@/lib/moments";
 import { useDailyArt } from "@/hooks/use-daily-art";
-import { dailyArtImageSrc } from "@/lib/preloadImage";
+import { loadDailyArtImage, easternTodayKey } from "@/lib/dailyArtImageLoad";
 
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
@@ -14,48 +14,75 @@ function isHiddenThisSession(): boolean {
   return sessionStorage.getItem(SESSION_HIDDEN_KEY) === "true";
 }
 
-/** Eastern date — matches server daily-art / verse cache */
-function todayKey(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
-}
-
 export function DailyArtCard() {
   const { art, imageUrl, loading: artLoading } = useDailyArt();
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState<string | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [hidden] = useState(() => isHiddenThisSession());
   const [shared, setShared] = useState(false);
-  const [saved, setSaved] = useState(() => isMomentSaved(todayKey()));
+  const [saved, setSaved] = useState(() => isMomentSaved(easternTodayKey()));
   const [justSaved, setJustSaved] = useState(false);
   const [note, setNote] = useState("");
   const [imgRetry, setImgRetry] = useState(0);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blobRef = useRef<string | null>(null);
 
   const rawImageUrl = imageUrl ?? art?.imageUrl ?? null;
-  const displayUrl = rawImageUrl
-    ? `${dailyArtImageSrc(rawImageUrl.replace(/\?.*$/, ""))}${imgRetry ? `&r=${imgRetry}` : ""}`
-    : null;
-  const loading = artLoading && !displayUrl;
-  const prevDisplayUrl = useRef<string | null>(null);
+  const metaReady = !artLoading && !!art;
+  const showImageSpinner = metaReady && !!rawImageUrl && imageLoading && !resolvedSrc && !imageFailed;
 
   useEffect(() => {
-    if (!displayUrl) return;
-    if (displayUrl === prevDisplayUrl.current) return;
-    prevDisplayUrl.current = displayUrl;
-    setImageError(false);
-    setImageLoaded(false);
-  }, [displayUrl]);
+    if (!rawImageUrl) {
+      setResolvedSrc(null);
+      setImageFailed(false);
+      setImageLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setImageFailed(false);
+    setImageLoading(true);
+    setResolvedSrc(null);
+
+    if (blobRef.current) {
+      URL.revokeObjectURL(blobRef.current);
+      blobRef.current = null;
+    }
+
+    (async () => {
+      const blob = await loadDailyArtImage(rawImageUrl.replace(/\?.*$/, ""));
+      if (cancelled) {
+        if (blob) URL.revokeObjectURL(blob);
+        return;
+      }
+      if (blob) {
+        blobRef.current = blob;
+        setResolvedSrc(blob);
+        setImageFailed(false);
+      } else {
+        setImageFailed(true);
+      }
+      setImageLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rawImageUrl, imgRetry]);
 
   useEffect(() => {
-    if (!displayUrl || imageLoaded || imageError) return;
-    const t = setTimeout(() => setImageError(true), 28_000);
-    return () => clearTimeout(t);
-  }, [displayUrl, imageLoaded, imageError]);
+    return () => {
+      if (blobRef.current) {
+        URL.revokeObjectURL(blobRef.current);
+        blobRef.current = null;
+      }
+    };
+  }, []);
 
   const retryImage = () => {
-    setImageError(false);
-    setImageLoaded(false);
+    setImageFailed(false);
     setImgRetry((n) => n + 1);
   };
 
@@ -63,10 +90,9 @@ export function DailyArtCard() {
     if (!art) return;
     const shareText = `"${art.scripture}" — ${art.reference}${art.reflection ? `\n\n${art.reflection}` : ""}\n\nvia Shepherd's Path`;
 
-    if (navigator.share && displayUrl) {
+    if (navigator.share && resolvedSrc) {
       try {
-        const fullUrl = `${window.location.origin}${displayUrl}`;
-        const response = await fetch(fullUrl);
+        const response = await fetch(resolvedSrc);
         const blob = await response.blob();
         const file = new File([blob], "moment-of-beauty.jpg", { type: "image/jpeg" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -89,13 +115,13 @@ export function DailyArtCard() {
 
   const handleSave = () => {
     if (!art) return;
-    const date = todayKey();
+    const date = easternTodayKey();
     if (saved) {
       removeMoment(date);
       setSaved(false);
     } else {
       const isFirst = getMoments().length === 0;
-      saveMoment({ date, verse: art.scripture, reference: art.reference, imageUrl: displayUrl });
+      saveMoment({ date, verse: art.scripture, reference: art.reference, imageUrl: resolvedSrc ?? rawImageUrl });
       setSaved(true);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
@@ -110,7 +136,7 @@ export function DailyArtCard() {
     setNote(val);
     if (noteTimer.current) clearTimeout(noteTimer.current);
     noteTimer.current = setTimeout(() => {
-      updateMomentNote(todayKey(), val);
+      updateMomentNote(easternTodayKey(), val);
       if (!noteNudgeFiredRef.current && val.trim().length >= 20) {
         noteNudgeFiredRef.current = true;
         window.dispatchEvent(new Event("sp-journal-note-written"));
@@ -119,16 +145,27 @@ export function DailyArtCard() {
   };
 
   useEffect(() => {
-    const sync = () => setSaved(isMomentSaved(todayKey()));
+    const sync = () => setSaved(isMomentSaved(easternTodayKey()));
     window.addEventListener("sp-moments-change", sync);
     return () => window.removeEventListener("sp-moments-change", sync);
   }, []);
 
   if (hidden) return null;
-  if (!loading && !art) return null;
+  if (!artLoading && !art) return null;
 
-  // Show scripture while image loads or if image fails
-  if (!loading && art && (!displayUrl || imageError)) {
+  if (artLoading && !art) {
+    return (
+      <div
+        className="relative w-full flex items-center justify-center gap-2 text-white/60"
+        style={{ aspectRatio: "4/3", background: "linear-gradient(160deg, hsl(258 30% 18%) 0%, hsl(38 25% 22%) 100%)" }}
+      >
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span className="text-xs tracking-wide">A moment is being prepared…</span>
+      </div>
+    );
+  }
+
+  if (metaReady && art && imageFailed && !resolvedSrc) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -153,22 +190,14 @@ export function DailyArtCard() {
               {art.reflection}
             </p>
           )}
-          {loading && (
-            <p className="text-[12px] text-muted-foreground/50 text-center mt-4 flex items-center justify-center gap-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Preparing today&apos;s artwork…
-            </p>
-          )}
-          {imageError && !loading && (
-            <button
-              type="button"
-              onClick={retryImage}
-              className="mt-5 mx-auto block text-[13px] font-semibold text-primary hover:underline"
-              data-testid="button-retry-daily-art"
-            >
-              Load today&apos;s image
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={retryImage}
+            className="mt-5 mx-auto block text-[13px] font-semibold text-primary hover:underline"
+            data-testid="button-retry-daily-art"
+          >
+            Load today&apos;s image
+          </button>
         </div>
       </motion.div>
     );
@@ -182,14 +211,18 @@ export function DailyArtCard() {
       className="w-full"
     >
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3" }}>
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(160deg, hsl(258 30% 18%) 0%, hsl(38 25% 22%) 100%)" }}
+        />
+
         <AnimatePresence>
-          {(loading || (displayUrl && !imageLoaded)) && (
+          {showImageSpinner && (
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.4 }}
               className="absolute inset-0 flex items-center justify-center gap-2 text-white/60 z-10"
-              style={{ background: "linear-gradient(160deg, hsl(258 30% 18%) 0%, hsl(38 25% 22%) 100%)" }}
             >
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-xs tracking-wide">A moment is being prepared…</span>
@@ -197,42 +230,45 @@ export function DailyArtCard() {
           )}
         </AnimatePresence>
 
-        {displayUrl && !imageError && (
+        {resolvedSrc && (
           <motion.img
-            key={displayUrl}
-            src={displayUrl}
+            key={resolvedSrc}
+            src={resolvedSrc}
             alt="Today's moment"
             loading="eager"
             decoding="async"
-            ref={(el) => {
-              if (el?.complete && el.naturalWidth > 0) setImageLoaded(true);
-            }}
-            onLoad={() => setImageLoaded(true)}
-            onError={() => {
-              setImageLoaded(false);
-              setImageError(true);
-            }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: imageLoaded ? 1 : 0 }}
-            transition={{ duration: 1.2 }}
-            className="w-full h-full object-cover"
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 w-full h-full object-cover"
             data-testid="img-daily-art"
           />
         )}
 
-        {imageLoaded && (
+        {metaReady && art && !resolvedSrc && !showImageSpinner && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center z-[5]">
+            <p className="text-[15px] text-white/90 font-medium leading-snug drop-shadow-sm">
+              &ldquo;{art.scripture}&rdquo;
+            </p>
+            <p className="text-[11px] text-white/65 font-semibold mt-2 tracking-wide uppercase">
+              {art.reference}
+            </p>
+          </div>
+        )}
+
+        {resolvedSrc && (
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 z-[6]"
             style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)" }}
           />
         )}
 
         <AnimatePresence>
-          {imageLoaded && art && (
+          {resolvedSrc && art && (
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.6 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
               onClick={handleSave}
               data-testid="button-save-moment"
               aria-label={saved ? "Remove from saved moments" : "Save this moment"}
@@ -262,11 +298,11 @@ export function DailyArtCard() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {imageLoaded && art && (
+          {resolvedSrc && art && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
               className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-3 z-10"
             >
               <p className="text-[15px] text-white/95 font-medium leading-snug drop-shadow-sm">
@@ -339,7 +375,7 @@ export function DailyArtCard() {
         )}
       </AnimatePresence>
 
-      {imageLoaded && art && (
+      {resolvedSrc && art && (
         <div
           className="flex items-center justify-between px-4 py-3 gap-3"
           style={{ borderTop: "1px solid hsl(var(--border) / 0.4)" }}

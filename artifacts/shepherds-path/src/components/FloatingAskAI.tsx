@@ -74,6 +74,7 @@ export function FloatingAskAI() {
   );
 
   const hide = shouldHidePathAiFloater(location);
+  const isHome = location === "/" || location === "";
   const showingResponse = !!(response || isStreaming);
 
   const openSheet = useCallback(() => {
@@ -268,7 +269,11 @@ export function FloatingAskAI() {
     <>
       {/* FAB */}
       <div
-        className="fixed z-[45] flex items-center gap-2 right-2.5 bottom-[calc(60px+env(safe-area-inset-bottom,0px)+6px)] sm:right-4 sm:bottom-[var(--fab-bottom-desktop)]"
+        className={`fixed z-[45] flex items-center gap-2 right-2 sm:right-4 sm:bottom-[var(--fab-bottom-desktop)] ${
+          isHome
+            ? "bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))]"
+            : "bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))]"
+        }`}
         style={{ ["--fab-bottom-desktop" as string]: FAB_BOTTOM_DESKTOP }}
       >
         <AnimatePresence>

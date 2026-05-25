@@ -87,7 +87,7 @@ async function fetchPexelsPhoto(query: string): Promise<string | null> {
   }
 }
 
-function readStaticFallback(dir: string): Buffer | null {
+export function readStaticFallback(dir: string): Buffer | null {
   for (const name of ["natural-mountain.jpg", "natural-sunset.jpg"]) {
     const p = path.join(dir, name);
     if (fs.existsSync(p)) {
@@ -148,6 +148,9 @@ export async function writeDailyArtImageFile(
     }
   }
 
+  if (!imgBuffer) {
+    imgBuffer = readStaticFallback(dir);
+  }
   if (!imgBuffer) return false;
 
   fs.mkdirSync(dir, { recursive: true });
@@ -157,5 +160,15 @@ export async function writeDailyArtImageFile(
   } catch {
     /* keep original */
   }
+  return true;
+}
+
+/** Guarantees imgFile exists (copies static fallback if generation failed). */
+export function ensureDailyArtImageFile(imgFile: string, dir: string): boolean {
+  if (fs.existsSync(imgFile)) return true;
+  const fallback = readStaticFallback(dir);
+  if (!fallback) return false;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(imgFile, fallback);
   return true;
 }
