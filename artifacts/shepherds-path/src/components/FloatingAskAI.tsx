@@ -38,8 +38,9 @@ function cleanResponse(text: string): string {
     .replace(/_(.+?)_/g, "$1");
 }
 
-const FAB_BOTTOM =
-  "calc(60px + env(safe-area-inset-bottom, 0px) + 12px)";
+/** Desktop / sm+ — bottom tab bar hidden above sm */
+const FAB_BOTTOM_DESKTOP =
+  "calc(1.5rem + env(safe-area-inset-bottom, 0px))";
 
 export function FloatingAskAI() {
   const [location, navigate] = useLocation();
@@ -266,8 +267,8 @@ export function FloatingAskAI() {
     <>
       {/* FAB */}
       <div
-        className="fixed right-4 z-[45] flex items-center gap-2"
-        style={{ bottom: FAB_BOTTOM }}
+        className="fixed z-[45] flex items-center gap-2 right-2.5 bottom-[calc(60px+env(safe-area-inset-bottom,0px)+6px)] sm:right-4 sm:bottom-[var(--fab-bottom-desktop)]"
+        style={{ ["--fab-bottom-desktop" as string]: FAB_BOTTOM_DESKTOP }}
       >
         <AnimatePresence>
           {showPeek && !isOpen && (
@@ -279,7 +280,7 @@ export function FloatingAskAI() {
               exit={{ opacity: 0, x: 8, scale: 0.96 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
               onClick={openSheet}
-              className="mr-1 max-w-[200px] text-left rounded-full pl-3.5 pr-4 py-2 shadow-lg border border-primary/25 bg-background/95 backdrop-blur-md"
+              className="mr-1 max-w-[min(200px,55vw)] sm:max-w-[200px] text-left rounded-full pl-3.5 pr-4 py-2 shadow-lg border border-primary/25 bg-background/95 backdrop-blur-md"
             >
               <p className="text-[12px] font-bold text-foreground leading-tight">
                 {pageContext.greeting}
@@ -297,22 +298,22 @@ export function FloatingAskAI() {
           onClick={openSheet}
           aria-label="Ask Path AI"
           whileTap={{ scale: 0.94 }}
-          className="relative flex h-14 w-14 items-center justify-center rounded-2xl border-0 p-0 bg-transparent"
+          className="relative flex h-[46px] w-[46px] sm:h-14 sm:w-14 items-center justify-center rounded-2xl border-0 p-0 bg-transparent"
         >
           {/* Soft halo — breathes without flashing the whole control */}
           <span
-            className="pointer-events-none absolute -inset-1.5 rounded-[18px] bg-primary/45 blur-xl opacity-70"
+            className="pointer-events-none absolute -inset-1 sm:-inset-1.5 rounded-[16px] sm:rounded-[18px] bg-primary/45 blur-lg sm:blur-xl opacity-70"
             style={{ animation: "pathAiHalo 3.5s ease-in-out infinite" }}
             aria-hidden
           />
           <span
-            className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-primary to-violet-800 shadow-lg shadow-primary/40 ring-1 ring-white/15"
+            className="relative flex h-full w-full items-center justify-center rounded-[14px] sm:rounded-2xl bg-gradient-to-br from-violet-600 via-primary to-violet-800 shadow-lg shadow-primary/40 ring-1 ring-white/15"
             aria-hidden
           >
             <img
               src="/sp-icon-nobg.png"
               alt=""
-              className="h-9 w-9 object-contain drop-shadow-md"
+              className="h-7 w-7 sm:h-9 sm:w-9 object-contain drop-shadow-md"
             />
           </span>
         </motion.button>
