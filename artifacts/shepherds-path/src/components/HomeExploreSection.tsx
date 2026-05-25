@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sunrise, Compass, Share2, BookMarked, Swords, HandHeart, Star, Sparkles,
-  BookOpen, Play, Heart, Monitor, ChevronDown,
+  BookOpen, Play, Heart, Monitor, DoorOpen, ChevronDown,
 } from "lucide-react";
 
 const EXPLORE_KEY = "sp_home_explore_open";
@@ -12,6 +12,7 @@ const EXPLORE_ITEMS = [
   { href: "/salvation", Icon: Sunrise, label: "Beginning with Jesus", desc: "Meet Jesus without pressure", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-salvation" },
   { href: "/understand", Icon: Compass, label: "Bible Journeys", desc: "Scripture meets you where you are", color: "text-indigo-400", bg: "border-indigo-500/20 bg-indigo-500/6", testid: "explore-understand" },
   { href: "/calling", Icon: Share2, label: "Our Calling", desc: "Carry the hope forward", color: "text-orange-400", bg: "border-orange-500/20 bg-orange-500/6", testid: "explore-calling" },
+  { href: "/prayer-closet", Icon: DoorOpen, label: "Prayer closet", desc: "Your space — worship bed, wall verse, prayer", color: "text-violet-400", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-prayer-closet" },
   { href: "/journal", Icon: BookMarked, label: "Prayer Journal", desc: "What you don't want to lose", color: "text-teal-400", bg: "border-teal-500/20 bg-teal-500/6", testid: "explore-journal" },
   { href: "/iron-circle", Icon: Swords, label: "Iron Sharpens Iron", desc: "Walk alongside others", color: "text-rose-400", bg: "border-rose-500/20 bg-rose-500/6", testid: "explore-iron-circle" },
   { href: "/prayer-wall", Icon: HandHeart, label: "Prayer Wall", desc: "Lift someone up today", color: "text-sky-400", bg: "border-sky-500/20 bg-sky-500/6", testid: "explore-prayer-wall" },

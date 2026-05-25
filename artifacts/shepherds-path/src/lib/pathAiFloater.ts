@@ -2,6 +2,7 @@
 
 export const HIDE_FLOATER_PREFIXES = [
   "/guidance",
+  "/prayer-closet",
   "/shepherd-admin",
   "/present",
   "/demo",

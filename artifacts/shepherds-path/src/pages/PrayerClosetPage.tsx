@@ -1,0 +1,364 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  BookOpen,
+  Flame,
+  Heart,
+  Settings2,
+  Sparkles,
+} from "lucide-react";
+import { NavBar } from "@/components/NavBar";
+import { BackButton } from "@/components/BackButton";
+import { WorshipBedControls } from "@/components/WorshipBedControls";
+import { useDailyArt } from "@/hooks/use-daily-art";
+import { useDailyVerse } from "@/hooks/use-verses";
+import { useWorshipBed } from "@/hooks/use-worship-bed";
+import { getSessionId } from "@/lib/session";
+import { getUserName } from "@/lib/userName";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  CLOSET_BACKGROUNDS,
+  closetDisplayName,
+  loadClosetNote,
+  loadClosetSettings,
+  markClosetVisit,
+  saveClosetNote,
+  saveClosetSettings,
+  type ClosetBackgroundId,
+  type ClosetSettings,
+} from "@/lib/prayerCloset";
+import type { WorshipTrackId } from "@/lib/worshipTracks";
+import type { JournalEntry } from "@shared/schema";
+
+export default function PrayerClosetPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const sessionId = getSessionId();
+  const { imageUrl: dailyArtUrl } = useDailyArt();
+  const { data: dailyVerse } = useDailyVerse();
+
+  const [settings, setSettings] = useState<ClosetSettings>(() => loadClosetSettings());
+  const [note, setNote] = useState(() => loadClosetNote());
+  const [showSetup, setShowSetup] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+
+  const { usingGenerated } = useWorshipBed(
+    settings.worshipEnabled,
+    settings.worshipTrackId,
+    settings.worshipVolume,
+  );
+
+  useEffect(() => {
+    markClosetVisit();
+    const name = getUserName();
+    if (name && !settings.name.trim()) {
+      const next = saveClosetSettings({ name });
+      setSettings(next);
+    }
+  }, []);
+
+  const { data: journalEntries } = useQuery<JournalEntry[]>({
+    queryKey: ["/api/journal", sessionId],
+    queryFn: async () => {
+      const res = await fetch(`/api/journal?sessionId=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const lastPrayer = useMemo(() => {
+    const prayers = (journalEntries ?? []).filter((e) => e.type === "prayer");
+    return prayers[0] ?? null;
+  }, [journalEntries]);
+
+  const backgroundSrc = useMemo(() => {
+    if (settings.backgroundId === "daily-art" && dailyArtUrl) {
+      return dailyArtUrl.replace(/\?.*$/, "");
+    }
+    const bg = CLOSET_BACKGROUNDS.find((b) => b.id === settings.backgroundId);
+    return bg?.src || "/hero-landing.webp";
+  }, [settings.backgroundId, dailyArtUrl]);
+
+  const wallVerse = useMemo(() => {
+    if (settings.pinnedText && settings.pinnedReference) {
+      return { text: settings.pinnedText, reference: settings.pinnedReference };
+    }
+    if (dailyVerse?.text && dailyVerse?.reference) {
+      return { text: dailyVerse.text, reference: dailyVerse.reference };
+    }
+    return {
+      text: "Be still, and know that I am God.",
+      reference: "Psalm 46:10",
+    };
+  }, [settings.pinnedText, settings.pinnedReference, dailyVerse]);
+
+  const dim = 1 - settings.candleLevel * 0.45;
+  const title = closetDisplayName(settings);
+
+  const patchSettings = (patch: Partial<ClosetSettings>) => {
+    const next = saveClosetSettings(patch);
+    setSettings(next);
+  };
+
+  const pinTodayVerse = () => {
+    if (!dailyVerse?.text) return;
+    patchSettings({
+      pinnedText: dailyVerse.text,
+      pinnedReference: dailyVerse.reference,
+    });
+    toast({ title: "Verse pinned to your closet wall" });
+  };
+
+  const saveNoteToJournal = async () => {
+    const content = note.trim();
+    if (!content) return;
+    setSavingNote(true);
+    try {
+      await apiRequest("POST", "/api/journal", {
+        sessionId,
+        type: "prayer",
+        title: "Prayer closet",
+        content,
+      });
+      saveClosetNote("");
+      setNote("");
+      queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] });
+      toast({ title: "Saved to your journal" });
+    } catch {
+      toast({ title: "Couldn't save", variant: "destructive" });
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  return (
+    <>
+      <NavBar />
+      <main className="min-h-screen bg-[#09031e] pb-32 pt-14">
+        <div className="relative min-h-[52vh] sm:min-h-[58vh] overflow-hidden">
+          <img
+            src={backgroundSrc}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              objectPosition:
+                CLOSET_BACKGROUNDS.find((b) => b.id === settings.backgroundId)?.position ??
+                "center",
+              filter: `brightness(${dim})`,
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(8,4,18,0.35) 0%, rgba(8,4,18,0.15) 40%, rgba(9,3,30,0.92) 78%, #09031e 100%)",
+            }}
+          />
+          <div className="absolute top-3 left-3 z-20">
+            <BackButton href="/" testId="button-back-prayer-closet" />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSetup((v) => !v)}
+            data-testid="button-closet-settings"
+            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-black/45 border border-white/15 flex items-center justify-center text-white/80"
+            aria-label="Closet settings"
+          >
+            <Settings2 className="w-4 h-4" />
+          </button>
+
+          <div className="relative z-10 flex flex-col items-center justify-end min-h-[52vh] sm:min-h-[58vh] px-5 pb-8 text-center">
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-[10px] font-bold uppercase tracking-[0.22em] text-violet-200/70 mb-2"
+            >
+              Your prayer closet
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="manifesto-line text-white text-[1.75rem] sm:text-[2rem] max-w-[18ch] mb-4"
+            >
+              {title}
+            </motion.h1>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.12 }}
+              className="max-w-md rounded-2xl border border-white/15 bg-black/35 backdrop-blur-md px-5 py-4"
+              data-testid="closet-wall-verse"
+            >
+              <p className="path-reminder-quote text-[17px] sm:text-[18px] text-white/90 leading-relaxed">
+                &ldquo;{wallVerse.text.length > 220 ? `${wallVerse.text.slice(0, 220)}…` : wallVerse.text}&rdquo;
+              </p>
+              <p className="text-[13px] font-semibold text-violet-200/85 mt-2">— {wallVerse.reference}</p>
+              {dailyVerse && !settings.pinnedText && (
+                <button
+                  type="button"
+                  onClick={pinTodayVerse}
+                  data-testid="button-pin-verse-closet"
+                  className="mt-3 text-[12px] font-medium text-violet-300/90 hover:text-white"
+                >
+                  Pin today&apos;s verse to this wall
+                </button>
+              )}
+            </motion.div>
+            <div className="flex items-center gap-2 mt-5 text-amber-300/80">
+              <Flame className="w-4 h-4" style={{ opacity: 0.4 + settings.candleLevel * 0.6 }} />
+              <input
+                type="range"
+                min={15}
+                max={100}
+                value={Math.round(settings.candleLevel * 100)}
+                data-testid="closet-candle"
+                onChange={(e) => patchSettings({ candleLevel: Number(e.target.value) / 100 })}
+                className="w-28 accent-amber-500/80"
+                aria-label="Candle light"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-xl mx-auto px-3 sm:px-4 -mt-2 space-y-4">
+          {showSetup && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="rounded-2xl border border-border/50 bg-card/80 p-4 space-y-4"
+              data-testid="closet-setup-panel"
+            >
+              <div>
+                <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">
+                  Name your closet
+                </label>
+                <input
+                  value={settings.name}
+                  onChange={(e) => patchSettings({ name: e.target.value })}
+                  placeholder="e.g. Brian"
+                  data-testid="input-closet-name"
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[15px]"
+                />
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Background
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {CLOSET_BACKGROUNDS.map((bg) => (
+                    <button
+                      key={bg.id}
+                      type="button"
+                      data-testid={`closet-bg-${bg.id}`}
+                      onClick={() => patchSettings({ backgroundId: bg.id as ClosetBackgroundId })}
+                      className={`rounded-xl border px-2 py-2 text-[12px] font-medium transition-colors ${
+                        settings.backgroundId === bg.id
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border/60 text-muted-foreground hover:border-primary/30"
+                      }`}
+                    >
+                      {bg.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          <WorshipBedControls
+            enabled={settings.worshipEnabled}
+            trackId={settings.worshipTrackId}
+            volume={settings.worshipVolume}
+            usingGenerated={usingGenerated}
+            onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
+            onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
+            onVolumeChange={(worshipVolume) => patchSettings({ worshipVolume })}
+          />
+
+          <div className="rounded-2xl border border-border/50 bg-card/60 p-4">
+            <p className="text-[12px] font-bold uppercase tracking-widest text-primary/70 mb-2">
+              What&apos;s on your heart
+            </p>
+            <textarea
+              value={note}
+              onChange={(e) => {
+                setNote(e.target.value);
+                saveClosetNote(e.target.value);
+              }}
+              rows={4}
+              placeholder="A few honest words for God — no polish required…"
+              data-testid="input-closet-prayer"
+              className="w-full resize-none rounded-xl border border-border/60 bg-background/80 px-3 py-3 text-[16px] leading-relaxed"
+            />
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                type="button"
+                disabled={!note.trim() || savingNote}
+                onClick={saveNoteToJournal}
+                data-testid="button-save-closet-prayer"
+                className="flex-1 min-w-[140px] rounded-xl py-2.5 text-[14px] font-semibold text-white bg-primary hover:opacity-95 disabled:opacity-45"
+              >
+                {savingNote ? "Saving…" : "Save to journal"}
+              </button>
+              <Link href="/guidance">
+                <span
+                  data-testid="link-closet-guidance"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-500/30 px-4 py-2.5 text-[14px] font-semibold text-primary"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Talk It Through
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          {lastPrayer && (
+            <div className="rounded-2xl border border-border/40 bg-card/40 px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                Last prayer you held
+              </p>
+              <p className="text-[14px] text-foreground/80 leading-relaxed line-clamp-3 italic path-reminder-quote">
+                {lastPrayer.content}
+              </p>
+              {lastPrayer.reference && (
+                <p className="text-[12px] text-primary/60 mt-1">— {lastPrayer.reference}</p>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link href="/journal" className="flex-1">
+              <span
+                data-testid="link-closet-journal"
+                className="flex items-center justify-center gap-2 w-full rounded-xl border border-border/50 py-3 text-[14px] font-semibold text-foreground/85"
+              >
+                <BookOpen className="w-4 h-4" />
+                Open journal
+              </span>
+            </Link>
+            <Link href="/devotional" className="flex-1">
+              <span
+                data-testid="link-closet-devotional"
+                className="flex items-center justify-center gap-2 w-full rounded-xl border border-border/50 py-3 text-[14px] font-semibold text-foreground/85"
+              >
+                <Heart className="w-4 h-4" />
+                Today&apos;s devotional
+                <ArrowRight className="w-4 h-4 opacity-50" />
+              </span>
+            </Link>
+          </div>
+
+          <p className="text-center text-[12px] text-muted-foreground/55 leading-relaxed px-2 pb-4">
+            &ldquo;When you pray, go into your room, close the door…&rdquo; — Matthew 6:6. This space is yours; nothing here is posted publicly.
+          </p>
+        </div>
+      </main>
+    </>
+  );
+}

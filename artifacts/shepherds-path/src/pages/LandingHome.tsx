@@ -41,6 +41,7 @@ import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { ThresholdHero } from "@/components/ThresholdHero";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathShortcuts } from "@/components/HomePathShortcuts";
+import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -620,6 +621,7 @@ export default function LandingHome() {
           <div className="flex flex-col gap-3">
 
           <DevotionalCard />
+          <PrayerClosetHomeCard />
           <HomePathShortcuts />
 
           <AnimatePresence>

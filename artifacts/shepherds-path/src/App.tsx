@@ -29,6 +29,7 @@ import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
 import { FloatingAskAI } from "@/components/FloatingAskAI";
 import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
+import PrayerClosetPage from "@/pages/PrayerClosetPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminSermonsPage from "@/pages/AdminSermonsPage";
 import StoriesPage from "@/pages/StoriesPage";
@@ -138,6 +139,7 @@ function Router() {
       <Route path="/calling" component={CallingPage} />
       <Route path="/alignment" component={ScripturalAlignment} />
       <Route path="/prayer-portrait" component={PrayerPortraitPage} />
+      <Route path="/prayer-closet" component={PrayerClosetPage} />
       <Route path="/screenshot-gen">
         <Suspense fallback={<div className="min-h-screen bg-[#0d0a1a]" />}>
           <ScreenshotGenerator />

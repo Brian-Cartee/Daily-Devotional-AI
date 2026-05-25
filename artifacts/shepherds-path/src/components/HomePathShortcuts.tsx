@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { BookMarked, Compass, Gift, ArrowRight, type LucideIcon } from "lucide-react";
+import { BookMarked, Compass, Gift, DoorOpen, ArrowRight, type LucideIcon } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
 
 const SHORTCUTS: {
@@ -19,6 +19,15 @@ const SHORTCUTS: {
     desc: "Scripture and prayer shaped for what's on your heart",
     testid: "shortcut-guidance",
     accent: "from-violet-500/12 to-primary/8 border-primary/20",
+    iconColor: "text-primary",
+  },
+  {
+    href: "/prayer-closet",
+    Icon: DoorOpen,
+    label: "Prayer closet",
+    desc: "Your room — verse, worship bed, honest prayer",
+    testid: "shortcut-prayer-closet",
+    accent: "from-violet-500/12 to-primary/8 border-primary/25",
     iconColor: "text-primary",
   },
   {
