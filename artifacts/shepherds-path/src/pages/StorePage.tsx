@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { ShoppingBag, ExternalLink, Package } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
-import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 
 const STORE_URL = "https://my-store-10fb787.creator-spring.com/";
 
@@ -69,9 +68,13 @@ export default function StorePage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 shadow-sm"
+              className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-sm shadow-primary/20"
             >
-              <ShepherdCrookMark className="w-8 h-8 text-primary opacity-90" />
+              <img
+                src="/sp-icon.png"
+                alt="Shepherd's Path"
+                className="w-full h-full object-cover"
+              />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 8 }}
