@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
 import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments } from "@/lib/moments";
 import { useDailyArt } from "@/hooks/use-daily-art";
+import { dailyArtImageSrc } from "@/lib/preloadImage";
 
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
@@ -28,9 +29,13 @@ export function DailyArtCard() {
   const [saved, setSaved] = useState(() => isMomentSaved(todayKey()));
   const [justSaved, setJustSaved] = useState(false);
   const [note, setNote] = useState("");
+  const [imgRetry, setImgRetry] = useState(0);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const displayUrl = imageUrl ?? art?.imageUrl ?? null;
+  const rawImageUrl = imageUrl ?? art?.imageUrl ?? null;
+  const displayUrl = rawImageUrl
+    ? `${dailyArtImageSrc(rawImageUrl.replace(/\?.*$/, ""))}${imgRetry ? `&r=${imgRetry}` : ""}`
+    : null;
   const loading = artLoading && !displayUrl;
   const prevDisplayUrl = useRef<string | null>(null);
 
@@ -44,9 +49,15 @@ export function DailyArtCard() {
 
   useEffect(() => {
     if (!displayUrl || imageLoaded || imageError) return;
-    const t = setTimeout(() => setImageError(true), 22_000);
+    const t = setTimeout(() => setImageError(true), 28_000);
     return () => clearTimeout(t);
   }, [displayUrl, imageLoaded, imageError]);
+
+  const retryImage = () => {
+    setImageError(false);
+    setImageLoaded(false);
+    setImgRetry((n) => n + 1);
+  };
 
   const handleShare = async () => {
     if (!art) return;
@@ -145,8 +156,18 @@ export function DailyArtCard() {
           {loading && (
             <p className="text-[12px] text-muted-foreground/50 text-center mt-4 flex items-center justify-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Preparing today's artwork…
+              Preparing today&apos;s artwork…
             </p>
+          )}
+          {imageError && !loading && (
+            <button
+              type="button"
+              onClick={retryImage}
+              className="mt-5 mx-auto block text-[13px] font-semibold text-primary hover:underline"
+              data-testid="button-retry-daily-art"
+            >
+              Load today&apos;s image
+            </button>
           )}
         </div>
       </motion.div>
@@ -178,8 +199,11 @@ export function DailyArtCard() {
 
         {displayUrl && !imageError && (
           <motion.img
+            key={displayUrl}
             src={displayUrl}
             alt="Today's moment"
+            loading="eager"
+            decoding="async"
             ref={(el) => {
               if (el?.complete && el.naturalWidth > 0) setImageLoaded(true);
             }}

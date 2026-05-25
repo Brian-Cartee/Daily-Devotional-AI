@@ -11,7 +11,7 @@ export function getEasternDateKey(d = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
 }
 
-/** Prefer a dir that already has files; works for api-server cwd and monorepo layouts */
+/** Prefer dir with fallback art + existing JPEGs (api-server empty dir must not win over shepherds-path). */
 export function resolveDailyArtDir(): string {
   const candidates = [
     path.resolve(process.cwd(), "client/public/daily-art"),
@@ -19,12 +19,24 @@ export function resolveDailyArtDir(): string {
     path.resolve(MODULE_DIR, "../client/public/daily-art"),
     path.resolve(MODULE_DIR, "../../shepherds-path/public/daily-art"),
   ];
+  let best = candidates[0];
+  let bestScore = -1;
   for (const dir of candidates) {
-    if (fs.existsSync(dir)) return dir;
+    if (!fs.existsSync(dir)) continue;
+    let score = 0;
+    if (fs.existsSync(path.join(dir, "natural-mountain.jpg"))) score += 100;
+    try {
+      score += fs.readdirSync(dir).filter((f) => f.endsWith(".jpg")).length;
+    } catch {
+      /* ignore */
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = dir;
+    }
   }
-  const primary = candidates[0];
-  fs.mkdirSync(primary, { recursive: true });
-  return primary;
+  fs.mkdirSync(best, { recursive: true });
+  return best;
 }
 
 export function buildDailyArtPrompt(scripture: string, reference: string, visualTheme: string): string {

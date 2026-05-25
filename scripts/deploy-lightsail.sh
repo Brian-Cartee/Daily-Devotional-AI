@@ -20,6 +20,13 @@ fi
 
 echo "==> Building API (artifacts/api-server)..."
 bash "$REPO_ROOT/scripts/fix-api-server.sh"
+DAILY_ART_API="$REPO_ROOT/artifacts/api-server/client/public/daily-art"
+DAILY_ART_FALLBACK="$REPO_ROOT/artifacts/shepherds-path/public/daily-art/natural-mountain.jpg"
+mkdir -p "$DAILY_ART_API"
+if [[ -f "$DAILY_ART_FALLBACK" ]] && [[ ! -f "$DAILY_ART_API/natural-mountain.jpg" ]]; then
+  cp "$DAILY_ART_FALLBACK" "$DAILY_ART_API/natural-mountain.jpg"
+  echo "==> Copied daily-art fallback image into api-server storage"
+fi
 cd "$REPO_ROOT/artifacts/api-server"
 
 echo "==> Restarting api-server..."

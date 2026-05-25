@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { dailyArtImageSrc, preloadImage, probeImageUrl } from "@/lib/preloadImage";
+import { dailyArtImageSrc } from "@/lib/preloadImage";
 
 export interface DailyArtData {
   imageUrl: string | null;
@@ -12,7 +12,9 @@ const POLL_MS = 5_000;
 const MAX_POLLS = 24;
 
 /**
- * Fetches /api/daily-art and ensures the image is loadable before exposing the URL.
+ * Fetches /api/daily-art. When the API reports an image, expose a cache-busted URL
+ * immediately and let the <img> onLoad/onError handle readiness (probe/preload was
+ * failing in Safari when an earlier 404 was cached).
  */
 export function useDailyArt(onImageUrl?: (url: string) => void) {
   const [art, setArt] = useState<DailyArtData | null>(null);
@@ -21,16 +23,12 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
   const onImageRef = useRef(onImageUrl);
   onImageRef.current = onImageUrl;
 
-  const applyImageUrl = useCallback(async (baseUrl?: string) => {
-    const src = dailyArtImageSrc(baseUrl ?? "/api/daily-art/image");
-    const ready = await probeImageUrl(src);
-    if (!ready) return false;
-    const ok = await preloadImage(src);
-    if (!ok) return false;
+  const applyImageUrl = useCallback((base?: string | null) => {
+    if (!base) return;
+    const src = dailyArtImageSrc(base.replace(/\?.*$/, ""));
     setImageUrl(src);
     setArt((prev) => (prev ? { ...prev, imageUrl: src } : prev));
     onImageRef.current?.(src);
-    return true;
   }, []);
 
   useEffect(() => {
@@ -42,11 +40,6 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
       if (!cancelled) setLoading(false);
     };
 
-    const tryAttachImage = async (): Promise<boolean> => {
-      if (cancelled) return false;
-      return applyImageUrl();
-    };
-
     const load = async () => {
       try {
         const res = await fetch("/api/daily-art", { cache: "no-store" });
@@ -55,10 +48,9 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
         setArt(data);
 
         if (data.imageUrl) {
-          if (await tryAttachImage()) {
-            finishLoading();
-            return;
-          }
+          applyImageUrl(data.imageUrl);
+          finishLoading();
+          return;
         }
 
         finishLoading();
@@ -69,8 +61,17 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
             return;
           }
           polls += 1;
-          if (await tryAttachImage()) {
-            if (timer) clearInterval(timer);
+          try {
+            const r = await fetch("/api/daily-art", { cache: "no-store" });
+            const next = (await r.json()) as DailyArtData;
+            if (cancelled) return;
+            if (next.imageUrl) {
+              setArt(next);
+              applyImageUrl(next.imageUrl);
+              if (timer) clearInterval(timer);
+            }
+          } catch {
+            /* keep polling */
           }
         }, POLL_MS);
       } catch {
