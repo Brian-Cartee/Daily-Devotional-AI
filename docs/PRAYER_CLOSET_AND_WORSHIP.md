@@ -37,6 +37,9 @@ Edit `artifacts/shepherds-path/src/lib/worshipYouTubeMixes.ts` to add `videoId` 
 | Holy Voltage Ep. 1 | Holy Voltage Radio |
 | House Praise 2026 | Kingdom Frequencies |
 | Glorious Praise & Worship | Casley Music |
+| Best uplifting EDM worship | EDM Christian Music |
+| JESUS uplifting EDM #14 | Christian Techno Music |
+| Upbeat workout & feel-good | Christian Edm Music |
 
 Playback uses the **YouTube IFrame API** (compliant embed). On mobile, the user may need to **tap play** inside the slim player bar.
 

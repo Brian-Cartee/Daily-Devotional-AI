@@ -5,7 +5,10 @@
 export type WorshipYoutubeMixId =
   | "holy-voltage-ep1"
   | "kingdom-frequencies-2026"
-  | "casley-glorious-praise";
+  | "casley-glorious-praise"
+  | "edm-christian-uplifting"
+  | "christian-techno-2025-14"
+  | "edm-workout-upbeat";
 
 export type WorshipYoutubeMix = {
   id: WorshipYoutubeMixId;
@@ -40,6 +43,30 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     channel: "Casley Music",
     durationLabel: "Mix",
     mood: "Christian EDM · uplifting",
+  },
+  {
+    id: "edm-christian-uplifting",
+    videoId: "HYIl_xHF5r4",
+    title: "Best uplifting EDM worship",
+    channel: "EDM Christian Music",
+    durationLabel: "Playlist",
+    mood: "Techno · praise · dance",
+  },
+  {
+    id: "christian-techno-2025-14",
+    videoId: "IjJ8k0DsOWE",
+    title: "JESUS uplifting EDM #14",
+    channel: "Christian Techno Music",
+    durationLabel: "~1 hr",
+    mood: "Worship · praise · gospel",
+  },
+  {
+    id: "edm-workout-upbeat",
+    videoId: "-pP0Sy4YvZI",
+    title: "Upbeat workout & feel-good",
+    channel: "Christian Edm Music",
+    durationLabel: "Playlist",
+    mood: "Christian EDM · energy",
   },
 ];
 
