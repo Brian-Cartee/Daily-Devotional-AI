@@ -30,7 +30,7 @@ Until files exist, local mode plays a **very quiet generated stillness tone**.
 
 ### Curated YouTube mixes (prayer closet)
 
-Edit `artifacts/shepherds-path/src/lib/worshipYouTubeMixes.ts` to add `videoId` + metadata. Current mixes:
+Edit `artifacts/shepherds-path/src/lib/worshipYouTubeMixes.ts` to add `videoId` + metadata (each `id` and `videoId` must be unique — the file asserts on load). **Six mixes** for now:
 
 | Mix | Channel |
 |-----|---------|

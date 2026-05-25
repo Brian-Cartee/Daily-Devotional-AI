@@ -70,6 +70,23 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
   },
 ];
 
+function assertUniqueWorshipMixes(mixes: WorshipYoutubeMix[]): void {
+  const ids = new Set<string>();
+  const videoIds = new Set<string>();
+  for (const mix of mixes) {
+    if (ids.has(mix.id)) {
+      throw new Error(`[worshipYouTubeMixes] duplicate mix id: ${mix.id}`);
+    }
+    if (videoIds.has(mix.videoId)) {
+      throw new Error(`[worshipYouTubeMixes] duplicate videoId: ${mix.videoId}`);
+    }
+    ids.add(mix.id);
+    videoIds.add(mix.videoId);
+  }
+}
+
+assertUniqueWorshipMixes(WORSHIP_YOUTUBE_MIXES);
+
 export function getWorshipYoutubeMix(id: string | null | undefined): WorshipYoutubeMix {
   return WORSHIP_YOUTUBE_MIXES.find((m) => m.id === id) ?? WORSHIP_YOUTUBE_MIXES[0];
 }
