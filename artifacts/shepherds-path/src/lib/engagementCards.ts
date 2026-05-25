@@ -150,6 +150,25 @@ export function saveCheckin(emotion: CheckinEmotion): void {
   localStorage.setItem(CHECKIN_PREFIX + today, emotion);
 }
 
+export const CHECKIN_OPTIONS: {
+  key: CheckinEmotion;
+  emoji: string;
+  label: string;
+}[] = [
+  { key: "great", emoji: "😊", label: "Doing great" },
+  { key: "grateful", emoji: "🙏", label: "Grateful" },
+  { key: "hopeful", emoji: "🌤️", label: "Hopeful" },
+  { key: "okay", emoji: "😌", label: "Steady" },
+  { key: "anxious", emoji: "😟", label: "Anxious" },
+  { key: "lonely", emoji: "🫂", label: "Lonely" },
+  { key: "drained", emoji: "🪫", label: "Drained" },
+  { key: "hard", emoji: "😔", label: "Hard day" },
+];
+
+export function getCheckinDisplay(emotion: CheckinEmotion) {
+  return CHECKIN_OPTIONS.find((o) => o.key === emotion) ?? CHECKIN_OPTIONS[0];
+}
+
 export const CHECKIN_PROMPTS: Record<CheckinEmotion, string> = {
   great: "I'm having a good day and want to bring that joy to God — help me not take it for granted…",
   grateful: "I'm feeling grateful today and want to bring that thankfulness to God…",

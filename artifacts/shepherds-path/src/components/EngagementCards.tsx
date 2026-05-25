@@ -22,6 +22,8 @@ import {
   dismissTip,
   getTodayCheckin,
   saveCheckin,
+  getCheckinDisplay,
+  CHECKIN_OPTIONS,
   CHECKIN_PROMPTS,
   isSunday,
   isSundaySummaryDismissed,
@@ -488,20 +490,14 @@ export function CheckinCard() {
   function handleSelect(emotion: CheckinEmotion) {
     saveCheckin(emotion);
     setSelected(emotion);
-    navigate(`/guidance?situation=${encodeURIComponent(CHECKIN_PROMPTS[emotion])}`);
   }
 
-  /** Positive options first — faith includes good days, not only struggle */
-  const EMOTIONS: { key: CheckinEmotion; emoji: string; label: string }[] = [
-    { key: "great",    emoji: "😊", label: "Doing great" },
-    { key: "grateful", emoji: "🙏", label: "Grateful" },
-    { key: "hopeful",  emoji: "🌤️", label: "Hopeful" },
-    { key: "okay",     emoji: "😌", label: "Steady" },
-    { key: "anxious",  emoji: "😟", label: "Anxious" },
-    { key: "lonely",   emoji: "🫂", label: "Lonely" },
-    { key: "drained",  emoji: "🪫", label: "Drained" },
-    { key: "hard",     emoji: "😔", label: "Hard day" },
-  ];
+  function continueToTalk() {
+    if (!selected) return;
+    navigate(`/guidance?situation=${encodeURIComponent(CHECKIN_PROMPTS[selected])}`);
+  }
+
+  const picked = selected ? getCheckinDisplay(selected) : null;
 
   return (
     <motion.div
@@ -516,13 +512,15 @@ export function CheckinCard() {
             {isLateNight() ? "What's on your heart tonight?" : "How are you doing today, really?"}
           </p>
           <p className="text-[12px] text-muted-foreground/75 leading-snug mt-1">
-            Good days count too. Tap what fits — we&apos;ll shape Talk it through for you.
+            {selected
+              ? "Saved for today. Talk it through is optional whenever you&apos;re ready."
+              : "Good days count too. Tap what fits — no rush to go anywhere."}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
-        {EMOTIONS.map(({ key, emoji, label }) => (
+        {CHECKIN_OPTIONS.map(({ key, emoji, label }) => (
           <button
             key={key}
             type="button"
@@ -541,10 +539,37 @@ export function CheckinCard() {
         ))}
       </div>
 
-      {selected && (
-        <p className="mt-3 text-[12px] text-muted-foreground/80 text-center leading-snug">
-          Opening Talk it through with words for how you feel — edit anything before you send.
-        </p>
+      {picked && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-3 space-y-2.5"
+          data-testid="checkin-saved-summary"
+        >
+          <div
+            className="flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5"
+            data-testid="checkin-you-said"
+          >
+            <span className="text-xl leading-none" aria-hidden>
+              {picked.emoji}
+            </span>
+            <p className="text-[13px] font-semibold text-foreground">
+              You said: <span className="text-primary">{picked.label}</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="button-checkin-continue-talk"
+            onClick={continueToTalk}
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white bg-primary hover:opacity-95 active:scale-[0.99] transition-all"
+          >
+            Continue in Talk it through
+            <ArrowRight className="w-4 h-4" />
+          </button>
+          <p className="text-[11px] text-muted-foreground/65 text-center leading-snug">
+            We&apos;ll start with gentle words for how you feel — edit anything before you send.
+          </p>
+        </motion.div>
       )}
     </motion.div>
   );
