@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { isIntroFlowComplete, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
 
 const ONBOARD_KEY = "sp_onboarding_shown";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -19,6 +20,7 @@ const SCREEN_VISIBLE_MS = 2600;
 const FADE_MS = 650;
 
 export function shouldShowOnboarding(): boolean {
+  if (isReturningHome() || isIntroFlowComplete()) return false;
   const lastShown = localStorage.getItem(ONBOARD_KEY);
   if (!lastShown) return true;
   const lastVisit = localStorage.getItem(LAST_VISIT_KEY);
@@ -30,6 +32,7 @@ export function shouldShowOnboarding(): boolean {
 
 export function markOnboardingShown(): void {
   localStorage.setItem(ONBOARD_KEY, new Date().toISOString().split("T")[0]);
+  markIntroFlowComplete();
 }
 
 interface OnboardingFlowProps {

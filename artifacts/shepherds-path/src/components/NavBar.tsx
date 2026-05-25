@@ -9,6 +9,7 @@ import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
+import { markReturningHome } from "@/lib/introState";
 
 
 const NAV_ITEMS = [
@@ -99,7 +100,15 @@ export function NavBar() {
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
 
           {/* Logo — icon only */}
-          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 mr-2" title="Shepherd's Path">
+          <Link
+            href="/"
+            onClick={() => {
+              markReturningHome();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="shrink-0 mr-2"
+            title="Shepherd's Path"
+          >
             <img
               src="/sp-icon.png"
               alt="Shepherd's Path"
@@ -331,6 +340,9 @@ export function NavBar() {
                 key={href}
                 href={href}
                 data-testid={`bottom-nav-${label.toLowerCase()}`}
+                onClick={() => {
+                  if (href === "/") markReturningHome();
+                }}
                 className="flex flex-col items-center justify-center flex-1 h-full transition-all"
               >
                 {active ? (

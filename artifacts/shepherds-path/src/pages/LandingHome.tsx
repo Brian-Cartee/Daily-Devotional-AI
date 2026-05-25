@@ -7,6 +7,7 @@ import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
+import { clearReturningHome, isReturningHome } from "@/lib/introState";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
@@ -660,8 +661,10 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
 
 export default function LandingHome() {
   const [, navigate] = useLocation();
-  const [showSplash, setShowSplash] = useState(() => shouldShowSplash());
+  const skipIntrosForHome = isReturningHome();
+  const [showSplash, setShowSplash] = useState(() => !skipIntrosForHome && shouldShowSplash());
   const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (skipIntrosForHome) return false;
     const params = new URLSearchParams(window.location.search);
     if (params.has("onboarding")) {
       const url = new URL(window.location.href);
@@ -671,6 +674,9 @@ export default function LandingHome() {
     }
     return shouldShowOnboarding();
   });
+  useEffect(() => {
+    if (skipIntrosForHome) clearReturningHome();
+  }, [skipIntrosForHome]);
   const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);

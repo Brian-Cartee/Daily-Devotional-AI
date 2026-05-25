@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-
-const VISIT_COUNT_KEY = "sp_visit_count";
-const SESSION_KEY = "sp_welcome_shown_this_session";
-
-// Show welcome overlay for first N visits, then stop
-const REGULAR_THRESHOLD = 5;
+import {
+  incrementWelcomeVisitCount,
+  markIntroFlowComplete,
+  recordWelcomeShownThisSession,
+  shouldShowWelcomeOverlay,
+  WELCOME_SESSION_KEY,
+} from "@/lib/introState";
 
 export function useWelcomeOverlay() {
   const [show, setShow] = useState(false);
@@ -17,33 +18,29 @@ export function useWelcomeOverlay() {
       const url = new URL(window.location.href);
       url.searchParams.delete("intro");
       window.history.replaceState({}, "", url.toString());
-      sessionStorage.removeItem(SESSION_KEY);
+      try {
+        sessionStorage.removeItem(WELCOME_SESSION_KEY);
+      } catch {
+        /* noop */
+      }
     }
 
-    // Only show once per browser session (prevents re-showing on back navigation)
-    if (!forceIntro && sessionStorage.getItem(SESSION_KEY)) return;
+    if (!shouldShowWelcomeOverlay(forceIntro)) return;
 
-    // Count how many times this person has visited
-    const currentCount = parseInt(localStorage.getItem(VISIT_COUNT_KEY) ?? "0");
-    const newCount = currentCount + 1;
-
-    // Increment visit count for this new session
-    if (!sessionStorage.getItem(SESSION_KEY)) {
-      localStorage.setItem(VISIT_COUNT_KEY, String(newCount));
+    if (!forceIntro) {
+      incrementWelcomeVisitCount();
     }
 
-    // Show overlay for first REGULAR_THRESHOLD visits (or when forced)
-    if (forceIntro || newCount <= REGULAR_THRESHOLD) {
-      const timer = setTimeout(() => {
-        sessionStorage.setItem(SESSION_KEY, "1");
-        setShow(true);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      recordWelcomeShownThisSession();
+      setShow(true);
+    }, 800);
+    return () => clearTimeout(timer);
   }, []);
 
   const dismiss = () => {
-    sessionStorage.setItem(SESSION_KEY, "1");
+    recordWelcomeShownThisSession();
+    markIntroFlowComplete();
     setShow(false);
   };
 

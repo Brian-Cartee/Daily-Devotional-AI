@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { recordSplashShown, shouldShowSplash } from "@/lib/introState";
 
-const SPLASH_KEY = "sp_splash_shown";
-
-export function shouldShowSplash(): boolean {
-  return !sessionStorage.getItem(SPLASH_KEY);
-}
-
-export function recordSplashShown(): void {
-  sessionStorage.setItem(SPLASH_KEY, "1");
-}
+export { shouldShowSplash, recordSplashShown };
 
 interface SplashScreenProps {
   onDone: () => void;
