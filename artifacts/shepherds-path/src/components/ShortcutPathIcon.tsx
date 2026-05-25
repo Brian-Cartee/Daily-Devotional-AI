@@ -1,12 +1,14 @@
-import { BookMarked, BookOpen, Compass, Gift, type LucideIcon } from "lucide-react";
+import { BookMarked, BookOpen, Compass, Gift, Heart, Sun, type LucideIcon } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
 
 export type ShortcutIconVariant =
   | "guidance"
+  | "devotional"
   | "journal"
   | "pathways"
   | "invite"
-  | "deeper";
+  | "deeper"
+  | "checkin";
 
 const TILE: Record<
   ShortcutIconVariant,
@@ -23,6 +25,13 @@ const TILE: Record<
     ring: "ring-violet-300/35",
     shadow: "shadow-primary/40",
     bg: "bg-black/25",
+  },
+  devotional: {
+    halo: "bg-teal-400/35",
+    ring: "ring-teal-300/45",
+    shadow: "shadow-teal-500/35",
+    bg: "bg-gradient-to-br from-teal-400 via-emerald-500 to-teal-950",
+    Icon: Sun,
   },
   journal: {
     halo: "bg-teal-400/35",
@@ -52,9 +61,18 @@ const TILE: Record<
     bg: "bg-gradient-to-br from-amber-400 via-yellow-600 to-amber-950",
     Icon: BookOpen,
   },
+  checkin: {
+    halo: "bg-rose-400/35",
+    ring: "ring-rose-300/45",
+    shadow: "shadow-rose-500/35",
+    bg: "bg-gradient-to-br from-rose-400 via-pink-500 to-rose-950",
+    Icon: Heart,
+  },
 };
 
 const TILE_PX = 44;
+/** Talk it through PNG — slightly larger so it matches lucide tiles visually */
+const BRAND_ICON_PX = 42;
 
 /** Home shortcut tile — matches Talk it through logo weight (ring, glow, rounded tile) */
 export function ShortcutPathIcon({ variant }: { variant: ShortcutIconVariant }) {
@@ -73,7 +91,7 @@ export function ShortcutPathIcon({ variant }: { variant: ShortcutIconVariant }) 
         className={`relative flex h-full w-full items-center justify-center overflow-hidden rounded-[14px] ring-1 shadow-lg ${tile.ring} ${tile.shadow} ${tile.bg}`}
       >
         {variant === "guidance" ? (
-          <BrandIcon size={40} className="drop-shadow-md" />
+          <BrandIcon size={BRAND_ICON_PX} className="drop-shadow-md" />
         ) : tile.Icon ? (
           <tile.Icon className="w-[22px] h-[22px] text-white drop-shadow-sm" strokeWidth={2.25} />
         ) : null}

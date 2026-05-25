@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, SmilePlus, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon, Sun, Wind } from "lucide-react";
+import { X, Lightbulb, BarChart3, Share2, Copy, Check, Compass, ArrowRight, ChevronRight, Bell, BellOff, Loader2, Mail, Moon, Sun, Wind } from "lucide-react";
+import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { getReturnPhase, type DayPhase } from "@/lib/returnFlow";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight, getNightTimeLabel, getNightGreeting } from "@/lib/nightMode";
@@ -279,6 +280,12 @@ interface GratitudePromptCardProps {
 const GRATITUDE_COPY: Record<CheckinEmotion | "none", {
   header: string; prompt: string; placeholder: string; journalTitle: string;
 }> = {
+  great: {
+    header: "Celebrate a moment",
+    prompt: "What's going well today — what do you want to thank God for while it's fresh?",
+    placeholder: "What I'm celebrating…",
+    journalTitle: "A good day",
+  },
   hard: {
     header: "Stay a moment",
     prompt: "What are you carrying that you haven't said out loud yet?",
@@ -484,80 +491,59 @@ export function CheckinCard() {
     navigate(`/guidance?situation=${encodeURIComponent(CHECKIN_PROMPTS[emotion])}`);
   }
 
+  /** Positive options first — faith includes good days, not only struggle */
   const EMOTIONS: { key: CheckinEmotion; emoji: string; label: string }[] = [
-    { key: "hard",     emoji: "😔", label: "Hard day" },
-    { key: "anxious",  emoji: "😟", label: "Anxious" },
-    { key: "okay",     emoji: "😌", label: "Steady" },
-    { key: "lonely",   emoji: "🫂", label: "Lonely" },
+    { key: "great",    emoji: "😊", label: "Doing great" },
     { key: "grateful", emoji: "🙏", label: "Grateful" },
     { key: "hopeful",  emoji: "🌤️", label: "Hopeful" },
+    { key: "okay",     emoji: "😌", label: "Steady" },
+    { key: "anxious",  emoji: "😟", label: "Anxious" },
+    { key: "lonely",   emoji: "🫂", label: "Lonely" },
     { key: "drained",  emoji: "🪫", label: "Drained" },
+    { key: "hard",     emoji: "😔", label: "Hard day" },
   ];
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [showArrow, setShowArrow] = useState(true);
-
-  function handleScroll() {
-    const el = scrollRef.current;
-    if (!el) return;
-    setShowArrow(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
-  }
 
   return (
     <motion.div
       {...fadeIn}
       data-testid="card-checkin"
-      className="rounded-2xl border border-border/60 bg-card px-7 py-5 shadow-sm"
+      className="rounded-2xl border border-border/60 bg-card px-5 py-5 shadow-sm"
     >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
-          <SmilePlus className="w-3.5 h-3.5 text-rose-500" />
+      <div className="flex items-start gap-3 mb-3">
+        <ShortcutPathIcon variant="checkin" />
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
+            {isLateNight() ? "What's on your heart tonight?" : "How are you doing today, really?"}
+          </p>
+          <p className="text-[12px] text-muted-foreground/75 leading-snug mt-1">
+            Good days count too. Tap what fits — we&apos;ll shape Talk it through for you.
+          </p>
         </div>
-        <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
-          {isLateNight() ? "What's on your heart tonight?" : "How are you doing today, really?"}
-        </p>
       </div>
 
-      {/* Scrollable row with right-fade + arrow hint */}
-      <div className="relative">
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex gap-2 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-        >
-          {EMOTIONS.map(({ key, emoji, label }) => (
-            <button
-              key={key}
-              data-testid={`button-checkin-${key}`}
-              onClick={() => handleSelect(key)}
-              style={{ touchAction: "manipulation", minWidth: "72px", flexShrink: 0 }}
-              className={`flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 border transition-all ${
-                selected === key
-                  ? "bg-primary/10 border-primary/40 text-primary"
-                  : "bg-muted/40 border-border/50 text-foreground/70 hover:bg-muted/70 active:scale-95"
-              }`}
-            >
-              <span className="text-xl">{emoji}</span>
-              <span className="text-[11px] font-semibold leading-none">{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Right-side fade + chevron — hidden once fully scrolled */}
-        {showArrow && (
-          <div
-            className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-end pointer-events-none"
-            style={{ background: "linear-gradient(to right, transparent, var(--card) 75%)" }}
+      <div className="grid grid-cols-4 gap-2">
+        {EMOTIONS.map(({ key, emoji, label }) => (
+          <button
+            key={key}
+            type="button"
+            data-testid={`button-checkin-${key}`}
+            onClick={() => handleSelect(key)}
+            style={{ touchAction: "manipulation" }}
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 px-1 min-h-[72px] border transition-all ${
+              selected === key
+                ? "bg-primary/10 border-primary/40 text-primary"
+                : "bg-muted/40 border-border/50 text-foreground/70 hover:bg-muted/70 active:scale-95"
+            }`}
           >
-            <ChevronRight className="w-4 h-4 text-muted-foreground/60 mr-0.5" />
-          </div>
-        )}
+            <span className="text-xl leading-none">{emoji}</span>
+            <span className="text-[10px] font-semibold leading-tight text-center">{label}</span>
+          </button>
+        ))}
       </div>
 
       {selected && (
-        <p className="mt-2.5 text-[12px] text-muted-foreground text-center">
-          A reflection has been suggested above — feel free to edit it.
+        <p className="mt-3 text-[12px] text-muted-foreground/80 text-center leading-snug">
+          Opening Talk it through with words for how you feel — edit anything before you send.
         </p>
       )}
     </motion.div>

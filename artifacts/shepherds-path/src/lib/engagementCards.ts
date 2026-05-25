@@ -128,7 +128,15 @@ export function dismissTip(id: string): void {
 }
 
 // ── Daily check-in ────────────────────────────────────────────────────────────
-export type CheckinEmotion = "hard" | "anxious" | "okay" | "lonely" | "grateful" | "hopeful" | "drained";
+export type CheckinEmotion =
+  | "great"
+  | "grateful"
+  | "hopeful"
+  | "okay"
+  | "anxious"
+  | "lonely"
+  | "drained"
+  | "hard";
 
 const CHECKIN_PREFIX = "sp_checkin_";
 
@@ -143,13 +151,14 @@ export function saveCheckin(emotion: CheckinEmotion): void {
 }
 
 export const CHECKIN_PROMPTS: Record<CheckinEmotion, string> = {
-  hard: "Today feels heavy and I could use some encouragement from God's Word…",
-  anxious: "I'm feeling anxious right now and need God's peace to settle over me…",
-  okay: "I'm doing okay today and just want to spend a few quiet minutes with God…",
-  lonely: "I'm feeling lonely today and need a reminder that God is with me…",
+  great: "I'm having a good day and want to bring that joy to God — help me not take it for granted…",
   grateful: "I'm feeling grateful today and want to bring that thankfulness to God…",
   hopeful: "I'm feeling hopeful today and want to hold onto that with God's help…",
+  okay: "I'm doing okay today and just want to spend a few quiet minutes with God…",
+  anxious: "I'm feeling anxious right now and need God's peace to settle over me…",
+  lonely: "I'm feeling lonely today and need a reminder that God is with me…",
   drained: "I'm feeling drained and empty — I need God to renew my strength today…",
+  hard: "Today feels heavy and I could use some encouragement from God's Word…",
 };
 
 // ── Sunday summary ─────────────────────────────────────────────────────────────

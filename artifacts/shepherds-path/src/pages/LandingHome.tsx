@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, SlidersHorizontal, BookMarked, HandHeart } from "lucide-react";
+import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, SlidersHorizontal, BookMarked, HandHeart } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -41,6 +41,7 @@ import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { ThresholdHero } from "@/components/ThresholdHero";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathShortcuts } from "@/components/HomePathShortcuts";
+import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
@@ -105,9 +106,7 @@ function DevotionalCard() {
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
         <div className="relative z-10 flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-teal-100 to-emerald-50 shadow-sm shadow-teal-200/60">
-            <Sun className="w-5 h-5 text-teal-500" />
-          </div>
+          <ShortcutPathIcon variant="devotional" />
           <div className="flex-1 min-w-0 py-0.5">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-500 border border-teal-400/40 shadow-sm">
