@@ -1,7 +1,12 @@
-import { BookMarked, Compass, Gift, type LucideIcon } from "lucide-react";
+import { BookMarked, BookOpen, Compass, Gift, type LucideIcon } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
 
-export type ShortcutIconVariant = "guidance" | "journal" | "pathways" | "invite";
+export type ShortcutIconVariant =
+  | "guidance"
+  | "journal"
+  | "pathways"
+  | "invite"
+  | "deeper";
 
 const TILE: Record<
   ShortcutIconVariant,
@@ -39,6 +44,13 @@ const TILE: Record<
     shadow: "shadow-amber-500/35",
     bg: "bg-gradient-to-br from-amber-500 via-orange-500 to-amber-950",
     Icon: Gift,
+  },
+  deeper: {
+    halo: "bg-yellow-400/35",
+    ring: "ring-amber-200/50",
+    shadow: "shadow-amber-500/40",
+    bg: "bg-gradient-to-br from-amber-400 via-yellow-600 to-amber-950",
+    Icon: BookOpen,
   },
 };
 

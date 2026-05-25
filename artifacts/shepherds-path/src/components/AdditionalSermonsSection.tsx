@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Play, Share2, X, Loader2, BookOpen, ArrowRight, Headphones, Sparkles } from "lucide-react";
+import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { apiSessionExtras } from "@/lib/requestExtras";
@@ -379,16 +380,13 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
           className="w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-opacity active:opacity-70"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
         >
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.2)" }}
-            >
-              <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.75)" }} />
-            </div>
-            <div className="text-left">
+          <div className="flex items-center gap-3">
+            <ShortcutPathIcon variant="deeper" />
+            <div className="text-left min-w-0">
               <p className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.78)" }}>Go Deeper</p>
-              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.50)" }}>More voices · search any topic</p>
+              <p className="text-[11px] leading-snug" style={{ color: "rgba(255,255,255,0.50)" }}>
+                Short teaching clips for today&apos;s verse — or search your own topic
+              </p>
             </div>
           </div>
           <ChevronDown className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} />
@@ -412,7 +410,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
               className="w-full flex items-center justify-between px-1 pb-2.5 pt-0.5"
             >
               <div className="flex items-center gap-2">
-                <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.85)" }} />
+                <ShortcutPathIcon variant="deeper" />
                 <span className="text-[12px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Go Deeper
                 </span>
@@ -564,19 +562,25 @@ export function GoDeepCard() {
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(245,158,11,0.055)", border: "1px solid rgba(245,158,11,0.18)" }}>
-      <div className="px-4 pt-3.5 pb-3.5">
-        {/* Header */}
-        <div className="flex items-center gap-2.5 mb-3">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(245,158,11,0.14)", border: "1px solid rgba(245,158,11,0.25)" }}
-          >
-            <BookOpen className="w-3.5 h-3.5" style={{ color: "rgba(245,158,11,0.9)" }} />
-          </div>
-          <div>
-            <p className="text-[13px] font-semibold text-foreground">Go Deeper</p>
-            <p className="text-[11px] text-muted-foreground/65">Search any teaching, topic, or scripture</p>
+    <div
+      className="rounded-2xl overflow-hidden border border-amber-500/20 bg-gradient-to-br from-amber-500/8 via-card/40 to-card/30"
+      data-testid="card-go-deeper-home"
+    >
+      <div className="px-4 pt-4 pb-3.5">
+        <div className="flex items-start gap-3 mb-3">
+          <ShortcutPathIcon variant="deeper" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-600/80 dark:text-amber-300/70 mb-0.5">
+              Teaching clips
+            </p>
+            <p className="text-[15px] font-bold text-foreground leading-tight">Go Deeper</p>
+            <p className="text-[12px] text-muted-foreground/80 leading-snug mt-1">
+              When you want more than a moment — watch a short message from a trusted teacher on what
+              you&apos;re carrying, a verse, or a struggle.
+            </p>
+            <p className="text-[11px] text-muted-foreground/55 leading-snug mt-1.5">
+              We find 5–15 minute clips (not full sermons). No match? Talk it through opens with your topic.
+            </p>
           </div>
         </div>
 
@@ -588,7 +592,7 @@ export function GoDeepCard() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
-            placeholder="e.g. forgiveness, Psalm 23, grace under pressure…"
+            placeholder="Try: anxiety, Romans 8, parenting, grief…"
             data-testid="input-go-deeper-search"
             className="flex-1 rounded-xl border border-border/50 bg-background/50 px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-amber-400/40"
           />
