@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+
+/** Same mark as iOS App Store / About — signals “this is the app’s core feature” */
+const TALK_IT_THROUGH_ICON = "/app-icon.png";
 
 const PLACEHOLDERS = [
   "I can't quiet my mind tonight…",
@@ -40,8 +43,18 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
       data-testid="card-talk-it-through-hero"
     >
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-11 h-11 rounded-xl bg-primary/35 ring-1 ring-violet-300/25 flex items-center justify-center shrink-0">
-          <MessageCircle className="w-5 h-5 text-violet-100" strokeWidth={2} />
+        <div
+          className="shrink-0 rounded-[14px] overflow-hidden ring-1 ring-violet-300/30 shadow-lg shadow-primary/35"
+          style={{ width: 48, height: 48 }}
+        >
+          <img
+            src={TALK_IT_THROUGH_ICON}
+            alt=""
+            width={48}
+            height={48}
+            className="h-full w-full object-cover"
+            decoding="async"
+          />
         </div>
         <div className="min-w-0 pt-0.5">
           <div className="flex flex-wrap items-center gap-2 mb-1">
