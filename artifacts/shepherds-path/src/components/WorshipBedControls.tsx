@@ -1,4 +1,5 @@
 import { Music2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { WorshipBedVolumeSlider } from "@/components/WorshipBedVolumeSlider";
 import type { WorshipBedSource } from "@/lib/worshipBedSource";
 import { isMobileTouchDevice } from "@/lib/device";
@@ -58,22 +59,12 @@ export function WorshipBedControls({
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
+        <Switch
+          checked={enabled}
+          onCheckedChange={onEnabledChange}
           data-testid="toggle-worship-bed"
-          onClick={() => onEnabledChange(!enabled)}
-          className={`shrink-0 w-11 h-6 rounded-full transition-colors relative ${
-            enabled ? "bg-violet-600" : "bg-white/20"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-              enabled ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
-        </button>
+          className="shrink-0 data-[state=checked]:bg-violet-600 data-[state=unchecked]:bg-white/20"
+        />
       </div>
 
       {enabled && (
