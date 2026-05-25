@@ -43,6 +43,7 @@ import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathShortcuts } from "@/components/HomePathShortcuts";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
+import { BRAND_ICON } from "@/lib/brand";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -359,7 +360,7 @@ function ClosingManifesto() {
         <div className="flex items-center gap-3 mb-7 sm:mb-8 w-full max-w-xs sm:max-w-sm">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
           <img
-            src="/talk-it-through-icon.png"
+            src={BRAND_ICON}
             alt="Shepherd's Path"
             className="w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-[14px] sm:rounded-[18px] flex-shrink-0 object-cover"
             style={{ boxShadow: "0 0 24px rgba(122,1,141,0.5)" }}

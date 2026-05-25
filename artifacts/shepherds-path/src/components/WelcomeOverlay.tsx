@@ -3,6 +3,7 @@ import { ArrowRight, Sprout, Headphones, Loader2, Square, X } from "lucide-react
 import { useTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 import { useState } from "react";
+import { BRAND_ICON } from "@/lib/brand";
 
 const WELCOME_SCRIPT = `Hey… I'm really glad you're here.
 
@@ -95,7 +96,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           }}
         >
           <img
-            src="/sp-icon.png"
+            src={BRAND_ICON}
             alt="Shepherd's Path"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ShoppingBag, ExternalLink, Package } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
+import { BRAND_ICON } from "@/lib/brand";
 
 const STORE_URL = "https://my-store-10fb787.creator-spring.com/";
 
@@ -71,7 +72,7 @@ export default function StorePage() {
               className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-sm shadow-primary/20"
             >
               <img
-                src="/sp-icon.png"
+                src={BRAND_ICON}
                 alt="Shepherd's Path"
                 className="w-full h-full object-cover"
               />

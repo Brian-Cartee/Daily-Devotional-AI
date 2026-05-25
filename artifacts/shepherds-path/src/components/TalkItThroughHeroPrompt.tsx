@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowRight, Sparkles } from "lucide-react";
-
-/** iOS App Store mark (speech bubble + cross) — not web app-icon.png (cross-path crook) */
-const TALK_IT_THROUGH_ICON = "/talk-it-through-icon.png";
+import { BRAND_ICON } from "@/lib/brand";
 
 const PLACEHOLDERS = [
   "I can't quiet my mind tonight…",
@@ -48,7 +46,7 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
           style={{ width: 48, height: 48 }}
         >
           <img
-            src={TALK_IT_THROUGH_ICON}
+            src={BRAND_ICON}
             alt=""
             width={48}
             height={48}

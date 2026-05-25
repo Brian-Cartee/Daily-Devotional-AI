@@ -5,6 +5,7 @@ import { Loader2, CheckCircle2, AlertCircle, Zap } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { getSessionId } from "@/lib/session";
 import { checkProWithServer, linkProSessionForContinuity } from "@/lib/proStatus";
+import { BRAND_ICON } from "@/lib/brand";
 
 type Stage = "idle" | "loading" | "success" | "error" | "not-found";
 
@@ -67,7 +68,7 @@ export default function RestorePage() {
           {/* App icon */}
           <div className="flex justify-center mb-5">
             <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl ring-1 ring-white/10">
-              <img src="/sp-icon.png" alt="Shepherd's Path" className="w-full h-full object-cover" />
+              <img src={BRAND_ICON} alt="Shepherd's Path" className="w-full h-full object-cover" />
             </div>
           </div>
 

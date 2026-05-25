@@ -7,6 +7,7 @@ import {
   Sparkles, ArrowRight, Users, Share2, Check, Play, HandHeart, Loader2
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
+import { BRAND_ICON } from "@/lib/brand";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 18 },
@@ -91,7 +92,7 @@ export default function AboutPage() {
         <motion.div {...fadeUp(0)} className="relative z-10 flex flex-col items-center">
           {/* App icon */}
           <div className="mb-6" style={{ filter: "drop-shadow(0 8px 24px rgba(122,1,141,0.5))" }}>
-            <img src="/app-icon.png" alt="Shepherd's Path" className="w-24 h-24 rounded-[22px]" />
+            <img src={BRAND_ICON} alt="Shepherd's Path" className="w-24 h-24 rounded-[22px] object-cover" />
           </div>
 
           <p className="text-white/40 text-[11px] tracking-[0.22em] uppercase mb-3">Shepherd's Path</p>

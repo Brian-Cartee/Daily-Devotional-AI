@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { recordSplashShown, shouldShowSplash } from "@/lib/introState";
+import { BRAND_ICON } from "@/lib/brand";
 
 export { shouldShowSplash, recordSplashShown };
 
@@ -63,7 +64,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
               }}
             >
               <img
-                src="/sp-icon.png"
+                src={BRAND_ICON}
                 alt="Shepherd's Path"
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />

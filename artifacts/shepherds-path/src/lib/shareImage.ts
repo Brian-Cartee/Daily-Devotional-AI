@@ -1,4 +1,5 @@
 import { getRelationshipAge } from "./relationship";
+import { BRAND_ICON } from "./brand";
 
 // Curated pool of spiritual landscape fallback photos — used when AI art is unavailable.
 // All photos must be nature / light / sky — no people, babies, or pets.
@@ -734,7 +735,7 @@ async function drawLogoHeader(
 
   // Try to load the new app icon
   let logoDrawn = false;
-  for (const src of ["/app-icon.png", "/app-icon-192.png"]) {
+  for (const src of [BRAND_ICON, "/app-icon-192.png"]) {
     try {
       const logo = await loadImage(src);
       ctx.save();
@@ -940,7 +941,7 @@ async function drawCenteredLogoHeader(
   const RADIUS = 17;
 
   let logoDrawn = false;
-  for (const src of ["/app-icon.png", "/app-icon-192.png"]) {
+  for (const src of [BRAND_ICON, "/app-icon-192.png"]) {
     try {
       const logo = await loadImage(src);
       ctx.save();

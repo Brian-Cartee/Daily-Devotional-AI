@@ -22,6 +22,7 @@ import { AiPauseModal } from "@/components/AiPauseModal";
 import { ListenButton } from "@/components/ListenButton";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { useToast } from "@/hooks/use-toast";
+import { BRAND_ICON } from "@/lib/brand";
 import {
   buildTodayWalkMessage,
   FLOATER_PEEK_SESSION_KEY,
@@ -306,16 +307,11 @@ export function FloatingAskAI() {
             style={{ animation: "pathAiHalo 3.5s ease-in-out infinite" }}
             aria-hidden
           />
-          <span
-            className="relative flex h-full w-full items-center justify-center rounded-[14px] sm:rounded-2xl bg-gradient-to-br from-violet-600 via-primary to-violet-800 shadow-lg shadow-primary/40 ring-1 ring-white/15"
-            aria-hidden
-          >
-            <img
-              src="/sp-icon-nobg.png"
-              alt=""
-              className="h-7 w-7 sm:h-9 sm:w-9 object-contain drop-shadow-md"
-            />
-          </span>
+          <img
+            src={BRAND_ICON}
+            alt=""
+            className="relative h-full w-full rounded-[14px] sm:rounded-2xl object-cover shadow-lg shadow-primary/40 ring-1 ring-white/15"
+          />
         </motion.button>
       </div>
 
@@ -353,7 +349,7 @@ export function FloatingAskAI() {
               <div className="flex items-start justify-between gap-3 px-4 pt-1 pb-3 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
-                    <img src="/sp-icon.png" alt="" className="w-10 h-10 rounded-xl ring-2 ring-primary/30" />
+                    <img src={BRAND_ICON} alt="" className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/30" />
                     <Sparkles className="absolute -bottom-1 -right-1 w-3.5 h-3.5 text-amber-500" />
                   </div>
                   <div className="min-w-0">
