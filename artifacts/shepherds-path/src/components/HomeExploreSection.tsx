@@ -17,7 +17,7 @@ const EXPLORE_ITEMS = [
   { href: "/prayer-wall", Icon: HandHeart, label: "Prayer Wall", desc: "Lift someone up today", color: "text-sky-400", bg: "border-sky-500/20 bg-sky-500/6", testid: "explore-prayer-wall" },
   { href: "/reading-plans", Icon: Star, label: "Your Walk", desc: "A path through Scripture for you", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6", testid: "explore-reading-plans" },
   { href: "/study", Icon: Sparkles, label: "Explore Scripture", desc: "A question or passage on your mind", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-study" },
-  { href: "/read", Icon: BookOpen, label: "Read the Bible", desc: "KJV, WEB, and ASV", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-read" },
+  { href: "/read", Icon: BookOpen, label: "Read or listen to the Bible", desc: "KJV, WEB, and ASV — play any chapter", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-read" },
   { href: "/stories", Icon: Play, label: "Stories", desc: "Real testimonies of faith", color: "text-violet-400", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-stories" },
   { href: "/prayer-portrait", Icon: Heart, label: "Prayer Portrait", desc: "A prayer spoken over your life", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-prayer-portrait" },
   { href: "/display", Icon: Monitor, label: "Scripture on Your TV", desc: "Ambient devotional screen", color: "text-violet-400", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-display-mode" },
@@ -56,9 +56,10 @@ export function HomeExploreSection() {
         type="button"
         onClick={toggle}
         data-testid="toggle-home-explore"
-        className="w-full flex items-center justify-between gap-3 px-0.5 py-1 mb-2 text-left group"
+        aria-expanded={expanded}
+        className="relative w-full py-2 mb-2 pr-8 text-left group touch-manipulation"
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
           <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 shrink-0 group-hover:text-foreground/80 transition-colors">
             More paths
@@ -66,7 +67,8 @@ export function HomeExploreSection() {
           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
         </div>
         <ChevronDown
-          className={`w-4 h-4 text-muted-foreground/50 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 transition-transform ${expanded ? "rotate-180" : ""}`}
+          aria-hidden
         />
       </button>
 
