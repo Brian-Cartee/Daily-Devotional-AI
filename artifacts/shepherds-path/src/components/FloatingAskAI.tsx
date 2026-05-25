@@ -7,6 +7,7 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  HelpCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -583,9 +584,23 @@ export function FloatingAskAI() {
                     </button>
                   </div>
                   {!showingResponse && (
-                    <p className="text-center text-[10px] text-muted-foreground/70 mt-2 leading-relaxed">
-                      Path AI guides — God transforms. For full prayer chains, use Talk It Through.
-                    </p>
+                    <div className="mt-2 space-y-2">
+                      <p className="text-center text-[10px] text-muted-foreground/70 leading-relaxed">
+                        Path AI guides — God transforms. For full prayer chains, use Talk It Through.
+                      </p>
+                      <button
+                        type="button"
+                        data-testid="link-path-ai-how-to-use"
+                        onClick={() => {
+                          handleClose();
+                          navigate("/how-to-use");
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 text-[12px] font-semibold text-primary/90 hover:text-primary py-2 min-h-[40px] rounded-lg hover:bg-primary/5 transition-colors"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        How to use the app
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   Bell, BellOff, Mail, Check, Loader2, X, Sun, Moon,
-  Clock, AlarmClock, CalendarDays, ChevronDown, ShieldCheck
+  Clock, AlarmClock, CalendarDays, ChevronDown, ShieldCheck, HelpCircle, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
@@ -268,7 +269,9 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         <div className="px-5 pt-5 pb-4 flex items-center justify-between sticky top-0 bg-card border-b border-border/30 z-10">
           <div>
             <h2 className="text-[16px] font-bold text-foreground">Reminders</h2>
-            <p className="text-[12px] text-muted-foreground mt-0.5">Push notifications &amp; daily email</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">
+              Phone reminders · optional daily email
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
@@ -435,7 +438,9 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
                   <><Bell className="w-4 h-4 mr-2" /> Turn On Notifications</>
                 )}
               </Button>
-              <p className="text-center text-[11px] text-muted-foreground">Quiet. Respectful. Always on your terms.</p>
+              <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
+                Quiet. Respectful. Turn off anytime below or in your phone settings.
+              </p>
             </div>
           )}
 
@@ -444,6 +449,19 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
 
           {/* ── Email section ── */}
           <EmailSection />
+
+          <Link
+            href="/how-to-use"
+            onClick={onClose}
+            data-testid="link-reminders-how-to-use"
+            className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/30 px-4 py-3 min-h-[48px] hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <HelpCircle className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-[13px] font-semibold text-foreground">How to use Shepherd&apos;s Path</span>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </Link>
 
         </div>
       </motion.div>

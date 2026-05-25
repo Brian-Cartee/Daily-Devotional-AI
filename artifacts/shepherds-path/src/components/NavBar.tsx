@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Moon, Compass, NotebookPen, Bell, Search, Mail, Globe, Check, Heart, ShoppingBag, HelpCircle, MoreHorizontal, Home, Zap, Shield, Headphones } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Check, Heart, Home } from "lucide-react";
+import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -149,135 +150,25 @@ export function NavBar() {
           {/* Utility icons */}
           <div className="flex items-center gap-0.5 shrink-0">
 
-            {/* ⋯ More menu — Mail, Language, Help */}
-            <div className="relative" ref={moreRef}>
-              <button
-                onClick={() => { setMoreOpen((v) => !v); setNotifOpen(false); setEmailOpen(false); setLangOpen(false); }}
-                data-testid="button-more-menu"
-                aria-label="More options"
-                title="More"
-                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                  moreOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                }`}
-              >
-                <MoreHorizontal className="w-[18px] h-[18px]" />
-              </button>
-
-              <AnimatePresence>
-                {moreOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-11 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[180px]"
-                  >
-                    {/* Email subscribe */}
-                    <button
-                      onClick={() => { setMoreOpen(false); setEmailOpen((v) => !v); }}
-                      data-testid="button-subscribe-toggle"
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">Daily Verse Email</span>
-                    </button>
-
-                    {/* Language submenu trigger */}
-                    <button
-                      onClick={() => { setMoreOpen(false); setLangOpen((v) => !v); }}
-                      data-testid="button-language-toggle"
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">Language</span>
-                    </button>
-
-                    {/* Appearance — Night / Morning */}
-                    <div className="mx-3 my-1 h-px bg-border/50" />
-                    <button
-                      onClick={() => { setMoreOpen(false); toggleTheme(); }}
-                      data-testid="button-appearance-toggle"
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      {theme === "dark"
-                        ? <Sun className="w-4 h-4 text-amber-400" />
-                        : <Moon className="w-4 h-4 text-primary/70" />
-                      }
-                      <div className="flex-1 text-left">
-                        <span className="font-medium block leading-tight">Appearance</span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {theme === "dark" ? "Night · Switch to Morning" : "Morning · Switch to Night"}
-                        </span>
-                      </div>
-                    </button>
-
-                    {/* Guidance tone toggle */}
-                    <div className="mx-3 my-1 h-px bg-border/50" />
-                    <button
-                      onClick={toggleTone}
-                      data-testid="button-guidance-tone-toggle"
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <Shield className="w-4 h-4 text-primary/70" />
-                      <div className="flex-1 text-left">
-                        <span className="font-medium block leading-tight">Guidance Tone</span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {guidanceTone === "coach" ? "Direct & Accountable ✓" : "Gentle & Encouraging ✓"}
-                        </span>
-                      </div>
-                    </button>
-
-                    {/* Listen voice */}
-                    <button
-                      onClick={() => { toggleVoice(); setMoreOpen(false); }}
-                      data-testid="button-voice-toggle"
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <Headphones className="w-4 h-4 text-primary/70" />
-                      <div className="flex-1 text-left">
-                        <span className="font-medium block leading-tight">Listen Voice</span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {voicePref === "onyx" ? "Male · Switch to Female" : "Female · Switch to Male"}
-                        </span>
-                      </div>
-                    </button>
-
-                    <Link
-                      href="/store"
-                      data-testid="nav-store-more"
-                      onClick={() => setMoreOpen(false)}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <ShoppingBag className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">Merch Store</span>
-                    </Link>
-
-                    {/* How to use */}
-                    <Link
-                      href="/how-to-use"
-                      data-testid="nav-how-to-use"
-                      onClick={() => setMoreOpen(false)}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">How to Use</span>
-                    </Link>
-
-                    {/* Restore Pro access */}
-                    <div className="mx-3 my-1 h-px bg-border/50" />
-                    <Link
-                      href="/restore"
-                      data-testid="nav-restore-pro"
-                      onClick={() => setMoreOpen(false)}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      <Zap className="w-4 h-4 text-amber-500" />
-                      <span className="font-medium text-amber-600 dark:text-amber-400">Restore Pro Access</span>
-                    </Link>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <NavBarMoreMenu
+              menuRef={moreRef}
+              open={moreOpen}
+              onToggle={() => {
+                setMoreOpen((v) => !v);
+                setNotifOpen(false);
+                setEmailOpen(false);
+                setLangOpen(false);
+              }}
+              onClose={() => setMoreOpen(false)}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              guidanceTone={guidanceTone}
+              onToggleTone={toggleTone}
+              voicePref={voicePref}
+              onToggleVoice={toggleVoice}
+              onOpenEmail={() => setEmailOpen(true)}
+              onOpenLanguage={() => setLangOpen(true)}
+            />
 
             {/* Language picker — floats independently */}
             <AnimatePresence>
@@ -314,8 +205,9 @@ export function NavBar() {
               <button
                 onClick={() => { closeAll(); setNotifOpen(true); }}
                 data-testid="nav-notifications"
-                aria-label="Reminders"
+                aria-label="Reminders and notifications"
                 title="Reminders"
+                aria-expanded={notifOpen}
                 className="relative w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
               >
                 <Bell className="w-[18px] h-[18px]" />
