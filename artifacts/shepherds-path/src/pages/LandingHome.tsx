@@ -25,10 +25,13 @@ import {
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 import { GuidedWalkthrough, shouldShowWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
 import {
-  GreetingHeader, ReturningUserCard, ShareVerseButton, SundaySummaryCard,
-  FirstStepsCard, NotificationNudgeCard, LateNightBannerCard,
-  WalkMilestoneCard, TheReturnCard,
+  GreetingHeader, ShareVerseButton, SundaySummaryCard,
+  LateNightBannerCard,
 } from "@/components/EngagementCards";
+import { HomeEngagementStack } from "@/components/HomeEngagementStack";
+import { HomeYourPathCard } from "@/components/HomeYourPathCard";
+import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
+import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { HomeDailyTouchpoint } from "@/components/HomeDailyTouchpoint";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
@@ -238,7 +241,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is there a mobile app?",
-    a: 'Yes. Shepherd\'s Path is available on iOS through the App Store. An Android version is coming soon. You can also add it to your home screen from your browser — tap the share button and choose "Add to Home Screen" — for a native app feel.',
+    a: 'Yes — search "Shepherd\'s Path" on the App Store (iOS). Android is coming soon. In Safari you can also use Share → Add to Home Screen for a quick shortcut to the same experience.',
   },
   {
     q: "Where do I begin?",
@@ -480,8 +483,21 @@ export default function LandingHome() {
   };
 
   const streak = streakData?.currentStreak ?? 0;
+  const visitCount = streakData?.visitDates?.length ?? 0;
+  const daysWithApp = getRelationshipAge();
   const isPro = isProVerifiedLocally();
-  const showProNudge = !!rhythm && streak >= 3 && !isPro && !proNudgeHidden && !demo?.config.isDemo;
+  const showYourPath = shouldShowYourPathCard(daysWithApp, visitCount);
+  const engagementBusy =
+    hasActiveHomeEngagementSlot(daysWithApp) || showYourPath || showWalkthrough;
+  const showProNudge =
+    !!rhythm &&
+    streak >= 5 &&
+    daysWithApp >= 7 &&
+    !isPro &&
+    !proNudgeHidden &&
+    !demo?.config.isDemo &&
+    !engagementBusy &&
+    !isLateNight();
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -629,15 +645,12 @@ export default function LandingHome() {
             )}
           </AnimatePresence>
 
+          {showYourPath && (
+            <HomeYourPathCard daysWithApp={daysWithApp} devotionalVisitCount={visitCount} />
+          )}
+
           <LateNightBannerCard />
-          <WalkMilestoneCard daysWithApp={getRelationshipAge()} />
-          <ReturningUserCard />
-          <NotificationNudgeCard />
-          {!isLateNight() && <TheReturnCard />}
-          {!isLateNight() && <HomeHeartLink />}
-
-          <FirstStepsCard daysWithApp={getRelationshipAge()} />
-
+          {!showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {

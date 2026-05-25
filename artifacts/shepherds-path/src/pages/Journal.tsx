@@ -26,6 +26,7 @@ import { FREE_ARCHIVE_VISIBLE_DAYS } from "@/lib/journalArchive";
 import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
 import { printJournalEntries } from "@/lib/journalPrint";
 import type { JournalEntry, MemoryVerse } from "@shared/schema";
+import { markJournalPathVisited } from "@/lib/homePathProgress";
 
 const SERMON_USAGE_KEY = "sp_sermon_recordings";
 
@@ -997,6 +998,10 @@ export default function Journal() {
     const label = TABS.find(t => t.key === activeTab)?.label ?? activeTab;
     saveBookmark("journal", { tab: activeTab, label });
   }, [activeTab]);
+
+  useEffect(() => {
+    markJournalPathVisited();
+  }, []);
 
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
