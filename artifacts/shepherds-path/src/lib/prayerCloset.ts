@@ -29,7 +29,7 @@ export const CLOSET_BACKGROUNDS: {
   position?: string;
 }[] = [
   { id: "daily-art", label: "Today's art", src: "" },
-  { id: "path-road", label: "The path", src: "/hero-landing.webp", position: "center 42%" },
+  { id: "path-road", label: "The path on the hill", src: "/hero-landing.webp", position: "center 42%" },
   { id: "mountain-lake", label: "Still waters", src: "/hero-prayer-wall-lake.jpg", position: "center 40%" },
   { id: "misty-forest", label: "Quiet forest", src: "/daily-art/natural-mountain.jpg" },
   { id: "sunset-hill", label: "Golden hour", src: "/daily-art/natural-sunset.jpg" },

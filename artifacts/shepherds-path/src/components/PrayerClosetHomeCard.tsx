@@ -34,7 +34,7 @@ export function PrayerClosetHomeCard() {
             <p className="text-[16px] font-bold text-white leading-tight">{title}</p>
             <p className="text-[12px] text-white/55 leading-snug mt-0.5 flex items-center gap-1.5">
               <Music2 className="w-3 h-3 shrink-0 opacity-70" />
-              Optional worship bed · verse on the wall · journal
+              A sacred room · hill on the wall · vision board · bean bag
             </p>
           </div>
           <ArrowRight className="w-5 h-5 text-violet-300/60 group-hover:text-violet-200 shrink-0" />

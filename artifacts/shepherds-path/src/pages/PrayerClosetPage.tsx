@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
+import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import { WorshipBedControls } from "@/components/WorshipBedControls";
 import { useDailyArt } from "@/hooks/use-daily-art";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -97,8 +98,12 @@ export default function PrayerClosetPage() {
     };
   }, [settings.pinnedText, settings.pinnedReference, dailyVerse]);
 
-  const dim = 1 - settings.candleLevel * 0.45;
   const title = closetDisplayName(settings);
+  const wallBg = CLOSET_BACKGROUNDS.find((b) => b.id === settings.backgroundId);
+  const dailyArtThumb =
+    settings.backgroundId === "daily-art" && dailyArtUrl
+      ? dailyArtUrl.replace(/\?.*$/, "")
+      : dailyArtUrl?.replace(/\?.*$/, "") ?? null;
 
   const patchSettings = (patch: Partial<ClosetSettings>) => {
     const next = saveClosetSettings(patch);
@@ -139,94 +144,53 @@ export default function PrayerClosetPage() {
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-[#09031e] pb-32 pt-14">
-        <div className="relative min-h-[52vh] sm:min-h-[58vh] overflow-hidden">
-          <img
-            src={backgroundSrc}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              objectPosition:
-                CLOSET_BACKGROUNDS.find((b) => b.id === settings.backgroundId)?.position ??
-                "center",
-              filter: `brightness(${dim})`,
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(to bottom, rgba(8,4,18,0.35) 0%, rgba(8,4,18,0.15) 40%, rgba(9,3,30,0.92) 78%, #09031e 100%)",
-            }}
-          />
-          <div className="absolute top-3 left-3 z-20">
+      <main className="min-h-screen bg-[#07050f] pb-32 pt-14">
+        <div className="relative max-w-lg mx-auto px-3 pt-2">
+          <div className="absolute top-0 left-0 z-30">
             <BackButton href="/" testId="button-back-prayer-closet" />
           </div>
           <button
             type="button"
             onClick={() => setShowSetup((v) => !v)}
             data-testid="button-closet-settings"
-            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-black/45 border border-white/15 flex items-center justify-center text-white/80"
+            className="absolute top-0 right-0 z-30 w-10 h-10 rounded-full bg-black/50 border border-white/12 flex items-center justify-center text-white/80 backdrop-blur-sm"
             aria-label="Closet settings"
           >
             <Settings2 className="w-4 h-4" />
           </button>
 
-          <div className="relative z-10 flex flex-col items-center justify-end min-h-[52vh] sm:min-h-[58vh] px-5 pb-8 text-center">
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-[10px] font-bold uppercase tracking-[0.22em] text-violet-200/70 mb-2"
-            >
-              Your prayer closet
-            </motion.p>
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="manifesto-line text-white text-[1.75rem] sm:text-[2rem] max-w-[18ch] mb-4"
-            >
-              {title}
-            </motion.h1>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.12 }}
-              className="max-w-md rounded-2xl border border-white/15 bg-black/35 backdrop-blur-md px-5 py-4"
-              data-testid="closet-wall-verse"
-            >
-              <p className="path-reminder-quote text-[17px] sm:text-[18px] text-white/90 leading-relaxed">
-                &ldquo;{wallVerse.text.length > 220 ? `${wallVerse.text.slice(0, 220)}…` : wallVerse.text}&rdquo;
-              </p>
-              <p className="text-[13px] font-semibold text-violet-200/85 mt-2">— {wallVerse.reference}</p>
-              {dailyVerse && !settings.pinnedText && (
-                <button
-                  type="button"
-                  onClick={pinTodayVerse}
-                  data-testid="button-pin-verse-closet"
-                  className="mt-3 text-[12px] font-medium text-violet-300/90 hover:text-white"
-                >
-                  Pin today&apos;s verse to this wall
-                </button>
-              )}
-            </motion.div>
-            <div className="flex items-center gap-2 mt-5 text-amber-300/80">
-              <Flame className="w-4 h-4" style={{ opacity: 0.4 + settings.candleLevel * 0.6 }} />
-              <input
-                type="range"
-                min={15}
-                max={100}
-                value={Math.round(settings.candleLevel * 100)}
-                data-testid="closet-candle"
-                onChange={(e) => patchSettings({ candleLevel: Number(e.target.value) / 100 })}
-                className="w-28 accent-amber-500/80"
-                aria-label="Candle light"
-              />
-            </div>
-          </div>
+          <PrayerClosetRoom
+            title={title}
+            wallArtSrc={backgroundSrc}
+            wallArtPosition={wallBg?.position}
+            wallVerse={wallVerse}
+            candleLevel={settings.candleLevel}
+            draftNote={note}
+            lastPrayerSnippet={
+              lastPrayer?.content
+                ? lastPrayer.content.length > 80
+                  ? `${lastPrayer.content.slice(0, 80)}…`
+                  : lastPrayer.content
+                : null
+            }
+            dailyArtThumb={settings.backgroundId !== "daily-art" ? dailyArtThumb : null}
+            canPinVerse={!!(dailyVerse && !settings.pinnedText)}
+            onPinVerse={pinTodayVerse}
+            onCandleChange={(candleLevel) => patchSettings({ candleLevel })}
+          />
+
+          <p
+            className="path-reminder-quote text-center text-[15px] text-white/70 leading-relaxed mt-4 px-2"
+            data-testid="closet-wall-verse"
+          >
+            &ldquo;{wallVerse.text.length > 160 ? `${wallVerse.text.slice(0, 160)}…` : wallVerse.text}&rdquo;
+            <span className="block text-[12px] text-violet-200/70 mt-1.5 not-italic font-semibold">
+              — {wallVerse.reference}
+            </span>
+          </p>
         </div>
 
-        <div className="max-w-xl mx-auto px-3 sm:px-4 -mt-2 space-y-4">
+        <div className="max-w-xl mx-auto px-3 sm:px-4 mt-5 space-y-4">
           {showSetup && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -248,7 +212,7 @@ export default function PrayerClosetPage() {
               </div>
               <div>
                 <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Background
+                  Framed wall art
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {CLOSET_BACKGROUNDS.map((bg) => (
