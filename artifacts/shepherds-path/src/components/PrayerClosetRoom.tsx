@@ -37,14 +37,14 @@ export function PrayerClosetRoom({
 
   return (
     <div
-      className="relative mx-auto max-w-lg w-full"
+      className="relative mx-auto max-w-xl w-full"
       data-testid="prayer-closet-room"
       style={{ perspective: "900px" }}
     >
       <div
-        className="relative rounded-[1.25rem] overflow-hidden border border-violet-500/20 shadow-2xl shadow-black/60"
+        className="relative rounded-b-[1.25rem] overflow-hidden border-x border-b border-violet-500/20 shadow-2xl shadow-black/60"
         style={{
-          minHeight: "min(72vw, 420px)",
+          minHeight: "min(78vw, 480px)",
           background: "linear-gradient(180deg, #1a1228 0%, #0f0a18 100%)",
         }}
       >
@@ -218,6 +218,19 @@ export function PrayerClosetRoom({
             background:
               "linear-gradient(to top, #08060e 0%, #12101a 40%, transparent 100%)",
           }}
+        />
+        {/* Prayer rug — nod to real closet floors */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 bottom-[10%] z-[5] pointer-events-none rounded-lg opacity-90"
+          style={{
+            width: "min(62%, 220px)",
+            height: "min(18%, 56px)",
+            background:
+              "linear-gradient(135deg, rgba(127,29,29,0.55) 0%, rgba(153,27,27,0.45) 50%, rgba(120,53,15,0.4) 100%)",
+            boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.15)",
+            borderRadius: "4px",
+          }}
+          aria-hidden
         />
         <div
           className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-[70%] h-8 rounded-[100%] z-[4] pointer-events-none opacity-40"

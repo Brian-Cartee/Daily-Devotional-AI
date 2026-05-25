@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
+import { ClosetDoorwayFrame } from "@/components/ClosetDoorwayFrame";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import {
   WorshipBedControls,
@@ -173,25 +174,27 @@ export default function PrayerClosetPage() {
             <Settings2 className="w-4 h-4" />
           </button>
 
-          <PrayerClosetRoom
-            title={title}
-            wallArtSrc={backgroundSrc}
-            wallArtPosition={wallBg?.position}
-            wallVerse={wallVerse}
-            candleLevel={settings.candleLevel}
-            draftNote={note}
-            lastPrayerSnippet={
-              lastPrayer?.content
-                ? lastPrayer.content.length > 80
-                  ? `${lastPrayer.content.slice(0, 80)}…`
-                  : lastPrayer.content
-                : null
-            }
-            dailyArtThumb={settings.backgroundId !== "daily-art" ? dailyArtThumb : null}
-            canPinVerse={!!(dailyVerse && !settings.pinnedText)}
-            onPinVerse={pinTodayVerse}
-            onCandleChange={(candleLevel) => patchSettings({ candleLevel })}
-          />
+          <ClosetDoorwayFrame>
+            <PrayerClosetRoom
+              title={title}
+              wallArtSrc={backgroundSrc}
+              wallArtPosition={wallBg?.position}
+              wallVerse={wallVerse}
+              candleLevel={settings.candleLevel}
+              draftNote={note}
+              lastPrayerSnippet={
+                lastPrayer?.content
+                  ? lastPrayer.content.length > 80
+                    ? `${lastPrayer.content.slice(0, 80)}…`
+                    : lastPrayer.content
+                  : null
+              }
+              dailyArtThumb={settings.backgroundId !== "daily-art" ? dailyArtThumb : null}
+              canPinVerse={!!(dailyVerse && !settings.pinnedText)}
+              onPinVerse={pinTodayVerse}
+              onCandleChange={(candleLevel) => patchSettings({ candleLevel })}
+            />
+          </ClosetDoorwayFrame>
 
           <p
             className="path-reminder-quote text-center text-[15px] text-white/70 leading-relaxed mt-4 px-2"
