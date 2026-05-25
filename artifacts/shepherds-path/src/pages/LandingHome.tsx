@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -247,36 +247,52 @@ const FAQ_ITEMS = [
 
 const FAQ_INITIAL_COUNT = 5;
 
-function FaqItem({ item, index, open, setOpen }: { item: { q: string; a: string }; index: number; open: number | null; setOpen: (i: number | null) => void }) {
+/** Shared section label for home footer blocks — readable on phone and desktop */
+function HomeSectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="border border-border/40 rounded-2xl overflow-hidden bg-card/40">
+    <div className="flex items-center gap-3 mb-5 sm:mb-6">
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <p className="text-xs sm:text-[13px] font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-foreground/70 shrink-0 text-center max-w-[min(100%,14rem)] leading-snug">
+        {children}
+      </p>
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/50 to-transparent" />
+    </div>
+  );
+}
+
+function FaqItem({ item, index, open, setOpen }: { item: { q: string; a: string }; index: number; open: number | null; setOpen: (i: number | null) => void }) {
+  const isOpen = open === index;
+  return (
+    <div className="border border-border/50 rounded-2xl overflow-hidden bg-card/50">
       <button
+        type="button"
         data-testid={`faq-toggle-${index}`}
-        onClick={() => setOpen(open === index ? null : index)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+        onClick={() => setOpen(isOpen ? null : index)}
+        aria-expanded={isOpen}
+        className="w-full flex items-center justify-between gap-4 px-4 sm:px-5 py-4 sm:py-[1.125rem] min-h-[52px] text-left touch-manipulation"
       >
-        <span className="text-[13px] font-semibold text-foreground leading-snug">{item.q}</span>
+        <span className="text-[15px] sm:text-base font-semibold text-foreground leading-snug pr-1">{item.q}</span>
         <motion.div
-          animate={{ rotate: open === index ? 180 : 0 }}
+          animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
           className="shrink-0"
         >
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          <ChevronDown className="w-5 h-5 text-muted-foreground" aria-hidden />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
-        {open === index && (
+        {isOpen && (
           <motion.div
             key="answer"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.22, ease: "easeInOut" }}
-            className="overflow-hidden"
+            className="overflow-hidden border-t border-border/40"
           >
             <p
               data-testid={`faq-answer-${index}`}
-              className="px-4 pb-4 text-[13px] text-foreground/80 leading-relaxed"
+              className="px-4 sm:px-5 pt-3 pb-5 text-[14px] sm:text-[15px] text-foreground/85 leading-relaxed"
             >
               {item.a}
             </p>
@@ -293,13 +309,9 @@ function FaqSection() {
   const remaining = FAQ_ITEMS.length - FAQ_INITIAL_COUNT;
 
   return (
-    <div className="px-0 mb-6">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
-        <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/80 shrink-0">Questions people ask</p>
-        <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border/60 to-transparent" />
-      </div>
-      <div className="space-y-1">
+    <div className="px-0 mb-8 sm:mb-10 max-w-xl mx-auto w-full">
+      <HomeSectionLabel>Questions people ask</HomeSectionLabel>
+      <div className="space-y-2.5 sm:space-y-3">
         {FAQ_ITEMS.slice(0, FAQ_INITIAL_COUNT).map((item, i) => (
           <FaqItem key={i} item={item} index={i} open={open} setOpen={setOpen} />
         ))}
@@ -320,11 +332,12 @@ function FaqSection() {
 
       {!showAll && (
         <button
+          type="button"
           data-testid="button-faq-show-more"
           onClick={() => setShowAll(true)}
-          className="mt-3 w-full py-3 rounded-2xl border border-border/40 bg-card/30 text-[13px] text-muted-foreground/80 hover:text-foreground hover:bg-card/60 transition-colors flex items-center justify-center gap-1.5"
+          className="mt-4 w-full min-h-[48px] py-3.5 rounded-2xl border border-border/50 bg-card/40 text-[14px] sm:text-[15px] font-medium text-foreground/75 hover:text-foreground hover:bg-card/70 transition-colors flex items-center justify-center gap-2 touch-manipulation"
         >
-          <ChevronDown className="w-3.5 h-3.5" />
+          <ChevronDown className="w-4 h-4" aria-hidden />
           {remaining} more questions
         </button>
       )}
@@ -334,8 +347,7 @@ function FaqSection() {
 
 function ClosingManifesto() {
   return (
-    <div className="relative w-full mt-10 mb-2">
-      {/* Atmospheric violet bloom — bleeds freely, no clip */}
+    <div className="relative w-full mt-10 sm:mt-12 mb-2 max-w-xl mx-auto">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -343,35 +355,32 @@ function ClosingManifesto() {
         }}
       />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 py-8">
-        {/* App icon — brand seal, larger now that it anchors the whole closing */}
-        <div className="flex items-center gap-3 mb-7">
+      <div className="relative z-10 flex flex-col items-center text-center px-5 sm:px-8 py-8 sm:py-10">
+        <div className="flex items-center gap-3 mb-7 sm:mb-8 w-full max-w-xs sm:max-w-sm">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
           <img
-            src="/sp-icon.png"
+            src="/talk-it-through-icon.png"
             alt="Shepherd's Path"
-            className="w-16 h-16 rounded-[14px] flex-shrink-0"
-            style={{ boxShadow: "0 0 20px rgba(122,1,141,0.55)" }}
+            className="w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-[14px] sm:rounded-[18px] flex-shrink-0 object-cover"
+            style={{ boxShadow: "0 0 24px rgba(122,1,141,0.5)" }}
           />
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
         </div>
 
-        {/* The three lines — ascending scale, each one landing harder */}
         <p
-          className="text-[26px] leading-snug mb-3 text-white/90"
+          className="text-[1.625rem] sm:text-[26px] leading-snug mb-3 text-white/90"
           style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
         >
           The path is here.
         </p>
         <p
-          className="text-[30px] leading-snug mb-4 text-white/95"
+          className="text-[1.875rem] sm:text-[30px] leading-snug mb-4 text-white/95"
           style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500 }}
         >
           Start where you are.
         </p>
         <p
-          className="text-[40px] leading-tight text-white"
+          className="text-[2.125rem] sm:text-[40px] leading-tight text-white max-w-[16ch] sm:max-w-none"
           style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 500, textShadow: "0 2px 24px rgba(139,92,246,0.65)" }}
         >
           Walking it is up to you.
@@ -544,7 +553,7 @@ export default function LandingHome() {
       <ThresholdHero />
 
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-3 pb-20 relative z-10 -mt-4">
+      <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 pb-28 sm:pb-24 relative z-10 -mt-4">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
@@ -804,10 +813,11 @@ export default function LandingHome() {
             type="button"
             onClick={() => setShowDepthExtras((v) => !v)}
             data-testid="toggle-depth-extras"
-            className="mt-8 w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            aria-expanded={showDepthExtras}
+            className="mt-8 w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 min-h-[52px] rounded-2xl border border-border/50 bg-card/40 text-[15px] sm:text-base font-semibold text-foreground/85 hover:text-foreground hover:bg-card/60 transition-colors touch-manipulation"
           >
-            <span>{showDepthExtras ? "Hide" : "About Scripture & our story"}</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showDepthExtras ? "rotate-180" : ""}`} />
+            <span>{showDepthExtras ? "Hide Scripture & our story" : "About Scripture & our story"}</span>
+            <ChevronDown className={`w-5 h-5 shrink-0 text-muted-foreground transition-transform ${showDepthExtras ? "rotate-180" : ""}`} aria-hidden />
           </button>
 
           {showDepthExtras && (
@@ -1007,12 +1017,8 @@ export default function LandingHome() {
           )}
 
           {/* ── Daily Scripture Sign-Up ── */}
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-4 px-0.5">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
-              <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 shrink-0">Start your morning with Scripture</p>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
-            </div>
+          <div className="mt-10 sm:mt-12 max-w-xl mx-auto w-full">
+            <HomeSectionLabel>Start your morning with Scripture</HomeSectionLabel>
             <InlineSubscribeToggle />
           </div>
 
@@ -1021,17 +1027,19 @@ export default function LandingHome() {
         </motion.div>
 
 
-        {/* Footer */}
+        {/* Footer — readable column width on wide screens */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-8 pb-2"
+          className="mt-10 sm:mt-12 pb-2 max-w-xl mx-auto w-full"
         >
-          {/* Brand pills — smaller so 2 fit per row on mobile */}
-          <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-2 mb-4">
+          <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-2.5 mb-6 sm:mb-8">
             {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
-              <span key={tag} className="text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border border-border/60 bg-card/60 text-foreground/75">
+              <span
+                key={tag}
+                className="text-xs sm:text-[13px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full border border-border/60 bg-card/60 text-foreground/80"
+              >
                 {tag}
               </span>
             ))}
@@ -1039,58 +1047,66 @@ export default function LandingHome() {
 
           <FaqSection />
 
-          {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-4" />
+          <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mb-6 sm:mb-7" />
 
-          {/* Links — 8 key destinations, 2-col */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs text-foreground/65 text-center mb-3 px-4">
-            <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="link-pricing-footer">
-              Plans & Pricing
-            </Link>
-            <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about-footer">
-              About
-            </Link>
-            <Link href="/salvation" className="hover:text-foreground transition-colors font-semibold text-rose-500/80 dark:text-rose-400/80" data-testid="link-salvation-footer">
-              Beginning with Jesus
-            </Link>
-            <Link href="/greatest-gift" className="hover:text-foreground transition-colors font-semibold text-amber-600/80 dark:text-amber-400/80" data-testid="link-greatest-gift-footer">
-              The Greatest Gift
-            </Link>
-            <Link href="/prayer-wall" className="hover:text-foreground transition-colors" data-testid="link-prayer-wall-footer">
-              Prayer Wall
-            </Link>
-            <Link href="/how-to-use" className="hover:text-foreground transition-colors" data-testid="link-how-to-use-footer">
-              How to Use
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy-footer">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms-footer">
-              Terms
-            </Link>
-            <Link href="/display" className="hover:text-foreground transition-colors col-span-2" data-testid="link-display-footer">
+          <nav
+            aria-label="Site links"
+            className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-[15px] text-foreground/75 text-center mb-5 px-2"
+          >
+            {(
+              [
+                ["/pricing", "Plans & Pricing", "link-pricing-footer", ""],
+                ["/about", "About", "link-about-footer", ""],
+                ["/salvation", "Beginning with Jesus", "link-salvation-footer", "font-semibold text-rose-500/90 dark:text-rose-400/90"],
+                ["/greatest-gift", "The Greatest Gift", "link-greatest-gift-footer", "font-semibold text-amber-600/90 dark:text-amber-400/90"],
+                ["/prayer-wall", "Prayer Wall", "link-prayer-wall-footer", ""],
+                ["/how-to-use", "How to Use", "link-how-to-use-footer", ""],
+                ["/privacy", "Privacy Policy", "link-privacy-footer", ""],
+                ["/terms", "Terms", "link-terms-footer", ""],
+              ] as const
+            ).map(([href, label, testId, accent]) => (
+              <Link
+                key={href}
+                href={href}
+                data-testid={testId}
+                className={`min-h-[44px] flex items-center justify-center py-2 hover:text-foreground transition-colors touch-manipulation ${accent}`}
+              >
+                {label}
+              </Link>
+            ))}
+            <Link
+              href="/display"
+              data-testid="link-display-footer"
+              className="col-span-2 min-h-[44px] flex items-center justify-center py-2 hover:text-foreground transition-colors touch-manipulation"
+            >
               Scripture Display Mode
             </Link>
-          </div>
+          </nav>
 
-          {/* Contact + Share — inline row */}
-          <div className="flex items-center justify-center gap-4 flex-wrap text-xs text-foreground/55 mb-1">
-            <Link href="/support" className="hover:text-foreground transition-colors" data-testid="link-support-footer">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-5 text-sm sm:text-[15px] text-foreground/65 mb-2 px-2">
+            <Link
+              href="/support"
+              data-testid="link-support-footer"
+              className="min-h-[44px] flex items-center justify-center hover:text-foreground transition-colors touch-manipulation"
+            >
               Contact Support
             </Link>
-            <span className="text-border/60">·</span>
-            <Link href="/feedback" className="hover:text-foreground transition-colors font-medium" data-testid="link-feedback-footer">
+            <Link
+              href="/feedback"
+              data-testid="link-feedback-footer"
+              className="min-h-[44px] flex items-center justify-center font-medium hover:text-foreground transition-colors touch-manipulation"
+            >
               Share Feedback
             </Link>
-            <span className="text-border/60">·</span>
             <button
+              type="button"
               onClick={handleShareApp}
               data-testid="btn-share-app-footer"
-              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              className="min-h-[44px] flex items-center justify-center gap-1.5 hover:text-foreground transition-colors touch-manipulation"
             >
               {shared
-                ? <><Check className="w-3 h-3 text-green-500" /> Copied!</>
-                : <><Share2 className="w-3 h-3" /> Share App</>
+                ? <><Check className="w-4 h-4 text-green-500" aria-hidden /> Copied!</>
+                : <><Share2 className="w-4 h-4" aria-hidden /> Share App</>
               }
             </button>
           </div>
@@ -1098,29 +1114,27 @@ export default function LandingHome() {
           {/* ── Closing sequence: Manifesto → Scripture → Download ── */}
           <ClosingManifesto />
 
-          {/* Psalm 119:105 — bridge between manifesto and CTA */}
-          <div className="flex flex-col items-center gap-1.5 px-6 -mt-2 mb-8">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/40">A reminder for the path</p>
+          <div className="flex flex-col items-center gap-2 px-5 sm:px-8 -mt-2 mb-8 sm:mb-10 max-w-lg mx-auto">
+            <p className="text-xs sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground/55">A reminder for the path</p>
             <p
-              className="text-[15px] text-foreground/65 italic text-center leading-relaxed"
+              className="text-[16px] sm:text-[17px] text-foreground/75 italic text-center leading-relaxed"
               style={{ fontFamily: "var(--font-serif)" }}
             >
               "Your word is a lamp to my feet and a light to my path."
             </p>
-            <p className="text-[12px] text-foreground/40 tracking-wide">— Psalm 119:105</p>
+            <p className="text-[13px] sm:text-sm text-foreground/50 tracking-wide">— Psalm 119:105</p>
           </div>
 
-          {/* Download buttons — clean, no card border */}
-          <div className="flex flex-col items-center gap-3 px-4 mb-2">
-            <p className="text-[12px] text-foreground/50 tracking-wide">If you want it with you —</p>
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col items-center gap-4 px-4 mb-2 max-w-md mx-auto w-full">
+            <p className="text-sm sm:text-[15px] text-foreground/55 tracking-wide text-center">If you want it with you —</p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               {!isAndroid() && (
                 <a
                   href="https://apps.apple.com/app/shepherds-path/id6760953522"
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="btn-appstore-cta"
-                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl bg-foreground text-background font-semibold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
+                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3.5 min-h-[48px] rounded-xl bg-foreground text-background font-semibold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
                 >
                   <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
@@ -1134,7 +1148,7 @@ export default function LandingHome() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="btn-googleplay-cta"
-                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3 rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[14px] hover:bg-primary/15 active:scale-[0.98] transition-all"
+                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3.5 min-h-[48px] rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[15px] hover:bg-primary/15 active:scale-[0.98] transition-all"
                 >
                   <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
                     <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
@@ -1145,14 +1159,13 @@ export default function LandingHome() {
             </div>
           </div>
 
-          {/* Copyright */}
-          <div className="flex flex-col items-center gap-1 mt-6 pb-4">
-            <p className="text-[12px] text-foreground/40 text-center">
+          <div className="flex flex-col items-center gap-1.5 mt-8 pb-6">
+            <p className="text-[13px] sm:text-sm text-foreground/45 text-center leading-relaxed">
               © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
             </p>
             <a
               href="https://www.shepherdspathai.com"
-              className="text-[11px] text-foreground/30 hover:text-foreground/55 transition-colors tracking-wide"
+              className="text-[13px] text-foreground/40 hover:text-foreground/60 transition-colors tracking-wide py-1"
             >
               shepherdspathai.com
             </a>

@@ -288,37 +288,78 @@ export function InlineSubscribeToggle() {
 
   if (emailSubscribed) {
     return (
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-        className="relative rounded-2xl border border-green-500/20 bg-green-500/5 px-5 py-4 flex items-center gap-3"
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative rounded-2xl border border-green-500/25 bg-green-500/8 px-5 sm:px-6 py-5 flex items-start sm:items-center gap-4"
       >
-        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
-          <Check className="w-4 h-4 text-green-600 dark:text-green-400" strokeWidth={2.5} />
+        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
+          <Check className="w-5 h-5 text-green-600 dark:text-green-400" strokeWidth={2.5} />
         </div>
-        <div>
-          <p className="text-[13px] font-semibold text-foreground leading-tight">You're receiving daily Scripture by email</p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">A quiet word each morning — straight to your inbox.</p>
+        <div className="min-w-0">
+          <p className="text-[15px] sm:text-base font-semibold text-foreground leading-snug">
+            You&apos;re receiving daily Scripture by email
+          </p>
+          <p className="text-[14px] sm:text-[15px] text-muted-foreground mt-1 leading-relaxed">
+            A quiet word each morning — straight to your inbox.
+          </p>
         </div>
       </motion.div>
     );
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
       className="relative rounded-2xl border border-primary/20 bg-primary/4 overflow-hidden"
     >
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
-      <div className="px-5 pt-6 pb-6">
-        <div className="mb-4">
-          <p className="text-[14px] font-bold text-foreground leading-tight">Receive the daily verse</p>
-          <p className="text-[12px] text-muted-foreground mt-1">A quiet reminder each morning.</p>
+      <div className="px-5 sm:px-6 pt-6 pb-6 sm:pb-7">
+        <div className="mb-5">
+          <p className="text-[16px] sm:text-[17px] font-bold text-foreground leading-snug">Receive the daily verse</p>
+          <p className="text-[14px] sm:text-[15px] text-muted-foreground mt-1.5 leading-relaxed">
+            A quiet reminder each morning — free, one email.
+          </p>
         </div>
 
-        <form onSubmit={handleEmailSubmit} className="space-y-3">
-          <Input data-testid="input-toggle-name" type="text" placeholder="Your first name (optional)" value={name} onChange={e => setName(e.target.value)} className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
-          <Input data-testid="input-toggle-email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="text-sm rounded-xl bg-background" disabled={emailStatus === "loading"} />
-          {emailStatus === "error" && <p className="text-xs text-destructive">{emailMsg}</p>}
-          <Button data-testid="button-toggle-email-submit" type="submit" disabled={!email.trim() || emailStatus === "loading"} className="w-full rounded-xl font-semibold text-sm">
-            {emailStatus === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-3.5 h-3.5 mr-1.5" />Send it to me</>}
+        <form onSubmit={handleEmailSubmit} className="space-y-3.5">
+          <Input
+            data-testid="input-toggle-name"
+            type="text"
+            placeholder="Your first name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
+            disabled={emailStatus === "loading"}
+          />
+          <Input
+            data-testid="input-toggle-email"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
+            disabled={emailStatus === "loading"}
+          />
+          {emailStatus === "error" && <p className="text-sm text-destructive">{emailMsg}</p>}
+          <Button
+            data-testid="button-toggle-email-submit"
+            type="submit"
+            disabled={!email.trim() || emailStatus === "loading"}
+            className="w-full min-h-[48px] rounded-xl font-semibold text-[15px]"
+          >
+            {emailStatus === "loading" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Mail className="w-4 h-4 mr-1.5" />
+                Send it to me
+              </>
+            )}
           </Button>
         </form>
       </div>
