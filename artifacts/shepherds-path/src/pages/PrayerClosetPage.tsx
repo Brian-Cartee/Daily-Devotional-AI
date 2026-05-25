@@ -5,10 +5,10 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpen,
-  Flame,
   Heart,
   Settings2,
   Sparkles,
+  X,
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
@@ -160,19 +160,29 @@ export default function PrayerClosetPage() {
     <>
       <NavBar />
       <main className="min-h-screen bg-[#07050f] pb-32 pt-14">
-        <div className="relative max-w-lg mx-auto px-3 pt-2">
-          <div className="absolute top-0 left-0 z-30">
-            <BackButton href="/" testId="button-back-prayer-closet" />
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowSetup((v) => !v)}
-            data-testid="button-closet-settings"
-            className="absolute top-0 right-0 z-30 w-10 h-10 rounded-full bg-black/50 border border-white/12 flex items-center justify-center text-white/80 backdrop-blur-sm"
-            aria-label="Closet settings"
+        <div className="relative max-w-xl mx-auto px-3">
+          {/* Fixed controls — always tappable above room art */}
+          <div
+            className="sticky top-14 z-50 flex items-center justify-between gap-2 mb-2 py-1"
+            data-testid="closet-page-header"
           >
-            <Settings2 className="w-4 h-4" />
-          </button>
+            <BackButton
+              href="/"
+              testId="button-back-prayer-closet"
+              className="relative z-50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSetup(true)}
+              data-testid="button-closet-settings"
+              aria-label="Closet settings"
+              aria-expanded={showSetup}
+              className="relative z-50 flex items-center justify-center w-11 h-11 rounded-full bg-black/55 border border-white/15 text-white/90 backdrop-blur-sm active:scale-95"
+              style={{ touchAction: "manipulation" }}
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
+          </div>
 
           <ClosetDoorwayFrame>
             <PrayerClosetRoom
@@ -209,47 +219,85 @@ export default function PrayerClosetPage() {
 
         <div className="max-w-xl mx-auto px-3 sm:px-4 mt-5 space-y-4">
           {showSetup && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="rounded-2xl border border-border/50 bg-card/80 p-4 space-y-4"
-              data-testid="closet-setup-panel"
+            <div
+              className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center p-3 sm:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="closet-setup-title"
+              data-testid="closet-setup-overlay"
             >
-              <div>
-                <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">
-                  Name your closet
-                </label>
-                <input
-                  value={settings.name}
-                  onChange={(e) => patchSettings({ name: e.target.value })}
-                  placeholder="e.g. Brian"
-                  data-testid="input-closet-name"
-                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[15px]"
-                />
-              </div>
-              <div>
-                <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Framed wall art
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {CLOSET_BACKGROUNDS.map((bg) => (
-                    <button
-                      key={bg.id}
-                      type="button"
-                      data-testid={`closet-bg-${bg.id}`}
-                      onClick={() => patchSettings({ backgroundId: bg.id as ClosetBackgroundId })}
-                      className={`rounded-xl border px-2 py-2 text-[12px] font-medium transition-colors ${
-                        settings.backgroundId === bg.id
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border/60 text-muted-foreground hover:border-primary/30"
-                      }`}
-                    >
-                      {bg.label}
-                    </button>
-                  ))}
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                aria-label="Close settings"
+                onClick={() => setShowSetup(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative z-10 w-full max-w-md max-h-[min(85vh,520px)] overflow-y-auto rounded-2xl border border-border/50 bg-card shadow-2xl p-4 space-y-4"
+                data-testid="closet-setup-panel"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    id="closet-setup-title"
+                    className="text-[14px] font-bold text-foreground"
+                  >
+                    Closet settings
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowSetup(false)}
+                    data-testid="button-close-closet-setup"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-muted/80 text-foreground"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
-            </motion.div>
+                <div>
+                  <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    Name your closet
+                  </label>
+                  <input
+                    value={settings.name}
+                    onChange={(e) => patchSettings({ name: e.target.value })}
+                    placeholder="e.g. Brian"
+                    data-testid="input-closet-name"
+                    className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[15px]"
+                  />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    Framed wall art
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {CLOSET_BACKGROUNDS.map((bg) => (
+                      <button
+                        key={bg.id}
+                        type="button"
+                        data-testid={`closet-bg-${bg.id}`}
+                        onClick={() => patchSettings({ backgroundId: bg.id as ClosetBackgroundId })}
+                        className={`rounded-xl border px-2 py-2 text-[12px] font-medium transition-colors ${
+                          settings.backgroundId === bg.id
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border/60 text-muted-foreground hover:border-primary/30"
+                        }`}
+                      >
+                        {bg.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSetup(false)}
+                  className="w-full rounded-xl py-2.5 text-[14px] font-semibold text-white bg-primary"
+                >
+                  Done
+                </button>
+              </motion.div>
+            </div>
           )}
 
           <WorshipBedControls

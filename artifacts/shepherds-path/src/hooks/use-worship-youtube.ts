@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getWorshipYoutubeMix } from "@/lib/worshipYouTubeMixes";
+import { isMobileTouchDevice } from "@/lib/device";
 import { loadYouTubeIframeApi, type YtPlayerInstance } from "@/lib/youtubeIframeApi";
 
 type YTPlayerOptions = {
@@ -80,9 +81,11 @@ export function useWorshipYoutube(
             onReady: (event) => {
               if (cancelled) return;
               playerRef.current = event.target;
-              const vol = Math.round(Math.min(100, Math.max(0, volumeRef.current * 100)));
-              event.target.setVolume(vol);
-              event.target.unMute();
+              if (!isMobileTouchDevice()) {
+                const vol = Math.round(Math.min(100, Math.max(0, volumeRef.current * 100)));
+                event.target.setVolume(vol);
+                event.target.unMute();
+              }
               try {
                 event.target.playVideo();
               } catch {
@@ -109,7 +112,7 @@ export function useWorshipYoutube(
   }, [enabled, mixId, containerId, destroyPlayer]);
 
   useEffect(() => {
-    if (!enabled || !playerReady || !playerRef.current) return;
+    if (!enabled || !playerReady || !playerRef.current || isMobileTouchDevice()) return;
     const vol = Math.round(Math.min(100, Math.max(0, volume * 100)));
     playerRef.current.setVolume(vol);
     if (vol === 0) playerRef.current.mute();

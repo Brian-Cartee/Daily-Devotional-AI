@@ -1,5 +1,7 @@
-import { Music2, Volume2, VolumeX } from "lucide-react";
+import { Music2 } from "lucide-react";
+import { WorshipBedVolumeSlider } from "@/components/WorshipBedVolumeSlider";
 import type { WorshipBedSource } from "@/lib/worshipBedSource";
+import { isMobileTouchDevice } from "@/lib/device";
 import { WORSHIP_TRACKS, type WorshipTrackId } from "@/lib/worshipTracks";
 import {
   WORSHIP_YOUTUBE_MIXES,
@@ -158,23 +160,11 @@ export function WorshipBedControls({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            {volume < 0.05 ? (
-              <VolumeX className="w-4 h-4 text-white/40 shrink-0" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-white/50 shrink-0" />
-            )}
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(volume * 100)}
-              data-testid="worship-bed-volume"
-              onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
-              className="flex-1 accent-violet-500"
-              aria-label="Worship bed volume"
-            />
-          </div>
+          <WorshipBedVolumeSlider
+            volume={volume}
+            onVolumeChange={onVolumeChange}
+            youtubeOnMobile={youtubeOnMobile}
+          />
           {!isYoutube && usingGenerated && (
             <p className="text-[10px] text-white/40 mt-2 leading-snug">
               Playing a quiet stillness tone — add MP3s in public/worship/ for full tracks (see README).

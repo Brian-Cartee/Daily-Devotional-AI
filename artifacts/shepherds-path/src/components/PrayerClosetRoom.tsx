@@ -283,16 +283,22 @@ export function PrayerClosetRoom({
         </div>
 
         {/* Candle control — minimal, inside room floor line */}
-        <div className="absolute inset-x-6 bottom-3 z-20 flex items-center justify-center gap-2">
+        <div className="absolute inset-x-4 bottom-3 z-20 flex items-center justify-center gap-2 min-h-[36px] pointer-events-auto">
           <Flame className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
           <input
             type="range"
             min={10}
             max={100}
+            step={1}
             value={Math.round(candleLevel * 100)}
             data-testid="closet-candle"
-            onChange={(e) => onCandleChange(Number(e.target.value) / 100)}
-            className="flex-1 max-w-[160px] accent-amber-500/90 h-1"
+            onInput={(e) => onCandleChange(Number(e.currentTarget.value) / 100)}
+            onChange={(e) => onCandleChange(Number(e.currentTarget.value) / 100)}
+            className="worship-volume-slider flex-1 max-w-[180px]"
+            style={{
+              touchAction: "pan-x",
+              ["--worship-vol" as string]: `${Math.round(candleLevel * 100)}%`,
+            }}
             aria-label="Candle light"
           />
         </div>

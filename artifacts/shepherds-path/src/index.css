@@ -262,3 +262,60 @@ button, a, input, textarea, select, [role="button"] {
   background: hsl(249 58% 40% / 0.18);
   color: hsl(249 58% 30%);
 }
+
+/* Worship bed volume — reliable thumb drag on iOS Safari */
+.worship-volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.worship-volume-slider:disabled {
+  cursor: not-allowed;
+}
+
+.worship-volume-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgb(139 92 246) 0%,
+    rgb(139 92 246) var(--worship-vol, 50%),
+    rgba(255 255 255 / 0.22) var(--worship-vol, 50%),
+    rgba(255 255 255 / 0.22) 100%
+  );
+}
+
+.worship-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  border: 2px solid rgb(139 92 246);
+}
+
+.worship-volume-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255 255 255 / 0.22);
+}
+
+.worship-volume-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(139 92 246);
+}
+
+.worship-volume-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgb(139 92 246);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
