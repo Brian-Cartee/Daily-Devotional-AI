@@ -105,24 +105,39 @@ export default function TriviaPage() {
   async function startCategory(cat: typeof CATEGORIES[0]) {
     setCategory(cat);
     setPhase("loading");
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 45000);
     try {
       const diffParam = difficulty === "challenging" ? "?difficulty=challenging" : "";
       const [qRes, playRes] = await Promise.all([
-        fetch(`/api/trivia/questions/${cat.id}${diffParam}`),
+        fetch(`/api/trivia/questions/${cat.id}${diffParam}`, { signal: controller.signal }),
         fetch("/api/trivia/play", { method: "POST" }),
       ]);
+      window.clearTimeout(timeout);
+      if (!qRes.ok) {
+        const errBody = await qRes.json().catch(() => ({}));
+        throw new Error((errBody as { error?: string }).error || `Server error (${qRes.status})`);
+      }
       const data = await qRes.json();
       const playData = await playRes.json().catch(() => ({ count: 0 }));
       if (playData.count) setPlayCount(playData.count);
-      if (!data.questions?.length) throw new Error("No questions");
+      if (!data.questions?.length) throw new Error("No questions returned");
       setQuestions(isVeteran ? data.questions : data.questions.slice(0, 5));
       setCurrentIdx(0);
       setAnswers([]);
       setSelectedAnswer(null);
       setRevealed(false);
       setPhase("playing");
-    } catch {
-      toast({ title: "Could not load questions", description: "Please try again.", variant: "destructive" });
+    } catch (err) {
+      window.clearTimeout(timeout);
+      const aborted = err instanceof Error && err.name === "AbortError";
+      toast({
+        title: "Could not load questions",
+        description: aborted
+          ? "This took too long. Check your connection and try again."
+          : err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
       setPhase("select");
     }
   }

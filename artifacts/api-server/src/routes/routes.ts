@@ -27,6 +27,8 @@ import { scheduleDailyEmails } from "../emailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
+import { getTriviaSeed } from "../triviaSeed";
+import type { TriviaQuestion } from "@workspace/db";
 import {
   PASTOR_TIER_AI_GUIDE,
   resolvePastorYouTubeVideo,
@@ -3927,6 +3929,33 @@ ${historyNote}`;
     "books-authors": "The books of the Bible — who wrote them, when, and in what context",
   };
 
+  const pickTriviaQuestions = (pool: TriviaQuestion[], count = 10) => {
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  };
+
+  const refreshTriviaQuestionsInBackground = async (
+    storageKey: string,
+    category: string,
+    isHard: boolean,
+  ) => {
+    const prompt = TRIVIA_PROMPTS[category];
+    const systemPrompt = isHard
+      ? `You are a challenging Bible trivia question writer for a Christian faith app. Generate exactly 30 HARD multiple choice trivia questions about ${prompt}. Rules: questions must require deep knowledge — specific chapter and verse numbers, exact counts (e.g. "how many"), lesser-known names, precise sequences of events, detailed theological distinctions; 4 plausible answer options each; one clearly correct answer; include a brief teaching explanation (1-2 sentences) with a verse reference. Do NOT include easy or recall-level questions. Return ONLY a valid JSON array of 30 objects, no markdown, no commentary. Each object: {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"...","verseRef":"..."}`
+      : `You are a Bible trivia question writer for a Christian faith app. Generate exactly 30 multiple choice trivia questions about ${prompt}. Rules: questions must be factual/narrative (who, what, where, when), 4 distinct answer options each, one clearly correct answer, include a brief friendly explanation (1-2 sentences) that teaches something, add a verse reference when applicable, mix easy and medium difficulty. Return ONLY a valid JSON array of 30 objects, no markdown, no commentary. Each object: {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"...","verseRef":"..."}`;
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: systemPrompt }],
+      temperature: 0.7,
+      max_tokens: 4000,
+    });
+    const raw = completion.choices[0]?.message?.content?.trim() || "[]";
+    const parsed = JSON.parse(raw.replace(/^```json\n?/, "").replace(/\n?```$/, "")) as TriviaQuestion[];
+    if (Array.isArray(parsed) && parsed.length >= 10) {
+      await storage.saveTriviaQuestions(storageKey, parsed);
+    }
+  };
+
   app.get("/api/trivia/questions/:category", async (req, res) => {
     const { category } = req.params;
     if (!TRIVIA_CATEGORIES[category]) {
@@ -3935,28 +3964,38 @@ ${historyNote}`;
     const isHard = req.query.difficulty === "challenging";
     const storageKey = isHard ? `${category}_challenging` : category;
     try {
-      let allQuestions = await storage.getTriviaQuestions(storageKey);
-      if (!allQuestions || allQuestions.length < 10) {
-        const prompt = TRIVIA_PROMPTS[category];
-        const systemPrompt = isHard
-          ? `You are a challenging Bible trivia question writer for a Christian faith app. Generate exactly 30 HARD multiple choice trivia questions about ${prompt}. Rules: questions must require deep knowledge — specific chapter and verse numbers, exact counts (e.g. "how many"), lesser-known names, precise sequences of events, detailed theological distinctions; 4 plausible answer options each; one clearly correct answer; include a brief teaching explanation (1-2 sentences) with a verse reference. Do NOT include easy or recall-level questions. Return ONLY a valid JSON array of 30 objects, no markdown, no commentary. Each object: {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"...","verseRef":"..."}`
-          : `You are a Bible trivia question writer for a Christian faith app. Generate exactly 30 multiple choice trivia questions about ${prompt}. Rules: questions must be factual/narrative (who, what, where, when), 4 distinct answer options each, one clearly correct answer, include a brief friendly explanation (1-2 sentences) that teaches something, add a verse reference when applicable, mix easy and medium difficulty. Return ONLY a valid JSON array of 30 objects, no markdown, no commentary. Each object: {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"...","verseRef":"..."}`;
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [{ role: "system", content: systemPrompt }],
-          temperature: 0.7,
-          max_tokens: 4000,
+      const cached = await storage.getTriviaQuestions(storageKey);
+      if (cached && cached.length >= 10) {
+        return res.json({
+          questions: pickTriviaQuestions(cached),
+          categoryLabel: TRIVIA_CATEGORIES[category],
         });
-        const raw = completion.choices[0]?.message?.content?.trim() || "[]";
-        const parsed = JSON.parse(raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
-        allQuestions = parsed;
-        await storage.saveTriviaQuestions(storageKey, allQuestions!);
       }
-      const shuffled = [...allQuestions!].sort(() => Math.random() - 0.5);
-      const ten = shuffled.slice(0, 10);
-      res.json({ questions: ten, categoryLabel: TRIVIA_CATEGORIES[category] });
+
+      const seed = getTriviaSeed(storageKey, category);
+      if (seed.length < 5) {
+        return res.status(500).json({ error: "Could not load questions" });
+      }
+
+      res.json({
+        questions: pickTriviaQuestions(seed),
+        categoryLabel: TRIVIA_CATEGORIES[category],
+      });
+
+      if (!cached || cached.length < 10) {
+        void refreshTriviaQuestionsInBackground(storageKey, category, isHard).catch((err) =>
+          console.error("[Trivia] Background refresh error:", err),
+        );
+      }
     } catch (err) {
-      console.error("[Trivia] Question generation error:", err);
+      console.error("[Trivia] Question load error:", err);
+      const seed = getTriviaSeed(storageKey, category);
+      if (seed.length >= 5) {
+        return res.json({
+          questions: pickTriviaQuestions(seed),
+          categoryLabel: TRIVIA_CATEGORIES[category],
+        });
+      }
       res.status(500).json({ error: "Could not load questions" });
     }
   });
