@@ -27,6 +27,11 @@ import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { createShareImage } from "@/lib/shareImage";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
+import { GuidedPathwaysSection } from "@/components/GuidedPathwaysSection";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { isProVerifiedLocally } from "@/lib/proStatus";
+import { canAccessJourney, getJourneyById, proPathways } from "@/lib/journeyCatalog";
+import { apiSessionExtras } from "@/lib/requestExtras";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
 import { BiblePassageText } from "@/components/BiblePassageText";
@@ -458,9 +463,20 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   );
 }
 
-function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (journey: Journey) => void; onLifeSeasonSelect: (journey: Journey) => void; resumeBar?: React.ReactNode }) {
+function JourneyHub({
+  onSelect,
+  onLifeSeasonSelect,
+  onLockedSelect,
+  resumeBar,
+}: {
+  onSelect: (journey: Journey) => void;
+  onLifeSeasonSelect: (journey: Journey) => void;
+  onLockedSelect: () => void;
+  resumeBar?: React.ReactNode;
+}) {
   const [, navigate] = useLocation();
   const search = useSearch();
+  const isPro = isProVerifiedLocally();
   const [lifePhase, setLifePhase] = useState<"idle" | "input" | "loading">("idle");
   const [lifeSituation, setLifeSituation] = useState(() => {
     const params = new URLSearchParams(search);
@@ -484,10 +500,14 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
         } catch { /* fall through to fetch */ }
       }
       setLifePhase("loading");
+      if (!isPro) {
+        setLifePhase("input");
+        return;
+      }
       fetch("/api/journey/life-season", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation: situation.trim() }),
+        body: JSON.stringify({ situation: situation.trim(), ...apiSessionExtras() }),
       })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(journey => onLifeSeasonSelect(journey as Journey))
@@ -497,13 +517,17 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
 
   const handleGenerateLifeJourney = async () => {
     if (!lifeSituation.trim()) return;
+    if (!isPro) {
+      onLockedSelect();
+      return;
+    }
     setLifePhase("loading");
     setLifeError(null);
     try {
       const res = await fetch("/api/journey/life-season", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation: lifeSituation.trim() }),
+        body: JSON.stringify({ situation: lifeSituation.trim(), ...apiSessionExtras() }),
       });
       if (!res.ok) throw new Error("Generation failed");
       const journey = await res.json();
@@ -541,7 +565,14 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
           </motion.div>
         </div>
 
-        {/* Life Season Journey */}
+        <GuidedPathwaysSection
+          pathways={proPathways()}
+          isPro={isPro}
+          onSelect={onSelect}
+          onLockedSelect={onLockedSelect}
+        />
+
+        {/* Life Season Journey — Pro: AI-shaped from your words */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -549,11 +580,27 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
           className="mb-7"
         >
           <div className="flex items-center gap-2 mb-3 px-0.5">
-            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap flex-shrink-0">Start with what you're walking through</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap flex-shrink-0">
+              {isPro ? "Start with what you're walking through" : "Journey from your exact words"}
+            </span>
             <div className="flex-1 h-px bg-border/60" />
           </div>
 
-          {lifePhase === "idle" ? (
+          {!isPro && lifePhase === "idle" ? (
+            <button
+              type="button"
+              data-testid="btn-life-season-pro"
+              onClick={onLockedSelect}
+              className="w-full text-left rounded-2xl border border-violet-200/50 dark:border-violet-800/40 bg-card/80 p-4 hover:bg-card transition-colors"
+            >
+              <p className="text-[14px] font-semibold text-foreground leading-snug">
+                After Talk It Through, Pro can shape a journey from your exact situation.
+              </p>
+              <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
+                Free users still have every core Bible journey below. Guided Pathways above cover grief, anxiety, and more.
+              </p>
+            </button>
+          ) : lifePhase === "idle" ? (
             <button
               data-testid="btn-life-season-start"
               onClick={() => setLifePhase("input")}
@@ -634,7 +681,7 @@ function JourneyHub({ onSelect, onLifeSeasonSelect, resumeBar }: { onSelect: (jo
                           initial={{ opacity: 0, y: 14 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: (ci * 0.1) + i * 0.07 }}
-                          onClick={() => onSelect(journey)}
+                          onClick={() => (canAccessJourney(journey, isPro) ? onSelect(journey) : onLockedSelect())}
                           data-testid={`journey-card-${journey.id}`}
                           className={`w-full text-left rounded-2xl relative overflow-hidden border ${journey.borderColor} bg-card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
                         >
@@ -803,19 +850,39 @@ export default function UnderstandBible() {
   const params = new URLSearchParams(search);
   const journeyId = params.get("j");
   const situation = params.get("situation") ?? "";
-  const selectedJourney = journeyId ? (ALL_JOURNEYS.find(j => j.id === journeyId) ?? null) : null;
+  const selectedJourney = journeyId ? (getJourneyById(journeyId) ?? null) : null;
   const [lifeSeasonJourney, setLifeSeasonJourney] = useState<Journey | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const activeJourney = selectedJourney ?? lifeSeasonJourney;
 
   useEffect(() => {
     if (selectedJourney) {
+      if (!canAccessJourney(selectedJourney)) {
+        setShowUpgrade(true);
+        navigate("/understand#pathways");
+        return;
+      }
       saveBookmark("journey", { journeyId: selectedJourney.id, label: selectedJourney.title });
     }
   }, [selectedJourney?.id]);
 
-  const handleSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); navigate(`/understand?j=${journey.id}`); };
+  useEffect(() => {
+    if (window.location.hash === "#pathways") {
+      const el = document.getElementById("pathways");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
+  const handleSelect = (journey: Journey) => {
+    if (!canAccessJourney(journey)) {
+      setShowUpgrade(true);
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
+    navigate(`/understand?j=${journey.id}`);
+  };
   const handleLifeSeasonSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); setLifeSeasonJourney(journey); };
   const handleBack = () => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -842,6 +909,7 @@ export default function UnderstandBible() {
             <JourneyHub
               onSelect={handleSelect}
               onLifeSeasonSelect={handleLifeSeasonSelect}
+              onLockedSelect={() => setShowUpgrade(true)}
               resumeBar={
                 <AnimatePresence>
                   {!resumeDismissed && (() => {
@@ -861,6 +929,7 @@ export default function UnderstandBible() {
           </motion.div>
         )}
       </AnimatePresence>
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
     </>
   );
 }

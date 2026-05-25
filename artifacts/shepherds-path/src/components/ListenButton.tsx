@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Volume2, VolumeX, RotateCcw, Play } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useTTS } from "@/hooks/use-tts";
+import { useTTS, type ListenScope } from "@/hooks/use-tts";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 
 /** Returns true only if the user has explicitly chosen a voice. */
@@ -29,6 +29,8 @@ interface ListenButtonProps {
   label?: string;
   size?: "sm" | "md";
   vertical?: boolean;
+  /** verse = today's short scripture (always free); snippet = reflection/prayer chunks */
+  scope?: ListenScope;
 }
 
 export function ListenButton({
@@ -38,6 +40,7 @@ export function ListenButton({
   label = "Listen",
   size = "sm",
   vertical = false,
+  scope = "snippet",
 }: ListenButtonProps) {
   const { toggle, resumeAfterBlock, playing, loading, loadingLong, error, blocked } = useTTS();
   const [showPicker, setShowPicker] = useState(false);
@@ -52,8 +55,9 @@ export function ListenButton({
       resumeAfterBlock();
       return;
     }
+    const opts = { scope };
     if (playing || loading) {
-      toggle(text, voice ?? getUserVoice());
+      toggle(text, voice ?? getUserVoice(), opts);
       return;
     }
     // First-time: show voice picker so they choose before hearing anything
@@ -61,13 +65,13 @@ export function ListenButton({
       setShowPicker(true);
       return;
     }
-    toggle(text, voice ?? getUserVoice());
+    toggle(text, voice ?? getUserVoice(), opts);
   };
 
   const pickVoice = (picked: "onyx" | "shimmer") => {
     setUserVoice(picked);
     setShowPicker(false);
-    toggle(text, voice ?? picked);
+    toggle(text, voice ?? picked, { scope });
   };
 
   const displayLabel = () => {

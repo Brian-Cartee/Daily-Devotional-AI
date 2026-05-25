@@ -1,4 +1,11 @@
 import { db } from "./db";
+import {
+  parseVisitPayload,
+  serializeVisitPayload,
+  freezeAvailable,
+  computeStreakAfterGap,
+  currentMonthKey,
+} from "./streakLogic";
 import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback } from "@workspace/db";
 import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr, count, gte } from "drizzle-orm";
 
@@ -17,9 +24,30 @@ export interface IStorage {
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
-  recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean; visitDates: string[] }>;
-  getStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; visitDates: string[] } | null>;
+  recordStreak(
+    sessionId: string,
+    isPro?: boolean,
+  ): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    isNewDay: boolean;
+    visitDates: string[];
+    freezeApplied?: boolean;
+    freezeAvailable?: boolean;
+  }>;
+  getStreak(
+    sessionId: string,
+    isPro?: boolean,
+  ): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    visitDates: string[];
+    freezeAvailable?: boolean;
+    freezeUsedThisMonth?: boolean;
+  } | null>;
   getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined>;
+  getAllActiveProSubscribers(): Promise<ProSubscriber[]>;
+  linkProEmailToSession(email: string, sessionId: string): Promise<void>;
   getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined>;
   upsertProSubscriber(data: { email: string; stripeCustomerId: string; stripeSubscriptionId: string; plan: string; status: string }): Promise<ProSubscriber>;
   updateProSubscriberStatus(stripeSubscriptionId: string, status: string): Promise<void>;
@@ -41,7 +69,17 @@ export interface IStorage {
   getVerseArt(verseDate: string): Promise<VerseArt | undefined>;
   saveVerseArt(verseDate: string, verseReference: string, imageUrl: string): Promise<VerseArt>;
   getOrCreateReferralCode(sessionId: string): Promise<ReferralCode>;
-  recordReferral(code: string, referredSessionId: string): Promise<{ success: boolean; referrerSessionId: string | null }>;
+  recordReferral(
+    code: string,
+    referredSessionId: string,
+  ): Promise<{
+    success: boolean;
+    referrerSessionId: string | null;
+    referredProUntil: string | null;
+    referrerProUntil: string | null;
+    referralCount: number;
+    alreadyRecorded: boolean;
+  }>;
   getReferralStats(sessionId: string): Promise<{ code: string; referralCount: number; proExpiresAt: Date | null } | null>;
   hasReferralPro(sessionId: string): Promise<boolean>;
   getMemoryVerses(sessionId: string): Promise<MemoryVerse[]>;
@@ -163,47 +201,118 @@ export class DatabaseStorage implements IStorage {
     return updated.filter(d => d >= cutoff).slice(-14);
   }
 
-  async recordStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; isNewDay: boolean; visitDates: string[] }> {
+  async recordStreak(
+    sessionId: string,
+    isPro = false,
+  ): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    isNewDay: boolean;
+    visitDates: string[];
+    freezeApplied?: boolean;
+    freezeAvailable?: boolean;
+  }> {
     const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
     const [existing] = await db.select().from(streaks).where(eq(streaks.sessionId, sessionId));
 
     if (!existing) {
       const visitDates = [today];
-      await db.insert(streaks).values({ sessionId, currentStreak: 1, longestStreak: 1, lastVisitDate: today, visitDates: JSON.stringify(visitDates) });
-      return { currentStreak: 1, longestStreak: 1, isNewDay: true, visitDates };
+      await db.insert(streaks).values({
+        sessionId,
+        currentStreak: 1,
+        longestStreak: 1,
+        lastVisitDate: today,
+        visitDates: serializeVisitPayload(visitDates, null),
+      });
+      return {
+        currentStreak: 1,
+        longestStreak: 1,
+        isNewDay: true,
+        visitDates,
+        freezeApplied: false,
+        freezeAvailable: isPro,
+      };
     }
 
-    const visitDates = this._addVisitDate(JSON.parse(existing.visitDates || "[]"), today);
+    const { dates: priorDates, freezeMonth } = parseVisitPayload(existing.visitDates);
+    const visitDates = this._addVisitDate(priorDates, today);
 
     if (existing.lastVisitDate === today) {
-      return { currentStreak: existing.currentStreak, longestStreak: existing.longestStreak, isNewDay: false, visitDates };
+      return {
+        currentStreak: existing.currentStreak,
+        longestStreak: existing.longestStreak,
+        isNewDay: false,
+        visitDates,
+        freezeApplied: false,
+        freezeAvailable: freezeAvailable(isPro, freezeMonth, today),
+      };
     }
 
-    const newStreak = existing.lastVisitDate === yesterday ? existing.currentStreak + 1 : 1;
+    const { newStreak, freezeApplied, newFreezeMonth } = computeStreakAfterGap({
+      lastVisitDate: existing.lastVisitDate,
+      currentStreak: existing.currentStreak,
+      freezeMonth,
+      isPro,
+      today,
+    });
     const newLongest = Math.max(newStreak, existing.longestStreak);
 
     await db.update(streaks).set({
       currentStreak: newStreak,
       longestStreak: newLongest,
       lastVisitDate: today,
-      visitDates: JSON.stringify(visitDates),
+      visitDates: serializeVisitPayload(visitDates, newFreezeMonth),
     }).where(eq(streaks.sessionId, sessionId));
 
-    return { currentStreak: newStreak, longestStreak: newLongest, isNewDay: true, visitDates };
+    return {
+      currentStreak: newStreak,
+      longestStreak: newLongest,
+      isNewDay: true,
+      visitDates,
+      freezeApplied,
+      freezeAvailable: freezeAvailable(isPro, newFreezeMonth, today),
+    };
   }
 
-  async getStreak(sessionId: string): Promise<{ currentStreak: number; longestStreak: number; visitDates: string[] } | null> {
+  async getStreak(sessionId: string, isPro = false): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    visitDates: string[];
+    freezeAvailable?: boolean;
+    freezeUsedThisMonth?: boolean;
+  } | null> {
     const [existing] = await db.select().from(streaks).where(eq(streaks.sessionId, sessionId));
     if (!existing) return null;
-    const visitDates: string[] = (() => { try { return JSON.parse(existing.visitDates || "[]"); } catch { return []; } })();
-    return { currentStreak: existing.currentStreak, longestStreak: existing.longestStreak, visitDates };
+    const { dates: visitDates, freezeMonth } = parseVisitPayload(existing.visitDates);
+    const today = new Date().toISOString().split("T")[0];
+    const month = currentMonthKey(today);
+    return {
+      currentStreak: existing.currentStreak,
+      longestStreak: existing.longestStreak,
+      visitDates,
+      freezeAvailable: freezeAvailable(isPro, freezeMonth, today),
+      freezeUsedThisMonth: freezeMonth === month,
+    };
   }
 
   async getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined> {
     const [row] = await db.select().from(proSubscribers).where(eq(proSubscribers.email, email.toLowerCase()));
     return row;
+  }
+
+  async getAllActiveProSubscribers(): Promise<ProSubscriber[]> {
+    return db.select().from(proSubscribers).where(eq(proSubscribers.status, "active"));
+  }
+
+  async linkProEmailToSession(email: string, sessionId: string): Promise<void> {
+    const normalized = email.toLowerCase().trim();
+    const existing = await this.getSubscriberByEmail(normalized);
+    if (existing) {
+      await this.updateSubscriberSession(normalized, sessionId);
+      return;
+    }
+    await this.createSubscriber({ email: normalized, sessionId });
   }
 
   async getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined> {
@@ -373,20 +482,79 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async recordReferral(code: string, referredSessionId: string): Promise<{ success: boolean; referrerSessionId: string | null }> {
+  async addReferralProDays(sessionId: string, days: number): Promise<Date> {
+    const { addProDays } = await import("./referralRewards");
+    const row = await this.getOrCreateReferralCode(sessionId);
+    const newExpiry = addProDays(row.proExpiresAt, days);
+    await db.update(referralCodes).set({ proExpiresAt: newExpiry }).where(eq(referralCodes.sessionId, sessionId));
+    return newExpiry;
+  }
+
+  async recordReferral(
+    code: string,
+    referredSessionId: string,
+  ): Promise<{
+    success: boolean;
+    referrerSessionId: string | null;
+    referredProUntil: string | null;
+    referrerProUntil: string | null;
+    referralCount: number;
+    alreadyRecorded: boolean;
+  }> {
+    const { addProDays, REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } = await import("./referralRewards");
     const [referrer] = await db.select().from(referralCodes).where(eq(referralCodes.code, code));
-    if (!referrer) return { success: false, referrerSessionId: null };
-    if (referrer.sessionId === referredSessionId) return { success: false, referrerSessionId: null };
+    if (!referrer) {
+      return {
+        success: false,
+        referrerSessionId: null,
+        referredProUntil: null,
+        referrerProUntil: null,
+        referralCount: 0,
+        alreadyRecorded: false,
+      };
+    }
+    if (referrer.sessionId === referredSessionId) {
+      return {
+        success: false,
+        referrerSessionId: null,
+        referredProUntil: null,
+        referrerProUntil: null,
+        referralCount: referrer.referralCount,
+        alreadyRecorded: false,
+      };
+    }
     const [alreadyReferred] = await db.select().from(referrals).where(eq(referrals.referredSessionId, referredSessionId));
-    if (alreadyReferred) return { success: false, referrerSessionId: referrer.sessionId };
+    if (alreadyReferred) {
+      const stats = await this.getReferralStats(referredSessionId);
+      return {
+        success: false,
+        referrerSessionId: referrer.sessionId,
+        referredProUntil: stats?.proExpiresAt?.toISOString() ?? null,
+        referrerProUntil: referrer.proExpiresAt?.toISOString() ?? null,
+        referralCount: referrer.referralCount,
+        alreadyRecorded: true,
+      };
+    }
+
     await db.insert(referrals).values({ referralCode: code, referredSessionId }).onConflictDoNothing();
-    const now = new Date();
-    const currentExpiry = referrer.proExpiresAt && referrer.proExpiresAt > now ? referrer.proExpiresAt : now;
-    const newExpiry = new Date(currentExpiry.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    const referrerExpiry = addProDays(referrer.proExpiresAt, REFERRAL_DAYS_PER_FRIEND);
     await db.update(referralCodes)
-      .set({ referralCount: sqlExpr`${referralCodes.referralCount} + 1`, proExpiresAt: newExpiry })
+      .set({ referralCount: sqlExpr`${referralCodes.referralCount} + 1`, proExpiresAt: referrerExpiry })
       .where(eq(referralCodes.code, code));
-    return { success: true, referrerSessionId: referrer.sessionId };
+
+    const referredExpiry = await this.addReferralProDays(referredSessionId, REFERRAL_WELCOME_DAYS);
+
+    const [updatedReferrer] = await db.select().from(referralCodes).where(eq(referralCodes.code, code));
+
+    return {
+      success: true,
+      referrerSessionId: referrer.sessionId,
+      referredProUntil: referredExpiry.toISOString(),
+      referrerProUntil: updatedReferrer?.proExpiresAt?.toISOString() ?? referrerExpiry.toISOString(),
+      referralCount: updatedReferrer?.referralCount ?? referrer.referralCount + 1,
+      alreadyRecorded: false,
+    };
   }
 
   async getReferralStats(sessionId: string): Promise<{ code: string; referralCount: number; proExpiresAt: Date | null } | null> {

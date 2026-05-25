@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { CheckCircle2, Sparkles, ArrowRight, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { markProVerified } from "@/lib/proStatus";
+import { getSessionId } from "@/lib/session";
+import { linkProSessionForContinuity, markProVerified } from "@/lib/proStatus";
 
 export default function ProSuccess() {
   const [, navigate] = useLocation();
@@ -25,6 +26,7 @@ export default function ProSuccess() {
         if (data.email) {
           markProVerified(data.email);
           setEmail(data.email);
+          void linkProSessionForContinuity(data.email, getSessionId());
         }
       })
       .catch(() => {})
@@ -80,10 +82,11 @@ export default function ProSuccess() {
 
             <div className="bg-card border border-border rounded-2xl p-4 text-left space-y-2.5">
               {[
-                "No daily limits — use it as much as you need",
-                "Devotional history archive",
-                "Beautiful PDF · custom plans",
-                "Streak protection",
+                "Unlimited AI and listen",
+                "Full sacred archive search",
+                "Weekly Spiritual Weather email (when email is linked)",
+                "Streak protection — one grace day per month",
+                "Prayer Portrait & print your full journal",
               ].map(f => (
                 <div key={f} className="flex items-center gap-2.5 text-sm text-foreground/80">
                   <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />

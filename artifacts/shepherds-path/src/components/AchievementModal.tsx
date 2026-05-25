@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2, Zap, Share2 } from "lucide-react";
+import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2, Zap, Share2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import type { Achievement } from "@/lib/achievements";
@@ -179,6 +179,20 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
             >
               <Zap className="w-3.5 h-3.5" />
               Continue your walk uninterrupted with Pro
+            </Link>
+          )}
+
+          {["streak_7", "streak_14", "streak_21", "streak_30", "streak_60", "streak_100", "streak_365"].includes(
+            achievement.id,
+          ) && (
+            <Link
+              href="/invite"
+              onClick={handleClose}
+              data-testid="btn-achievement-invite"
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-2xl border border-border bg-muted/30 text-foreground/80 text-[12px] font-semibold hover:bg-muted/50 transition-colors mt-2"
+            >
+              <Gift className="w-3.5 h-3.5 text-amber-600" />
+              Invite someone on this walk — earn bonus Pro days
             </Link>
           )}
         </div>

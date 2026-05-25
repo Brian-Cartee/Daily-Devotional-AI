@@ -6,16 +6,20 @@ interface ShareButtonProps {
   text: string;
   className?: string;
   showLabel?: boolean;
+  /** When set, native share includes this URL (e.g. referral link). */
+  url?: string;
 }
 
-export function ShareButton({ title, text, className = "", showLabel = true }: ShareButtonProps) {
+export function ShareButton({ title, text, className = "", showLabel = true, url }: ShareButtonProps) {
   const [done, setDone] = useState(false);
 
   const handleShare = async () => {
-    const shareText = `${text}\n\n— Shepherd's Path | shepherdspathAI.com`;
+    const shareText = url
+      ? text
+      : `${text}\n\n— Shepherd's Path | shepherdspathAI.com`;
     if (navigator.share) {
       try {
-        await navigator.share({ title, text: shareText });
+        await navigator.share({ title, text: shareText, ...(url ? { url } : {}) });
         setDone(true);
         setTimeout(() => setDone(false), 2000);
       } catch { }

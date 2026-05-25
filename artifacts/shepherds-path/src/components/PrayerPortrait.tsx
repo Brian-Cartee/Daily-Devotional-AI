@@ -7,6 +7,7 @@ import {
 import { useTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { apiSessionExtras } from "@/lib/requestExtras";
 
 type Step = "upload" | "questions" | "generating" | "result" | "error";
 
@@ -58,6 +59,7 @@ export function PrayerPortrait({ situation, onClose }: Props) {
             burden: burden.trim(),
             cover: cover.trim(),
           },
+          ...apiSessionExtras(),
         }),
       });
       if (!res.ok) throw new Error("failed");

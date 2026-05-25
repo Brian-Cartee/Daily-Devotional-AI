@@ -1,63 +1,104 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getUserVoice } from "@/lib/userName";
+import { getSessionId } from "@/lib/session";
+import { isProVerifiedLocally } from "@/lib/proStatus";
+import { canPrewarmListen, type ListenScope } from "@/lib/listenPolicy";
+
+export type { ListenScope };
 
 let _instanceCounter = 0;
 
 const TTS_FETCH_TIMEOUT_MS = 25_000;
 const TTS_SLOW_WARNING_MS = 3_000;
 
+export type ListenLimitCode =
+  | "devotional_chain_limit"
+  | "pro_required"
+  | "listen_daily_cap"
+  | "verse_too_long"
+  | "session_required";
+
+export type FetchTTSOptions = {
+  scope?: ListenScope;
+  chainStart?: boolean;
+};
+
+function ttsPayload(text: string, voice: string, opts?: FetchTTSOptions) {
+  return {
+    text: text.slice(0, 4096),
+    voice,
+    scope: opts?.scope ?? "snippet",
+    chainStart: opts?.chainStart === true,
+    sessionId: getSessionId(),
+    isPro: isProVerifiedLocally(),
+  };
+}
+
 /**
- * Fire-and-forget: warms the server-side TTS disk cache for a given text+voice
- * so the FIRST listen is served from cache (near-instant) instead of calling OpenAI.
- * Safe to call speculatively — server will deduplicate using its own cache key.
+ * Pro-only speculative cache warm (Policy 2 — no prewarm for free users).
  */
-export function prewarmTTS(text: string, voice?: string): void {
-  if (!text?.trim()) return;
+export function prewarmTTS(text: string, voice?: string, scope: ListenScope = "snippet"): void {
+  if (!text?.trim() || !canPrewarmListen()) return;
   fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: text.slice(0, 4096), voice: voice ?? getUserVoice() }),
+    body: JSON.stringify(ttsPayload(text, voice ?? getUserVoice(), { scope })),
   })
     .then(r => r.blob())
     .catch(() => {});
 }
 
-/** Fetch TTS audio with a hard 10-second timeout. Returns a blob URL or null. */
+type FetchTTSResult =
+  | { ok: true; url: string }
+  | { ok: false; code?: ListenLimitCode; message?: string };
+
 async function fetchTTS(
   text: string,
   voice: string,
   cancelRef: React.MutableRefObject<boolean>,
-): Promise<string | null> {
+  opts?: FetchTTSOptions,
+): Promise<FetchTTSResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TTS_FETCH_TIMEOUT_MS);
   try {
     const response = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text.slice(0, 4096), voice }),
+      body: JSON.stringify(ttsPayload(text, voice, opts)),
       signal: controller.signal,
     });
     clearTimeout(timer);
-    if (!response.ok || cancelRef.current) return null;
+    if (cancelRef.current) return { ok: false };
+    if (!response.ok) {
+      if (response.status === 403 || response.status === 400) {
+        try {
+          const data = await response.json();
+          return { ok: false, code: data.code as ListenLimitCode, message: data.message };
+        } catch {
+          return { ok: false };
+        }
+      }
+      return { ok: false };
+    }
     const blob = await response.blob();
-    if (cancelRef.current) return null;
-    return URL.createObjectURL(blob);
+    if (cancelRef.current) return { ok: false };
+    return { ok: true, url: URL.createObjectURL(blob) };
   } catch {
     clearTimeout(timer);
-    return null;
+    return { ok: false };
   }
 }
 
 export function useTTS() {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [loadingLong, setLoadingLong] = useState(false); // true after 3s — "still on its way..."
+  const [loadingLong, setLoadingLong] = useState(false);
   const [error, setError] = useState(false);
-  const [blocked, setBlocked] = useState(false);          // iOS autoplay blocked
+  const [blocked, setBlocked] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [listenLimitCode, setListenLimitCode] = useState<ListenLimitCode | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
-  /** Text that produced blobUrlRef — prevents playing verse audio for reflection, etc. */
   const blobTextRef = useRef<string | null>(null);
   const preloadingRef = useRef(false);
   const chainCancelRef = useRef(false);
@@ -101,7 +142,6 @@ export function useTTS() {
     setProgress(0);
   }, [cleanup]);
 
-  // Global coordination: when any instance starts, all others stop immediately.
   useEffect(() => {
     const handle = (e: Event) => {
       const id = (e as CustomEvent<{ id: string }>).detail?.id;
@@ -123,35 +163,32 @@ export function useTTS() {
     );
   }, []);
 
-  const preload = useCallback(async (text: string, voice?: string) => {
+  const preload = useCallback(async (text: string, voice?: string, opts?: FetchTTSOptions) => {
     if (blobUrlRef.current || preloadingRef.current) return;
     preloadingRef.current = true;
     const selectedVoice = voice ?? getUserVoice();
     try {
-      const url = await fetchTTS(text, selectedVoice, chainCancelRef);
-      if (url) {
-        blobUrlRef.current = url;
+      const result = await fetchTTS(text, selectedVoice, chainCancelRef, opts);
+      if (result.ok) {
+        blobUrlRef.current = result.url;
         blobTextRef.current = text;
       }
     } catch {
-      // silently ignore — user can still tap Listen and it'll fetch fresh
+      /* noop */
     } finally {
       preloadingRef.current = false;
     }
   }, []);
 
-  /** Attempt to play an audio element, handling iOS autoplay block gracefully. */
-  const attemptPlay = useCallback(async (audio: HTMLAudioElement, blobUrl: string) => {
+  const attemptPlay = useCallback(async (audio: HTMLAudioElement, blobUrl: string, sourceText: string) => {
     try {
       await audio.play();
       setBlocked(false);
     } catch (err: unknown) {
-      const name = (err instanceof Error) ? err.name : "";
+      const name = err instanceof Error ? err.name : "";
       if (name === "NotAllowedError") {
-        // iOS / browser autoplay policy blocked playback — store the URL so
-        // the UI can show a "tap to play" button and resume.
         blobUrlRef.current = blobUrl;
-        blobTextRef.current = text;
+        blobTextRef.current = sourceText;
         setBlocked(true);
         setLoading(false);
         setPlaying(false);
@@ -162,7 +199,6 @@ export function useTTS() {
     }
   }, []);
 
-  /** Resume playback after user taps "Tap to play" (iOS autoplay recovery). */
   const resumeAfterBlock = useCallback(() => {
     const url = blobUrlRef.current;
     if (!url) return;
@@ -179,11 +215,11 @@ export function useTTS() {
       .catch(() => setError(true));
   }, []);
 
-  const play = useCallback(async (text: string, voice?: string) => {
+  const play = useCallback(async (text: string, voice?: string, opts?: FetchTTSOptions) => {
     const selectedVoice = voice ?? getUserVoice();
     notifyStart();
+    setListenLimitCode(null);
 
-    // Fast path: use preloaded blob only when it matches this exact text
     if (blobUrlRef.current && blobTextRef.current === text) {
       const url = blobUrlRef.current;
       blobUrlRef.current = null;
@@ -200,11 +236,10 @@ export function useTTS() {
       };
       audio.onended = () => { setPlaying(false); setProgress(100); URL.revokeObjectURL(url); };
       audio.onerror = () => { setPlaying(false); setError(true); };
-      await attemptPlay(audio, url);
+      await attemptPlay(audio, url, text);
       return;
     }
 
-    // Slow path: fetch from server (disk cache if prewarmed, otherwise OpenAI)
     cleanup();
     chainCancelRef.current = false;
     setProgress(0);
@@ -214,16 +249,26 @@ export function useTTS() {
     startSlowTimer();
 
     try {
-      const url = await fetchTTS(text, selectedVoice, chainCancelRef);
+      const result = await fetchTTS(text, selectedVoice, chainCancelRef, opts);
       clearSlowTimer();
 
-      if (!url || chainCancelRef.current) {
+      if (!result.ok) {
         setLoading(false);
-        if (!chainCancelRef.current) setError(true);
+        if (result.code) {
+          setListenLimitCode(result.code);
+          window.dispatchEvent(new CustomEvent("sp-listen-limit", { detail: { code: result.code } }));
+        } else if (!chainCancelRef.current) {
+          setError(true);
+        }
         return;
       }
 
-      const audio = new Audio(url);
+      if (chainCancelRef.current) {
+        setLoading(false);
+        return;
+      }
+
+      const audio = new Audio(result.url);
       audioRef.current = audio;
       audio.oncanplay = () => { setLoading(false); setPlaying(true); };
       audio.ontimeupdate = () => {
@@ -232,10 +277,10 @@ export function useTTS() {
       audio.onended = () => {
         setPlaying(false);
         setProgress(100);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(result.url);
       };
-      audio.onerror = () => { setPlaying(false); setLoading(false); setError(true); };
-      await attemptPlay(audio, url);
+      audio.onerror = () => { setPlaying(false); setError(true); };
+      await attemptPlay(audio, result.url, text);
     } catch {
       clearSlowTimer();
       setLoading(false);
@@ -245,25 +290,21 @@ export function useTTS() {
   }, [cleanup, notifyStart, startSlowTimer, clearSlowTimer, attemptPlay]);
 
   const toggle = useCallback(
-    (text: string, voice?: string) => {
-      if (playing) { stop(); } else { play(text, voice); }
+    (text: string, voice?: string, opts?: FetchTTSOptions) => {
+      if (playing) { stop(); } else { void play(text, voice, opts); }
     },
     [playing, play, stop],
   );
 
-  /**
-   * playChain — plays an ordered list of text sections with pipeline prefetching.
-   * While section N plays, section N+1 is fetched in the background so transitions
-   * are seamless. The server disk cache means subsequent plays of the same content
-   * are near-instant.
-   */
   const playChain = useCallback(async (
     sections: Array<{ text: string; voice?: string; key?: string }>,
     onSectionStart?: (index: number, key?: string) => void,
     onComplete?: () => void,
+    chainOpts?: { chainScope: "devotional" | "guidance"; onLimit?: (code: ListenLimitCode) => void },
   ) => {
     if (sections.length === 0) return;
     notifyStart();
+    setListenLimitCode(null);
     cleanup();
     chainCancelRef.current = false;
     setProgress(0);
@@ -279,20 +320,31 @@ export function useTTS() {
 
       const { text, voice: sectionVoice, key } = sections[i];
       const selectedVoice = sectionVoice ?? getUserVoice();
+      const fetchOpts: FetchTTSOptions | undefined = chainOpts
+        ? {
+            scope: chainOpts.chainScope,
+            chainStart: i === 0,
+          }
+        : undefined;
 
       onSectionStart?.(i, key);
 
-      // Use prefetched blob from previous iteration, or fetch fresh
       let blobUrl: string | null = prefetchedUrl;
       prefetchedUrl = null;
 
       if (!blobUrl) {
-        blobUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
+        const result = await fetchTTS(text, selectedVoice, chainCancelRef, fetchOpts);
         clearSlowTimer();
         if (chainCancelRef.current) break;
-        // If this section's fetch failed, skip it and move to the next one
-        // rather than stopping the whole chain.
-        if (!blobUrl) continue;
+        if (!result.ok) {
+          if (result.code) {
+            setListenLimitCode(result.code);
+            chainOpts?.onLimit?.(result.code);
+            window.dispatchEvent(new CustomEvent("sp-listen-limit", { detail: { code: result.code } }));
+          }
+          break;
+        }
+        blobUrl = result.url;
       } else {
         clearSlowTimer();
       }
@@ -302,19 +354,19 @@ export function useTTS() {
       setLoading(false);
       setPlaying(true);
 
-      // Pipeline: start fetching the next section while this one plays
       const nextSection = sections[i + 1];
-      let prefetchPromise: Promise<string | null> | null = null;
+      let prefetchPromise: Promise<FetchTTSResult> | null = null;
       if (nextSection) {
         const nextVoice = nextSection.voice ?? getUserVoice();
-        prefetchPromise = fetchTTS(nextSection.text, nextVoice, chainCancelRef);
+        const nextOpts: FetchTTSOptions | undefined = chainOpts
+          ? { scope: chainOpts.chainScope, chainStart: false }
+          : undefined;
+        prefetchPromise = fetchTTS(nextSection.text, nextVoice, chainCancelRef, nextOpts);
       }
 
       const segStart = (i / sections.length) * 100;
       const segEnd = ((i + 1) / sections.length) * 100;
 
-      // Attempt playback — returns true if played cleanly, false on any error.
-      // Includes a duration-based timeout so a missing onended never hangs the chain.
       const tryPlay = (urlToPlay: string): Promise<boolean> =>
         new Promise<boolean>((resolve) => {
           let settled = false;
@@ -327,8 +379,6 @@ export function useTTS() {
           const audio = new Audio(urlToPlay);
           audioRef.current = audio;
 
-          // Once duration is known, set a hard ceiling so onended hanging never
-          // blocks the chain forever (duration + 15 s buffer).
           let durationTimeout: ReturnType<typeof setTimeout> | null = null;
           audio.onloadedmetadata = () => {
             if (audio.duration && isFinite(audio.duration)) {
@@ -341,7 +391,8 @@ export function useTTS() {
 
           audio.ontimeupdate = () => {
             if (audio.duration) {
-              setProgress(Math.round(segStart + (audio.currentTime / audio.duration) * (segEnd - segStart)));
+              const segProgress = audio.currentTime / audio.duration;
+              setProgress(Math.round(segStart + segProgress * (segEnd - segStart)));
             }
           };
           audio.onended = () => {
@@ -354,49 +405,42 @@ export function useTTS() {
             URL.revokeObjectURL(urlToPlay);
             done(false);
           };
-          if (chainCancelRef.current) {
-            if (durationTimeout) clearTimeout(durationTimeout);
-            URL.revokeObjectURL(urlToPlay);
-            done(false);
-            return;
-          }
-          audio.play().catch(() => {
-            if (durationTimeout) clearTimeout(durationTimeout);
-            URL.revokeObjectURL(urlToPlay);
-            done(false);
-          });
+
+          audio.play().catch(() => done(false));
         });
 
       const played = await tryPlay(blobUrl);
-
-      // On error, retry once with a fresh fetch before skipping this section
-      if (!played && !chainCancelRef.current) {
-        const retryUrl = await fetchTTS(text, selectedVoice, chainCancelRef);
-        if (retryUrl && !chainCancelRef.current) {
-          await tryPlay(retryUrl);
-        }
+      if (!played) {
+        setPlaying(false);
+        setError(true);
+        break;
       }
 
       if (prefetchPromise) {
-        prefetchedUrl = await prefetchPromise;
+        const nextResult = await prefetchPromise;
+        if (nextResult.ok) prefetchedUrl = nextResult.url;
       }
     }
 
-    if (prefetchedUrl) URL.revokeObjectURL(prefetchedUrl);
-
+    setLoading(false);
     setPlaying(false);
-    audioRef.current = null;
-
-    // Always complete gracefully unless the user explicitly stopped playback.
-    if (!chainCancelRef.current) {
-      setProgress(100);
-      onComplete?.();
-    } else {
-      setProgress(0);
-    }
+    setProgress(0);
+    if (!chainCancelRef.current) onComplete?.();
   }, [cleanup, notifyStart, startSlowTimer, clearSlowTimer]);
 
-  useEffect(() => () => cleanup(), [cleanup]);
-
-  return { play, stop, toggle, preload, playChain, resumeAfterBlock, playing, loading, loadingLong, error, blocked, progress };
+  return {
+    playing,
+    loading,
+    loadingLong,
+    error,
+    blocked,
+    progress,
+    listenLimitCode,
+    toggle,
+    play,
+    stop,
+    preload,
+    resumeAfterBlock,
+    playChain,
+  };
 }

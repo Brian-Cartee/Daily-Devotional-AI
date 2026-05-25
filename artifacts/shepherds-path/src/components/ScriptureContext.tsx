@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Scroll, X, Send, Loader2, ChevronRight, Headphones, Square } from "lucide-react";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
+import { apiSessionExtras } from "@/lib/requestExtras";
 import { useLocation } from "wouter";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { ListenButton } from "@/components/ListenButton";
@@ -144,7 +145,7 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
       const res = await fetch("/api/context/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reference, text, question: q }),
+        body: JSON.stringify({ reference, text, question: q, ...apiSessionExtras() }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("failed");
@@ -160,7 +161,13 @@ export function ScriptureContext({ reference, text, verseId }: ScriptureContextP
   const { data, isLoading, isError } = useQuery<ContextData>({
     queryKey: ["/api/context", reference],
     queryFn: async () => {
-      const params = new URLSearchParams({ reference, text });
+      const extras = apiSessionExtras();
+      const params = new URLSearchParams({
+        reference,
+        text,
+        sessionId: extras.sessionId,
+        isPro: String(extras.isPro),
+      });
       const res = await fetch(`/api/context?${params.toString()}`);
       if (!res.ok) throw new Error("context fetch failed");
       return res.json();

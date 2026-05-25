@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Play, Share2, X, Loader2, BookOpen, ArrowRight, Headphones, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { apiSessionExtras } from "@/lib/requestExtras";
 
 function decodeHtml(str: string): string {
   return str
@@ -333,6 +334,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
         date: new Date().toISOString().slice(0, 10),
         reflectionContext: reflectionContent?.slice(0, 400),
         primaryPastor: primaryChannel || "",
+        ...apiSessionExtras(),
       });
       if (results.length) setAutoSermons(results);
       else setAutoFailed(true);
@@ -356,6 +358,7 @@ export function AdditionalSermonsSection({ verseId, verseReference, reflectionCo
         verseId,
         date: new Date().toISOString().slice(0, 10),
         customTopic: topic,
+        ...apiSessionExtras(),
       });
       if (results.length) setSearchSermons(results);
       else setSearchFailed(true);
@@ -546,7 +549,11 @@ export function GoDeepCard() {
     setFailed(false);
     setLastTopic(topic);
     try {
-      const found = await fetchSermons({ customTopic: topic, date: new Date().toISOString().slice(0, 10) });
+      const found = await fetchSermons({
+        customTopic: topic,
+        date: new Date().toISOString().slice(0, 10),
+        ...apiSessionExtras(),
+      });
       if (found.length) setResults(found);
       else setFailed(true);
     } catch {

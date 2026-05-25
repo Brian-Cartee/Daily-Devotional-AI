@@ -20,6 +20,11 @@ import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { JournalArchiveSection } from "@/components/JournalArchiveSection";
+import { ShareInviteCard } from "@/components/ShareInviteCard";
+import { FREE_ARCHIVE_VISIBLE_DAYS } from "@/lib/journalArchive";
+import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
+import { printJournalEntries } from "@/lib/journalPrint";
 import type { JournalEntry, MemoryVerse } from "@shared/schema";
 
 const SERMON_USAGE_KEY = "sp_sermon_recordings";
@@ -108,13 +113,7 @@ function exportAsText(entries: JournalEntry[]) {
 }
 
 function PremiumModal({ onClose }: { onClose: () => void }) {
-  const PRO_FEATURES = [
-    "Beautiful PDF copy of your journal",
-    "Cloud backup & sync across devices",
-    "Unlimited journal entries",
-    "Printable weekly devotional summaries",
-    "Priority AI responses",
-  ];
+  const PRO_FEATURES = PRO_FEATURE_BULLETS.slice(0, 5);
 
   return (
     <motion.div
@@ -191,7 +190,17 @@ function PremiumModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: () => void }) {
+function ExportMenu({
+  entries,
+  allEntries,
+  isPro,
+  onClose,
+}: {
+  entries: JournalEntry[];
+  allEntries: JournalEntry[];
+  isPro: boolean;
+  onClose: () => void;
+}) {
   const [showPremium, setShowPremium] = useState(false);
   const { toast } = useToast();
 
@@ -203,6 +212,22 @@ function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: ()
     }
     exportAsText(entries);
     toast({ description: "Your journal has been saved. Keep it somewhere meaningful." });
+    onClose();
+  };
+
+  const handlePrintExport = () => {
+    const toPrint = isPro ? allEntries : entries;
+    if (toPrint.length === 0) {
+      toast({ description: "Nothing to export yet — your entries will appear here as you save them." });
+      onClose();
+      return;
+    }
+    if (!isPro) {
+      setShowPremium(true);
+      return;
+    }
+    printJournalEntries(toPrint);
+    toast({ description: "Use Print → Save as PDF in the dialog to keep a copy." });
     onClose();
   };
 
@@ -236,18 +261,18 @@ function ExportMenu({ entries, onClose }: { entries: JournalEntry[]; onClose: ()
           <span className="ml-auto text-[10px] font-semibold text-green-600 bg-green-50 dark:bg-green-950/50 dark:text-green-400 px-2 py-0.5 rounded-full">Free</span>
         </button>
 
-        {/* Premium: PDF */}
+        {/* Pro: print / save as PDF via browser */}
         <button
           data-testid="btn-export-pdf"
-          onClick={() => setShowPremium(true)}
+          onClick={handlePrintExport}
           className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left group"
         >
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <FileType2 className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">Save as PDF</p>
-            <p className="text-[11px] text-muted-foreground">Beautifully formatted</p>
+            <p className="text-sm font-semibold text-foreground">Print / Save as PDF</p>
+            <p className="text-[11px] text-muted-foreground">Full archive · browser print</p>
           </div>
           <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
             <Lock className="w-2.5 h-2.5" /> Pro
@@ -483,6 +508,8 @@ function SermonRecorder({ onSave }: { onSave: () => void }) {
     const ext = mimeType.includes("mp4") ? "mp4" : "webm";
     const formData = new FormData();
     formData.append("audio", blob, `sermon.${ext}`);
+    formData.append("sessionId", sessionId);
+    formData.append("isPro", String(isProVerifiedLocally()));
     try {
       const res = await fetch("/api/transcribe", { method: "POST", body: formData });
       if (!res.ok) throw new Error("failed");
@@ -962,6 +989,9 @@ export default function Journal() {
   });
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [archiveDay, setArchiveDay] = useState<string | null>(null);
+  const [showArchiveUpgrade, setShowArchiveUpgrade] = useState(false);
+  const isPro = isProVerifiedLocally();
 
   useEffect(() => {
     const label = TABS.find(t => t.key === activeTab)?.label ?? activeTab;
@@ -1020,7 +1050,22 @@ export default function Journal() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/memory-verses", sessionId] }),
   });
 
-  const filtered = entries.filter(e => e.type === activeTab);
+  const cutoffDate = (() => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - FREE_ARCHIVE_VISIBLE_DAYS);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const entryVisible = (e: JournalEntry) => {
+    if (isPro) return true;
+    const day = (e.verseDate || String(e.createdAt)).slice(0, 10);
+    return day >= cutoffDate;
+  };
+
+  const filtered = entries
+    .filter((e) => e.type === activeTab)
+    .filter((e) => !archiveDay || (e.verseDate || String(e.createdAt)).slice(0, 10) === archiveDay)
+    .filter((e) => entryVisible(e));
   const activeTabConfig = TABS.find(t => t.key === activeTab)!;
 
   const textEntryCount = entries.filter(e => e.type !== "note").length;
@@ -1147,7 +1192,12 @@ export default function Journal() {
                 </button>
                 <AnimatePresence>
                   {exportOpen && (
-                    <ExportMenu entries={entries} onClose={() => setExportOpen(false)} />
+                    <ExportMenu
+                      entries={entries.filter(entryVisible)}
+                      allEntries={entries}
+                      isPro={isPro}
+                      onClose={() => setExportOpen(false)}
+                    />
                   )}
                 </AnimatePresence>
               </div>
@@ -1195,6 +1245,31 @@ export default function Journal() {
 
         {/* Content */}
         <main className="max-w-xl mx-auto px-5 py-6 pb-24">
+
+          <JournalArchiveSection
+            selectedDay={archiveDay}
+            onSelectDay={setArchiveDay}
+            onUpgrade={() => setShowArchiveUpgrade(true)}
+          />
+
+          {archiveDay && (
+            <p className="text-[12px] text-muted-foreground mb-4 -mt-2">
+              Showing entries from{" "}
+              {new Date(archiveDay + "T12:00:00").toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+              .{" "}
+              <button
+                type="button"
+                className="text-primary font-semibold"
+                onClick={() => setArchiveDay(null)}
+              >
+                Clear day filter
+              </button>
+            </p>
+          )}
 
           {/* ── 7-Day Framework: Today's Journal Prompt ── */}
           <AnimatePresence>
@@ -1467,8 +1542,18 @@ export default function Journal() {
               </div>
             </AnimatePresence>
           )}
+
+          <ShareInviteCard variant="compact" />
         </main>
       </div>
+
+      {showArchiveUpgrade && (
+        <UpgradeModal
+          onClose={() => setShowArchiveUpgrade(false)}
+          title="Your full sacred archive"
+          subtitle="Pro unlocks every prayer, reflection, and devotional day you've saved — searchable across your whole walk."
+        />
+      )}
     </>
   );
 }

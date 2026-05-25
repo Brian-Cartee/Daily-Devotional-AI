@@ -360,8 +360,8 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
                     <AlarmClock className="w-4 h-4 text-rose-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Streak protection</p>
-                    <p className="text-[11px] text-muted-foreground">Alert before your streak resets</p>
+                    <p className="text-[13px] font-semibold text-foreground">Streak reminder</p>
+                    <p className="text-[11px] text-muted-foreground">Evening nudge if you haven't visited today</p>
                   </div>
                   <Toggle checked={settings.streakReminder} onChange={(v) => saveSetting("streakReminder", v)} />
                 </div>
@@ -408,7 +408,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
                   { icon: Sun, color: "text-amber-500 bg-amber-400/12", label: "Morning devotional", desc: "Daily verse to start your day" },
                   { icon: Clock, color: "text-sky-500 bg-sky-400/12", label: "Midday check-in", desc: "Optional noon reminder" },
                   { icon: Moon, color: "text-indigo-400 bg-indigo-400/12", label: "Evening reflection", desc: "Close the day with intention" },
-                  { icon: AlarmClock, color: "text-rose-400 bg-rose-400/12", label: "Streak protection", desc: "Never lose your streak" },
+                  { icon: AlarmClock, color: "text-rose-400 bg-rose-400/12", label: "Streak reminder", desc: "Nudge if today's visit is still open" },
                   { icon: CalendarDays, color: "text-violet-400 bg-violet-400/12", label: "Weekly summary", desc: "Your week, reflected back" },
                 ].map(({ icon: Icon, color, label, desc }) => (
                   <div key={label} className="flex items-center gap-3 px-4 py-2.5">

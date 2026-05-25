@@ -457,6 +457,84 @@ ${data.videoUrl ? `Watch a short video message from Brian:\n${data.videoUrl}\n\n
 "Your word is a lamp to my feet and a light to my path." — Psalm 119:105`;
 }
 
+export interface WeeklyWeatherEmailData {
+  appUrl: string;
+  weekLabel: string;
+  observations: string[];
+  seasonLetter?: string | null;
+  invitation: string;
+  guidanceUrl: string;
+  email?: string;
+}
+
+export function buildWeeklyWeatherEmailHtml(data: WeeklyWeatherEmailData): string {
+  const logoSrc = getEmailLogoSrc(data.appUrl);
+  const obsHtml = data.observations
+    .map(
+      (o) =>
+        `<li style="margin:0 0 10px;font-family:Arial,sans-serif;font-size:15px;line-height:1.65;color:#3d3048;border-left:3px solid #7c5cbf;padding-left:12px;">${o}</li>`,
+    )
+    .join("");
+
+  const letterBlock = data.seasonLetter
+    ? `<p style="margin:0 0 20px;font-family:Georgia,serif;font-size:16px;line-height:1.75;color:#2d1b3e;font-style:italic;">${data.seasonLetter}</p>`
+    : "";
+
+  const unsub = data.email
+    ? `${data.appUrl}/api/unsubscribe?email=${encodeURIComponent(data.email)}`
+    : `${data.appUrl}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background-color:#f0ede8;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0ede8;padding:24px 12px 40px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+<tr>
+  <td style="background:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
+    <img src="${logoSrc}" alt="Shepherd's Path" width="72" height="72" style="display:block;margin:0 auto 14px;width:72px;height:72px;border-radius:16px;"/>
+    <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">Pro · Spiritual Weather</p>
+    <h1 style="margin:0;font-family:Georgia,serif;font-size:26px;font-weight:400;color:#fff;">Your week, reflected</h1>
+    <p style="margin:8px 0 0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);">${data.weekLabel}</p>
+  </td>
+</tr>
+<tr>
+  <td style="background:#fff;padding:36px 32px;border-left:1px solid #e2ddd6;border-right:1px solid #e2ddd6;">
+    ${letterBlock}
+    <ul style="margin:0 0 24px;padding:0;list-style:none;">${obsHtml}</ul>
+    <p style="margin:0 0 24px;font-family:Arial,sans-serif;font-size:15px;line-height:1.7;color:#5a4a68;">${data.invitation}</p>
+    <a href="${data.guidanceUrl}" style="display:block;text-align:center;background:linear-gradient(135deg,#5a3d8a,#7c5cbf);color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px;font-weight:700;padding:14px 24px;border-radius:12px;">Talk it through in the app</a>
+  </td>
+</tr>
+<tr>
+  <td style="padding:20px 8px 0;text-align:center;">
+    <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#9a8aa8;line-height:1.6;">
+      <a href="${data.appUrl}" style="color:#7c5cbf;">Open Shepherd's Path</a> ·
+      <a href="${unsub}" style="color:#9a8aa8;">Unsubscribe from emails</a>
+    </p>
+  </td>
+</tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+}
+
+export function buildWeeklyWeatherEmailText(data: WeeklyWeatherEmailData): string {
+  const obs = data.observations.map((o) => `• ${o}`).join("\n");
+  const letter = data.seasonLetter ? `\n${data.seasonLetter}\n\n` : "\n";
+  return `Shepherd's Path Pro — Spiritual Weather (${data.weekLabel})
+
+${letter}${obs}
+
+${data.invitation}
+
+Talk it through: ${data.guidanceUrl}
+
+Open the app: ${data.appUrl}`;
+}
+
 export function buildDailyVerseEmailText(data: DailyVerseEmailData): string {
   const formattedDate = new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',

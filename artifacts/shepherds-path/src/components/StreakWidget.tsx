@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Zap, Check, Flame, UserRound } from "lucide-react";
 import { Link } from "wouter";
-import { getSessionId } from "@/lib/session";
 import { getUserName } from "@/lib/userName";
+import { fetchStreak } from "@/lib/streakApi";
+import { isProVerifiedLocally } from "@/lib/proStatus";
+import { ShieldCheck } from "lucide-react";
 
 export const WEEK_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -37,12 +39,12 @@ interface StreakWidgetProps {
 }
 
 export function StreakWidget({ onAddName, variant = "card" }: StreakWidgetProps) {
-  const sessionId = getSessionId();
   const userName = getUserName();
+  const isPro = isProVerifiedLocally();
 
-  const { data } = useQuery<{ currentStreak: number; longestStreak: number; visitDates: string[] }>({
-    queryKey: ["/api/streak", sessionId],
-    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+  const { data } = useQuery({
+    queryKey: ["/api/streak", isPro],
+    queryFn: fetchStreak,
     staleTime: 60_000,
   });
 
@@ -165,6 +167,17 @@ export function StreakWidget({ onAddName, variant = "card" }: StreakWidgetProps)
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {getSubtitle()}
             </p>
+            {isPro && data?.freezeAvailable && (
+              <p className="text-[10px] text-primary/70 mt-1 flex items-center gap-1" data-testid="streak-freeze-available">
+                <ShieldCheck className="w-3 h-3 shrink-0" />
+                One grace day this month if life gets busy
+              </p>
+            )}
+            {isPro && data?.freezeUsedThisMonth && !data?.freezeAvailable && (
+              <p className="text-[10px] text-muted-foreground/60 mt-1" data-testid="streak-freeze-used">
+                Grace day used this month
+              </p>
+            )}
           </div>
 
           {/* Streak badge */}

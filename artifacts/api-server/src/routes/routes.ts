@@ -25,8 +25,20 @@ import { getCulturalMomentNote } from "../culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText, buildWelcomeEmailHtml, buildWelcomeEmailText } from "../resend";
 import { scheduleDailyEmails } from "../emailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
+import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
+import { buildThresholdPayload, buildWeeklyWeather, buildVerseFrame } from "../homeExperience";
+import { buildJournalArchive } from "../journalArchive";
+import {
+  bindRateLimiter,
+  checkAiDailyLimit,
+  checkFeatureBudget,
+  parseProFlag,
+  aiDailyCap,
+} from "../costGuards";
+import { checkListenPolicy, getListenAllowance, type ListenScope } from "../listenLimits";
+import { getAiDailyLimits } from "../aiLimits";
 import { getTriviaSeed } from "../triviaSeed";
 import type { TriviaQuestion } from "@workspace/db";
 import {
@@ -118,11 +130,11 @@ function isRateLimited(key: string, maxRequests: number, windowMs: number): bool
   rateLimitStore.set(key, [...timestamps, now]);
   return false;
 }
-function getDailyLimit(daysWithApp: number): number {
-  if (daysWithApp <= 30) return 40;   // First 30 days: generous exploration
-  if (daysWithApp <= 90) return 25;   // Days 31–90: still comfortable, Pro awareness builds
-  return 15;                          // After 90 days: clear signal to go Pro
+function getDailyHardLimit(daysWithApp: number): number {
+  return getAiDailyLimits(daysWithApp).hardLimit;
 }
+
+bindRateLimiter(isRateLimited);
 
 function getDailyUsageCount(sessionId: string): number {
   const now = Date.now();
@@ -203,6 +215,7 @@ export async function registerRoutes(
   // subscriber email addresses but maintain separate databases.
   if (config.shouldRunSchedulers) {
     scheduleDailyEmails().catch(console.error);
+    scheduleProWeeklySpiritualWeatherEmails();
   } else {
     console.log("[email] Scheduler skipped. Set ENABLE_EMAIL_SCHEDULER=true on your VPS to enable.");
   }
@@ -211,17 +224,36 @@ export async function registerRoutes(
   app.get("/api/ai-usage", (req, res) => {
     const sessionId = req.query.sessionId as string | undefined;
     const daysWithApp = Math.max(1, Number(req.query.daysWithApp) || 1);
-    if (!sessionId) return res.json({ used: 0, limit: getDailyLimit(daysWithApp), remaining: getDailyLimit(daysWithApp) });
+    const isPro = parseProFlag(req.query.isPro);
+    const { displayLimit, phase } = getAiDailyLimits(daysWithApp);
+    const hardLimit = aiDailyCap(daysWithApp, isPro);
+    const effectiveLimit = isPro ? hardLimit : displayLimit;
+    if (!sessionId) {
+      return res.json({
+        used: 0,
+        limit: effectiveLimit,
+        hardLimit,
+        remaining: effectiveLimit,
+        phase,
+        isPro,
+      });
+    }
     const used = getDailyUsageCount(sessionId);
-    const limit = getDailyLimit(daysWithApp);
-    return res.json({ used, limit, remaining: Math.max(0, limit - used) });
+    return res.json({
+      used,
+      limit: effectiveLimit,
+      hardLimit,
+      remaining: Math.max(0, effectiveLimit - used),
+      phase,
+      isPro,
+    });
   });
 
   // ── AI usage — last 7 days per session ───────────────────────────────────
   app.get("/api/ai-usage/weekly", async (req, res) => {
     const sessionId = req.query.sessionId as string | undefined;
     const daysWithApp = Math.max(1, Number(req.query.daysWithApp) || 1);
-    const dailyLimit = getDailyLimit(daysWithApp);
+    const { displayLimit: dailyLimit } = getAiDailyLimits(daysWithApp);
 
     // Build a 7-element array: today at index 6, 6 days ago at index 0
     const days: { date: string; dayName: string; count: number; limit: number }[] = [];
@@ -376,6 +408,55 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/home/threshold", async (req, res) => {
+    const sessionId = (req.query.sessionId as string) || "";
+    const daysWithApp = Math.max(0, parseInt(String(req.query.daysWithApp ?? "0"), 10) || 0);
+    const isPro = req.query.isPro === "true";
+    if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+    try {
+      const threshold = await buildThresholdPayload(sessionId, daysWithApp, isPro);
+      res.json({ threshold });
+    } catch (err) {
+      console.error("[home/threshold]", err);
+      res.status(500).json({ error: "Could not load threshold" });
+    }
+  });
+
+  app.get("/api/home/weekly-weather", async (req, res) => {
+    const sessionId = (req.query.sessionId as string) || "";
+    const isPro = req.query.isPro === "true";
+    if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+    try {
+      const weather = await buildWeeklyWeather(sessionId, {
+        isPro,
+        withSeasonLetter: isPro,
+      });
+      res.json({ weather });
+    } catch (err) {
+      console.error("[home/weekly-weather]", err);
+      res.status(500).json({ error: "Could not load weekly weather" });
+    }
+  });
+
+  app.get("/api/home/verse-frame", async (req, res) => {
+    const reference = (req.query.reference as string) || "";
+    const text = (req.query.text as string) || "";
+    const sessionId = (req.query.sessionId as string) || "";
+    const isPro = parseProFlag(req.query.isPro);
+    if (!reference || !text) return res.status(400).json({ error: "reference and text required" });
+    const frameGuard = checkFeatureBudget(sessionId, "verse-frame", isPro);
+    if (!frameGuard.ok) {
+      return res.status(frameGuard.status).json({ error: frameGuard.message, code: frameGuard.code });
+    }
+    try {
+      const frame = await buildVerseFrame(openai, reference, text);
+      res.json({ frame });
+    } catch (err) {
+      console.error("[home/verse-frame]", err);
+      res.json({ frame: "One word for today — let it walk with you." });
+    }
+  });
+
   // Debug endpoint: inspect raw sheet rows to confirm column mapping
   app.get("/api/download/growth-plan", (_req, res) => {
     const pdfPath = path.resolve(process.cwd(), "scripts/shepherds-path-growth-plan.pdf");
@@ -395,11 +476,23 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/listen/allowance", (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    const isPro = req.query.isPro === "true";
+    if (!sessionId) return res.json({ isPro, devotionalChainsRemaining: isPro ? null : 1, requestsRemaining: isPro ? null : 50 });
+    return res.json(getListenAllowance(sessionId, isPro));
+  });
+
   // Text-to-speech using OpenAI — returns audio/mpeg
-  // GET endpoint (used by preload hook)
+  // GET endpoint (used by preload hook) — verse-only for free users
   app.get("/api/tts", async (req, res) => {
     const text = (req.query.text as string)?.trim();
     if (!text) return res.status(400).json({ message: "text required" });
+    const sessionId = req.query.sessionId as string | undefined;
+    const isPro = req.query.isPro === "true";
+    const scope = (req.query.scope as ListenScope) || "verse";
+    const policy = checkListenPolicy({ sessionId, isPro, scope, textLen: text.length });
+    if (!policy.ok) return res.status(policy.status).json({ code: policy.code, message: policy.message });
     try {
       const buffer = await getTTSAudio(text, "onyx");
       res.set("Content-Type", "audio/mpeg");
@@ -413,8 +506,24 @@ export async function registerRoutes(
 
   // POST endpoint (used by devotional listen button — allows voice selection)
   app.post("/api/tts", async (req, res) => {
-    const { text, voice } = req.body as { text: string; voice?: string };
+    const { text, voice, scope, chainStart, sessionId, isPro } = req.body as {
+      text: string;
+      voice?: string;
+      scope?: ListenScope;
+      chainStart?: boolean;
+      sessionId?: string;
+      isPro?: boolean;
+    };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
+    const listenScope = scope ?? "snippet";
+    const policy = checkListenPolicy({
+      sessionId,
+      isPro: isPro === true,
+      scope: listenScope,
+      chainStart: chainStart === true,
+      textLen: text.trim().length,
+    });
+    if (!policy.ok) return res.status(policy.status).json({ code: policy.code, message: policy.message });
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const selectedVoice = allowedVoices.includes(voice ?? "") ? voice! : "onyx";
     try {
@@ -432,6 +541,12 @@ export async function registerRoutes(
   const audioUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
   app.post("/api/transcribe", audioUpload.single("audio"), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No audio file provided" });
+    const sessionId = (req.body as { sessionId?: string })?.sessionId;
+    const isPro = parseProFlag((req.body as { isPro?: boolean })?.isPro);
+    const transcribeGuard = checkFeatureBudget(sessionId, "transcribe", isPro);
+    if (!transcribeGuard.ok) {
+      return res.status(transcribeGuard.status).json({ message: transcribeGuard.message, code: transcribeGuard.code });
+    }
     try {
       const audioFile = new File([req.file.buffer], req.file.originalname || "sermon.webm", {
         type: req.file.mimetype || "audio/webm",
@@ -482,6 +597,12 @@ ${transcription.text.slice(0, 8000)}`,
   const sermonChunkUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
   app.post("/api/sermon/chunk", sermonChunkUpload.single("audio"), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No audio provided" });
+    const sessionId = (req.body as { sessionId?: string })?.sessionId;
+    const isPro = parseProFlag((req.body as { isPro?: boolean })?.isPro);
+    const chunkGuard = checkFeatureBudget(sessionId, "sermon-chunk", isPro);
+    if (!chunkGuard.ok) {
+      return res.status(chunkGuard.status).json({ message: chunkGuard.message, code: chunkGuard.code });
+    }
     try {
       const audioFile = new File([req.file.buffer], req.file.originalname || "chunk.m4a", {
         type: req.file.mimetype || "audio/mp4",
@@ -1301,6 +1422,23 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
           : `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
       }
 
+      const isProGen = parseProFlag((req.body as { isPro?: boolean }).isPro);
+      const aiGuardGen = checkAiDailyLimit(sessionId2, daysWithApp2, isProGen);
+      if (!aiGuardGen.ok) {
+        return res.status(aiGuardGen.status).json({
+          message: aiGuardGen.message,
+          limitReached: true,
+        });
+      }
+      if (sessionId2) {
+        storage.logAiUsage({
+          sessionId: sessionId2,
+          feature: input.type === "reflection" ? "reflection" : "prayer",
+          daysWithApp: daysWithApp2,
+          platform: "web",
+        }).catch(() => {});
+      }
+
       await streamCompletion(
         [
           { role: "system", content: systemPrompt },
@@ -1338,6 +1476,23 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
 
       if (detectCrisis(input.question)) {
         return res.status(200).json({ content: CRISIS_RESPONSE });
+      }
+
+      const isProChat = parseProFlag((req.body as { isPro?: boolean }).isPro);
+      const aiGuardChat = checkAiDailyLimit(chatSessionId, chatDaysWithApp, isProChat);
+      if (!aiGuardChat.ok) {
+        return res.status(aiGuardChat.status).json({
+          message: aiGuardChat.message,
+          limitReached: true,
+        });
+      }
+      if (chatSessionId) {
+        storage.logAiUsage({
+          sessionId: chatSessionId,
+          feature: "devotional_chat",
+          daysWithApp: chatDaysWithApp,
+          platform: "web",
+        }).catch(() => {});
       }
 
       const { context: chatJournalCtx, count: chatEntryCount } = await getJournalContext(chatSessionId);
@@ -1468,8 +1623,10 @@ What you never do:
       return;
     }
     const passageDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
-    if (passageSessionId && isRateLimited(`daily:${passageSessionId}`, getDailyLimit(passageDaysWithApp), 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
+    const isProPassage = parseProFlag((req.body as any).isPro);
+    const aiGuardPassage = checkAiDailyLimit(passageSessionId, passageDaysWithApp, isProPassage);
+    if (!aiGuardPassage.ok) {
+      return res.status(aiGuardPassage.status).json({ message: aiGuardPassage.message, limitReached: true });
     }
     if (passageSessionId) storage.logAiUsage({ sessionId: passageSessionId, feature: "passage_chat", daysWithApp: passageDaysWithApp, platform: "web" }).catch(() => { });
 
@@ -1707,20 +1864,21 @@ What you never do:
 
   app.get("/api/streak", async (req, res) => {
     const sessionId = req.query.sessionId as string;
+    const isPro = req.query.isPro === "true";
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
     try {
-      const result = await storage.getStreak(sessionId);
-      res.json(result ?? { currentStreak: 0, longestStreak: 0, visitDates: [] });
+      const result = await storage.getStreak(sessionId, isPro);
+      res.json(result ?? { currentStreak: 0, longestStreak: 0, visitDates: [], freezeAvailable: isPro, freezeUsedThisMonth: false });
     } catch (err) {
       res.status(500).json({ message: "Failed to get streak" });
     }
   });
 
   app.post("/api/streak", async (req, res) => {
-    const { sessionId } = req.body;
+    const { sessionId, isPro } = req.body as { sessionId?: string; isPro?: boolean };
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
     try {
-      const result = await storage.recordStreak(sessionId);
+      const result = await storage.recordStreak(sessionId, isPro === true);
       res.json(result);
     } catch (err) {
       res.status(500).json({ message: "Failed to record streak" });
@@ -2012,6 +2170,23 @@ What you never do:
     }
   });
 
+  app.get("/api/journal/archive", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    const isPro = req.query.isPro === "true";
+    const q = (req.query.q as string) || "";
+    const type = (req.query.type as string) || "";
+    const day = (req.query.day as string) || "";
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      const archive = buildJournalArchive(entries, { isPro, q, type, day });
+      res.json(archive);
+    } catch (err) {
+      console.error("[journal/archive]", err);
+      res.status(500).json({ message: "Failed to load archive" });
+    }
+  });
+
   app.post("/api/journal", async (req, res) => {
     const parsed = insertJournalEntrySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid entry", errors: parsed.error.flatten() });
@@ -2167,12 +2342,14 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     const sessionId = (req.body as any).sessionId as string | undefined;
     const guidanceMode: string = (req.body as any).guidanceMode || "encouraging";
     const daysWithApp: number = Number((req.body as any).daysWithApp) || 1;
+    const isProGuidance = parseProFlag((req.body as any).isPro);
     const modeNote = buildModeNote(guidanceMode);
-    if (sessionId && isRateLimited(`guidance:${sessionId}`, 20, 3_600_000)) {
-      return res.status(429).json({ message: "Too many requests — please wait a moment before trying again." });
-    }
-    if (sessionId && isRateLimited(`daily:${sessionId}`, getDailyLimit(daysWithApp), 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
+    const aiGuardGuidance = checkAiDailyLimit(sessionId, daysWithApp, isProGuidance);
+    if (!aiGuardGuidance.ok) {
+      return res.status(aiGuardGuidance.status).json({
+        message: aiGuardGuidance.message,
+        limitReached: true,
+      });
     }
     if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
 
@@ -2442,8 +2619,10 @@ Rules:
     if (sid && isRateLimited(`vp:${sid}`, 12, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests" });
     }
-    if (sid && isRateLimited(`daily:${sid}`, getDailyLimit(vpDaysWithApp), 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
+    const isProVp = parseProFlag((req.body as any).isPro);
+    const aiGuardVp = checkAiDailyLimit(sid, vpDaysWithApp, isProVp);
+    if (!aiGuardVp.ok) {
+      return res.status(aiGuardVp.status).json({ message: aiGuardVp.message, limitReached: true });
     }
     if (sid) storage.logAiUsage({ sessionId: sid, feature: "verse_prayer", daysWithApp: vpDaysWithApp, platform: "web" }).catch(() => { });
     if (detectCrisis(situation)) {
@@ -2553,8 +2732,12 @@ Return JSON: { "action": "...", "scripture": "..." }`
   }
 
   app.post("/api/unsplash/photo", async (req, res) => {
-    const { situation } = req.body as { situation?: string };
+    const { situation, sessionId } = req.body as { situation?: string; sessionId?: string };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    const unsplashKey = sessionId ? `unsplash:${sessionId}` : `unsplash:ip:${req.ip ?? "anon"}`;
+    if (isRateLimited(unsplashKey, 20, 86_400_000)) {
+      return res.status(429).json({ message: "Photo lookup limit reached. Try again later." });
+    }
 
     const query = situationToUnsplashQuery(situation);
     const cached = unsplashPhotoCache.get(query);
@@ -2583,13 +2766,23 @@ Return JSON: { "action": "...", "scripture": "..." }`
 
   // ── Personal Prayer Portrait (Pro) ────────────────────────────────────────────
   app.post("/api/guidance/prayer-portrait", async (req, res) => {
-    const { imageBase64, mimeType, situation, answers } = req.body as {
+    const { imageBase64, mimeType, situation, answers, sessionId, isPro } = req.body as {
       imageBase64?: string;
       mimeType?: string;
       situation?: string;
       answers?: { belief?: string; burden?: string; cover?: string };
+      sessionId?: string;
+      isPro?: boolean;
     };
     if (!imageBase64?.trim()) return res.status(400).json({ message: "Image required" });
+    const proPortrait = parseProFlag(isPro);
+    if (!proPortrait) {
+      return res.status(403).json({ message: "Prayer Portrait is included with Pro.", code: "pro_required" });
+    }
+    const portraitGuard = checkFeatureBudget(sessionId, "prayer-portrait", true);
+    if (!portraitGuard.ok) {
+      return res.status(portraitGuard.status).json({ message: portraitGuard.message, code: portraitGuard.code });
+    }
 
     try {
       const parts: string[] = [];
@@ -2866,8 +3059,17 @@ Return JSON: { "action": "...", "scripture": "..." }`
     if (sessionIdJourney && isRateLimited(`journey:${sessionIdJourney}`, 10, 3_600_000)) {
       return res.status(429).json({ message: "Too many requests — please wait before generating another journey." });
     }
-    if (sessionIdJourney && isRateLimited(`daily:${sessionIdJourney}`, getDailyLimit(journeyDaysWithApp), 86_400_000)) {
-      return res.status(429).json({ message: "You've reached today's reflection limit. Come back tomorrow 🙏", limitReached: true });
+    const isProJourney = parseProFlag((req.body as any).isPro);
+    if (!isProJourney) {
+      return res.status(403).json({
+        message:
+          "A journey shaped from your exact words is included with Pro. Explore 7-day Guided Pathways for grief, anxiety, loneliness, and more on Bible Journeys.",
+        code: "pro_pathway_required",
+      });
+    }
+    const aiGuardJourney = checkAiDailyLimit(sessionIdJourney, journeyDaysWithApp, isProJourney);
+    if (!aiGuardJourney.ok) {
+      return res.status(aiGuardJourney.status).json({ message: aiGuardJourney.message, limitReached: true });
     }
     if (sessionIdJourney) storage.logAiUsage({ sessionId: sessionIdJourney, feature: "life_season", daysWithApp: journeyDaysWithApp, platform: "web" }).catch(() => { });
     if (detectCrisis(situation)) {
@@ -2887,10 +3089,15 @@ Return JSON: { "action": "...", "scripture": "..." }`
   // ── Devotional for Two ───────────────────────────────────────────────────────
 
   app.post("/api/devotional/for-two", async (req, res) => {
-    const { verseReference, verseText, reflection, lang } = req.body as {
+    const { verseReference, verseText, reflection, lang, sessionId, daysWithApp, isPro } = req.body as {
       verseReference?: string; verseText?: string; reflection?: string; lang?: string;
+      sessionId?: string; daysWithApp?: number; isPro?: boolean;
     };
     if (!verseReference || !verseText) return res.status(400).json({ message: "verseReference and verseText required" });
+    const forTwoGuard = checkAiDailyLimit(sessionId, Number(daysWithApp) || 1, parseProFlag(isPro));
+    if (!forTwoGuard.ok) {
+      return res.status(forTwoGuard.status).json({ message: forTwoGuard.message, code: forTwoGuard.code, limitReached: true });
+    }
     try {
       const reflectionContext = reflection
         ? `The devotional reflection for today is: "${reflection.substring(0, 600)}"`
@@ -2973,8 +3180,9 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
 
   app.post("/api/verse-art/generate", async (req, res) => {
     try {
-      const { verseDate, verseText, verseReference } = req.body as {
+      const { verseDate, verseText, verseReference, sessionId, isPro } = req.body as {
         verseDate: string; verseText: string; verseReference: string;
+        sessionId?: string; isPro?: boolean;
       };
       if (!verseDate || !verseText || !verseReference) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -2984,6 +3192,11 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
       const localPath = path.join(VERSE_ART_DIR, `${verseDate}.png`);
       if (fs.existsSync(localPath)) {
         return res.json({ imageUrl: `/api/verse-art/image/${verseDate}`, cached: true });
+      }
+
+      const artGuard = checkFeatureBudget(sessionId, "verse-art", parseProFlag(isPro));
+      if (!artGuard.ok) {
+        return res.status(artGuard.status).json({ message: artGuard.message, code: artGuard.code });
       }
 
       const prompt = `A breathtaking, cinematic spiritual landscape that captures the soul of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Style: ultra-high quality photorealistic landscape photography combined with painterly, luminous quality — National Geographic meets Rembrandt. Choose a scene that powerfully echoes the verse's meaning: radiant golden light bursting through ancient cathedral forest, majestic snow-capped mountains at sunrise, vast ocean at twilight with God-rays piercing the clouds, aurora borealis over a still wilderness valley, rolling fields of wildflowers at golden hour, or a serene river winding through ancient woodland. Rich warm light, extraordinary atmospheric depth, deeply spiritual and awe-inspiring mood. IMPORTANT: no people, no human figures, no faces, no text, no words, no letters anywhere. Pure nature only. This must be the most powerful, moving image possible.`;
@@ -3136,6 +3349,24 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
     }
   });
 
+  app.post("/api/pro/link-session", async (req, res) => {
+    const { email, sessionId } = req.body as { email?: string; sessionId?: string };
+    if (!email || !sessionId) {
+      return res.status(400).json({ message: "email and sessionId required" });
+    }
+    try {
+      const pro = await storage.getProSubscriberByEmail(email.toLowerCase());
+      if (pro?.status !== "active") {
+        return res.status(403).json({ message: "Active Pro subscription required" });
+      }
+      await storage.linkProEmailToSession(email, sessionId);
+      res.json({ linked: true });
+    } catch (err) {
+      console.error("[pro/link-session]", err);
+      res.status(500).json({ message: "Could not link session" });
+    }
+  });
+
   app.post("/api/stripe/restore", async (req, res) => {
     const { email } = req.body as { email: string };
     if (!email) return res.status(400).json({ message: "Email required" });
@@ -3178,14 +3409,17 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
     const sessionId = req.query.sessionId as string;
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
     try {
+      const { REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } = await import("../referralRewards");
       const referral = await storage.getOrCreateReferralCode(sessionId);
-      const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+      const appUrl = (process.env.APP_URL || "https://shepherdspathai.com").replace(/\/$/, "");
       const shareUrl = `${appUrl}?ref=${referral.code}`;
       res.json({
         code: referral.code,
         shareUrl,
         referralCount: referral.referralCount,
         proExpiresAt: referral.proExpiresAt,
+        referrerBonusDays: REFERRAL_DAYS_PER_FRIEND,
+        welcomeDays: REFERRAL_WELCOME_DAYS,
       });
     } catch (err) {
       res.status(500).json({ message: "Could not get referral code" });
@@ -4180,10 +4414,12 @@ ${historyNote}`;
   // Daily message — one curated short clip per day, anchored to verse + reflection context
   app.post("/api/sermon/daily", async (req, res) => {
     try {
-      const { verseId, date, reflectionContext } = req.body as {
+      const { verseId, date, reflectionContext, sessionId, isPro } = req.body as {
         verseId: number;
         date?: string;
         reflectionContext?: string;
+        sessionId?: string;
+        isPro?: boolean;
       };
 
       const dateKey = date || new Date().toISOString().slice(0, 10);
@@ -4191,6 +4427,11 @@ ${historyNote}`;
 
       if (dailySermonCache.has(cacheKey)) {
         return res.json(dailySermonCache.get(cacheKey));
+      }
+
+      const sermonGuard = checkFeatureBudget(sessionId, "sermon-daily", parseProFlag(isPro));
+      if (!sermonGuard.ok) {
+        return res.status(sermonGuard.status).json({ found: false, code: sermonGuard.code, message: sermonGuard.message });
       }
 
       const verse = await storage.getVerseById(verseId);
@@ -4292,8 +4533,9 @@ ${historyNote}`;
 
   app.post("/api/sermon/additional", async (req, res) => {
     try {
-      const { verseId, date, reflectionContext, primaryPastor, customTopic } = req.body as {
+      const { verseId, date, reflectionContext, primaryPastor, customTopic, sessionId, isPro } = req.body as {
         verseId: number; date?: string; reflectionContext?: string; primaryPastor?: string; customTopic?: string;
+        sessionId?: string; isPro?: boolean;
       };
 
       const dateKey = date || new Date().toISOString().slice(0, 10);
@@ -4302,6 +4544,11 @@ ${historyNote}`;
         ? `topic:${customTopic.slice(0, 40).toLowerCase().replace(/\s+/g, "-")}`
         : `${dateKey}:${verseId}:additional`;
       if (!customTopic && additionalSermonCache.has(cacheKey)) return res.json(additionalSermonCache.get(cacheKey));
+
+      const addGuard = checkFeatureBudget(sessionId, "sermon-additional", parseProFlag(isPro));
+      if (!addGuard.ok) {
+        return res.status(addGuard.status).json({ found: false, sermons: [], code: addGuard.code, message: addGuard.message });
+      }
 
       // For standalone custom-topic searches (GoDeepCard), verseId is not provided —
       // skip the verse lookup entirely; the AI only needs the topic.
@@ -4486,11 +4733,18 @@ Example: {"prompts":["What does adoption mean in Romans 8?","How does the Spirit
   // Scripture context — 3 plain-language sections + bridge back to the devotional moment
   app.get("/api/context", async (req, res) => {
     try {
-      const { reference, text } = req.query as { reference?: string; text?: string };
+      const { reference, text, sessionId, isPro } = req.query as {
+        reference?: string; text?: string; sessionId?: string; isPro?: string;
+      };
       if (!reference || !text) return res.status(400).json({ error: "Missing params" });
 
       const cacheKey = reference.toLowerCase().replace(/[\s:,]/g, "_");
       if (scriptureContextCache.has(cacheKey)) return res.json(scriptureContextCache.get(cacheKey));
+
+      const ctxGuard = checkFeatureBudget(sessionId, "context-fetch", parseProFlag(isPro));
+      if (!ctxGuard.ok) {
+        return res.status(ctxGuard.status).json({ error: ctxGuard.message, code: ctxGuard.code });
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -4531,10 +4785,13 @@ Return a JSON object with exactly these four fields:
   // Context Q&A — brief, grounded follow-up answers anchored to the passage
   app.post("/api/context/ask", async (req, res) => {
     try {
-      const { reference, text, question } = req.body as {
+      const { reference, text, question, sessionId, isPro, daysWithApp } = req.body as {
         reference?: string;
         text?: string;
         question?: string;
+        sessionId?: string;
+        isPro?: boolean;
+        daysWithApp?: number;
       };
       if (!reference || !text || !question) {
         return res.status(400).json({ error: "Missing params" });
@@ -4542,6 +4799,16 @@ Return a JSON object with exactly these four fields:
 
       if (detectCrisis(question)) {
         return res.status(200).json({ content: CRISIS_RESPONSE });
+      }
+
+      const isProCtx = parseProFlag(isPro);
+      const askGuard = checkFeatureBudget(sessionId, "context-ask", isProCtx);
+      if (!askGuard.ok) {
+        return res.status(askGuard.status).json({ error: askGuard.message, code: askGuard.code });
+      }
+      const aiGuardCtxAsk = checkAiDailyLimit(sessionId, Number(daysWithApp) || 1, isProCtx);
+      if (!aiGuardCtxAsk.ok) {
+        return res.status(aiGuardCtxAsk.status).json({ error: aiGuardCtxAsk.message, limitReached: true });
       }
 
       const response = await openai.chat.completions.create({

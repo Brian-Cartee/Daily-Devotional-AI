@@ -1,33 +1,22 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Gift, Copy, Share2, Check, Users } from "lucide-react";
+import { Link } from "wouter";
+import { Gift, Copy, Share2, Check, Users, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
+import { useReferralInvite } from "@/hooks/useReferralInvite";
+import { inviteShareText, INVITE_SHARE_TITLE } from "@/lib/referralShare";
 
-interface ReferralData {
-  code: string;
-  shareUrl: string;
-  referralCount: number;
-  proExpiresAt: string | null;
+type ShareInviteVariant = "full" | "compact" | "inline";
+
+interface ShareInviteCardProps {
+  variant?: ShareInviteVariant;
+  className?: string;
 }
 
-export function ShareInviteCard() {
+export function ShareInviteCard({ variant = "full", className = "" }: ShareInviteCardProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const sessionId = getSessionId();
-
-  const { data, isLoading } = useQuery<ReferralData>({
-    queryKey: ["/api/referral/my-code", sessionId],
-    queryFn: () =>
-      fetch(`/api/referral/my-code?sessionId=${encodeURIComponent(sessionId)}`).then((r) => r.json()),
-  });
-
-  const daysRemaining = (() => {
-    if (!data?.proExpiresAt) return 0;
-    const diff = new Date(data.proExpiresAt).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  })();
+  const { data, isLoading, bonusDays, welcomeDays, daysRemaining } = useReferralInvite();
 
   const handleCopy = async () => {
     if (!data?.shareUrl) return;
@@ -43,40 +32,72 @@ export function ShareInviteCard() {
 
   const handleNativeShare = async () => {
     if (!data?.shareUrl) return;
+    const text = inviteShareText(bonusDays, welcomeDays);
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Shepherd's Path — Daily Walk with Jesus",
-          text: "I've been using this for my daily devotional. Open your Bible. We'll open the conversation.",
+          title: INVITE_SHARE_TITLE,
+          text,
           url: data.shareUrl,
         });
       } catch {
-        // user cancelled, no action needed
+        /* cancelled */
       }
     } else {
-      handleCopy();
+      try {
+        await navigator.clipboard.writeText(`${text}\n\n${data.shareUrl}`);
+        toast({ title: "Copied invite message", description: "Paste into a text or group chat." });
+      } catch {
+        handleCopy();
+      }
     }
   };
 
   if (isLoading) return null;
 
+  if (variant === "inline") {
+    return (
+      <Link href="/invite">
+        <div
+          data-testid="share-invite-inline"
+          className={`flex items-center gap-2 rounded-xl border border-amber-200/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800/30 px-3 py-2.5 active:scale-[0.99] transition-transform ${className}`}
+        >
+          <Gift className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-[13px] font-semibold text-foreground flex-1">
+            Invite a friend — {bonusDays} Pro days each
+          </span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+        </div>
+      </Link>
+    );
+  }
+
+  const isCompact = variant === "compact";
+
   return (
     <div
-      className="mt-8 rounded-2xl border border-amber-200/40 bg-gradient-to-br from-amber-50/60 to-purple-50/40 dark:from-amber-900/10 dark:to-purple-900/10 dark:border-amber-700/20 p-5"
+      className={`${isCompact ? "mt-4" : "mt-8"} rounded-2xl border border-amber-200/40 bg-gradient-to-br from-amber-50/60 to-purple-50/40 dark:from-amber-900/10 dark:to-purple-900/10 dark:border-amber-700/20 ${isCompact ? "p-4" : "p-5"} ${className}`}
       data-testid="share-invite-card"
     >
-      <div className="flex items-start gap-3 mb-3">
+      <div className={`flex items-start gap-3 ${isCompact ? "mb-2" : "mb-3"}`}>
         <div className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
           <Gift className="w-4 h-4 text-amber-600 dark:text-amber-400" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
-            Invite a friend — earn 14 free Pro days
+            {isCompact ? "Share the walk" : `Invite a friend — earn ${bonusDays} free Pro days`}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Every friend who joins through your link adds 14 days of Pro to your account. No limits.
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+            Friends get <strong>{welcomeDays} days of Pro</strong> when they join through your link.
+            You earn <strong>{bonusDays} bonus days</strong> per friend.
+            {!isCompact && " No limits."}
           </p>
         </div>
+        {isCompact && (
+          <Link href="/invite" className="text-[11px] font-semibold text-primary shrink-0">
+            Details
+          </Link>
+        )}
       </div>
 
       {(data?.referralCount ?? 0) > 0 && (
@@ -85,20 +106,25 @@ export function ShareInviteCard() {
           <span>
             <strong>{data?.referralCount}</strong> friend{data?.referralCount !== 1 ? "s" : ""} joined
             {daysRemaining > 0 && (
-              <> · <strong>{daysRemaining} days</strong> Pro remaining</>
+              <>
+                {" "}
+                · <strong>{daysRemaining} days</strong> referral Pro left
+              </>
             )}
           </span>
         </div>
       )}
 
-      <div className="flex items-center gap-2 mb-3 bg-white/70 dark:bg-gray-800/50 rounded-lg border border-gray-200/60 dark:border-gray-600/40 px-3 py-2">
-        <p
-          className="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate font-mono"
-          data-testid="text-referral-url"
-        >
-          {data?.shareUrl ?? "Loading..."}
-        </p>
-      </div>
+      {!isCompact && (
+        <div className="flex items-center gap-2 mb-3 bg-white/70 dark:bg-gray-800/50 rounded-lg border border-gray-200/60 dark:border-gray-600/40 px-3 py-2">
+          <p
+            className="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate font-mono"
+            data-testid="text-referral-url"
+          >
+            {data?.shareUrl ?? "Loading..."}
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <Button

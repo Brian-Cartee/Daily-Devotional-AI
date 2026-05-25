@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { href: "/study",      label: "Study",      icon: Search },
   { href: "/journal",    label: "Journal",    icon: NotebookPen },
   { href: "/stories",    label: "Stories",    icon: Heart },
-  { href: "/store",      label: "Store",      icon: ShoppingBag },
 ];
 
 const BOTTOM_NAV_ITEMS = [
@@ -246,6 +245,16 @@ export function NavBar() {
                         </span>
                       </div>
                     </button>
+
+                    <Link
+                      href="/store"
+                      data-testid="nav-store-more"
+                      onClick={() => setMoreOpen(false)}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">Merch Store</span>
+                    </Link>
 
                     {/* How to use */}
                     <Link

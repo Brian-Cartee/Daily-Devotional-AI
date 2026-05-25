@@ -42,6 +42,19 @@ export function markProVerified(email?: string): void {
   localStorage.setItem(PRO_VERIFIED_KEY, "true");
 }
 
+/** Links Pro billing email to this device session for weekly spiritual weather email. */
+export async function linkProSessionForContinuity(email: string, sessionId: string): Promise<void> {
+  try {
+    await fetch("/api/pro/link-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.toLowerCase(), sessionId }),
+    });
+  } catch {
+    /* non-blocking */
+  }
+}
+
 export function markReferralPro(expiresAt: string): void {
   localStorage.setItem(REFERRAL_PRO_KEY, expiresAt);
 }

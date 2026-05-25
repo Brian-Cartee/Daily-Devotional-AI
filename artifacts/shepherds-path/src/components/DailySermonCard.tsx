@@ -4,6 +4,7 @@ import { Play, X, Loader2, BookOpen, ChevronDown, Check, ExternalLink } from "lu
 import { useLocation } from "wouter";
 import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally, isOwnerPreviewActive } from "@/lib/proStatus";
+import { apiSessionExtras } from "@/lib/requestExtras";
 
 function decodeHtmlEntities(str: string): string {
   return str
@@ -124,6 +125,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
         verseId,
         date: new Date().toISOString().slice(0, 10),
         reflectionContext: reflectionContent,
+        ...apiSessionExtras(),
       }),
     })
       .then(r => r.json())

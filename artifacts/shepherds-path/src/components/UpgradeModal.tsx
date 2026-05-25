@@ -4,21 +4,13 @@ import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartph
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
 import { markProVerified, activateProCode } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
 import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
 import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
 
-const PRO_FEATURES = [
-  "No daily limits — use it as much as you need",
-  "Beautiful PDF copy of your journal",
-  "Full devotional history archive",
-  "Custom Bible reading plans",
-  "Multiple named prayer journals",
-  "Streak protection — never lose your streak",
-  "Weekly AI-powered spiritual summary email",
-  "Curated video teachings — surfaced by the AI when your conversation calls for deeper guidance",
-];
+const PRO_FEATURES = PRO_FEATURE_BULLETS;
 
 const PLAY_SKUS = {
   monthly: "monthly_pro",

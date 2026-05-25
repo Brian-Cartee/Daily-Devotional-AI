@@ -8,7 +8,7 @@ export function getGuidanceMode(): GuidanceMode {
     if (stored === "encouraging") return "encouraging";
     if (stored === "coach") return "coach";
   } catch {}
-  return "coach";
+  return "encouraging";
 }
 
 export function saveGuidanceMode(mode: GuidanceMode): void {

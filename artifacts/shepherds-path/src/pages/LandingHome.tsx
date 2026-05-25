@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Sunrise, Swords, Compass, BookOpen, ArrowRight, ShieldCheck, ChevronDown, ChevronRight, Check, Share2, Flame, Sparkles, Mic, MicOff, Star, Smartphone, Download, Zap, SlidersHorizontal, BookMarked, HandHeart, Heart, Gift, Users, Volume2, Play, Trophy, Moon, HelpCircle, Wind, Monitor } from "lucide-react";
+import { Sun, ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, SlidersHorizontal, BookMarked, HandHeart } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
@@ -11,24 +11,22 @@ import { clearReturningHome, isReturningHome } from "@/lib/introState";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
+import { fetchStreak } from "@/lib/streakApi";
+import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
 import { useDemoMode } from "@/components/DemoProvider";
-import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
-import { AiPauseModal } from "@/components/AiPauseModal";
-import { streamAI } from "@/lib/streamAI";
 import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import {
-  getRhythm, markFirstAction, hasFirstAction,
+  getRhythm, hasFirstAction,
   getRhythmDismissed, incrementRhythmDismissed,
   getRecommendedJourneyId, getJourneyName, getDailyVerse, getPrayerPrompt,
   FOCUS_LABELS, type FaithRhythm,
 } from "@/lib/faithRhythm";
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
 import { GuidedWalkthrough, shouldShowWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
-import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import {
   GreetingHeader, ReturningUserCard, GratitudePromptCard,
-  CheckinCard, ShareVerseButton, SundaySummaryCard, FrameworkDayCard,
+  CheckinCard, ShareVerseButton, SundaySummaryCard,
   FirstStepsCard, WeeklyReflectionCard, NotificationNudgeCard, LateNightBannerCard,
   WalkMilestoneCard, TheReturnCard,
 } from "@/components/EngagementCards";
@@ -40,47 +38,15 @@ import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
+import { ThresholdHero } from "@/components/ThresholdHero";
+import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
+import { HomePathShortcuts } from "@/components/HomePathShortcuts";
+import { HomeExploreSection } from "@/components/HomeExploreSection";
+import { HomeHeartLink } from "@/components/HomeHeartLink";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
 const logoLarge = "/logo-mark-white.png";
-
-const sections = [
-  {
-    href: "/understand",
-    icon: Compass,
-    pillText: "Choose Your Journey",
-    title: "Bible Journeys",
-    description: "Guided paths through Scripture — the Psalms, the Life of Jesus, Lent, the Sermon on the Mount, and more. Each one takes you deeper.",
-    cta: "Explore Journeys",
-    testid: "card-understand",
-    imageBg: "bg-gradient-to-br from-indigo-500/10 to-violet-500/5",
-    border: "border-indigo-900/10",
-    iconColor: "text-indigo-500",
-    pillClass: "bg-indigo-500/10 text-indigo-600",
-    accentGradient: "bg-gradient-to-b from-indigo-400 to-violet-500",
-    iconBg: "bg-gradient-to-br from-indigo-100 to-violet-50",
-    iconShadow: "shadow-indigo-200/60",
-    photo: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=700&q=70&auto=format&fit=crop",
-  },
-  {
-    href: "/read",
-    icon: BookOpen,
-    pillText: "Full Bible",
-    title: "Read the Bible",
-    description: "Read Genesis to Revelation in KJV, WEB, or ASV — with meaning, context, and reflection always within reach.",
-    cta: "Start Reading",
-    testid: "card-read",
-    imageBg: "bg-gradient-to-br from-amber-500/10 to-orange-500/5",
-    border: "border-amber-900/10",
-    iconColor: "text-amber-500",
-    pillClass: "bg-amber-500/10 text-amber-600",
-    accentGradient: "bg-gradient-to-b from-amber-400 to-orange-500",
-    iconBg: "bg-gradient-to-br from-amber-100 to-orange-50",
-    iconShadow: "shadow-amber-200/60",
-    photo: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=700&q=70&auto=format&fit=crop",
-  },
-];
 
 function formatVisitDate(dateStr: string): string {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -95,238 +61,11 @@ function formatVisitDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-
-function HeroAIPrompt() {
-  const [query, setQuery] = useState("");
-  const [, navigate] = useLocation();
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [placeholderVisible, setPlaceholderVisible] = useState(true);
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-
-  const dayPlaceholders = [
-    "I'm going through a divorce and I don't know how to move forward…",
-    "I just lost someone I love and I'm struggling to find peace…",
-    "I'm battling anxiety and my faith feels weak right now…",
-    "My marriage is falling apart and I don't know where to turn…",
-    "I feel distant from God and I'm not sure why…",
-    "I'm facing a health diagnosis and I'm scared…",
-    "I lost my job and I'm not sure what God is doing…",
-    "I'm carrying grief that no one around me seems to understand…",
-  ];
-  const nightPlaceholders = [
-    "I can't sleep — something is weighing on me tonight…",
-    "It's late and I feel completely alone right now…",
-    "I don't know how to pray, but I need something tonight…",
-    "Something is keeping me up and I don't know where else to go…",
-    "My mind won't stop — I'm looking for some peace…",
-    "I'm scared and it's late and I just need some comfort…",
-  ];
-  const placeholders = isLateNight() ? nightPlaceholders : dayPlaceholders;
-
-  useEffect(() => {
-    const timer = setTimeout(() => inputRef.current?.focus(), 600);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlaceholderVisible(false);
-      setTimeout(() => {
-        setPlaceholderIndex(i => (i + 1) % placeholders.length);
-        setPlaceholderVisible(true);
-      }, 400);
-    }, 3800);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    function handler(e: CustomEvent<{ text: string }>) {
-      setQuery(e.detail.text);
-      setTimeout(() => {
-        const input = document.querySelector<HTMLElement>('[data-testid="hero-ai-input"]');
-        input?.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => inputRef.current?.focus(), 300);
-      }, 80);
-    }
-    window.addEventListener("sp-fill-prompt", handler as EventListener);
-    return () => window.removeEventListener("sp-fill-prompt", handler as EventListener);
-  }, []);
-
-  const toggleVoice = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setQuery(transcript);
-      if (event.results[event.results.length - 1].isFinal) {
-        inputRef.current?.focus();
-      }
-    };
-    recognitionRef.current = recognition;
-    recognition.start();
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    markFirstAction();
-    navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (query.trim()) navigate(`/guidance?situation=${encodeURIComponent(query.trim())}`);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative rounded-2xl overflow-hidden mb-1 shadow-lg shadow-primary/15 border border-primary/20"
-    >
-      {/* Colored header band */}
-      <div className="px-6 py-3.5 flex items-center gap-2.5" style={{ background: "linear-gradient(135deg, hsl(292 98% 28%), hsl(292 85% 36%))" }}>
-        <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
-          <Sparkles className="w-3.5 h-3.5 text-white/90" />
-        </div>
-        <span className="text-[14px] font-bold text-white" style={{ letterSpacing: "0.01em" }}>Talk It Through</span>
-      </div>
-
-      <div className="px-6 pt-4 pb-5 bg-card">
-
-
-        {/* Section 1 — open question */}
-        <form onSubmit={handleSubmit}>
-          <div className="relative rounded-xl border border-amber-400/30 bg-background focus-within:ring-2 focus-within:ring-amber-400/40 focus-within:border-amber-400/70 transition-all overflow-hidden shadow-sm">
-            {/* Textarea */}
-            <textarea
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              spellCheck
-              autoCapitalize="sentences"
-              autoCorrect="on"
-              autoComplete="off"
-              ref={inputRef}
-              data-testid="hero-ai-input"
-              rows={4}
-              className="w-full bg-transparent px-4 pt-3 pb-2 text-[15px] text-foreground outline-none resize-none leading-relaxed"
-            />
-            {/* Animated placeholder overlay */}
-            {!query && (
-              <span
-                className="absolute left-4 top-3 text-[15px] text-muted-foreground pointer-events-none leading-relaxed transition-opacity duration-300"
-                style={{ opacity: placeholderVisible ? 1 : 0, right: "0.75rem" }}
-              >
-                {placeholders[placeholderIndex]}
-              </span>
-            )}
-            {/* Bottom toolbar */}
-            <div className="flex items-center justify-between px-2 pb-2">
-              {hasSpeechSupport ? (
-                <button
-                  type="button"
-                  onClick={toggleVoice}
-                  data-testid="button-voice-input"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                  style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
-                >
-                  {isListening
-                    ? <MicOff className="w-4 h-4" />
-                    : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />
-                  }
-                  {isListening && (
-                    <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />
-                  )}
-                </button>
-              ) : <span />}
-              <button
-                type="submit"
-                disabled={!query.trim()}
-                data-testid="hero-ai-submit"
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 disabled:opacity-50 transition-all shadow-md shadow-amber-400/50"
-              >
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </form>
-
-        {/* Situation chips — secondary helper, not the preferred path */}
-        <div className="mt-3">
-          <p className="text-[11px] text-muted-foreground/70 mb-2 px-0.5">
-            Not sure where to start? Tap one to fill in a starting point — then make it your own.
-          </p>
-          <div className="relative">
-            <div
-              className="flex gap-2 overflow-x-auto pb-1"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-            {[
-              { label: "I'm carrying grief",         fill: "I'm grieving the loss of someone I love and I don't know how to process the pain…" },
-              { label: "I'm facing something in my marriage",    fill: "My marriage is struggling and I don't know where to turn…" },
-              { label: "I feel distant from God", fill: "I feel distant from God lately and I'm not sure why…" },
-              { label: "I'm struggling with anxiety",      fill: "I'm battling anxiety and my faith feels weak right now…" },
-              { label: "I'm facing something with my health",      fill: "I'm facing a health challenge and I'm scared about what comes next…" },
-              { label: "I'm searching for direction",        fill: "I need direction for my life and I'm not sure which way to go…" },
-              { label: "I'm under financial pressure",       fill: "I'm going through financial difficulty and I'm stressed and worried…" },
-              { label: "I feel lost",          fill: "I feel lost and I'm struggling to find my purpose right now…" },
-            ].map(({ label, fill }) => (
-              <button
-                key={label}
-                type="button"
-                data-testid={`chip-situation-${label.toLowerCase().replace(/\s+/g, "-")}`}
-                onClick={() => {
-                  setQuery(fill);
-                  inputRef.current?.focus();
-                }}
-                className="shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-foreground/60 hover:bg-primary/10 hover:text-foreground/80 hover:border-primary/35 active:scale-95 transition-all"
-              >
-                {label}
-              </button>
-            ))}
-            {/* Trailing spacer — must be >= fade overlay width (w-14) to clear it */}
-            <div className="w-14 flex-shrink-0" />
-            </div>
-            {/* Fade + chevron — signals more chips to the right */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
-              style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 70%)" }}>
-              <ChevronRight className="w-5 h-5 text-foreground/65 mr-0.5" />
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </motion.div>
-  );
-}
-
 function DevotionalCard() {
-  const sessionId = getSessionId();
-  const { data } = useQuery<{ currentStreak: number; longestStreak: number; visitDates: string[] }>({
-    queryKey: ["/api/streak", sessionId],
-    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+  const isPro = isProVerifiedLocally();
+  const { data } = useQuery({
+    queryKey: ["/api/streak", isPro],
+    queryFn: fetchStreak,
     staleTime: 60_000,
   });
 
@@ -660,7 +399,7 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
 })();
 
 export default function LandingHome() {
-  const [, navigate] = useLocation();
+  const sessionId = getSessionId();
   const skipIntrosForHome = isReturningHome();
   const [showSplash, setShowSplash] = useState(() => !skipIntrosForHome && shouldShowSplash());
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -678,7 +417,6 @@ export default function LandingHome() {
     if (skipIntrosForHome) clearReturningHome();
   }, [skipIntrosForHome]);
   const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
-  const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
@@ -703,50 +441,14 @@ export default function LandingHome() {
       setTimeout(scrollToIt, 500);
     }
   }, []);
-  // Passage finder state
-  const [passageQuery, setPassageQuery] = useState("");
-  const [passageResult, setPassageResult] = useState("");
-  const [passageLoading, setPassageLoading] = useState(false);
-  const [showAiPause, setShowAiPause] = useState(false);
-  const [somethingElseOpen, setSomethingElseOpen] = useState(false);
-  const [somethingElseText, setSomethingElseText] = useState("");
-  const [commitmentOpen, setCommitmentOpen] = useState(true);
-
-  const findPassage = async () => {
-    const desc = passageQuery.trim();
-    if (!desc || passageLoading) return;
-    if (!canUseAi()) { setShowAiPause(true); return; }
-    recordAiUsage();
-    setPassageLoading(true);
-    setPassageResult("");
-    try {
-      const result = await streamAI(
-        "/api/chat/passage",
-        {
-          passageRef: "story-finder",
-          passageText: desc,
-          userName: getUserName() ?? undefined,
-          sessionId: getSessionId(),
-          daysWithApp: getRelationshipAge(),
-          messages: [{
-            role: "user",
-            content: `A user is trying to find a Bible story, passage, or verse they remember. They described it as:\n\n"${desc}"\n\nYour job is to identify the scripture(s) that best match this description. For each match, provide:\n- **Story/Passage Name** (the common title)\n- **Reference** (e.g. John 6:1–14; also note parallel passages)\n- **Why it matches** (1 sentence)\n- **Key Verse** (the single most memorable line)\n\nProvide 1–3 matches. Be warm, clear, and helpful. End with an encouraging sentence.`,
-          }],
-        },
-        (text) => setPassageResult(text),
-      );
-      setPassageResult(result);
-    } catch {
-      setPassageResult("Sorry, we couldn't search right now. Please try again.");
-    }
-    setPassageLoading(false);
-  };
+  const [commitmentOpen, setCommitmentOpen] = useState(false);
+  const [showDepthExtras, setShowDepthExtras] = useState(false);
   const demo = useDemoMode();
 
-  const sessionId = getSessionId();
-  const { data: streakData } = useQuery<{ currentStreak: number; visitDates: string[] }>({
-    queryKey: ["/api/streak", sessionId],
-    queryFn: () => fetch(`/api/streak?sessionId=${sessionId}`).then(r => r.json()),
+  const isProStreak = isProVerifiedLocally();
+  const { data: streakData } = useQuery({
+    queryKey: ["/api/streak", isProStreak],
+    queryFn: fetchStreak,
     staleTime: 60_000,
   });
 
@@ -797,19 +499,11 @@ export default function LandingHome() {
     } catch { }
   };
 
-  const focusHeroInput = () => {
-    setTimeout(() => {
-      const input = document.querySelector<HTMLInputElement>('[data-testid="hero-ai-input"]');
-      input?.scrollIntoView({ behavior: "smooth", block: "center" });
-      input?.focus();
-    }, 600);
-  };
-
   const handleDismissWelcome = () => {
     dismissWelcome();
     markEntryShown();
     setShowEntryScreen(false);
-    focusHeroInput();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -826,6 +520,7 @@ export default function LandingHome() {
         {showWelcome && !showOnboarding && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       {showEntryScreen && !showOnboarding && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      <SpiritualWeatherCard />
       <SimpleNotifNudge />
       <DeepNotifNudge />
       <AnimatePresence>
@@ -846,80 +541,10 @@ export default function LandingHome() {
         }}
       />
 
-      {/* Hero section */}
-      <div className="relative h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden">
-        <img
-          src="/hero-landing.webp"
-          alt="A road cresting a green hill toward golden light"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "center center" }}
-        />
-        <div className="absolute inset-0" style={{background: "linear-gradient(to bottom, rgba(10,8,24,0.22) 0%, rgba(10,8,24,0.08) 38%, rgba(10,8,24,0.52) 100%)"}} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background)) 4%, transparent 42%)" }} />
-
-        {/* Share — top right of hero */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20">
-          <button
-            onClick={handleShareApp}
-            data-testid="btn-share-hero"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white/85 hover:bg-black/45 active:scale-95 transition-all"
-          >
-            {shared
-              ? <Check className="w-3.5 h-3.5 text-green-400" />
-              : <Share2 className="w-3.5 h-3.5" />
-            }
-          </button>
-        </div>
-
-        {/* Hero text */}
-        <div className="relative z-10 flex flex-col items-start justify-center h-full text-left px-5 pl-8 sm:pl-14 pb-14 sm:pb-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="flex flex-col items-start leading-none mb-3 select-none">
-              <span className="text-white mb-1" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.25rem, 4vw, 1.5rem)", letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 2px 20px rgba(0,0,0,0.7)" }}>Shepherd's</span>
-              <span className="text-white font-black leading-none drop-shadow-lg" style={{ fontSize: "clamp(2.8rem, 11vw, 4.5rem)", letterSpacing: "-0.02em", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>PATH</span>
-            </div>
-            <p className="text-white/90 drop-shadow mt-2" style={{ fontFamily: "var(--font-decorative)", fontWeight: 400, fontSize: "clamp(1.35rem, 5vw, 2rem)", letterSpacing: "0.01em" }}>
-              You don't have to walk this alone.
-            </p>
-
-            {demo?.config.isDemo && (
-              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
-                <span className="text-white/60 text-[10px] uppercase tracking-wider font-semibold">For</span>
-                <span className="text-white text-[12px] font-bold">{demo.config.churchName}</span>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Ambient grass — blurred hero image bleeds into side margins on wide screens */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none select-none absolute inset-x-0 bottom-0 overflow-hidden"
-        style={{ top: "56vh", zIndex: 1 }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "url('/hero-landing.webp')",
-            backgroundSize: "cover",
-            backgroundPosition: "center 18%",
-            filter: "blur(5px)",
-            opacity: 0.48,
-            transform: "scale(1.06)",
-            maskImage: "linear-gradient(to bottom, transparent 0%, black 35%)",
-            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 35%)",
-          }}
-        />
-      </div>
+      <ThresholdHero />
 
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-3 pb-20 relative z-10 -mt-16 sm:-mt-20">
+      <div className="max-w-xl md:max-w-4xl mx-auto px-3 pb-20 relative z-10 -mt-4">
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
@@ -983,197 +608,25 @@ export default function LandingHome() {
             </div>
           )}
 
-          {/* ══ FOR YOU ══ */}
+          {/* ══ Today's path — chapel first, marketplace later ══ */}
           <div className="flex flex-col gap-3">
 
-          {/* Guided walkthrough — passive entry, shows for first few visits */}
+          <DevotionalCard />
+          <HomePathShortcuts />
+
           <AnimatePresence>
             {showWalkthrough && (
               <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
             )}
           </AnimatePresence>
 
-          {/* Late-night presence banner — replaces energetic cards between 11pm–5am */}
           <LateNightBannerCard />
-
-          {/* Walk milestone — grounding acknowledgment at 30/60/100 days */}
           <WalkMilestoneCard daysWithApp={getRelationshipAge()} />
-
-          {/* Returning-user grace card */}
           <ReturningUserCard />
-
-          {/* Notification nudge — shown once to users who haven't enabled reminders */}
           <NotificationNudgeCard />
-
-          {/* ── Daily Verse anchor — scripture before anything else ── */}
-          {!isLateNight() && (() => {
-            const ANCHOR_VERSES = [
-              { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
-              { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13" },
-              { text: "Come to me, all you who are weary and burdened, and I will give you rest.", ref: "Matthew 11:28" },
-              { text: "For God so loved the world that He gave His one and only Son.", ref: "John 3:16" },
-              { text: "Trust in the Lord with all your heart and lean not on your own understanding.", ref: "Proverbs 3:5" },
-              { text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you.", ref: "Joshua 1:9" },
-              { text: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.", ref: "Psalm 34:18" },
-              { text: "Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.", ref: "Philippians 4:6" },
-              { text: "For I know the plans I have for you, declares the Lord — plans to prosper you and not to harm you.", ref: "Jeremiah 29:11" },
-              { text: "And we know that in all things God works for the good of those who love Him.", ref: "Romans 8:28" },
-              { text: "Cast all your anxiety on Him because He cares for you.", ref: "1 Peter 5:7" },
-              { text: "The Lord himself goes before you and will be with you; He will never leave you nor forsake you.", ref: "Deuteronomy 31:8" },
-              { text: "Even though I walk through the darkest valley, I will fear no evil, for You are with me.", ref: "Psalm 23:4" },
-              { text: "My grace is sufficient for you, for My power is made perfect in weakness.", ref: "2 Corinthians 12:9" },
-              { text: "In Him we have redemption through His blood, the forgiveness of sins.", ref: "Ephesians 1:7" },
-              { text: "God is our refuge and strength, an ever-present help in trouble.", ref: "Psalm 46:1" },
-              { text: "The steadfast love of the Lord never ceases; His mercies never come to an end.", ref: "Lamentations 3:22-23" },
-              { text: "Ask and it will be given to you; seek and you will find; knock and the door will be opened.", ref: "Matthew 7:7" },
-              { text: "He gives strength to the weary and increases the power of the weak.", ref: "Isaiah 40:29" },
-              { text: "Peace I leave with you; My peace I give you. I do not give as the world gives.", ref: "John 14:27" },
-              { text: "Your word is a lamp to my feet and a light to my path.", ref: "Psalm 119:105" },
-              { text: "But those who hope in the Lord will renew their strength.", ref: "Isaiah 40:31" },
-              { text: "Greater is He who is in you than he who is in the world.", ref: "1 John 4:4" },
-              { text: "If God is for us, who can be against us?", ref: "Romans 8:31" },
-              { text: "The Lord bless you and keep you; the Lord make His face shine on you.", ref: "Numbers 6:24-25" },
-              { text: "I lift up my eyes to the mountains — where does my help come from? My help comes from the Lord.", ref: "Psalm 121:1-2" },
-              { text: "He heals the brokenhearted and binds up their wounds.", ref: "Psalm 147:3" },
-              { text: "Give thanks to the Lord, for He is good; His love endures forever.", ref: "Psalm 107:1" },
-              { text: "Come near to God and He will come near to you.", ref: "James 4:8" },
-              { text: "This is the day that the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" },
-            ];
-            const dayIndex = Math.floor(Date.now() / 86_400_000) % ANCHOR_VERSES.length;
-            const verse = ANCHOR_VERSES[dayIndex];
-            return (
-              <Link href="/devotional">
-                <div
-                  data-testid="card-daily-verse-anchor"
-                  className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
-                  style={{ background: "linear-gradient(135deg, rgba(100,0,120,0.45) 0%, rgba(60,0,80,0.55) 100%)", border: "1px solid rgba(160,0,180,0.25)" }}
-                >
-                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "linear-gradient(to right, #7A018D, #a855f7, #f59e0b)" }} />
-                  <div className="px-5 pt-4 pb-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(192,132,252,0.9)" }}>Today's Verse</p>
-                    <p className="leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif", fontStyle: "italic", fontSize: "17px", color: "rgba(255,255,255,0.90)" }}>
-                      "{verse.text}"
-                    </p>
-                    <p className="text-[12px] font-semibold" style={{ color: "rgba(192,132,252,0.9)" }}>— {verse.ref}</p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })()}
-
-          {/* ── The Return — time-aware daily prompt (midday / evening / close) ── */}
           {!isLateNight() && <TheReturnCard />}
+          {!isLateNight() && <HomeHeartLink />}
 
-          {/* ── HERO: Talk It Through prompt — primary entry point ── */}
-          <HeroAIPrompt />
-
-          {/* Quick-select chips — horizontal scroll strip */}
-          {!isLateNight() && (
-            <div className="relative rounded-2xl border border-primary/15 bg-card overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/40 via-violet-500/40 to-primary/40" />
-              <div className="px-4 pt-3.5 pb-3.5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60 mb-2.5">
-                  Where are you today?
-                </p>
-
-                {/* Scrollable chip row — no emojis, icon + label pills */}
-                <div className="relative">
-                <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                  {([
-                    { icon: <Zap  className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anxiety",      query: "I'm feeling anxious and overwhelmed and need God's peace" },
-                    { icon: <Heart className="w-3.5 h-3.5 flex-shrink-0" />, label: "Grief",       query: "I'm grieving a loss and need God's comfort right now" },
-                    { icon: <Moon className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Loneliness", query: "I'm feeling deeply lonely and disconnected and need God's presence" },
-                    { icon: <Flame className="w-3.5 h-3.5 flex-shrink-0" />, label: "Anger",       query: "I'm struggling with anger and frustration and need God's guidance" },
-                    { icon: <Wind className="w-3.5 h-3.5 flex-shrink-0" />,  label: "Fear",        query: "I'm living with fear and I need God's courage and peace to carry me through" },
-                    { icon: <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />, label: "Doubt", query: "I'm struggling with doubt and I'm not sure what I believe — help me find solid ground" },
-                    { icon: <Sunrise className="w-3.5 h-3.5 flex-shrink-0" />, label: "Hope",     query: "I need hope — help me find God's promises for the season I'm in" },
-                    { icon: <Users className="w-3.5 h-3.5 flex-shrink-0" />, label: "Relationship",query: "I'm struggling in an important relationship and need wisdom from God" },
-                  ] as const).map(({ icon, label, query }) => (
-                    <button
-                      key={label}
-                      data-testid={`emotion-card-${label.toLowerCase()}`}
-                      onClick={() => { markFirstAction(); navigate(`/guidance?situation=${encodeURIComponent(query)}`); }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-primary/20 bg-muted/30 hover:bg-primary/10 hover:border-primary/45 active:scale-[0.97] transition-all whitespace-nowrap flex-shrink-0 text-primary/75 hover:text-primary"
-                    >
-                      {icon}
-                      <span className="text-[13px] font-semibold">{label}</span>
-                    </button>
-                  ))}
-                  {/* Something else — expands inline input */}
-                  <button
-                    data-testid="emotion-card-something-else"
-                    onClick={() => setSomethingElseOpen(v => !v)}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border transition-all whitespace-nowrap flex-shrink-0 ${
-                      somethingElseOpen
-                        ? "border-primary/50 bg-primary/10 text-primary"
-                        : "border-primary/20 bg-muted/30 hover:bg-primary/10 hover:border-primary/45 text-primary/75 hover:text-primary"
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="text-[13px] font-semibold">Something else</span>
-                  </button>
-                  {/* Trailing spacer — must be >= fade overlay width (w-14) to clear it */}
-                  <div className="w-14 flex-shrink-0" />
-                </div>
-                {/* Fade + chevron — signals more chips to the right */}
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-14 flex items-center justify-end"
-                  style={{ background: "linear-gradient(to right, transparent, hsl(var(--card)) 70%)" }}>
-                  <ChevronRight className="w-5 h-5 text-foreground/65 mr-0.5" />
-                </div>
-                </div>
-
-                {/* Inline input — appears when "Something else" is tapped */}
-                <AnimatePresence>
-                  {somethingElseOpen && (
-                    <motion.div
-                      key="something-else-input"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden mt-3"
-                    >
-                      <div className="flex gap-2 items-end">
-                        <textarea
-                          autoFocus
-                          value={somethingElseText}
-                          onChange={e => setSomethingElseText(e.target.value)}
-                          placeholder="Describe what you're carrying…"
-                          rows={2}
-                          data-testid="input-something-else"
-                          className="flex-1 resize-none rounded-xl border border-primary/30 bg-background px-3 py-2.5 text-[16px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 leading-relaxed"
-                          onKeyDown={e => {
-                            if (e.key === "Enter" && !e.shiftKey && somethingElseText.trim()) {
-                              e.preventDefault();
-                              markFirstAction();
-                              navigate(`/guidance?situation=${encodeURIComponent(somethingElseText.trim())}`);
-                            }
-                          }}
-                        />
-                        <button
-                          onClick={() => {
-                            if (!somethingElseText.trim()) return;
-                            markFirstAction();
-                            navigate(`/guidance?situation=${encodeURIComponent(somethingElseText.trim())}`);
-                          }}
-                          disabled={!somethingElseText.trim()}
-                          data-testid="button-something-else-submit"
-                          className="flex-shrink-0 w-11 h-11 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-md shadow-amber-400/30 transition-all"
-                        >
-                          <ArrowRight className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-
-          {/* Daily Devotional */}
-          <DevotionalCard />
-
-          {/* First Steps seeker card — shown to new users (days 1–7) */}
           <FirstStepsCard daysWithApp={getRelationshipAge()} />
 
 
@@ -1252,77 +705,6 @@ export default function LandingHome() {
             );
           })()}
 
-          {/* Pro conversion nudge — shown at day 3+ streak, rhythm set, free user */}
-          {showProNudge && (
-            <div
-              data-testid="card-pro-nudge"
-              className="relative rounded-2xl overflow-hidden border border-amber-300/30 bg-card shadow-sm"
-            >
-              {/* Warm gradient top bar */}
-              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-orange-400 opacity-70 rounded-l-2xl" />
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 via-orange-400/3 to-transparent pointer-events-none" />
-
-              <div className="relative z-10 px-5 pt-4 pb-4">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Flame className="w-4 h-4 text-amber-500" />
-                      <span className="text-[12px] font-bold uppercase tracking-widest text-amber-600/80">
-                        {streak} morning{streak !== 1 ? "s" : ""} with God
-                      </span>
-                    </div>
-                    <h3 className="text-[16px] font-extrabold text-foreground leading-tight tracking-tight">
-                      You're building something real.
-                    </h3>
-                    <p className="text-[13px] text-muted-foreground leading-snug mt-0.5">
-                      Don't let anything interrupt it.
-                    </p>
-                  </div>
-                  <button
-                    data-testid="btn-pro-nudge-dismiss"
-                    onClick={handleProNudgeDismiss}
-                    className="w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
-                    aria-label="Dismiss"
-                  >
-                    <span className="text-lg leading-none">×</span>
-                  </button>
-                </div>
-
-                {/* Feature bullets */}
-                <div className="flex flex-col gap-1.5 mb-4">
-                  {[
-                    "No daily limits — AI guidance whenever you need it",
-                    "Streak protection — miss a day, keep your streak",
-                    "Full access to all devotional themes",
-                  ].map((point) => (
-                    <div key={point} className="flex items-start gap-2">
-                      <Check className="w-3.5 h-3.5 text-amber-500 mt-[2px] shrink-0" strokeWidth={3} />
-                      <span className="text-[13px] text-foreground/80 leading-snug">{point}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA */}
-                <Link href="/pricing">
-                  <div
-                    data-testid="btn-pro-nudge-cta"
-                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[14px] font-bold shadow-sm shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    See what Pro gives you
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                </Link>
-
-                <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
-                  Starts at $3.75/month · Billed annually
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* ── Personal reflection cards — daily/weekly touchpoints ── */}
           <CheckinCard />
           <GratitudePromptCard sessionId={sessionId} />
@@ -1377,48 +759,61 @@ export default function LandingHome() {
             </div>
           </Link>}
 
-          {/* ── Explore — all features ── */}
-          <div id="explore-section" className="mt-2">
-            <div className="flex items-center gap-3 mb-3 px-0.5">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
-              <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Explore</p>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              {([
-                { href: "/salvation",    Icon: Sunrise,    label: "Beginning with Jesus",    desc: "Meet Jesus without pressure",               color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-salvation" },
-                { href: "/understand",   Icon: Compass,    label: "Bible Journeys",          desc: "Let Scripture meet you where you are",       color: "text-indigo-400",  bg: "border-indigo-500/20 bg-indigo-500/6",  testid: "explore-understand" },
-                { href: "/calling",        Icon: Share2, label: "Our Calling",              desc: "Carry the hope forward — share the path",    color: "text-orange-400",  bg: "border-orange-500/20 bg-orange-500/6",  testid: "explore-calling" },
-                { href: "/journal",      Icon: BookMarked, label: "Prayer Journal",          desc: "A place for what you don't want to lose",    color: "text-teal-400",    bg: "border-teal-500/20   bg-teal-500/6",    testid: "explore-journal" },
-                { href: "/iron-circle",  Icon: Swords,     label: "Iron Sharpens Iron",      desc: "Walk alongside others in faith",             color: "text-rose-400",    bg: "border-rose-500/20   bg-rose-500/6",    testid: "explore-iron-circle" },
-                { href: "/prayer-wall",  Icon: HandHeart,  label: "Prayer Wall",             desc: "Lift someone up today",                      color: "text-sky-400",     bg: "border-sky-500/20    bg-sky-500/6",     testid: "explore-prayer-wall" },
-                { href: "/reading-plans",Icon: Star,       label: "Your Walk",               desc: "A path through Scripture made for where you are", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/6",testid: "explore-reading-plans" },
-                { href: "/study",        Icon: Sparkles,   label: "Explore Scripture",       desc: "A question, a passage, or something on your mind", color: "text-amber-400", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-study" },
-                { href: "/read",         Icon: BookOpen,   label: "Read the Bible",          desc: "KJV, WEB, and ASV",                          color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-read" },
-                { href: "/stories",      Icon: Play,       label: "Stories",                 desc: "Real testimonies of faith",                  color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-stories" },
-                { href: "/trivia",       Icon: Trophy,     label: "Bible Trivia",            desc: "A simple way to engage Scripture",            color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-trivia" },
-                { href: "/prayer-portrait", Icon: Heart,  label: "Prayer Portrait",         desc: "A prayer spoken over your life",              color: "text-amber-400",   bg: "border-amber-500/20  bg-amber-500/6",   testid: "explore-prayer-portrait" },
-                { href: "/display",        Icon: Monitor, label: "Scripture on Your TV",    desc: "Ambient devotional screen for home or office",color: "text-violet-400",  bg: "border-violet-500/20 bg-violet-500/6",  testid: "explore-display-mode" },
-              ] as const).map(({ href, Icon, label, desc, color, bg, testid }) => (
-                <Link key={href} href={href}>
-                  <div
-                    data-testid={`card-${testid}`}
-                    className={`rounded-2xl border ${bg} p-3.5 cursor-pointer hover:brightness-110 active:scale-[0.97] transition-all h-full`}
-                  >
-                    <Icon className={`w-5 h-5 ${color} mb-2`} />
-                    <p className="text-[13px] font-bold text-foreground leading-tight">{label}</p>
-                    <p className="text-[11px] text-muted-foreground/65 mt-0.5 leading-snug">{desc}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <HomeExploreSection />
 
-          {/* Go Deeper — sermon search for scrollers ready to explore */}
           {!isLateNight() && <GoDeepCard />}
 
+          {showProNudge && (
+            <div
+              data-testid="card-pro-nudge"
+              className="relative rounded-2xl overflow-hidden border border-border/50 bg-card/60"
+            >
+              <div className="relative z-10 px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-semibold text-foreground leading-snug">
+                      {streak} morning{streak !== 1 ? "s" : ""} with God — Pro keeps the walk when life gets loud.
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                      Archive search, listen-first, streak grace — optional, never required.
+                    </p>
+                  </div>
+                  <button
+                    data-testid="btn-pro-nudge-dismiss"
+                    onClick={handleProNudgeDismiss}
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    <span className="text-lg leading-none">×</span>
+                  </button>
+                </div>
+                <Link href="/pricing">
+                  <span
+                    data-testid="btn-pro-nudge-cta"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-primary/80"
+                  >
+                    See Pro
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowDepthExtras((v) => !v)}
+            data-testid="toggle-depth-extras"
+            className="mt-8 w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span>{showDepthExtras ? "Hide" : "About Scripture & our story"}</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showDepthExtras ? "rotate-180" : ""}`} />
+          </button>
+
+          {showDepthExtras && (
+          <>
           {/* ── 63,779 Scripture Unity Card ── */}
-          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(120,60,200,0.22)" }}>
+          <div className="mt-4 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(120,60,200,0.22)" }}>
             {/* SVG arch visualization — simplified Chris Harrison style */}
             <div style={{ background: "linear-gradient(180deg, #06030f 0%, #0d0620 100%)" }}>
               <svg viewBox="0 0 400 110" className="w-full" style={{ height: "110px", display: "block" }} preserveAspectRatio="none">
@@ -1608,6 +1003,8 @@ export default function LandingHome() {
               ))}
             </div>
           </div>
+          </>
+          )}
 
           {/* ── Daily Scripture Sign-Up ── */}
           <div className="mt-8">
@@ -1763,7 +1160,6 @@ export default function LandingHome() {
         </motion.div>
       </div>
 
-      {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
     </div>
   );
 }

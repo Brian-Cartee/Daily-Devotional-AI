@@ -3,6 +3,9 @@ import { Link, useLocation } from "wouter";
 import { ArrowLeft, Check, Minus, AlertCircle, ArrowRight } from "lucide-react";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { SessionStillness } from "@/components/SessionStillness";
+import { useDailyVerse } from "@/hooks/use-verses";
+import { markReturningHome } from "@/lib/introState";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 const STORAGE_KEY = `sp_walk_${TODAY}`;
@@ -249,10 +252,12 @@ function mapToEmotionKey(responses: Responses): string {
 
 export default function ScripturalAlignment() {
   const [, navigate] = useLocation();
+  const { data: dailyVerse } = useDailyVerse();
   const saved = loadSaved();
   const [responses, setResponses] = useState<Responses>(saved.responses);
   const [reflection, setReflection] = useState(saved.reflection);
   const [saved_, setSaved_] = useState(false);
+  const [showStillness, setShowStillness] = useState(false);
   const memoryFiredRef = useRef(false);
 
   useEffect(() => {
@@ -385,13 +390,24 @@ export default function ScripturalAlignment() {
               </p>
             </div>
 
+            <button
+              type="button"
+              onClick={() => setShowStillness(true)}
+              data-testid="btn-walk-stillness"
+              className="w-full text-[13px] font-semibold text-white/55 hover:text-white/80 py-3 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
+            >
+              Rest here before you go
+            </button>
+
             {/* Bridge to Path AI */}
             <button
               data-testid="button-walk-to-path-ai"
               onClick={() => {
                 const ctx = buildWalkContext(responses);
                 localStorage.setItem("sp_ask_ai_prefill", ctx);
-                navigate("/");
+                window.dispatchEvent(
+                  new CustomEvent("sp-open-path-ai", { detail: { prefill: ctx } }),
+                );
               }}
               className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all active:scale-[0.98]"
               style={{
@@ -418,6 +434,17 @@ export default function ScripturalAlignment() {
           </p>
         )}
       </div>
+
+      <SessionStillness
+        open={showStillness}
+        verseText={dailyVerse?.text ?? "Be still, and know that I am God."}
+        verseRef={dailyVerse?.reference ?? "Psalm 46:10"}
+        onDone={() => {
+          setShowStillness(false);
+          markReturningHome();
+          navigate("/");
+        }}
+      />
     </div>
   );
 }

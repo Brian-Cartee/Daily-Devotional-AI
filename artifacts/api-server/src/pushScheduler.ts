@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { Expo } from "expo-server-sdk";
 import { config } from "./config";
 import { storage } from "./storage";
+import { buildWeeklyWeather } from "./homeExperience";
 import { db } from "./db";
 import { streaks } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -169,11 +170,31 @@ async function sendWeeklySummary() {
   const subs = await storage.getAllPushSubscriptions();
   for (const sub of subs) {
     if (!sub.weeklySummary) continue;
+    let title = "Your weekly walk summary";
+    let body = "A new week begins tomorrow. See how far you've come.";
+    let url = "/";
+
+    try {
+      const weather = await buildWeeklyWeather(sub.sessionId);
+      if (weather.shouldShow && weather.observations[0]) {
+        title = "Your spiritual weather this week";
+        body =
+          weather.observations[0].length > 110
+            ? `${weather.observations[0].slice(0, 107)}…`
+            : weather.observations[0];
+        url = weather.guidancePrefill
+          ? `/guidance?situation=${encodeURIComponent(weather.guidancePrefill)}`
+          : "/guidance";
+      }
+    } catch {
+      /* generic fallback */
+    }
+
     const ok = await sendToSubscription(sub, {
-      title: "Your weekly walk summary 📖",
-      body: "A new week of devotions begins tomorrow. See how far you've come.",
+      title,
+      body,
       tag: "weekly-summary",
-      url: "/devotional",
+      url,
     });
     if (!ok) await storage.deletePushSubscription(sub.sessionId);
   }

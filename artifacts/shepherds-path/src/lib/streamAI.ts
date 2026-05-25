@@ -1,4 +1,15 @@
 import { apiUrl } from "@/lib/api";
+import { refreshAiUsage } from "@/hooks/use-ai-usage";
+import { apiSessionExtras } from "@/lib/requestExtras";
+
+export class AiLimitReachedError extends Error {
+  limitReached = true;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "AiLimitReachedError";
+  }
+}
 
 export async function streamAI(
   url: string,
@@ -9,7 +20,7 @@ export async function streamAI(
   const res = await fetch(apiUrl(url), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...apiSessionExtras(), ...body }),
     credentials: "include",
     signal,
   });
@@ -18,8 +29,15 @@ export async function streamAI(
     let msg = `Request failed: ${res.status}`;
     try {
       const errData = await res.json();
+      if (errData.limitReached) {
+        throw new AiLimitReachedError(
+          errData.message || "You've reached today's reflection limit.",
+        );
+      }
       if (errData.message) msg = errData.message;
-    } catch {}
+    } catch (e) {
+      if (e instanceof AiLimitReachedError) throw e;
+    }
     throw new Error(msg);
   }
 
@@ -39,5 +57,6 @@ export async function streamAI(
     reader.releaseLock();
   }
 
+  void refreshAiUsage();
   return text;
 }

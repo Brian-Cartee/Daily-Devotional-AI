@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearch, useLocation } from "wouter";
+import { useSearch, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff } from "lucide-react";
 import { ListenButton } from "@/components/ListenButton";
@@ -11,15 +11,25 @@ import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
 import { NamePrompt } from "@/components/NamePrompt";
 import { getSessionId } from "@/lib/session";
 import { type Journey } from "@/data/journeys";
+import { isProVerifiedLocally } from "@/lib/proStatus";
+import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
-import { canUseAi, recordAiUsage, getAiUsage, getRemainingAi } from "@/lib/aiUsage";
+import { canUseAi } from "@/lib/aiUsage";
+import { apiSessionExtras } from "@/lib/requestExtras";
+import { refreshAiUsage, getGlobalAiUsage } from "@/hooks/use-ai-usage";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { isLateNight } from "@/lib/nightMode";
 import { getRelationshipAge } from "@/lib/relationship";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
+import { SessionStillness } from "@/components/SessionStillness";
+import { ShareInviteCard } from "@/components/ShareInviteCard";
+import { useDailyVerse } from "@/hooks/use-verses";
+import { getListenFirstPreference } from "@/lib/listenFirst";
+import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
+import { markReturningHome } from "@/lib/introState";
 
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
@@ -92,11 +102,15 @@ export default function GuidancePage() {
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showListenUpgrade, setShowListenUpgrade] = useState(false);
   const [showAiPause, setShowAiPause] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
   const [isListening, setIsListening] = useState(false);
   const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
   const framework = getTodayFramework();
+  const { data: dailyVerse } = useDailyVerse();
+  const [showStillness, setShowStillness] = useState(false);
+  const listenFirstTriggeredRef = useRef(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const pendingGuidanceFlow = useRef(false);
 
@@ -168,11 +182,20 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation, messages: conversationMessages, userName: getUserName() ?? undefined, sessionId: getSessionId(), guidanceMode: explicitMode ?? guidanceMode, isLateNight: isLateNight(), daysWithApp: getRelationshipAge() }),
+        body: JSON.stringify({
+          situation,
+          messages: conversationMessages,
+          userName: getUserName() ?? undefined,
+          guidanceMode: explicitMode ?? guidanceMode,
+          isLateNight: isLateNight(),
+          ...apiSessionExtras(),
+        }),
       });
       if (res.status === 429) {
-        setStreamingText("You've sent a lot of requests recently. Please wait a few minutes and try again.");
-        setResponseComplete(true);
+        setShowAiPause(true);
+        setStreamingText("");
+        setResponseComplete(false);
+        void refreshAiUsage();
         return;
       }
       if (!res.ok || !res.body) {
@@ -198,6 +221,7 @@ export default function GuidancePage() {
       setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
       setStreamingText("");
       setResponseComplete(true);
+      void refreshAiUsage();
     } catch {
       setStreamingText("Trouble connecting — check your signal and we can try again.");
       setResponseComplete(true);
@@ -216,13 +240,18 @@ export default function GuidancePage() {
   const fetchJourney = () => {
     if (!situation.trim()) return;
     setJourneyError(false);
+    if (!isProVerifiedLocally()) {
+      setJourney(null);
+      setJourneyLoading(false);
+      return;
+    }
     setJourneyLoading(true);
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 55_000);
     fetch("/api/journey/life-season", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId() }),
+      body: JSON.stringify({ situation: situation.trim(), ...apiSessionExtras() }),
       signal: controller.signal,
     })
       .then(async (r) => {
@@ -276,7 +305,6 @@ export default function GuidancePage() {
     if (!situation.trim()) return;
 
     if (!canUseAi()) { setShowAiPause(true); return; }
-    recordAiUsage();
 
     // Name gate: if the user hasn't been asked yet and has no name,
     // show the prompt first so the very first response can address them personally.
@@ -358,7 +386,7 @@ export default function GuidancePage() {
     fetch("/api/unsplash/photo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim() }),
+      body: JSON.stringify({ situation: situation.trim(), sessionId: apiSessionExtras().sessionId }),
     })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -386,6 +414,10 @@ export default function GuidancePage() {
       setChainSection(null);
       return;
     }
+    if (!canStartGuidanceChain()) {
+      setShowListenUpgrade(true);
+      return;
+    }
     if (!verse) return;
     const firstResponse = messages.find(m => m.role === "assistant")?.content ?? streamingText;
     if (!firstResponse) return;
@@ -400,9 +432,23 @@ export default function GuidancePage() {
       sections,
       (_, key) => setChainSection(key ?? null),
       () => setChainSection(null),
+      {
+        chainScope: "guidance",
+        onLimit: () => setShowListenUpgrade(true),
+      },
     );
     setChainSection(null);
   };
+
+  useEffect(() => {
+    if (!responseComplete || !verse || listenFirstTriggeredRef.current) return;
+    if (!canUseListenFirstAuto() || !getListenFirstPreference()) return;
+    listenFirstTriggeredRef.current = true;
+    const t = setTimeout(() => {
+      void startGuidanceListen();
+    }, 600);
+    return () => clearTimeout(t);
+  }, [responseComplete, verse]);
 
   // Scroll follow-up response into view as soon as it starts streaming
   useEffect(() => {
@@ -467,7 +513,6 @@ export default function GuidancePage() {
     const text = followUp.trim();
     if (!text || isSending) return;
     if (!canUseAi()) { setShowAiPause(true); return; }
-    recordAiUsage();
     setFollowUp("");
     setIsSending(true);
     setIsReflecting(true);
@@ -887,6 +932,18 @@ export default function GuidancePage() {
                     </button>
                   </div>
                 )}
+                {responseComplete && (
+                  <div className="mt-5 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowStillness(true)}
+                      data-testid="btn-guidance-stillness"
+                      className="text-[13px] font-semibold text-muted-foreground/80 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
+                    >
+                      Rest here before you go
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </motion.div>
@@ -951,7 +1008,7 @@ export default function GuidancePage() {
                   <p className="text-[12px] font-bold uppercase tracking-widest text-primary/90">
                     A word for this moment
                   </p>
-                  {verse && <ListenButton text={`${verse.text} — ${verse.reference}`} label="Listen" size="sm" />}
+                  {verse && <ListenButton text={`${verse.text} — ${verse.reference}`} label="Listen" size="sm" scope="verse" />}
                 </div>
                 {vpLoading && !verse ? (
                   <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 pt-6 pb-5">
@@ -1090,7 +1147,7 @@ export default function GuidancePage() {
                         </div>
                       </div>
                       {/* After 3rd use — subtle value reinforcement */}
-                      {getAiUsage().count === 3 && (
+                      {getGlobalAiUsage()?.used === 3 && (
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -1232,17 +1289,45 @@ export default function GuidancePage() {
 
           {/* Journey card */}
           <AnimatePresence>
-            {responseComplete && revealStage >= 4 && (journeyLoading || journey || journeyError) && (
+            {responseComplete && revealStage >= 4 && (journeyLoading || journey || journeyError || !isProVerifiedLocally()) && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: responseComplete ? 0.1 : 0.5 }}
               >
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
-                  Your Personalized Journey
+                  {isProVerifiedLocally() ? "Your Personalized Journey" : "A pathway for this season"}
                 </p>
 
-                {journeyLoading ? (
+                {!isProVerifiedLocally() ? (
+                  (() => {
+                    const suggested = suggestPathwayForSituation(situation);
+                    return (
+                      <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-5 py-4">
+                        {suggested ? (
+                          <>
+                            <p className="text-sm text-foreground/85 leading-relaxed mb-2">
+                              We have a curated <span className="font-semibold">{suggested.title}</span> pathway — seven days of Scripture for where you are.
+                            </p>
+                            <p className="text-[12px] text-muted-foreground mb-3">
+                              Pro also shapes a journey from your exact words. Core Bible journeys stay free.
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                            Pro includes 7-day Guided Pathways for grief, anxiety, loneliness, and more — plus a journey shaped from your situation.
+                          </p>
+                        )}
+                        <Link href="/understand#pathways">
+                          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:underline">
+                            Explore Guided Pathways
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </span>
+                        </Link>
+                      </div>
+                    );
+                  })()
+                ) : journeyLoading ? (
                   <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-7 pt-6 pb-5">
                     <p className="text-[16px] leading-relaxed font-medium text-foreground/60 italic mb-2">
                       "Your word is a lamp to my feet and a light to my path."
@@ -1337,6 +1422,12 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
+          {responseComplete && revealStage >= 4 && (
+            <div className="mt-8 mb-4">
+              <ShareInviteCard variant="compact" />
+            </div>
+          )}
+
           <div ref={bottomRef} />
         </div>
       </main>
@@ -1397,7 +1488,25 @@ export default function GuidancePage() {
       </AnimatePresence>
 
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showListenUpgrade && (
+        <UpgradeModal
+          onClose={() => setShowListenUpgrade(false)}
+          title="Hear this guidance"
+          subtitle={LISTEN_LIMIT_COPY.guidance}
+        />
+      )}
       {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
+
+      <SessionStillness
+        open={showStillness}
+        verseText={dailyVerse?.text ?? verse?.text ?? "The Lord bless you and keep you."}
+        verseRef={dailyVerse?.reference ?? verse?.reference ?? "Numbers 6:24"}
+        onDone={() => {
+          setShowStillness(false);
+          markReturningHome();
+          navigate("/");
+        }}
+      />
 
       <AnimatePresence>
         {showNamePrompt && <NamePrompt onDone={handleNameDone} />}

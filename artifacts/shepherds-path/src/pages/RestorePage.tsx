@@ -3,7 +3,8 @@ import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, Zap } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
-import { checkProWithServer } from "@/lib/proStatus";
+import { getSessionId } from "@/lib/session";
+import { checkProWithServer, linkProSessionForContinuity } from "@/lib/proStatus";
 
 type Stage = "idle" | "loading" | "success" | "error" | "not-found";
 
@@ -22,6 +23,7 @@ export default function RestorePage() {
     try {
       const isPro = await checkProWithServer(trimmed);
       if (isPro) {
+        void linkProSessionForContinuity(trimmed, getSessionId());
         setStage("success");
         setTimeout(() => navigate("/"), 2200);
       } else {

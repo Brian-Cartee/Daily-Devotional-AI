@@ -25,12 +25,17 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://www.shepherdspathai.com",
-        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_fznKTWBRurIjZrjtAyyvVqVpZBL"
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_fznKTWBRurIjZrjtAyyvVqVpZBL",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_QIMTVotWHNqMnAtibhgIEflMiud"
       }
     }
   },
   "submit": {
     "production": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      },
       "ios": {
         "ascAppId": "6760953522",
         "ascApiKeyIssuerId": "2787b8ca-4e36-4112-9a35-875f90ed0169",

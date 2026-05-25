@@ -1,52 +1,34 @@
-import { useState, useEffect, useRef } from "react";
-import { X, Send, ArrowRight } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  X,
+  Send,
+  ArrowRight,
+  BookMarked,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 import { getUserName } from "@/lib/userName";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight } from "@/lib/nightMode";
 import { useAiUsage, refreshAiUsage } from "@/hooks/use-ai-usage";
-
-const HIDE_ON = ["/guidance", "/shepherd-admin", "/shepherd-admin/sermons", "/present", "/demo", "/display"];
-
-const EXPAND_INTERVALS = [4000, 45000, 90000];
-
-const PRESET_PROMPTS = [
-  { label: "I feel anxious and overwhelmed", icon: "🌿" },
-  { label: "Help me understand a Bible verse", icon: "📖" },
-  { label: "I have a difficult decision to make", icon: "🕊️" },
-  { label: "I want to grow closer to God", icon: "✝️" },
-  { label: "I'm struggling to forgive someone", icon: "🤍" },
-  { label: "I need encouragement right now", icon: "🌄" },
-];
-
-function buildTodayWalkMessage(): string | null {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const raw = localStorage.getItem(`sp_walk_${today}`);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as { responses: Record<string, string>; reflection: string };
-    const dims = ["faith", "obedience", "love", "surrender", "endurance"];
-    const answered = dims.filter(d => data.responses[d]).length;
-    if (answered < 5) return null;
-    const dimLabels: Record<string, string> = {
-      faith: "Faith", obedience: "Obedience", love: "Love", surrender: "Surrender", endurance: "Endurance",
-    };
-    const hard = dims.filter(d => data.responses[d] === "struggled" || data.responses[d] === "not-yet")
-      .map(d => dimLabels[d]);
-    if (hard.length === 0) {
-      return "I just finished my Walk Today reflection and it was a good day. I want to go deeper with God — can you help me?";
-    }
-    if (hard.length === 1) {
-      return `I just finished my Walk Today reflection. ${hard[0]} was hard for me today. Can you help me work through this with Scripture?`;
-    }
-    const listed = hard.length === 2 ? hard.join(" and ") : `${hard.slice(0, -1).join(", ")}, and ${hard[hard.length - 1]}`;
-    return `I just finished my Walk Today reflection. ${listed} were challenging for me today. Can you help me bring this to God?`;
-  } catch {
-    return null;
-  }
-}
+import { canUseAi, shouldShowAiCounter } from "@/lib/aiUsage";
+import { AiPauseModal } from "@/components/AiPauseModal";
+import { ListenButton } from "@/components/ListenButton";
+import { useDailyVerse } from "@/hooks/use-verses";
+import { useToast } from "@/hooks/use-toast";
+import {
+  buildTodayWalkMessage,
+  FLOATER_PEEK_SESSION_KEY,
+  FLOATER_USED_KEY,
+  getPathAiPageContext,
+  shouldHidePathAiFloater,
+} from "@/lib/pathAiFloater";
 
 function cleanResponse(text: string): string {
   return text
@@ -56,66 +38,98 @@ function cleanResponse(text: string): string {
     .replace(/_(.+?)_/g, "$1");
 }
 
+const FAB_BOTTOM =
+  "calc(60px + env(safe-area-inset-bottom, 0px) + 12px)";
+
 export function FloatingAskAI() {
   const [location, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: dailyVerse } = useDailyVerse();
+
   const [isOpen, setIsOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [showPeek, setShowPeek] = useState(false);
+  const [showMorePrompts, setShowMorePrompts] = useState(false);
   const [question, setQuestion] = useState("");
   const [submittedQuestion, setSubmittedQuestion] = useState("");
   const [response, setResponse] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [showAiPause, setShowAiPause] = useState(false);
+  const [savingJournal, setSavingJournal] = useState(false);
   const { usage } = useAiUsage();
   const inputRef = useRef<HTMLInputElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
-  const expandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const expandIndexRef = useRef(0);
   const pendingPrefillRef = useRef<string | null>(null);
-  const [todayWalkMsg] = useState<string | null>(() => buildTodayWalkMessage());
 
-  const hide = HIDE_ON.some(p => location.startsWith(p));
+  const todayWalkMsg = useMemo(() => buildTodayWalkMessage(), [isOpen]);
+  const pageContext = useMemo(
+    () =>
+      getPathAiPageContext(location, {
+        verseReference: dailyVerse?.reference ?? null,
+      }),
+    [location, dailyVerse?.reference],
+  );
+
+  const hide = shouldHidePathAiFloater(location);
+  const showingResponse = !!(response || isStreaming);
+
+  const openSheet = useCallback(() => {
+    localStorage.setItem(FLOATER_USED_KEY, "1");
+    setShowPeek(false);
+    setIsOpen(true);
+  }, []);
 
   useEffect(() => {
     if (hide || isOpen) return;
+    if (sessionStorage.getItem(FLOATER_PEEK_SESSION_KEY)) return;
+    if (localStorage.getItem(FLOATER_USED_KEY)) return;
 
-    const scheduleNext = () => {
-      const delay = EXPAND_INTERVALS[expandIndexRef.current] ?? 120000;
-      expandTimerRef.current = setTimeout(() => {
-        setIsExpanded(true);
-        setTimeout(() => setIsExpanded(false), 3200);
-        expandIndexRef.current = Math.min(expandIndexRef.current + 1, EXPAND_INTERVALS.length - 1);
-        scheduleNext();
-      }, delay);
+    let hidePeek: ReturnType<typeof setTimeout> | undefined;
+    const showTimer = setTimeout(() => {
+      setShowPeek(true);
+      sessionStorage.setItem(FLOATER_PEEK_SESSION_KEY, "1");
+      hidePeek = setTimeout(() => setShowPeek(false), 4000);
+    }, 5000);
+
+    return () => {
+      clearTimeout(showTimer);
+      if (hidePeek) clearTimeout(hidePeek);
     };
-
-    scheduleNext();
-    return () => { if (expandTimerRef.current) clearTimeout(expandTimerRef.current); };
   }, [hide, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      setIsExpanded(false);
-      if (expandTimerRef.current) clearTimeout(expandTimerRef.current);
-      setTimeout(() => inputRef.current?.focus(), 350);
+      setTimeout(() => inputRef.current?.focus(), 320);
+    } else {
+      setShowMorePrompts(false);
     }
   }, [isOpen]);
 
-  // On mount: check if Walk Today left a pre-filled question for Path AI
   useEffect(() => {
     const prefill = localStorage.getItem("sp_ask_ai_prefill");
     if (prefill) {
       localStorage.removeItem("sp_ask_ai_prefill");
       pendingPrefillRef.current = prefill;
-      setIsOpen(true);
+      openSheet();
     }
-  }, []);
+  }, [openSheet]);
 
-  // When modal opens with a pending prefill, auto-send it
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<{ prefill?: string }>).detail;
+      if (detail?.prefill) pendingPrefillRef.current = detail.prefill;
+      openSheet();
+    };
+    window.addEventListener("sp-open-path-ai", onOpen);
+    return () => window.removeEventListener("sp-open-path-ai", onOpen);
+  }, [openSheet]);
+
   useEffect(() => {
     if (isOpen && pendingPrefillRef.current) {
       const msg = pendingPrefillRef.current;
       pendingPrefillRef.current = null;
-      setTimeout(() => handleSend(msg), 350);
+      setTimeout(() => handleSend(msg), 400);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -128,7 +142,11 @@ export function FloatingAskAI() {
   const handleSend = async (q?: string) => {
     const text = (q ?? question).trim();
     if (!text || isStreaming) return;
-    if (!q) {} else setQuestion(q);
+    if (!canUseAi()) {
+      setShowAiPause(true);
+      return;
+    }
+    if (!q) setQuestion(text);
     setSubmittedQuestion(text);
     setResponse("");
     setIsDone(false);
@@ -146,9 +164,16 @@ export function FloatingAskAI() {
           guidanceMode: "pastoral",
           isLateNight: isLateNight(),
           daysWithApp: getRelationshipAge(),
+          isPro: isProVerifiedLocally(),
         }),
       });
 
+      if (res.status === 429) {
+        setShowAiPause(true);
+        setIsStreaming(false);
+        void refreshAiUsage();
+        return;
+      }
       if (!res.ok || !res.body) {
         setResponse("Having trouble connecting right now. Please try again.");
         setIsDone(true);
@@ -196,43 +221,104 @@ export function FloatingAskAI() {
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
+  const handleSaveJournal = async () => {
+    if (!response || savingJournal) return;
+    setSavingJournal(true);
+    const sessionId = getSessionId();
+    const content = `Path AI\n\nQ: ${submittedQuestion}\n\n${response}`;
+    try {
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          type: "reflection",
+          content,
+          reference: pageContext.chipLabel,
+        }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] });
+      toast({ title: "Saved to journal", description: "This conversation is in your reflections." });
+    } catch {
+      toast({
+        title: "Could not save",
+        description: "Try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingJournal(false);
+    }
+  };
+
+  const goToGuidance = () => {
+    const encoded = encodeURIComponent(submittedQuestion);
+    handleClose();
+    navigate(`/guidance?situation=${encoded}`);
+  };
+
   if (hide) return null;
 
-  const showingResponse = response || isStreaming;
+  const primaryPrompts = pageContext.prompts.slice(0, 4);
+  const extraPrompts = pageContext.prompts.slice(4);
 
   return (
     <>
       {/* FAB */}
-      <div className="fixed bottom-[52px] right-4 z-40 flex items-center">
+      <div
+        className="fixed right-4 z-[45] flex items-center gap-2"
+        style={{ bottom: FAB_BOTTOM }}
+      >
         <AnimatePresence>
-          {isExpanded && !isOpen && (
-            <motion.span
-              key="label"
-              initial={{ opacity: 0, x: 8, width: 0 }}
-              animate={{ opacity: 1, x: 0, width: "auto" }}
-              exit={{ opacity: 0, x: 8, width: 0 }}
-              transition={{ duration: 0.28, ease: "easeOut" }}
-              className="mr-2 overflow-hidden whitespace-nowrap text-[13px] font-semibold text-white/90 bg-black/55 backdrop-blur-md px-3 py-1.5 rounded-full"
-              style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+          {showPeek && !isOpen && (
+            <motion.button
+              type="button"
+              key="peek"
+              initial={{ opacity: 0, x: 12, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 8, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              onClick={openSheet}
+              className="mr-1 max-w-[200px] text-left rounded-full pl-3.5 pr-4 py-2 shadow-lg border border-primary/25 bg-background/95 backdrop-blur-md"
             >
-              Ask Path AI
-            </motion.span>
+              <p className="text-[12px] font-bold text-foreground leading-tight">
+                {pageContext.greeting}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                Tap for a faithful answer
+              </p>
+            </motion.button>
           )}
         </AnimatePresence>
 
-        <button
+        <motion.button
+          type="button"
           data-testid="button-floating-ask-ai"
-          onClick={() => setIsOpen(true)}
-          aria-label="Ask Path AI"
-          className="flex items-center justify-center active:scale-95 transition-transform bg-transparent border-0 p-0"
+          onClick={openSheet}
+          aria-label="Open Path AI"
+          whileTap={{ scale: 0.94 }}
+          className="relative flex items-center justify-center w-[52px] h-[52px] rounded-2xl border-0 p-0 bg-transparent"
         >
+          <span
+            className="absolute inset-0 rounded-2xl bg-primary/25 animate-pulse"
+            aria-hidden
+          />
+          <span
+            className="absolute -inset-0.5 rounded-[14px] bg-gradient-to-br from-violet-500/50 via-primary/40 to-amber-500/35 blur-md opacity-80"
+            aria-hidden
+          />
           <img
             src="/sp-icon.png"
-            alt="Path AI"
-            className="w-10 h-10 rounded-xl"
-            style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.35))" }}
+            alt=""
+            className="relative w-11 h-11 rounded-xl ring-2 ring-primary/50 shadow-lg shadow-primary/25"
           />
-        </button>
+          <span
+            className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center shadow-md ring-2 ring-background"
+            aria-hidden
+          >
+            ✝
+          </span>
+        </motion.button>
       </div>
 
       {/* Sheet */}
@@ -244,7 +330,7 @@ export function FloatingAskAI() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px]"
+              className="fixed inset-0 z-[48] bg-black/55 backdrop-blur-sm"
               onClick={handleClose}
             />
 
@@ -253,133 +339,95 @@ export function FloatingAskAI() {
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl overflow-hidden"
+              transition={{ type: "spring", damping: 32, stiffness: 340 }}
+              className="fixed bottom-0 left-0 right-0 z-[50] flex flex-col rounded-t-3xl overflow-hidden bg-background border border-border/60 shadow-2xl"
               style={{
-                background: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border) / 0.6)",
-                maxHeight: "88vh",
+                maxHeight: "min(92vh, 720px)",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-9 h-1 rounded-full bg-foreground/20" />
+              <div className="flex justify-center pt-3 pb-1 shrink-0">
+                <div className="w-10 h-1 rounded-full bg-foreground/25" />
               </div>
 
-              {/* Header row */}
-              <div className="flex items-center justify-between px-4 pt-2 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <img src="/sp-icon.png" alt="" className="w-8 h-8 rounded-[7px]" />
-                  <div>
-                    <p className="text-[16px] font-bold text-foreground leading-none">Ask Path AI</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">A quiet question deserves a faithful answer</p>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 px-4 pt-1 pb-3 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <img src="/sp-icon.png" alt="" className="w-10 h-10 rounded-xl ring-2 ring-primary/30" />
+                    <Sparkles className="absolute -bottom-1 -right-1 w-3.5 h-3.5 text-amber-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[17px] font-bold text-foreground leading-tight">Path AI</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
+                      {pageContext.subline}
+                    </p>
+                    <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary/90 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5">
+                      {pageContext.chipLabel}
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {usage && (
+                <div className="flex items-center gap-2 shrink-0">
+                  {usage && shouldShowAiCounter() && (
                     <div
                       data-testid="text-ai-usage-counter"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full"
-                      style={{
-                        background: usage.remaining <= 2
-                          ? "rgba(220,38,38,0.12)"
+                      className={`px-2 py-1 rounded-full text-[10px] font-semibold tabular-nums border ${
+                        usage.remaining <= 2
+                          ? "bg-destructive/10 border-destructive/25 text-destructive"
                           : usage.remaining <= 4
-                          ? "rgba(217,119,6,0.12)"
-                          : "rgba(122,1,141,0.15)",
-                        border: `1px solid ${
-                          usage.remaining <= 2
-                            ? "rgba(220,38,38,0.25)"
-                            : usage.remaining <= 4
-                            ? "rgba(217,119,6,0.25)"
-                            : "rgba(122,1,141,0.35)"
-                        }`,
-                      }}
+                            ? "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400"
+                            : "bg-primary/10 border-primary/25 text-primary"
+                      }`}
                     >
-                      <span
-                        className="text-[11px] font-semibold tabular-nums"
-                        style={{
-                          color: usage.remaining <= 2
-                            ? "rgba(248,113,113,0.9)"
-                            : usage.remaining <= 4
-                            ? "rgba(251,191,36,0.85)"
-                            : "rgba(200,150,215,0.9)",
-                        }}
-                      >
-                        {usage.remaining} of {usage.limit} left today
-                      </span>
+                      {usage.remaining}/{usage.limit}
                     </div>
                   )}
                   <button
                     data-testid="button-close-ask-ai"
                     onClick={handleClose}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div
-                className="overflow-y-auto"
-                style={{ maxHeight: "calc(88vh - 80px)" }}
-              >
-                <div className="px-4 pb-6 flex flex-col gap-4">
-
-                  {/* ── Spiritual invitation ─────────────────────────── */}
-                  {!showingResponse && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, ease: "easeOut" }}
-                      className="rounded-2xl px-4 py-4"
-                      style={{
-                        background: "linear-gradient(160deg, rgba(124,58,237,0.10) 0%, rgba(0,0,0,0) 100%)",
-                        border: "1px solid rgba(124,58,237,0.18)",
-                      }}
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto min-h-0 px-4">
+                {!showingResponse && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl px-4 py-3.5 mb-4 bg-gradient-to-br from-primary/8 via-violet-500/5 to-transparent border border-primary/15"
+                  >
+                    <p className="text-[15px] font-semibold text-foreground leading-snug">
+                      {pageContext.greeting}
+                    </p>
+                    <p
+                      className="text-[13px] text-muted-foreground mt-2 leading-relaxed italic"
+                      style={{ fontFamily: "Georgia, serif" }}
                     >
-                      {/* Verse */}
-                      <p
-                        className="text-[14px] leading-relaxed mb-2.5"
-                        style={{
-                          fontFamily: "'Georgia', serif",
-                          fontStyle: "italic",
-                          color: "rgba(167,139,250,0.85)",
-                        }}
-                      >
-                        "Ask and it will be given to you; seek and you will find."
-                      </p>
-                      <p
-                        className="text-[11px] font-semibold uppercase tracking-[0.12em] mb-3"
-                        style={{ color: "rgba(167,139,250,0.5)" }}
-                      >
+                      &ldquo;Ask and it will be given to you; seek and you will find.&rdquo;
+                      <span className="block not-italic text-[10px] font-semibold uppercase tracking-widest text-primary/60 mt-1.5">
                         Matthew 7:7
+                      </span>
+                    </p>
+                  </motion.div>
+                )}
+
+                {showingResponse && (
+                  <div className="space-y-3 mb-4">
+                    <div className="rounded-xl bg-muted/50 border border-border/50 px-3.5 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                        You asked
                       </p>
-
-                      {/* Divider */}
-                      <div
-                        className="mb-3"
-                        style={{ height: "1px", background: "rgba(124,58,237,0.15)" }}
-                      />
-
-                      {/* Invitation copy */}
-                      <p
-                        className="text-[14px] leading-[1.65]"
-                        style={{ color: "rgba(255,255,255,0.72)" }}
-                      >
-                        Path AI is a tool — but your willingness to lean in is what opens the door. Every time you show up and ask, you're creating space for God to work.{" "}
-                        <span style={{ color: "rgba(255,255,255,0.90)", fontWeight: 600 }}>
-                          Consistent leaning-in is where the miracles happen.
-                        </span>
-                      </p>
-                    </motion.div>
-                  )}
-
-                  {/* ── Response area ───────────────────────────────── */}
-                  {showingResponse && (
+                      <p className="text-[14px] text-foreground leading-snug">{submittedQuestion}</p>
+                    </div>
                     <div
                       ref={responseRef}
-                      className="rounded-xl bg-card/60 border border-border/50 px-4 py-3.5 overflow-y-auto text-[16px] leading-[1.7] text-foreground/95"
-                      style={{ maxHeight: "42vh" }}
+                      className="rounded-xl bg-card border border-border/60 px-4 py-3.5 overflow-y-auto text-[16px] leading-[1.7] text-foreground/95"
+                      style={{ maxHeight: "min(38vh, 280px)" }}
                     >
                       {response}
                       {isStreaming && !response && (
@@ -389,157 +437,169 @@ export function FloatingAskAI() {
                         <span className="inline-block w-1 h-4 bg-primary/60 rounded-sm animate-pulse align-middle ml-0.5" />
                       )}
                       {isDone && (
-                        <p className="text-[11px] text-muted-foreground/60 mt-3 flex items-center gap-1">
-                          <span>✝</span>
-                          <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-border/40">
+                          <ListenButton
+                            text={response}
+                            label="Listen"
+                            size="sm"
+                            scope="snippet"
+                          />
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <span>✝</span>
+                            <span>Grounded in Scripture</span>
+                          </p>
+                        </div>
                       )}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* ── Preset prompts ──────────────────────────────── */}
-                  {!showingResponse && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, delay: 0.08, ease: "easeOut" }}
-                      className="space-y-2"
-                    >
-                      <p
-                        className="text-[11px] uppercase tracking-[0.13em] px-0.5"
-                        style={{ color: "rgba(255,255,255,0.52)" }}
+                {!showingResponse && (
+                  <div className="space-y-2 pb-2">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-0.5">
+                      Suggested for here
+                    </p>
+
+                    {todayWalkMsg && (
+                      <button
+                        data-testid="btn-preset-walk-today"
+                        onClick={() => handlePreset(todayWalkMsg)}
+                        className="w-full text-left px-4 py-3 rounded-xl transition-all active:scale-[0.98] flex items-center gap-3 bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/15"
                       >
-                        Common places to start
-                      </p>
+                        <span className="text-lg leading-none flex-shrink-0">🌅</span>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-0.5">
+                            From Walk Today
+                          </p>
+                          <p className="text-[13px] text-foreground leading-snug">
+                            Continue where you left off
+                          </p>
+                        </div>
+                      </button>
+                    )}
 
-                      {/* Dynamic Walk Today card — shows only if today's walk is complete */}
-                      {todayWalkMsg && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {primaryPrompts.map((p, i) => (
                         <button
-                          data-testid="btn-preset-walk-today"
-                          onClick={() => handlePreset(todayWalkMsg)}
-                          className="w-full text-left px-4 py-3 rounded-xl transition-all active:scale-[0.97] flex items-center gap-3"
-                          style={{
-                            background: "linear-gradient(135deg, rgba(251,191,36,0.10) 0%, rgba(251,191,36,0.05) 100%)",
-                            border: "1px solid rgba(251,191,36,0.25)",
-                          }}
+                          key={p.testId ?? i}
+                          data-testid={p.testId ? `btn-preset-${p.testId}` : `btn-preset-prompt-${i}`}
+                          onClick={() => handlePreset(p.label)}
+                          className="text-left px-3.5 py-3 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/50 active:scale-[0.98] transition-all"
                         >
-                          <span className="text-lg leading-none flex-shrink-0">🌅</span>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-0.5" style={{ color: "rgba(251,191,36,0.60)" }}>
-                              From your Walk Today
-                            </p>
-                            <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.82)" }}>
-                              Continue where you left off
-                            </p>
+                          <span className="text-base leading-none block mb-1.5">{p.icon}</span>
+                          <span className="text-[13px] text-foreground/90 leading-snug">{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {extraPrompts.length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowMorePrompts((v) => !v)}
+                          className="w-full flex items-center justify-center gap-1 text-[12px] font-semibold text-muted-foreground py-1"
+                        >
+                          {showMorePrompts ? (
+                            <>
+                              Fewer starters <ChevronUp className="w-3.5 h-3.5" />
+                            </>
+                          ) : (
+                            <>
+                              More starters <ChevronDown className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                        </button>
+                        {showMorePrompts && (
+                          <div className="grid grid-cols-1 gap-2">
+                            {extraPrompts.map((p, i) => (
+                              <button
+                                key={`extra-${i}`}
+                                onClick={() => handlePreset(p.label)}
+                                className="text-left px-3.5 py-2.5 rounded-xl border border-border/50 bg-muted/20 text-[13px] text-foreground/85"
+                              >
+                                {p.icon} {p.label}
+                              </button>
+                            ))}
                           </div>
-                        </button>
-                      )}
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
-                      <div className="grid grid-cols-2 gap-2">
-                        {PRESET_PROMPTS.map((p, i) => (
-                          <button
-                            key={i}
-                            data-testid={`btn-preset-prompt-${i}`}
-                            onClick={() => handlePreset(p.label)}
-                            className="text-left px-3 py-2.5 rounded-xl transition-all active:scale-[0.97]"
-                            style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid rgba(255,255,255,0.09)",
-                              color: "rgba(255,255,255,0.78)",
-                            }}
-                          >
-                            <span className="text-base leading-none block mb-1.5">{p.icon}</span>
-                            <span className="text-[13px] leading-snug">{p.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* ── Custom input ────────────────────────────────── */}
-                  {!isDone && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: 0.14, ease: "easeOut" }}
+                {isDone && (
+                  <div className="flex flex-col gap-2 pb-4">
+                    <button
+                      data-testid="button-ask-ai-guidance"
+                      onClick={goToGuidance}
+                      className="w-full py-3.5 rounded-xl flex items-center justify-center gap-2 text-[15px] font-semibold bg-gradient-to-r from-primary to-violet-600 text-primary-foreground shadow-md shadow-primary/20 active:scale-[0.98] transition-transform"
                     >
-                      {!showingResponse && (
-                        <p
-                          className="text-[11px] uppercase tracking-[0.13em] mb-2 px-0.5"
-                          style={{ color: "rgba(255,255,255,0.52)" }}
-                        >
-                          Or ask your own
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <input
-                          ref={inputRef}
-                          data-testid="input-ask-ai-question"
-                          value={question}
-                          onChange={e => setQuestion(e.target.value)}
-                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                          placeholder="What's on your heart or mind?"
-                          disabled={isStreaming}
-                          className="flex-1 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/65 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all disabled:opacity-50"
-                        />
-                        <button
-                          data-testid="button-ask-ai-send"
-                          onClick={() => handleSend()}
-                          disabled={!question.trim() || isStreaming}
-                          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-95 disabled:opacity-40"
-                          style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
-                        >
-                          <Send className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+                      Go deeper in Talk It Through
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      data-testid="button-ask-ai-save-journal"
+                      onClick={handleSaveJournal}
+                      disabled={savingJournal}
+                      className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[14px] font-semibold border border-border bg-muted/40 hover:bg-muted/60 transition-colors disabled:opacity-50"
+                    >
+                      <BookMarked className="w-4 h-4" />
+                      {savingJournal ? "Saving…" : "Save to journal"}
+                    </button>
+                    <button
+                      data-testid="button-ask-ai-new"
+                      onClick={handleReset}
+                      className="w-full py-2.5 rounded-xl text-[14px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      Ask something else
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                  {/* ── Post-response CTAs ──────────────────────────── */}
-                  {isDone && (
-                    <div className="flex flex-col gap-2">
-                      {/* Primary: Take to Guidance */}
-                      <button
-                        data-testid="button-ask-ai-guidance"
-                        onClick={() => {
-                          const encoded = encodeURIComponent(submittedQuestion);
-                          handleClose();
-                          navigate(`/guidance?situation=${encoded}`);
-                        }}
-                        className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[15px] font-semibold transition-all active:scale-[0.98]"
-                        style={{ background: "linear-gradient(135deg, #b45309, #d97706)", color: "#fff" }}
-                      >
-                        Take this to Guidance
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                      {/* Secondary: Ask another */}
-                      <button
-                        data-testid="button-ask-ai-new"
-                        onClick={handleReset}
-                        className="w-full py-2.5 rounded-xl border border-border/60 text-[14px] text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-                      >
-                        Ask another question
-                      </button>
-                    </div>
-                  )}
-
-                  {/* ── Footer note ─────────────────────────────────── */}
+              {/* Sticky input */}
+              {!isDone && (
+                <div className="shrink-0 px-4 pt-2 pb-4 border-t border-border/50 bg-background/95 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={inputRef}
+                      data-testid="input-ask-ai-question"
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      placeholder={
+                        showingResponse ? "Follow up…" : "What's on your heart or mind?"
+                      }
+                      disabled={isStreaming}
+                      className="flex-1 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/35 disabled:opacity-50"
+                    />
+                    <button
+                      data-testid="button-ask-ai-send"
+                      onClick={() => handleSend()}
+                      disabled={!question.trim() || isStreaming}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground disabled:opacity-40 active:scale-95 transition-transform"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
                   {!showingResponse && (
-                    <p
-                      className="text-center text-[11px] leading-relaxed pb-1"
-                      style={{ color: "rgba(255,255,255,0.28)" }}
-                    >
-                      Path AI guides — God transforms.{"\n"}
-                      The blessings you seek are waiting on the other side of showing up.
+                    <p className="text-center text-[10px] text-muted-foreground/70 mt-2 leading-relaxed">
+                      Path AI guides — God transforms. For full prayer chains, use Talk It Through.
                     </p>
                   )}
-
                 </div>
-              </div>
+              )}
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}
     </>
   );
 }

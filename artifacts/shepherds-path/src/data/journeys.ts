@@ -21,6 +21,8 @@ export interface Journey {
   badgeText?: string;
   badgeBg?: string;
   image?: string;
+  /** Curated 7-day pathways — Pro subscribers */
+  proOnly?: boolean;
   entries: GuidedChapter[];
 }
 

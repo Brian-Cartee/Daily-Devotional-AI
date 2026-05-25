@@ -2,52 +2,14 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { BackButton } from "@/components/BackButton";
-import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw } from "lucide-react";
+import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw, Volume2 } from "lucide-react";
+import { ShareInviteCard } from "@/components/ShareInviteCard";
+import { REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } from "@/lib/referralConfig";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { AI_FREE_LIMIT } from "@/lib/aiUsage";
+import { AI_FREE_LIMIT, AI_HONEYMOON_DAYS, AI_LIMIT_HONEYMOON_DISPLAY } from "@/lib/aiLimits";
+import { FREE_FEATURES, PRO_FEATURES, PRO_SCENARIOS, PRO_EMAIL_FAQ_NOTE } from "@/lib/proFeatures";
 import { isIOS } from "@/lib/platform";
-
-const FREE_FEATURES = [
-  { icon: Sun, text: `${AI_FREE_LIMIT} AI responses per day` },
-  { icon: BookOpen, text: "Full Bible reading (KJV, WEB, ASV)" },
-  { icon: Sun, text: "Daily devotional with scripture & prayer" },
-  { icon: Compass, text: "All 4 guided Bible journeys" },
-  { icon: ScrollText, text: "Prayer journal (1 journal)" },
-  { icon: Flame, text: "Daily streak tracking" },
-  { icon: BookMarked, text: "1 free sermon note per month" },
-];
-
-const PRO_FEATURES = [
-  { icon: Zap, text: "No daily limits — use it as much as you need" },
-  { icon: BookOpen, text: "Full Bible reading (KJV, WEB, ASV)" },
-  { icon: Sun, text: "Daily devotional with scripture & prayer" },
-  { icon: Compass, text: "All 4 guided Bible journeys" },
-  { icon: ScrollText, text: "Multiple named prayer journals" },
-  { icon: Flame, text: "Streak protection — never lose your streak" },
-  { icon: History, text: "Full devotional history archive" },
-  { icon: FileText, text: "Beautiful PDF copy of your journal" },
-  { icon: BookMarked, text: "Unlimited sermon notes" },
-  { icon: Mail, text: "Weekly AI-powered spiritual summary email" },
-];
-
-const PRO_SCENARIOS = [
-  {
-    icon: Zap,
-    title: "Never cut off mid-reflection",
-    body: "Free users hit a daily limit. Pro means every question, prayer, and reflection goes as deep as God takes you — no interruptions.",
-  },
-  {
-    icon: Download,
-    title: "Take your notes with you",
-    body: "Save your journal, devotional notes, and prayers as a beautifully formatted PDF — to print, share, or keep forever.",
-  },
-  {
-    icon: Flame,
-    title: "Streak protection built in",
-    body: "Miss a day of life, not a day of faith. Pro protects your streak so one busy day doesn't wipe out weeks of consistency.",
-  },
-];
 
 const WHITE_LABEL_TIERS = [
   {
@@ -123,7 +85,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What counts as an AI response?",
-    a: `Each AI-generated reflection, prayer, explanation, or study response counts as one. Free users get ${AI_FREE_LIMIT} per day, resetting at midnight. Listening to audio and reading the Bible never count.`
+    a: `Each AI-generated reflection, prayer, explanation, or study response counts as one. Your first ${AI_HONEYMOON_DAYS} days include ${AI_LIMIT_HONEYMOON_DISPLAY} per day; after that, ${AI_FREE_LIMIT} per day (with a small grace buffer you won't feel until you're truly deep in conversation). Resets at midnight. Listening and Bible reading never count.`
   },
   {
     q: "Is the AI content biblically sound?",
@@ -140,6 +102,14 @@ const FAQ_ITEMS = [
   {
     q: "I already subscribed — how do I activate Pro?",
     a: "On any AI limit screen, tap 'Already subscribed?' and enter your purchase email to restore access on this device."
+  },
+  {
+    q: "When do I get the weekly Spiritual Weather email?",
+    a: PRO_EMAIL_FAQ_NOTE,
+  },
+  {
+    q: "How does inviting friends work?",
+    a: `Share your personal link from the Invite page or after a devotional. Friends who join get ${REFERRAL_WELCOME_DAYS} days of Pro to explore. You earn ${REFERRAL_DAYS_PER_FRIEND} bonus Pro days for each friend — stackable, no purchase required for them to start free.`,
   },
 ];
 
@@ -438,6 +408,15 @@ export default function PricingPage() {
         </div>
       </motion.div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.34 }}
+        className="max-w-2xl mx-auto px-5 pb-6"
+      >
+        <ShareInviteCard variant="compact" className="mt-0" />
+      </motion.div>
+
       {/* Barrier line */}
       <motion.p
         initial={{ opacity: 0 }}
@@ -445,7 +424,7 @@ export default function PricingPage() {
         transition={{ delay: 0.36 }}
         className="text-[12px] text-muted-foreground/60 text-center px-5 pb-8 -mt-2"
       >
-        If cost is ever a barrier, you're still welcome here.
+        If cost is ever a barrier, you're still welcome here — invite friends to earn bonus Pro days.
       </motion.p>
 
       {!isIOS() && (<>

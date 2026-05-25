@@ -5,7 +5,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getSessionId } from "@/lib/session";
-import { checkReferralProStatus, silentlyRevalidatePro } from "@/lib/proStatus";
+import { checkReferralProStatus, markReferralPro, silentlyRevalidatePro } from "@/lib/proStatus";
+import { ReferralWelcomeToast, setReferralWelcomePending } from "@/components/ReferralWelcomeToast";
+import { refreshAiUsage } from "@/hooks/use-ai-usage";
 import { ThemeContext, getStoredTheme, applyTheme, type AppTheme } from "@/lib/theme";
 import NotFound from "@/pages/not-found";
 import LandingHome from "@/pages/LandingHome";
@@ -38,6 +40,7 @@ import GreatestGiftPage from "@/pages/GreatestGiftPage";
 import SupportPage from "@/pages/SupportPage";
 import HowToUsePage from "@/pages/HowToUsePage";
 import FeedbackPage from "@/pages/FeedbackPage";
+import InvitePage from "@/pages/InvitePage";
 import TriviaPage from "@/pages/TriviaPage";
 // import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
@@ -62,6 +65,7 @@ function ReferralCapture() {
     const sessionId = getSessionId();
     checkReferralProStatus(sessionId).catch(() => {});
     silentlyRevalidatePro().catch(() => {});
+    refreshAiUsage().catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (!ref) return;
@@ -71,10 +75,17 @@ function ReferralCapture() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: ref, referredSessionId: sessionId }),
-    }).then(() => {
-      localStorage.setItem("sp_referral_recorded", "1");
-      checkReferralProStatus(sessionId).catch(() => {});
-    }).catch(() => {});
+    })
+      .then((r) => r.json())
+      .then((data: { success?: boolean; referredProUntil?: string }) => {
+        localStorage.setItem("sp_referral_recorded", "1");
+        if (data.success && data.referredProUntil) {
+          markReferralPro(data.referredProUntil);
+          setReferralWelcomePending();
+        }
+        checkReferralProStatus(sessionId).catch(() => {});
+      })
+      .catch(() => {});
   }, []);
   return null;
 }
@@ -120,6 +131,7 @@ function Router() {
       <Route path="/support" component={SupportPage} />
       <Route path="/how-to-use" component={HowToUsePage} />
       <Route path="/feedback" component={FeedbackPage} />
+      <Route path="/invite" component={InvitePage} />
       <Route path="/trivia" component={TriviaPage} />
       <Route path="/trivia/:id" component={TriviaPage} />
       {/* <Route path="/sms" component={SmsPage} /> */}
@@ -184,6 +196,7 @@ function App() {
                 <BrandedDomainRedirect />
                 <ScrollToTop />
                 <ReferralCapture />
+                <ReferralWelcomeToast />
                 <Router />
                 <FloatingAskAI />
                 <DemoFloatingBar />

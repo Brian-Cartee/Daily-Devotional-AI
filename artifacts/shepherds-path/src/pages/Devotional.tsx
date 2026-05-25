@@ -6,10 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download, RefreshCw, Sparkles, Lock } from "lucide-react";
 import { createShareImage, createStoryShareImage, getDailyVersePhoto, PHOTO_POOL } from "@/lib/shareImage";
 import { isProVerifiedLocally, activateProCode } from "@/lib/proStatus";
+import { apiSessionExtras } from "@/lib/requestExtras";
+import { recordStreakVisit } from "@/lib/streakApi";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { useDailyArt } from "@/hooks/use-daily-art";
-import { streamAI } from "@/lib/streamAI";
+import { streamAI, AiLimitReachedError } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,15 @@ import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer, cle
 import { DailySermonCard } from "@/components/DailySermonCard";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
 import { ScriptureContext } from "@/components/ScriptureContext";
+import { SessionStillness } from "@/components/SessionStillness";
+import { getListenFirstPreference } from "@/lib/listenFirst";
+import {
+  canStartDevotionalChain,
+  canUseListenFirstAuto,
+  recordDevotionalChainStarted,
+  LISTEN_LIMIT_COPY,
+} from "@/lib/listenPolicy";
+import { markReturningHome } from "@/lib/introState";
 
 /** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
 const openLink = (url: string) => {
@@ -92,6 +103,8 @@ export default function Devotional() {
   const [copied, setCopied] = useState(false);
   const [sharingImage, setSharingImage] = useState(false);
   const [devotionalStarted, setDevotionalStarted] = useState(false);
+  const [showStillness, setShowStillness] = useState(false);
+  const listenFirstTriggeredRef = useRef(false);
   const [entryTriggered, setEntryTriggered] = useState(false);
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
@@ -115,6 +128,7 @@ export default function Devotional() {
   const [reflectionReplySaved, setReflectionReplySaved] = useState(false);
   const ttsListen = useTTS();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showListenUpgrade, setShowListenUpgrade] = useState(false);
   const [showPostValueName, setShowPostValueName] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   const [showTipPrompt, setShowTipPrompt] = useState(false);
@@ -163,6 +177,7 @@ export default function Devotional() {
             verseDate: verse.date,
             verseText: verse.text,
             verseReference: verse.reference,
+            ...apiSessionExtras(),
           }),
         })
           .then(r => r.json())
@@ -180,7 +195,12 @@ export default function Devotional() {
       const res = await fetch("/api/verse-art/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verseDate: verse?.date, verseText: verse?.text, verseReference: verse?.reference }),
+        body: JSON.stringify({
+          verseDate: verse?.date,
+          verseText: verse?.text,
+          verseReference: verse?.reference,
+          ...apiSessionExtras(),
+        }),
       });
       if (!res.ok) throw new Error("Generation failed");
       return res.json() as Promise<{ imageUrl: string }>;
@@ -242,6 +262,7 @@ export default function Devotional() {
           verseText: verse.text,
           reflection: reflectionContent,
           lang: getStoredLang(),
+          ...apiSessionExtras(),
         }),
       });
       const data = await res.json();
@@ -303,20 +324,23 @@ export default function Devotional() {
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         label: `Today's devotional · ${verse.reference}`,
       });
-      prewarmTTS(`${verse.text} — ${verse.reference}`, getUserVoice());
-      fetch("/api/streak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      }).then(r => r.json()).then(data => {
-        if (data.currentStreak) {
-          setStreak(data);
-          const achievement = checkStreakAchievement(data.currentStreak, data.isNewDay);
-          if (achievement) {
-            pendingStreakAchievementRef.current = achievement;
+      prewarmTTS(`${verse.text} — ${verse.reference}`, getUserVoice(), "verse");
+      recordStreakVisit()
+        .then((data) => {
+          if (data.currentStreak) {
+            setStreak(data);
+            if (data.freezeApplied) {
+              toast({
+                description: "Pro kept your streak — one grace day used this month.",
+              });
+            }
+            const achievement = checkStreakAchievement(data.currentStreak, data.isNewDay);
+            if (achievement) {
+              pendingStreakAchievementRef.current = achievement;
+            }
           }
-        }
-      }).catch(() => {});
+        })
+        .catch(() => {});
     }
   }, [verse]);
 
@@ -395,8 +419,12 @@ export default function Devotional() {
         // Prayer generates sequentially so it can emerge from the same emotional space
         generatePrayer(verseId, lang, userName, finalText);
       }
-    } catch (e: any) {
-      if (e?.name !== "AbortError") setReflectionError(true);
+    } catch (e: unknown) {
+      if (e instanceof AiLimitReachedError) {
+        setShowUpgrade(true);
+      } else if ((e as { name?: string })?.name !== "AbortError") {
+        setReflectionError(true);
+      }
     }
     if (!controller.signal.aborted) setReflectionLoading(false);
   };
@@ -423,8 +451,12 @@ export default function Devotional() {
         const cleaned = finalPrayer.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim();
         prewarmTTS(cleaned, "nova");
       }
-    } catch (e: any) {
-      if (e?.name !== "AbortError") setPrayerError(true);
+    } catch (e: unknown) {
+      if (e instanceof AiLimitReachedError) {
+        setShowUpgrade(true);
+      } else if ((e as { name?: string })?.name !== "AbortError") {
+        setPrayerError(true);
+      }
     }
     if (!controller.signal.aborted) setPrayerLoading(false);
   };
@@ -500,6 +532,11 @@ export default function Devotional() {
     if (ttsListen.playing || ttsListen.loading) { stopFullListen(); return; }
     if (!listenHintSeen) { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }
 
+    if (!canStartDevotionalChain()) {
+      setShowListenUpgrade(true);
+      return;
+    }
+
     // Don't start if content is still generating — wait for at least reflection
     if (reflectionLoading || (!reflectionContent && !prayerContent)) return;
 
@@ -517,6 +554,8 @@ export default function Devotional() {
     if (cleanPrayer.trim()) sections.push({ key: "prayer", text: cleanPrayer });
     if (sections.length === 0) return;
 
+    recordDevotionalChainStarted();
+
     await ttsListen.playChain(
       sections,
       (_, key) => setListenSection(key as "verse" | "reflection" | "prayer"),
@@ -524,11 +563,26 @@ export default function Devotional() {
         setListenSection(null);
         setShowListenReply(true);
         setTimeout(() => listenReplyRef.current?.focus(), 300);
-      }
+      },
+      {
+        chainScope: "devotional",
+        onLimit: () => setShowListenUpgrade(true),
+      },
     );
 
     setListenSection(null);
   };
+
+  useEffect(() => {
+    if (!reflectionContent || listenFirstTriggeredRef.current) return;
+    if (!canUseListenFirstAuto() || !getListenFirstPreference()) return;
+    if (reflectionLoading) return;
+    listenFirstTriggeredRef.current = true;
+    const t = setTimeout(() => {
+      void startFullListen();
+    }, 800);
+    return () => clearTimeout(t);
+  }, [reflectionContent, reflectionLoading]);
 
   const handleShare = async () => {
     if (!verse) return;
@@ -858,7 +912,7 @@ export default function Devotional() {
                 className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors group"
               >
                 <Zap className="w-3 h-3 shrink-0" />
-                <span>{streak.currentStreak}-day streak — Pro protects it so one busy day never resets your progress</span>
+                <span>{streak.currentStreak}-day streak — Pro includes one grace day per month if you miss a visit</span>
               </Link>
             </motion.div>
           )}
@@ -1593,6 +1647,16 @@ export default function Devotional() {
                   ? "You came back again. That matters more than you realize."
                   : "You spent time in the Word today. Let it stay with you."}
               </p>
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowStillness(true)}
+                  data-testid="btn-devotional-stillness"
+                  className="text-[13px] font-semibold text-muted-foreground/80 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
+                >
+                  Close in stillness
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -1721,8 +1785,26 @@ export default function Devotional() {
         </motion.div>
       </main>
 
+      <SessionStillness
+        open={showStillness}
+        verseText={verse?.text ?? ""}
+        verseRef={verse?.reference ?? ""}
+        onDone={() => {
+          setShowStillness(false);
+          markReturningHome();
+          navigate("/");
+        }}
+      />
+
       <AnimatePresence>
         {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+        {showListenUpgrade && (
+          <UpgradeModal
+            onClose={() => setShowListenUpgrade(false)}
+            title="Unlimited listen"
+            subtitle={LISTEN_LIMIT_COPY.devotional}
+          />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
