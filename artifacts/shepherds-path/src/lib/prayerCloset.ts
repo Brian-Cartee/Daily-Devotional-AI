@@ -1,3 +1,6 @@
+import type { WorshipBedSource } from "@/lib/worshipBedSource";
+import type { WorshipYoutubeMixId } from "@/lib/worshipYouTubeMixes";
+
 /** Personal prayer closet — local preferences (Matthew 6:6) */
 
 export const CLOSET_STORAGE_KEY = "sp_prayer_closet_v1";
@@ -18,7 +21,10 @@ export type ClosetSettings = {
   pinnedText: string | null;
   candleLevel: number;
   worshipEnabled: boolean;
+  /** local MP3 slots vs curated YouTube hour-mixes */
+  worshipSource: WorshipBedSource;
   worshipTrackId: string | null;
+  worshipYoutubeMixId: WorshipYoutubeMixId;
   worshipVolume: number;
 };
 
@@ -42,7 +48,9 @@ export const DEFAULT_CLOSET_SETTINGS: ClosetSettings = {
   pinnedText: null,
   candleLevel: 0.55,
   worshipEnabled: false,
+  worshipSource: "youtube",
   worshipTrackId: "morning-stillness",
+  worshipYoutubeMixId: "holy-voltage-ep1",
   worshipVolume: 0.35,
 };
 

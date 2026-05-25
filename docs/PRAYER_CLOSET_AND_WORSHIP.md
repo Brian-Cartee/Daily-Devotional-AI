@@ -5,7 +5,7 @@
 While you were away, we added:
 
 1. **Prayer closet** — `/prayer-closet`
-2. **Worship bed** — optional music inside the closet (4 track slots + quiet fallback tone until MP3s are added)
+2. **Worship bed** — optional music inside the closet: **YouTube mixes** (~1 hr, official embed) or **local stillness** (4 MP3 slots + quiet fallback tone)
 
 ### Deploy on Lightsail
 
@@ -26,7 +26,19 @@ Download royalty-free worship / gentle house MP3s from [Pixabay worship](https:/
 | `hope-rise.mp3` | Uplifting gentle house |
 | `night-rest.mp3` | Evening rest |
 
-Until files exist, the app plays a **very quiet generated stillness tone** when worship bed is on.
+Until files exist, local mode plays a **very quiet generated stillness tone**.
+
+### Curated YouTube mixes (prayer closet)
+
+Edit `artifacts/shepherds-path/src/lib/worshipYouTubeMixes.ts` to add `videoId` + metadata. Current mixes:
+
+| Mix | Channel |
+|-----|---------|
+| Holy Voltage Ep. 1 | Holy Voltage Radio |
+| House Praise 2026 | Kingdom Frequencies |
+| Glorious Praise & Worship | Casley Music |
+
+Playback uses the **YouTube IFrame API** (compliant embed). On mobile, the user may need to **tap play** inside the slim player bar.
 
 ### Home entry points
 

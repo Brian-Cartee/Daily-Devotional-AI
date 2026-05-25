@@ -13,10 +13,16 @@ import {
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
-import { WorshipBedControls } from "@/components/WorshipBedControls";
+import {
+  WorshipBedControls,
+  WORSHIP_YOUTUBE_PLAYER_ID,
+} from "@/components/WorshipBedControls";
 import { useDailyArt } from "@/hooks/use-daily-art";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { useWorshipBed } from "@/hooks/use-worship-bed";
+import { useWorshipYoutube } from "@/hooks/use-worship-youtube";
+import { isYoutubeWorshipSource } from "@/lib/worshipBedSource";
+import type { WorshipYoutubeMixId } from "@/lib/worshipYouTubeMixes";
 import { getSessionId } from "@/lib/session";
 import { getUserName } from "@/lib/userName";
 import { apiRequest } from "@/lib/queryClient";
@@ -47,10 +53,18 @@ export default function PrayerClosetPage() {
   const [showSetup, setShowSetup] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
 
+  const youtubeWorship = isYoutubeWorshipSource(settings.worshipSource);
   const { usingGenerated } = useWorshipBed(
     settings.worshipEnabled,
     settings.worshipTrackId,
     settings.worshipVolume,
+    youtubeWorship,
+  );
+  const { playerReady: youtubeReady, loadError: youtubeError } = useWorshipYoutube(
+    settings.worshipEnabled && youtubeWorship,
+    settings.worshipYoutubeMixId,
+    settings.worshipVolume,
+    WORSHIP_YOUTUBE_PLAYER_ID,
   );
 
   useEffect(() => {
@@ -237,11 +251,19 @@ export default function PrayerClosetPage() {
 
           <WorshipBedControls
             enabled={settings.worshipEnabled}
+            source={settings.worshipSource ?? "youtube"}
             trackId={settings.worshipTrackId}
+            youtubeMixId={settings.worshipYoutubeMixId ?? "holy-voltage-ep1"}
             volume={settings.worshipVolume}
             usingGenerated={usingGenerated}
+            youtubeReady={youtubeReady}
+            youtubeError={youtubeError}
             onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
+            onSourceChange={(worshipSource) => patchSettings({ worshipSource })}
             onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
+            onYoutubeMixChange={(worshipYoutubeMixId: WorshipYoutubeMixId) =>
+              patchSettings({ worshipYoutubeMixId })
+            }
             onVolumeChange={(worshipVolume) => patchSettings({ worshipVolume })}
           />
 

@@ -27,7 +27,13 @@ function startGeneratedStillness(volume: number): GeneratedPad {
   };
 }
 
-export function useWorshipBed(enabled: boolean, trackId: string | null, volume: number) {
+export function useWorshipBed(
+  enabled: boolean,
+  trackId: string | null,
+  volume: number,
+  /** When true, skip MP3/stillness — YouTube player handles audio */
+  youtubeActive = false,
+) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const generatedRef = useRef<GeneratedPad | null>(null);
   const [usingGenerated, setUsingGenerated] = useState(false);
@@ -47,7 +53,7 @@ export function useWorshipBed(enabled: boolean, trackId: string | null, volume: 
   volumeRef.current = volume;
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || youtubeActive) {
       stopAll();
       return;
     }
@@ -88,10 +94,10 @@ export function useWorshipBed(enabled: boolean, trackId: string | null, volume: 
       window.clearTimeout(t);
       stopAll();
     };
-  }, [enabled, trackId, stopAll]);
+  }, [enabled, trackId, stopAll, youtubeActive]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || youtubeActive) return;
     if (audioRef.current && !usingGenerated) {
       audioRef.current.volume = Math.min(1, Math.max(0, volume));
     }
@@ -99,7 +105,7 @@ export function useWorshipBed(enabled: boolean, trackId: string | null, volume: 
       generatedRef.current?.stop();
       generatedRef.current = startGeneratedStillness(volume);
     }
-  }, [volume, enabled, usingGenerated]);
+  }, [volume, enabled, usingGenerated, youtubeActive]);
 
   return { usingGenerated };
 }
