@@ -1,3 +1,5 @@
+import { youtubeNeedsSideVolumeOnThisDevice } from "@/lib/platform";
+
 /** Touch-first phones — YouTube IFrame API volume is unsupported on most mobile browsers */
 export function isMobileTouchDevice(): boolean {
   if (typeof window === "undefined") return false;
@@ -5,4 +7,9 @@ export function isMobileTouchDevice(): boolean {
   const narrow = window.matchMedia("(max-width: 768px)").matches;
   const ua = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   return (coarse && narrow) || ua;
+}
+
+/** Worship bed YouTube mixes on iOS — in-app slider disabled; use side volume */
+export function isYoutubeSideVolumeDevice(): boolean {
+  return youtubeNeedsSideVolumeOnThisDevice();
 }

@@ -53,6 +53,7 @@ import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
+import { isNativeWebViewShell } from "@/lib/platform";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ScrollToTop() {
@@ -202,8 +203,8 @@ function App() {
                 <Router />
                 <FloatingAskAI />
                 <DemoFloatingBar />
-                <InstallPrompt />
-                <UpdatePrompt />
+                {!isNativeWebViewShell() && <InstallPrompt />}
+                {!isNativeWebViewShell() && <UpdatePrompt />}
               </DemoProvider>
             </WouterRouter>
           </TooltipProvider>

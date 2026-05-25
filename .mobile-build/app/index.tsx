@@ -1,6 +1,8 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
+  Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -9,12 +11,46 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
+import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
 
-const APP_URL = "https://www.shepherdspathai.com";
+const APP_ORIGIN = "https://www.shepherdspathai.com";
 
-// Injected AFTER the page loads. Polls until React has mounted (#root has
-// children) then notifies the native shell to hide the loading overlay.
-// Hard 8s failsafe fires regardless so the overlay never blocks forever.
+/** Hosts allowed inside the shell (app + worship embeds) */
+const IN_APP_HOST_SUFFIXES = [
+  "shepherdspathai.com",
+  "youtube.com",
+  "youtu.be",
+  "googlevideo.com",
+  "ytimg.com",
+  "ggpht.com",
+];
+
+function hostAllowedInWebView(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol === "about:" || protocol === "blob:" || protocol === "data:") {
+      return true;
+    }
+    if (protocol !== "https:" && protocol !== "http:") return false;
+    const host = hostname.replace(/^www\./, "");
+    return IN_APP_HOST_SUFFIXES.some(
+      (suffix) => host === suffix || host.endsWith(`.${suffix}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Injected BEFORE content — brand background + flag for web UI
+const BEFORE_CONTENT_JS = `(function(){
+  document.documentElement.style.backgroundColor='#0d0612';
+  document.body.style.backgroundColor='#0d0612';
+  document.documentElement.setAttribute('data-sp-shell','native');
+  document.documentElement.classList.add('sp-native-shell');
+  true;
+})();`;
+
+// Injected AFTER load — hide native splash when React mounts
 const READY_JS = `(function(){
   var sent=false;
   function notify(){
@@ -31,25 +67,20 @@ const READY_JS = `(function(){
   true;
 })();`;
 
-const BEFORE_CONTENT_JS = `document.documentElement.style.backgroundColor='#0d0612';document.body.style.backgroundColor='#0d0612';true;`;
-
 export default function MainScreen() {
   const webviewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const loadEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hideOverlay = () => {
+  const hideOverlay = useCallback(() => {
     if (loadEndTimerRef.current) {
       clearTimeout(loadEndTimerRef.current);
       loadEndTimerRef.current = null;
     }
     setLoading(false);
-  };
+  }, []);
 
-  // Absolute maximum: overlay always clears within 12 seconds of mount.
-  // This guarantees the spinner is never permanent even if the page hangs
-  // or the ready signal is never received.
   useEffect(() => {
     const absoluteMax = setTimeout(() => setLoading(false), 12000);
     return () => {
@@ -64,14 +95,27 @@ export default function MainScreen() {
     webviewRef.current?.reload();
   };
 
+  const onShouldStartLoadWithRequest = (event: ShouldStartLoadRequest): boolean => {
+    const { url, navigationType } = event;
+    if (!url || url === "about:blank") return true;
+    if (hostAllowedInWebView(url)) return true;
+    // External links (support, mailto, etc.) open in Safari
+    if (navigationType === "click" || url.startsWith("http")) {
+      Linking.openURL(url).catch(() => {});
+    }
+    return false;
+  };
+
   if (error) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
+      <SafeAreaView style={styles.errorContainer} edges={["top", "bottom"]}>
         <StatusBar style="light" />
         <Text style={styles.errorIcon}>🙏</Text>
         <Text style={styles.errorTitle}>Unable to Connect</Text>
         <Text style={styles.errorMessage}>
-          Please check your internet connection and try again.
+          Shepherd&apos;s Path couldn&apos;t load. Check your connection, then try again.
+          {"\n\n"}
+          The website updates on its own — pull down in the app to refresh after we ship changes.
         </Text>
         <Pressable
           onPress={reload}
@@ -84,31 +128,37 @@ export default function MainScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
       <WebView
         ref={webviewRef}
-        source={{ uri: APP_URL }}
+        source={{ uri: APP_ORIGIN }}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
+        sharedCookiesEnabled
         allowsBackForwardNavigationGestures
         pullToRefreshEnabled
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        allowsFullscreenVideo
+        setSupportMultipleWindows={false}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         injectedJavaScript={READY_JS}
+        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
             if (data.type === "app_ready") hideOverlay();
-          } catch {}
+          } catch {
+            /* noop */
+          }
         }}
         onLoadStart={() => {
           setLoading(true);
           setError(false);
         }}
         onLoadEnd={() => {
-          // Secondary failsafe: if the app_ready message never comes,
-          // hide the overlay 8 seconds after the page finishes loading.
           if (loadEndTimerRef.current) clearTimeout(loadEndTimerRef.current);
           loadEndTimerRef.current = setTimeout(hideOverlay, 8000);
         }}
@@ -126,10 +176,14 @@ export default function MainScreen() {
           setLoading(true);
           webviewRef.current?.reload();
         }}
+        {...(Platform.OS === "android"
+          ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }
+          : {})}
       />
       {loading && (
-        <View style={styles.loadingOverlay}>
+        <View style={styles.loadingOverlay} pointerEvents="none">
           <ActivityIndicator size="large" color="#7A018D" />
+          <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
         </View>
       )}
     </SafeAreaView>
@@ -150,6 +204,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#0d0612",
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
+  },
+  loadingHint: {
+    fontSize: 14,
+    color: "#c0a8cc",
   },
   errorContainer: {
     flex: 1,

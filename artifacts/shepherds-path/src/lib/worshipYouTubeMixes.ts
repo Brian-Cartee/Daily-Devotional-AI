@@ -26,7 +26,7 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     title: "JESUS ENERGY — Holy Voltage Ep. 1",
     channel: "Holy Voltage Radio",
     durationLabel: "~1 hr",
-    mood: "Christian techno · praise",
+    mood: "Praise house · energetic",
   },
   {
     id: "kingdom-frequencies-2026",
@@ -34,7 +34,7 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     title: "House Praise 2026",
     channel: "Kingdom Frequencies",
     durationLabel: "~1 hr",
-    mood: "Christian EDM · house",
+    mood: "Praise house · upbeat",
   },
   {
     id: "casley-glorious-praise",
@@ -42,7 +42,7 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     title: "Glorious Praise & Worship",
     channel: "Casley Music",
     durationLabel: "Mix",
-    mood: "Christian EDM · uplifting",
+    mood: "Praise house · uplifting",
   },
   {
     id: "edm-christian-uplifting",
@@ -50,7 +50,7 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     title: "Best uplifting EDM worship",
     channel: "EDM Christian Music",
     durationLabel: "Playlist",
-    mood: "Techno · praise · dance",
+    mood: "Praise house · uplifting",
   },
   {
     id: "christian-techno-2025-14",
@@ -58,7 +58,7 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     title: "JESUS uplifting EDM #14",
     channel: "Christian Techno Music",
     durationLabel: "~1 hr",
-    mood: "Worship · praise · gospel",
+    mood: "Praise house · gospel",
   },
   {
     id: "edm-workout-upbeat",
@@ -66,7 +66,7 @@ export const WORSHIP_YOUTUBE_MIXES: WorshipYoutubeMix[] = [
     title: "Upbeat workout & feel-good",
     channel: "Christian Edm Music",
     durationLabel: "Playlist",
-    mood: "Christian EDM · energy",
+    mood: "Praise house · feel-good",
   },
 ];
 

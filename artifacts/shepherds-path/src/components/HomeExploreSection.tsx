@@ -57,17 +57,17 @@ export function HomeExploreSection() {
         onClick={toggle}
         data-testid="toggle-home-explore"
         aria-expanded={expanded}
-        className="relative w-full min-h-[44px] py-2 mb-2 pr-8 text-left group touch-manipulation"
+        className="relative w-full min-h-[44px] py-2 mb-2 px-9 group touch-manipulation"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-primary/30" />
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 shrink-0 group-hover:text-foreground/80 transition-colors">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 shrink-0 text-center group-hover:text-foreground/80 transition-colors">
             More paths
           </p>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/20 to-primary/30" />
         </div>
         <ChevronDown
-          className={`absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 transition-transform ${expanded ? "rotate-180" : ""}`}
           aria-hidden
         />
       </button>

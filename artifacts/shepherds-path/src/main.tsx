@@ -4,13 +4,12 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { installApiFetch } from "./lib/api";
 import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
+import { isNativeWebViewShell } from "./lib/platform";
 
 installApiFetch();
 
-const isNativeWebView = typeof window !== "undefined" && !!(window as any).ReactNativeWebView;
-
 if ("serviceWorker" in navigator) {
-  if (isNativeWebView) {
+  if (isNativeWebViewShell()) {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       registrations.forEach((r) => r.unregister());
     }).catch(() => {});

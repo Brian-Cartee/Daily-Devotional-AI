@@ -1,10 +1,35 @@
 export function isAndroid(): boolean {
+  if (typeof navigator === "undefined") return false;
   return /android/i.test(navigator.userAgent);
 }
 
 export function isIOS(): boolean {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+/** True inside the App Store WebView shell (.mobile-build loads shepherdspathai.com) */
+export function isNativeWebViewShell(): boolean {
+  if (typeof window === "undefined") return false;
+  if ((window as Window & { ReactNativeWebView?: unknown }).ReactNativeWebView) {
+    return true;
+  }
+  return document.documentElement.dataset.spShell === "native";
+}
+
+/** YouTube embed volume — use device side buttons on iPhone/iPad (Safari or App Store app) */
+export function youtubeNeedsSideVolumeOnThisDevice(): boolean {
+  return isIOS() && isMobileTouchDevice();
+}
+
+function isMobileTouchDevice(): boolean {
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const narrow = window.matchMedia("(max-width: 768px)").matches;
+  const ua = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  return (coarse && narrow) || ua;
 }
 
 export function isStandalone(): boolean {

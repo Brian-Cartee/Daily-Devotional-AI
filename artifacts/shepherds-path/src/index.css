@@ -13,6 +13,11 @@ html, body {
   text-size-adjust: 100%;
 }
 
+/* App Store WebView shell — safe areas for home indicator + notch */
+html[data-sp-shell="native"] body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Remove Android tap highlight flash on all interactive elements */
 * {
   -webkit-tap-highlight-color: transparent;

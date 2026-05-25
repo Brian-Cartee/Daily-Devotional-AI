@@ -2,7 +2,7 @@ import { Music2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { WorshipBedVolumeSlider } from "@/components/WorshipBedVolumeSlider";
 import type { WorshipBedSource } from "@/lib/worshipBedSource";
-import { isMobileTouchDevice } from "@/lib/device";
+import { isYoutubeSideVolumeDevice } from "@/lib/device";
 import { WORSHIP_TRACKS, type WorshipTrackId } from "@/lib/worshipTracks";
 import {
   WORSHIP_YOUTUBE_MIXES,
@@ -43,7 +43,7 @@ export function WorshipBedControls({
   onVolumeChange,
 }: Props) {
   const isYoutube = source === "youtube";
-  const youtubeOnMobile = isYoutube && isMobileTouchDevice();
+  const youtubeOnMobile = isYoutube && isYoutubeSideVolumeDevice();
 
   return (
     <div

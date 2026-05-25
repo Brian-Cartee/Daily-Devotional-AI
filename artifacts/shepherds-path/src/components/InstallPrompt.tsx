@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Share, Plus } from "lucide-react";
 import { BRAND_ICON } from "@/lib/brand";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -18,6 +19,7 @@ export function InstallPrompt() {
   const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
+    if (isNativeWebViewShell()) return;
     if (localStorage.getItem(STORAGE_KEY)) return;
 
     // Don't show until the user has dismissed the welcome overlay
@@ -58,6 +60,8 @@ export function InstallPrompt() {
     localStorage.setItem(STORAGE_KEY, "1");
   };
 
+  if (isNativeWebViewShell()) return null;
+
   return (
     <AnimatePresence>
       {visible && !accepted && (
@@ -92,7 +96,7 @@ export function InstallPrompt() {
                 <p className="text-[15px] font-extrabold text-foreground leading-tight">Shepherd's Path</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">
                   {isIOS
-                    ? "Add to your Home Screen for quick access — just 2 taps"
+                    ? "Get the App Store app, or add to Home Screen from Safari — 2 taps"
                     : "Install the app for fast, offline access anytime"}
                 </p>
               </div>
@@ -129,7 +133,7 @@ export function InstallPrompt() {
                 </div>
 
                 <p className="text-center text-[11px] text-muted-foreground pt-1">
-                  Opens like an app — no App Store needed
+                  Search &ldquo;Shepherd&apos;s Path&rdquo; on the App Store, or use Add to Home Screen below
                 </p>
               </div>
             ) : (

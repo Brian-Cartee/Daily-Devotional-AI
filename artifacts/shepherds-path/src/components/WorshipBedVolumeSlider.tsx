@@ -58,7 +58,8 @@ export function WorshipBedVolumeSlider({ volume, onVolumeChange, youtubeOnMobile
       {youtubeOnMobile ? (
         <p className="text-[10px] text-white/50 leading-snug">
           On iPhone, use the <strong className="font-semibold text-white/65">side volume buttons</strong> for
-          this mix — YouTube doesn&apos;t allow in-app volume control on mobile.
+          this mix — that&apos;s normal in Safari and the App Store app (YouTube doesn&apos;t allow in-app
+          volume on iOS).
         </p>
       ) : null}
     </div>
