@@ -1,10 +1,20 @@
 import { Link } from "wouter";
-import { MessageCircle, BookMarked, Compass, Gift, ArrowRight } from "lucide-react";
+import { BookMarked, Compass, Gift, ArrowRight, type LucideIcon } from "lucide-react";
+import { BrandIcon } from "@/components/BrandIcon";
 
-const SHORTCUTS = [
+const SHORTCUTS: {
+  href: string;
+  label: string;
+  desc: string;
+  testid: string;
+  accent: string;
+  iconColor: string;
+  Icon?: LucideIcon;
+  useBrandIcon?: boolean;
+}[] = [
   {
     href: "/guidance",
-    Icon: MessageCircle,
+    useBrandIcon: true,
     label: "Talk it through",
     desc: "Scripture and prayer shaped for what's on your heart",
     testid: "shortcut-guidance",
@@ -43,14 +53,18 @@ const SHORTCUTS = [
 export function HomePathShortcuts() {
   return (
     <div className="flex flex-col gap-2" data-testid="home-path-shortcuts">
-      {SHORTCUTS.map(({ href, Icon, label, desc, testid, accent, iconColor }) => (
+      {SHORTCUTS.map(({ href, Icon, useBrandIcon, label, desc, testid, accent, iconColor }) => (
         <Link key={href} href={href}>
           <div
             data-testid={testid}
             className={`group flex items-center gap-3 rounded-xl border bg-gradient-to-br ${accent} px-4 py-3 active:scale-[0.99] transition-transform`}
           >
-            <div className="w-9 h-9 rounded-lg bg-card/80 flex items-center justify-center shrink-0 shadow-sm">
-              <Icon className={`w-4 h-4 ${iconColor}`} />
+            <div className="w-10 h-10 rounded-lg bg-card/80 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+              {useBrandIcon ? (
+                <BrandIcon size={36} />
+              ) : Icon ? (
+                <Icon className={`w-4 h-4 ${iconColor}`} />
+              ) : null}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-bold text-foreground leading-tight">{label}</p>

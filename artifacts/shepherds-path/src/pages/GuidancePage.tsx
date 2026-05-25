@@ -7,6 +7,7 @@ import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guid
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
+import { BrandIcon } from "@/components/BrandIcon";
 import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
 import { NamePrompt } from "@/components/NamePrompt";
 import { getSessionId } from "@/lib/session";
@@ -600,9 +601,12 @@ export default function GuidancePage() {
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="relative z-10 flex flex-col items-center justify-center min-h-[278px] text-center px-6 pb-8"
               >
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/65 mb-5 select-none">
-                  Seek Guidance
-                </p>
+                <div className="flex flex-col items-center gap-3 mb-5">
+                  <BrandIcon size={56} className="drop-shadow-lg" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/65 select-none">
+                    Talk It Through
+                  </p>
+                </div>
                 <h1
                   className="text-[2.5rem] leading-[1.18] text-white text-balance mb-3"
                   style={{
@@ -630,7 +634,7 @@ export default function GuidancePage() {
                 className="relative z-10 max-w-2xl mx-auto px-5 pt-8 pb-7"
                 style={{ background: "linear-gradient(180deg, hsl(265 60% 8% / 0.85) 0%, transparent 100%)" }}
               >
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Seek Guidance</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Talk It Through</p>
                 <h1 className="text-[22px] font-extrabold text-foreground leading-tight tracking-tight">
                   {getHeroHeadingCompact(situation, isFirstVisit)}
                 </h1>
@@ -693,7 +697,7 @@ export default function GuidancePage() {
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-[15px] transition-all disabled:opacity-45 disabled:cursor-not-allowed active:scale-[0.97]"
                         style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", boxShadow: heartInput.trim() ? "0 4px 18px rgba(245,158,11,0.45)" : "none" }}
                       >
-                        Seek Guidance
+                        Talk It Through
                         <ArrowRight className="w-4 h-4" />
                       </button>
                       {/* Secondary — speak option, smaller + centered */}

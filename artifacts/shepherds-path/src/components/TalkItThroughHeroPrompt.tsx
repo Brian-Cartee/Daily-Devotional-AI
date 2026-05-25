@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { BRAND_ICON } from "@/lib/brand";
+import { BrandIcon } from "@/components/BrandIcon";
 
 const PLACEHOLDERS = [
   "I can't quiet my mind tonight…",
@@ -42,17 +42,10 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
     >
       <div className="flex items-start gap-3 mb-4">
         <div
-          className="shrink-0 rounded-[14px] overflow-hidden ring-1 ring-violet-300/30 shadow-lg shadow-primary/35"
-          style={{ width: 48, height: 48 }}
+          className="shrink-0 flex items-center justify-center rounded-[14px] bg-black/20 ring-1 ring-violet-300/30 shadow-lg shadow-primary/35"
+          style={{ width: 56, height: 56 }}
         >
-          <img
-            src={BRAND_ICON}
-            alt=""
-            width={48}
-            height={48}
-            className="h-full w-full object-cover"
-            decoding="async"
-          />
+          <BrandIcon size={52} className="drop-shadow-md" />
         </div>
         <div className="min-w-0 pt-0.5">
           <div className="flex flex-wrap items-center gap-2 mb-1">

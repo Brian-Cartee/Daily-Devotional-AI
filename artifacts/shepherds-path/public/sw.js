@@ -4,8 +4,10 @@ const STATIC_CACHE = "shepherd-path-static-__SW_CACHE_VERSION__";
 const APP_SHELL = [
   "/",
   "/manifest.json",
-  "/favicon.png",
-  "/app-icon.png",
+  "/favicon.png?v=5",
+  "/favicon-32.png?v=5",
+  "/talk-it-through-icon.png?v=5",
+  "/app-icon.png?v=5",
   "/logo-mark-white.png",
   "/hero-landing.png",
 ];

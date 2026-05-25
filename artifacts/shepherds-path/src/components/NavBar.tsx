@@ -10,7 +10,7 @@ import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guid
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
-import { BRAND_ICON } from "@/lib/brand";
+import { BrandIcon } from "@/components/BrandIcon";
 
 
 const NAV_ITEMS = [
@@ -109,12 +109,7 @@ export function NavBar() {
             className="shrink-0 mr-2"
             title="Shepherd's Path"
           >
-            <img
-              src={BRAND_ICON}
-              alt="Shepherd's Path"
-              className="w-9 h-9 rounded-xl shadow-sm select-none object-cover"
-              draggable={false}
-            />
+            <BrandIcon size={40} className="rounded-[12px] shadow-sm select-none" />
           </Link>
 
           {/* Nav items — desktop only, icon + tooltip */}

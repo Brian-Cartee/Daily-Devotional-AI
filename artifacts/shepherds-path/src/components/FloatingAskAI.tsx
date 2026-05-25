@@ -22,7 +22,7 @@ import { AiPauseModal } from "@/components/AiPauseModal";
 import { ListenButton } from "@/components/ListenButton";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { useToast } from "@/hooks/use-toast";
-import { BRAND_ICON } from "@/lib/brand";
+import { BrandIcon } from "@/components/BrandIcon";
 import {
   buildTodayWalkMessage,
   FLOATER_PEEK_SESSION_KEY,
@@ -299,7 +299,7 @@ export function FloatingAskAI() {
           onClick={openSheet}
           aria-label="Ask Path AI"
           whileTap={{ scale: 0.94 }}
-          className="relative flex h-[46px] w-[46px] sm:h-14 sm:w-14 items-center justify-center rounded-2xl border-0 p-0 bg-transparent"
+          className="relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border-0 p-0 bg-transparent"
         >
           {/* Soft halo — breathes without flashing the whole control */}
           <span
@@ -307,10 +307,9 @@ export function FloatingAskAI() {
             style={{ animation: "pathAiHalo 3.5s ease-in-out infinite" }}
             aria-hidden
           />
-          <img
-            src={BRAND_ICON}
-            alt=""
-            className="relative h-full w-full rounded-[14px] sm:rounded-2xl object-cover shadow-lg shadow-primary/40 ring-1 ring-white/15"
+          <BrandIcon
+            size={48}
+            className="relative h-full w-full rounded-[14px] sm:rounded-2xl shadow-lg shadow-primary/40 ring-1 ring-white/15"
           />
         </motion.button>
       </div>
@@ -349,7 +348,7 @@ export function FloatingAskAI() {
               <div className="flex items-start justify-between gap-3 px-4 pt-1 pb-3 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
-                    <img src={BRAND_ICON} alt="" className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/30" />
+                    <BrandIcon size={40} className="rounded-xl ring-2 ring-primary/30" />
                     <Sparkles className="absolute -bottom-1 -right-1 w-3.5 h-3.5 text-amber-500" />
                   </div>
                   <div className="min-w-0">
