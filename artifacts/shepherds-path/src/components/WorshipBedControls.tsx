@@ -43,6 +43,7 @@ export function WorshipBedControls({
   onVolumeChange,
 }: Props) {
   const isYoutube = source === "youtube";
+  const youtubeOnMobile = isYoutube && isMobileTouchDevice();
 
   return (
     <div
