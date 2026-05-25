@@ -181,6 +181,18 @@ button, a, input, textarea, select, [role="button"] {
     100% { background-position: 200% 0; }
   }
 
+  @keyframes pathAiHalo {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(0.96);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.04);
+    }
+  }
+
   /* Bible reading typography */
   .reading-text {
     font-family: var(--font-reading);

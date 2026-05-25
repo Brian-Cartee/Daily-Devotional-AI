@@ -295,28 +295,25 @@ export function FloatingAskAI() {
           type="button"
           data-testid="button-floating-ask-ai"
           onClick={openSheet}
-          aria-label="Open Path AI"
+          aria-label="Ask Path AI"
           whileTap={{ scale: 0.94 }}
-          className="relative flex items-center justify-center w-[52px] h-[52px] rounded-2xl border-0 p-0 bg-transparent"
+          className="relative flex h-14 w-14 items-center justify-center rounded-2xl border-0 p-0 bg-transparent"
         >
+          {/* Soft halo — breathes without flashing the whole control */}
           <span
-            className="absolute inset-0 rounded-2xl bg-primary/25 animate-pulse"
+            className="pointer-events-none absolute -inset-1.5 rounded-[18px] bg-primary/45 blur-xl opacity-70"
+            style={{ animation: "pathAiHalo 3.5s ease-in-out infinite" }}
             aria-hidden
           />
           <span
-            className="absolute -inset-0.5 rounded-[14px] bg-gradient-to-br from-violet-500/50 via-primary/40 to-amber-500/35 blur-md opacity-80"
-            aria-hidden
-          />
-          <img
-            src="/sp-icon.png"
-            alt=""
-            className="relative w-11 h-11 rounded-xl ring-2 ring-primary/50 shadow-lg shadow-primary/25"
-          />
-          <span
-            className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center shadow-md ring-2 ring-background"
+            className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-primary to-violet-800 shadow-lg shadow-primary/40 ring-1 ring-white/15"
             aria-hidden
           >
-            ✝
+            <img
+              src="/sp-icon-nobg.png"
+              alt=""
+              className="h-9 w-9 object-contain drop-shadow-md"
+            />
           </span>
         </motion.button>
       </div>
