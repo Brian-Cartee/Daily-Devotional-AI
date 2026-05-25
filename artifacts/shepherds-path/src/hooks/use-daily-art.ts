@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { dailyArtImageSrc, preloadImage, probeImageUrl } from "@/lib/preloadImage";
 
 export interface DailyArtData {
   imageUrl: string | null;
@@ -7,25 +8,11 @@ export interface DailyArtData {
   reflection: string;
 }
 
-const POLL_MS = 8_000;
-const MAX_POLLS = 20;
-
-function easternDateKey(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
-}
-
-/** Check if today's JPEG exists on the server (background gpt-image-1 may still be running). */
-async function probeDailyArtImage(): Promise<boolean> {
-  try {
-    const res = await fetch("/api/daily-art/image", { method: "GET", cache: "no-store" });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+const POLL_MS = 5_000;
+const MAX_POLLS = 24;
 
 /**
- * Fetches /api/daily-art and polls until the background image is ready.
+ * Fetches /api/daily-art and ensures the image is loadable before exposing the URL.
  */
 export function useDailyArt(onImageUrl?: (url: string) => void) {
   const [art, setArt] = useState<DailyArtData | null>(null);
@@ -34,16 +21,31 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
   const onImageRef = useRef(onImageUrl);
   onImageRef.current = onImageUrl;
 
-  const applyImageUrl = useCallback((url: string) => {
-    setImageUrl(url);
-    setArt(prev => (prev ? { ...prev, imageUrl: url } : prev));
-    onImageRef.current?.(url);
+  const applyImageUrl = useCallback(async (baseUrl?: string) => {
+    const src = dailyArtImageSrc(baseUrl ?? "/api/daily-art/image");
+    const ready = await probeImageUrl(src);
+    if (!ready) return false;
+    const ok = await preloadImage(src);
+    if (!ok) return false;
+    setImageUrl(src);
+    setArt((prev) => (prev ? { ...prev, imageUrl: src } : prev));
+    onImageRef.current?.(src);
+    return true;
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     let polls = 0;
     let timer: ReturnType<typeof setInterval> | null = null;
+
+    const finishLoading = () => {
+      if (!cancelled) setLoading(false);
+    };
+
+    const tryAttachImage = async (): Promise<boolean> => {
+      if (cancelled) return false;
+      return applyImageUrl();
+    };
 
     const load = async () => {
       try {
@@ -53,20 +55,13 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
         setArt(data);
 
         if (data.imageUrl) {
-          const bust =
-            data.imageUrl.includes("?") ? data.imageUrl : `${data.imageUrl}?d=${easternDateKey()}`;
-          applyImageUrl(bust);
-          setLoading(false);
-          return;
+          if (await tryAttachImage()) {
+            finishLoading();
+            return;
+          }
         }
 
-        if (await probeDailyArtImage()) {
-          applyImageUrl("/api/daily-art/image");
-          setLoading(false);
-          return;
-        }
-
-        setLoading(false);
+        finishLoading();
 
         timer = setInterval(async () => {
           if (cancelled || polls >= MAX_POLLS) {
@@ -74,13 +69,12 @@ export function useDailyArt(onImageUrl?: (url: string) => void) {
             return;
           }
           polls += 1;
-          if (await probeDailyArtImage()) {
-            applyImageUrl("/api/daily-art/image");
+          if (await tryAttachImage()) {
             if (timer) clearInterval(timer);
           }
         }, POLL_MS);
       } catch {
-        if (!cancelled) setLoading(false);
+        finishLoading();
       }
     };
 

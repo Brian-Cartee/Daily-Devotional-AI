@@ -32,13 +32,21 @@ export function DailyArtCard() {
 
   const displayUrl = imageUrl ?? art?.imageUrl ?? null;
   const loading = artLoading && !displayUrl;
+  const prevDisplayUrl = useRef<string | null>(null);
 
   useEffect(() => {
-    if (displayUrl) {
-      setImageError(false);
-      setImageLoaded(false);
-    }
+    if (!displayUrl) return;
+    if (displayUrl === prevDisplayUrl.current) return;
+    prevDisplayUrl.current = displayUrl;
+    setImageError(false);
+    setImageLoaded(false);
   }, [displayUrl]);
+
+  useEffect(() => {
+    if (!displayUrl || imageLoaded || imageError) return;
+    const t = setTimeout(() => setImageError(true), 22_000);
+    return () => clearTimeout(t);
+  }, [displayUrl, imageLoaded, imageError]);
 
   const handleShare = async () => {
     if (!art) return;
@@ -168,10 +176,13 @@ export function DailyArtCard() {
           )}
         </AnimatePresence>
 
-        {displayUrl && (
+        {displayUrl && !imageError && (
           <motion.img
             src={displayUrl}
             alt="Today's moment"
+            ref={(el) => {
+              if (el?.complete && el.naturalWidth > 0) setImageLoaded(true);
+            }}
             onLoad={() => setImageLoaded(true)}
             onError={() => {
               setImageLoaded(false);

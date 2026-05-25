@@ -28,6 +28,7 @@ import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pus
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
+import { resolveDailyArtDir, writeDailyArtImageFile } from "../dailyArtUtil";
 import { buildThresholdPayload, buildWeeklyWeather, buildVerseFrame } from "../homeExperience";
 import { buildJournalArchive } from "../journalArchive";
 import {
@@ -2826,7 +2827,7 @@ Return JSON: { "action": "...", "scripture": "..." }`
 
   // ── Daily Art Image ───────────────────────────────────────────────────────────
 
-  const DAILY_ART_DIR = path.resolve(process.cwd(), "client/public/daily-art");
+  const DAILY_ART_DIR = resolveDailyArtDir();
   if (!fs.existsSync(DAILY_ART_DIR)) fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
 
   app.use("/daily-art", express.static(DAILY_ART_DIR, { maxAge: "1d" }));
@@ -2886,58 +2887,9 @@ Return JSON: { "action": "...", "scripture": "..." }`
     { scripture: "The eternal God is your refuge, and underneath are the everlasting arms.", reference: "Deuteronomy 33:27", reflection: "You cannot fall further than His arms reach.", query: "vast Grand Canyon sunrise ancient rock golden shadows" },
   ];
 
-  /**
-   * Build a rich cinematic prompt for gpt-image-1 daily devotional art.
-   * Produces painterly, gallery-quality landscape images with divine light and no text.
-   */
-  function buildDailyArtPrompt(scripture: string, reference: string, visualTheme: string): string {
-    return [
-      `Breathtaking devotional artwork: ${visualTheme}.`,
-      `Inspired by the scripture "${scripture}" (${reference}).`,
-      `Style: cinematic oil painting meets fine art photography — luminous, painterly brushwork with photorealistic detail.`,
-      `Lighting: warm divine golden light, god rays, ethereal glow that suggests transcendence and peace.`,
-      `Mood: deeply contemplative, sacred, emotionally moving — the kind of image that stops a viewer in silence.`,
-      `Composition: wide landscape format, rule-of-thirds, leading lines drawing the eye toward the light source.`,
-      `No people, no text, no watermarks, no logos, no borders.`,
-      `Museum quality. Award-winning nature and spiritual photography. 16:9 aspect ratio.`,
-    ].join(" ");
-  }
-
-  async function fetchUnsplashPhoto(query: string): Promise<string | null> {
-    const key = process.env.UNSPLASH_ACCESS_KEY;
-    if (!key) return null;
-    try {
-      const res = await fetch(
-        `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&orientation=landscape&content_filter=high&client_id=${key}`
-      );
-      if (!res.ok) return null;
-      const data = await res.json() as any;
-      return data.urls?.regular ?? null;
-    } catch { return null; }
-  }
-
-  async function fetchPexelsPhoto(query: string): Promise<string | null> {
-    const key = process.env.PEXELS_API_KEY;
-    if (!key) return null;
-    try {
-      const page = Math.floor(Math.random() * 4) + 1;
-      const res = await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&page=${page}&orientation=landscape`,
-        { headers: { Authorization: key } }
-      );
-      if (!res.ok) return null;
-      const data = await res.json() as any;
-      const photos: any[] = data.photos ?? [];
-      if (!photos.length) return null;
-      const photo = photos[Math.floor(Math.random() * photos.length)];
-      return photo.src?.large2x ?? photo.src?.large ?? null;
-    } catch { return null; }
-  }
-
   // ── Serve daily-art image through /api path (works in all deployment routing) ──
   app.get("/api/daily-art/image", (req, res) => {
-    const nowET = new Date(Date.now() - 5 * 60 * 60 * 1000);
-    const today = nowET.toISOString().split("T")[0];
+    const today = getEasternDateString();
     const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
     if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "not ready" });
     res.set("Cache-Control", "public, max-age=86400");
@@ -2984,67 +2936,42 @@ Return JSON: { "action": "...", "scripture": "..." }`
 
   app.get("/api/daily-art", async (req, res) => {
     try {
-      // Roll over at midnight US Eastern (UTC-5)
-      const nowET = new Date(Date.now() - 5 * 60 * 60 * 1000);
-      const today = nowET.toISOString().split("T")[0];
+      const today = getEasternDateString();
       const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
       const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
 
-      // Serve cached result if already fetched today
-      if (fs.existsSync(imgFile) && fs.existsSync(metaFile)) {
-        const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
-        return res.json({ imageUrl: `/api/daily-art/image`, ...meta });
-      }
-
-      // Pick verse for today — deterministic by day-of-year, no AI needed
-      const dayOfYear = Math.floor(
-        (nowET.getTime() - new Date(nowET.getFullYear(), 0, 0).getTime()) / 86_400_000
-      );
+      const [y, mo, da] = today.split("-").map(Number);
+      const dayOfYear = Math.floor((Date.UTC(y, mo - 1, da) - Date.UTC(y, 0, 0)) / 86_400_000);
       const { query, ...scriptureData } = VERSE_POOL[dayOfYear % VERSE_POOL.length];
 
-      // If only metadata is cached (image being generated in background), return text fallback immediately
-      if (fs.existsSync(metaFile) && !fs.existsSync(imgFile)) {
-        const meta = JSON.parse(fs.readFileSync(metaFile, "utf-8"));
-        return res.json({ imageUrl: null, ...meta });
+      if (!fs.existsSync(metaFile)) {
+        fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
+        fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
       }
 
-      // Write metadata immediately so any parallel requests return fast while image generates
-      fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
-      fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
+      if (!fs.existsSync(imgFile)) {
+        console.log("[daily-art] Building today's image (stock → static → AI)...");
+        await writeDailyArtImageFile(
+          imgFile,
+          query,
+          scriptureData.scripture,
+          scriptureData.reference,
+        );
+      }
 
-      // Return scripture text immediately — image generates in the background
-      res.json({ imageUrl: null, ...scriptureData });
-
-      // Generate image in background (non-blocking)
-      (async () => {
-        let imgBuffer: Buffer | null = null;
-        try {
-          const aiPrompt = buildDailyArtPrompt(scriptureData.scripture, scriptureData.reference, query);
-          console.log("[daily-art] Generating AI image with gpt-image-1...");
-          imgBuffer = await generateImageBuffer(aiPrompt, "1536x1024", "high");
-          console.log("[daily-art] AI image generated successfully.");
-        } catch (aiErr) {
-          console.warn("[daily-art] AI generation failed, falling back to stock photo:", aiErr);
-          let photoUrl = await fetchUnsplashPhoto(query);
-          if (!photoUrl) photoUrl = await fetchPexelsPhoto(query);
-          if (photoUrl) {
-            const imgRes = await fetch(photoUrl);
-            if (imgRes.ok) imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-          }
-        }
-        if (imgBuffer) {
-          fs.writeFileSync(imgFile, imgBuffer);
-          try {
-            execSync(`magick "${imgFile}" -resize 1536x -quality 85 -strip "${imgFile}"`, { timeout: 20000 });
-          } catch { /* keep original if ImageMagick unavailable */ }
-          // Update meta to indicate image is now available
-          fs.writeFileSync(metaFile, JSON.stringify({ ...scriptureData, imageReady: true }));
-          console.log("[daily-art] Background image saved, subsequent requests will serve it.");
-        }
-      })();
+      const meta = fs.existsSync(metaFile)
+        ? JSON.parse(fs.readFileSync(metaFile, "utf-8"))
+        : scriptureData;
+      const imageUrl = fs.existsSync(imgFile) ? `/api/daily-art/image` : null;
+      return res.json({ imageUrl, ...meta });
     } catch (err) {
       console.error("daily art error:", err);
-      res.json({ imageUrl: null, scripture: "The heavens declare the glory of God.", reference: "Psalm 19:1", reflection: "Creation speaks what words cannot." });
+      res.json({
+        imageUrl: null,
+        scripture: "The heavens declare the glory of God.",
+        reference: "Psalm 19:1",
+        reflection: "Creation speaks what words cannot.",
+      });
     }
   });
 
