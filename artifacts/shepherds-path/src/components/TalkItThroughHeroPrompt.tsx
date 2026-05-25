@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowRight, Sparkles } from "lucide-react";
 
-/** Same mark as iOS App Store / About — signals “this is the app’s core feature” */
-const TALK_IT_THROUGH_ICON = "/app-icon.png";
+/** iOS App Store mark (speech bubble + cross) — not web app-icon.png (cross-path crook) */
+const TALK_IT_THROUGH_ICON = "/talk-it-through-icon.png";
 
 const PLACEHOLDERS = [
   "I can't quiet my mind tonight…",
