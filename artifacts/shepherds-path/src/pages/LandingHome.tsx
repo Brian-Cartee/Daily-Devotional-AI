@@ -40,6 +40,7 @@ import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { HomeDailyTouchpoint } from "@/components/HomeDailyTouchpoint";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
+import { isNativeWebViewShell } from "@/lib/platform";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
@@ -469,7 +470,9 @@ function LandingHomeInner() {
   const sessionId = getSessionId();
   const skipIntrosForHome = isReturningHome();
 
-  const [showSplash, setShowSplash] = useState(() => !skipIntrosForHome && shouldShowSplash());
+  const [showSplash, setShowSplash] = useState(
+    () => !skipIntrosForHome && !isNativeWebViewShell() && shouldShowSplash(),
+  );
   const [thresholdWelcome, setThresholdWelcome] = useState(() => consumeThresholdJustCompleted());
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (skipIntrosForHome) return false;

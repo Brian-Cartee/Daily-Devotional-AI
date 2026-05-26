@@ -11,6 +11,19 @@ export function isIOS(): boolean {
   );
 }
 
+/** Tell the App Store iOS shell to hide its loading overlay */
+export function notifyNativeShellReady(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event("sp-app-ready"));
+    (
+      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "app_ready" }));
+  } catch {
+    /* noop */
+  }
+}
+
 /** True inside the App Store WebView shell (.mobile-build loads shepherdspathai.com) */
 export function isNativeWebViewShell(): boolean {
   if (typeof window === "undefined") return false;

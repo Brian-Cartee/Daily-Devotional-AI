@@ -4,7 +4,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { installApiFetch } from "./lib/api";
 import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
-import { isNativeWebViewShell } from "./lib/platform";
+import { isNativeWebViewShell, notifyNativeShellReady } from "./lib/platform";
 
 installApiFetch();
 
@@ -64,3 +64,13 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </ErrorBoundary>
 );
+
+if (typeof window !== "undefined" && isNativeWebViewShell()) {
+  const pollMount = (attempts = 0) => {
+    notifyNativeShellReady();
+    const root = document.getElementById("root");
+    if (root && root.children.length > 0) return;
+    if (attempts < 80) setTimeout(() => pollMount(attempts + 1), 250);
+  };
+  pollMount();
+}

@@ -60,7 +60,7 @@ import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
-import { isNativeWebViewShell } from "@/lib/platform";
+import { isNativeWebViewShell, notifyNativeShellReady } from "@/lib/platform";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ScrollToTop() {
@@ -195,13 +195,9 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    try {
-      if ((window as any).ReactNativeWebView) {
-        (window as any).ReactNativeWebView.postMessage(
-          JSON.stringify({ type: "app_ready" })
-        );
-      }
-    } catch {}
+    notifyNativeShellReady();
+    const t = setTimeout(notifyNativeShellReady, 400);
+    return () => clearTimeout(t);
   }, []);
 
   const toggleTheme = () =>

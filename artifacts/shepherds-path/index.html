@@ -56,5 +56,66 @@
   <body style="background-color:#0d0612;margin:0;padding:0;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- App Store WebView: runs before React — tells native shell when UI is ready (no new iOS build needed) -->
+    <script>
+    (function () {
+      var bridge = window.ReactNativeWebView;
+      if (!bridge) return;
+
+      document.documentElement.setAttribute("data-sp-shell", "native");
+      document.documentElement.classList.add("sp-native-shell");
+
+      var sent = false;
+      function notify() {
+        if (sent) return;
+        var root = document.getElementById("root");
+        if (!root || root.children.length === 0) return;
+        sent = true;
+        try {
+          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+        } catch (e) {}
+      }
+
+      function poll() {
+        notify();
+        if (!sent) setTimeout(poll, 150);
+      }
+      poll();
+
+      window.addEventListener("sp-app-ready", notify);
+
+      setTimeout(function () {
+        if (sent) return;
+        var root = document.getElementById("root");
+        if (!root) return;
+        root.innerHTML =
+          '<div style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">' +
+          '<p style="font-size:20px;font-weight:700;margin:0 0 10px;">Having trouble loading</p>' +
+          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">Try again, or open shepherdspathai.com in Safari for the full experience.</p>' +
+          '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button></div>';
+        sent = true;
+        try {
+          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+        } catch (e) {}
+      }, 14000);
+
+      var mod = document.querySelector('script[type="module"]');
+      if (mod) {
+        mod.addEventListener("load", function () { setTimeout(poll, 50); });
+        mod.addEventListener("error", function () {
+          var root = document.getElementById("root");
+          if (!root) return;
+          root.innerHTML =
+            '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:system-ui,sans-serif;">' +
+            '<p style="font-size:18px;font-weight:600;margin:0 0 12px;">Could not load the app</p>' +
+            '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;">Try again</button></div>';
+          sent = true;
+          try {
+            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+          } catch (e) {}
+        });
+      }
+    })();
+    </script>
   </body>
 </html>
