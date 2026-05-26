@@ -33,6 +33,8 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 import { SessionStillness } from "@/components/SessionStillness";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
+import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
+import { easternVerseDateKey } from "@/lib/shareVerse";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference } from "@/lib/listenFirst";
 import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
@@ -874,13 +876,25 @@ export default function GuidancePage() {
                   );
                 })()}
                 {responseComplete && (
-                  <div className="mt-5 flex items-center gap-3">
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
                     <ListenButton
                       text={cleanResponse(assistantMessages[0]?.content ?? "")}
                       label="Hear this"
                       size="sm"
                       data-testid="button-guidance-listen-text"
                     />
+                    {verse && assistantMessages[0]?.content && (
+                      <ShareVerseTrigger
+                        text={verse.text}
+                        reference={verse.reference}
+                        date={easternVerseDateKey()}
+                        extraLine={`A word that met me today:\n"${cleanResponse(assistantMessages[0].content).replace(/\n+/g, " ").slice(0, 280)}"`}
+                        showFriend={false}
+                        label="Share encouragement"
+                        testId="button-share-guidance"
+                        className="text-[12px]"
+                      />
+                    )}
                   </div>
                 )}
                 {responseComplete && (

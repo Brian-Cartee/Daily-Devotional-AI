@@ -426,6 +426,70 @@ export async function registerRoutes(
     }
   });
 
+  /** Shareable verse page — OG HTML for link previews; redirects humans to /v/:date */
+  app.get("/api/share/verse/:date", async (req, res) => {
+    try {
+      const { date } = req.params;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).send("Invalid date");
+      }
+      let verse = await storage.getVerseByDate(date);
+      if (!verse) {
+        await syncTodayVerseFromSheet();
+        verse = await storage.getVerseByDate(date);
+      }
+      if (!verse) {
+        return res.status(404).send("Verse not found");
+      }
+      const appUrl = (process.env.APP_URL || "https://www.shepherdspathai.com").replace(/\/$/, "");
+      const pageUrl = `${appUrl}/v/${date}`;
+      const esc = (s: string) =>
+        s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      const desc =
+        verse.text.length > 200 ? `${verse.text.slice(0, 197)}…` : verse.text;
+      const verseArtDir = path.resolve(process.cwd(), "server/verse-art-cache");
+      const localArt = path.join(verseArtDir, `${date}.png`);
+      const ogImage = fs.existsSync(localArt)
+        ? `${appUrl}/api/verse-art/image/${date}`
+        : `${appUrl}/og-image.jpg?v=5`;
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${esc(verse.reference)} — Shepherd's Path</title>
+  <meta name="description" content="${esc(desc)}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="${esc(pageUrl)}" />
+  <meta property="og:title" content="${esc(verse.reference)} — Shepherd's Path" />
+  <meta property="og:description" content="${esc(desc)}" />
+  <meta property="og:image" content="${esc(ogImage)}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${esc(verse.reference)}" />
+  <meta name="twitter:description" content="${esc(desc)}" />
+  <meta name="twitter:image" content="${esc(ogImage)}" />
+  <meta http-equiv="refresh" content="0;url=${esc(pageUrl)}" />
+  <link rel="canonical" href="${esc(pageUrl)}" />
+</head>
+<body style="font-family:Georgia,serif;background:#0a0612;color:#f5f0ff;padding:2rem;text-align:center">
+  <p style="opacity:0.7">Opening Scripture…</p>
+  <p style="font-size:1.25rem;margin:1.5rem 0;font-style:italic">"${esc(verse.text)}"</p>
+  <p style="font-weight:bold">— ${esc(verse.reference)}</p>
+  <p><a href="${esc(pageUrl)}" style="color:#c4b5fd">Continue on Shepherd's Path</a></p>
+</body>
+</html>`;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.send(html);
+    } catch (e) {
+      console.error("share verse HTML error:", e);
+      res.status(500).send("Error");
+    }
+  });
+
   app.get("/api/home/threshold", async (req, res) => {
     const sessionId = (req.query.sessionId as string) || "";
     const daysWithApp = Math.max(0, parseInt(String(req.query.daysWithApp ?? "0"), 10) || 0);

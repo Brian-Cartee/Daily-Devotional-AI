@@ -13,6 +13,8 @@ import {
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
+import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
+import { easternVerseDateKey } from "@/lib/shareVerse";
 import {
   WorshipBedControls,
   WORSHIP_YOUTUBE_PLAYER_ID,
@@ -293,15 +295,23 @@ export default function PrayerClosetPage() {
             />
           </div>
 
-          <p
-            className="path-reminder-quote text-center text-[15px] text-white/70 leading-relaxed mt-4 px-2"
-            data-testid="closet-wall-verse"
-          >
-            &ldquo;{wallVerse.text.length > 160 ? `${wallVerse.text.slice(0, 160)}…` : wallVerse.text}&rdquo;
-            <span className="block text-[12px] text-violet-200/70 mt-1.5 not-italic font-semibold">
-              — {wallVerse.reference}
-            </span>
-          </p>
+          <div className="mt-4 px-2 text-center" data-testid="closet-wall-verse">
+            <p className="path-reminder-quote text-[15px] text-white/70 leading-relaxed">
+              &ldquo;{wallVerse.text.length > 160 ? `${wallVerse.text.slice(0, 160)}…` : wallVerse.text}&rdquo;
+            </p>
+            <div className="flex items-center justify-center gap-3 mt-2">
+              <span className="text-[12px] text-violet-200/70 font-semibold">— {wallVerse.reference}</span>
+              <ShareVerseTrigger
+                text={wallVerse.text}
+                reference={wallVerse.reference}
+                date={dailyVerse?.date ?? easternVerseDateKey()}
+                imageBgUrl={backgroundSrc}
+                label="Share verse"
+                testId="button-share-closet-verse"
+                className="text-violet-200/80"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="max-w-xl mx-auto px-3 sm:px-4 mt-5 space-y-4">

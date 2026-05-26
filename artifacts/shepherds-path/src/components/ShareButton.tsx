@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Share2, Check } from "lucide-react";
+import { APP_ORIGIN, shareNative } from "@/lib/shareVerse";
 
 interface ShareButtonProps {
   title: string;
   text: string;
   className?: string;
   showLabel?: boolean;
-  /** When set, native share includes this URL (e.g. referral link). */
+  /** When set, native share includes this URL (e.g. referral or /v/date link). */
   url?: string;
 }
 
@@ -15,20 +16,12 @@ export function ShareButton({ title, text, className = "", showLabel = true, url
 
   const handleShare = async () => {
     const shareText = url
-      ? text
-      : `${text}\n\n— Shepherd's Path | shepherdspathAI.com`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: shareText, ...(url ? { url } : {}) });
-        setDone(true);
-        setTimeout(() => setDone(false), 2000);
-      } catch { }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        setDone(true);
-        setTimeout(() => setDone(false), 2000);
-      } catch { }
+      ? `${text}\n\n${url}`
+      : `${text}\n\n— Shepherd's Path\n${APP_ORIGIN}`;
+    const result = await shareNative({ title, text: shareText, url: url || APP_ORIGIN });
+    if (result === "shared") {
+      setDone(true);
+      setTimeout(() => setDone(false), 2000);
     }
   };
 

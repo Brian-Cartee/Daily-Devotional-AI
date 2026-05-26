@@ -11,6 +11,12 @@ import { recordStreakVisit } from "@/lib/streakApi";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
+import {
+  buildFriendVerseShareText,
+  buildVerseSharePreviewUrl,
+  buildVerseShareText,
+  easternVerseDateKey,
+} from "@/lib/shareVerse";
 import { streamAI, AiLimitReachedError } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
@@ -144,7 +150,6 @@ export default function Devotional() {
   const [sharePreviewBlob, setSharePreviewBlob] = useState<Blob | null>(null);
   const [sharePreviewFormat, setSharePreviewFormat] = useState<"square" | "story">("square");
   const [regeneratingPreview, setRegeneratingPreview] = useState(false);
-  const [showShareUpgrade, setShowShareUpgrade] = useState(false);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
   const [verseInMemory, setVerseInMemory] = useState(false);
@@ -580,12 +585,22 @@ export default function Devotional() {
 
   const handleShare = async () => {
     if (!verse) return;
-    const prayerText = prayerContent
-      ? "\n\n🙏 " + prayerContent.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim()
-      : "";
-    const text = `📖 ${verse.reference}\n\n"${verse.text}"${prayerText}\n\n— Shepherd's Path\nwww.shepherdspathai.com`;
+    const date = verse.date ?? easternVerseDateKey();
+    const prayerSnippet = prayerContent
+      ? prayerContent.replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "").trim().slice(0, 200)
+      : undefined;
+    const text = buildVerseShareText({
+      text: verse.text,
+      reference: verse.reference,
+      date,
+      extraLine: prayerSnippet ? `A prayer for today:\n"${prayerSnippet}"` : undefined,
+    });
     if (navigator.share) {
-      try { await navigator.share({ title: `Today's Word: ${verse.reference}`, text }); } catch { }
+      try {
+        await navigator.share({ title: `Today's Word: ${verse.reference}`, text });
+      } catch {
+        /* cancelled */
+      }
     } else {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -595,19 +610,26 @@ export default function Devotional() {
 
   const handleSendToFriend = async () => {
     if (!verse) return;
-    const name = getUserName();
-    const from = name ? `${name} was thinking of you` : "Someone was thinking of you";
-    const text = `${from} while reading today's verse.\n\n"${verse.text}"\n— ${verse.reference}`;
+    const text = buildFriendVerseShareText(
+      verse.text,
+      verse.reference,
+      getUserName(),
+      verse.date ?? easternVerseDateKey(),
+    );
     if (navigator.share) {
       try {
         await navigator.share({ title: "Someone was thinking of you today", text });
         setFriendShareDone(true);
-      } catch {}
+      } catch {
+        /* cancelled */
+      }
     } else {
       try {
         await navigator.clipboard.writeText(text);
         setFriendShareDone(true);
-      } catch {}
+      } catch {
+        /* noop */
+      }
     }
   };
 
@@ -626,7 +648,6 @@ export default function Devotional() {
   };
 
   const handleNativeShareImage = async () => {
-    if (!isProVerifiedLocally()) { setShowShareUpgrade(true); return; }
     if (!sharePreviewBlob || !verse) return;
     try {
       const file = new File([sharePreviewBlob], "shepherds-path-devotional.png", { type: "image/png" });
@@ -703,26 +724,30 @@ export default function Devotional() {
     setRegeneratingPreview(false);
   };
 
-  const APP_URL = "https://www.shepherdspathai.com";
-
   const buildShareText = () => {
     if (!verse) return "";
-    return `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏\n${APP_URL}`;
+    const date = verse.date ?? easternVerseDateKey();
+    return buildVerseShareText({ text: verse.text, reference: verse.reference, date });
   };
+
+  const verseShareUrl = () =>
+    buildVerseSharePreviewUrl(verse?.date ?? easternVerseDateKey());
 
   const shareOnX = () => {
     if (!verse) return;
     const tweetText = encodeURIComponent(
-      `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏`
+      `📖 ${verse.reference}\n\n"${verse.text}"\n\nSit in Scripture · Shepherd's Path`,
     );
-    openLink(`https://x.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(APP_URL)}`);
+    openLink(`https://x.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(verseShareUrl())}`);
   };
 
   const shareOnFacebook = () => {
     const quote = encodeURIComponent(
-      `📖 ${verse?.reference ?? ""}\n\n"${verse?.text ?? ""}"\n\nReflect & pray with me at Shepherd's Path 🙏`
+      `📖 ${verse?.reference ?? ""}\n\n"${verse?.text ?? ""}"\n\nSit in Scripture · Shepherd's Path`,
     );
-    openLink(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(APP_URL)}&quote=${quote}`);
+    openLink(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(verseShareUrl())}&quote=${quote}`,
+    );
   };
 
   const shareOnWhatsApp = () => {
@@ -745,7 +770,9 @@ export default function Devotional() {
   const shareOnPinterest = () => {
     if (!verse) return;
     const description = encodeURIComponent(`📖 ${verse.reference} — "${verse.text}" — Reflect & pray at Shepherd's Path 🙏`);
-    openLink(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(APP_URL)}&description=${description}`);
+    openLink(
+      `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(verseShareUrl())}&description=${description}`,
+    );
   };
 
   const shareOnTelegram = () => {
@@ -753,7 +780,7 @@ export default function Devotional() {
     const msg = encodeURIComponent(
       `📖 ${verse.reference}\n\n"${verse.text}"\n\nReflect & pray with me at Shepherd's Path 🙏`
     );
-    openLink(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${msg}`);
+    openLink(`https://t.me/share/url?url=${encodeURIComponent(verseShareUrl())}&text=${msg}`);
   };
 
   if (isVerseLoading) {
@@ -1793,16 +1820,6 @@ export default function Devotional() {
             onClose={() => setShowListenUpgrade(false)}
             title="Unlimited listen"
             subtitle={LISTEN_LIMIT_COPY.devotional}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showShareUpgrade && (
-          <UpgradeModal
-            onClose={() => setShowShareUpgrade(false)}
-            title="You've created something beautiful today"
-            subtitle="Browse any scene freely. Pro unlocks sharing — send this image into the world."
           />
         )}
       </AnimatePresence>

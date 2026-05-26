@@ -18,6 +18,7 @@ import { ThemeContext, getStoredTheme, applyTheme, type AppTheme } from "@/lib/t
 import NotFound from "@/pages/not-found";
 import LandingHome from "@/pages/LandingHome";
 import Devotional from "@/pages/Devotional";
+import SharedVersePage from "@/pages/SharedVersePage";
 import UnderstandBible from "@/pages/UnderstandBible";
 import ReadBible from "@/pages/ReadBible";
 import Journal from "@/pages/Journal";
@@ -113,6 +114,7 @@ function Router() {
       <Route path="/" component={LandingHome} />
       <Route path="/guidance" component={GuidancePage} />
       <Route path="/devotional" component={Devotional} />
+      <Route path="/v/:date" component={SharedVersePage} />
       <Route path="/understand" component={UnderstandBible} />
       <Route path="/read" component={ReadBible} />
       <Route path="/study" component={QuickStudyPage} />

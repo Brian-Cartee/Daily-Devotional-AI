@@ -7,6 +7,7 @@ import { getRelationshipAge } from "@/lib/relationship";
 import { isLateNight, getNightTimeLabel, getNightGreeting } from "@/lib/nightMode";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { Button } from "@/components/ui/button";
+import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -595,35 +596,14 @@ interface ShareVerseButtonProps {
 }
 
 export function ShareVerseButton({ verseText, verseRef }: ShareVerseButtonProps) {
-  const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
-
-  async function handleShare() {
-    const formatted = `"${verseText}"\n— ${verseRef}\n\nvia Shepherd's Path`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: formatted });
-      } catch {
-        // user cancelled — no toast needed
-      }
-      return;
-    }
-    await navigator.clipboard.writeText(formatted);
-    setCopied(true);
-    toast({ title: "Copied to clipboard", description: "Paste it anywhere to share." });
-    setTimeout(() => setCopied(false), 2000);
-  }
-
   return (
-    <button
-      onClick={handleShare}
-      data-testid="button-share-verse"
-      aria-label="Share this verse"
-      className="flex items-center gap-1 text-[11px] font-semibold text-primary/60 hover:text-primary transition-colors"
-    >
-      {copied ? <Copy className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
-      {copied ? "Copied" : "Share"}
-    </button>
+    <ShareVerseTrigger
+      text={verseText}
+      reference={verseRef}
+      label="Share"
+      testId="button-share-verse"
+      className="text-[11px] text-primary/60 hover:text-primary"
+    />
   );
 }
 

@@ -5,6 +5,7 @@ import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
 import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments } from "@/lib/moments";
 import { useDailyArt } from "@/hooks/use-daily-art";
 import { loadDailyArtImage, easternTodayKey } from "@/lib/dailyArtImageLoad";
+import { buildVerseShareText, shareNative } from "@/lib/shareVerse";
 
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
@@ -90,29 +91,33 @@ export function DailyArtCard() {
 
   const handleShare = async () => {
     if (!art) return;
-    const shareText = `"${art.scripture}" — ${art.reference}${art.reflection ? `\n\n${art.reflection}` : ""}\n\nvia Shepherd's Path`;
+    const date = easternTodayKey();
+    const shareText = buildVerseShareText({
+      text: art.scripture,
+      reference: art.reference,
+      date,
+      extraLine: art.reflection?.trim() || undefined,
+    });
 
     if (navigator.share && resolvedSrc) {
       try {
         const response = await fetch(resolvedSrc);
         const blob = await response.blob();
         const file = new File([blob], "moment-of-beauty.jpg", { type: "image/jpeg" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        if (navigator.canShare?.({ files: [file] })) {
           await navigator.share({ files: [file], text: shareText });
           return;
         }
-        await navigator.share({ title: "A Moment of Beauty", text: shareText, url: window.location.origin });
-        return;
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
       }
     }
 
-    try {
-      await navigator.clipboard.writeText(`${shareText}\n\n${window.location.origin}`);
+    const result = await shareNative({ title: "A Moment of Beauty", text: shareText });
+    if (result === "shared") {
       setShared(true);
       setTimeout(() => setShared(false), 2500);
-    } catch { }
+    }
   };
 
   const handleSave = () => {

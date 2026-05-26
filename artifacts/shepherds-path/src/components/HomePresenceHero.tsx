@@ -1,6 +1,8 @@
 import { Link } from "wouter";
 import { ArrowRight, BookOpen, Wind } from "lucide-react";
 import { TalkItThroughHeroPrompt } from "@/components/TalkItThroughHeroPrompt";
+import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
+import { easternVerseDateKey } from "@/lib/shareVerse";
 import type { PresenceDoorId } from "@/components/HomePresenceDoors";
 import type { ThresholdNeed } from "@/lib/thresholdState";
 import { isLateNight } from "@/lib/nightMode";
@@ -47,7 +49,17 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
             >
               &ldquo;{verse.text}&rdquo;
             </p>
-            <p className="text-[13px] font-semibold text-amber-200/75 mt-1">— {verse.reference}</p>
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <p className="text-[13px] font-semibold text-amber-200/75">— {verse.reference}</p>
+              <ShareVerseTrigger
+                text={verse.text}
+                reference={verse.reference}
+                date={easternVerseDateKey()}
+                label="Share"
+                testId="button-share-home-scripture"
+                className="text-amber-200/80 hover:text-amber-100"
+              />
+            </div>
           </div>
         ) : (
           <p className="text-[14px] text-white/50 mb-3">Your verse for today is ready.</p>
