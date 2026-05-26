@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   Smartphone,
   ArrowRight,
+  Wind,
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { MinistrySupportSection } from "@/components/MinistrySupportSection";
@@ -26,6 +27,15 @@ const fade = (delay = 0) => ({
 });
 
 const quickStarts = [
+  {
+    href: "/",
+    icon: LayoutGrid,
+    title: "For You home",
+    desc: "Choose Talk, Scripture, or Breathe — then today's devotional right below.",
+    testId: "how-to-quick-home",
+    accent: "border-primary/25 bg-primary/8",
+    iconColor: "text-primary",
+  },
   {
     href: "/devotional",
     icon: Sun,
@@ -53,10 +63,19 @@ const quickStarts = [
     accent: "border-indigo-500/25 bg-indigo-500/8",
     iconColor: "text-indigo-600 dark:text-indigo-400",
   },
+  {
+    href: "/sigh",
+    icon: Wind,
+    title: "Just breathe",
+    desc: "A quieter room when you need stillness — no performance.",
+    testId: "how-to-quick-breathe",
+    accent: "border-sky-500/25 bg-sky-500/8",
+    iconColor: "text-sky-600 dark:text-sky-400",
+  },
 ];
 
 const bottomNav = [
-  { label: "For You", desc: "Home — devotional, shortcuts, and your path" },
+  { label: "For You", desc: "Home — three ways to begin, devotional, closet, shortcuts" },
   { label: "Guidance", desc: "Talk it through (full pastoral conversation)" },
   { label: "Journey", desc: "Bible journeys and guided pathways" },
   { label: "Journal", desc: "Prayers and reflections you save" },
@@ -65,17 +84,28 @@ const bottomNav = [
 const steps = [
   {
     number: "1",
-    icon: Sun,
-    color: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
-    iconColor: "text-amber-600 dark:text-amber-400",
-    title: "Daily Devotional",
-    where: "For You home → Today's devotional, or Devotional in the top menu",
+    icon: LayoutGrid,
+    color: "bg-primary/5 border-primary/20",
+    iconColor: "text-primary",
+    title: "For You — choose your step",
+    where: "Home (For You tab) — \"How do you want to begin?\"",
     description:
-      "Each day opens with a Bible verse chosen for today. Read it without rushing, receive a short reflection written for you, listen to a prayer if you like, and close with gratitude. Most people anchor their morning here.",
-    tip: "The home screen may show a \"Your path\" card for your first few days — step one is this devotional.",
+      "Three tabs: Talk it through, Sit in Scripture, and Just breathe. Pick what fits today. Most of the day Scripture is selected — your full devotional card is right below. Switch anytime; nothing is posted publicly unless you share it.",
+    tip: "Evening often highlights Talk it through; late night may suggest Just breathe.",
   },
   {
     number: "2",
+    icon: Sun,
+    color: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    title: "Daily devotional",
+    where: "Devotional card on For You, or Devotional in the menu",
+    description:
+      "Each day opens with a Bible verse chosen for today. Read or listen without rushing, receive reflection and prayer, and close with gratitude. Tap Share to send the verse or an image to someone on your heart.",
+    tip: "Listen-first works well in the car or with coffee — look for play buttons throughout.",
+  },
+  {
+    number: "3",
     icon: Sparkles,
     color: "bg-fuchsia-50 dark:bg-fuchsia-950/30 border-fuchsia-200 dark:border-fuchsia-800/50",
     iconColor: "text-fuchsia-600 dark:text-fuchsia-400",
@@ -86,18 +116,18 @@ const steps = [
     tip: "Tap \"How does this app work?\" in Path AI anytime to return to this guide.",
   },
   {
-    number: "3",
+    number: "4",
     icon: MessageCircle,
     color: "bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800/50",
     iconColor: "text-violet-600 dark:text-violet-400",
     title: "Talk it through",
-    where: "Bottom tab Guidance, or the Talk it through shortcut on For You",
+    where: "For You tab, bottom tab Guidance, or More paths",
     description:
-      "When life is heavy — grief, fear, a hard decision, loneliness — bring it in your own words. There is no wrong way to say it. You receive Scripture, reflection, and prayer that follow the conversation, like pastoral care available day or night.",
-    tip: "Path AI is the quick stop; Talk it through is where the conversation can go as deep as you need.",
+      "When life is heavy — grief, fear, a hard decision, loneliness — bring it in your own words. You receive Scripture, reflection, and prayer for your moment. After a response, you can share encouragement (not your private situation).",
+    tip: "Path AI (floating button) is one quick answer; Talk it through is the full conversation.",
   },
   {
-    number: "4",
+    number: "5",
     icon: DoorOpen,
     color: "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/50",
     iconColor: "text-indigo-600 dark:text-indigo-400",
@@ -108,7 +138,7 @@ const steps = [
     tip: "On iPhone, YouTube worship volume uses the side buttons; that is normal in the app and in Safari.",
   },
   {
-    number: "5",
+    number: "6",
     icon: NotebookPen,
     color: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50",
     iconColor: "text-sky-600 dark:text-sky-400",
@@ -119,7 +149,7 @@ const steps = [
     tip: "Path AI can save a conversation into your journal with one tap after an answer.",
   },
   {
-    number: "6",
+    number: "7",
     icon: Compass,
     color: "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50",
     iconColor: "text-rose-600 dark:text-rose-400",
@@ -130,7 +160,7 @@ const steps = [
     tip: "On For You, open More paths → Guided Pathways for focused 7-day topics.",
   },
   {
-    number: "7",
+    number: "8",
     icon: BookOpen,
     color: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
     iconColor: "text-emerald-600 dark:text-emerald-400",
@@ -141,7 +171,7 @@ const steps = [
     tip: "Tap a verse to highlight or bookmark it for later.",
   },
   {
-    number: "8",
+    number: "9",
     icon: Users,
     color: "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50",
     iconColor: "text-orange-600 dark:text-orange-400",
@@ -205,8 +235,8 @@ export default function HowToUsePage() {
             Your map of Shepherd&apos;s Path
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
-            One app, many paths — all Bible-first. Start with one step below; you do not need to
-            learn everything today.
+            Start on For You — choose Talk, Scripture, or Breathe — then explore one step below.
+            You do not need to learn everything today.
           </p>
         </motion.div>
 

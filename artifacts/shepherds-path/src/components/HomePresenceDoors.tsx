@@ -9,6 +9,7 @@ interface HomePresenceDoorsProps {
   onSelect: (id: PresenceDoorId) => void;
 }
 
+/** Left → right: signature guidance, daily Word, quiet room */
 const DOORS: {
   id: PresenceDoorId;
   label: string;
@@ -17,18 +18,18 @@ const DOORS: {
   Icon: typeof BookOpen;
 }[] = [
   {
-    id: "scripture",
-    label: "Sit in Scripture",
-    desc: "Verse & devotional",
-    testid: "door-sit-scripture",
-    Icon: BookOpen,
-  },
-  {
     id: "talk",
     label: "Talk it through",
     desc: "Prayer & clarity now",
     testid: "door-talk-through",
     Icon: MessageCircle,
+  },
+  {
+    id: "scripture",
+    label: "Sit in Scripture",
+    desc: "Verse & devotional",
+    testid: "door-sit-scripture",
+    Icon: BookOpen,
   },
   {
     id: "quiet",
@@ -39,18 +40,21 @@ const DOORS: {
   },
 ];
 
+/** Default tab — pair with Devotional card directly below on home */
 export function defaultPresenceDoor(): PresenceDoorId {
   if (isLateNight()) return "quiet";
   const h = new Date().getHours();
-  if (h >= 5 && h < 11) return "scripture";
-  return "talk";
+  // Most of the day: Scripture (matches devotional below). Evening: Talk.
+  if (h >= 5 && h < 17) return "scripture";
+  if (h >= 17 && h < 22) return "talk";
+  return "quiet";
 }
 
 export function HomePresenceDoors({ selected, onSelect }: HomePresenceDoorsProps) {
   return (
     <div className="mb-3">
       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-2 px-0.5">
-        Choose your step
+        How do you want to begin?
       </p>
       <div
         className="grid grid-cols-3 gap-2 sm:gap-2.5"

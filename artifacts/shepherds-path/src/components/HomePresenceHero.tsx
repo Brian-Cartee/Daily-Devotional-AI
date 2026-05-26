@@ -64,6 +64,9 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
         ) : (
           <p className="text-[14px] text-white/50 mb-3">Your verse for today is ready.</p>
         )}
+        <p className="text-[11px] text-center text-white/45 mb-2 leading-snug">
+          Your full devotional continues just below ↓
+        </p>
         <Link href="/devotional">
           <span
             data-testid="btn-hero-open-devotional"

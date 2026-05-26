@@ -33,34 +33,34 @@ function dismissWalkthrough(): void {
 
 const STEPS = [
   {
+    id: "home",
+    title: "For You — three ways",
+    subtitle: "How you want to begin",
+    script: `On For You, you'll see three choices: Talk it through, Sit in Scripture, or Just breathe. Pick what fits today. Most of the day, Scripture is highlighted — and that's on purpose. Your full devotional continues right below. Nothing here is shared unless you choose.`,
+  },
+  {
+    id: "scripture",
+    title: "Sit in Scripture",
+    subtitle: "Today's verse & devotional",
+    script: `Each day opens with a Bible verse chosen for today. Read or listen without rushing — reflection, prayer, and a quiet moment to respond. You can share the verse or a beautiful image with someone who needs it. This is the heart of a daily habit with God.`,
+  },
+  {
     id: "talk",
-    title: "Talk It Through",
-    subtitle: "Where everything begins",
-    script: `When you're ready… this is where you begin. You can share whatever's on your heart here. Just be honest about where you are. You don't have to carry it alone.`,
-  },
-  {
-    id: "response",
-    title: "How It Responds",
-    subtitle: "Personal, not generic",
-    script: `When you share, the response is built around you. You'll receive scripture that speaks to your moment… a reflection shaped by what you're going through… and a prayer you can step into. Not something generic. Something personal.`,
-  },
-  {
-    id: "journey",
-    title: "Your Bible Journey",
-    subtitle: "Something ongoing, not one-time",
-    script: `From there, something deeper begins. A Bible journey is created around what you shared… guiding you through scripture, reflection, and meaning over time. You can move at your own pace. One step at a time.`,
+    title: "Talk it through",
+    subtitle: "When you need more than reading",
+    script: `When life is heavy, tap Talk it through — on For You or the Guidance tab. Share what's on your heart in your own words. You'll receive Scripture, reflection, and prayer shaped for your moment — not generic advice. You can share encouragement too, without sharing your private words.`,
   },
   {
     id: "listen",
-    title: "Listen to Everything",
+    title: "Listen to everything",
     subtitle: "Let it come to you",
-    script: `Here's something worth knowing — everything in this app can be heard aloud. Your guidance, your prayer, your scripture. Some people find the best way to settle into Shepherd's Path is simply to listen. Press play… set the phone down… and let the words come to you. You don't have to navigate. You can just… receive.`,
+    script: `Almost everything can be heard aloud — today's verse, your devotional, guidance, and prayer. Some people press play, set the phone down, and simply receive. You don't have to navigate. You can just listen.`,
   },
   {
     id: "journal",
-    title: "Your Journal",
+    title: "Journal & quiet rooms",
     subtitle: "Keep what matters",
-    script: `Along the way, you can keep what matters. A prayer that stayed with you… a verse you don't want to forget… a moment you want to come back to. Your journal becomes a place to hold what matters… and to come back to what God is doing in your life.`,
+    script: `Save prayers and reflections in your Journal — private to you. Try the prayer closet for worship and stillness, or Just breathe when you need a softer room. Come back whenever you're ready. The door stays open.`,
   },
 ];
 
@@ -249,7 +249,7 @@ export function GuidedWalkthrough({ onDismiss }: Props) {
             </div>
             <p className="text-[15px] font-bold text-foreground mb-1">You're ready.</p>
             <p className="text-[12px] text-muted-foreground/65 leading-relaxed mb-3.5">
-              Whenever you're ready, just share what's on your heart.
+              On For You, choose Talk, Scripture, or Breathe — then scroll to today&apos;s devotional.
             </p>
             <button
               onClick={handleDismiss}

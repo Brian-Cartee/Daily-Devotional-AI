@@ -9,20 +9,23 @@ const WELCOME_SCRIPT = `Hey… I'm really glad you're here.
 
 I don't know what brought you…
 maybe something's been weighing on you…
-or maybe you just felt a pull.
+or maybe you just wanted a quiet moment with God.
 
 Either way… that matters.
-It's worth paying attention to.
 
-You don't need the right words…
-and you don't have to have anything figured out.
-Just be honest about where you are.
-That's where God meets people… every time.
+You don't need the right words.
+You don't need a plan.
 
-So take a breath…
-and when you're ready…
-you can just start sharing what's on your heart…
-or take a moment to see how this works.`;
+When you step inside, you'll see three ways to begin:
+talk through what's on your heart,
+sit with today's Scripture,
+or simply breathe and be still.
+
+Most mornings, Scripture is the natural start —
+your full devotional is right there on For You.
+
+Take a breath…
+and when you're ready, step inside.`;
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
@@ -127,7 +130,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           style={{ boxShadow: "0 4px 24px rgba(245,158,11,0.35)" }}
           onClick={handleDismiss}
         >
-          <span className="text-white tracking-tight">Share What You&rsquo;re Carrying</span>
+          <span className="text-white tracking-tight">Step inside For You</span>
           <ArrowRight className="w-4 h-4 text-white absolute right-5" />
         </button>
 
@@ -143,7 +146,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
           onClick={handleGrow}
         >
           <Sprout className="w-4 h-4 opacity-70" />
-          <span>I&rsquo;m here to grow</span>
+          <span>Start with today&rsquo;s Scripture</span>
         </button>
 
         {/* Audio — glassmorphism floater, purple-tinted */}
