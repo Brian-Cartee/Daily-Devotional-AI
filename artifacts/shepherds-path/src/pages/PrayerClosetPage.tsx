@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
-import { ClosetCandleControl } from "@/components/ClosetCandleControl";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import {
   WorshipBedControls,
@@ -36,11 +35,9 @@ import {
   loadClosetSettings,
   markClosetIntroSeen,
   markClosetVisit,
-  markCandleHintSeen,
   saveClosetNote,
   saveClosetSettings,
   shouldShowClosetIntro,
-  shouldShowCandleHint,
   visionBoardHasContent,
   type ClosetBackgroundId,
   type ClosetSettings,
@@ -60,7 +57,6 @@ export default function PrayerClosetPage() {
   const [showSetup, setShowSetup] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [showIntro, setShowIntro] = useState(() => shouldShowClosetIntro());
-  const [showCandleHint, setShowCandleHint] = useState(() => shouldShowCandleHint());
   const verseArtGenStarted = useRef(false);
 
   const verseDate = dailyVerse?.date;
@@ -183,11 +179,6 @@ export default function PrayerClosetPage() {
     setShowIntro(false);
   };
 
-  const dismissCandleHint = () => {
-    markCandleHintSeen();
-    setShowCandleHint(false);
-  };
-
   const pinTodayVerse = () => {
     if (!dailyVerse?.text) return;
     patchSettings({
@@ -223,9 +214,9 @@ export default function PrayerClosetPage() {
     <>
       <NavBar />
       <main className="min-h-screen bg-[#07050f] pb-36 pt-14">
-        <div className="relative max-w-2xl mx-auto px-2 sm:px-3">
+        <div className="relative max-w-2xl mx-auto">
           <div
-            className="sticky top-14 z-50 flex items-center justify-between gap-2 mb-2 py-1"
+            className="sticky top-14 z-50 flex items-center justify-between gap-2 px-2 sm:px-3 py-1.5 bg-[#07050f]/90 backdrop-blur-md border-b border-white/5"
             data-testid="closet-page-header"
           >
             <BackButton
@@ -233,21 +224,42 @@ export default function PrayerClosetPage() {
               testId="button-back-prayer-closet"
               className="relative z-50"
             />
+            <div className="flex-1 text-center min-w-0 px-1">
+              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-violet-200/45 truncate">
+                A room set apart
+              </p>
+              <p className="manifesto-line text-white/95 text-[1.1rem] leading-tight truncate">
+                {title}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setShowSetup(true)}
               data-testid="button-closet-settings"
               aria-label="Closet settings"
               aria-expanded={showSetup}
-              className="relative z-50 flex items-center justify-center w-11 h-11 rounded-full bg-black/55 border border-white/15 text-white/90 backdrop-blur-sm active:scale-95"
+              className="relative z-50 flex items-center justify-center w-11 h-11 rounded-full bg-black/55 border border-white/15 text-white/90 backdrop-blur-sm active:scale-95 shrink-0"
               style={{ touchAction: "manipulation" }}
             >
               <Settings2 className="w-5 h-5" />
             </button>
           </div>
 
+          {showIntro && (
+            <p className="text-center text-[12px] text-white/55 leading-snug px-4 py-2 border-b border-white/5">
+              This room is yours. Nothing here is shared unless you choose.{" "}
+              <button
+                type="button"
+                onClick={dismissIntro}
+                className="text-violet-200/85 font-semibold underline underline-offset-2"
+                data-testid="button-dismiss-closet-intro"
+              >
+                Enter quietly
+              </button>
+            </p>
+          )}
+
           <PrayerClosetRoom
-            title={title}
             wallArtSrc={backgroundSrc}
             wallArtPosition={wallBg?.position}
             wallVerse={wallVerse}
@@ -256,20 +268,11 @@ export default function PrayerClosetPage() {
             lastPrayerSnippet={lastPrayerSnippet}
             dailyArtThumb={dailyArtThumb}
             visionBoardEmphasis={boardEmphasis}
-            showIntroLine={showIntro}
-            onIntroDismiss={dismissIntro}
             canPinVerse={!!(dailyVerse && !settings.pinnedText)}
             onPinVerse={pinTodayVerse}
           />
 
-          <div className="mt-3 px-0.5 space-y-3">
-            <ClosetCandleControl
-              level={settings.candleLevel}
-              onChange={(candleLevel) => patchSettings({ candleLevel })}
-              showHint={showCandleHint}
-              onHintDismiss={dismissCandleHint}
-            />
-
+          <div className="mt-3 px-2 sm:px-3 space-y-3">
             <WorshipBedControls
               compactPlayer
               enabled={settings.worshipEnabled}

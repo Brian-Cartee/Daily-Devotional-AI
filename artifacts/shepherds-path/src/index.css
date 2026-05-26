@@ -382,9 +382,11 @@ button, a, input, textarea, select, [role="button"] {
 .closet-room-viewport {
   position: relative;
   width: 100%;
-  min-height: min(88vw, 500px);
-  perspective: 860px;
-  perspective-origin: 50% 36%;
+  height: min(112vw, calc(100dvh - 10.5rem));
+  min-height: min(112vw, calc(100dvh - 10.5rem));
+  max-height: 640px;
+  perspective: 920px;
+  perspective-origin: 50% 42%;
   overflow: hidden;
   background: #0a0612;
 }
@@ -392,16 +394,16 @@ button, a, input, textarea, select, [role="button"] {
 .closet-room-scene {
   position: relative;
   width: 100%;
-  height: min(88vw, 488px);
+  height: 100%;
   transform-style: preserve-3d;
 }
 
 .closet-room-back {
   position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 18%;
-  height: 40%;
+  left: 9%;
+  right: 9%;
+  top: 14%;
+  height: 44%;
   transform: translateZ(-220px);
   transform-style: preserve-3d;
 }
@@ -409,13 +411,31 @@ button, a, input, textarea, select, [role="button"] {
 .closet-room-left {
   position: absolute;
   left: 0;
-  top: 14%;
-  width: 20%;
-  bottom: 22%;
-  transform: rotateY(48deg);
+  top: 10%;
+  width: 24%;
+  bottom: 18%;
+  transform: rotateY(42deg);
   transform-origin: left center;
-  background: linear-gradient(90deg, #08050e 0%, #16101f 55%, #1e1628 100%);
+  background: linear-gradient(90deg, #08050e 0%, #1a1428 50%, #221a32 100%);
   box-shadow: inset -12px 0 24px rgba(0, 0, 0, 0.45);
+}
+
+/* Soft wash where vision board hangs */
+.closet-room-left-board {
+  position: absolute;
+  left: 3%;
+  top: 14%;
+  width: 36%;
+  height: 52%;
+  transform: rotateY(34deg) translateZ(8px);
+  transform-origin: left center;
+  z-index: 6;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 80% at 30% 40%,
+    rgba(139, 92, 246, 0.12) 0%,
+    transparent 70%
+  );
 }
 
 .closet-room-right {
@@ -454,32 +474,33 @@ button, a, input, textarea, select, [role="button"] {
 
 .closet-room-rug {
   position: absolute;
-  left: 50%;
-  top: 32%;
-  width: 42%;
-  max-width: 168px;
+  left: 46%;
+  top: 36%;
+  width: 44%;
+  max-width: 176px;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.55));
 }
 
+/* Back-right corner, angled toward rug */
 .closet-room-chair {
   position: absolute;
-  right: 12%;
-  top: 48%;
-  transform: rotateX(-78deg) rotateY(-28deg) translateZ(8px);
+  right: 6%;
+  top: 26%;
+  transform: rotateX(-78deg) rotateY(-48deg) translateZ(28px);
   transform-origin: center bottom;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.6));
 }
 
 .closet-room-vision {
   position: absolute;
-  left: 2%;
-  top: 22%;
-  width: 32%;
-  max-width: 128px;
-  transform: rotateY(46deg) translateZ(-24px);
+  left: 4%;
+  top: 16%;
+  width: 38%;
+  max-width: 148px;
+  transform: rotateY(30deg) translateZ(48px);
   transform-origin: left center;
-  z-index: 12;
+  z-index: 14;
 }
 
 .closet-room-candle {
@@ -498,25 +519,6 @@ button, a, input, textarea, select, [role="button"] {
   pointer-events: none;
   z-index: 25;
   background: linear-gradient(to bottom, #0a0612 0%, rgba(10, 6, 18, 0.85) 45%, transparent 100%);
-}
-
-.closet-room-header {
-  position: absolute;
-  inset: 0 0 auto 0;
-  z-index: 35;
-  padding: 10px 14px 20px;
-  text-align: center;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 6, 18, 0.95) 0%,
-    rgba(10, 6, 18, 0.55) 65%,
-    transparent 100%
-  );
-}
-
-.closet-room-header button {
-  pointer-events: auto;
 }
 
 .closet-room-vignette {
