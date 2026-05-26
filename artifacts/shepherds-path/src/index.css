@@ -377,3 +377,152 @@ button, a, input, textarea, select, [role="button"] {
   border: 2px solid rgb(251 191 36);
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
 }
+
+/* Prayer closet — corner room (CSS 3D, one shared perspective) */
+.closet-room-viewport {
+  position: relative;
+  width: 100%;
+  min-height: min(88vw, 500px);
+  perspective: 860px;
+  perspective-origin: 50% 36%;
+  overflow: hidden;
+  background: #0a0612;
+}
+
+.closet-room-scene {
+  position: relative;
+  width: 100%;
+  height: min(88vw, 488px);
+  transform-style: preserve-3d;
+}
+
+.closet-room-back {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 18%;
+  height: 40%;
+  transform: translateZ(-220px);
+  transform-style: preserve-3d;
+}
+
+.closet-room-left {
+  position: absolute;
+  left: 0;
+  top: 14%;
+  width: 20%;
+  bottom: 22%;
+  transform: rotateY(48deg);
+  transform-origin: left center;
+  background: linear-gradient(90deg, #08050e 0%, #16101f 55%, #1e1628 100%);
+  box-shadow: inset -12px 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.closet-room-right {
+  position: absolute;
+  right: 0;
+  top: 14%;
+  width: 20%;
+  bottom: 22%;
+  transform: rotateY(-48deg);
+  transform-origin: right center;
+  background: linear-gradient(270deg, #08050e 0%, #16101f 55%, #1e1628 100%);
+  box-shadow: inset 12px 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.closet-room-floor {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -4%;
+  height: 58%;
+  transform: rotateX(78deg);
+  transform-origin: center bottom;
+  transform-style: preserve-3d;
+  background:
+    linear-gradient(180deg, rgba(251, 191, 36, 0.04) 0%, transparent 35%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, transparent 18%, transparent 82%, rgba(0, 0, 0, 0.45) 100%),
+    repeating-linear-gradient(
+      90deg,
+      #1c1526 0,
+      #1c1526 32px,
+      #14101c 32px,
+      #14101c 64px
+    );
+  box-shadow: inset 0 24px 48px rgba(0, 0, 0, 0.55);
+}
+
+.closet-room-rug {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  width: 42%;
+  max-width: 168px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+}
+
+.closet-room-chair {
+  position: absolute;
+  right: 12%;
+  top: 48%;
+  transform: rotateX(-78deg) rotateY(-28deg) translateZ(8px);
+  transform-origin: center bottom;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+}
+
+.closet-room-vision {
+  position: absolute;
+  left: 2%;
+  top: 22%;
+  width: 32%;
+  max-width: 128px;
+  transform: rotateY(46deg) translateZ(-24px);
+  transform-origin: left center;
+  z-index: 12;
+}
+
+.closet-room-candle {
+  position: absolute;
+  right: 3%;
+  top: 30%;
+  transform: rotateY(-46deg) translateZ(-16px);
+  transform-origin: right center;
+  z-index: 12;
+}
+
+.closet-room-ceiling {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 24%;
+  pointer-events: none;
+  z-index: 25;
+  background: linear-gradient(to bottom, #0a0612 0%, rgba(10, 6, 18, 0.85) 45%, transparent 100%);
+}
+
+.closet-room-header {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 35;
+  padding: 10px 14px 20px;
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 6, 18, 0.95) 0%,
+    rgba(10, 6, 18, 0.55) 65%,
+    transparent 100%
+  );
+}
+
+.closet-room-header button {
+  pointer-events: auto;
+}
+
+.closet-room-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
+}

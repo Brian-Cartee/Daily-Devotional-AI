@@ -136,7 +136,7 @@ export function NavBar() {
             className="shrink-0 mr-2"
             title="Shepherd's Path"
           >
-            <BrandIcon size={40} className="rounded-[12px] shadow-sm select-none" />
+            <BrandIcon size={40} className="rounded-[12px] shadow-sm select-none ring-1 ring-primary/15" />
           </Link>
 
           {/* Nav items — desktop only, icon + tooltip */}
