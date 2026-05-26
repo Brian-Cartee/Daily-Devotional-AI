@@ -13,7 +13,7 @@ import { PrayerThatStays } from "@/components/prayer/PrayerThatStays";
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
-import { BrandIcon } from "@/components/BrandIcon";
+import { getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
 import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
 import { NamePrompt } from "@/components/NamePrompt";
 import { getSessionId } from "@/lib/session";
@@ -143,11 +143,7 @@ export default function GuidancePage() {
   const [coachConsentOpen, setCoachConsentOpen] = useState(false);
   const [pendingCoachRegenerate, setPendingCoachRegenerate] = useState(false);
 
-  const { data: dailyArtData } = useQuery<{ imageUrl: string }>({
-    queryKey: ["/api/daily-art"],
-    staleTime: 1000 * 60 * 60 * 6,
-  });
-  const heroArtUrl = dailyArtData?.imageUrl ?? "/hero-guidance.jpg";
+  const heroArtUrl = getGuidanceHeroImage();
 
   const applyGuidanceMode = (mode: GuidanceMode, regenerate = false) => {
     setGuidanceModeState(mode);
@@ -645,12 +641,9 @@ export default function GuidancePage() {
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="relative z-10 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[240px] text-center px-5 pb-6"
               >
-                <div className="flex flex-col items-center gap-2.5 mb-4">
-                  <BrandIcon size={48} className="drop-shadow-lg" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80 select-none">
-                    Talk It Through
-                  </p>
-                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80 select-none mb-4">
+                  Talk It Through
+                </p>
                 <h1
                   className="text-[2rem] sm:text-[2.5rem] leading-[1.18] text-white text-balance"
                   style={{

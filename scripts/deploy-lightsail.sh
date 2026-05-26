@@ -31,11 +31,20 @@ cd "$REPO_ROOT/artifacts/api-server"
 
 echo "==> Restarting api-server..."
 API_CWD="$REPO_ROOT/artifacts/api-server"
+# App loads artifacts/api-server/.env via src/env.ts — do not pass --env-file here
+# (breaks on Node < 20.6 and can leave api-server in PM2 "errored").
 if pm2 describe api-server >/dev/null 2>&1; then
-  pm2 delete api-server 2>/dev/null || true
+  pm2 restart api-server --update-env
+else
+  pm2 start dist/index.mjs --name api-server --cwd "$API_CWD" --env production
 fi
-pm2 start dist/index.mjs --name api-server --cwd "$API_CWD" \
-  --node-args="--env-file=.env" --env production -i 1
+sleep 2
+API_PORT=3001
+if [[ -f "$API_CWD/.env" ]]; then
+  _p=$(grep -E '^PORT=' "$API_CWD/.env" | cut -d= -f2- | tr -d ' "' || true)
+  [[ -n "$_p" ]] && API_PORT="$_p"
+fi
+curl -s -o /dev/null -w "API HTTP %{http_code}\n" "http://127.0.0.1:${API_PORT}/api/health" || echo "WARN: API health check failed — run: pm2 logs api-server --lines 40"
 
 echo "==> Building frontend (artifacts/shepherds-path)..."
 cd "$REPO_ROOT/artifacts/shepherds-path"

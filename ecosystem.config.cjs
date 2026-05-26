@@ -9,7 +9,6 @@ module.exports = {
       cwd: "./artifacts/api-server",
       script: "dist/index.mjs",
       interpreter: "node",
-      node_args: "--env-file=.env",
       env: {
         NODE_ENV: "production",
         PORT: 3000,

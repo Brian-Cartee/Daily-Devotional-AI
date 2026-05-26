@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import {
   loadClosetSettings,
   closetDisplayName,
+  closetHomeStatus,
   markClosetVisit,
   hasVisitedCloset,
 } from "@/lib/prayerCloset";
@@ -14,6 +15,7 @@ export function PrayerClosetHomeCard() {
   const settings = loadClosetSettings();
   const title = closetDisplayName(settings, "Your prayer closet");
   const [visited] = useState(hasVisitedCloset);
+  const statusLine = closetHomeStatus(settings);
 
   return (
     <Link href="/prayer-closet">
@@ -46,7 +48,7 @@ export function PrayerClosetHomeCard() {
           </p>
           <p className="text-[18px] font-bold text-white leading-tight drop-shadow-sm">{title}</p>
           <p className="text-[12px] text-white/70 leading-snug mt-1 max-w-[90%]">
-            Worship, vision board, and honest prayer inside
+            {statusLine ?? "Worship, vision board, and honest prayer inside"}
           </p>
           <div className="flex items-center justify-between mt-3">
             <span className="text-[11px] font-semibold text-violet-200/90 uppercase tracking-wider">

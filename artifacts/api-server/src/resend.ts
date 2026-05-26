@@ -1,7 +1,6 @@
 // Resend email integration via Replit Connectors
 import { Resend } from 'resend';
 import { config } from './config';
-import { getEmailLogoSrc } from './emailLogo';
 import { EMAIL_THEME, emailPreheader } from './emailTheme';
 
 let connectionSettings: any;
@@ -77,7 +76,6 @@ export function buildDailyVerseEmailHtml(data: DailyVerseEmailData): string {
     month: "long",
     day: "numeric",
   });
-  const logoSrc = getEmailLogoSrc(data.appUrl);
   const encouragement = data.personalEncouragement || data.encouragement;
   const preheader = `${data.reference}: ${data.text.slice(0, 80)}…`;
 
@@ -97,26 +95,15 @@ ${emailPreheader(preheader)}
     <td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;">
 
-        <!-- Brand row -->
+        <!-- Brand row — type only (logo PNG has no transparency; avoids black square in clients) -->
         <tr>
           <td align="center" style="padding:0 0 20px;">
-            <table cellpadding="0" cellspacing="0" role="presentation">
-              <tr>
-                <td align="center" style="padding-bottom:10px;">
-                  <img src="${logoSrc}"
-                       alt="Shepherd's Path"
-                       width="64" height="64"
-                       style="display:block;width:64px;height:64px;border:0;object-fit:contain;" />
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <p style="margin:0;font-family:${T.sans};font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:${T.textMuted};">
-                    Shepherd&rsquo;s Path
-                  </p>
-                </td>
-              </tr>
-            </table>
+            <p style="margin:0 0 6px;font-family:${T.serif};font-size:22px;font-weight:400;color:${T.text};letter-spacing:0.02em;">
+              Shepherd&rsquo;s Path
+            </p>
+            <p style="margin:0;font-family:${T.sans};font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:${T.textMuted};">
+              Daily word
+            </p>
           </td>
         </tr>
 
@@ -234,8 +221,6 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
   const firstName = data.name?.split(" ")[0] ?? null;
   const greeting = firstName ? `${firstName},` : "Friend,";
   const videoUrl = data.videoUrl || null;
-  const logoSrc = getEmailLogoSrc(data.appUrl);
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -252,10 +237,7 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
         <!-- HEADER -->
         <tr>
           <td style="padding:0 0 20px;text-align:center;">
-            <img src="${logoSrc}"
-                 alt="Shepherd's Path" width="64" height="64"
-                 style="display:block;margin:0 auto 12px;width:64px;height:64px;border:0;object-fit:contain;" />
-            <p style="margin:0 0 14px;font-family:${EMAIL_THEME.sans};font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:${EMAIL_THEME.textMuted};">
+            <p style="margin:0 0 14px;font-family:${EMAIL_THEME.serif};font-size:22px;color:${EMAIL_THEME.text};">
               Shepherd&rsquo;s Path
             </p>
             <h1 style="margin:0;font-family:${EMAIL_THEME.serif};font-size:26px;font-weight:400;color:${EMAIL_THEME.text};line-height:1.35;">
@@ -467,7 +449,6 @@ export interface WeeklyWeatherEmailData {
 }
 
 export function buildWeeklyWeatherEmailHtml(data: WeeklyWeatherEmailData): string {
-  const logoSrc = getEmailLogoSrc(data.appUrl);
   const obsHtml = data.observations
     .map(
       (o) =>
@@ -492,7 +473,7 @@ export function buildWeeklyWeatherEmailHtml(data: WeeklyWeatherEmailData): strin
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
 <tr>
   <td style="background:linear-gradient(160deg,#2d1b5e 0%,#442f74 60%,#5a3d8a 100%);border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-    <img src="${logoSrc}" alt="Shepherd's Path" width="72" height="72" style="display:block;margin:0 auto 14px;width:72px;height:72px;border-radius:16px;"/>
+    <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:20px;color:#fff;">Shepherd&rsquo;s Path</p>
     <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);">Pro · Spiritual Weather</p>
     <h1 style="margin:0;font-family:Georgia,serif;font-size:26px;font-weight:400;color:#fff;">Your week, reflected</h1>
     <p style="margin:8px 0 0;font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);">${data.weekLabel}</p>

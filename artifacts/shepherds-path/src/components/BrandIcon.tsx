@@ -3,17 +3,19 @@ import { BRAND_ICON } from "@/lib/brand";
 type BrandIconProps = {
   size?: number;
   className?: string;
+  /** On dark photos/gradients — hides the baked-in black PNG square via blend mode */
+  onDark?: boolean;
 };
 
-/** Renders the full speech-bubble logo without cropping (object-contain). */
-export function BrandIcon({ size = 48, className = "" }: BrandIconProps) {
+/** Speech-bubble logo. Source PNG has no alpha; use `onDark` over photos. */
+export function BrandIcon({ size = 48, className = "", onDark = false }: BrandIconProps) {
   return (
     <img
       src={BRAND_ICON}
       alt=""
       width={size}
       height={size}
-      className={`object-contain ${className}`.trim()}
+      className={`object-contain ${onDark ? "mix-blend-screen" : ""} ${className}`.trim()}
       decoding="async"
     />
   );

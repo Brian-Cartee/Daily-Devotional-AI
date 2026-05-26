@@ -25,6 +25,8 @@ type Props = {
   onTrackChange: (id: WorshipTrackId) => void;
   onYoutubeMixChange: (id: WorshipYoutubeMixId) => void;
   onVolumeChange: (v: number) => void;
+  /** Prayer closet: keep YouTube player in the control strip, not overlapping the room scene */
+  compactPlayer?: boolean;
 };
 
 export function WorshipBedControls({
@@ -41,6 +43,7 @@ export function WorshipBedControls({
   onTrackChange,
   onYoutubeMixChange,
   onVolumeChange,
+  compactPlayer = false,
 }: Props) {
   const isYoutube = source === "youtube";
   const youtubeOnMobile = isYoutube && isYoutubeSideVolumeDevice();
@@ -128,8 +131,12 @@ export function WorshipBedControls({
               ))}
               <div
                 id={WORSHIP_YOUTUBE_PLAYER_ID}
-                className={`w-full rounded-xl overflow-hidden bg-black/60 ${
-                  enabled ? "min-h-[52px]" : "h-0 min-h-0"
+                className={`w-full rounded-xl overflow-hidden bg-black/80 border border-white/10 ${
+                  enabled
+                    ? compactPlayer
+                      ? "min-h-[72px] max-h-[88px]"
+                      : "min-h-[52px]"
+                    : "h-0 min-h-0 border-0"
                 }`}
                 data-testid="worship-youtube-player"
               />

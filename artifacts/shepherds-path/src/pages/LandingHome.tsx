@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,7 @@ import {
 } from "@/lib/thresholdState";
 import { shouldRedirectToNightShepherd } from "@/lib/nightShepherdState";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { fetchStreak } from "@/lib/streakApi";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
@@ -61,6 +61,9 @@ import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
 import { BrandIcon } from "@/components/BrandIcon";
+import { useDailyVerse } from "@/hooks/use-verses";
+import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
+import { apiSessionExtras } from "@/lib/requestExtras";
 
 const logoSmall = "/logo-mark-white.png";
 const logoWhite = "/logo-mark-white.png";
@@ -86,6 +89,42 @@ function DevotionalCard() {
     queryFn: fetchStreak,
     staleTime: 60_000,
   });
+  const { data: verse } = useDailyVerse();
+  const verseDate = verse?.date;
+  const verseArtGenStarted = useRef(false);
+  const queryClient = useQueryClient();
+
+  const { data: verseArt } = useQuery({
+    queryKey: ["/api/verse-art", verseDate],
+    queryFn: async () => {
+      if (!verseDate) return null;
+      const res = await fetch(`/api/verse-art/${verseDate}`);
+      if (!res.ok) return null;
+      return res.json() as { imageUrl: string | null; cached: boolean };
+    },
+    enabled: !!verseDate,
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!verse || !verseDate || verseArt === undefined || verseArtGenStarted.current) return;
+    if (verseArt?.imageUrl) return;
+    verseArtGenStarted.current = true;
+    fetch("/api/verse-art/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        verseDate: verse.date,
+        verseText: verse.text,
+        verseReference: verse.reference,
+        ...apiSessionExtras(),
+      }),
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/verse-art", verseDate] }))
+      .catch(() => {});
+  }, [verse, verseDate, verseArt, queryClient]);
+
+  const cardBgSrc = verseArt?.imageUrl ?? getDevotionalHeroImage(verseDate);
 
   const weekDates = getCurrentWeekDates();
   const todayIdx = getTodayIndex();
@@ -110,11 +149,16 @@ function DevotionalCard() {
         className="group relative rounded-2xl border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
       >
         <img
-          src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=700&q=70&auto=format&fit=crop"
+          src={cardBgSrc}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-[0.32] pointer-events-none select-none"
-          style={{ filter: "saturate(0.75) brightness(1.05)" }}
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.38] pointer-events-none select-none"
+          style={{ filter: "saturate(0.85) brightness(0.92)" }}
+          onError={(e) => {
+            const el = e.currentTarget;
+            const fallback = getDevotionalHeroImage(verseDate);
+            if (el.src !== fallback) el.src = fallback;
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/8 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-transparent to-transparent pointer-events-none" />

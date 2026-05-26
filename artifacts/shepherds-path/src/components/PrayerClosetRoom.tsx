@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { Flame, Pin } from "lucide-react";
+import { ClosetPrayerChair } from "@/components/ClosetPrayerChair";
+import { ClosetPrayerRug } from "@/components/ClosetPrayerRug";
 import { CLOSET_BACKGROUNDS, type ClosetBackgroundId } from "@/lib/prayerCloset";
 
 type WallVerse = { text: string; reference: string };
@@ -15,9 +17,12 @@ type Props = {
   dailyArtThumb?: string | null;
   canPinVerse?: boolean;
   onPinVerse?: () => void;
+  showIntroLine?: boolean;
+  onIntroDismiss?: () => void;
+  visionBoardEmphasis?: boolean;
 };
 
-/** Enclosed prayer closet — framed wall art, vision board, bean bag, candle glow */
+/** Enclosed prayer closet — framed wall art, vision board, chair, candle glow */
 export function PrayerClosetRoom({
   title,
   wallArtSrc,
@@ -29,20 +34,23 @@ export function PrayerClosetRoom({
   dailyArtThumb,
   canPinVerse,
   onPinVerse,
+  showIntroLine,
+  onIntroDismiss,
+  visionBoardEmphasis = true,
 }: Props) {
   const glow = 0.35 + candleLevel * 0.55;
   const roomBrightness = 0.72 + candleLevel * 0.22;
 
   return (
     <div
-      className="relative mx-auto max-w-xl w-full"
+      className="relative mx-auto w-full"
       data-testid="prayer-closet-room"
-      style={{ perspective: "900px" }}
+      style={{ perspective: "960px" }}
     >
       <div
-        className="relative rounded-b-[1.25rem] overflow-hidden border-x border-b border-violet-500/20 shadow-2xl shadow-black/60"
+        className="relative rounded-2xl overflow-hidden border border-violet-500/20 shadow-2xl shadow-black/60"
         style={{
-          minHeight: "min(78vw, 480px)",
+          minHeight: "min(96vw, 580px)",
           background: "linear-gradient(180deg, #1a1228 0%, #0f0a18 100%)",
         }}
       >
@@ -92,10 +100,10 @@ export function PrayerClosetRoom({
           }}
         />
 
-        {/* Framed path / hill — hero art on the wall */}
+        {/* Framed wall art */}
         <div
           className="absolute left-1/2 -translate-x-1/2 z-[6]"
-          style={{ top: "12%", width: "min(78%, 280px)" }}
+          style={{ top: "10%", width: "min(82%, 300px)" }}
           data-testid="closet-framed-art"
         >
           <div
@@ -123,18 +131,21 @@ export function PrayerClosetRoom({
           </p>
         </div>
 
-        {/* Vision board — modern cork slate */}
+        {/* Vision board — quieter until something is pinned or added */}
         <div
-          className="absolute z-[7] rounded-lg border border-white/10 backdrop-blur-sm"
+          className="absolute z-[7] rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-500"
           style={{
-            left: "11%",
-            top: "14%",
-            width: "30%",
-            minWidth: "96px",
+            left: visionBoardEmphasis ? "11%" : "9%",
+            top: visionBoardEmphasis ? "18%" : "20%",
+            width: visionBoardEmphasis ? "30%" : "24%",
+            minWidth: visionBoardEmphasis ? "96px" : "72px",
+            opacity: visionBoardEmphasis ? 1 : 0.42,
             background:
               "linear-gradient(160deg, rgba(35,28,48,0.92) 0%, rgba(22,16,32,0.95) 100%)",
-            boxShadow: "4px 8px 24px rgba(0,0,0,0.35)",
-            transform: "rotate(-2.5deg)",
+            boxShadow: visionBoardEmphasis
+              ? "4px 8px 24px rgba(0,0,0,0.35)"
+              : "2px 4px 12px rgba(0,0,0,0.2)",
+            transform: visionBoardEmphasis ? "rotate(-2.5deg)" : "rotate(-1.5deg) scale(0.94)",
           }}
           data-testid="closet-vision-board"
         >
@@ -209,61 +220,42 @@ export function PrayerClosetRoom({
           </div>
         </div>
 
-        {/* Floor + rug */}
+        {/* Floor + rug — extra depth for chair + “your spot” */}
         <div
-          className="absolute inset-x-0 bottom-0 h-[28%] z-[4] pointer-events-none"
+          className="absolute inset-x-0 bottom-0 h-[32%] z-[4] pointer-events-none"
           style={{
             background:
               "linear-gradient(to top, #08060e 0%, #12101a 40%, transparent 100%)",
           }}
         />
-        {/* Prayer rug — nod to real closet floors */}
+        {/* Floor glow under rug */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 bottom-[10%] z-[5] pointer-events-none rounded-lg opacity-90"
+          className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[78%] h-16 rounded-[100%] z-[4] pointer-events-none"
           style={{
-            width: "min(62%, 220px)",
-            height: "min(18%, 56px)",
             background:
-              "linear-gradient(135deg, rgba(127,29,29,0.55) 0%, rgba(153,27,27,0.45) 50%, rgba(120,53,15,0.4) 100%)",
-            boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.15)",
-            borderRadius: "4px",
-          }}
-          aria-hidden
-        />
-        <div
-          className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-[70%] h-8 rounded-[100%] z-[4] pointer-events-none opacity-40"
-          style={{
-            background: "radial-gradient(ellipse, rgba(88,60,120,0.35) 0%, transparent 70%)",
+              "radial-gradient(ellipse, rgba(251,191,36,0.14) 0%, rgba(88,60,120,0.2) 45%, transparent 72%)",
           }}
         />
 
-        {/* Bean bag — modern sleek seat */}
+        {/* Prayer rug — kneeling spot (center) */}
         <div
-          className="absolute left-1/2 z-[8] pointer-events-none"
-          style={{ bottom: "6%", transform: "translateX(-50%)" }}
-          data-testid="closet-bean-bag"
-          aria-hidden
+          className="absolute left-1/2 z-[7] flex justify-center"
+          style={{ bottom: "7%", transform: "translateX(-50%) scale(0.92)" }}
         >
-          <div className="relative" style={{ width: "140px", height: "72px" }}>
-            <div
-              className="absolute inset-0 rounded-[45%_45%_40%_40%]"
-              style={{
-                background:
-                  "radial-gradient(ellipse 80% 70% at 35% 25%, #4a3d62 0%, #2a2238 55%, #15101f 100%)",
-                boxShadow: "0 12px 28px rgba(0,0,0,0.55), inset 0 -4px 12px rgba(0,0,0,0.35)",
-              }}
-            />
-            <div
-              className="absolute rounded-full opacity-30"
-              style={{
-                width: "36%",
-                height: "28%",
-                left: "18%",
-                top: "22%",
-                background: "rgba(255,255,255,0.12)",
-              }}
-            />
+          <ClosetPrayerRug />
+        </div>
+
+        {/* Chair — off to the side for reading / resting */}
+        <div
+          className="absolute z-[8] flex flex-col items-center opacity-95"
+          style={{ right: "8%", bottom: "10%" }}
+        >
+          <div style={{ transform: "scale(0.82)" }}>
+            <ClosetPrayerChair />
           </div>
+          <p className="text-[7px] tracking-[0.14em] uppercase text-white/22 -mt-1 font-medium">
+            Rest
+          </p>
         </div>
 
         {/* In-room title */}
@@ -278,8 +270,33 @@ export function PrayerClosetRoom({
           >
             {title}
           </motion.h1>
+          {showIntroLine && (
+            <motion.p
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="text-[12px] text-white/55 leading-snug mt-2 max-w-[28ch] mx-auto"
+            >
+              This room is yours. Nothing here is shared unless you choose.
+              {onIntroDismiss && (
+                <button
+                  type="button"
+                  onClick={onIntroDismiss}
+                  className="block mx-auto mt-2 text-[11px] font-semibold text-violet-200/80 underline underline-offset-2"
+                  data-testid="button-dismiss-closet-intro"
+                >
+                  Enter quietly
+                </button>
+              )}
+            </motion.p>
+          )}
         </div>
 
+        {/* Clear floor zone — keeps worship UI / nav from covering the seat */}
+        <div
+          className="absolute inset-x-[8%] bottom-0 h-[22%] z-[9] pointer-events-none"
+          aria-hidden
+        />
       </div>
     </div>
   );

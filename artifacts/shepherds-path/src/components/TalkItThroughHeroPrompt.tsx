@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { BrandIcon } from "@/components/BrandIcon";
 import { waitMs } from "@/lib/pauseEngine";
 import { CRISIS_LIFELINE_DISPLAY, CRISIS_LIFELINE_TEL } from "@/lib/crisisResources";
 import type { ThresholdNeed } from "@/lib/thresholdState";
@@ -70,23 +69,15 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
       className="w-full rounded-2xl border border-white/12 bg-[#12101a]/95 backdrop-blur-sm p-4 sm:p-5 shadow-lg shadow-black/25 max-sm:rounded-[1.125rem]"
       data-testid="card-talk-it-through-hero"
     >
-      <div className="flex items-start gap-3 mb-4">
-        <div
-          className="shrink-0 flex items-center justify-center rounded-[14px] bg-black/25 ring-1 ring-white/15"
-          style={{ width: 52, height: 52 }}
-        >
-          <BrandIcon size={48} className="opacity-95" />
-        </div>
-        <div className="min-w-0 pt-0.5">
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/55 mb-1">
-            Talk it through
-          </p>
-          <p className="text-[15px] text-white/82 leading-snug">
-            Scripture and prayer shaped for{" "}
-            {phase === "evening" || phase === "late-evening" ? "tonight" : "right now"} — not generic
-            advice.
-          </p>
-        </div>
+      <div className="mb-4">
+        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/55 mb-1">
+          Talk it through
+        </p>
+        <p className="text-[15px] text-white/82 leading-snug">
+          Scripture and prayer shaped for{" "}
+          {phase === "evening" || phase === "late-evening" ? "tonight" : "right now"} — not generic
+          advice.
+        </p>
       </div>
 
       <label className="sr-only" htmlFor="hero-talk-input">

@@ -6,6 +6,7 @@ import {
   Gift,
   HandHeart,
   Heart,
+  MessageCircle,
   Lightbulb,
   Bell,
   Flame,
@@ -20,8 +21,6 @@ import {
   Sunrise,
   type LucideIcon,
 } from "lucide-react";
-import { BrandIcon } from "@/components/BrandIcon";
-
 export type ShortcutIconVariant =
   | "guidance"
   | "devotional"
@@ -59,7 +58,8 @@ const TILE: Record<
     halo: "bg-primary/40",
     ring: "ring-violet-300/35",
     shadow: "shadow-primary/40",
-    bg: "bg-black/25",
+    bg: "bg-gradient-to-br from-violet-500 via-primary to-violet-950",
+    Icon: MessageCircle,
   },
   devotional: {
     halo: "bg-teal-400/35",
@@ -243,9 +243,7 @@ export function ShortcutPathIcon({
         className={`relative flex h-full w-full items-center justify-center overflow-hidden ring-1 shadow-lg ${tile.ring} ${tile.shadow} ${tile.bg}`}
         style={{ borderRadius: dim.rounded }}
       >
-        {variant === "guidance" ? (
-          <BrandIcon size={dim.brand} className="drop-shadow-md" />
-        ) : tile.Icon ? (
+        {tile.Icon ? (
           <tile.Icon
             className="text-white drop-shadow-sm"
             style={{ width: dim.lucide, height: dim.lucide }}

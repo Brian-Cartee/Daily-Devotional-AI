@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
-import { ClosetDoorwayFrame } from "@/components/ClosetDoorwayFrame";
 import { ClosetCandleControl } from "@/components/ClosetCandleControl";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import {
@@ -28,15 +27,21 @@ import type { WorshipYoutubeMixId } from "@/lib/worshipYouTubeMixes";
 import { getSessionId } from "@/lib/session";
 import { getUserName } from "@/lib/userName";
 import { apiRequest } from "@/lib/queryClient";
+import { apiSessionExtras } from "@/lib/requestExtras";
 import { useToast } from "@/hooks/use-toast";
 import {
   CLOSET_BACKGROUNDS,
   closetDisplayName,
   loadClosetNote,
   loadClosetSettings,
+  markClosetIntroSeen,
   markClosetVisit,
+  markCandleHintSeen,
   saveClosetNote,
   saveClosetSettings,
+  shouldShowClosetIntro,
+  shouldShowCandleHint,
+  visionBoardHasContent,
   type ClosetBackgroundId,
   type ClosetSettings,
 } from "@/lib/prayerCloset";
@@ -54,6 +59,40 @@ export default function PrayerClosetPage() {
   const [note, setNote] = useState(() => loadClosetNote());
   const [showSetup, setShowSetup] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
+  const [showIntro, setShowIntro] = useState(() => shouldShowClosetIntro());
+  const [showCandleHint, setShowCandleHint] = useState(() => shouldShowCandleHint());
+  const verseArtGenStarted = useRef(false);
+
+  const verseDate = dailyVerse?.date;
+  const { data: verseArt } = useQuery({
+    queryKey: ["/api/verse-art", verseDate],
+    queryFn: async () => {
+      if (!verseDate) return null;
+      const res = await fetch(`/api/verse-art/${verseDate}`);
+      if (!res.ok) return null;
+      return res.json() as { imageUrl: string | null; cached: boolean };
+    },
+    enabled: !!verseDate,
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!dailyVerse || !verseDate || verseArt?.imageUrl || verseArtGenStarted.current) return;
+    if (verseArt === undefined) return;
+    verseArtGenStarted.current = true;
+    fetch("/api/verse-art/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        verseDate: dailyVerse.date,
+        verseText: dailyVerse.text,
+        verseReference: dailyVerse.reference,
+        ...apiSessionExtras(),
+      }),
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/verse-art", verseDate] }))
+      .catch(() => {});
+  }, [dailyVerse, verseDate, verseArt, queryClient]);
 
   const youtubeWorship = isYoutubeWorshipSource(settings.worshipSource);
   const { usingGenerated } = useWorshipBed(
@@ -94,12 +133,13 @@ export default function PrayerClosetPage() {
   }, [journalEntries]);
 
   const backgroundSrc = useMemo(() => {
-    if (settings.backgroundId === "daily-art" && dailyArtUrl) {
-      return dailyArtUrl.replace(/\?.*$/, "");
+    if (settings.backgroundId === "verse-art") {
+      if (verseArt?.imageUrl) return verseArt.imageUrl.replace(/\?.*$/, "");
+      return "/hero-landing.webp";
     }
     const bg = CLOSET_BACKGROUNDS.find((b) => b.id === settings.backgroundId);
     return bg?.src || "/hero-landing.webp";
-  }, [settings.backgroundId, dailyArtUrl]);
+  }, [settings.backgroundId, verseArt?.imageUrl]);
 
   const wallVerse = useMemo(() => {
     if (settings.pinnedText && settings.pinnedReference) {
@@ -116,14 +156,36 @@ export default function PrayerClosetPage() {
 
   const title = closetDisplayName(settings);
   const wallBg = CLOSET_BACKGROUNDS.find((b) => b.id === settings.backgroundId);
-  const dailyArtThumb =
-    settings.backgroundId === "daily-art" && dailyArtUrl
-      ? dailyArtUrl.replace(/\?.*$/, "")
-      : dailyArtUrl?.replace(/\?.*$/, "") ?? null;
+  const dailyArtThumb = dailyArtUrl?.replace(/\?.*$/, "") ?? null;
+
+  const lastPrayerSnippet = lastPrayer?.content
+    ? lastPrayer.content.length > 80
+      ? `${lastPrayer.content.slice(0, 80)}…`
+      : lastPrayer.content
+    : null;
+
+  const boardEmphasis = visionBoardHasContent({
+    pinnedText: settings.pinnedText,
+    draftNote: note,
+    lastPrayerSnippet,
+    dailyArtThumb,
+  });
+
+  const wallBackgroundOptions = CLOSET_BACKGROUNDS.filter((b) => b.wallArt !== false);
 
   const patchSettings = (patch: Partial<ClosetSettings>) => {
     const next = saveClosetSettings(patch);
     setSettings(next);
+  };
+
+  const dismissIntro = () => {
+    markClosetIntroSeen();
+    setShowIntro(false);
+  };
+
+  const dismissCandleHint = () => {
+    markCandleHintSeen();
+    setShowCandleHint(false);
   };
 
   const pinTodayVerse = () => {
@@ -160,9 +222,8 @@ export default function PrayerClosetPage() {
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-[#07050f] pb-32 pt-14">
-        <div className="relative max-w-xl mx-auto px-3">
-          {/* Fixed controls — always tappable above room art */}
+      <main className="min-h-screen bg-[#07050f] pb-36 pt-14">
+        <div className="relative max-w-2xl mx-auto px-2 sm:px-3">
           <div
             className="sticky top-14 z-50 flex items-center justify-between gap-2 mb-2 py-1"
             data-testid="closet-page-header"
@@ -185,31 +246,47 @@ export default function PrayerClosetPage() {
             </button>
           </div>
 
-          <ClosetDoorwayFrame>
-            <PrayerClosetRoom
-              title={title}
-              wallArtSrc={backgroundSrc}
-              wallArtPosition={wallBg?.position}
-              wallVerse={wallVerse}
-              candleLevel={settings.candleLevel}
-              draftNote={note}
-              lastPrayerSnippet={
-                lastPrayer?.content
-                  ? lastPrayer.content.length > 80
-                    ? `${lastPrayer.content.slice(0, 80)}…`
-                    : lastPrayer.content
-                  : null
-              }
-              dailyArtThumb={settings.backgroundId !== "daily-art" ? dailyArtThumb : null}
-              canPinVerse={!!(dailyVerse && !settings.pinnedText)}
-              onPinVerse={pinTodayVerse}
-            />
-          </ClosetDoorwayFrame>
+          <PrayerClosetRoom
+            title={title}
+            wallArtSrc={backgroundSrc}
+            wallArtPosition={wallBg?.position}
+            wallVerse={wallVerse}
+            candleLevel={settings.candleLevel}
+            draftNote={note}
+            lastPrayerSnippet={lastPrayerSnippet}
+            dailyArtThumb={dailyArtThumb}
+            visionBoardEmphasis={boardEmphasis}
+            showIntroLine={showIntro}
+            onIntroDismiss={dismissIntro}
+            canPinVerse={!!(dailyVerse && !settings.pinnedText)}
+            onPinVerse={pinTodayVerse}
+          />
 
-          <div className="mt-2 px-0.5">
+          <div className="mt-3 px-0.5 space-y-3">
             <ClosetCandleControl
               level={settings.candleLevel}
               onChange={(candleLevel) => patchSettings({ candleLevel })}
+              showHint={showCandleHint}
+              onHintDismiss={dismissCandleHint}
+            />
+
+            <WorshipBedControls
+              compactPlayer
+              enabled={settings.worshipEnabled}
+              source={settings.worshipSource ?? "youtube"}
+              trackId={settings.worshipTrackId}
+              youtubeMixId={settings.worshipYoutubeMixId ?? "soaking-moment-with-god"}
+              volume={settings.worshipVolume}
+              usingGenerated={usingGenerated}
+              youtubeReady={youtubeReady}
+              youtubeError={youtubeError}
+              onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
+              onSourceChange={(worshipSource) => patchSettings({ worshipSource })}
+              onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
+              onYoutubeMixChange={(worshipYoutubeMixId: WorshipYoutubeMixId) =>
+                patchSettings({ worshipYoutubeMixId })
+              }
+              onVolumeChange={(worshipVolume) => patchSettings({ worshipVolume })}
             />
           </div>
 
@@ -275,11 +352,14 @@ export default function PrayerClosetPage() {
                   />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                     Framed wall art
                   </p>
+                  <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+                    Today&apos;s moment from home appears on your vision board — not the big frame.
+                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {CLOSET_BACKGROUNDS.map((bg) => (
+                    {wallBackgroundOptions.map((bg) => (
                       <button
                         key={bg.id}
                         type="button"
@@ -306,24 +386,6 @@ export default function PrayerClosetPage() {
               </motion.div>
             </div>
           )}
-
-          <WorshipBedControls
-            enabled={settings.worshipEnabled}
-            source={settings.worshipSource ?? "youtube"}
-            trackId={settings.worshipTrackId}
-            youtubeMixId={settings.worshipYoutubeMixId ?? "soaking-moment-with-god"}
-            volume={settings.worshipVolume}
-            usingGenerated={usingGenerated}
-            youtubeReady={youtubeReady}
-            youtubeError={youtubeError}
-            onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
-            onSourceChange={(worshipSource) => patchSettings({ worshipSource })}
-            onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
-            onYoutubeMixChange={(worshipYoutubeMixId: WorshipYoutubeMixId) =>
-              patchSettings({ worshipYoutubeMixId })
-            }
-            onVolumeChange={(worshipVolume) => patchSettings({ worshipVolume })}
-          />
 
           <div className="rounded-2xl border border-border/50 bg-card/60 p-4">
             <p className="text-[12px] font-bold uppercase tracking-widest text-primary/70 mb-2">
