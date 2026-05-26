@@ -125,7 +125,7 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
         disabled={beginning}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 shadow-md shadow-black/20 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-70"
       >
-        {beginning ? "One breath…" : "Begin with Scripture"}
+        {beginning ? "One breath…" : "Talk it through"}
         {!beginning && <ArrowRight className="w-4 h-4" />}
       </button>
 

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Headphones, ChevronRight } from "lucide-react";
+import { Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
@@ -10,16 +10,15 @@ import {
   getThresholdNeed,
   getThresholdNeedAcknowledgment,
 } from "@/lib/thresholdState";
-import { hasWhyPanelDismissed, isReturningHomeHero } from "@/lib/homeHeroState";
+import { hasWhyPanelDismissed } from "@/lib/homeHeroState";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listenFirst";
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
 import { isProVerifiedLocally } from "@/lib/proStatus";
-import {
-  TalkItThroughHeroPrompt,
-  focusHeroTalkInput,
-} from "@/components/TalkItThroughHeroPrompt";
-import { HomePresenceDoors } from "@/components/HomePresenceDoors";
+import { focusHeroTalkInput } from "@/components/TalkItThroughHeroPrompt";
+import { HomePresenceDoors, defaultPresenceDoor } from "@/components/HomePresenceDoors";
+import type { PresenceDoorId } from "@/components/HomePresenceDoors";
+import { HomePresenceHero } from "@/components/HomePresenceHero";
 
 export type ThresholdData = {
   headline: string;
@@ -36,37 +35,13 @@ export type ThresholdData = {
 const BRAND_TAGLINE = "Find your way back to God";
 const BRAND_TAGLINE_SUB = "one moment at a time.";
 
-function DailyVerseCard({ verse }: { verse: { text: string; reference: string } }) {
-  return (
-    <Link href="/devotional">
-      <div
-        data-testid="card-daily-verse-threshold"
-        className="rounded-xl border border-amber-500/20 bg-black/35 backdrop-blur-sm px-3.5 py-3 active:scale-[0.99] transition-transform flex items-start gap-2"
-      >
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/65 mb-1">
-            Today&apos;s verse
-          </p>
-          <p
-            className="text-[15px] text-white/88 line-clamp-3 leading-snug"
-            style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontStyle: "italic" }}
-          >
-            &ldquo;{verse.text}&rdquo;
-          </p>
-          <p className="text-[13px] font-semibold text-amber-200/80 mt-1">— {verse.reference}</p>
-        </div>
-        <ChevronRight className="w-5 h-5 text-amber-200/50 shrink-0 mt-4" aria-hidden />
-      </div>
-    </Link>
-  );
-}
-
 export function ThresholdHero() {
   const sessionId = getSessionId();
   const daysWithApp = getRelationshipAge();
-  const returning = isReturningHomeHero();
-  const { data: verse, isLoading: verseLoading } = useDailyVerse();
+  const { data: verse } = useDailyVerse();
   const [listenFirst, setListenFirst] = useState(() => getListenFirstPreference());
+  const [activeDoor, setActiveDoor] = useState<PresenceDoorId>(defaultPresenceDoor);
+  const focusTalkAfterSelect = useRef(false);
   const thresholdNeed = getThresholdNeed();
   const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
   const needAck =
@@ -88,6 +63,18 @@ export function ThresholdHero() {
 
   const threshold = thresholdRes?.threshold;
   const showTalkPrompt = !thresholdLoading;
+
+  const selectDoor = (id: PresenceDoorId) => {
+    setActiveDoor(id);
+    if (id === "talk") focusTalkAfterSelect.current = true;
+  };
+
+  useEffect(() => {
+    if (activeDoor !== "talk" || !focusTalkAfterSelect.current) return;
+    focusTalkAfterSelect.current = false;
+    const t = window.setTimeout(() => focusHeroTalkInput(), 80);
+    return () => window.clearTimeout(t);
+  }, [activeDoor]);
 
   const toggleListenFirst = () => {
     if (!canUseListenFirstAuto()) return;
@@ -192,24 +179,20 @@ export function ThresholdHero() {
             </p>
           )}
 
-          {returning && verse && !verseLoading && (
-            <div className="mb-3 sm:mb-4">
-              <DailyVerseCard verse={verse} />
-            </div>
-          )}
-
           {showTalkPrompt && !thresholdLoading && (
-            <div className="mb-3 sm:mb-4">
-              <TalkItThroughHeroPrompt
-                phase={threshold?.phase}
-                thresholdNeed={thresholdNeed}
-              />
-            </div>
+            <>
+              <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} />
+              <div className="mb-4" role="tabpanel" aria-label="Your chosen step">
+                <HomePresenceHero
+                  door={activeDoor}
+                  phase={threshold?.phase}
+                  thresholdNeed={thresholdNeed}
+                  verse={verse ?? null}
+                  onSelectTalk={() => selectDoor("talk")}
+                />
+              </div>
+            </>
           )}
-
-          <div className="mb-4">
-            <HomePresenceDoors onTalkDoor={focusHeroTalkInput} />
-          </div>
 
           {threshold?.secondaryCta && daysWithApp < 3 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
