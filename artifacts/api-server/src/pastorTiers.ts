@@ -143,22 +143,92 @@ export function isBlockedPastorChannel(channelId: string, channelTitle: string):
   return getPastorChannelScore(channelId, channelTitle) === 50;
 }
 
-export function rankPastorYouTubeItems(items: YouTubeSearchItem[]): YouTubeSearchItem[] {
+export type PastorVideoContext = {
+  themeHint?: string;
+  verseReference?: string;
+  verseText?: string;
+  /** Stable per day+verse — rotates which pastor is tried first in fallbacks */
+  rotationSeed?: string;
+  excludeChannelTitles?: string[];
+};
+
+const STOP_WORDS = new Set([
+  "that", "this", "with", "from", "your", "have", "will", "what", "when", "they", "them",
+  "about", "into", "through", "without", "there", "their", "would", "should", "could",
+  "been", "being", "were", "which", "while", "where", "those", "these", "than", "then",
+  "also", "just", "only", "very", "more", "most", "some", "such", "upon", "unto", "thee",
+  "thou", "shall", "lord", "god", "christ", "jesus", "holy", "spirit",
+]);
+
+function hashSeed(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function tokenizeForMatch(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3 && !STOP_WORDS.has(w));
+}
+
+/** Higher = better match to today's verse/theme (not channel fame). */
+export function titleRelevanceScore(
+  title: string,
+  ctx?: Pick<PastorVideoContext, "themeHint" | "verseReference" | "verseText">,
+): number {
+  const t = title.toLowerCase();
+  let score = 0;
+  const themeWords = tokenizeForMatch(ctx?.themeHint || "");
+  const verseWords = tokenizeForMatch(`${ctx?.verseReference || ""} ${ctx?.verseText || ""}`);
+  const keywords = [...new Set([...themeWords, ...verseWords])];
+
+  for (const w of keywords) {
+    if (t.includes(w)) score += 3;
+  }
+
+  const book = (ctx?.verseReference || "").replace(/\d+.*$/, "").trim().toLowerCase();
+  if (book.length > 2 && t.includes(book)) score += 2;
+
+  if (/\b(clip|short|excerpt|minute|min)\b/.test(t)) score += 2;
+  if (/\bfull sermon\b/.test(t) && !/\bclip\b/.test(t)) score -= 3;
+  if (/\b(animated|overview|summary|explained)\b/.test(t)) score -= 5;
+
+  return score;
+}
+
+function isExcludedChannel(channelTitle: string, excludes?: string[]): boolean {
+  if (!excludes?.length) return false;
+  const n = channelTitle.toLowerCase();
+  return excludes.some((e) => e && n.includes(e.toLowerCase()));
+}
+
+export function rankPastorYouTubeItems(
+  items: YouTubeSearchItem[],
+  ctx?: PastorVideoContext,
+): YouTubeSearchItem[] {
   return [...items]
     .filter((item) => !isBlockedVideoItem(item))
+    .filter((item) => !isExcludedChannel(item.snippet?.channelTitle || "", ctx?.excludeChannelTitles))
     .sort((a, b) => {
-      const aScore = getPastorChannelScore(a.snippet?.channelId || "", a.snippet?.channelTitle || "");
-      const bScore = getPastorChannelScore(b.snippet?.channelId || "", b.snippet?.channelTitle || "");
-      return aScore - bScore;
+      const aCh = getPastorChannelScore(a.snippet?.channelId || "", a.snippet?.channelTitle || "");
+      const bCh = getPastorChannelScore(b.snippet?.channelId || "", b.snippet?.channelTitle || "");
+      if (aCh !== bCh) return aCh - bCh;
+      const aRel = titleRelevanceScore(a.snippet?.title || "", ctx);
+      const bRel = titleRelevanceScore(b.snippet?.title || "", ctx);
+      return bRel - aRel;
     });
 }
 
 export function pickPastorYouTubeItem(
   items: YouTubeSearchItem[],
   allowNonListedFallback = false,
+  ctx?: PastorVideoContext,
 ): YouTubeSearchItem | null {
   if (!items.length) return null;
-  const ranked = rankPastorYouTubeItems(items);
+  const ranked = rankPastorYouTubeItems(items, ctx);
   const approved = ranked.filter(
     (item) => getPastorChannelScore(item.snippet?.channelId || "", item.snippet?.channelTitle || "") < 99,
   );
@@ -168,9 +238,9 @@ export function pickPastorYouTubeItem(
 }
 
 /** For OpenAI prompts — tier list + removed ministries */
-export const PASTOR_TIER_AI_GUIDE = `Use ONLY approved pastors from Shepherd's Path tiers. Every searchQuery MUST include one approved pastor name.
+export const PASTOR_TIER_AI_GUIDE = `Use ONLY approved pastors from Shepherd's Path tiers. Every searchQuery MUST name exactly ONE approved preacher (not a list).
 
-Tier 1 (default — truth, conviction, scripture authority): Phillip Anthony Mitchell (2819 Church), Tony Evans (The Urban Alternative), Matt Chandler (The Village Church), Jack Hibbs (Real Life with Jack Hibbs), Allen Jackson (Allen Jackson Ministries), Dharius Daniels (Change Church).
+Tier 1 (truth, conviction, scripture authority): Phillip Anthony Mitchell (2819 Church), Tony Evans (The Urban Alternative), Matt Chandler (The Village Church), Jack Hibbs (Real Life with Jack Hibbs), Allen Jackson (Allen Jackson Ministries), Dharius Daniels (Change Church).
 
 Tier 2 (structured, biblical depth): Jentezen Franklin (Free Chapel), T.D. Jakes (The Potter's House).
 
@@ -178,16 +248,16 @@ Tier 3 (cultural bridge, engagement): Michael Todd (Transformation Church), Tim 
 
 REMOVED — never search or recommend: Andy Stanley (North Point), Craig Groeschel (Life.Church), Steven Furtick (Elevation), Louie Giglio (Passion City), BibleProject, or generic Bible overview / animated summary channels.
 
-Default to Tier 1 unless the verse clearly calls for Tier 3 engagement or encouragement.`;
+Pick the preacher whose gift best fits the verse theme — do NOT default to Tony Evans. Vary preachers across days. Examples: persistent prayer → Jack Hibbs or Allen Jackson; suffering/lament → Phillip Mitchell or Matt Chandler; identity/hope → Dharius Daniels or Michael Todd; endurance in trials → Matt Chandler or Jentezen Franklin.`;
 
-/** Ordered fallback searches when the initial YouTube results have no approved channel */
+/** Base fallback order — rotated per verse/day so one pastor is not always first */
 const APPROVED_PASTOR_SEARCH_ORDER: { tier: 1 | 2 | 3; searchName: string }[] = [
-  { tier: 1, searchName: "Tony Evans" },
   { tier: 1, searchName: "Phillip Mitchell 2819 Church" },
   { tier: 1, searchName: "Matt Chandler Village Church" },
   { tier: 1, searchName: "Jack Hibbs" },
   { tier: 1, searchName: "Allen Jackson Ministries" },
   { tier: 1, searchName: "Dharius Daniels Change Church" },
+  { tier: 1, searchName: "Tony Evans" },
   { tier: 2, searchName: "Jentezen Franklin" },
   { tier: 2, searchName: "T.D. Jakes" },
   { tier: 3, searchName: "Michael Todd Transformation Church" },
@@ -195,6 +265,13 @@ const APPROVED_PASTOR_SEARCH_ORDER: { tier: 1 | 2 | 3; searchName: string }[] = 
   { tier: 3, searchName: "Rich Wilkerson VOUS Church" },
   { tier: 3, searchName: "Eric Thomas hip hop preacher" },
 ];
+
+export function getRotatedPastorSearchOrder(seed: string): { tier: 1 | 2 | 3; searchName: string }[] {
+  const order = [...APPROVED_PASTOR_SEARCH_ORDER];
+  if (!seed) return order;
+  const offset = hashSeed(seed) % order.length;
+  return [...order.slice(offset), ...order.slice(0, offset)];
+}
 
 export function buildYouTubeSearchUrl(
   query: string,
@@ -251,13 +328,28 @@ function buildFallbackQuery(pastorSearchName: string, verseReference?: string, t
 export async function resolvePastorYouTubeVideo(
   initialItems: YouTubeSearchItem[],
   ytKey: string,
-  context: { verseReference?: string; themeHint?: string; pastorHint?: string },
+  context: {
+    verseReference?: string;
+    verseText?: string;
+    themeHint?: string;
+    pastorHint?: string;
+    rotationSeed?: string;
+    excludeChannelTitles?: string[];
+  },
   options?: { videoDuration?: "short" | "medium" | "long"; allowNonListedFallback?: boolean },
 ): Promise<YouTubeSearchItem | null> {
-  const fromInitial = pickPastorYouTubeItem(initialItems, false);
+  const pickCtx: PastorVideoContext = {
+    themeHint: context.themeHint,
+    verseReference: context.verseReference,
+    verseText: context.verseText,
+    rotationSeed: context.rotationSeed,
+    excludeChannelTitles: context.excludeChannelTitles,
+  };
+
+  const fromInitial = pickPastorYouTubeItem(initialItems, false, pickCtx);
   if (fromInitial) return fromInitial;
 
-  const searchOrder = [...APPROVED_PASTOR_SEARCH_ORDER];
+  const searchOrder = getRotatedPastorSearchOrder(context.rotationSeed || "");
   if (context.pastorHint && pastorHintMatchesApproved(context.pastorHint)) {
     const hintName = context.pastorHint.trim();
     const idx = searchOrder.findIndex((p) =>
@@ -274,16 +366,16 @@ export async function resolvePastorYouTubeVideo(
   for (const pastor of searchOrder) {
     const query = buildFallbackQuery(pastor.searchName, context.verseReference, context.themeHint);
     const url = buildYouTubeSearchUrl(query, ytKey, {
-      maxResults: 8,
+      maxResults: 10,
       videoDuration: options?.videoDuration ?? "medium",
     });
     const items = await fetchYouTubeSearchItems(url);
-    const pick = pickPastorYouTubeItem(items, false);
+    const pick = pickPastorYouTubeItem(items, false, pickCtx);
     if (pick) return pick;
   }
 
   if (options?.allowNonListedFallback) {
-    return pickPastorYouTubeItem(initialItems, true);
+    return pickPastorYouTubeItem(initialItems, true, pickCtx);
   }
   return null;
 }

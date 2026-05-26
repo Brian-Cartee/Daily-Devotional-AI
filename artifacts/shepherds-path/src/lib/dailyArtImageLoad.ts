@@ -4,17 +4,35 @@ export function easternTodayKey(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
 
-export function dailyArtFallbackUrls(primaryBase?: string | null): string[] {
+function hashDay(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+export function dailyArtFallbackUrls(
+  primaryBase?: string | null,
+  options?: { allowBundledPlaceholder?: boolean },
+): string[] {
   const day = easternTodayKey();
-  const bases = new Set<string>();
+  const bases: string[] = [];
+  const bust = `refresh=${Date.now()}`;
   if (primaryBase) {
-    bases.add(dailyArtImageSrc(primaryBase.replace(/\?.*$/, "")));
+    bases.push(dailyArtImageSrc(`${primaryBase.replace(/\?.*$/, "")}?${bust}`));
   }
-  bases.add(dailyArtImageSrc(`/api/daily-art/image/${day}`));
-  bases.add(dailyArtImageSrc("/api/daily-art/image"));
-  bases.add(`/daily-art/natural-mountain.jpg?t=${Date.now()}`);
-  bases.add(`/daily-art/natural-sunset.jpg?t=${Date.now()}`);
-  return [...bases];
+  bases.push(dailyArtImageSrc(`/api/daily-art/image/${day}?${bust}`));
+  bases.push(dailyArtImageSrc(`/api/daily-art/image?${bust}`));
+
+  if (options?.allowBundledPlaceholder !== false) {
+    const statics =
+      hashDay(day) % 2 === 0
+        ? ["/daily-art/natural-sunset.jpg", "/daily-art/natural-mountain.jpg"]
+        : ["/daily-art/natural-mountain.jpg", "/daily-art/natural-sunset.jpg"];
+    for (const s of statics) {
+      bases.push(`${s}?t=${Date.now()}`);
+    }
+  }
+  return bases;
 }
 
 export async function fetchDailyArtBlobUrl(src: string, timeoutMs = 14_000): Promise<string | null> {
@@ -36,8 +54,11 @@ export async function fetchDailyArtBlobUrl(src: string, timeoutMs = 14_000): Pro
 }
 
 /** Fetch via blob URL — avoids Safari caching a prior 404 on <img src>. */
-export async function loadDailyArtImage(primaryBase?: string | null): Promise<string | null> {
-  for (const url of dailyArtFallbackUrls(primaryBase)) {
+export async function loadDailyArtImage(
+  primaryBase?: string | null,
+  options?: { allowBundledPlaceholder?: boolean },
+): Promise<string | null> {
+  for (const url of dailyArtFallbackUrls(primaryBase, options)) {
     const blob = await fetchDailyArtBlobUrl(url);
     if (blob) return blob;
   }

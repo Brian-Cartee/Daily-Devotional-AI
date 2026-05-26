@@ -28,7 +28,15 @@ import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pus
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
-import { resolveDailyArtDir, writeDailyArtImageFile, ensureDailyArtImageFile } from "../dailyArtUtil";
+import {
+  resolveDailyArtDir,
+  writeDailyArtImageFile,
+  ensureDailyArtImageFile,
+  stockQueryForVerse,
+  imageMatchesStaticFallback,
+  fetchStockImageBuffer,
+  refreshDailyArtImage,
+} from "../dailyArtUtil";
 import { buildThresholdPayload, buildWeeklyWeather, buildVerseFrame } from "../homeExperience";
 import { buildJournalArchive } from "../journalArchive";
 import {
@@ -336,6 +344,15 @@ export async function registerRoutes(
     services.sms = hasTwilio
       ? { ok: true, message: "Twilio configured" }
       : { ok: false, message: "TWILIO_ACCOUNT_SID / AUTH_TOKEN / PHONE_NUMBER missing" };
+
+    const hasUnsplash = !!process.env.UNSPLASH_ACCESS_KEY?.trim();
+    const hasPexels = !!process.env.PEXELS_API_KEY?.trim();
+    services.dailyArtStock = hasUnsplash || hasPexels
+      ? {
+          ok: true,
+          message: [hasUnsplash && "Unsplash", hasPexels && "Pexels"].filter(Boolean).join(" + ") + " configured",
+        }
+      : { ok: false, message: "Set UNSPLASH_ACCESS_KEY and/or PEXELS_API_KEY in artifacts/api-server/.env" };
 
     // 7. Google Sheets — if today's verse loaded, sheets is working
     services.googleSheets = services.dailyVerse?.ok
@@ -1802,6 +1819,79 @@ What you never do:
     }
   });
 
+  // Force-regenerate today's Take a Moment image (admin only)
+  app.post("/api/admin/refresh-daily-art", async (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const provided = req.headers["x-admin-password"] || req.body?.adminPassword;
+    if (!adminPassword || provided !== adminPassword) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
+
+    try {
+      const today = getEasternDateString();
+      const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
+      const metaFile = path.join(DAILY_ART_DIR, `${today}.json`);
+      if (fs.existsSync(imgFile)) fs.unlinkSync(imgFile);
+
+      const [y, mo, da] = today.split("-").map(Number);
+      const dayOfYear = Math.floor((Date.UTC(y, mo - 1, da) - Date.UTC(y, 0, 0)) / 86_400_000);
+      const poolEntry = VERSE_POOL[dayOfYear % VERSE_POOL.length];
+      const { query: _poolQuery, ...poolScripture } = poolEntry;
+
+      let dailyVerse = await storage.getVerseByDate(today);
+      if (!dailyVerse) {
+        await syncTodayVerseFromSheet();
+        dailyVerse = await storage.getVerseByDate(today);
+      }
+
+      const scriptureData = dailyVerse
+        ? {
+            scripture: dailyVerse.text,
+            reference: dailyVerse.reference,
+            reflection: dailyVerse.encouragement || poolScripture.reflection,
+          }
+        : poolScripture;
+
+      const stockQuery = stockQueryForVerse(
+        scriptureData.scripture,
+        scriptureData.reference,
+        dayOfYear,
+        VERSE_POOL,
+      );
+
+      const result = await writeDailyArtImageFile(
+        imgFile,
+        stockQuery,
+        scriptureData.scripture,
+        scriptureData.reference,
+      );
+      let artSource = result.source;
+      if (!result.ok) {
+        const ensured = ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
+        artSource = ensured.source;
+      }
+
+      const meta = {
+        ...scriptureData,
+        artSource: artSource ?? "fallback",
+        isPlaceholder: artSource === "fallback",
+      };
+      fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
+      fs.writeFileSync(metaFile, JSON.stringify(meta));
+
+      return res.json({
+        ok: true,
+        date: today,
+        artSource,
+        isPlaceholder: artSource === "fallback",
+        imageUrl: fs.existsSync(imgFile) ? `/api/daily-art/image/${today}` : null,
+      });
+    } catch (err) {
+      console.error("[admin/refresh-daily-art]", err);
+      return res.status(500).json({ message: "Could not refresh daily art" });
+    }
+  });
+
   // Manually trigger daily email send (admin only — requires ADMIN_PASSWORD)
   app.post("/api/admin/send-daily-email", async (req, res) => {
     // Auth check
@@ -3017,11 +3107,8 @@ Return JSON: { "action": "...", "scripture": "..." }`
   app.get("/api/daily-art/image", (req, res) => {
     const today = getEasternDateString();
     const imgFile = path.join(DAILY_ART_DIR, `${today}.jpg`);
-    if (!fs.existsSync(imgFile)) {
-      ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
-    }
-    if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "not ready" });
-    res.set("Cache-Control", "public, max-age=86400");
+    if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "not ready — open /api/daily-art first" });
+    res.set("Cache-Control", "public, max-age=300");
     res.set("Content-Type", "image/jpeg");
     fs.createReadStream(imgFile).pipe(res);
   });
@@ -3031,11 +3118,9 @@ Return JSON: { "action": "...", "scripture": "..." }`
     const { date } = req.params;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ message: "Invalid date format" });
     const imgFile = path.join(DAILY_ART_DIR, `${date}.jpg`);
-    if (!fs.existsSync(imgFile) && date === getEasternDateString()) {
-      ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
-    }
     if (!fs.existsSync(imgFile)) return res.status(404).json({ message: "Not found" });
-    res.set("Cache-Control", "public, max-age=2592000"); // 30 days — past images never change
+    const maxAge = date === getEasternDateString() ? 300 : 2_592_000;
+    res.set("Cache-Control", `public, max-age=${maxAge}`);
     res.set("Content-Type", "image/jpeg");
     fs.createReadStream(imgFile).pipe(res);
   });
@@ -3074,33 +3159,80 @@ Return JSON: { "action": "...", "scripture": "..." }`
 
       const [y, mo, da] = today.split("-").map(Number);
       const dayOfYear = Math.floor((Date.UTC(y, mo - 1, da) - Date.UTC(y, 0, 0)) / 86_400_000);
-      const { query, ...scriptureData } = VERSE_POOL[dayOfYear % VERSE_POOL.length];
+      const poolEntry = VERSE_POOL[dayOfYear % VERSE_POOL.length];
+      const { query: poolQuery, ...poolScripture } = poolEntry;
 
-      if (!fs.existsSync(metaFile)) {
-        fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
-        fs.writeFileSync(metaFile, JSON.stringify(scriptureData));
+      let dailyVerse = await storage.getVerseByDate(today);
+      if (!dailyVerse) {
+        await syncTodayVerseFromSheet();
+        dailyVerse = await storage.getVerseByDate(today);
       }
 
-      if (!fs.existsSync(imgFile)) {
-        console.log("[daily-art] Building today's image (stock → static → AI)...");
-        await writeDailyArtImageFile(
-          imgFile,
-          query,
-          scriptureData.scripture,
-          scriptureData.reference,
-        );
-        ensureDailyArtImageFile(imgFile, DAILY_ART_DIR);
+      const scriptureData = dailyVerse
+        ? {
+            scripture: dailyVerse.text,
+            reference: dailyVerse.reference,
+            reflection: dailyVerse.encouragement || poolScripture.reflection,
+          }
+        : poolScripture;
+
+      const stockQuery = stockQueryForVerse(
+        scriptureData.scripture,
+        scriptureData.reference,
+        dayOfYear,
+        VERSE_POOL,
+      );
+
+      const hasStockKeys = !!(
+        process.env.UNSPLASH_ACCESS_KEY?.trim() || process.env.PEXELS_API_KEY?.trim()
+      );
+
+      if (req.query.refresh === "1" && fs.existsSync(imgFile)) {
+        try {
+          fs.unlinkSync(imgFile);
+        } catch {
+          /* continue */
+        }
       }
 
-      const meta = fs.existsSync(metaFile)
+      let artSource: string | undefined;
+      const refreshed = await refreshDailyArtImage(
+        imgFile,
+        metaFile,
+        DAILY_ART_DIR,
+        stockQuery,
+        scriptureData.scripture,
+        scriptureData.reference,
+      );
+      if (refreshed) {
+        artSource = refreshed;
+        console.log(`[daily-art] Built/refreshed today's image (source=${refreshed})`);
+      }
+
+      let meta: Record<string, unknown> = fs.existsSync(metaFile)
         ? JSON.parse(fs.readFileSync(metaFile, "utf-8"))
-        : scriptureData;
+        : { ...scriptureData };
+
+      meta = {
+        ...meta,
+        ...scriptureData,
+        ...(artSource ? { artSource } : {}),
+      };
+      if (!meta.artSource && fs.existsSync(imgFile)) {
+        meta.artSource = imageMatchesStaticFallback(imgFile, DAILY_ART_DIR) ? "fallback" : "cached";
+      }
+
+      fs.mkdirSync(DAILY_ART_DIR, { recursive: true });
+      fs.writeFileSync(metaFile, JSON.stringify(meta));
+
       const imageUrl = fs.existsSync(imgFile) ? `/api/daily-art/image/${today}` : null;
-      return res.json({ imageUrl, ...meta });
+      const isPlaceholder = meta.artSource === "fallback";
+      return res.json({ imageUrl, isPlaceholder, ...meta });
     } catch (err) {
       console.error("daily art error:", err);
       res.json({
         imageUrl: null,
+        isPlaceholder: true,
         scripture: "The heavens declare the glory of God.",
         reference: "Psalm 19:1",
         reflection: "Creation speaks what words cannot.",
@@ -3261,20 +3393,31 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
 
       const prompt = `A breathtaking, cinematic spiritual landscape that captures the soul of this Bible verse: "${verseText.slice(0, 200)}" (${verseReference}). Style: ultra-high quality photorealistic landscape photography combined with painterly, luminous quality — National Geographic meets Rembrandt. Choose a scene that powerfully echoes the verse's meaning: radiant golden light bursting through ancient cathedral forest, majestic snow-capped mountains at sunrise, vast ocean at twilight with God-rays piercing the clouds, aurora borealis over a still wilderness valley, rolling fields of wildflowers at golden hour, or a serene river winding through ancient woodland. Rich warm light, extraordinary atmospheric depth, deeply spiritual and awe-inspiring mood. IMPORTANT: no people, no human figures, no faces, no text, no words, no letters anywhere. Pure nature only. This must be the most powerful, moving image possible.`;
 
-      // Use direct OpenAI client — the AI integrations proxy doesn't support image generation
-      const response = await openaiTTS.images.generate({
-        model: "gpt-image-1",
-        prompt,
-        n: 1,
-        size: "1536x1024",
-        quality: "high",
-      } as any);
+      let imgBuffer: Buffer | null = null;
 
-      const b64Art = response.data?.[0]?.b64_json;
-      if (!b64Art) return res.status(500).json({ message: "No image returned" });
+      try {
+        const response = await openaiTTS.images.generate({
+          model: "gpt-image-1",
+          prompt,
+          n: 1,
+          size: "1536x1024",
+          quality: "high",
+        } as any);
+        const b64Art = response.data?.[0]?.b64_json;
+        if (b64Art) imgBuffer = Buffer.from(b64Art, "base64");
+      } catch (aiErr) {
+        console.warn("[verse-art] AI generation failed, trying stock photo:", aiErr);
+      }
 
-      // Decode b64 directly — no external fetch needed
-      const imgBuffer = Buffer.from(b64Art, "base64");
+      if (!imgBuffer) {
+        const [y, mo, da] = verseDate.split("-").map(Number);
+        const dayOfYear = Math.floor((Date.UTC(y, mo - 1, da) - Date.UTC(y, 0, 0)) / 86_400_000);
+        const stockQuery = stockQueryForVerse(verseText, verseReference, dayOfYear, VERSE_POOL);
+        imgBuffer = await fetchStockImageBuffer(`${stockQuery} devotion worship landscape`);
+      }
+
+      if (!imgBuffer) return res.status(500).json({ message: "No image returned" });
+
       fs.writeFileSync(localPath, imgBuffer);
 
       // Save stable local URL to DB
@@ -4507,10 +4650,13 @@ ${historyNote}`;
             role: "system",
             content: `You are curating a single short video message (5–10 minutes) for someone who just completed their daily devotional. Return JSON:
 {
-  "theme": "2–4 words describing the message theme (e.g. 'identity in Christ', 'trusting God while waiting')",
-  "searchQuery": "a precise YouTube search for a short sermon clip or excerpt (5–10 minutes). Include 'clip' or 'short' or 'excerpt' in the query. ${PASTOR_TIER_AI_GUIDE}",
+  "theme": "2–4 words describing the message theme (e.g. 'persistent prayer', 'lament before God', 'endurance in trials')",
+  "preacher": "exactly ONE approved preacher whose gift fits this verse — do not default to Tony Evans",
+  "searchQuery": "[preacher name] + theme words from the verse + 'sermon clip' or 'short teaching' (5–10 min)",
   "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
-}`,
+}
+
+${PASTOR_TIER_AI_GUIDE}`,
           },
           {
             role: "user",
@@ -4537,8 +4683,10 @@ ${historyNote}`;
         ytKey,
         {
           verseReference: verse.reference,
+          verseText: verse.text,
           themeHint: analysis.theme || analysis.searchQuery,
           pastorHint: analysis.preacher,
+          rotationSeed: cacheKey,
         },
         { videoDuration: "medium", allowNonListedFallback: false },
       );
@@ -4632,11 +4780,11 @@ The user typed: "${customTopic}"
 IMPORTANT: Users often type raw emotional phrases ("I'm struggling with heartbreak", "my marriage is falling apart", "I feel worthless"). Your job is to EXTRACT the core spiritual/emotional theme and convert it into a clean, effective YouTube search query that will actually return results.
 
 Examples of good extraction:
-- "pain from a breakup and heartbreak is killing me" → theme: heartbreak healing → searchQuery: "Tony Evans heartbreak healing sermon"
-- "I can't stop being anxious" → theme: anxiety, peace → searchQuery: "Matt Chandler anxiety peace sermon"
-- "my marriage is falling apart" → theme: marriage restoration → searchQuery: "T.D. Jakes marriage restoration sermon"
-- "I feel completely worthless" → theme: identity, self-worth → searchQuery: "Dharius Daniels identity worth in God sermon"
-- "addiction is ruining my life" → theme: addiction, freedom → searchQuery: "Michael Todd addiction freedom teaching"
+- "pain from a breakup and heartbreak is killing me" → theme: heartbreak healing → preacher: Dharius Daniels → searchQuery: "Dharius Daniels heartbreak healing sermon clip"
+- "I can't stop being anxious" → theme: anxiety, peace → preacher: Matt Chandler → searchQuery: "Matt Chandler anxiety peace sermon clip"
+- "my marriage is falling apart" → theme: marriage restoration → preacher: T.D. Jakes → searchQuery: "T.D. Jakes marriage restoration sermon clip"
+- "I feel completely worthless" → theme: identity, self-worth → preacher: Phillip Mitchell → searchQuery: "Phillip Mitchell identity worth in God sermon"
+- "addiction is ruining my life" → theme: addiction, freedom → preacher: Michael Todd → searchQuery: "Michael Todd addiction freedom teaching clip"
 
 Choose 2 preachers from different tiers who speak WELL on this specific theme.
 ${PASTOR_TIER_AI_GUIDE}
@@ -4685,8 +4833,11 @@ Include "clip" or "short" in each searchQuery. Target 5–10 minute content.`;
           ytKey,
           {
             verseReference: verse?.reference,
+            verseText: verse?.text,
             themeHint: clip.searchQuery,
             pastorHint: clip.pastor,
+            rotationSeed: `${cacheKey}:${clip.pastor || "clip"}`,
+            excludeChannelTitles: primaryPastor ? [primaryPastor] : undefined,
           },
           { videoDuration: "medium", allowNonListedFallback: true },
         );

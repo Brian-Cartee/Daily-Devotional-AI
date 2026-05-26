@@ -6,6 +6,9 @@ export interface DailyArtData {
   scripture: string;
   reference: string;
   reflection: string;
+  /** True when the server is serving a bundled placeholder scene (not stock/AI). */
+  isPlaceholder?: boolean;
+  artSource?: string;
 }
 
 const POLL_MS = 4_000;

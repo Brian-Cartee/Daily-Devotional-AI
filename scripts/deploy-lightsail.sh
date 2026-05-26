@@ -30,12 +30,12 @@ fi
 cd "$REPO_ROOT/artifacts/api-server"
 
 echo "==> Restarting api-server..."
+API_CWD="$REPO_ROOT/artifacts/api-server"
 if pm2 describe api-server >/dev/null 2>&1; then
-  pm2 restart api-server
-else
-  pm2 start dist/index.mjs --name api-server --cwd "$REPO_ROOT/artifacts/api-server" \
-    --env production -i 1
+  pm2 delete api-server 2>/dev/null || true
 fi
+pm2 start dist/index.mjs --name api-server --cwd "$API_CWD" \
+  --node-args="--env-file=.env" --env production -i 1
 
 echo "==> Building frontend (artifacts/shepherds-path)..."
 cd "$REPO_ROOT/artifacts/shepherds-path"

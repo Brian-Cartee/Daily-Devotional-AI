@@ -75,9 +75,9 @@ mkdir -p /tmp/build/node_modules
 ln -sfn /home/runner/workspace/node_modules/.pnpm /tmp/build/node_modules/.pnpm
 cp -r artifacts/shepherds-path-mobile /tmp/build/artifacts/shepherds-path-mobile --no-dereference
 mkdir -p /tmp/asc-key
-printf -- "-----BEGIN PRIVATE KEY-----\n" > /tmp/asc-key/AuthKey_3DD2747FYX.p8
-echo "$ASC_API_KEY_CONTENT" | tr -d ' \n\r\t' | fold -w 64 >> /tmp/asc-key/AuthKey_3DD2747FYX.p8
-printf -- "-----END PRIVATE KEY-----\n" >> /tmp/asc-key/AuthKey_3DD2747FYX.p8
+printf -- "-----BEGIN PRIVATE KEY-----\n" > /tmp/asc-key/AuthKey_45KVCS5PG2.p8
+echo "$ASC_API_KEY_CONTENT" | tr -d ' \n\r\t' | fold -w 64 >> /tmp/asc-key/AuthKey_45KVCS5PG2.p8
+printf -- "-----END PRIVATE KEY-----\n" >> /tmp/asc-key/AuthKey_45KVCS5PG2.p8
 
 # Build
 cd /tmp/build/artifacts/shepherds-path-mobile
@@ -90,7 +90,7 @@ EXPO_TOKEN=$EXPO_TOKEN eas submit --platform ios --id <BUILD_ID> --non-interacti
 **Key facts**:
 - `package.json` must NOT use `catalog:` or `workspace:*` — these are pnpm-only and break EAS build servers. Always use real version numbers.
 - ASC API key is stored in the `ASC_API_KEY_CONTENT` secret (raw base64, needs PEM headers added at runtime as shown above)
-- ASC Key ID: `3DD2747FYX`, Issuer ID: `2787b8ca-4e36-4112-9a35-875f90ed0169`, App ID: `6760953522`
+- ASC Key ID: `45KVCS5PG2`, Issuer ID: `2787b8ca-4e36-4112-9a35-875f90ed0169`, App ID: `6760953522`
 - Apple Team ID: `D5X4W5F62Y`
 
 ## Sermon Mode (v1.5)

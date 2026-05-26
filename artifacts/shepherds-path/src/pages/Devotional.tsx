@@ -10,7 +10,7 @@ import { apiSessionExtras } from "@/lib/requestExtras";
 import { recordStreakVisit } from "@/lib/streakApi";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
-import { useDailyArt } from "@/hooks/use-daily-art";
+import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 import { streamAI, AiLimitReachedError } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
@@ -151,14 +151,8 @@ export default function Devotional() {
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
-  // Daily + verse background art (gpt-image-1 on server)
-  const [dailyArtBg, setDailyArtBg] = useState<string | null>(null);
-  const { imageUrl: polledDailyArt } = useDailyArt(url => setDailyArtBg(url));
-  useEffect(() => {
-    if (polledDailyArt) setDailyArtBg(polledDailyArt);
-  }, [polledDailyArt]);
-
   const verseDate = verse?.date ?? "";
+  const bundledHeroSrc = getDevotionalHeroImage(verseDate || undefined);
   const autoGeneratingVerseArtRef = useRef(false);
   useQuery({
     queryKey: ["/api/verse-art", verseDate],
@@ -621,7 +615,7 @@ export default function Devotional() {
     if (!verse || sharingImage) return;
     setSharingImage(true);
     try {
-      const blob = await createShareImage(verse.text, verse.reference, verseArtUrl ?? dailyArtBg);
+      const blob = await createShareImage(verse.text, verse.reference, verseArtUrl ?? bundledHeroSrc);
       const url = URL.createObjectURL(blob);
       // Clean up any previous preview URL
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
@@ -675,7 +669,7 @@ export default function Devotional() {
     if (!verse || fmt === sharePreviewFormat || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
-      const activeBg = verseArtUrl ?? dailyArtBg;
+      const activeBg = verseArtUrl ?? bundledHeroSrc;
       const blob = fmt === "story"
         ? await createStoryShareImage(verse.text, verse.reference, activeBg)
         : await createShareImage(verse.text, verse.reference, activeBg);
@@ -693,11 +687,8 @@ export default function Devotional() {
     setRegeneratingPreview(true);
     try {
       // Build full pool: today's real photo + the curated fallback set
-      const activeBg = verseArtUrl ?? dailyArtBg;
-      const extendedPool = [
-        ...(dailyArtBg ? [dailyArtBg] : []),
-        ...PHOTO_POOL,
-      ];
+      const activeBg = verseArtUrl ?? bundledHeroSrc;
+      const extendedPool = [bundledHeroSrc, ...PHOTO_POOL];
       const others = extendedPool.filter(u => u !== activeBg);
       const pool = others.length > 0 ? others : extendedPool;
       const randomUrl = pool[Math.floor(Math.random() * pool.length)];
@@ -936,11 +927,10 @@ export default function Devotional() {
             >
               {/* Photo layer — verse-specific AI art first, daily art as fallback */}
               <img
-                src={verseArtUrl ?? dailyArtBg ?? "/hero-devotional.webp"}
+                src={verseArtUrl ?? bundledHeroSrc}
                 onError={(e) => {
                   const el = e.currentTarget as HTMLImageElement;
-                  if (dailyArtBg && el.src !== dailyArtBg) { el.src = dailyArtBg; }
-                  else { el.src = "/hero-devotional.webp"; }
+                  if (el.src !== bundledHeroSrc) el.src = bundledHeroSrc;
                 }}
                 alt=""
                 aria-hidden="true"

@@ -43,6 +43,10 @@ import { isLateNight } from "@/lib/nightMode";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
+import {
+  SCRIPTURE_COMMITMENT_LEAD,
+  SCRIPTURE_COMMITMENT_LINES,
+} from "@/content/scriptureCommitment";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
@@ -925,7 +929,7 @@ function LandingHomeInner() {
           </div>
 
           {/* ── Our Commitment to Scripture ── */}
-          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(160,80,200,0.25)" }}>
+          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(212,165,116,0.22)" }}>
 
             {/* Bible hero image — acts as the toggle header */}
             <button
@@ -945,7 +949,7 @@ function LandingHomeInner() {
               {/* Header text + chevron */}
               <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 pb-4">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(192,132,252,0.85)" }} />
+                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(212,165,116,0.85)" }} />
                   <p className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: "rgba(255,255,255,0.90)" }}>Our Commitment to Scripture</p>
                 </div>
                 <motion.div animate={{ rotate: commitmentOpen ? 180 : 0 }} transition={{ duration: 0.22 }}>
@@ -964,25 +968,48 @@ function LandingHomeInner() {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
-                  style={{ background: "linear-gradient(135deg, rgba(122,1,141,0.18) 0%, rgba(67,20,120,0.12) 100%)" }}
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(212,165,116,0.07) 0%, rgba(14,12,20,0.98) 48%)",
+                  }}
                 >
                   <div className="px-5 pt-4 pb-5">
+                    <p
+                      className="text-[14px] leading-relaxed mb-4"
+                      style={{ color: "rgba(255,255,255,0.78)", fontFamily: "var(--font-serif, Georgia, serif)" }}
+                    >
+                      {SCRIPTURE_COMMITMENT_LEAD}
+                    </p>
                     <div className="space-y-2.5">
-                      {[
-                        "Rooted in the Trinitarian faith — Father, Son, and Holy Spirit",
-                        "Every AI response is grounded in the actual Bible passage being studied — nothing outside God's Word",
-                        "Shaped by the historic, orthodox Christian faith — not cultural opinion",
-                        "Built to lead people to Christ, making it easier to immerse yourself in Scripture without embarrassment",
-                        "An honest, open place to encounter God — in a way that fits where you actually are",
-                      ].map((line, i) => (
+                      {SCRIPTURE_COMMITMENT_LINES.map((line, i) => (
                         <div key={i} className="flex items-start gap-2.5">
-                          <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: "rgba(192,132,252,0.7)" }} />
-                          <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>{line}</p>
+                          <div
+                            className="w-1 h-1 rounded-full mt-2 shrink-0"
+                            style={{ background: "rgba(212,165,116,0.75)" }}
+                          />
+                          <p className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.82)" }}>
+                            {line}
+                          </p>
                         </div>
                       ))}
                     </div>
-                    <p className="path-reminder-quote text-[14px] mt-4 pt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.80)", borderTop: "1px solid rgba(255,255,255,0.15)" }}>
-                      "Your word is a lamp to my feet and a light to my path." — Psalm 119:105
+                    <p
+                      className="path-reminder-quote text-[14px] mt-4 pt-3 leading-relaxed"
+                      style={{ color: "rgba(255,255,255,0.75)", borderTop: "1px solid rgba(255,255,255,0.12)" }}
+                    >
+                      &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo;
+                      <span className="block text-[11px] font-sans not-italic mt-1 tracking-wide text-white/45">
+                        Psalm 119:105
+                      </span>
+                    </p>
+                    <p className="text-center mt-3">
+                      <Link
+                        href="/alignment"
+                        data-testid="link-commitment-alignment"
+                        className="text-[12px] font-medium text-amber-200/70 hover:text-amber-100 underline underline-offset-2"
+                      >
+                        Read how we align with Scripture →
+                      </Link>
                     </p>
                   </div>
                 </motion.div>

@@ -15,7 +15,7 @@ raw = raw.replace(/\r/g, '');
 raw = raw.replace(/\s/g, '');
 const body = raw.match(/.{1,64}/g).join('\n');
 const pem = '-----BEGIN PRIVATE KEY-----\n' + body + '\n-----END PRIVATE KEY-----\n';
-fs.writeFileSync('/tmp/asc-key/AuthKey_3DD2747FYX.p8', pem, { mode: 0o600 });
+fs.writeFileSync('/tmp/asc-key/AuthKey_45KVCS5PG2.p8', pem, { mode: 0o600 });
 console.log('Key written: ' + pem.length + ' bytes');
 "
 
@@ -30,7 +30,7 @@ raw = raw.replace(/-----BEGIN PRIVATE KEY-----/g, '').replace(/-----END PRIVATE 
   .replace(/\\n/g, '').replace(/\n/g, '').replace(/\r/g, '').replace(/\s/g, '');
 const body = raw.match(/.{1,64}/g).join('\n');
 const pem = '-----BEGIN PRIVATE KEY-----\n' + body + '\n-----END PRIVATE KEY-----\n';
-const keyId = process.env.ASC_KEY_ID || '3DD2747FYX';
+const keyId = process.env.ASC_KEY_ID || '45KVCS5PG2';
 const issuerId = process.env.ASC_ISSUER_ID;
 const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: keyId, typ: 'JWT' })).toString('base64url');
 const payload = Buffer.from(JSON.stringify({ iss: issuerId, iat: Math.floor(Date.now()/1000), exp: Math.floor(Date.now()/1000)+1200, aud: 'appstoreconnect-v1' })).toString('base64url');

@@ -52,7 +52,9 @@ export function DailyArtCard() {
     }
 
     (async () => {
-      const blob = await loadDailyArtImage(rawImageUrl.replace(/\?.*$/, ""));
+      const blob = await loadDailyArtImage(rawImageUrl.replace(/\?.*$/, ""), {
+        allowBundledPlaceholder: art?.isPlaceholder !== false,
+      });
       if (cancelled) {
         if (blob) URL.revokeObjectURL(blob);
         return;
@@ -261,6 +263,15 @@ export function DailyArtCard() {
             className="absolute inset-0 z-[6]"
             style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)" }}
           />
+        )}
+
+        {resolvedSrc && art?.isPlaceholder && (
+          <p
+            className="absolute top-3 left-3 z-20 text-[10px] font-medium tracking-wide text-white/70 px-2.5 py-1 rounded-full"
+            style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+          >
+            Quiet scene for today
+          </p>
         )}
 
         <AnimatePresence>
