@@ -90,8 +90,8 @@ const steps = [
     title: "For You — choose your step",
     where: "Home (For You tab) — \"How do you want to begin?\"",
     description:
-      "Three tabs: Talk it through, Sit in Scripture, and Just breathe. Pick what fits today. Most of the day Scripture is selected — your full devotional card is right below. Switch anytime; nothing is posted publicly unless you share it.",
-    tip: "Evening often highlights Talk it through; late night may suggest Just breathe.",
+      "Three tabs: Talk it through, Sit in Scripture, and Just breathe. Talk is selected first most of the day — your full devotional card with today's Scripture is always right below. Switch anytime; nothing is posted publicly unless you share it.",
+    tip: "Late night (about 10pm–5am Eastern) may default to Just breathe instead.",
   },
   {
     number: "2",

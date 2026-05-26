@@ -36,7 +36,7 @@ const STEPS = [
     id: "home",
     title: "For You — three ways",
     subtitle: "How you want to begin",
-    script: `On For You, you'll see three choices: Talk it through, Sit in Scripture, or Just breathe. Pick what fits today. Most of the day, Scripture is highlighted — and that's on purpose. Your full devotional continues right below. Nothing here is shared unless you choose.`,
+    script: `On For You, you'll see three choices: Talk it through, Sit in Scripture, or Just breathe. Talk is usually selected first — so you can pray or share what's heavy right away. Your full devotional with today's Scripture continues right below. Tap Sit in Scripture anytime for the verse and share. Nothing here is shared unless you choose.`,
   },
   {
     id: "scripture",

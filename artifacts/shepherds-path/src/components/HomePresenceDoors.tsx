@@ -40,14 +40,10 @@ const DOORS: {
   },
 ];
 
-/** Default tab — pair with Devotional card directly below on home */
+/** Default tab — Talk hero + devotional card below (avoids duplicating Scripture in two panels) */
 export function defaultPresenceDoor(): PresenceDoorId {
   if (isLateNight()) return "quiet";
-  const h = new Date().getHours();
-  // Most of the day: Scripture (matches devotional below). Evening: Talk.
-  if (h >= 5 && h < 17) return "scripture";
-  if (h >= 17 && h < 22) return "talk";
-  return "quiet";
+  return "talk";
 }
 
 export function HomePresenceDoors({ selected, onSelect }: HomePresenceDoorsProps) {

@@ -21,8 +21,8 @@ talk through what's on your heart,
 sit with today's Scripture,
 or simply breathe and be still.
 
-Most mornings, Scripture is the natural start —
-your full devotional is right there on For You.
+Talk it through is usually highlighted first —
+and your full devotional with today's Scripture is right below on For You.
 
 Take a breath…
 and when you're ready, step inside.`;
