@@ -48,6 +48,14 @@ function swCacheVersionPlugin() {
         SW_CACHE_VERSION,
       );
       fs.writeFileSync(outSwPath, content, "utf-8");
+
+      const outIndex = path.resolve(import.meta.dirname, "dist/public/index.html");
+      if (fs.existsSync(outIndex)) {
+        const html = fs
+          .readFileSync(outIndex, "utf-8")
+          .replace(/\s+crossorigin(?=[\s>])/g, "");
+        fs.writeFileSync(outIndex, html, "utf-8");
+      }
     },
   };
 }

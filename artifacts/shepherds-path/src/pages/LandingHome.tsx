@@ -7,7 +7,7 @@ import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
-import { clearReturningHome, isReturningHome } from "@/lib/introState";
+import { clearReturningHome, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
 import {
   consumeThresholdJustCompleted,
   shouldShowThresholdArrival,
@@ -468,14 +468,22 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
 
 function LandingHomeInner() {
   const sessionId = getSessionId();
-  const skipIntrosForHome = isReturningHome();
+  const inNativeApp = isNativeWebViewShell();
+  const skipIntrosForHome = isReturningHome() || inNativeApp;
+
+  useEffect(() => {
+    if (inNativeApp) {
+      markIntroFlowComplete();
+      markEntryShown();
+    }
+  }, [inNativeApp]);
 
   const [showSplash, setShowSplash] = useState(
-    () => !skipIntrosForHome && !isNativeWebViewShell() && shouldShowSplash(),
+    () => !skipIntrosForHome && shouldShowSplash(),
   );
   const [thresholdWelcome, setThresholdWelcome] = useState(() => consumeThresholdJustCompleted());
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (skipIntrosForHome) return false;
+    if (skipIntrosForHome || inNativeApp) return false;
     const params = new URLSearchParams(window.location.search);
     if (params.has("onboarding")) {
       const url = new URL(window.location.href);
@@ -488,14 +496,18 @@ function LandingHomeInner() {
   useEffect(() => {
     if (skipIntrosForHome) clearReturningHome();
   }, [skipIntrosForHome]);
-  const [showEntryScreen, setShowEntryScreen] = useState(() => shouldShowHomeEntry());
+  const [showEntryScreen, setShowEntryScreen] = useState(
+    () => !inNativeApp && shouldShowHomeEntry(),
+  );
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
-  const [showWalkthrough, setShowWalkthrough] = useState(() => shouldShowWalkthrough());
+  const [showWalkthrough, setShowWalkthrough] = useState(
+    () => !inNativeApp && shouldShowWalkthrough(),
+  );
   useEffect(() => { recordWalkthroughVisit(); }, []);
   const [nameInput, setNameInput] = useState("");
   const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());

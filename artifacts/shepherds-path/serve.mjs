@@ -8,6 +8,15 @@ const PORT = process.env.PORT || "3000";
 
 const distDir = path.join(__dirname, "dist/public");
 const indexPath = path.join(distDir, "index.html");
+const nativeShellPath = path.join(distDir, "native-shell.html");
+
+function wantsNativeBootstrap(url) {
+  const q = (url || "").split("?")[1] || "";
+  if (!q.includes("native=1")) return false;
+  if (q.includes("enter=1")) return false;
+  const pathOnly = (url || "/").split("?")[0];
+  return pathOnly === "/" || pathOnly === "/index.html";
+}
 
 if (!fs.existsSync(distDir)) {
   console.error(`Build output not found at ${distDir}. Run 'pnpm build' first.`);
@@ -40,6 +49,21 @@ function statFile(p) {
 }
 
 const server = http.createServer((req, res) => {
+  if (wantsNativeBootstrap(req.url) && fs.existsSync(nativeShellPath)) {
+    const sendFile = (filePath, status = 200) => {
+      fs.readFile(filePath, (err, data) => {
+        if (err) { res.writeHead(404); res.end("Not found"); return; }
+        res.writeHead(status, {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache",
+        });
+        res.end(data);
+      });
+    };
+    sendFile(nativeShellPath);
+    return;
+  }
+
   const urlPath = (req.url || "/").split("?")[0];
   const candidate = path.join(distDir, urlPath);
 

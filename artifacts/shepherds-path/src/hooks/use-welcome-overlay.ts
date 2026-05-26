@@ -6,11 +6,14 @@ import {
   shouldShowWelcomeOverlay,
   WELCOME_SESSION_KEY,
 } from "@/lib/introState";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 export function useWelcomeOverlay() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    if (isNativeWebViewShell()) return;
+
     const params = new URLSearchParams(window.location.search);
     const forceIntro = params.has("intro");
 

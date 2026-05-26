@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Shepherd's Path</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(165deg, #1e0d50 0%, #130636 45%, #09031e 100%);
+      color: #f4efe6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px calc(28px + env(safe-area-inset-bottom));
+      text-align: center;
+    }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .tag { font-size: 15px; color: rgba(244,239,230,0.75); margin-bottom: 28px; line-height: 1.5; max-width: 320px; }
+    .btn {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto 12px;
+      padding: 16px 20px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary { background: linear-gradient(135deg, #e8c99b, #d4a574); color: #1a1208; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: #f4efe6;
+      border: 1px solid rgba(212,165,116,0.35);
+    }
+    .btn-ghost { background: transparent; color: #d4a574; font-size: 14px; font-weight: 600; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Shepherd&rsquo;s Path</h1>
+  <p class="tag">You don&rsquo;t have to walk alone.<br />Daily Scripture, prayer, and guidance for real life.</p>
+  <a class="btn btn-primary" id="enter-app" href="/?native=1&amp;enter=1">Open the app</a>
+  <a class="btn btn-secondary" href="/devotional?native=1&amp;enter=1">Today&rsquo;s devotional</a>
+  <a class="btn btn-secondary" href="/guidance?native=1&amp;enter=1">Talk it through</a>
+  <script>
+    (function () {
+      function ready() {
+        try {
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: "app_ready" }));
+          }
+        } catch (e) {}
+      }
+      ready();
+      setTimeout(ready, 100);
+    })();
+  </script>
+</body>
+</html>
