@@ -70,6 +70,17 @@ export function markThresholdComplete(need?: ThresholdNeed): void {
   }
 }
 
+export function getThresholdNeedAcknowledgment(need: ThresholdNeed): string {
+  switch (need) {
+    case "honesty":
+      return "You said you needed space for honesty — start wherever you are.";
+    case "hope":
+      return "You said you were looking for hope — small steps still count here.";
+    case "comfort":
+      return "You said you needed comfort — gentleness first, no performance.";
+  }
+}
+
 export function consumeThresholdJustCompleted(): boolean {
   try {
     if (sessionStorage.getItem(THRESHOLD_JUST_COMPLETED_KEY) !== "1") return false;

@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
+import { waitMs } from "@/lib/pauseEngine";
+import { CRISIS_LIFELINE_DISPLAY, CRISIS_LIFELINE_TEL } from "@/lib/crisisResources";
+import type { ThresholdNeed } from "@/lib/thresholdState";
 
 const PLACEHOLDERS = [
   "I can't quiet my mind tonight…",
@@ -10,23 +14,44 @@ const PLACEHOLDERS = [
   "Help me pray honestly about this…",
 ];
 
+const NEED_PLACEHOLDERS: Record<ThresholdNeed, string> = {
+  comfort: "I'm tired and need gentleness…",
+  honesty: "I haven't said this out loud yet…",
+  hope: "I'm afraid hope is running out…",
+};
+
 interface TalkItThroughHeroPromptProps {
   phase?: string;
+  thresholdNeed?: ThresholdNeed | null;
 }
 
-export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps) {
+export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughHeroPromptProps) {
   const [, navigate] = useLocation();
   const [value, setValue] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [beginning, setBeginning] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const placeholders = thresholdNeed
+    ? [NEED_PLACEHOLDERS[thresholdNeed], ...PLACEHOLDERS]
+    : PLACEHOLDERS;
 
   useEffect(() => {
     const t = setInterval(() => {
-      setPlaceholderIdx((i) => (i + 1) % PLACEHOLDERS.length);
+      setPlaceholderIdx((i) => (i + 1) % placeholders.length);
     }, 5500);
     return () => clearInterval(t);
-  }, []);
+  }, [placeholders.length]);
 
-  const begin = () => {
+  const begin = async () => {
+    if (beginning) return;
+    setBeginning(true);
+    try {
+      if ("vibrate" in navigator) navigator.vibrate(12);
+    } catch {
+      /* noop */
+    }
+    await waitMs(420);
     const text = value.trim();
     if (text) {
       navigate(`/guidance?situation=${encodeURIComponent(text)}`);
@@ -35,31 +60,31 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
     }
   };
 
+  const focusInput = () => {
+    inputRef.current?.focus();
+    inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <div
-      className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/20 max-sm:rounded-[1.125rem]"
+      className="w-full rounded-2xl border border-white/12 bg-[#12101a]/95 backdrop-blur-sm p-4 sm:p-5 shadow-lg shadow-black/25 max-sm:rounded-[1.125rem]"
       data-testid="card-talk-it-through-hero"
     >
       <div className="flex items-start gap-3 mb-4">
         <div
-          className="shrink-0 flex items-center justify-center rounded-[14px] bg-black/20 ring-1 ring-violet-300/30 shadow-lg shadow-primary/35"
-          style={{ width: 56, height: 56 }}
+          className="shrink-0 flex items-center justify-center rounded-[14px] bg-black/25 ring-1 ring-white/15"
+          style={{ width: 52, height: 52 }}
         >
-          <BrandIcon size={52} className="drop-shadow-md" />
+          <BrandIcon size={48} className="opacity-95" />
         </div>
         <div className="min-w-0 pt-0.5">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-violet-200">
-              Talk It Through
-            </p>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-full px-2 py-0.5">
-              <Sparkles className="w-3 h-3" />
-              AI companion
-            </span>
-          </div>
-          <p className="text-[15px] text-white/75 leading-snug">
-            Scripture-grounded conversation — prayer, clarity, and next steps shaped for{" "}
-            {phase === "evening" || phase === "late-evening" ? "tonight" : "right now"}.
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/55 mb-1">
+            Talk it through
+          </p>
+          <p className="text-[15px] text-white/82 leading-snug">
+            Scripture and prayer shaped for{" "}
+            {phase === "evening" || phase === "late-evening" ? "tonight" : "right now"} — not generic
+            advice.
           </p>
         </div>
       </div>
@@ -67,38 +92,71 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
       <label className="sr-only" htmlFor="hero-talk-input">
         What&apos;s on your heart
       </label>
-      <textarea
-        id="hero-talk-input"
-        data-testid="input-hero-talk-through"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            begin();
-          }
-        }}
-        rows={2}
-        placeholder={PLACEHOLDERS[placeholderIdx]}
-        className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30 transition-shadow"
-      />
+      <div className="relative">
+        <textarea
+          id="hero-talk-input"
+          ref={inputRef}
+          data-testid="input-hero-talk-through"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              void begin();
+            }
+          }}
+          rows={2}
+          className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.05] px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed text-white placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-amber-500/35 focus:border-amber-500/25 transition-shadow"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed overflow-hidden"
+          aria-hidden
+        >
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={placeholders[placeholderIdx]}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className="block text-white/38"
+            >
+              {placeholders[placeholderIdx]}
+            </motion.span>
+          </AnimatePresence>
+        </div>
+      </div>
 
       <button
         type="button"
         data-testid="btn-hero-talk-through"
-        onClick={begin}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all"
+        onClick={() => void begin()}
+        disabled={beginning}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 shadow-md shadow-black/20 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-70"
       >
-        Begin with Scripture
-        <ArrowRight className="w-4 h-4" />
+        {beginning ? "One breath…" : "Begin with Scripture"}
+        {!beginning && <ArrowRight className="w-4 h-4" />}
       </button>
 
-      <p className="mt-2.5 text-center text-[12px] text-white/45 leading-relaxed">
-        Private · grounded in the Bible · no perfect words required
+      <p className="mt-2.5 text-center text-[11px] text-white/40 leading-relaxed">
+        Private · grounded in the Bible · conversational guidance when you&apos;re ready
+      </p>
+
+      <p className="mt-2 text-center text-[10px] text-white/32 leading-relaxed px-1">
+        Not a substitute for church, counseling, or emergency care.{" "}
+        <a href={CRISIS_LIFELINE_TEL} className="underline underline-offset-2 text-white/45 hover:text-white/65">
+          {CRISIS_LIFELINE_DISPLAY}
+        </a>
         {" · "}
+        <Link href="/support" className="underline underline-offset-2 text-white/45 hover:text-white/65">
+          Support
+        </Link>
+      </p>
+
+      <p className="mt-2 text-center text-[12px] text-white/38 leading-relaxed">
         <Link
           href="/sigh"
-          className="text-violet-200/70 underline underline-offset-2 hover:text-violet-100"
+          className="text-white/50 underline underline-offset-2 hover:text-white/70"
           data-testid="link-hero-sigh-room"
         >
           Need a quieter room?
@@ -106,4 +164,11 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
       </p>
     </div>
   );
+}
+
+/** Scroll/focus hero input — used by “Talk it through” door */
+export function focusHeroTalkInput(): void {
+  const el = document.getElementById("hero-talk-input") as HTMLTextAreaElement | null;
+  el?.focus();
+  el?.scrollIntoView({ behavior: "smooth", block: "center" });
 }

@@ -21,6 +21,7 @@ const EXPLORE_ITEMS = [
   { href: "/study", label: "Explore Scripture", desc: "A question or passage on your mind", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-study" },
   { href: "/read", label: "Read or listen to the Bible", desc: "KJV, WEB, and ASV — play any chapter", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-read" },
   { href: "/stories", label: "Stories", desc: "Real testimonies of faith", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-stories" },
+  { href: "/trivia", label: "Bible Trivia", desc: "Play solo or challenge a friend", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-trivia" },
   { href: "/prayer-portrait", label: "Prayer Portrait", desc: "A prayer spoken over your life", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-prayer-portrait" },
   { href: "/display", label: "Scripture on Your TV", desc: "Ambient devotional screen", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-display-mode" },
 ] as const;

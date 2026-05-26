@@ -11,6 +11,7 @@ export const HIDE_FLOATER_PREFIXES = [
 ];
 
 export function shouldHidePathAiFloater(path: string): boolean {
+  if (path === "/" || path === "") return true;
   return HIDE_FLOATER_PREFIXES.some((p) => path.startsWith(p));
 }
 

@@ -1,7 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
+import {
+  hasWhyPanelDismissed,
+  markWhyPanelAutoShown,
+  markWhyPanelDismissed,
+  shouldAutoOpenWhyPanel,
+} from "@/lib/homeHeroState";
 
 /** Six beats — enough soul, not a wall of text */
 const PARAGRAPHS: { text: string; strong?: boolean }[] = [
@@ -41,8 +47,24 @@ export function WhyThisExistsPanel() {
   const [panelVisible, setPanelVisible] = useState(false);
   const controls = useAnimation();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dismissed = hasWhyPanelDismissed();
 
-  const open = () => setMounted(true);
+  const open = useCallback(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const onOpen = () => open();
+    window.addEventListener("sp-open-why", onOpen);
+    return () => window.removeEventListener("sp-open-why", onOpen);
+  }, [open]);
+
+  useEffect(() => {
+    if (!shouldAutoOpenWhyPanel()) return;
+    markWhyPanelAutoShown();
+    const t = setTimeout(open, 600);
+    return () => clearTimeout(t);
+  }, [open]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -56,6 +78,7 @@ export function WhyThisExistsPanel() {
 
   const close = async () => {
     setPanelVisible(false);
+    markWhyPanelDismissed();
     await controls.start({
       y: "-102%",
       transition: { type: "spring", damping: 32, stiffness: 310 },
@@ -73,37 +96,39 @@ export function WhyThisExistsPanel() {
 
   return (
     <>
-      <button
-        onClick={open}
-        data-testid="button-why-handle"
-        aria-label="Why this exists"
-        className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer gap-1"
-        style={{ height: 42, paddingTop: 10, background: "transparent", border: "none" }}
-      >
-        <motion.svg
-          animate={{ opacity: [0.4, 0.75, 0.4] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          width="36"
-          height="12"
-          viewBox="0 0 34 11"
-          fill="none"
+      {!dismissed && (
+        <button
+          onClick={open}
+          data-testid="button-why-handle"
+          aria-label="Why this exists"
+          className="fixed top-0 left-0 right-0 flex flex-col items-center z-[15] cursor-pointer gap-1"
+          style={{ height: 42, paddingTop: 10, background: "transparent", border: "none" }}
         >
-          <path
-            d="M1 1 L8 10 L26 10 L33 1"
-            stroke="rgba(255,255,255,0.9)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </motion.svg>
-        <motion.p
-          animate={{ opacity: [0.35, 0.55, 0.35] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/90 leading-none"
-        >
-          Why this exists
-        </motion.p>
-      </button>
+          <motion.svg
+            animate={{ opacity: [0.4, 0.75, 0.4] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+            width="36"
+            height="12"
+            viewBox="0 0 34 11"
+            fill="none"
+          >
+            <path
+              d="M1 1 L8 10 L26 10 L33 1"
+              stroke="rgba(255,255,255,0.9)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </motion.svg>
+          <motion.p
+            animate={{ opacity: [0.35, 0.55, 0.35] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+            className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/90 leading-none"
+          >
+            Why this exists
+          </motion.p>
+        </button>
+      )}
 
       <AnimatePresence>
         {mounted && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Headphones, ChevronRight } from "lucide-react";
@@ -6,12 +6,20 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isIntroFlowComplete } from "@/lib/introState";
-import { getThresholdNeed } from "@/lib/thresholdState";
+import {
+  getThresholdNeed,
+  getThresholdNeedAcknowledgment,
+} from "@/lib/thresholdState";
+import { hasWhyPanelDismissed, isReturningHomeHero } from "@/lib/homeHeroState";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listenFirst";
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
 import { isProVerifiedLocally } from "@/lib/proStatus";
-import { TalkItThroughHeroPrompt } from "@/components/TalkItThroughHeroPrompt";
+import {
+  TalkItThroughHeroPrompt,
+  focusHeroTalkInput,
+} from "@/components/TalkItThroughHeroPrompt";
+import { HomePresenceDoors } from "@/components/HomePresenceDoors";
 
 export type ThresholdData = {
   headline: string;
@@ -25,25 +33,44 @@ export type ThresholdData = {
   continuityLine?: string;
 };
 
-/** Classic brand lines — live on the photo, like the original homepage hero */
 const BRAND_TAGLINE = "Find your way back to God";
 const BRAND_TAGLINE_SUB = "one moment at a time.";
+
+function DailyVerseCard({ verse }: { verse: { text: string; reference: string } }) {
+  return (
+    <Link href="/devotional">
+      <div
+        data-testid="card-daily-verse-threshold"
+        className="rounded-xl border border-amber-500/20 bg-black/35 backdrop-blur-sm px-3.5 py-3 active:scale-[0.99] transition-transform flex items-start gap-2"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/65 mb-1">
+            Today&apos;s verse
+          </p>
+          <p
+            className="text-[15px] text-white/88 line-clamp-3 leading-snug"
+            style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontStyle: "italic" }}
+          >
+            &ldquo;{verse.text}&rdquo;
+          </p>
+          <p className="text-[13px] font-semibold text-amber-200/80 mt-1">— {verse.reference}</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-amber-200/50 shrink-0 mt-4" aria-hidden />
+      </div>
+    </Link>
+  );
+}
 
 export function ThresholdHero() {
   const sessionId = getSessionId();
   const daysWithApp = getRelationshipAge();
+  const returning = isReturningHomeHero();
   const { data: verse, isLoading: verseLoading } = useDailyVerse();
   const [listenFirst, setListenFirst] = useState(() => getListenFirstPreference());
   const thresholdNeed = getThresholdNeed();
   const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
-  const thresholdSubline =
-    thresholdNeed === "honesty"
-      ? "Say what's true. We'll meet you there."
-      : thresholdNeed === "hope"
-        ? "Small hope still counts here."
-        : thresholdNeed === "comfort"
-          ? "Gentleness first. Truth when you're ready."
-          : null;
+  const needAck =
+    thresholdNeed && daysWithApp < 14 ? getThresholdNeedAcknowledgment(thresholdNeed) : null;
 
   const isPro = isProVerifiedLocally();
 
@@ -60,6 +87,7 @@ export function ThresholdHero() {
   });
 
   const threshold = thresholdRes?.threshold;
+  const showTalkPrompt = !thresholdLoading;
 
   const toggleListenFirst = () => {
     if (!canUseListenFirstAuto()) return;
@@ -68,11 +96,8 @@ export function ThresholdHero() {
     setListenFirstPreference(next);
   };
 
-  const showTalkPrompt = !thresholdLoading;
-
   return (
     <div className="relative bg-[#09031e]">
-      {/* ── Cinematic photo band — road & hill visible (original homepage feel) ── */}
       <div
         className={`relative w-full overflow-hidden max-h-[400px] sm:max-h-[440px] ${
           showPhotoTaglines
@@ -87,7 +112,6 @@ export function ThresholdHero() {
           className="absolute inset-0 h-full w-full object-cover object-[center_42%] sm:object-[center_38%]"
           decoding="async"
         />
-        {/* Light top scrim for “Why this exists” handle legibility */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -118,72 +142,81 @@ export function ThresholdHero() {
         )}
       </div>
 
-      {/* ── Personal threshold + actions (dark band below the path) ── */}
-      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-4 sm:pt-5 pb-6 sm:pb-8">
+      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-4 sm:pt-5 pb-8 sm:pb-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
+          {hasWhyPanelDismissed() && (
+            <button
+              type="button"
+              data-testid="link-why-collapsed"
+              onClick={() => window.dispatchEvent(new Event("sp-open-why"))}
+              className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40 hover:text-white/65 transition-colors"
+            >
+              Why we built this
+            </button>
+          )}
+
           <h1
-            className="text-white font-bold leading-[1.15] mb-2 tracking-tight"
+            className="text-white font-bold leading-[1.18] mb-2 tracking-tight"
             style={{ fontSize: "clamp(1.5rem, 5vw, 2.1rem)" }}
             data-testid="text-threshold-headline"
           >
-            {thresholdLoading ? "…" : threshold?.headline ?? "What's on your heart?"}
+            {thresholdLoading ? "…" : threshold?.headline ?? "What are you carrying into today?"}
           </h1>
-          <p className="text-[16px] sm:text-[17px] text-white/80 leading-snug mb-3 font-medium line-clamp-2 sm:line-clamp-none sm:leading-relaxed">
-            {thresholdLoading ? "…" : threshold?.subtext}
+          <p
+            className="text-[16px] sm:text-[17px] text-white/78 leading-relaxed mb-3 font-medium"
+            data-testid="text-threshold-subtext"
+          >
+            {thresholdLoading
+              ? "…"
+              : threshold?.subtext ??
+                "One honest step is enough. Scripture and prayer can meet you before the noise starts."}
           </p>
-          {thresholdSubline && daysWithApp < 7 && (
+          {needAck && (
             <p
-              className="text-[14px] text-violet-200/75 leading-relaxed mb-3 italic"
+              className="text-[14px] text-amber-100/70 leading-relaxed mb-3"
               data-testid="text-threshold-need-line"
             >
-              {thresholdSubline}
+              {needAck}
             </p>
           )}
           {threshold?.continuityLine && (
             <p
-              className="hidden sm:block text-[15px] text-violet-100/85 leading-relaxed mb-4 pl-3.5 border-l-2 border-violet-400/40"
+              className="hidden sm:block text-[15px] text-white/70 leading-relaxed mb-4 pl-3.5 border-l-2 border-amber-500/30"
               data-testid="text-threshold-continuity"
             >
               {threshold.continuityLine}
             </p>
           )}
 
-          {showTalkPrompt && !thresholdLoading && (
+          {returning && verse && !verseLoading && (
             <div className="mb-3 sm:mb-4">
-              <TalkItThroughHeroPrompt phase={threshold?.phase} />
+              <DailyVerseCard verse={verse} />
             </div>
           )}
 
-          {verse && !verseLoading && (
-            <Link href="/devotional">
-              <div
-                data-testid="card-daily-verse-threshold"
-                className="mb-3 rounded-xl border border-violet-500/20 bg-black/30 backdrop-blur-sm px-3.5 py-3 active:scale-[0.99] transition-transform flex items-start gap-2"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-200/70 mb-1">
-                    Today&apos;s verse
-                  </p>
-                  <p className="path-reminder-quote text-[15px] text-white/88 line-clamp-2 leading-snug">
-                    &ldquo;{verse.text}&rdquo;
-                  </p>
-                  <p className="text-[13px] font-semibold text-violet-200/85 mt-1">— {verse.reference}</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-violet-300/60 shrink-0 mt-4" aria-hidden />
-              </div>
-            </Link>
+          {showTalkPrompt && !thresholdLoading && (
+            <div className="mb-3 sm:mb-4">
+              <TalkItThroughHeroPrompt
+                phase={threshold?.phase}
+                thresholdNeed={thresholdNeed}
+              />
+            </div>
           )}
+
+          <div className="mb-4">
+            <HomePresenceDoors onTalkDoor={focusHeroTalkInput} />
+          </div>
 
           {threshold?.secondaryCta && daysWithApp < 3 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
               <Link href={threshold.secondaryCta.href}>
                 <span
                   data-testid="btn-threshold-secondary"
-                  className="text-[14px] font-semibold text-violet-200/80 hover:text-white underline-offset-4 hover:underline transition-colors"
+                  className="text-[14px] font-semibold text-white/55 hover:text-white/80 underline-offset-4 hover:underline transition-colors"
                 >
                   {threshold.secondaryCta.label} →
                 </span>
@@ -198,7 +231,7 @@ export function ThresholdHero() {
                 onClick={toggleListenFirst}
                 data-testid="btn-listen-first-pref"
                 className={`mt-5 flex items-center gap-2 text-[13px] font-medium transition-colors ${
-                  listenFirst ? "text-violet-300" : "text-white/45 hover:text-white/65"
+                  listenFirst ? "text-amber-200/80" : "text-white/40 hover:text-white/60"
                 }`}
               >
                 <Headphones className="w-4 h-4" />
@@ -208,7 +241,7 @@ export function ThresholdHero() {
               <Link href="/pricing">
                 <span
                   data-testid="btn-listen-first-pro"
-                  className="mt-5 flex items-center gap-2 text-[13px] font-medium text-white/45 hover:text-white/65 transition-colors"
+                  className="mt-5 flex items-center gap-2 text-[13px] font-medium text-white/40 hover:text-white/60 transition-colors"
                 >
                   <Headphones className="w-4 h-4" />
                   Pro: mornings start with listen
