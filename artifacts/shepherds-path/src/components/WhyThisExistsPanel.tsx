@@ -9,7 +9,7 @@ import {
   shouldAutoOpenWhyPanel,
 } from "@/lib/homeHeroState";
 
-/** Six beats — enough soul, not a wall of text */
+/** Five beats — manifesto, not a feature pitch */
 const PARAGRAPHS: { text: string; strong?: boolean }[] = [
   {
     text: "This wasn't built for when life feels put together.",
@@ -23,14 +23,10 @@ const PARAGRAPHS: { text: string; strong?: boolean }[] = [
     strong: true,
   },
   {
-    text: "Talk It Through meets you with Scripture and prayer shaped for your situation — not random verses, not generic advice.",
+    text: "Scripture and prayer can meet you where you are — not to fix you fast, but to sit with you.",
   },
   {
-    text: "This isn't about reading more. It's about not walking through things alone.",
-    strong: true,
-  },
-  {
-    text: "The path is here. Walking it is up to you.",
+    text: "The path is here. You choose the next step.",
     strong: true,
   },
 ];
@@ -222,22 +218,28 @@ export function WhyThisExistsPanel() {
                 transition={{ duration: 0.45, delay: 0.5 }}
                 className="mt-8 flex flex-col gap-3"
               >
-                <Link href="/guidance" onClick={close}>
-                  <span
-                    data-testid="btn-why-talk-through"
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[16px] font-semibold text-white bg-white/15 border border-white/20 hover:bg-white/20 transition-colors"
-                  >
-                    Try Talk It Through
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                </Link>
                 <button
                   type="button"
                   onClick={close}
-                  className="text-[14px] font-medium text-white/45 hover:text-white/70 transition-colors py-1"
+                  data-testid="btn-why-begin"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 border border-amber-200/30 hover:opacity-95 transition-opacity"
                 >
-                  Return to home
+                  Begin when you&apos;re ready
+                  <ArrowRight className="w-4 h-4" />
                 </button>
+                <p className="text-center text-[12px] text-white/40 leading-relaxed pt-3">
+                  Scripture, quiet, or conversation — choose your door on the path below.
+                </p>
+                <p className="text-center pt-2">
+                  <Link
+                    href="/devotional"
+                    onClick={close}
+                    data-testid="link-why-todays-verse"
+                    className="text-[13px] font-medium text-amber-200/75 hover:text-amber-100 underline underline-offset-2"
+                  >
+                    Or open today&apos;s verse →
+                  </Link>
+                </p>
               </motion.div>
             </div>
           </div>
