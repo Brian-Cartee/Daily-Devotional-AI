@@ -1792,11 +1792,11 @@ What you never do:
         const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
         const videoUrl = process.env.WELCOME_VIDEO_URL || null;
         const { client, fromEmail } = await getUncachableResendClient();
-        const welcomeData = { name: input.name ?? null, appUrl, videoUrl };
+        const welcomeData = { name: input.name ?? null, email: input.email, appUrl, videoUrl };
         await client.emails.send({
           from: fromEmail,
           to: input.email,
-          subject: "You're on the path now — Welcome to Shepherd's Path",
+          subject: "You're subscribed — daily Scripture from Shepherd's Path",
           html: buildWelcomeEmailHtml(welcomeData),
           text: buildWelcomeEmailText(welcomeData),
         });
