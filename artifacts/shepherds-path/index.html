@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+    (function () {
+      if (!window.ReactNativeWebView) return;
+      if (location.pathname.indexOf("native-shell") >= 0) return;
+      if (location.search.indexOf("enter=1") >= 0) return;
+      location.replace("/native-shell.html");
+    })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Shepherd's Path — You Don't Have to Walk This Alone</title>
