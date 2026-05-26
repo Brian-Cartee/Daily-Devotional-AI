@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
 
@@ -95,6 +95,14 @@ export function TalkItThroughHeroPrompt({ phase }: TalkItThroughHeroPromptProps)
 
       <p className="mt-2.5 text-center text-[12px] text-white/45 leading-relaxed">
         Private · grounded in the Bible · no perfect words required
+        {" · "}
+        <Link
+          href="/sigh"
+          className="text-violet-200/70 underline underline-offset-2 hover:text-violet-100"
+          data-testid="link-hero-sigh-room"
+        >
+          Need a quieter room?
+        </Link>
       </p>
     </div>
   );

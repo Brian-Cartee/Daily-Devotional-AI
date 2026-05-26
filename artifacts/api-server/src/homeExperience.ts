@@ -142,8 +142,8 @@ export async function buildThresholdPayload(
   if (hour >= 23 || hour < 5) {
     return {
       headline: "Still awake?",
-      subtext: "You don't have to figure it out tonight. Talk It Through meets you with Scripture and prayer — or let today's verse hold you quietly.",
-      primaryCta: { label: "Talk it through", href: "/guidance" },
+      subtext: "You don't have to figure it out tonight. Night Shepherd meets you with quiet, Scripture, and prayer — unhurried.",
+      primaryCta: { label: "Night Shepherd", href: "/night" },
       secondaryCta: { label: "Listen to today's verse", href: "/devotional" },
       phase: "latenight",
       daysWithApp,
@@ -155,8 +155,8 @@ export async function buildThresholdPayload(
   if (hour >= 22) {
     return {
       headline: "Good evening.",
-      subtext: "The day is winding down. If something is still with you, bring it into Talk It Through — grounded in God's Word, not generic advice.",
-      primaryCta: { label: "Talk it through", href: "/guidance" },
+      subtext: "The day is winding down. If something is still with you, Night Shepherd offers a quieter path — Scripture and prayer without rush.",
+      primaryCta: { label: "Night Shepherd", href: "/night" },
       secondaryCta: { label: "Today's devotional", href: "/devotional" },
       phase: "late-evening",
       daysWithApp,

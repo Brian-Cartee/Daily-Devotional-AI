@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { isIntroFlowComplete, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
+import { isThresholdComplete } from "@/lib/thresholdState";
 
 const ONBOARD_KEY = "sp_onboarding_shown";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -21,6 +22,7 @@ const FADE_MS = 650;
 
 export function shouldShowOnboarding(): boolean {
   if (isReturningHome() || isIntroFlowComplete()) return false;
+  if (!isThresholdComplete()) return false;
   const lastShown = localStorage.getItem(ONBOARD_KEY);
   if (!lastShown) return true;
   const lastVisit = localStorage.getItem(LAST_VISIT_KEY);

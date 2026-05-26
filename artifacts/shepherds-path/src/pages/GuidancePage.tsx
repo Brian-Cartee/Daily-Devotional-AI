@@ -4,6 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff } from "lucide-react";
 import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import {
+  grantCoachConsentThisSession,
+  hasCoachConsentThisSession,
+} from "@/lib/coachConsent";
+import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
+import { PrayerThatStays } from "@/components/prayer/PrayerThatStays";
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { NavBar } from "@/components/NavBar";
@@ -134,6 +140,8 @@ export default function GuidancePage() {
   }, []);
 
   const [guidanceMode, setGuidanceModeState] = useState<GuidanceMode>(() => getGuidanceMode());
+  const [coachConsentOpen, setCoachConsentOpen] = useState(false);
+  const [pendingCoachRegenerate, setPendingCoachRegenerate] = useState(false);
 
   const { data: dailyArtData } = useQuery<{ imageUrl: string }>({
     queryKey: ["/api/daily-art"],
@@ -141,19 +149,27 @@ export default function GuidancePage() {
   });
   const heroArtUrl = dailyArtData?.imageUrl ?? "/hero-guidance.jpg";
 
-  const handleModeChange = (mode: GuidanceMode) => {
-    if (mode === guidanceMode) return;
+  const applyGuidanceMode = (mode: GuidanceMode, regenerate = false) => {
     setGuidanceModeState(mode);
     saveGuidanceMode(mode);
-
-    // If a response is already showing and there's no follow-up thread yet,
-    // re-generate the initial response in the new tone immediately
-    const userMessages = messages.filter(m => m.role === "user");
-    if (responseComplete && situation.trim() && userMessages.length <= 1) {
+    const userMessages = messages.filter((m) => m.role === "user");
+    if (regenerate && responseComplete && situation.trim() && userMessages.length <= 1) {
       const initialUserMsg: Message = { role: "user", content: situation };
       setMessages([initialUserMsg]);
       streamResponse([initialUserMsg], mode);
     }
+  };
+
+  const handleModeChange = (mode: GuidanceMode) => {
+    if (mode === guidanceMode) return;
+    if (mode === "coach" && !hasCoachConsentThisSession()) {
+      setPendingCoachRegenerate(
+        responseComplete && situation.trim() && messages.filter((m) => m.role === "user").length <= 1,
+      );
+      setCoachConsentOpen(true);
+      return;
+    }
+    applyGuidanceMode(mode, mode === "coach" || mode === "encouraging");
   };
 
   const [journey, setJourney] = useState<Journey | null>(null);
@@ -577,6 +593,19 @@ export default function GuidancePage() {
 
   return (
     <>
+      <CoachConsentModal
+        open={coachConsentOpen}
+        onAccept={() => {
+          grantCoachConsentThisSession();
+          setCoachConsentOpen(false);
+          applyGuidanceMode("coach", pendingCoachRegenerate);
+          setPendingCoachRegenerate(false);
+        }}
+        onDecline={() => {
+          setCoachConsentOpen(false);
+          setPendingCoachRegenerate(false);
+        }}
+      />
       <NavBar />
       <main className="min-h-screen bg-background pb-32">
         {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
@@ -738,6 +767,14 @@ export default function GuidancePage() {
 
                     <p className="mt-3 text-center text-[12px] text-white/50 leading-relaxed">
                       Private · grounded in the Bible · no perfect words required
+                      {" · "}
+                      <Link
+                        href="/sigh"
+                        className="text-violet-200/70 underline underline-offset-2 hover:text-violet-100"
+                        data-testid="link-guidance-sigh-room"
+                      >
+                        Need a quieter room?
+                      </Link>
                     </p>
                   </div>
 
@@ -1271,9 +1308,7 @@ export default function GuidancePage() {
                         </button>
                       </div>
 
-                      <p className="text-[12px] text-amber-700/55 dark:text-amber-400/45 italic mt-4">
-                        Take a moment here.
-                      </p>
+                      <PrayerThatStays />
 
                       {tts.playing && (
                         <div className="mt-3 h-1 rounded-full bg-amber-200/60 dark:bg-amber-800/30 overflow-hidden">

@@ -48,6 +48,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+AuthKey_*.p8
+/tmp/asc-key/
 
 # Replit
 .cache/

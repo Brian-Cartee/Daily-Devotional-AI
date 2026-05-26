@@ -2360,6 +2360,45 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       return res.end();
     }
 
+    const presenceMode: string = (req.body as any).presenceMode || "normal";
+    const isSighRoom = presenceMode === "sigh";
+
+    if (isSighRoom) {
+      const sighNameNote = userName
+        ? ` Their name is ${userName}. Use it once, gently, only if natural.`
+        : "";
+      const sighModeNote = buildModeNote(guidanceMode);
+      const sighSystem = `You are in the Sigh Room — a quiet pastoral space. Someone has shared something heavy.${sighNameNote}
+
+Your ONLY job right now is MIRRORING — not fixing, not preaching, not offering Scripture or prayer yet.
+
+Write 1–2 sentences (under 70 words total) that reflect back what they shared — the emotion beneath the words, not a summary of facts. Be specific to their words. Humble tone: you may say "What you shared carries weight" but NEVER "I completely understand" or "God told me."
+
+Do NOT offer advice, action steps, bullet lists, or questions unless one soft optional question is truly needed (prefer zero questions).
+
+Do NOT include Scripture references or prayer in this response.
+
+${sighModeNote}
+
+Sacred restraint: fewer words are better.`;
+
+      const sighHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
+        ? messages.map((m) => ({ role: m.role, content: m.content }))
+        : [{ role: "user", content: situation.trim() }];
+
+      try {
+        await streamCompletion(
+          [{ role: "system", content: sighSystem }, ...sighHistory],
+          res,
+          { temperature: 0.75, maxTokens: 120, req },
+        );
+      } catch (err) {
+        console.error("sigh mirror error:", err);
+        if (!res.headersSent) res.status(500).json({ message: "Failed" });
+      }
+      return;
+    }
+
     const isFollowUp = messages && messages.length > 1;
     const lateNight: boolean = !!(req.body as any).isLateNight;
 
@@ -2565,16 +2604,60 @@ Rules:
       });
       const summary = completion.choices[0]?.message?.content?.trim();
       if (summary && summary.length > 20) {
-        await storage.createJournalEntry({
+        const entry = await storage.createJournalEntry({
           sessionId,
           type: "guidance_memory",
           content: summary,
           title: undefined,
         });
+        return res.status(200).json({ ok: true, id: String(entry.id) });
       }
-      res.status(200).json({ ok: true });
+      res.status(200).json({ ok: true, id: null });
     } catch (err) {
       console.error("[memory] save failed:", err);
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
+  // ── Witness Letter — quiet continuity from last guidance memory ───────────────
+  app.get("/api/guidance/witness-letter", async (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    if (isRateLimited(`witness:${sessionId}`, 8, 3_600_000)) {
+      return res.status(429).json({ message: "Too many requests" });
+    }
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      const latest = entries.find((e) => e.type === "guidance_memory");
+      if (!latest?.content) return res.json({ id: null, letter: null });
+
+      const created = new Date(latest.createdAt).getTime();
+      const ageMs = Date.now() - created;
+      if (ageMs > 7 * 24 * 60 * 60 * 1000) {
+        return res.json({ id: null, letter: null });
+      }
+      if (ageMs < 2 * 60 * 60 * 1000) {
+        return res.json({ id: null, letter: null });
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 90,
+        messages: [
+          {
+            role: "system",
+            content: `Write a Witness Letter — 2 sentences only. You are holding what this person shared previously (below). Reflect back what they were carrying — no advice, no Scripture, no questions. Do not say "I remember" or "you wrote." Sound like a trusted companion who was present. Under 45 words total.`,
+          },
+          { role: "user", content: latest.content.slice(0, 500) },
+        ],
+      });
+      const letter = completion.choices[0]?.message?.content?.trim();
+      if (!letter || letter.length < 12) {
+        return res.json({ id: null, letter: null });
+      }
+      res.json({ id: String(latest.id), letter });
+    } catch (err) {
+      console.error("[witness-letter]", err);
       res.status(500).json({ message: "failed" });
     }
   });
@@ -2615,6 +2698,11 @@ Rules:
     const { situation, userName, sessionId: sid } = req.body as {
       situation?: string; userName?: string; sessionId?: string;
     };
+    const presenceMode: string = (req.body as any).presenceMode || "normal";
+    const fields: string = (req.body as any).fields || "both";
+    const isSighRoom = presenceMode === "sigh";
+    const isNightShepherd = presenceMode === "night";
+    const isSacredVp = isSighRoom || isNightShepherd;
     const vpDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (sid && isRateLimited(`vp:${sid}`, 12, 3_600_000)) {
@@ -2631,14 +2719,39 @@ Rules:
     }
     try {
       const nameNote = userName ? ` The person's name is ${userName}.` : "";
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        max_tokens: 520,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: `You are a compassionate Christian pastor.${nameNote} Given what someone has shared, return a JSON object with two fields:
+      const nightVpSystem = `You are Night Shepherd — someone is awake between 10pm and 5am.${nameNote} Return JSON only.
+
+Fields requested: "${fields}" (verse | prayer | both).
+
+Always include "rationale": one soft sentence (under 22 words) for why this Scripture fits this night — not preachy.
+
+If verse requested: "verse" with "reference" and "text" (ESV/NIV, 1–2 sentences max). Choose a verse for sleeplessness, fear, grief, loneliness, or holy quiet — avoid cliché. Verse text only — no intro inside text.
+
+If prayer requested: "prayer" as a WHISPER-SHORT first-person prayer (3–5 sentences max). Unhurried. For the middle of the night. Naming + one request + rest. End with Amen. Start with God/Lord/Father. No upbeat worship tone.
+
+Return only keys needed plus rationale.`;
+
+      const sighVpSystem = `You are in the Sigh Room — sacred, unhurried.${nameNote} Return JSON only.
+
+Fields requested: "${fields}" (verse | prayer | both).
+
+Always include "rationale": one plain sentence (under 25 words) explaining why this Scripture fits what they named — e.g. "You mentioned fear that won't let go — this speaks to that."
+
+If verse requested: "verse" with "reference" and "text" (ESV/NIV, 1–3 sentences). No cliché verses. Do NOT prepend intro sentences inside text — verse text only.
+
+If prayer requested: "prayer" as liturgical first-person prayer (4–6 sentences):
+1) Naming what God sees in them (specific to their share)
+2) One honest request
+3) Resting release — end with Amen.
+Start with God/Lord/Father — not Dear Heavenly Father. Raw and intimate, never template spam.
+
+Return only keys needed for requested fields plus rationale.`;
+
+      const vpSystem = isNightShepherd
+        ? nightVpSystem
+        : isSighRoom
+          ? sighVpSystem
+          : `You are a compassionate Christian pastor.${nameNote} Given what someone has shared, return a JSON object with two fields:
 
 FIRST — read the emotional register of what this person shared. Are they in pain, in crisis, grieving, anxious? Or are they excited, purposeful, seeking, grateful, celebrating, or simply wanting to grow? The emotional register determines everything. A person sharing something joyful or aspirational does not need a heavy, burdened prayer — that would be a mismatch that makes them feel unseen. A person in grief does not need an upbeat, visionary prayer — that would dismiss their pain. Read carefully before writing.
 
@@ -2654,14 +2767,27 @@ The prayer must match their emotional register precisely:
 
 Rules for all prayers: End with "Amen." Do not start with "Dear God" or "Heavenly Father" — start with just "God," "Lord," or "Father." Do not write generic spiritual language. The prayer should feel like a beginning — something that opens a door rather than closes one. When loneliness, rejection, or worthlessness is present, let the prayer carry the truth of God's unconditional love as a real anchor, not a slogan.
 
-Return only valid JSON. No markdown. No extra keys.`,
+Return only valid JSON. No markdown. No extra keys.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: isSacredVp ? 420 : 520,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: vpSystem,
           },
           { role: "user", content: situation.trim().slice(0, 1500) },
         ],
       });
       const raw = completion.choices[0]?.message?.content ?? "{}";
       const parsed = JSON.parse(raw);
-      res.json({ verse: parsed.verse ?? null, prayer: parsed.prayer ?? null });
+      res.json({
+        verse: fields === "prayer" && isSacredVp ? null : parsed.verse ?? null,
+        prayer: fields === "verse" && isSacredVp ? null : parsed.prayer ?? null,
+        rationale: parsed.rationale ?? null,
+      });
     } catch (err) {
       console.error("verse-and-prayer error:", err);
       res.status(500).json({ message: "Failed" });

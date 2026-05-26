@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { isIntroFlowComplete } from "@/lib/introState";
+import { getThresholdNeed } from "@/lib/thresholdState";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listenFirst";
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
@@ -33,7 +34,16 @@ export function ThresholdHero() {
   const daysWithApp = getRelationshipAge();
   const { data: verse, isLoading: verseLoading } = useDailyVerse();
   const [listenFirst, setListenFirst] = useState(() => getListenFirstPreference());
+  const thresholdNeed = getThresholdNeed();
   const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
+  const thresholdSubline =
+    thresholdNeed === "honesty"
+      ? "Say what's true. We'll meet you there."
+      : thresholdNeed === "hope"
+        ? "Small hope still counts here."
+        : thresholdNeed === "comfort"
+          ? "Gentleness first. Truth when you're ready."
+          : null;
 
   const isPro = isProVerifiedLocally();
 
@@ -125,6 +135,14 @@ export function ThresholdHero() {
           <p className="text-[16px] sm:text-[17px] text-white/80 leading-snug mb-3 font-medium line-clamp-2 sm:line-clamp-none sm:leading-relaxed">
             {thresholdLoading ? "…" : threshold?.subtext}
           </p>
+          {thresholdSubline && daysWithApp < 7 && (
+            <p
+              className="text-[14px] text-violet-200/75 leading-relaxed mb-3 italic"
+              data-testid="text-threshold-need-line"
+            >
+              {thresholdSubline}
+            </p>
+          )}
           {threshold?.continuityLine && (
             <p
               className="hidden sm:block text-[15px] text-violet-100/85 leading-relaxed mb-4 pl-3.5 border-l-2 border-violet-400/40"

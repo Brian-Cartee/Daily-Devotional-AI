@@ -8,6 +8,11 @@ import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import {
+  grantCoachConsentThisSession,
+  hasCoachConsentThisSession,
+} from "@/lib/coachConsent";
+import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
@@ -63,12 +68,24 @@ export function NavBar() {
   const [langOpen,  setLangOpen]  = useState(false);
   const [moreOpen,  setMoreOpen]  = useState(false);
   const [guidanceTone, setGuidanceTone] = useState<GuidanceMode>(() => getGuidanceMode());
+  const [coachConsentOpen, setCoachConsentOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
+  const applyGuidanceTone = (mode: GuidanceMode) => {
+    saveGuidanceMode(mode);
+    setGuidanceTone(mode);
+  };
+
   const toggleTone = () => {
-    const next: GuidanceMode = guidanceTone === "coach" ? "encouraging" : "coach";
-    saveGuidanceMode(next);
-    setGuidanceTone(next);
+    if (guidanceTone === "coach") {
+      applyGuidanceTone("encouraging");
+      return;
+    }
+    if (!hasCoachConsentThisSession()) {
+      setCoachConsentOpen(true);
+      return;
+    }
+    applyGuidanceTone("coach");
   };
   const [voicePref, setVoicePref] = useState<string>(() => getUserVoice());
   const toggleVoice = () => {
@@ -96,6 +113,15 @@ export function NavBar() {
 
   return (
     <>
+      <CoachConsentModal
+        open={coachConsentOpen}
+        onAccept={() => {
+          grantCoachConsentThisSession();
+          setCoachConsentOpen(false);
+          applyGuidanceTone("coach");
+        }}
+        onDecline={() => setCoachConsentOpen(false)}
+      />
       {/* ── Top navigation bar ── */}
       <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">

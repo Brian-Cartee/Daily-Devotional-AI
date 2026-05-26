@@ -101,25 +101,30 @@ export function LateNightBannerCard() {
         <p className="text-[13px] text-white/55 leading-relaxed mb-4">
           This is a safe place to bring what you're carrying. You don't need to have it together to open this app. God meets people exactly where they are — including at {getNightTimeLabel()}.
         </p>
-        <div className="flex gap-2.5">
+        <div className="flex flex-wrap gap-2.5">
+          <Link href="/night">
+            <button
+              data-testid="button-night-banner-shepherd"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600/55 hover:bg-indigo-600/75 text-[12px] font-bold text-white/95 border border-indigo-500/35 transition-all"
+            >
+              <Moon className="w-3.5 h-3.5" />
+              Night Shepherd
+            </button>
+          </Link>
+          <Link href="/sigh">
+            <button
+              data-testid="button-night-banner-sigh"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[12px] font-bold text-white/80 border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
+            >
+              Sigh Room
+            </button>
+          </Link>
           <Link href="/devotional">
             <button
               data-testid="button-night-banner-devotional"
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[12px] font-bold text-white/90 border border-white/15 hover:border-white/25 hover:bg-white/5 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[12px] font-bold text-white/75 border border-white/10 hover:border-white/15 transition-all"
             >
-              <ArrowRight className="w-3.5 h-3.5" />
-              Open devotional
-            </button>
-          </Link>
-          <Link href="/guidance">
-            <button
-              data-testid="button-night-banner-guidance"
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600/50 hover:bg-indigo-600/70 text-[12px] font-bold text-white/90 border border-indigo-500/30 transition-all"
-            >
-              <span className="inline-flex scale-[0.82] origin-left -ml-0.5">
-                <ShortcutPathIcon variant="pathways" size="sm" />
-              </span>
-              Seek guidance
+              Devotional
             </button>
           </Link>
         </div>

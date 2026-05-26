@@ -12,6 +12,8 @@ const EXPLORE_ITEMS = [
   { href: "/understand", label: "Bible Journeys", desc: "Scripture meets you where you are", bg: "border-indigo-500/20 bg-indigo-500/6", testid: "explore-understand" },
   { href: "/calling", label: "Our Calling", desc: "Carry the hope forward", bg: "border-orange-500/20 bg-orange-500/6", testid: "explore-calling" },
   { href: "/journal", label: "Prayer Journal", desc: "What you don't want to lose", bg: "border-teal-500/20 bg-teal-500/6", testid: "explore-journal" },
+  { href: "/lament", label: "Lament Pathway", desc: "Seven days for grief — no streak", bg: "border-slate-500/25 bg-slate-500/8", testid: "explore-lament" },
+  { href: "/surrender", label: "Surrender Stone", desc: "Release what you're carrying to God", bg: "border-slate-400/20 bg-slate-400/6", testid: "explore-surrender" },
   { href: "/prayer-closet", label: "Prayer closet", desc: "Your quiet room — worship & reflection", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-prayer-closet" },
   { href: "/iron-circle", label: "Iron Sharpens Iron", desc: "Walk alongside others", bg: "border-rose-500/20 bg-rose-500/6", testid: "explore-iron-circle" },
   { href: "/prayer-wall", label: "Prayer Wall", desc: "Lift someone up today", bg: "border-sky-500/20 bg-sky-500/6", testid: "explore-prayer-wall" },

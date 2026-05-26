@@ -1,5 +1,11 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import ThresholdArrivalPage from "@/pages/ThresholdArrivalPage";
+import SighRoomPage from "@/pages/SighRoomPage";
+import NightShepherdPage from "@/pages/NightShepherdPage";
+import LamentPathwayPage from "@/pages/LamentPathwayPage";
+import SurrenderStonePage from "@/pages/SurrenderStonePage";
+import { isSacredPresenceRoute } from "@/lib/presenceMode";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -93,8 +99,17 @@ function ReferralCapture() {
 }
 
 function Router() {
+  const [location] = useLocation();
+  const hideFloater = isSacredPresenceRoute(location);
+
   return (
+    <>
     <Switch>
+      <Route path="/threshold" component={ThresholdArrivalPage} />
+      <Route path="/sigh" component={SighRoomPage} />
+      <Route path="/night" component={NightShepherdPage} />
+      <Route path="/lament" component={LamentPathwayPage} />
+      <Route path="/surrender" component={SurrenderStonePage} />
       <Route path="/" component={LandingHome} />
       <Route path="/guidance" component={GuidancePage} />
       <Route path="/devotional" component={Devotional} />
@@ -153,6 +168,8 @@ function Router() {
       </Route>
       <Route component={NotFound} />
     </Switch>
+    {!hideFloater && <FloatingAskAI />}
+    </>
   );
 }
 
@@ -201,7 +218,6 @@ function App() {
                 <ReferralCapture />
                 <ReferralWelcomeToast />
                 <Router />
-                <FloatingAskAI />
                 <DemoFloatingBar />
                 {!isNativeWebViewShell() && <InstallPrompt />}
                 {!isNativeWebViewShell() && <UpdatePrompt />}

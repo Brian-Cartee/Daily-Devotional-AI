@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
-import { Link } from "wouter";
+import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, BookMarked, HandHeart } from "lucide-react";
 import { DailyArtCard } from "@/components/DailyArtCard";
@@ -8,6 +8,11 @@ import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
 import { clearReturningHome, isReturningHome } from "@/lib/introState";
+import {
+  consumeThresholdJustCompleted,
+  shouldShowThresholdArrival,
+} from "@/lib/thresholdState";
+import { shouldRedirectToNightShepherd } from "@/lib/nightShepherdState";
 import { WEEK_LABELS, getCurrentWeekDates, getTodayIndex } from "@/components/StreakWidget";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
@@ -42,6 +47,9 @@ import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { ThresholdHero } from "@/components/ThresholdHero";
+import { WitnessLetterCard } from "@/components/witness/WitnessLetterCard";
+import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
+import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathShortcuts } from "@/components/HomePathShortcuts";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
@@ -409,10 +417,12 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
   return out;
 })();
 
-export default function LandingHome() {
+function LandingHomeInner() {
   const sessionId = getSessionId();
   const skipIntrosForHome = isReturningHome();
+
   const [showSplash, setShowSplash] = useState(() => !skipIntrosForHome && shouldShowSplash());
+  const [thresholdWelcome, setThresholdWelcome] = useState(() => consumeThresholdJustCompleted());
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (skipIntrosForHome) return false;
     const params = new URLSearchParams(window.location.search);
@@ -567,6 +577,17 @@ export default function LandingHome() {
 
       <ThresholdHero />
 
+      {thresholdWelcome && (
+        <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
+          <p
+            className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2"
+            data-testid="text-threshold-welcome"
+          >
+            You stepped inside. Take your time — there&apos;s no rush here.
+          </p>
+        </div>
+      )}
+
       {/* Section cards */}
       <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 pb-28 sm:pb-24 relative z-10 -mt-4">
 
@@ -585,6 +606,10 @@ export default function LandingHome() {
         >
           {/* Time-aware greeting */}
           <GreetingHeader />
+
+          <WitnessLetterCard />
+
+          <LamentSeasonHomeCard />
 
           {/* Name prompt — shown once for returning users who haven't set their name */}
           {!getUserName() && !nameDismissed && streak >= 1 && (
@@ -623,7 +648,7 @@ export default function LandingHome() {
           )}
 
           {/* Streak whisper — quiet acknowledgment of consistency */}
-          {streak >= 2 && !isLateNight() && (
+          {streak >= 2 && !isLateNight() && !isLamentSeasonActive() && (
             <div className="flex items-center gap-1.5 px-0.5 -mt-0.5">
               <Flame className="w-3 h-3 text-amber-400" />
               <span className="text-[11px] font-semibold tracking-wide" style={{ color: "rgba(251,191,36,0.7)" }}>
@@ -1126,17 +1151,21 @@ export default function LandingHome() {
           {/* ── Closing sequence: Manifesto → Scripture → Download ── */}
           <ClosingManifesto />
 
-          <div className="flex flex-col items-center gap-2 px-5 sm:px-8 pr-14 sm:pr-8 -mt-2 mb-8 sm:mb-10 max-w-lg mx-auto">
-            <p className="text-xs sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground/60">A reminder for the path</p>
-            <p className="path-reminder-quote text-[17px] sm:text-[18px] text-foreground/82 text-center">
+          <div className="flex flex-col items-center gap-3 px-5 sm:px-6 -mt-2 mb-8 sm:mb-10 max-w-md mx-auto w-full text-center">
+            <p className="text-xs sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground/70 w-full">
+              A reminder for the path
+            </p>
+            <p className="path-reminder-quote text-[17px] sm:text-[18px] text-foreground/88 text-center w-full max-w-[22rem] mx-auto leading-relaxed">
               &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo;
             </p>
-            <p className="text-[13px] sm:text-sm text-foreground/55 tracking-wide font-medium">— Psalm 119:105</p>
+            <p className="text-[13px] sm:text-sm text-foreground/60 font-medium w-full">— Psalm 119:105</p>
           </div>
 
-          <div className="flex flex-col items-center gap-4 px-4 mb-2 max-w-md mx-auto w-full">
-            <p className="text-sm sm:text-[15px] text-foreground/55 tracking-wide text-center">If you want it with you —</p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col items-center justify-center gap-4 px-5 sm:px-6 mb-2 max-w-md mx-auto w-full text-center">
+            <p className="text-sm sm:text-[15px] text-foreground/65 tracking-wide w-full">
+              If you want it with you —
+            </p>
+            <div className="flex flex-col items-center justify-center gap-3 w-full max-w-sm mx-auto">
               {!isAndroid() && (
                 <a
                   href="https://apps.apple.com/app/shepherds-path/id6760953522"
@@ -1168,13 +1197,18 @@ export default function LandingHome() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1.5 mt-8 pb-6">
-            <p className="text-[13px] sm:text-sm text-foreground/45 text-center leading-relaxed">
-              © {new Date().getFullYear()} Shepherd's Path. All rights reserved.
+          <div
+            className="flex flex-col items-center justify-center gap-2 mt-10 pt-6 border-t border-border/40 w-full max-w-md mx-auto text-center"
+            style={{
+              paddingBottom: "max(2.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
+            }}
+          >
+            <p className="text-[13px] sm:text-sm text-foreground/55 leading-relaxed px-4 w-full">
+              © {new Date().getFullYear()} Shepherd&apos;s Path. All rights reserved.
             </p>
             <a
               href="https://www.shepherdspathai.com"
-              className="text-[13px] text-foreground/40 hover:text-foreground/60 transition-colors tracking-wide py-1"
+              className="text-[13px] sm:text-sm text-foreground/50 hover:text-foreground/75 transition-colors tracking-wide py-1 px-4"
             >
               shepherdspathai.com
             </a>
@@ -1184,4 +1218,14 @@ export default function LandingHome() {
 
     </div>
   );
+}
+
+export default function LandingHome() {
+  if (!isReturningHome() && shouldShowThresholdArrival()) {
+    return <Redirect to="/threshold" />;
+  }
+  if (shouldRedirectToNightShepherd()) {
+    return <Redirect to="/night" />;
+  }
+  return <LandingHomeInner />;
 }
