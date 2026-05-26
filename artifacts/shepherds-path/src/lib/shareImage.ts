@@ -112,7 +112,10 @@ export function getDevotionalHeroPhoto(): string {
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    // blob: and data: URLs are same-origin — crossOrigin breaks some WebKit paths
+    if (!src.startsWith("blob:") && !src.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("Image load failed"));
     img.src = src;

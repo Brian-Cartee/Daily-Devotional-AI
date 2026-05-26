@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Share2, Check, ChevronDown, Heart } from "lucide-react";
+import { Loader2, ChevronDown, Heart, Check } from "lucide-react";
 import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments } from "@/lib/moments";
 import { useDailyArt } from "@/hooks/use-daily-art";
 import { loadDailyArtImage, easternTodayKey } from "@/lib/dailyArtImageLoad";
-import { buildVerseShareText, shareNative } from "@/lib/shareVerse";
+import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
@@ -22,7 +22,6 @@ export function DailyArtCard() {
   const [imageLoading, setImageLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [hidden] = useState(() => isHiddenThisSession());
-  const [shared, setShared] = useState(false);
   const [saved, setSaved] = useState(() => isMomentSaved(easternTodayKey()));
   const [justSaved, setJustSaved] = useState(false);
   const [note, setNote] = useState("");
@@ -89,36 +88,7 @@ export function DailyArtCard() {
     setImgRetry((n) => n + 1);
   };
 
-  const handleShare = async () => {
-    if (!art) return;
-    const date = easternTodayKey();
-    const shareText = buildVerseShareText({
-      text: art.scripture,
-      reference: art.reference,
-      date,
-      extraLine: art.reflection?.trim() || undefined,
-    });
-
-    if (navigator.share && resolvedSrc) {
-      try {
-        const response = await fetch(resolvedSrc);
-        const blob = await response.blob();
-        const file = new File([blob], "moment-of-beauty.jpg", { type: "image/jpeg" });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], text: shareText });
-          return;
-        }
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-      }
-    }
-
-    const result = await shareNative({ title: "A Moment of Beauty", text: shareText });
-    if (result === "shared") {
-      setShared(true);
-      setTimeout(() => setShared(false), 2500);
-    }
-  };
+  const shareBgUrl = resolvedSrc ?? imageUrl ?? rawImageUrl;
 
   const handleSave = () => {
     if (!art) return;
@@ -378,13 +348,18 @@ export function DailyArtCard() {
                     My Moments →
                   </span>
                 </Link>
-                <button
-                  onClick={handleShare}
-                  data-testid="button-daily-art-share"
-                  className="flex items-center gap-1.5 text-[12px] font-semibold text-primary/70 hover:text-primary transition-colors px-3 py-1.5 rounded-full hover:bg-primary/8 active:scale-95"
-                >
-                  {shared ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Share2 className="w-3.5 h-3.5" /> Share this</>}
-                </button>
+                <ShareVerseTrigger
+                  text={art.scripture}
+                  reference={art.reference}
+                  date={easternTodayKey()}
+                  extraLine={art.reflection?.trim() || undefined}
+                  imageBgUrl={shareBgUrl}
+                  variant="moment"
+                  generateOnOpen={!!shareBgUrl}
+                  label="Share this"
+                  testId="button-daily-art-share"
+                  className="text-primary/70 hover:text-primary px-3 py-1.5 rounded-full hover:bg-primary/8 active:scale-95"
+                />
               </div>
             </div>
           </motion.div>
@@ -396,14 +371,18 @@ export function DailyArtCard() {
           className="flex items-center justify-between px-4 py-3 gap-3"
           style={{ borderTop: "1px solid hsl(var(--border) / 0.4)" }}
         >
-          <button
-            onClick={handleShare}
-            data-testid="link-daily-art-calling"
-            className="flex items-center gap-2 text-[13px] font-semibold text-foreground/70 hover:text-primary transition-colors"
-          >
-            <Share2 className="w-4 h-4 text-primary/60" />
-            {shared ? "Copied!" : "Share today's art"}
-          </button>
+          <ShareVerseTrigger
+            text={art.scripture}
+            reference={art.reference}
+            date={easternTodayKey()}
+            extraLine={art.reflection?.trim() || undefined}
+            imageBgUrl={shareBgUrl}
+            variant="moment"
+            generateOnOpen={!!shareBgUrl}
+            label="Share today's art"
+            testId="link-daily-art-calling"
+            className="text-[13px] text-foreground/70 hover:text-primary [&_svg]:w-4 [&_svg]:h-4 [&_svg]:text-primary/60"
+          />
           <Link href="/calling">
             <span className="text-[12px] text-primary/60 hover:text-primary font-medium transition-colors">
               Into the world →

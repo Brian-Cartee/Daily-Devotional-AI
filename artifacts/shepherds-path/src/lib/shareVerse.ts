@@ -32,6 +32,12 @@ export type VerseShareInput = {
   extraLine?: string;
 };
 
+/** Short caption when the verse is already on the shared image (avoids duplicate on iOS). */
+export function buildImageShareCaption(reference: string, date?: string): string {
+  const d = date ?? easternVerseDateKey();
+  return `${reference} · Shepherd's Path\n${buildVerseSharePreviewUrl(d)}`;
+}
+
 export function buildVerseShareText({
   text,
   reference,
