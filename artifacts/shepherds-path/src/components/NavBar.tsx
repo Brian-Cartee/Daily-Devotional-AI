@@ -143,7 +143,12 @@ export function NavBar() {
             className="shrink-0 mr-2"
             title="Shepherd's Path"
           >
-            <BrandIcon size={40} className="rounded-[12px] shadow-sm select-none ring-1 ring-primary/15" />
+            <BrandIcon
+              size={40}
+              className={`rounded-[12px] shadow-sm select-none ring-1 ring-primary/15 ${
+                overHomeHero ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]" : ""
+              }`}
+            />
           </Link>
 
           {/* Nav items — desktop only, icon + tooltip */}

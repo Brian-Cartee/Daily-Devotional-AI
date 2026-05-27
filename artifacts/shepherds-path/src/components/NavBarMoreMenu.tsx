@@ -124,8 +124,8 @@ export function NavBarMoreMenu({
         className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
           overHero
             ? open
-              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-              : "bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90"
+              ? "bg-primary/90 text-primary-foreground shadow-md shadow-black/40 backdrop-blur-sm"
+              : "bg-primary/90 text-primary-foreground shadow-md shadow-black/40 backdrop-blur-sm hover:bg-primary"
             : open
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/70"

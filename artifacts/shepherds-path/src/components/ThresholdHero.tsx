@@ -98,18 +98,14 @@ export function ThresholdHero() {
         <img
           src="/hero-landing.webp"
           alt=""
-          className="absolute inset-x-0 bottom-0 w-full object-cover object-[center_34%] sm:object-[center_36%]"
-          style={{
-            top: "calc(env(safe-area-inset-top, 0px) + 3.5rem + 6px)",
-            height: "calc(100% - env(safe-area-inset-top, 0px) - 3.5rem - 6px)",
-          }}
+          className="absolute inset-0 h-full w-full object-cover object-[center_30%] sm:object-[center_32%]"
           decoding="async"
         />
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(8,4,18,0.5) 0%, rgba(8,4,18,0.12) 22%, rgba(8,4,18,0.0) 48%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
+              "linear-gradient(to bottom, rgba(8,4,18,0.42) 0%, rgba(8,4,18,0.08) 18%, rgba(8,4,18,0) 42%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
           }}
         />
         {showPhotoTaglines && (
