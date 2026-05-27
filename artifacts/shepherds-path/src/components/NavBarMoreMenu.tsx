@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Bell,
   Globe,
   Headphones,
   HandHeart,
@@ -84,6 +85,8 @@ type Props = {
   onToggleVoice: () => void;
   onOpenEmail: () => void;
   onOpenLanguage: () => void;
+  onOpenNotifications: () => void;
+  hasNotificationBadge?: boolean;
   menuRef: React.RefObject<HTMLDivElement | null>;
   /** Home hero: purple pill buttons like bottom tab bar */
   overHero?: boolean;
@@ -100,8 +103,10 @@ export function NavBarMoreMenu({
   onToggleVoice,
   onOpenEmail,
   onOpenLanguage,
+  onOpenNotifications,
   onClose,
   menuRef,
+  hasNotificationBadge = false,
   overHero = false,
 }: Props) {
   const toneLabel = guidanceTone === "coach" ? "Direct & accountable" : "Gentle & encouraging";
@@ -127,6 +132,9 @@ export function NavBarMoreMenu({
         }`}
       >
         <MoreHorizontal className="w-[18px] h-[18px]" />
+        {hasNotificationBadge && (
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+        )}
       </button>
 
       <AnimatePresence>
@@ -140,6 +148,16 @@ export function NavBarMoreMenu({
           role="menu"
         >
           <MenuLabel>Stay connected</MenuLabel>
+          <MenuRow
+            icon={Bell}
+            label="Reminders & notifications"
+            hint="Schedule prayer nudges"
+            testId="button-reminders-open"
+            onClick={() => {
+              onClose();
+              onOpenNotifications();
+            }}
+          />
           <MenuRow
             icon={Mail}
             label="Daily verse email"

@@ -98,10 +98,10 @@ export function ThresholdHero() {
         <img
           src="/hero-landing.webp"
           alt=""
-          className="absolute inset-x-0 bottom-0 w-full object-cover object-[center_38%] sm:object-[center_40%]"
+          className="absolute inset-x-0 bottom-0 w-full object-cover object-[center_34%] sm:object-[center_36%]"
           style={{
-            top: "calc(env(safe-area-inset-top, 0px) + 3.5rem + 18px)",
-            height: "calc(100% - env(safe-area-inset-top, 0px) - 3.5rem - 18px)",
+            top: "calc(env(safe-area-inset-top, 0px) + 3.5rem + 6px)",
+            height: "calc(100% - env(safe-area-inset-top, 0px) - 3.5rem - 6px)",
           }}
           decoding="async"
         />

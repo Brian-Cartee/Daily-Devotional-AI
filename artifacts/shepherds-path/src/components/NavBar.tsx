@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Bell, Search, Check, Heart, Home } from "lucide-react";
+import { BookOpen, Sun, Compass, NotebookPen, Search, Check, Heart, Home } from "lucide-react";
 import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -98,8 +98,6 @@ export function NavBar() {
   const bookmarked = useBookmarkedSections();
   const moreRef = useRef<HTMLDivElement>(null);
 
-  const closeAll = () => { setNotifOpen(false); setEmailOpen(false); setLangOpen(false); setMoreOpen(false); };
-
   useEffect(() => {
     if (!moreOpen) return;
     const handler = (e: MouseEvent) => {
@@ -112,10 +110,8 @@ export function NavBar() {
   }, [moreOpen]);
 
   const overHomeHero = location === "/";
-
-  const utilityIconClass = overHomeHero
-    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90"
-    : "text-muted-foreground hover:text-foreground hover:bg-muted/70";
+  const needsNotificationNudge =
+    typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted";
 
   return (
     <>
@@ -131,16 +127,10 @@ export function NavBar() {
       {/* ── Top navigation bar — transparent on home so hero fills behind it ── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-40 ${
-          overHomeHero ? "bg-transparent" : "bg-background/80 backdrop-blur-xl"
+          overHomeHero ? "bg-transparent backdrop-blur-[1px]" : "bg-background/80 backdrop-blur-xl"
         }`}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
-        {overHomeHero && (
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#09031e]/75 via-[#09031e]/20 to-transparent"
-            aria-hidden
-          />
-        )}
         <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
 
           {/* Logo — icon only */}
@@ -214,6 +204,8 @@ export function NavBar() {
               onToggleVoice={toggleVoice}
               onOpenEmail={() => setEmailOpen(true)}
               onOpenLanguage={() => setLangOpen(true)}
+              onOpenNotifications={() => setNotifOpen(true)}
+              hasNotificationBadge={needsNotificationNudge}
             />
 
             {/* Language picker — floats independently */}
@@ -245,23 +237,6 @@ export function NavBar() {
             <AnimatePresence>
               {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
             </AnimatePresence>
-
-            {/* Bell / Reminders */}
-            <div className="relative">
-              <button
-                onClick={() => { closeAll(); setNotifOpen(true); }}
-                data-testid="nav-notifications"
-                aria-label="Reminders and notifications"
-                title="Reminders"
-                aria-expanded={notifOpen}
-                className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all shrink-0 ${utilityIconClass}`}
-              >
-                <Bell className="w-[18px] h-[18px]" />
-                {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                )}
-              </button>
-            </div>
 
           </div>
         </div>
