@@ -265,7 +265,7 @@ export function NavBar() {
               >
                 {active ? (
                   <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary shadow-sm shadow-primary/30">
-                    <Icon className="w-[18px] h-[18px] text-white shrink-0" />
+                    <Icon className={`${href === "/" ? "w-5 h-5" : "w-[18px] h-[18px]"} text-white shrink-0`} />
                     <span className="text-[13px] font-bold text-white leading-none">{label}</span>
                   </div>
                 ) : (
