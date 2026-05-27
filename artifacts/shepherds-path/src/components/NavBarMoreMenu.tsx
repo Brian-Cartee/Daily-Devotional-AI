@@ -198,6 +198,14 @@ export function NavBarMoreMenu({
             onClick={onClose}
           />
           <MenuRow
+            icon={Shield}
+            label="Safety & boundaries"
+            hint="What this app is and isn't"
+            href="/how-to-use#faq"
+            testId="nav-safety-boundaries"
+            onClick={onClose}
+          />
+          <MenuRow
             icon={HandHeart}
             label="Support the mission"
             hint="Why gifts & Pro help — no pressure"

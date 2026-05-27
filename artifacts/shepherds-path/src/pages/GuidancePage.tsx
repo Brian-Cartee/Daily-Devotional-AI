@@ -53,6 +53,12 @@ interface Message {
   content: string;
 }
 
+interface GuidanceMovements {
+  reflection: string;
+  scripture: string;
+  prayer: string;
+}
+
 /** Strip any AI-generated markdown bold/italic so the response reads as a single voice */
 function cleanResponse(text: string): string {
   return text
@@ -60,6 +66,16 @@ function cleanResponse(text: string): string {
     .replace(/\*(.+?)\*/g, "$1")        // *italic*
     .replace(/__(.+?)__/g, "$1")        // __bold__
     .replace(/_(.+?)_/g, "$1");         // _italic_
+}
+
+function splitGuidanceMovements(raw: string, verse?: VerseResult | null, prayer?: string | null): GuidanceMovements {
+  const paras = cleanResponse(raw).split("\n\n").map((p) => p.trim()).filter(Boolean);
+  const reflection = paras.slice(0, 2).join("\n\n") || "You’re not alone in this moment.";
+  const scripture = verse
+    ? `"${verse.text}"\n— ${verse.reference}`
+    : (paras.find((p) => /\b\d?\s?[A-Za-z]+\s+\d+:\d+\b/.test(p)) ?? "Scripture is near — take one verse slowly.");
+  const prayerBody = prayer?.trim() || paras.slice(2).join("\n\n") || "Jesus, meet me here. Give me peace, clarity, and courage for my next faithful step. Amen.";
+  return { reflection, scripture, prayer: prayerBody };
 }
 
 function getEmpathyReflection(situation: string): string {
@@ -127,6 +143,7 @@ export default function GuidancePage() {
   const framework = getTodayFramework();
   const { data: dailyVerse } = useDailyVerse();
   const [showStillness, setShowStillness] = useState(false);
+  const [showSlowVerse, setShowSlowVerse] = useState(false);
   const listenFirstTriggeredRef = useRef(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const pendingGuidanceFlow = useRef(false);
@@ -146,6 +163,18 @@ export default function GuidancePage() {
   const [pendingCoachRegenerate, setPendingCoachRegenerate] = useState(false);
 
   const heroArtUrl = getGuidanceHeroImage();
+
+  const carryVerseToday = () => {
+    if (!verse) return;
+    const payload = {
+      date: new Date().toISOString().split("T")[0],
+      text: verse.text,
+      reference: verse.reference,
+      source: "guidance",
+    };
+    localStorage.setItem("sp_carry_today", JSON.stringify(payload));
+    toast({ description: "Saved. Carry this verse with you today." });
+  };
 
   const applyGuidanceMode = (mode: GuidanceMode, regenerate = false) => {
     setGuidanceModeState(mode);
@@ -849,6 +878,35 @@ export default function GuidancePage() {
                     ? (assistantMessages[0]?.content ?? "")
                     : (streamingText || (assistantMessages[0]?.content ?? ""))
                   );
+                  if (responseComplete && rawText.trim()) {
+                    const movements = splitGuidanceMovements(rawText, verse, prayer);
+                    const sections = [
+                      { key: "reflection", title: "What I’m hearing", text: movements.reflection },
+                      { key: "scripture", title: "A verse for this moment", text: movements.scripture },
+                      { key: "prayer", title: "A simple prayer", text: movements.prayer },
+                    ];
+                    return (
+                      <div className="space-y-5" data-testid="text-guidance-response">
+                        {sections.map((section) => (
+                          <div key={section.key} className="rounded-2xl border border-border/70 bg-card/40 px-5 py-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-2">
+                              {section.title}
+                            </p>
+                            <div
+                              className={section.key === "scripture"
+                                ? "text-[20px] leading-[1.78] text-foreground italic"
+                                : "text-[17px] leading-[1.78] text-foreground"}
+                              style={{ fontFamily: "var(--font-reading)" }}
+                            >
+                              {section.text.split("\n\n").map((para, i) => (
+                                <p key={i} className="mb-3 last:mb-0">{para}</p>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
                   const paras = rawText.split("\n\n").filter(p => p.trim());
                   const PREVIEW = 3;
                   const showAll = guidanceExpanded || !responseComplete || paras.length <= PREVIEW;
@@ -902,6 +960,16 @@ export default function GuidancePage() {
                     <span>✝</span>
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                   </p>
+                )}
+                {responseComplete && (
+                  <Link href="/how-to-use">
+                    <p
+                      className="text-[11px] text-muted-foreground/70 mt-1 underline underline-offset-4 cursor-pointer hover:text-muted-foreground transition-colors"
+                      data-testid="link-guidance-safety-boundaries"
+                    >
+                      Safety & boundaries
+                    </p>
+                  </Link>
                 )}
                 {responseComplete && (
                   <p className="text-[12px] text-muted-foreground/80 mt-2 tracking-wide">
@@ -987,14 +1055,25 @@ export default function GuidancePage() {
                   </div>
                 )}
                 {responseComplete && (
-                  <div className="mt-5 flex justify-center">
+                  <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        inputRef.current?.focus();
+                        if (!followUp.trim()) setFollowUp("Can you guide me one step deeper?");
+                      }}
+                      data-testid="btn-guidance-more-guidance"
+                      className="text-[13px] font-semibold text-muted-foreground/85 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
+                    >
+                      More guidance
+                    </button>
                     <button
                       type="button"
                       onClick={() => setShowStillness(true)}
                       data-testid="btn-guidance-stillness"
                       className="text-[13px] font-semibold text-muted-foreground/80 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
                     >
-                      Rest here before you go
+                      More quiet
                     </button>
                   </div>
                 )}
@@ -1077,12 +1156,30 @@ export default function GuidancePage() {
                     className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/12 via-violet-500/8 to-indigo-500/10 border border-primary/35 px-6 pt-6 pb-5"
                   >
                     <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
-                    <p className="text-[19px] leading-relaxed font-medium text-foreground italic mb-4">
+                    <p className="text-[21px] leading-[1.78] font-medium text-foreground italic mb-4">
                       "{verse.text}"
                     </p>
-                    <p className="text-[13px] font-bold text-primary/70 tracking-wide">
+                    <p className="text-[13px] font-bold text-primary/70 tracking-wide mb-3">
                       — {verse.reference}
                     </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowSlowVerse(true)}
+                        data-testid="button-guidance-read-slowly"
+                        className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-primary/25 bg-background/70 hover:border-primary/45 transition-colors"
+                      >
+                        Read slowly
+                      </button>
+                      <button
+                        type="button"
+                        onClick={carryVerseToday}
+                        data-testid="button-guidance-carry-today"
+                        className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-primary/25 bg-background/70 hover:border-primary/45 transition-colors"
+                      >
+                        Carry this today
+                      </button>
+                    </div>
                   </div>
                 ) : null}
               </motion.div>
@@ -1234,7 +1331,7 @@ export default function GuidancePage() {
                       data-testid="button-upgrade-from-limit"
                       className="text-[13px] text-primary/80 hover:text-primary underline underline-offset-2 transition-colors"
                     >
-                      Or go unlimited with Pro — anytime, as much as you need.
+                      Need longer sessions tonight? Pro is available when you want deeper support.
                     </button>
                   </motion.div>
                 )}
@@ -1483,6 +1580,41 @@ export default function GuidancePage() {
           <div ref={bottomRef} />
         </div>
       </main>
+
+      <AnimatePresence>
+        {showSlowVerse && verse && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[180] bg-background/95 backdrop-blur-sm flex items-center justify-center px-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="w-full max-w-xl rounded-2xl border border-border bg-card px-6 py-6"
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-3">
+                Read slowly
+              </p>
+              <p className="text-[24px] leading-[1.9] italic text-foreground" style={{ fontFamily: "var(--font-reading)" }}>
+                "{verse.text}"
+              </p>
+              <p className="text-[14px] font-semibold text-primary/80 mt-4">— {verse.reference}</p>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowSlowVerse(false)}
+                  className="rounded-full px-4 py-2 text-[13px] font-semibold border border-border hover:border-primary/30 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Floating input bar — mobile only, docks above NavBar ── */}
       <AnimatePresence>

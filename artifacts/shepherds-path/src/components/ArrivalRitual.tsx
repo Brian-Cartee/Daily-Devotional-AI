@@ -7,6 +7,12 @@ import { isLateNight } from "@/lib/nightMode";
 const ARRIVAL_KEY = "sp_arrival_shown_v1";
 
 type NextStep = "talk" | "scripture" | "breathe";
+const CARE_PATHS = [
+  "I feel alone",
+  "I’m anxious",
+  "I’m grieving",
+  "I’m exhausted",
+];
 
 function encodeSituation(s: string): string {
   return encodeURIComponent(s.trim());
@@ -158,6 +164,24 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
                       {breathPhase === "in" ? "Breathe in" : "Breathe out"}
                     </p>
                   </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                  {CARE_PATHS.map((path) => (
+                    <button
+                      key={path}
+                      type="button"
+                      onClick={() => {
+                        setValue(path);
+                        setSubmitted(true);
+                        markArrivalRitualShown();
+                        onComplete?.();
+                      }}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white/70 transition-colors"
+                      data-testid={`chip-care-${path.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                    >
+                      {path}
+                    </button>
+                  ))}
                 </div>
                 <div className="flex items-center gap-2">
                   <input

@@ -8,14 +8,14 @@ const LAST_VISIT_KEY = "sp_last_visit_date";
 const INACTIVITY_DAYS = 30;
 
 const SCREENS = [
-  "This isn't another Bible app.",
+  "This is a companion — not a replacement for God, Scripture, or your pastor.",
   "You don't have to know what to say.",
   "You don't have to have it together.",
-  "You just have to be honest.",
-  "When you share what's on your mind, Scripture meets you in it.",
+  "Bring what is true. We'll respond with humility, Scripture, and prayer.",
+  "Your words stay private to your account, and you can leave at any time.",
 ];
 
-const FINAL = "Say what's actually on your mind.";
+const FINAL = "Take one honest step.";
 
 const SCREEN_VISIBLE_MS = 2600;
 const FADE_MS = 650;

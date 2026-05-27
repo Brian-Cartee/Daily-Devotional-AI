@@ -83,6 +83,19 @@ function formatVisitDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+function getCarryToday(): { text: string; reference: string } | null {
+  try {
+    const raw = localStorage.getItem("sp_carry_today");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { date?: string; text?: string; reference?: string };
+    const today = new Date().toISOString().split("T")[0];
+    if (parsed.date !== today || !parsed.text || !parsed.reference) return null;
+    return { text: parsed.text, reference: parsed.reference };
+  } catch {
+    return null;
+  }
+}
+
 function DevotionalCard() {
   const isPro = isProVerifiedLocally();
   const { data } = useQuery({
@@ -571,6 +584,7 @@ function LandingHomeInner() {
     !demo?.config.isDemo &&
     !engagementBusy &&
     !isLateNight();
+  const carryToday = getCarryToday();
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -664,6 +678,13 @@ function LandingHomeInner() {
         >
           {/* Time-aware greeting */}
           <GreetingHeader />
+          {carryToday && (
+            <div className="rounded-2xl border border-primary/20 bg-primary/6 px-4 py-3" data-testid="card-carry-today">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70 mb-1">Carry this today</p>
+              <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
+              <p className="text-[12px] font-semibold text-primary/70 mt-1">— {carryToday.reference}</p>
+            </div>
+          )}
 
           {/* Keep the first screen calm: only show these after a first meaningful action */}
           {hasAction && (

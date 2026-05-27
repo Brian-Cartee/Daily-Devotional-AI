@@ -127,7 +127,7 @@ export default function PrayerWallPage() {
             className="text-[13.5px] text-white/70 leading-relaxed"
             style={{ textShadow: "0 1px 8px rgba(0,0,0,0.9)", maxWidth: "280px" }}
           >
-            Share what's on your heart. Others are here — and they're praying with you.
+            A quiet place to be held in prayer. Share only what you feel safe sharing.
           </p>
         </div>
       </div>
@@ -150,7 +150,7 @@ export default function PrayerWallPage() {
                   className="w-full rounded-2xl py-5 font-bold text-[15px] bg-gradient-to-r from-violet-500 to-rose-500 hover:opacity-90 border-0 text-white shadow-md shadow-violet-500/20"
                 >
                   <HandHeart className="w-4 h-4 mr-2" />
-                  Add your prayer request
+                  Share a request
                 </Button>
               </motion.div>
             ) : (
@@ -226,7 +226,7 @@ export default function PrayerWallPage() {
               <span>{entries.length} prayer{entries.length !== 1 ? "s" : ""} lifted</span>
             </div>
             <div className="flex-1 h-px bg-border/60" />
-            <p className="text-[11px] text-muted-foreground/50">Newest first</p>
+            <p className="text-[11px] text-muted-foreground/50">Pray as you feel led</p>
           </motion.div>
         )}
 
