@@ -1,14 +1,18 @@
 # Worship bed audio
 
-Place royalty-free MP3 files here (Pixabay Content License or your own licenses):
+Default stillness loops are **generated WAV** files (see repo `scripts/generate-worship-wavs.py`).
 
-| File | Track id |
-|------|----------|
-| `morning-stillness.mp3` | Soft ambient prayer |
-| `soaking-prayer.mp3` | Warm soaking pads |
-| `hope-rise.mp3` | Gentle uplift (optional soft energy) |
-| `night-rest.mp3` | Evening rest |
+| File | Track |
+|------|-------|
+| `morning-stillness.wav` | Soft ambient prayer |
+| `soaking-prayer.wav` | Warm soaking pads |
+| `hope-rise.wav` | Gentle uplift |
+| `night-rest.wav` | Evening rest |
 
-The app plays these in **Prayer closet** when worship bed is on. If a file is missing, a quiet generated stillness tone is used until you add tracks.
+Regenerate after clone:
 
-Suggested sources: [Pixabay worship music](https://pixabay.com/music/search/worship/) — download MP3, rename to match table above, commit or copy to Lightsail `artifacts/shepherds-path/public/worship/`.
+```bash
+python3 scripts/generate-worship-wavs.py
+```
+
+You may replace any file with a licensed MP3/WAV (same basename) from [Pixabay worship](https://pixabay.com/music/search/worship/). The prayer closet plays these when **Stillness (local)** is selected.

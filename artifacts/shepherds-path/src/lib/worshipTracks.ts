@@ -1,6 +1,6 @@
 /**
- * Worship bed tracks — host MP3s at public/worship/{id}.mp3
- * Pixabay / licensed Christian EDM or ambient (see public/worship/README.md)
+ * Worship bed tracks — files in public/worship/{id}.wav
+ * Generated via scripts/generate-worship-wavs.py (or replace with licensed MP3s).
  */
 
 export type WorshipTrackId =
@@ -13,34 +13,39 @@ export type WorshipTrack = {
   id: WorshipTrackId;
   title: string;
   mood: string;
-  /** Path under site root; file may be added later */
   src: string;
 };
+
+export function worshipAssetUrl(relativePath: string): string {
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  const path = relativePath.startsWith("/") ? relativePath : `/${relativePath}`;
+  return `${base}${path}`;
+}
 
 export const WORSHIP_TRACKS: WorshipTrack[] = [
   {
     id: "morning-stillness",
     title: "Morning stillness",
     mood: "Soft ambient · prayer",
-    src: "/worship/morning-stillness.mp3",
+    src: worshipAssetUrl("/worship/morning-stillness.wav"),
   },
   {
     id: "soaking-prayer",
     title: "Soaking prayer",
     mood: "Warm pads · unhurried",
-    src: "/worship/soaking-prayer.mp3",
+    src: worshipAssetUrl("/worship/soaking-prayer.wav"),
   },
   {
     id: "hope-rise",
     title: "Hope rise",
     mood: "Gentle uplift · soft",
-    src: "/worship/hope-rise.mp3",
+    src: worshipAssetUrl("/worship/hope-rise.wav"),
   },
   {
     id: "night-rest",
     title: "Night rest",
     mood: "Low tempo · evening",
-    src: "/worship/night-rest.mp3",
+    src: worshipAssetUrl("/worship/night-rest.wav"),
   },
 ];
 

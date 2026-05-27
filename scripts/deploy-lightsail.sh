@@ -46,6 +46,15 @@ if [[ -f "$API_CWD/.env" ]]; then
 fi
 curl -s -o /dev/null -w "API HTTP %{http_code}\n" "http://127.0.0.1:${API_PORT}/api/health" || echo "WARN: API health check failed — run: pm2 logs api-server --lines 40"
 
+echo "==> Worship bed audio (stillness local)..."
+if [[ ! -f "$REPO_ROOT/artifacts/shepherds-path/public/worship/morning-stillness.wav" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python3 "$REPO_ROOT/scripts/generate-worship-wavs.py"
+  else
+    echo "WARN: No worship WAV files — run: python3 scripts/generate-worship-wavs.py"
+  fi
+fi
+
 echo "==> Building frontend (artifacts/shepherds-path)..."
 cd "$REPO_ROOT/artifacts/shepherds-path"
 if command -v pnpm >/dev/null 2>&1; then

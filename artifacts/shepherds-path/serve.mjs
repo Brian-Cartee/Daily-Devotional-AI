@@ -42,7 +42,35 @@ const MIME = {
   ".xml": "application/xml",
   ".webmanifest": "application/manifest+json",
   ".gz": "application/gzip",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".m4a": "audio/mp4",
+  ".ogg": "audio/ogg",
 };
+
+const ASSET_EXTENSIONS = new Set([
+  ".mp3",
+  ".wav",
+  ".m4a",
+  ".ogg",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".svg",
+  ".ico",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".js",
+  ".mjs",
+  ".css",
+  ".json",
+  ".webmanifest",
+  ".xml",
+  ".txt",
+  ".gz",
+]);
 
 function statFile(p) {
   try { return fs.statSync(p); } catch { return null; }
@@ -88,6 +116,12 @@ const server = http.createServer((req, res) => {
     const idx = path.join(candidate, "index.html");
     statFile(idx) ? sendFile(idx) : sendFile(indexPath);
   } else {
+    const ext = path.extname(urlPath).toLowerCase();
+    if (ASSET_EXTENSIONS.has(ext)) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Not found");
+      return;
+    }
     sendFile(indexPath);
   }
 });

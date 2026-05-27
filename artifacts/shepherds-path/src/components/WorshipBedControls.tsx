@@ -216,7 +216,12 @@ export function WorshipBedControls({
           />
           {!isYoutube && usingGenerated && (
             <p className="text-[10px] text-white/40 mt-2 leading-snug">
-              Playing a quiet stillness tone — add MP3s in public/worship/ for full tracks (see README).
+              Playing a quiet stillness tone — track file could not load. Pull latest deploy or check public/worship/.
+            </p>
+          )}
+          {!isYoutube && isPlaying && !usingGenerated && (
+            <p className="text-[10px] text-emerald-200/75 mt-2 leading-snug text-center">
+              Playing — use side volume if you need it louder.
             </p>
           )}
         </>
