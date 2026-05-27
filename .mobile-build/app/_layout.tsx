@@ -40,11 +40,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { networkMode: "always" } },
 });
 
-try {
-  initializeRevenueCat();
-} catch (err: any) {
-  Alert.alert("RevenueCat Unavailable", err?.message ?? "Unknown error");
-}
+initializeRevenueCat();
 
 async function rescheduleNotifications() {
   if (Platform.OS === "web") return;

@@ -40,26 +40,45 @@ function getRevenueCatApiKey(): string {
   return REVENUECAT_TEST_API_KEY;
 }
 
-export function initializeRevenueCat() {
-  const apiKey = getRevenueCatApiKey();
-  Purchases.setLogLevel(__DEV__ ? Purchases.LOG_LEVEL.DEBUG : Purchases.LOG_LEVEL.ERROR);
-  Purchases.configure({ apiKey });
-  if (__DEV__) {
-    console.log("[RevenueCat] Configured with key for platform:", Platform.OS);
+let revenueCatConfigured = false;
+
+export function isRevenueCatConfigured(): boolean {
+  return revenueCatConfigured;
+}
+
+/** Never throw — a billing init failure must not block the WebView shell. */
+export function initializeRevenueCat(): boolean {
+  try {
+    const apiKey = getRevenueCatApiKey();
+    Purchases.setLogLevel(__DEV__ ? Purchases.LOG_LEVEL.DEBUG : Purchases.LOG_LEVEL.ERROR);
+    Purchases.configure({ apiKey });
+    revenueCatConfigured = true;
+    if (__DEV__) {
+      console.log("[RevenueCat] Configured with key for platform:", Platform.OS);
+    }
+    return true;
+  } catch (err) {
+    console.warn("[RevenueCat] Not configured:", err);
+    revenueCatConfigured = false;
+    return false;
   }
 }
 
 function useSubscriptionContext() {
+  const enabled = revenueCatConfigured;
+
   const customerInfoQuery = useQuery({
     queryKey: ["revenuecat", "customer-info"],
     queryFn: async () => Purchases.getCustomerInfo(),
     staleTime: 60 * 1000,
+    enabled,
   });
 
   const offeringsQuery = useQuery({
     queryKey: ["revenuecat", "offerings"],
     queryFn: async () => Purchases.getOfferings(),
     staleTime: 300 * 1000,
+    enabled,
   });
 
   const purchaseMutation = useMutation({
