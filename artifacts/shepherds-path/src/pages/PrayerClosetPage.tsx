@@ -15,10 +15,8 @@ import { BackButton } from "@/components/BackButton";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { easternVerseDateKey } from "@/lib/shareVerse";
-import {
-  WorshipBedControls,
-  WORSHIP_YOUTUBE_PLAYER_ID,
-} from "@/components/WorshipBedControls";
+import { WorshipBedControls } from "@/components/WorshipBedControls";
+import { WorshipSectionErrorBoundary } from "@/components/WorshipSectionErrorBoundary";
 import { useDailyArt } from "@/hooks/use-daily-art";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { useWorshipBed } from "@/hooks/use-worship-bed";
@@ -105,6 +103,7 @@ export default function PrayerClosetPage() {
     youtubeWorship,
   );
   const {
+    embedUrl: youtubeEmbedUrl,
     playerReady: youtubeReady,
     loadError: youtubeError,
     needsTap: youtubeNeedsTap,
@@ -114,12 +113,18 @@ export default function PrayerClosetPage() {
     settings.worshipEnabled && youtubeWorship,
     settings.worshipYoutubeMixId,
     settings.worshipVolume,
-    WORSHIP_YOUTUBE_PLAYER_ID,
   );
 
+  const worshipNeedsTap = youtubeWorship ? youtubeNeedsTap : localNeedsTap;
+  const worshipPlaying = youtubeWorship ? youtubePlaying : localPlaying;
+
   const playWorshipMusic = () => {
-    if (youtubeWorship) void playYoutubeWorship();
-    else void playLocalWorship();
+    try {
+      if (youtubeWorship) playYoutubeWorship();
+      else void playLocalWorship().catch(() => {});
+    } catch {
+      /* keep prayer closet usable */
+    }
   };
 
   useEffect(() => {
@@ -291,27 +296,30 @@ export default function PrayerClosetPage() {
           />
 
           <div className="mt-3 px-2 sm:px-3 space-y-3">
-            <WorshipBedControls
-              compactPlayer
-              enabled={settings.worshipEnabled}
-              source={settings.worshipSource ?? "youtube"}
-              trackId={settings.worshipTrackId}
-              youtubeMixId={settings.worshipYoutubeMixId ?? "soaking-moment-with-god"}
-              volume={settings.worshipVolume}
-              usingGenerated={usingGenerated}
-              youtubeReady={youtubeReady}
-              youtubeError={youtubeError}
-              needsTap={youtubeWorship ? youtubeNeedsTap : localNeedsTap}
-              isPlaying={youtubeWorship ? youtubePlaying : localPlaying}
-              onPlayMusic={playWorshipMusic}
-              onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
-              onSourceChange={(worshipSource) => patchSettings({ worshipSource })}
-              onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
-              onYoutubeMixChange={(worshipYoutubeMixId: WorshipYoutubeMixId) =>
-                patchSettings({ worshipYoutubeMixId })
-              }
-              onVolumeChange={(worshipVolume) => patchSettings({ worshipVolume })}
-            />
+            <WorshipSectionErrorBoundary>
+              <WorshipBedControls
+                compactPlayer
+                enabled={settings.worshipEnabled}
+                source={settings.worshipSource ?? "youtube"}
+                trackId={settings.worshipTrackId}
+                youtubeMixId={settings.worshipYoutubeMixId ?? "soaking-moment-with-god"}
+                volume={settings.worshipVolume}
+                usingGenerated={usingGenerated}
+                youtubeEmbedUrl={youtubeEmbedUrl}
+                youtubeReady={youtubeReady}
+                youtubeError={youtubeError}
+                needsTap={worshipNeedsTap}
+                isPlaying={worshipPlaying}
+                onPlayMusic={playWorshipMusic}
+                onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
+                onSourceChange={(worshipSource) => patchSettings({ worshipSource })}
+                onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
+                onYoutubeMixChange={(worshipYoutubeMixId: WorshipYoutubeMixId) =>
+                  patchSettings({ worshipYoutubeMixId })
+                }
+                onVolumeChange={(worshipVolume) => patchSettings({ worshipVolume })}
+              />
+            </WorshipSectionErrorBoundary>
           </div>
 
           <div className="mt-4 px-2 text-center" data-testid="closet-wall-verse">

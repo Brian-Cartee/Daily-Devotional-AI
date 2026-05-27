@@ -37,16 +37,21 @@ export class ErrorBoundary extends Component<Props, State> {
               Take a breath — tap below to pick up where you left off.
             </p>
           </div>
-          <button
-            onClick={() => {
-              this.setState({ hasError: false, errorMessage: "" });
-              window.location.reload();
-            }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh the app
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={() => this.setState({ hasError: false, errorMessage: "" })}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh the app
+            </button>
+          </div>
           {this.state.errorMessage ? (
             <p className="text-[11px] text-muted-foreground/50 max-w-xs break-all font-mono">
               {this.state.errorMessage}

@@ -9,8 +9,6 @@ import {
   type WorshipYoutubeMixId,
 } from "@/lib/worshipYouTubeMixes";
 
-export const WORSHIP_YOUTUBE_PLAYER_ID = "sp-worship-youtube-player";
-
 type Props = {
   enabled: boolean;
   source: WorshipBedSource;
@@ -18,6 +16,7 @@ type Props = {
   youtubeMixId: WorshipYoutubeMixId;
   volume: number;
   usingGenerated?: boolean;
+  youtubeEmbedUrl?: string | null;
   youtubeReady?: boolean;
   youtubeError?: boolean;
   needsTap?: boolean;
@@ -39,6 +38,7 @@ export function WorshipBedControls({
   youtubeMixId,
   volume,
   usingGenerated,
+  youtubeEmbedUrl,
   youtubeReady,
   youtubeError,
   needsTap = false,
@@ -135,19 +135,20 @@ export function WorshipBedControls({
                   ))}
                 </div>
               ))}
-              <div
-                key={youtubeMixId}
-                id={WORSHIP_YOUTUBE_PLAYER_ID}
-                className={`w-full rounded-xl overflow-hidden bg-black/80 border border-white/10 ${
-                  enabled
-                    ? compactPlayer
-                      ? "min-h-[120px] max-h-[140px]"
-                      : "min-h-[100px]"
-                    : "h-0 min-h-0 border-0"
-                }`}
-                data-testid="worship-youtube-player"
-              />
-              {onPlayMusic && (needsTap || (!isPlaying && !youtubeError)) && (
+              {youtubeEmbedUrl ? (
+                <iframe
+                  key={`${youtubeMixId}-${youtubeEmbedUrl}`}
+                  title="Worship music"
+                  src={youtubeEmbedUrl}
+                  className={`w-full rounded-xl bg-black/80 border border-white/10 ${
+                    compactPlayer ? "min-h-[120px] max-h-[140px]" : "min-h-[100px] aspect-video"
+                  }`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  data-testid="worship-youtube-player"
+                />
+              ) : null}
+              {onPlayMusic && needsTap && (
                 <button
                   type="button"
                   onClick={onPlayMusic}
@@ -155,10 +156,10 @@ export function WorshipBedControls({
                   className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-[13px] bg-violet-600 hover:bg-violet-500 text-white border border-violet-400/40 transition-colors"
                 >
                   <Play className="w-4 h-4" aria-hidden />
-                  {isPlaying ? "Resume music" : "Play music"}
+                  Play music
                 </button>
               )}
-              {isPlaying && !needsTap && (
+              {isPlaying && (
                 <p className="text-[10px] text-emerald-200/75 leading-snug text-center">
                   Playing — use side volume on iPhone if you need it louder.
                 </p>
@@ -168,9 +169,9 @@ export function WorshipBedControls({
                   This mix may not allow embedding — try another or use Stillness (local).
                 </p>
               )}
-              {!youtubeError && enabled && !youtubeReady && (
-                <p className="text-[10px] text-white/40 leading-snug">
-                  Loading player…
+              {needsTap && !youtubeEmbedUrl && (
+                <p className="text-[10px] text-white/40 leading-snug text-center">
+                  Tap Play to load the mix — nothing plays until you choose.
                 </p>
               )}
             </div>

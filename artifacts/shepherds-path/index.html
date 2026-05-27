@@ -79,15 +79,24 @@
       document.documentElement.setAttribute("data-sp-shell", "native");
       document.documentElement.classList.add("sp-native-shell");
 
-      window.onerror = function (msg, _url, _line, _col, err) {
+      function isBenignShellError(msg) {
+        var s = String(msg || "");
+        return /ResizeObserver|AbortError|NotAllowedError|play\(\) request was interrupted|The operation was aborted|Non-Error promise rejection|Load failed|cancelled/i.test(s);
+      }
+
+      function reportShellError(msg, detail) {
+        if (isBenignShellError(msg) || isBenignShellError(detail)) return;
         try {
-          bridge.postMessage(JSON.stringify({ type: "js_error", msg: String(msg), detail: err && err.message }));
+          bridge.postMessage(JSON.stringify({ type: "js_error", msg: String(msg), detail: detail || "" }));
         } catch (e) {}
+      }
+
+      window.onerror = function (msg, _url, _line, _col, err) {
+        reportShellError(msg, err && err.message);
       };
       window.onunhandledrejection = function (ev) {
-        try {
-          bridge.postMessage(JSON.stringify({ type: "js_error", msg: String(ev.reason) }));
-        } catch (e) {}
+        var reason = ev && ev.reason;
+        reportShellError(reason, reason && reason.message);
       };
 
       var sent = false;
