@@ -315,17 +315,17 @@ export function FloatingAskAI() {
           onClick={openSheet}
           aria-label="Ask Path AI"
           whileTap={{ scale: 0.94 }}
-          className="relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border-0 p-0 bg-transparent"
+          className="relative flex h-10 w-10 items-center justify-center rounded-[12px] border-0 p-0 bg-transparent"
         >
           {/* Soft halo — breathes without flashing the whole control */}
           <span
-            className="pointer-events-none absolute -inset-1 sm:-inset-1.5 rounded-[16px] sm:rounded-[18px] bg-primary/45 blur-lg sm:blur-xl opacity-70"
+            className="pointer-events-none absolute -inset-0.5 rounded-[14px] bg-primary/40 blur-md opacity-60"
             style={{ animation: "pathAiHalo 3.5s ease-in-out infinite" }}
             aria-hidden
           />
           <BrandIcon
-            size={48}
-            className="relative h-full w-full rounded-[14px] sm:rounded-2xl shadow-lg shadow-primary/40 ring-1 ring-white/15"
+            size={40}
+            className="relative h-10 w-10 rounded-[12px] shadow-sm select-none ring-1 ring-primary/15"
           />
         </motion.button>
       </div>
