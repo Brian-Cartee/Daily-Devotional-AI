@@ -4752,7 +4752,7 @@ ${PASTOR_TIER_AI_GUIDE}`,
           pastorHint: analysis.preacher,
           rotationSeed: cacheKey,
         },
-        { videoDuration: "medium", allowNonListedFallback: false },
+        { videoDuration: "medium", allowNonListedFallback: true },
       );
       if (!video?.id?.videoId) return res.json({ found: false });
 

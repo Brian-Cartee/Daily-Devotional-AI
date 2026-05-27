@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, X, Loader2, BookOpen, ChevronDown, Check, ExternalLink } from "lucide-react";
 import { useLocation } from "wouter";
@@ -77,7 +77,7 @@ const closingPrayer = (theme: string) =>
 export function DailySermonCard({ verseId, verseReference, reflectionContent, onSermonLoaded }: DailySermonCardProps) {
   const [, setLocation] = useLocation();
   const [sermon, setSermon] = useState<Sermon | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showPlayer, setShowPlayer] = useState(false);
   const [stage, setStage] = useState<"idle" | "watched" | "journaled">("idle");
   const [journalText, setJournalText] = useState("");
@@ -85,8 +85,79 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
   const [journalSaved, setJournalSaved] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
   const cacheKey = `sermon_daily_${new Date().toISOString().slice(0, 10)}_${verseId}`;
+
+  const loadSermon = useCallback(async (force = false) => {
+    if (!reflectionContent || !verseId) return;
+    if (fetchedRef.current && !force) return;
+
+    setShowUpsell(showSermonUpsell(verseId));
+    setLoadError(null);
+    setLoading(true);
+
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (!force && cached) {
+        const parsed = JSON.parse(cached) as Sermon;
+        setSermon(parsed);
+        onSermonLoaded?.(parsed.channel);
+        fetchedRef.current = true;
+        return;
+      }
+    } catch {
+      /* ignore bad cache */
+    }
+
+    try {
+      const res = await fetch("/api/sermon/daily", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verseId,
+          date: new Date().toISOString().slice(0, 10),
+          reflectionContext: reflectionContent,
+          ...apiSessionExtras(),
+        }),
+      });
+      const data = (await res.json()) as {
+        found?: boolean;
+        sermon?: Sermon;
+        message?: string;
+        code?: string;
+      };
+
+      if (data.found && data.sermon) {
+        setSermon(data.sermon);
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data.sermon));
+        } catch {
+          /* quota */
+        }
+        onSermonLoaded?.(data.sermon.channel);
+        fetchedRef.current = true;
+        return;
+      }
+
+      setSermon(null);
+      fetchedRef.current = true;
+      if (data.code === "sermon-daily_limit") {
+        setLoadError(data.message || "Daily clip limit reached — try again tomorrow or open Go Deeper below.");
+      } else {
+        setLoadError(
+          data.message ||
+            "We couldn't find today's clip yet. Tap retry, or expand Go Deeper for more teaching videos.",
+        );
+      }
+    } catch {
+      setSermon(null);
+      fetchedRef.current = true;
+      setLoadError("Connection issue — tap retry, or expand Go Deeper below.");
+    } finally {
+      setLoading(false);
+    }
+  }, [cacheKey, onSermonLoaded, reflectionContent, verseId]);
 
   const openPlayer = () => {
     if (!sermon) return;
@@ -102,43 +173,9 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
   };
 
   useEffect(() => {
-    if (fetchedRef.current || !reflectionContent || !verseId) return;
-
-    setShowUpsell(showSermonUpsell(verseId));
-
-    try {
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        setSermon(JSON.parse(cached));
-        setLoading(false);
-        return;
-      }
-    } catch {}
-
-    fetchedRef.current = true;
-    setLoading(true);
-
-    fetch("/api/sermon/daily", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        verseId,
-        date: new Date().toISOString().slice(0, 10),
-        reflectionContext: reflectionContent,
-        ...apiSessionExtras(),
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.found && data.sermon) {
-          setSermon(data.sermon);
-          try { sessionStorage.setItem(cacheKey, JSON.stringify(data.sermon)); } catch {}
-          onSermonLoaded?.(data.sermon.channel);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [verseId, reflectionContent, cacheKey, onSermonLoaded]);
+    if (!reflectionContent || !verseId) return;
+    void loadSermon();
+  }, [verseId, reflectionContent, loadSermon]);
 
   const saveJournal = async () => {
     if (!journalText.trim() || journalSaving) return;
@@ -161,7 +198,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
     setJournalSaving(false);
   };
 
-  if (!loading && !sermon) return null;
+  if (!loading && !sermon && !loadError) return null;
 
   return (
     <AnimatePresence>
@@ -213,6 +250,33 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
                   <div className="h-4 rounded-full bg-white/5 animate-pulse w-3/4" />
                   <div className="h-4 rounded-full bg-white/5 animate-pulse w-1/2" />
                   <div className="rounded-2xl bg-white/5 animate-pulse" style={{ aspectRatio: "16/9" }} />
+                </div>
+              )}
+
+              {!loading && loadError && !sermon && (
+                <div className="px-4 pb-4 pt-3 space-y-3">
+                  <p
+                    className="text-[14px] leading-relaxed"
+                    style={{ color: "rgba(255,255,255,0.65)", fontFamily: "'Georgia', serif", fontStyle: "italic" }}
+                  >
+                    {loadError}
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="btn-retry-daily-sermon"
+                    onClick={() => {
+                      fetchedRef.current = false;
+                      void loadSermon(true);
+                    }}
+                    className="w-full py-3 rounded-xl text-[13px] font-semibold"
+                    style={{
+                      background: "rgba(124,58,237,0.2)",
+                      border: "1px solid rgba(167,139,250,0.35)",
+                      color: "rgba(255,255,255,0.85)",
+                    }}
+                  >
+                    Try again
+                  </button>
                 </div>
               )}
 
