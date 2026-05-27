@@ -25,6 +25,8 @@ export function useDailyVerse() {
       const data = await res.json();
       return parseWithLogging(api.verses.getDaily.responses[200], data, "verses.getDaily");
     },
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

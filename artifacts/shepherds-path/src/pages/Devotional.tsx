@@ -378,7 +378,7 @@ export default function Devotional() {
   // Effect 3: Passive auto-trigger — after 3 seconds of dwelling on the verse, begin naturally
   useEffect(() => {
     if (!verse || entryTriggered) return;
-    const timer = setTimeout(() => setEntryTriggered(true), 3000);
+    const timer = setTimeout(() => setEntryTriggered(true), 1200);
     return () => clearTimeout(timer);
   }, [verse, entryTriggered]);
 

@@ -127,7 +127,7 @@ export function NavBar() {
       {/* ── Top navigation bar — transparent on home so hero fills behind it ── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-40 ${
-          overHomeHero ? "bg-transparent backdrop-blur-[1px]" : "bg-background/80 backdrop-blur-xl"
+          overHomeHero ? "bg-transparent" : "bg-background/80 backdrop-blur-xl"
         }`}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >

@@ -7,11 +7,36 @@ interface DevotionalCache {
   prayer?: string;
 }
 
-const STORAGE_KEY = "shepherds_devotional_session";
+const STORAGE_KEY = "shepherds_devotional_session_v2";
+
+function readRaw(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    /* localStorage can be blocked (Safari private / some WebViews) */
+  }
+  try {
+    return sessionStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeRaw(value: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+    return;
+  } catch {
+    /* fall back */
+  }
+  try {
+    sessionStorage.setItem(STORAGE_KEY, value);
+  } catch {}
+}
 
 function load(): DevotionalCache | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = readRaw();
     if (!raw) return null;
     const parsed: DevotionalCache = JSON.parse(raw);
     if (parsed.date !== todayKey()) return null;
@@ -24,7 +49,7 @@ function load(): DevotionalCache | null {
 function save(data: Partial<Omit<DevotionalCache, "date">>) {
   try {
     const existing = load() ?? { date: todayKey() };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...existing, ...data, date: todayKey() }));
+    writeRaw(JSON.stringify({ ...existing, ...data, date: todayKey() }));
   } catch {}
 }
 
