@@ -4,7 +4,11 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { installApiFetch } from "./lib/api";
 import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
-import { isNativeWebViewShell, notifyNativeShellReady } from "./lib/platform";
+import {
+  isNativeWebViewShell,
+  notifyNativeShellReady,
+  removeNativeBootPlaceholder,
+} from "./lib/platform";
 
 installApiFetch();
 
@@ -59,18 +63,26 @@ if ("serviceWorker" in navigator) {
   }
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  throw new Error("Missing #root mount node");
+}
+
+createRoot(rootEl).render(
   <ErrorBoundary>
     <App />
   </ErrorBoundary>
 );
 
+removeNativeBootPlaceholder();
+
 if (typeof window !== "undefined" && isNativeWebViewShell()) {
-  const pollMount = (attempts = 0) => {
+  const pollReady = (attempts = 0) => {
+    removeNativeBootPlaceholder();
     notifyNativeShellReady();
-    const root = document.getElementById("root");
-    if (root && root.children.length > 0) return;
-    if (attempts < 80) setTimeout(() => pollMount(attempts + 1), 250);
+    if (attempts < 80) {
+      setTimeout(() => pollReady(attempts + 1), 250);
+    }
   };
-  pollMount();
+  requestAnimationFrame(() => pollReady());
 }

@@ -11,9 +11,29 @@ export function isIOS(): boolean {
   );
 }
 
+/** Boot HTML in index.html — gone once React has replaced #root contents */
+export function hasNativeBootPlaceholder(): boolean {
+  if (typeof document === "undefined") return false;
+  return !!document.getElementById("sp-boot");
+}
+
+/** True when the native shell can hide its loading overlay */
+export function isNativeShellUiReady(): boolean {
+  if (typeof document === "undefined") return false;
+  const root = document.getElementById("root");
+  if (!root || root.children.length === 0) return false;
+  return !hasNativeBootPlaceholder();
+}
+
+export function removeNativeBootPlaceholder(): void {
+  if (typeof document === "undefined") return;
+  document.getElementById("sp-boot")?.remove();
+}
+
 /** Tell the App Store iOS shell to hide its loading overlay */
 export function notifyNativeShellReady(): void {
   if (typeof window === "undefined") return;
+  if (!isNativeShellUiReady()) return;
   try {
     window.dispatchEvent(new Event("sp-app-ready"));
     (

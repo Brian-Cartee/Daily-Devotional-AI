@@ -99,10 +99,22 @@ export default function MainScreen() {
     setShowStuckHelp(false);
   }, []);
 
+  const onUserContinue = useCallback(() => {
+    readyRef.current = true;
+    setShowOverlay(false);
+    setShowStuckHelp(false);
+  }, []);
+
   useEffect(() => {
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 4000);
-    return () => clearTimeout(slowTimer);
-  }, [entryUrl]);
+    const forceContinueTimer = setTimeout(() => {
+      if (!readyRef.current) onUserContinue();
+    }, 12000);
+    return () => {
+      clearTimeout(slowTimer);
+      clearTimeout(forceContinueTimer);
+    };
+  }, [entryUrl, onUserContinue]);
 
   const reload = () => {
     setError(false);
@@ -115,12 +127,6 @@ export default function MainScreen() {
 
   const openInSafari = () => {
     Linking.openURL(`${APP_ORIGIN}/native-shell.html`).catch(() => {});
-  };
-
-  const onUserContinue = () => {
-    readyRef.current = true;
-    setShowOverlay(false);
-    setShowStuckHelp(false);
   };
 
   const onShouldStartLoadWithRequest = (event: ShouldStartLoadRequest): boolean => {
@@ -184,9 +190,13 @@ export default function MainScreen() {
             if (data.type === "app_ready") onAppReady();
             // Only block the UI for errors before the app has mounted — worship/audio
             // often logs benign rejections that must not force a full refresh.
-            if (data.type === "js_error") {
-              setShowOverlay(false);
-              setShowStuckHelp(true);
+            if (data.type === "js_error" && !readyRef.current) {
+              const msg = String(data.msg || data.detail || "");
+              const benign =
+                /ResizeObserver|AbortError|NotAllowedError|play\(\)|interrupted|cancelled|Load failed/i.test(
+                  msg,
+                );
+              if (!benign) setShowStuckHelp(true);
             }
           } catch {
             /* noop */

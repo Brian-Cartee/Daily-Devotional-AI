@@ -197,9 +197,15 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    notifyNativeShellReady();
-    const t = setTimeout(notifyNativeShellReady, 400);
-    return () => clearTimeout(t);
+    if (!isNativeWebViewShell()) return;
+    const ping = () => notifyNativeShellReady();
+    ping();
+    const t1 = setTimeout(ping, 400);
+    const t2 = setTimeout(ping, 1200);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   const toggleTheme = () =>

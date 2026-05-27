@@ -123,19 +123,14 @@
 
       function hardReloadApp() {
         var u = "/?native=1&enter=1&_=" + Date.now();
-        try {
-          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
-        } catch (e) {}
         location.replace(u);
       }
 
       var enterBtn = document.getElementById("sp-enter-btn");
       if (enterBtn) {
         enterBtn.addEventListener("click", function () {
-          try {
-            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
-          } catch (e) {}
           if (!hasMountedApp()) hardReloadApp();
+          else notify();
         });
       }
 
@@ -152,18 +147,14 @@
       window.addEventListener("sp-app-ready", notify);
 
       setTimeout(function () {
-        if (sent) return;
+        if (sent || hasMountedApp()) return;
         var root = document.getElementById("root");
         if (!root) return;
         root.innerHTML =
           '<div style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">' +
           '<p style="font-size:20px;font-weight:700;margin:0 0 10px;">Having trouble loading</p>' +
-          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">Try again, or open shepherdspathai.com in Safari for the full experience.</p>' +
+          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">Tap Reload, or open shepherdspathai.com in Safari.</p>' +
           '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button></div>';
-        sent = true;
-        try {
-          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
-        } catch (e) {}
       }, 14000);
 
       var mod = document.querySelector('script[type="module"]');
@@ -176,10 +167,6 @@
             '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:system-ui,sans-serif;">' +
             '<p style="font-size:18px;font-weight:600;margin:0 0 12px;">Could not load the app</p>' +
             '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;">Try again</button></div>';
-          sent = true;
-          try {
-            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
-          } catch (e) {}
         });
       }
     })();
