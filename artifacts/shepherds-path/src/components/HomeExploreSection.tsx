@@ -30,23 +30,13 @@ const EXPLORE_ITEMS = [
 const PREVIEW_HREFS = new Set(["/read", "/prayer-wall", "/reading-plans", "/study"]);
 const PREVIEW_ITEMS = EXPLORE_ITEMS.filter((item) => PREVIEW_HREFS.has(item.href));
 
-function readExpandedDefault(): boolean {
-  try {
-    return localStorage.getItem(EXPLORE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 type Props = {
-  /** Week one: collapsed only — no preview tile grid */
+  /** New users: hide path grid until they tap More paths */
   chapelFirstWeek?: boolean;
 };
 
 export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
-  const [expanded, setExpanded] = useState(() =>
-    chapelFirstWeek ? false : readExpandedDefault(),
-  );
+  const [expanded, setExpanded] = useState(false);
 
   const toggle = () => {
     setExpanded((v) => {
@@ -83,7 +73,31 @@ export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
       </button>
 
       <AnimatePresence initial={false} mode="wait">
-        {!expanded && !chapelFirstWeek ? (
+        {expanded ? (
+          <motion.div
+            key="full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="grid grid-cols-2 gap-2.5">
+              {EXPLORE_ITEMS.map(({ href, label, desc, bg, testid }) => (
+                <Link key={href} href={href}>
+                  <div
+                    data-testid={`card-${testid}`}
+                    className={`rounded-2xl border ${bg} p-3.5 cursor-pointer hover:brightness-110 active:scale-[0.97] transition-all h-full min-h-[108px]`}
+                  >
+                    <div className="mb-2.5">
+                      <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
+                    </div>
+                    <p className="text-[13px] font-bold text-foreground leading-tight">{label}</p>
+                    <p className="text-[11px] text-muted-foreground/65 mt-0.5 leading-snug">{desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        ) : chapelFirstWeek ? null : (
           <motion.div
             key="preview"
             initial={{ opacity: 0, height: 0 }}
@@ -112,30 +126,6 @@ export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
             >
               See all paths in the app
             </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="grid grid-cols-2 gap-2.5">
-              {EXPLORE_ITEMS.map(({ href, label, desc, bg, testid }) => (
-                <Link key={href} href={href}>
-                  <div
-                    data-testid={`card-${testid}`}
-                    className={`rounded-2xl border ${bg} p-3.5 cursor-pointer hover:brightness-110 active:scale-[0.97] transition-all h-full min-h-[108px]`}
-                  >
-                    <div className="mb-2.5">
-                      <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
-                    </div>
-                    <p className="text-[13px] font-bold text-foreground leading-tight">{label}</p>
-                    <p className="text-[11px] text-muted-foreground/65 mt-0.5 leading-snug">{desc}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -45,7 +45,6 @@ import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/componen
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import {
   bumpHomeVisitAfterThreshold,
-  isChapelFirstWeek,
   isDeferredOnboardingVisit,
   isSacredFirstHomeVisit,
 } from "@/lib/firstSession";
@@ -603,7 +602,7 @@ function LandingHomeInner() {
     !engagementBusy &&
     !isLateNight();
   const carryToday = getCarryToday();
-  const chapelFirstWeek = isChapelFirstWeek(daysWithApp, visitCount);
+  const chapelExploreCollapsed = daysWithApp < 3 && visitCount < 2;
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -724,9 +723,9 @@ function LandingHomeInner() {
             </p>
           )}
 
-          {!chapelFirstWeek && <WitnessLetterCard />}
+          <WitnessLetterCard />
 
-          {!chapelFirstWeek && <LamentSeasonHomeCard />}
+          <LamentSeasonHomeCard />
 
           {/* Name prompt — shown once for returning users who haven't set their name */}
           {!getUserName() && !nameDismissed && streak >= 1 && (
@@ -781,20 +780,18 @@ function LandingHomeInner() {
           <PrayerClosetHomeCard />
           <HomePathShortcuts />
 
-          {!chapelFirstWeek && (
-            <AnimatePresence>
-              {showWalkthrough && (
-                <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
-              )}
-            </AnimatePresence>
-          )}
+          <AnimatePresence>
+            {showWalkthrough && (
+              <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
+            )}
+          </AnimatePresence>
 
-          {!chapelFirstWeek && showYourPath && (
+          {showYourPath && (
             <HomeYourPathCard daysWithApp={daysWithApp} devotionalVisitCount={visitCount} />
           )}
 
           <LateNightBannerCard />
-          {!chapelFirstWeek && !showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
+          {!showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {
@@ -869,15 +866,9 @@ function LandingHomeInner() {
             );
           })()}
 
-          {!chapelFirstWeek && (
-            <>
-              <HomeDailyTouchpoint sessionId={sessionId} />
-              <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
-            </>
-          )}
+          <HomeDailyTouchpoint sessionId={sessionId} />
+          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
 
-          {!chapelFirstWeek && (
-          <>
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
@@ -925,14 +916,12 @@ function LandingHomeInner() {
               </div>
             </div>
           </Link>}
-          </>
-          )}
 
-          <HomeExploreSection chapelFirstWeek={chapelFirstWeek} />
+          <HomeExploreSection chapelFirstWeek={chapelExploreCollapsed} />
 
-          {!chapelFirstWeek && !isLateNight() && <GoDeepCard />}
+          {!isLateNight() && <GoDeepCard />}
 
-          {!chapelFirstWeek && showProNudge && (
+          {showProNudge && (
             <div
               data-testid="card-pro-nudge"
               className="relative rounded-2xl overflow-hidden border border-border/50 bg-card/60"
@@ -972,8 +961,6 @@ function LandingHomeInner() {
             </div>
           )}
 
-          {!chapelFirstWeek && (
-          <>
           <button
             type="button"
             onClick={() => setShowDepthExtras((v) => !v)}
@@ -1201,8 +1188,6 @@ function LandingHomeInner() {
               ))}
             </div>
           </div>
-          </>
-          )}
           </>
           )}
 
