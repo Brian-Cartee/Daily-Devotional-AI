@@ -69,9 +69,11 @@
   </head>
   <body style="background-color:#0d0612;margin:0;padding:0;">
     <div id="root">
-      <div id="sp-boot" style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-        <p style="font-size:20px;font-weight:700;margin:0 0 10px;">Shepherd&rsquo;s Path</p>
-        <p style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;">Opening your chapel&hellip;</p>
+      <div id="sp-boot" style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+        <p style="font-size:22px;font-weight:700;margin:0;">Shepherd&rsquo;s Path</p>
+        <p id="sp-boot-status" style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;max-width:300px;">Opening your chapel&hellip;</p>
+        <button type="button" id="sp-enter-btn" style="margin-top:8px;width:100%;max-width:300px;padding:16px 20px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e8c99b,#d4a574);color:#1a1208;-webkit-tap-highlight-color:transparent;">Continue</button>
+        <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="font-size:15px;font-weight:600;color:#d4a574;text-decoration:underline;">Open in Safari instead</a>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
@@ -104,15 +106,37 @@
         reportShellError(reason, reason && reason.message);
       };
 
+      function hasMountedApp() {
+        var root = document.getElementById("root");
+        if (!root || root.children.length === 0) return false;
+        return !document.getElementById("sp-boot");
+      }
+
       var sent = false;
       function notify() {
-        if (sent) return;
-        var root = document.getElementById("root");
-        if (!root || root.children.length === 0) return;
+        if (sent || !hasMountedApp()) return;
         sent = true;
         try {
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
+      }
+
+      function hardReloadApp() {
+        var u = "/?native=1&enter=1&_=" + Date.now();
+        try {
+          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+        } catch (e) {}
+        location.replace(u);
+      }
+
+      var enterBtn = document.getElementById("sp-enter-btn");
+      if (enterBtn) {
+        enterBtn.addEventListener("click", function () {
+          try {
+            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+          } catch (e) {}
+          if (!hasMountedApp()) hardReloadApp();
+        });
       }
 
       function poll() {

@@ -55,16 +55,20 @@ const BEFORE_CONTENT_JS = `(function(){
 
 const READY_JS = `(function(){
   var sent=false;
-  function notify(){
-    if(sent)return;
+  function hasRealApp(){
     var r=document.getElementById('root');
-    if(!r||r.children.length===0)return;
+    if(!r||r.children.length===0)return false;
+    if(document.getElementById('sp-boot'))return false;
+    return true;
+  }
+  function notify(){
+    if(sent||!hasRealApp())return;
     sent=true;
     try{window.ReactNativeWebView.postMessage(JSON.stringify({type:'app_ready'}));}catch(e){}
   }
   function check(){
     notify();
-    if(!sent)setTimeout(check,200);
+    if(!sent)setTimeout(check,250);
   }
   check();
   true;
@@ -96,16 +100,8 @@ export default function MainScreen() {
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 2500);
-    const forceHideTimer = setTimeout(() => {
-      readyRef.current = true;
-      setShowOverlay(false);
-      setShowSlowOptions(false);
-    }, 4000);
-    return () => {
-      clearTimeout(slowTimer);
-      clearTimeout(forceHideTimer);
-    };
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 4000);
+    return () => clearTimeout(slowTimer);
   }, [entryUrl]);
 
   const reload = () => {
@@ -199,16 +195,8 @@ export default function MainScreen() {
         onLoadStart={() => {
           setError(false);
         }}
-        onLoadEnd={(e) => {
-          const url = e.nativeEvent.url;
+        onLoadEnd={() => {
           setShowStuckHelp(false);
-          if (isBootstrapUrl(url)) {
-            onAppReady();
-            return;
-          }
-          setTimeout(() => {
-            if (!readyRef.current) onAppReady();
-          }, 500);
         }}
         onError={() => {
           setShowOverlay(false);
@@ -255,9 +243,9 @@ export default function MainScreen() {
 
           <Pressable
             onPress={onUserContinue}
-            style={({ pressed }) => [styles.skipOverlayBtn, { opacity: pressed ? 0.7 : 1 }]}
+            style={({ pressed }) => [styles.continueBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={styles.skipOverlayText}>Tap to continue</Text>
+            <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
       )}
@@ -350,16 +338,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#d4a574",
   },
-  skipOverlayBtn: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  continueBtn: {
+    marginTop: 24,
+    width: "100%",
+    maxWidth: 300,
+    backgroundColor: "#d4a574",
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
   },
-  skipOverlayText: {
-    fontSize: 14,
-    color: "#d4a574",
-    fontWeight: "600",
-    textDecorationLine: "underline",
+  continueBtnText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1a1208",
   },
   stuckSheet: {
     ...StyleSheet.absoluteFillObject,
