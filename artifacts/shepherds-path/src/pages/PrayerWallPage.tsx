@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavBar } from "@/components/NavBar";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getSessionId } from "@/lib/session";
@@ -10,13 +11,35 @@ import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
+type WallTab = "recent" | "praying" | "answered";
+
 interface WallEntry {
   id: number;
   displayName: string | null;
   request: string;
-  prayCount: number;
-  hasPrayed: boolean;
+  status?: string;
+  answeredText?: string | null;
+  answeredAt?: string | null;
   createdAt: string;
+  encouragements?: { prayed: number; total: number };
+  myActions?: string[];
+}
+
+interface AnsweredEntry {
+  id: number;
+  displayName: string | null;
+  request: string;
+  answeredText?: string | null;
+  answeredAt?: string | null;
+  createdAt: string;
+}
+
+function prayCount(entry: WallEntry): number {
+  return entry.encouragements?.prayed ?? entry.encouragements?.total ?? 0;
+}
+
+function hasPrayedEntry(entry: WallEntry, prayedIds: Set<number>): boolean {
+  return prayedIds.has(entry.id) || (entry.myActions?.includes("prayed") ?? false);
 }
 
 function timeAgo(dateStr: string): string {
@@ -41,12 +64,28 @@ export default function PrayerWallPage() {
   const [showForm, setShowForm] = useState(false);
   const [prayedIds, setPrayedIds] = useState<Set<number>>(new Set());
   const [remindedIds, setRemindedIds] = useState<Set<number>>(new Set());
+  const [tab, setTab] = useState<WallTab>("recent");
 
   const { data: entries = [], isLoading } = useQuery<WallEntry[]>({
     queryKey: ["/api/prayer-wall", sessionId],
     queryFn: () => fetch(`/api/prayer-wall?sessionId=${sessionId}`).then(r => r.json()),
     refetchInterval: 30000,
   });
+
+  const { data: answeredEntries = [], isLoading: answeredLoading } = useQuery<AnsweredEntry[]>({
+    queryKey: ["/api/prayer-wall/answered"],
+    queryFn: () => fetch("/api/prayer-wall/answered").then((r) => r.json()),
+    enabled: tab === "answered",
+  });
+
+  const visibleEntries = useMemo(() => {
+    if (tab === "answered") return [];
+    const active = entries.filter((e) => e.status !== "answered");
+    if (tab === "praying") {
+      return active.filter((e) => hasPrayedEntry(e, prayedIds));
+    }
+    return active;
+  }, [entries, tab, prayedIds]);
 
   const submitMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/prayer-wall", {
@@ -218,12 +257,28 @@ export default function PrayerWallPage() {
           </AnimatePresence>
         </motion.div>
 
+        <motion.div {...fadeUp(0.08)} className="mb-5">
+          <SegmentedControl<WallTab>
+            testId="prayer-wall-tabs"
+            value={tab}
+            onChange={setTab}
+            segments={[
+              { id: "recent", label: "Recent" },
+              { id: "praying", label: "Praying" },
+              { id: "answered", label: "Answered" },
+            ]}
+          />
+        </motion.div>
+
         {/* Stats bar */}
-        {entries.length > 0 && (
+        {tab !== "answered" && visibleEntries.length > 0 && (
           <motion.div {...fadeUp(0.1)} className="flex items-center gap-4 mb-4 px-1">
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Users className="w-3.5 h-3.5" />
-              <span>{entries.length} prayer{entries.length !== 1 ? "s" : ""} lifted</span>
+              <span>
+                {visibleEntries.length} prayer{visibleEntries.length !== 1 ? "s" : ""}
+                {tab === "praying" ? " you're holding" : " lifted"}
+              </span>
             </div>
             <div className="flex-1 h-px bg-border/60" />
             <p className="text-[11px] text-muted-foreground/50">Pray as you feel led</p>
@@ -231,23 +286,69 @@ export default function PrayerWallPage() {
         )}
 
         {/* Prayer feed */}
-        {isLoading && (
+        {tab !== "answered" && isLoading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         )}
 
-        {!isLoading && entries.length === 0 && (
+        {!isLoading && tab !== "answered" && visibleEntries.length === 0 && (
           <motion.div {...fadeUp(0.15)} className="text-center py-12">
             <HandHeart className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-[14px] font-semibold text-foreground/60">Be the first to share</p>
-            <p className="text-[13px] text-muted-foreground mt-1">The wall is quiet right now — open it up.</p>
+            <p className="text-[14px] font-semibold text-foreground/60">
+              {tab === "praying" ? "No prayers you're holding yet" : "Be the first to share"}
+            </p>
+            <p className="text-[13px] text-muted-foreground mt-1">
+              {tab === "praying"
+                ? "Tap “I'm praying” on a request — it will show up here."
+                : "The wall is quiet right now — open it up."}
+            </p>
           </motion.div>
         )}
 
+        {tab === "answered" && answeredLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {tab === "answered" && !answeredLoading && answeredEntries.length === 0 && (
+          <motion.div {...fadeUp(0.15)} className="text-center py-12">
+            <p className="text-[14px] font-semibold text-foreground/60">No answered prayers yet</p>
+            <p className="text-[13px] text-muted-foreground mt-1">When God moves, stories of hope can land here.</p>
+          </motion.div>
+        )}
+
+        {tab === "answered" && !answeredLoading && (
+          <AnimatePresence>
+            {answeredEntries.map((entry, i) => (
+              <motion.div
+                key={entry.id}
+                data-testid={`card-answered-${entry.id}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.04 }}
+                className="mb-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 overflow-hidden"
+              >
+                <div className="p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600/80 dark:text-emerald-400/80 mb-2">
+                    Answered
+                  </p>
+                  <p className="text-[14px] text-foreground/85 leading-relaxed mb-2">{entry.request}</p>
+                  {entry.answeredText && (
+                    <p className="text-[13px] text-muted-foreground italic leading-relaxed border-l-2 border-emerald-500/40 pl-3">
+                      {entry.answeredText}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
+
         <AnimatePresence>
-          {entries.map((entry, i) => {
-            const hasPrayed = entry.hasPrayed || prayedIds.has(entry.id);
+          {tab !== "answered" && visibleEntries.map((entry, i) => {
+            const hasPrayed = hasPrayedEntry(entry, prayedIds);
             const hasReminded = remindedIds.has(entry.id);
             return (
               <motion.div
@@ -294,9 +395,9 @@ export default function PrayerWallPage() {
                       <span className="text-[15px]">🙏</span>
                       <span>{hasPrayed ? "Praying" : "I'm praying"}</span>
                     </button>
-                    {entry.prayCount > 0 && (
+                    {prayCount(entry) > 0 && (
                       <p className="text-[12px] text-muted-foreground">
-                        {entry.prayCount} {entry.prayCount === 1 ? "person" : "people"} praying
+                        {prayCount(entry)} {prayCount(entry) === 1 ? "person" : "people"} praying
                       </p>
                     )}
                   </div>

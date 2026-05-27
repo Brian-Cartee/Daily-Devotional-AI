@@ -41,6 +41,7 @@ import { HomeDailyTouchpoint } from "@/components/HomeDailyTouchpoint";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { isNativeWebViewShell } from "@/lib/platform";
+import { NavBar } from "@/components/NavBar";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import {
@@ -637,6 +638,7 @@ function LandingHomeInner() {
 
   return (
     <div className="min-h-screen relative" style={{ background: "hsl(var(--background))" }}>
+      <NavBar />
       <AnimatePresence>
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>

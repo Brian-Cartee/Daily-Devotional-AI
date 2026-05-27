@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { waitMs } from "@/lib/pauseEngine";
 import { CRISIS_LIFELINE_DISPLAY, CRISIS_LIFELINE_TEL } from "@/lib/crisisResources";
 import type { ThresholdNeed } from "@/lib/thresholdState";
+import { SituationPills } from "@/components/SituationPills";
 
 const PLACEHOLDERS = [
   "I can't quiet my mind tonight…",
@@ -27,6 +28,7 @@ interface TalkItThroughHeroPromptProps {
 export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughHeroPromptProps) {
   const [, navigate] = useLocation();
   const [value, setValue] = useState("");
+  const [topicId, setTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [beginning, setBeginning] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -79,6 +81,16 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
           advice.
         </p>
       </div>
+
+      <SituationPills
+        variant="dark"
+        selectedId={topicId}
+        className="mb-3"
+        onSelect={(situationText, id) => {
+          setTopicId(id);
+          setValue(situationText);
+        }}
+      />
 
       <label className="sr-only" htmlFor="hero-talk-input">
         What&apos;s on your heart

@@ -40,8 +40,9 @@ import { getListenFirstPreference } from "@/lib/listenFirst";
 import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
 import { markReturningHome } from "@/lib/introState";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
+import { SituationPills } from "@/components/SituationPills";
+import { ScriptureSceneCard } from "@/components/ScriptureSceneCard";
 
-import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
 
 interface VerseResult {
@@ -131,6 +132,7 @@ export default function GuidancePage() {
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
   const [heartInput, setHeartInput] = useState("");
+  const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [heartListening, setHeartListening] = useState(false);
   const [followUp, setFollowUp] = useState("");
@@ -740,6 +742,16 @@ export default function GuidancePage() {
                         : "Whatever weighs on your heart, bring it here. You are more seen and more loved than you may feel right now."}
                     </p>
 
+                    <SituationPills
+                      variant="dark"
+                      selectedId={situationTopicId}
+                      className="mb-4"
+                      onSelect={(situationText, id) => {
+                        setSituationTopicId(id);
+                        setHeartInput(situationText);
+                      }}
+                    />
+
                     <label className="sr-only" htmlFor="input-guidance-heart">
                       What&apos;s on your heart
                     </label>
@@ -1152,36 +1164,32 @@ export default function GuidancePage() {
                     <p className="text-[13px] font-bold text-primary/65 tracking-wide">— Psalm 46:10</p>
                   </div>
                 ) : verse ? (
-                  <div
-                    data-testid="card-guidance-verse"
-                    className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/12 via-violet-500/8 to-indigo-500/10 border border-primary/35 px-6 pt-6 pb-5"
-                  >
-                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
-                    <p className="text-[21px] leading-[1.78] font-medium text-foreground italic mb-4">
-                      "{verse.text}"
-                    </p>
-                    <p className="text-[13px] font-bold text-primary/70 tracking-wide mb-3">
-                      — {verse.reference}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowSlowVerse(true)}
-                        data-testid="button-guidance-read-slowly"
-                        className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-primary/25 bg-background/70 hover:border-primary/45 transition-colors"
-                      >
-                        Read slowly
-                      </button>
-                      <button
-                        type="button"
-                        onClick={carryVerseToday}
-                        data-testid="button-guidance-carry-today"
-                        className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-primary/25 bg-background/70 hover:border-primary/45 transition-colors"
-                      >
-                        Carry this today
-                      </button>
-                    </div>
-                  </div>
+                  <ScriptureSceneCard
+                    testId="card-guidance-verse"
+                    text={verse.text}
+                    reference={verse.reference}
+                    label="Scripture for you"
+                    imageSrc={heroArtUrl}
+                    onBookmark={carryVerseToday}
+                    footer={
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowSlowVerse(true)}
+                          data-testid="button-guidance-read-slowly"
+                          className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-white/25 bg-black/25 text-white hover:bg-black/40 transition-colors"
+                        >
+                          Read slowly
+                        </button>
+                        <ListenButton
+                          text={`${verse.text} — ${verse.reference}`}
+                          label="Listen"
+                          size="sm"
+                          scope="verse"
+                        />
+                      </div>
+                    }
+                  />
                 ) : null}
               </motion.div>
             )}

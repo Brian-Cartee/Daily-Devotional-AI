@@ -51,10 +51,10 @@ const AI_PROMPTS: Record<string, string> = {
 };
 
 const PASTORAL_BUTTONS = [
-  { key: "explain",  label: "Help me understand this" },
-  { key: "context",  label: "What was happening in this time?" },
-  { key: "apply",    label: "What does this mean for my life?" },
-  { key: "crossref", label: "Where else does Scripture speak to this?" },
+  { key: "context",  label: "Context" },
+  { key: "explain",  label: "Explanation" },
+  { key: "apply",    label: "Reflection" },
+  { key: "crossref", label: "More in Scripture" },
 ];
 
 function PastoralInsightActions({ text, title }: { text: string; title: string }) {
@@ -494,10 +494,13 @@ export default function ReadBible() {
               {chapterText.data && (
                 <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-white/20 dark:border-slate-700/30 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm">
                   <div className="p-4 sticky top-14">
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-semibold text-foreground">Pastoral Insight</span>
+                      <span className="text-sm font-semibold text-foreground">Understand this passage</span>
                     </div>
+                    <p className="text-[12px] text-muted-foreground mb-3 leading-snug">
+                      Calm insight — not overwhelming. Pick one lens at a time.
+                    </p>
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {PASTORAL_BUTTONS.map(({ key, label }) => (
                         <button
