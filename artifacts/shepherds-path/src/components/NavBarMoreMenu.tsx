@@ -201,7 +201,7 @@ export function NavBarMoreMenu({
             icon={Shield}
             label="Safety & boundaries"
             hint="What this app is and isn't"
-            href="/how-to-use#faq"
+            href="/safety"
             testId="nav-safety-boundaries"
             onClick={onClose}
           />

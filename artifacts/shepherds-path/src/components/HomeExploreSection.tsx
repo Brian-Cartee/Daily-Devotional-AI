@@ -38,8 +38,15 @@ function readExpandedDefault(): boolean {
   }
 }
 
-export function HomeExploreSection() {
-  const [expanded, setExpanded] = useState(readExpandedDefault);
+type Props = {
+  /** Week one: collapsed only — no preview tile grid */
+  chapelFirstWeek?: boolean;
+};
+
+export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
+  const [expanded, setExpanded] = useState(() =>
+    chapelFirstWeek ? false : readExpandedDefault(),
+  );
 
   const toggle = () => {
     setExpanded((v) => {
@@ -76,7 +83,7 @@ export function HomeExploreSection() {
       </button>
 
       <AnimatePresence initial={false} mode="wait">
-        {!expanded ? (
+        {!expanded && !chapelFirstWeek ? (
           <motion.div
             key="preview"
             initial={{ opacity: 0, height: 0 }}

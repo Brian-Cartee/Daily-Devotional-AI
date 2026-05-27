@@ -1,4 +1,5 @@
 import type { WorshipBedSource } from "@/lib/worshipBedSource";
+import { isNativeWebViewShell } from "@/lib/platform";
 import type { WorshipYoutubeMixId } from "@/lib/worshipYouTubeMixes";
 
 /** Personal prayer closet — local preferences (Matthew 6:6) */
@@ -70,18 +71,25 @@ function normalizeBackgroundId(id: ClosetBackgroundId): ClosetBackgroundId {
   return id;
 }
 
+function defaultClosetSettings(): ClosetSettings {
+  return {
+    ...DEFAULT_CLOSET_SETTINGS,
+    worshipSource: isNativeWebViewShell() ? "local" : DEFAULT_CLOSET_SETTINGS.worshipSource,
+  };
+}
+
 export function loadClosetSettings(): ClosetSettings {
   try {
     const raw = localStorage.getItem(CLOSET_STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_CLOSET_SETTINGS };
+    if (!raw) return defaultClosetSettings();
     const parsed = JSON.parse(raw) as ClosetSettings;
     return {
-      ...DEFAULT_CLOSET_SETTINGS,
+      ...defaultClosetSettings(),
       ...parsed,
       backgroundId: normalizeBackgroundId(parsed.backgroundId ?? DEFAULT_CLOSET_SETTINGS.backgroundId),
     };
   } catch {
-    return { ...DEFAULT_CLOSET_SETTINGS };
+    return defaultClosetSettings();
   }
 }
 

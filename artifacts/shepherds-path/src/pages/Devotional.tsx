@@ -37,6 +37,7 @@ import { Link } from "wouter";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { AchievementModal } from "@/components/AchievementModal";
 import { checkStreakAchievement, checkDevotionalFirstComplete, markAchievementSeen, getBadge, type Achievement } from "@/lib/achievements";
+import { isSacredSessionQuiet } from "@/lib/sacredSession";
 import { TipPrompt, shouldShowTip } from "@/components/TipPrompt";
 import { NamePrompt } from "@/components/NamePrompt";
 import { hasBeenPrompted } from "@/lib/userName";
@@ -499,8 +500,8 @@ export default function Devotional() {
       const prayer = capitalizeDivinePronouns(rawPrayer);
       setGratitudePrayer(prayer);
 
-      // Fire achievement after full devotional completion (Step 4 — Thank Him)
-      if (prayer) {
+      // Fire achievement after full devotional — not right after sacred stillness rooms
+      if (prayer && !isSacredSessionQuiet()) {
         const devotionalAchievement = checkDevotionalFirstComplete();
         if (devotionalAchievement) {
           setTimeout(() => {

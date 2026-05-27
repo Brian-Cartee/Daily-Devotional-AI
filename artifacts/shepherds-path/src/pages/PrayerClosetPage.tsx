@@ -43,6 +43,7 @@ import {
   type ClosetSettings,
 } from "@/lib/prayerCloset";
 import type { WorshipTrackId } from "@/lib/worshipTracks";
+import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import type { JournalEntry } from "@shared/schema";
 
 export default function PrayerClosetPage() {
@@ -128,6 +129,7 @@ export default function PrayerClosetPage() {
   };
 
   useEffect(() => {
+    markSacredSessionQuiet();
     markClosetVisit();
     const name = getUserName();
     if (name && !settings.name.trim()) {

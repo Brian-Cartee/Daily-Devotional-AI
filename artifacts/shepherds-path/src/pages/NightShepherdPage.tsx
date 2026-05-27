@@ -24,6 +24,7 @@ import { getNightGreeting, getNightTimeLabel, isLateNight } from "@/lib/nightMod
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { canUseAi } from "@/lib/aiUsage";
 import { refreshAiUsage } from "@/hooks/use-ai-usage";
+import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { PrayerThatStays } from "@/components/prayer/PrayerThatStays";
 
@@ -186,6 +187,7 @@ export default function NightShepherdPage() {
 
   const afterStillness = () => {
     setShowStillness(false);
+    markSacredSessionQuiet();
     setStep("sleep");
   };
 

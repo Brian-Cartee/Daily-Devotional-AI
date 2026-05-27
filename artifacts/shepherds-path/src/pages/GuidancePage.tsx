@@ -39,6 +39,7 @@ import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference } from "@/lib/listenFirst";
 import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
 import { markReturningHome } from "@/lib/introState";
+import { markSacredSessionQuiet } from "@/lib/sacredSession";
 
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
@@ -962,7 +963,7 @@ export default function GuidancePage() {
                   </p>
                 )}
                 {responseComplete && (
-                  <Link href="/how-to-use">
+                  <Link href="/safety">
                     <p
                       className="text-[11px] text-muted-foreground/70 mt-1 underline underline-offset-4 cursor-pointer hover:text-muted-foreground transition-colors"
                       data-testid="link-guidance-safety-boundaries"
@@ -1055,7 +1056,15 @@ export default function GuidancePage() {
                   </div>
                 )}
                 {responseComplete && (
-                  <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+                  <div className="mt-5 flex flex-col items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowStillness(true)}
+                      data-testid="btn-guidance-stillness"
+                      className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm transition-colors"
+                    >
+                      Sit in silence
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -1066,14 +1075,6 @@ export default function GuidancePage() {
                       className="text-[13px] font-semibold text-muted-foreground/85 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
                     >
                       More guidance
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowStillness(true)}
-                      data-testid="btn-guidance-stillness"
-                      className="text-[13px] font-semibold text-muted-foreground/80 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
-                    >
-                      More quiet
                     </button>
                   </div>
                 )}
@@ -1687,6 +1688,7 @@ export default function GuidancePage() {
         verseRef={dailyVerse?.reference ?? verse?.reference ?? "Numbers 6:24"}
         onDone={() => {
           setShowStillness(false);
+          markSacredSessionQuiet();
           markReturningHome();
           navigate("/");
         }}

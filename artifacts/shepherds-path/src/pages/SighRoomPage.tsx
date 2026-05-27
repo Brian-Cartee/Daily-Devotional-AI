@@ -18,6 +18,7 @@ import { canUseAi } from "@/lib/aiUsage";
 import { refreshAiUsage } from "@/hooks/use-ai-usage";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { detectCrisisClient } from "@/lib/crisisClient";
+import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import { PrayerThatStays } from "@/components/prayer/PrayerThatStays";
 
 type Step =
@@ -243,6 +244,7 @@ export default function SighRoomPage() {
 
   const afterStillness = () => {
     setShowStillness(false);
+    markSacredSessionQuiet();
     setStep("close");
   };
 

@@ -20,9 +20,12 @@ function encodeSituation(s: string): string {
 
 export function shouldShowArrivalRitual(): boolean {
   try {
-    return !localStorage.getItem(ARRIVAL_KEY);
-  } catch {
+    if (localStorage.getItem(ARRIVAL_KEY)) return false;
+    const visits = parseInt(localStorage.getItem("sp_home_visits_after_threshold") ?? "0", 10);
+    if (visits < 2) return false;
     return true;
+  } catch {
+    return false;
   }
 }
 

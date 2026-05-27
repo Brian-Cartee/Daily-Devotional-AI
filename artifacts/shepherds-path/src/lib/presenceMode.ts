@@ -6,7 +6,8 @@ export function isSacredPresenceRoute(pathname: string): boolean {
     pathname === "/sigh" ||
     pathname === "/night" ||
     pathname === "/lament" ||
-    pathname === "/surrender"
+    pathname === "/surrender" ||
+    pathname === "/prayer-closet"
   );
 }
 

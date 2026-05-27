@@ -43,6 +43,13 @@ import { isLateNight } from "@/lib/nightMode";
 import { isNativeWebViewShell } from "@/lib/platform";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
+import {
+  bumpHomeVisitAfterThreshold,
+  isChapelFirstWeek,
+  isDeferredOnboardingVisit,
+  isSacredFirstHomeVisit,
+} from "@/lib/firstSession";
+import { isThresholdComplete } from "@/lib/thresholdState";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import {
   SCRIPTURE_COMMITMENT_LEAD,
@@ -484,6 +491,13 @@ function LandingHomeInner() {
   const inNativeApp = isNativeWebViewShell();
   const skipIntrosForHome = isReturningHome() || inNativeApp;
 
+  const [homeVisitAfterThreshold] = useState(() =>
+    isThresholdComplete() ? bumpHomeVisitAfterThreshold() : 0,
+  );
+  const sacredFirstHome = isSacredFirstHomeVisit(homeVisitAfterThreshold);
+  const deferredOnboardingVisit = isDeferredOnboardingVisit(homeVisitAfterThreshold);
+  const blockHomeOverlays = sacredFirstHome || skipIntrosForHome;
+
   useEffect(() => {
     if (inNativeApp) {
       markIntroFlowComplete();
@@ -492,11 +506,11 @@ function LandingHomeInner() {
   }, [inNativeApp]);
 
   const [showSplash, setShowSplash] = useState(
-    () => !skipIntrosForHome && shouldShowSplash(),
+    () => !blockHomeOverlays && shouldShowSplash(),
   );
   const [thresholdWelcome, setThresholdWelcome] = useState(() => consumeThresholdJustCompleted());
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (skipIntrosForHome || inNativeApp) return false;
+    if (blockHomeOverlays || inNativeApp) return false;
     const params = new URLSearchParams(window.location.search);
     if (params.has("onboarding")) {
       const url = new URL(window.location.href);
@@ -504,13 +518,15 @@ function LandingHomeInner() {
       window.history.replaceState({}, "", url.toString());
       return true;
     }
+    if (deferredOnboardingVisit) return shouldShowOnboarding();
+    if (homeVisitAfterThreshold > 0 && homeVisitAfterThreshold !== 2) return false;
     return shouldShowOnboarding();
   });
   useEffect(() => {
     if (skipIntrosForHome) clearReturningHome();
   }, [skipIntrosForHome]);
   const [showEntryScreen, setShowEntryScreen] = useState(
-    () => !inNativeApp && shouldShowHomeEntry(),
+    () => !inNativeApp && !blockHomeOverlays && homeVisitAfterThreshold > 2 && shouldShowHomeEntry(),
   );
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
@@ -518,8 +534,10 @@ function LandingHomeInner() {
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
+  const showWelcomeOverlay =
+    showWelcome && !showOnboarding && !blockHomeOverlays && homeVisitAfterThreshold > 2;
   const [showWalkthrough, setShowWalkthrough] = useState(
-    () => !inNativeApp && shouldShowWalkthrough(),
+    () => !inNativeApp && !blockHomeOverlays && homeVisitAfterThreshold > 2 && shouldShowWalkthrough(),
   );
   useEffect(() => { recordWalkthroughVisit(); }, []);
   const [nameInput, setNameInput] = useState("");
@@ -585,6 +603,7 @@ function LandingHomeInner() {
     !engagementBusy &&
     !isLateNight();
   const carryToday = getCarryToday();
+  const chapelFirstWeek = isChapelFirstWeek(daysWithApp, visitCount);
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -628,7 +647,7 @@ function LandingHomeInner() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showWelcome && !showOnboarding && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+        {showWelcomeOverlay && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       {showEntryScreen && !showOnboarding && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
       <AnimatePresence>
@@ -696,9 +715,18 @@ function LandingHomeInner() {
             </>
           )}
 
-          <WitnessLetterCard />
+          {sacredFirstHome && (
+            <p
+              className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2 -mt-1"
+              data-testid="text-sacred-first-hint"
+            >
+              Start with today&apos;s Word below — one honest step is enough.
+            </p>
+          )}
 
-          <LamentSeasonHomeCard />
+          {!chapelFirstWeek && <WitnessLetterCard />}
+
+          {!chapelFirstWeek && <LamentSeasonHomeCard />}
 
           {/* Name prompt — shown once for returning users who haven't set their name */}
           {!getUserName() && !nameDismissed && streak >= 1 && (
@@ -753,18 +781,20 @@ function LandingHomeInner() {
           <PrayerClosetHomeCard />
           <HomePathShortcuts />
 
-          <AnimatePresence>
-            {showWalkthrough && (
-              <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
-            )}
-          </AnimatePresence>
+          {!chapelFirstWeek && (
+            <AnimatePresence>
+              {showWalkthrough && (
+                <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
+              )}
+            </AnimatePresence>
+          )}
 
-          {showYourPath && (
+          {!chapelFirstWeek && showYourPath && (
             <HomeYourPathCard daysWithApp={daysWithApp} devotionalVisitCount={visitCount} />
           )}
 
           <LateNightBannerCard />
-          {!showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
+          {!chapelFirstWeek && !showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {
@@ -839,10 +869,15 @@ function LandingHomeInner() {
             );
           })()}
 
-          {/* ── One reflection touchpoint per day ── */}
-          <HomeDailyTouchpoint sessionId={sessionId} />
-          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
+          {!chapelFirstWeek && (
+            <>
+              <HomeDailyTouchpoint sessionId={sessionId} />
+              <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
+            </>
+          )}
 
+          {!chapelFirstWeek && (
+          <>
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
@@ -890,12 +925,14 @@ function LandingHomeInner() {
               </div>
             </div>
           </Link>}
+          </>
+          )}
 
-          <HomeExploreSection />
+          <HomeExploreSection chapelFirstWeek={chapelFirstWeek} />
 
-          {!isLateNight() && <GoDeepCard />}
+          {!chapelFirstWeek && !isLateNight() && <GoDeepCard />}
 
-          {showProNudge && (
+          {!chapelFirstWeek && showProNudge && (
             <div
               data-testid="card-pro-nudge"
               className="relative rounded-2xl overflow-hidden border border-border/50 bg-card/60"
@@ -935,6 +972,8 @@ function LandingHomeInner() {
             </div>
           )}
 
+          {!chapelFirstWeek && (
+          <>
           <button
             type="button"
             onClick={() => setShowDepthExtras((v) => !v)}
@@ -1162,6 +1201,8 @@ function LandingHomeInner() {
               ))}
             </div>
           </div>
+          </>
+          )}
           </>
           )}
 

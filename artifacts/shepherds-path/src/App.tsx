@@ -47,6 +47,7 @@ import PrayerWallPage from "@/pages/PrayerWallPage";
 import GreatestGiftPage from "@/pages/GreatestGiftPage";
 import SupportPage from "@/pages/SupportPage";
 import HowToUsePage from "@/pages/HowToUsePage";
+import SafetyPage from "@/pages/SafetyPage";
 import FeedbackPage from "@/pages/FeedbackPage";
 import InvitePage from "@/pages/InvitePage";
 import TriviaPage from "@/pages/TriviaPage";
@@ -149,6 +150,7 @@ function Router() {
       <Route path="/greatest-gift" component={GreatestGiftPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/how-to-use" component={HowToUsePage} />
+      <Route path="/safety" component={SafetyPage} />
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/invite" component={InvitePage} />
       <Route path="/trivia" component={TriviaPage} />
