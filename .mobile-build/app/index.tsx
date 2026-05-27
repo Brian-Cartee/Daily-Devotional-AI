@@ -15,9 +15,9 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 
-/** Static bootstrap page — loads fast, signals ready immediately (fixes endless spinner). */
+/** Open the live app directly — skip the extra bootstrap tap. */
 function shellEntryUrl(): string {
-  return `${APP_ORIGIN}/native-shell.html?_=${Date.now()}`;
+  return `${APP_ORIGIN}/?native=1&enter=1&_=${Date.now()}`;
 }
 
 const IN_APP_HOST_SUFFIXES = [
@@ -56,18 +56,28 @@ const BEFORE_CONTENT_JS = `(function(){
 const READY_JS = `(function(){
   var sent=false;
   function notify(){
-    if(sent)return; sent=true;
+    if(sent)return;
+    var r=document.getElementById('root');
+    if(!r||r.children.length===0)return;
+    sent=true;
     try{window.ReactNativeWebView.postMessage(JSON.stringify({type:'app_ready'}));}catch(e){}
   }
-  if(location.pathname.indexOf('native-shell')>=0){notify();return true;}
   function check(){
-    var r=document.getElementById('root');
-    if(r&&r.children.length>0){notify();return;}
-    setTimeout(check,200);
+    notify();
+    if(!sent)setTimeout(check,200);
   }
   check();
   true;
 })();`;
+
+function isBootstrapUrl(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    return pathname.includes("native-shell");
+  } catch {
+    return url.includes("native-shell");
+  }
+}
 
 export default function MainScreen() {
   const webviewRef = useRef<WebView>(null);
@@ -86,11 +96,15 @@ export default function MainScreen() {
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 2000);
-    const forceShowTimer = setTimeout(() => setShowOverlay(false), 3000);
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 2500);
+    const forceHideTimer = setTimeout(() => {
+      readyRef.current = true;
+      setShowOverlay(false);
+      setShowSlowOptions(false);
+    }, 4000);
     return () => {
       clearTimeout(slowTimer);
-      clearTimeout(forceShowTimer);
+      clearTimeout(forceHideTimer);
     };
   }, [entryUrl]);
 
@@ -174,7 +188,7 @@ export default function MainScreen() {
             if (data.type === "app_ready") onAppReady();
             // Only block the UI for errors before the app has mounted — worship/audio
             // often logs benign rejections that must not force a full refresh.
-            if (data.type === "js_error" && !readyRef.current) {
+            if (data.type === "js_error") {
               setShowOverlay(false);
               setShowStuckHelp(true);
             }
@@ -184,17 +198,17 @@ export default function MainScreen() {
         }}
         onLoadStart={() => {
           setError(false);
-          if (!readyRef.current) setShowOverlay(true);
         }}
-        onLoadEnd={() => {
-          readyRef.current = true;
+        onLoadEnd={(e) => {
+          const url = e.nativeEvent.url;
           setShowStuckHelp(false);
-          setTimeout(() => setShowOverlay(false), 400);
-        }}
-        onNavigationStateChange={(nav) => {
-          if (nav.url.includes("native-shell") || nav.url.includes("enter=1")) {
-            setTimeout(() => setShowOverlay(false), 200);
+          if (isBootstrapUrl(url)) {
+            onAppReady();
+            return;
           }
+          setTimeout(() => {
+            if (!readyRef.current) onAppReady();
+          }, 500);
         }}
         onError={() => {
           setShowOverlay(false);

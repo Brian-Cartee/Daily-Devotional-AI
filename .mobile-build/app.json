@@ -2,7 +2,7 @@
   "expo": {
     "name": "Shepherd's Path",
     "slug": "shepherds-path-mobile",
-    "version": "2.0.5",
+    "version": "2.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
     "scheme": "shepherdspath",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.shepherdspath.app",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "supportsTablet": true,
       "requireFullScreen": true,
       "infoPlist": {

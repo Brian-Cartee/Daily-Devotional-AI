@@ -44,6 +44,7 @@
   </style>
   <script>
     (function () {
+      var inApp = !!window.ReactNativeWebView;
       function signalReady() {
         try {
           if (window.ReactNativeWebView) {
@@ -51,12 +52,14 @@
           }
         } catch (e) {}
       }
+      if (inApp) {
+        signalReady();
+        location.replace("/?native=1&enter=1");
+        return;
+      }
       signalReady();
       document.addEventListener("DOMContentLoaded", signalReady);
       window.addEventListener("load", signalReady);
-      for (var i = 1; i <= 24; i++) {
-        setTimeout(signalReady, i * 200);
-      }
     })();
   </script>
 </head>

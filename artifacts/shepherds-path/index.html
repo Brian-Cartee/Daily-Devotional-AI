@@ -68,7 +68,12 @@
   </script>
   </head>
   <body style="background-color:#0d0612;margin:0;padding:0;">
-    <div id="root"></div>
+    <div id="root">
+      <div id="sp-boot" style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+        <p style="font-size:20px;font-weight:700;margin:0 0 10px;">Shepherd&rsquo;s Path</p>
+        <p style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;">Opening your chapel&hellip;</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- App Store WebView: runs before React — tells native shell when UI is ready (no new iOS build needed) -->
     <script>
@@ -114,7 +119,11 @@
         notify();
         if (!sent) setTimeout(poll, 150);
       }
-      poll();
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", poll);
+      } else {
+        poll();
+      }
 
       window.addEventListener("sp-app-ready", notify);
 
