@@ -161,7 +161,7 @@ export default function ReadingPlansPage() {
         {phase !== "intake-pace" && (
           <BackButton
             testId="button-back-reading-plans"
-            onClick={() => { sessionStorage.setItem("scrollToExplore", "1"); navigate("/"); }}
+            backToPaths
             className="mb-6"
           />
         )}

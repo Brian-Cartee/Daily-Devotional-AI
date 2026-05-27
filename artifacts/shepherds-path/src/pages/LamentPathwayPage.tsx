@@ -13,6 +13,7 @@ import {
   startLamentPathway,
 } from "@/lib/lamentPathway";
 import { getSessionId } from "@/lib/session";
+import { markReturnToHomePaths, navigateBackToHomePaths } from "@/lib/homePathsNav";
 import { apiSessionExtras } from "@/lib/requestExtras";
 
 type Step = "intro" | "wait" | "psalm" | "question" | "write" | "silence" | "companion" | "done";
@@ -90,7 +91,7 @@ export default function LamentPathwayPage() {
 
   const exitSeason = () => {
     endLamentSeason();
-    navigate("/", { replace: true });
+    navigateBackToHomePaths(navigate, { replace: true });
   };
 
   return (
@@ -104,6 +105,7 @@ export default function LamentPathwayPage() {
       <header className="relative z-10 flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
         <Link
           href="/"
+          onClick={() => markReturnToHomePaths()}
           className="flex items-center gap-1.5 text-[13px] text-white/45 hover:text-white/75 py-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -135,7 +137,7 @@ export default function LamentPathwayPage() {
               >
                 Surrender Stone →
               </Link>
-              <Link href="/" className="block mt-6 text-[13px] text-white/40">
+              <Link href="/" onClick={() => markReturnToHomePaths()} className="block mt-6 text-[13px] text-white/40">
                 Home
               </Link>
             </motion.div>

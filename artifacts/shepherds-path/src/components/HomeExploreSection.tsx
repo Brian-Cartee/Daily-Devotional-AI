@@ -5,7 +5,9 @@ import { ChevronDown } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 
-const EXPLORE_KEY = "sp_home_explore_open";
+import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
+
+const EXPLORE_KEY = HOME_EXPLORE_OPEN_KEY;
 
 const EXPLORE_ITEMS = [
   { href: "/salvation", label: "Beginning with Jesus", desc: "Meet Jesus without pressure", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-salvation" },
@@ -36,7 +38,13 @@ type Props = {
 };
 
 export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(EXPLORE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const toggle = () => {
     setExpanded((v) => {

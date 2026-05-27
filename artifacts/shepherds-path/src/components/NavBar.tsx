@@ -111,6 +111,12 @@ export function NavBar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [moreOpen]);
 
+  const overHomeHero = location === "/";
+
+  const utilityIconClass = overHomeHero
+    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90"
+    : "text-muted-foreground hover:text-foreground hover:bg-muted/70";
+
   return (
     <>
       <CoachConsentModal
@@ -122,9 +128,20 @@ export function NavBar() {
         }}
         onDecline={() => setCoachConsentOpen(false)}
       />
-      {/* ── Top navigation bar ── */}
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
+      {/* ── Top navigation bar — transparent on home so hero fills behind it ── */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-40 ${
+          overHomeHero ? "bg-transparent" : "bg-background/80 backdrop-blur-xl"
+        }`}
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
+        {overHomeHero && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#09031e]/75 via-[#09031e]/20 to-transparent"
+            aria-hidden
+          />
+        )}
+        <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
 
           {/* Logo — icon only */}
           <Link
@@ -154,7 +171,9 @@ export function NavBar() {
                   className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all group ${
                     active
                       ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                      : overHomeHero
+                        ? "text-white/85 hover:text-white hover:bg-white/12"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                   }`}
                 >
                   <Icon className="w-[18px] h-[18px] shrink-0" />
@@ -177,6 +196,7 @@ export function NavBar() {
           <div className="flex items-center gap-0.5 shrink-0">
 
             <NavBarMoreMenu
+              overHero={overHomeHero}
               menuRef={moreRef}
               open={moreOpen}
               onToggle={() => {
@@ -234,7 +254,7 @@ export function NavBar() {
                 aria-label="Reminders and notifications"
                 title="Reminders"
                 aria-expanded={notifOpen}
-                className="relative w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-all shrink-0"
+                className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all shrink-0 ${utilityIconClass}`}
               >
                 <Bell className="w-[18px] h-[18px]" />
                 {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (

@@ -1117,7 +1117,7 @@ export default function Journal() {
           {/* Back */}
           <BackButton
             testId="button-back-journal"
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            backToPaths
             className="absolute top-3 left-3 z-20"
           />
           {/* Shimmer placeholder — fades out once image loads */}

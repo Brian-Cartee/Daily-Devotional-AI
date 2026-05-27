@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { navigateBackToHomePaths } from "@/lib/homePathsNav";
 
 interface BackButtonProps {
   onClick?: () => void;
@@ -7,6 +8,8 @@ interface BackButtonProps {
   href?: string;
   /** Used when history is empty */
   fallback?: string;
+  /** Go to home More paths section instead of page top or history.back */
+  backToPaths?: boolean;
   testId?: string;
   className?: string;
 }
@@ -15,6 +18,7 @@ export function BackButton({
   onClick,
   href,
   fallback = "/",
+  backToPaths = false,
   testId,
   className = "",
 }: BackButtonProps) {
@@ -23,6 +27,10 @@ export function BackButton({
   const handleClick = () => {
     if (onClick) {
       onClick();
+      return;
+    }
+    if (backToPaths) {
+      navigateBackToHomePaths(navigate);
       return;
     }
     if (href) {

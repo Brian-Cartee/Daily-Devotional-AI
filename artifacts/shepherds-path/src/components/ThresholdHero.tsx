@@ -88,24 +88,28 @@ export function ThresholdHero() {
   return (
     <div className="relative bg-[#09031e]">
       <div
-        className={`relative w-full overflow-hidden max-h-[400px] sm:max-h-[440px] ${
+        className={`relative w-full overflow-hidden max-h-[460px] sm:max-h-[500px] ${
           showPhotoTaglines
-            ? "h-[46vh] min-h-[260px] sm:h-[44vh]"
-            : "h-[38vh] min-h-[220px] sm:h-[36vh]"
+            ? "h-[52vh] min-h-[300px] sm:h-[50vh]"
+            : "h-[46vh] min-h-[280px] sm:h-[44vh]"
         }`}
         aria-hidden={false}
       >
         <img
           src="/hero-landing.webp"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-[center_42%] sm:object-[center_38%]"
+          className="absolute inset-x-0 bottom-0 w-full object-cover object-[center_38%] sm:object-[center_40%]"
+          style={{
+            top: "calc(env(safe-area-inset-top, 0px) + 3.5rem + 18px)",
+            height: "calc(100% - env(safe-area-inset-top, 0px) - 3.5rem - 18px)",
+          }}
           decoding="async"
         />
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(8,4,18,0.35) 0%, rgba(8,4,18,0.05) 28%, rgba(8,4,18,0.0) 50%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
+              "linear-gradient(to bottom, rgba(8,4,18,0.5) 0%, rgba(8,4,18,0.12) 22%, rgba(8,4,18,0.0) 48%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
           }}
         />
         {showPhotoTaglines && (

@@ -392,7 +392,7 @@ export default function CallingPage() {
       `}</style>
 
       <BackButton
-        onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate("/"); }}
+        backToPaths
         testId="button-calling-back"
         className="fixed top-4 left-4 z-50"
       />

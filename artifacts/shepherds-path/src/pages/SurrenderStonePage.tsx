@@ -6,6 +6,7 @@ import { saveSurrenderEntry } from "@/lib/surrenderStone";
 import { getSessionId } from "@/lib/session";
 import { apiSessionExtras } from "@/lib/requestExtras";
 import { waitMs } from "@/lib/pauseEngine";
+import { markReturnToHomePaths, navigateBackToHomePaths } from "@/lib/homePathsNav";
 
 type Step = "invite" | "hold" | "release" | "scripture" | "stillness" | "close";
 
@@ -116,7 +117,11 @@ export default function SurrenderStonePage() {
       }}
     >
       <header className="relative z-10 flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
-        <Link href="/" className="flex items-center gap-1.5 text-[13px] text-white/45 hover:text-white/70 py-2">
+        <Link
+          href="/"
+          onClick={() => markReturnToHomePaths()}
+          className="flex items-center gap-1.5 text-[13px] text-white/45 hover:text-white/70 py-2"
+        >
           <ArrowLeft className="w-4 h-4" />
           Home
         </Link>
@@ -232,7 +237,7 @@ export default function SurrenderStonePage() {
               <button
                 type="button"
                 data-testid="btn-surrender-close"
-                onClick={() => navigate("/", { replace: true })}
+                onClick={() => navigateBackToHomePaths(navigate, { replace: true })}
                 className="w-full rounded-xl bg-white/10 border border-white/15 text-white font-semibold py-3.5"
               >
                 Return home

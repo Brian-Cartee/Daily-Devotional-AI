@@ -19,6 +19,7 @@ import { getSessionId } from "@/lib/session";
 import { fetchStreak } from "@/lib/streakApi";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
+import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
 import { useDemoMode } from "@/components/DemoProvider";
 import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import {
@@ -543,8 +544,8 @@ function LandingHomeInner() {
   const [nameInput, setNameInput] = useState("");
   const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());
   useEffect(() => {
-    if (sessionStorage.getItem('scrollToExplore')) {
-      sessionStorage.removeItem('scrollToExplore');
+    if (sessionStorage.getItem(SCROLL_TO_EXPLORE_KEY)) {
+      sessionStorage.removeItem(SCROLL_TO_EXPLORE_KEY);
       const scrollToIt = () => {
         const el = document.getElementById('explore-section');
         if (el) {

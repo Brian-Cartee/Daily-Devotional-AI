@@ -509,7 +509,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.70) 100%)" }} />
         <BackButton
           testId="button-back-study"
-          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          backToPaths
           className="absolute top-[60px] left-3 z-10"
         />
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">

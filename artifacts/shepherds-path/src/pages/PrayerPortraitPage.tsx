@@ -7,6 +7,7 @@ import { NavBar } from "@/components/NavBar";
 import { motion } from "framer-motion";
 import { Heart, Lock, Camera, Sparkles } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { navigateBackToHomePaths } from "@/lib/homePathsNav";
 
 // Warm, contemplative photo — sunlight through forest canopy
 const HERO_PHOTO = "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=900&q=85&auto=format&fit=crop";
@@ -38,7 +39,7 @@ export default function PrayerPortraitPage() {
 
             {/* Back button */}
             <BackButton
-              onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+              backToPaths
               testId="button-back-prayer-portrait"
               className="absolute top-3 left-4 z-10"
             />
@@ -100,7 +101,7 @@ export default function PrayerPortraitPage() {
   return (
     <PrayerPortrait
       situation=""
-      onClose={() => navigate("/")}
+      onClose={() => navigateBackToHomePaths(navigate)}
     />
   );
 }

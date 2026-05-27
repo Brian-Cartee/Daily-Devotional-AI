@@ -263,7 +263,7 @@ export default function TriviaPage() {
       {/* Back button — fixed, out of flow so content centers cleanly */}
       {phase === "select" && (
         <BackButton
-          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          backToPaths
           testId="btn-trivia-back"
           className="fixed top-[60px] left-3 z-30"
         />

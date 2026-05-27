@@ -149,7 +149,7 @@ export default function PrayerWallPage() {
 
         {/* Back button */}
         <BackButton
-          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          backToPaths
           testId="button-back-prayer-wall"
           className="absolute top-[62px] left-4 z-10"
         />

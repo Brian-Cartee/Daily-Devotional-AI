@@ -156,7 +156,7 @@ export default function StoriesPage() {
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)" }} />
           <BackButton
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            backToPaths
             testId="button-back-stories"
             className="absolute top-3 left-3 z-20"
           />

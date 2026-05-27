@@ -479,7 +479,7 @@ export default function IronCirclePage() {
           {/* Content */}
           <div className="relative z-10 flex flex-col items-center justify-start text-center px-6 pt-6 pb-8">
             <BackButton
-              onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+              backToPaths
               testId="button-back-iron-circle"
               className="absolute top-3 left-3 z-50"
             />

@@ -247,7 +247,7 @@ export default function ReadBible() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/65" />
           <BackButton
             testId="button-back-read"
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            backToPaths
             className="absolute top-3 left-3 z-20"
           />
           <motion.div

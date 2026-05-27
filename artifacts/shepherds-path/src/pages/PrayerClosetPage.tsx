@@ -270,7 +270,7 @@ export default function PrayerClosetPage() {
             data-testid="closet-page-header"
           >
             <BackButton
-              href="/"
+              backToPaths
               testId="button-back-prayer-closet"
               className="relative z-50"
             />

@@ -547,7 +547,7 @@ function JourneyHub({
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
           <BackButton
             testId="button-back-understand"
-            onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+            backToPaths
             className="absolute top-3 left-3 z-20"
           />
           <motion.div

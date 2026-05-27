@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { isProVerifiedLocally, isOwnerPreviewActive, markOwnerPreview } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
+import { markReturnToHomePaths } from "@/lib/homePathsNav";
 
 interface LibraryEntry {
   date: string;
@@ -173,7 +174,7 @@ function ProGate() {
           Upgrade to Pro
         </button>
       </Link>
-      <Link href="/">
+      <Link href="/" onClick={() => markReturnToHomePaths()}>
         <p className="mt-4 text-white/30 text-xs hover:text-white/60 transition-colors cursor-pointer">
           Back to Shepherd's Path
         </p>
@@ -403,7 +404,7 @@ export default function DisplayMode() {
           >
             {/* Top bar */}
             <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-5">
-              <Link href="/" className="pointer-events-auto">
+              <Link href="/" onClick={() => markReturnToHomePaths()} className="pointer-events-auto">
                 <span className="text-[10px] text-white/25 uppercase tracking-widest font-semibold hover:text-white/50 transition-colors">
                   ← Home
                 </span>

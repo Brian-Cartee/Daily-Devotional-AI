@@ -85,6 +85,8 @@ type Props = {
   onOpenEmail: () => void;
   onOpenLanguage: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
+  /** Home hero: purple pill buttons like bottom tab bar */
+  overHero?: boolean;
 };
 
 export function NavBarMoreMenu({
@@ -100,6 +102,7 @@ export function NavBarMoreMenu({
   onOpenLanguage,
   onClose,
   menuRef,
+  overHero = false,
 }: Props) {
   const toneLabel = guidanceTone === "coach" ? "Direct & accountable" : "Gentle & encouraging";
   const voiceLabel = voicePref === "onyx" ? "Male voice" : "Female voice";
@@ -114,7 +117,13 @@ export function NavBarMoreMenu({
         aria-expanded={open}
         title="Settings"
         className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-          open ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+          overHero
+            ? open
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+              : "bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90"
+            : open
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
         }`}
       >
         <MoreHorizontal className="w-[18px] h-[18px]" />

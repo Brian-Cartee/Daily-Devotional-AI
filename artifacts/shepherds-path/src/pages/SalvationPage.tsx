@@ -157,7 +157,7 @@ export default function SalvationPage() {
 
         {/* Back button */}
         <BackButton
-          onClick={() => { sessionStorage.setItem('scrollToExplore', '1'); navigate('/'); }}
+          backToPaths
           testId="button-back-salvation"
           className="absolute top-[62px] left-4 z-10"
         />
