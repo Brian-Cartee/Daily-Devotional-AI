@@ -5,6 +5,7 @@ import { installApiFetch } from "./lib/api";
 import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
 import {
+  isNativeShellUiReady,
   isNativeWebViewShell,
   notifyNativeShellReady,
   removeNativeBootPlaceholder,
@@ -74,11 +75,11 @@ createRoot(rootEl).render(
   </ErrorBoundary>
 );
 
-removeNativeBootPlaceholder();
-
 if (typeof window !== "undefined" && isNativeWebViewShell()) {
   const pollReady = (attempts = 0) => {
-    removeNativeBootPlaceholder();
+    if (isNativeShellUiReady()) {
+      removeNativeBootPlaceholder();
+    }
     notifyNativeShellReady();
     if (attempts < 80) {
       setTimeout(() => pollReady(attempts + 1), 250);

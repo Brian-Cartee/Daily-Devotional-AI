@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -53,35 +53,20 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
-const READY_JS = `(function(){
-  var sent=false;
+const PROBE_READY_JS = `(function(){
   function hasRealApp(){
     var r=document.getElementById('root');
     if(!r||r.children.length===0)return false;
     if(document.getElementById('sp-boot'))return false;
     return true;
   }
-  function notify(){
-    if(sent||!hasRealApp())return;
-    sent=true;
-    try{window.ReactNativeWebView.postMessage(JSON.stringify({type:'app_ready'}));}catch(e){}
-  }
-  function check(){
-    notify();
-    if(!sent)setTimeout(check,250);
-  }
-  check();
+  try{
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      type: hasRealApp() ? 'app_ready' : 'app_still_loading'
+    }));
+  }catch(e){}
   true;
 })();`;
-
-function isBootstrapUrl(url: string): boolean {
-  try {
-    const { pathname } = new URL(url);
-    return pathname.includes("native-shell");
-  } catch {
-    return url.includes("native-shell");
-  }
-}
 
 export default function MainScreen() {
   const webviewRef = useRef<WebView>(null);
@@ -90,43 +75,45 @@ export default function MainScreen() {
   const [showSlowOptions, setShowSlowOptions] = useState(false);
   const [showStuckHelp, setShowStuckHelp] = useState(false);
   const [error, setError] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   const readyRef = useRef(false);
 
-  const onAppReady = useCallback(() => {
-    readyRef.current = true;
-    setShowOverlay(false);
-    setShowSlowOptions(false);
-    setShowStuckHelp(false);
+  const probeWebReady = useCallback(() => {
+    webviewRef.current?.injectJavaScript(PROBE_READY_JS);
   }, []);
 
-  const onUserContinue = useCallback(() => {
+  const onAppReady = useCallback(() => {
+    if (readyRef.current) return;
     readyRef.current = true;
+    setAppReady(true);
     setShowOverlay(false);
+    setShowSlowOptions(false);
     setShowStuckHelp(false);
   }, []);
 
   useEffect(() => {
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 4000);
-    const forceContinueTimer = setTimeout(() => {
-      if (!readyRef.current) onUserContinue();
-    }, 12000);
+    const stuckTimer = setTimeout(() => {
+      if (!readyRef.current) setShowStuckHelp(true);
+    }, 20000);
     return () => {
       clearTimeout(slowTimer);
-      clearTimeout(forceContinueTimer);
+      clearTimeout(stuckTimer);
     };
-  }, [entryUrl, onUserContinue]);
+  }, [entryUrl]);
 
-  const reload = () => {
+  const reload = useCallback(() => {
     setError(false);
     setShowOverlay(true);
     setShowSlowOptions(false);
     setShowStuckHelp(false);
     readyRef.current = false;
+    setAppReady(false);
     setEntryUrl(shellEntryUrl());
-  };
+  }, []);
 
   const openInSafari = () => {
-    Linking.openURL(`${APP_ORIGIN}/native-shell.html`).catch(() => {});
+    Linking.openURL(`${APP_ORIGIN}/?native=1&enter=1`).catch(() => {});
   };
 
   const onShouldStartLoadWithRequest = (event: ShouldStartLoadRequest): boolean => {
@@ -162,6 +149,8 @@ export default function MainScreen() {
     );
   }
 
+  const showBlankGuard = !showOverlay && !appReady && !error;
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
@@ -182,14 +171,11 @@ export default function MainScreen() {
         setSupportMultipleWindows={false}
         cacheEnabled
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
-        injectedJavaScript={READY_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
             if (data.type === "app_ready") onAppReady();
-            // Only block the UI for errors before the app has mounted — worship/audio
-            // often logs benign rejections that must not force a full refresh.
             if (data.type === "js_error" && !readyRef.current) {
               const msg = String(data.msg || data.detail || "");
               const benign =
@@ -206,7 +192,10 @@ export default function MainScreen() {
           setError(false);
         }}
         onLoadEnd={() => {
-          setShowStuckHelp(false);
+          probeWebReady();
+          setTimeout(probeWebReady, 400);
+          setTimeout(probeWebReady, 1200);
+          setTimeout(probeWebReady, 3000);
         }}
         onError={() => {
           setShowOverlay(false);
@@ -230,11 +219,14 @@ export default function MainScreen() {
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <ActivityIndicator size="large" color="#E8C99B" />
           <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
+          <Text style={styles.loadingSubhint}>
+            Please wait — the app will open when it&apos;s ready.
+          </Text>
 
           {showSlowOptions && (
             <View style={styles.slowOptions}>
               <Text style={styles.slowHint}>
-                Still waking up? You can wait, refresh, or open in Safari.
+                Taking longer than usual? Refresh or open in Safari.
               </Text>
               <Pressable
                 onPress={reload}
@@ -250,22 +242,15 @@ export default function MainScreen() {
               </Pressable>
             </View>
           )}
-
-          <Pressable
-            onPress={onUserContinue}
-            style={({ pressed }) => [styles.continueBtn, { opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Text style={styles.continueBtnText}>Continue</Text>
-          </Pressable>
         </View>
       )}
 
-      {showStuckHelp && !showOverlay && !readyRef.current && (
+      {(showStuckHelp && !appReady) || showBlankGuard ? (
         <View style={styles.stuckSheet} pointerEvents="auto">
           <Text style={styles.stuckTitle}>Having trouble loading?</Text>
           <Text style={styles.stuckText}>
-            The page didn&apos;t finish loading in the app. Try Dismiss to peek underneath, then
-            Refresh for a clean load — or use Safari for the full experience.
+            The app didn&apos;t finish loading. Refresh for a clean start, or use Safari while we
+            catch up.
           </Text>
           <Pressable
             onPress={reload}
@@ -276,11 +261,13 @@ export default function MainScreen() {
           <Pressable onPress={openInSafari} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Open in Safari</Text>
           </Pressable>
-          <Pressable onPress={() => setShowStuckHelp(false)} style={styles.tertiaryButton}>
-            <Text style={styles.tertiaryText}>Dismiss</Text>
-          </Pressable>
+          {showBlankGuard && (
+            <Pressable onPress={probeWebReady} style={styles.tertiaryButton}>
+              <Text style={styles.tertiaryText}>Check again</Text>
+            </Pressable>
+          )}
         </View>
-      )}
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -300,7 +287,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
-    gap: 12,
+    gap: 10,
     zIndex: 20,
   },
   loadingHint: {
@@ -309,8 +296,16 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
+  loadingSubhint: {
+    fontSize: 13,
+    color: "#c0a8cc",
+    textAlign: "center",
+    lineHeight: 18,
+    maxWidth: 300,
+    marginTop: 4,
+  },
   slowOptions: {
-    marginTop: 8,
+    marginTop: 16,
     width: "100%",
     maxWidth: 320,
     gap: 10,
@@ -347,20 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#d4a574",
-  },
-  continueBtn: {
-    marginTop: 24,
-    width: "100%",
-    maxWidth: 300,
-    backgroundColor: "#d4a574",
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-  continueBtnText: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1a1208",
   },
   stuckSheet: {
     ...StyleSheet.absoluteFillObject,

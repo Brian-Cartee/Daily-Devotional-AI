@@ -128,6 +128,9 @@
 
       var enterBtn = document.getElementById("sp-enter-btn");
       if (enterBtn) {
+        enterBtn.style.display = "none";
+      }
+      if (enterBtn) {
         enterBtn.addEventListener("click", function () {
           if (!hasMountedApp()) hardReloadApp();
           else notify();
