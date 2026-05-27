@@ -617,16 +617,11 @@ function LandingHomeInner() {
         {showWelcome && !showOnboarding && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       {showEntryScreen && !showOnboarding && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
-      <SpiritualWeatherCard />
-      <SimpleNotifNudge />
-      <DeepNotifNudge />
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
         )}
       </AnimatePresence>
-
-      <WhyThisExistsPanel />
 
       {/* Desktop side vignette — frames the content column on wide screens only */}
       <div
@@ -669,6 +664,16 @@ function LandingHomeInner() {
         >
           {/* Time-aware greeting */}
           <GreetingHeader />
+
+          {/* Keep the first screen calm: only show these after a first meaningful action */}
+          {hasAction && (
+            <>
+              <SpiritualWeatherCard />
+              <WhyThisExistsPanel />
+              <SimpleNotifNudge />
+              <DeepNotifNudge />
+            </>
+          )}
 
           <WitnessLetterCard />
 

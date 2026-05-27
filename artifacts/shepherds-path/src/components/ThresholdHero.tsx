@@ -19,6 +19,7 @@ import { focusHeroTalkInput } from "@/components/TalkItThroughHeroPrompt";
 import { HomePresenceDoors, defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import type { PresenceDoorId } from "@/components/HomePresenceDoors";
 import { HomePresenceHero } from "@/components/HomePresenceHero";
+import { ArrivalRitual, shouldShowArrivalRitual } from "@/components/ArrivalRitual";
 
 export type ThresholdData = {
   headline: string;
@@ -63,6 +64,7 @@ export function ThresholdHero() {
 
   const threshold = thresholdRes?.threshold;
   const showTalkPrompt = !thresholdLoading;
+  const [showArrival, setShowArrival] = useState(() => shouldShowArrivalRitual());
 
   const selectDoor = (id: PresenceDoorId) => {
     setActiveDoor(id);
@@ -162,6 +164,11 @@ export function ThresholdHero() {
               : threshold?.subtext ??
                 "One honest step is enough. Scripture and prayer can meet you before the noise starts."}
           </p>
+          {showArrival && (
+            <div className="mb-3">
+              <ArrivalRitual defaultOpen onComplete={() => setShowArrival(false)} />
+            </div>
+          )}
           {needAck && (
             <p
               className="text-[14px] text-amber-100/70 leading-relaxed mb-3"
