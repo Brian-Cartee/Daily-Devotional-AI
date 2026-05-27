@@ -9,8 +9,12 @@ type YTPlayerOptions = {
   events?: {
     onReady?: (event: { target: YtPlayerInstance }) => void;
     onError?: () => void;
+    onStateChange?: (event: { data: number }) => void;
   };
 };
+
+/** YT.PlayerState */
+const YT_PLAYING = 1;
 
 declare global {
   interface Window {
@@ -19,6 +23,7 @@ declare global {
         element: HTMLElement | string,
         options: YTPlayerOptions,
       ) => YtPlayerInstance;
+      PlayerState?: { PLAYING: number };
     };
     onYouTubeIframeAPIReady?: () => void;
   }
@@ -33,6 +38,8 @@ export function useWorshipYoutube(
   const playerRef = useRef<YtPlayerInstance | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const destroyPlayer = useCallback(() => {
     try {
@@ -42,10 +49,36 @@ export function useWorshipYoutube(
     }
     playerRef.current = null;
     setPlayerReady(false);
+    setIsPlaying(false);
+    setNeedsTap(false);
   }, []);
 
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
+
+  const applyVolume = useCallback((player: YtPlayerInstance) => {
+    const vol = Math.round(Math.min(100, Math.max(0, volumeRef.current * 100)));
+    try {
+      player.setVolume(vol);
+      if (vol > 0) player.unMute();
+      else player.mute();
+    } catch {
+      /* some mobile embeds reject setVolume until play */
+    }
+  }, []);
+
+  const playNow = useCallback(() => {
+    const player = playerRef.current;
+    if (!player) return;
+    try {
+      applyVolume(player);
+      player.unMute();
+      player.playVideo();
+      setNeedsTap(false);
+    } catch {
+      setNeedsTap(true);
+    }
+  }, [applyVolume]);
 
   useEffect(() => {
     if (!enabled) {
@@ -56,46 +89,67 @@ export function useWorshipYoutube(
 
     const mix = getWorshipYoutubeMix(mixId);
     let cancelled = false;
+    setPlayerReady(false);
+    setLoadError(false);
+    setIsPlaying(false);
 
     void (async () => {
       try {
         await loadYouTubeIframeApi();
         if (cancelled || !window.YT?.Player) return;
 
+        const host = document.getElementById(containerId);
+        if (!host) {
+          if (!cancelled) setLoadError(true);
+          return;
+        }
+        host.innerHTML = "";
+
         destroyPlayer();
-        const origin =
-          typeof window !== "undefined" ? encodeURIComponent(window.location.origin) : "";
 
         const player = new window.YT.Player(containerId, {
           videoId: mix.videoId,
           playerVars: {
-            autoplay: 1,
+            autoplay: isMobileTouchDevice() ? 0 : 1,
             rel: 0,
             modestbranding: 1,
             iv_load_policy: 3,
             playsinline: 1,
             controls: 1,
-            ...(origin ? { origin: window.location.origin } : {}),
+            enablejsapi: 1,
+            origin: window.location.origin,
           },
           events: {
             onReady: (event) => {
               if (cancelled) return;
               playerRef.current = event.target;
-              if (!isMobileTouchDevice()) {
-                const vol = Math.round(Math.min(100, Math.max(0, volumeRef.current * 100)));
-                event.target.setVolume(vol);
-                event.target.unMute();
+              applyVolume(event.target);
+              if (isMobileTouchDevice()) {
+                setNeedsTap(true);
+                setPlayerReady(true);
+                setLoadError(false);
+                return;
               }
               try {
                 event.target.playVideo();
               } catch {
-                /* mobile may require tap inside player */
+                setNeedsTap(true);
               }
               setPlayerReady(true);
               setLoadError(false);
             },
             onError: () => {
-              if (!cancelled) setLoadError(true);
+              if (!cancelled) {
+                setLoadError(true);
+                setNeedsTap(false);
+              }
+            },
+            onStateChange: (event) => {
+              if (cancelled) return;
+              if (event.data === YT_PLAYING) {
+                setIsPlaying(true);
+                setNeedsTap(false);
+              }
             },
           },
         });
@@ -109,15 +163,12 @@ export function useWorshipYoutube(
       cancelled = true;
       destroyPlayer();
     };
-  }, [enabled, mixId, containerId, destroyPlayer]);
+  }, [enabled, mixId, containerId, destroyPlayer, applyVolume]);
 
   useEffect(() => {
-    if (!enabled || !playerReady || !playerRef.current || isMobileTouchDevice()) return;
-    const vol = Math.round(Math.min(100, Math.max(0, volume * 100)));
-    playerRef.current.setVolume(vol);
-    if (vol === 0) playerRef.current.mute();
-    else playerRef.current.unMute();
-  }, [volume, enabled, playerReady]);
+    if (!enabled || !playerReady || !playerRef.current) return;
+    applyVolume(playerRef.current);
+  }, [volume, enabled, playerReady, applyVolume]);
 
-  return { playerReady, loadError };
+  return { playerReady, loadError, needsTap, isPlaying, playNow };
 }

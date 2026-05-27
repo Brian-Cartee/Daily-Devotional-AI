@@ -1,4 +1,4 @@
-import { Music2 } from "lucide-react";
+import { Music2, Play } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { WorshipBedVolumeSlider } from "@/components/WorshipBedVolumeSlider";
 import type { WorshipBedSource } from "@/lib/worshipBedSource";
@@ -20,6 +20,9 @@ type Props = {
   usingGenerated?: boolean;
   youtubeReady?: boolean;
   youtubeError?: boolean;
+  needsTap?: boolean;
+  isPlaying?: boolean;
+  onPlayMusic?: () => void;
   onEnabledChange: (v: boolean) => void;
   onSourceChange: (source: WorshipBedSource) => void;
   onTrackChange: (id: WorshipTrackId) => void;
@@ -38,6 +41,9 @@ export function WorshipBedControls({
   usingGenerated,
   youtubeReady,
   youtubeError,
+  needsTap = false,
+  isPlaying = false,
+  onPlayMusic,
   onEnabledChange,
   onSourceChange,
   onTrackChange,
@@ -130,16 +136,33 @@ export function WorshipBedControls({
                 </div>
               ))}
               <div
+                key={youtubeMixId}
                 id={WORSHIP_YOUTUBE_PLAYER_ID}
                 className={`w-full rounded-xl overflow-hidden bg-black/80 border border-white/10 ${
                   enabled
                     ? compactPlayer
-                      ? "min-h-[72px] max-h-[88px]"
-                      : "min-h-[52px]"
+                      ? "min-h-[120px] max-h-[140px]"
+                      : "min-h-[100px]"
                     : "h-0 min-h-0 border-0"
                 }`}
                 data-testid="worship-youtube-player"
               />
+              {onPlayMusic && (needsTap || (!isPlaying && !youtubeError)) && (
+                <button
+                  type="button"
+                  onClick={onPlayMusic}
+                  data-testid="btn-worship-play"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-[13px] bg-violet-600 hover:bg-violet-500 text-white border border-violet-400/40 transition-colors"
+                >
+                  <Play className="w-4 h-4" aria-hidden />
+                  {isPlaying ? "Resume music" : "Play music"}
+                </button>
+              )}
+              {isPlaying && !needsTap && (
+                <p className="text-[10px] text-emerald-200/75 leading-snug text-center">
+                  Playing — use side volume on iPhone if you need it louder.
+                </p>
+              )}
               {youtubeError && (
                 <p className="text-[10px] text-amber-200/80 leading-snug">
                   This mix may not allow embedding — try another or use Stillness (local).
@@ -147,12 +170,24 @@ export function WorshipBedControls({
               )}
               {!youtubeError && enabled && !youtubeReady && (
                 <p className="text-[10px] text-white/40 leading-snug">
-                  Loading player… On phone, tap play inside the bar if music doesn&apos;t start.
+                  Loading player…
                 </p>
               )}
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-col gap-2 mb-3">
+              {onPlayMusic && (needsTap || !isPlaying) && (
+                <button
+                  type="button"
+                  onClick={onPlayMusic}
+                  data-testid="btn-worship-play-local"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-[13px] bg-violet-600 hover:bg-violet-500 text-white border border-violet-400/40 transition-colors"
+                >
+                  <Play className="w-4 h-4" aria-hidden />
+                  Play stillness music
+                </button>
+              )}
+              <div className="flex flex-wrap gap-2">
               {WORSHIP_TRACKS.map((t) => (
                 <button
                   key={t.id}
@@ -169,6 +204,7 @@ export function WorshipBedControls({
                   <p className="text-[10px] text-white/45">{t.mood}</p>
                 </button>
               ))}
+              </div>
             </div>
           )}
 

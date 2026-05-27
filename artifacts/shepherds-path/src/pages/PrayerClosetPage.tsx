@@ -93,18 +93,34 @@ export default function PrayerClosetPage() {
   }, [dailyVerse, verseDate, verseArt, queryClient]);
 
   const youtubeWorship = isYoutubeWorshipSource(settings.worshipSource);
-  const { usingGenerated } = useWorshipBed(
+  const {
+    usingGenerated,
+    needsTap: localNeedsTap,
+    isPlaying: localPlaying,
+    playNow: playLocalWorship,
+  } = useWorshipBed(
     settings.worshipEnabled,
     settings.worshipTrackId,
     settings.worshipVolume,
     youtubeWorship,
   );
-  const { playerReady: youtubeReady, loadError: youtubeError } = useWorshipYoutube(
+  const {
+    playerReady: youtubeReady,
+    loadError: youtubeError,
+    needsTap: youtubeNeedsTap,
+    isPlaying: youtubePlaying,
+    playNow: playYoutubeWorship,
+  } = useWorshipYoutube(
     settings.worshipEnabled && youtubeWorship,
     settings.worshipYoutubeMixId,
     settings.worshipVolume,
     WORSHIP_YOUTUBE_PLAYER_ID,
   );
+
+  const playWorshipMusic = () => {
+    if (youtubeWorship) void playYoutubeWorship();
+    else void playLocalWorship();
+  };
 
   useEffect(() => {
     markClosetVisit();
@@ -285,6 +301,9 @@ export default function PrayerClosetPage() {
               usingGenerated={usingGenerated}
               youtubeReady={youtubeReady}
               youtubeError={youtubeError}
+              needsTap={youtubeWorship ? youtubeNeedsTap : localNeedsTap}
+              isPlaying={youtubeWorship ? youtubePlaying : localPlaying}
+              onPlayMusic={playWorshipMusic}
               onEnabledChange={(worshipEnabled) => patchSettings({ worshipEnabled })}
               onSourceChange={(worshipSource) => patchSettings({ worshipSource })}
               onTrackChange={(id: WorshipTrackId) => patchSettings({ worshipTrackId: id })}
