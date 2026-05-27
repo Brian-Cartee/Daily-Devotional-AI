@@ -42,6 +42,11 @@ import {
   type ClosetBackgroundId,
   type ClosetSettings,
 } from "@/lib/prayerCloset";
+import {
+  getSpiritualOnboardingSelection,
+  isFirstPrayerCompleted,
+  markFirstPrayerCompleted,
+} from "@/lib/spiritualOnboarding";
 import type { WorshipTrackId } from "@/lib/worshipTracks";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import type { JournalEntry } from "@shared/schema";
@@ -58,6 +63,10 @@ export default function PrayerClosetPage() {
   const [showSetup, setShowSetup] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [showIntro, setShowIntro] = useState(() => shouldShowClosetIntro());
+  const [showFirstPrayer, setShowFirstPrayer] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("firstPrayer") === "1" && !isFirstPrayerCompleted();
+  });
   const verseArtGenStarted = useRef(false);
 
   const verseDate = dailyVerse?.date;
@@ -204,6 +213,22 @@ export default function PrayerClosetPage() {
     setShowIntro(false);
   };
 
+  const onboardingSelection = getSpiritualOnboardingSelection();
+  const seasonLabel = onboardingSelection.season
+    ? onboardingSelection.season.charAt(0).toUpperCase() + onboardingSelection.season.slice(1)
+    : "This season";
+  const covenantLabel = onboardingSelection.covenant?.replace("-", " ") ?? "10 min";
+  const firstPrayerPrompt = `Jesus, I come to You in a ${seasonLabel.toLowerCase()} season. I give You these ${covenantLabel} each day. Teach me to listen, trust, and follow You one step at a time.`;
+
+  const completeFirstPrayer = () => {
+    markFirstPrayerCompleted();
+    setShowFirstPrayer(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("firstPrayer");
+    window.history.replaceState({}, "", url.toString());
+    toast({ title: "Beautiful first step. Keep this rhythm tomorrow." });
+  };
+
   const pinTodayVerse = () => {
     if (!dailyVerse?.text) return;
     patchSettings({
@@ -282,6 +307,31 @@ export default function PrayerClosetPage() {
                 Enter quietly
               </button>
             </p>
+          )}
+
+          {showFirstPrayer && (
+            <div
+              className="mx-2 sm:mx-3 mt-2 rounded-2xl border border-amber-300/20 bg-amber-500/5 px-4 py-3"
+              data-testid="card-first-prayer"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200/75">
+                Your first holy step
+              </p>
+              <p className="text-[14px] text-white/90 mt-1 leading-relaxed">
+                {seasonLabel} is welcome here. Start with this prayer, then write what is on your heart.
+              </p>
+              <p className="mt-2 text-[13px] italic text-white/80 leading-relaxed">
+                &ldquo;{firstPrayerPrompt}&rdquo;
+              </p>
+              <button
+                type="button"
+                onClick={completeFirstPrayer}
+                className="mt-3 rounded-xl bg-amber-500/85 text-black font-semibold px-3.5 py-2 text-[13px] hover:opacity-95"
+                data-testid="button-first-prayer-complete"
+              >
+                I completed this prayer
+              </button>
+            </div>
           )}
 
           <PrayerClosetRoom

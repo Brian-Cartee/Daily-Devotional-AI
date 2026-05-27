@@ -642,7 +642,14 @@ function LandingHomeInner() {
       </AnimatePresence>
       <AnimatePresence>
         {showOnboarding && (
-          <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
+          <OnboardingFlow
+            onComplete={(options) => {
+              setShowOnboarding(false);
+              if (options?.startInPrayerCloset) {
+                window.location.href = "/prayer-closet?firstPrayer=1&source=onboarding";
+              }
+            }}
+          />
         )}
       </AnimatePresence>
       <AnimatePresence>

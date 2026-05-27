@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { isIntroFlowComplete, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
 import { isThresholdComplete } from "@/lib/thresholdState";
+import {
+  saveSpiritualOnboarding,
+  type CovenantCadence,
+  type SeasonOfSoul,
+} from "@/lib/spiritualOnboarding";
 
 const ONBOARD_KEY = "sp_onboarding_shown";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -38,7 +43,7 @@ export function markOnboardingShown(): void {
 }
 
 interface OnboardingFlowProps {
-  onComplete: () => void;
+  onComplete: (options?: { startInPrayerCloset?: boolean }) => void;
 }
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -46,6 +51,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [visible, setVisible] = useState(true);
   const [onFinal, setOnFinal] = useState(false);
   const [finalVisible, setFinalVisible] = useState(false);
+  const [season, setSeason] = useState<SeasonOfSoul | null>(null);
+  const [covenant, setCovenant] = useState<CovenantCadence | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalHapticFired = useRef(false);
 
@@ -99,8 +106,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   const handleBegin = () => {
+    if (!season || !covenant) return;
+    saveSpiritualOnboarding({ season, covenant });
     markOnboardingShown();
-    onComplete();
+    onComplete({ startInPrayerCloset: true });
   };
 
   const showSkip = screenIndex >= 2;
@@ -222,7 +231,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: finalVisible ? 1 : 0, y: finalVisible ? 0 : 10 }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative z-10 text-center leading-snug font-light mb-12"
+              className="relative z-10 text-center leading-snug font-light mb-7"
               style={{
                 fontFamily: "'Georgia', serif",
                 fontSize: "clamp(1.55rem, 5vw, 2rem)",
@@ -233,6 +242,67 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             >
               {FINAL}
             </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: finalVisible ? 1 : 0, y: finalVisible ? 0 : 10 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative z-10 w-full max-w-sm space-y-4 mb-8"
+            >
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/65 text-center">
+                  Name your season
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "weary", label: "Weary" },
+                    { id: "hungry", label: "Hungry" },
+                    { id: "rebuilding", label: "Rebuilding" },
+                    { id: "grateful", label: "Grateful" },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSeason(item.id as SeasonOfSoul)}
+                      className="rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors"
+                      style={{
+                        background: season === item.id ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.09)",
+                        color: "rgba(255,255,255,0.95)",
+                        border: season === item.id ? "1px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.15)",
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/65 text-center">
+                  Your daily covenant
+                </p>
+                <div className="flex gap-2">
+                  {[
+                    { id: "10-min", label: "10 min" },
+                    { id: "15-min", label: "15 min" },
+                    { id: "20-min", label: "20 min" },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setCovenant(item.id as CovenantCadence)}
+                      className="flex-1 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors"
+                      style={{
+                        background: covenant === item.id ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.09)",
+                        color: "rgba(255,255,255,0.95)",
+                        border: covenant === item.id ? "1px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.15)",
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
 
             <motion.button
               initial={{ opacity: 0, y: 14 }}
@@ -247,8 +317,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   "0 8px 36px rgba(122,1,141,0.45), 0 0 0 1px rgba(255,255,255,0.10)",
                 minWidth: 180,
               }}
+              disabled={!season || !covenant}
             >
-              Begin
+              Begin with a 3-minute prayer
             </motion.button>
           </motion.div>
         )}

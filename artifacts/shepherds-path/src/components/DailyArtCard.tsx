@@ -6,6 +6,7 @@ import { saveMoment, removeMoment, isMomentSaved, updateMomentNote, getMoments }
 import { useDailyArt } from "@/hooks/use-daily-art";
 import { loadDailyArtImage, easternTodayKey } from "@/lib/dailyArtImageLoad";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
+import { verseExcerptForCard } from "@/lib/verseExcerpt";
 
 const SESSION_HIDDEN_KEY = "sp-daily-art-hidden-session";
 
@@ -130,6 +131,8 @@ export function DailyArtCard() {
   if (hidden) return null;
   if (!artLoading && !art) return null;
 
+  const cardVerse = art ? verseExcerptForCard(art.scripture) : null;
+
   if (artLoading && !art) {
     return (
       <div
@@ -236,7 +239,11 @@ export function DailyArtCard() {
         {resolvedSrc && (
           <div
             className="absolute inset-0 z-[6]"
-            style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)" }}
+            style={{
+              background: cardVerse?.truncated
+                ? "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.82) 100%)"
+                : "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.72) 100%)",
+            }}
           />
         )}
 
@@ -289,10 +296,10 @@ export function DailyArtCard() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-3 z-10"
+              className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-8 z-10"
             >
-              <p className="text-[15px] text-white/95 font-medium leading-snug drop-shadow-sm">
-                &ldquo;{art.scripture}&rdquo;
+              <p className="text-[15px] sm:text-[16px] text-white/95 font-medium leading-relaxed drop-shadow-sm">
+                &ldquo;{cardVerse?.text ?? art.scripture}&rdquo;
               </p>
               <p className="text-[11px] text-white/65 font-semibold mt-1.5 tracking-wide uppercase">
                 {art.reference}
@@ -301,13 +308,15 @@ export function DailyArtCard() {
               <button
                 onClick={() => setExpanded(e => !e)}
                 data-testid="button-daily-art"
-                aria-label={expanded ? "Close reflection" : "Read today's reflection"}
+                aria-label={expanded ? "Close reflection" : cardVerse?.truncated ? "Read full verse and reflection" : "Read today's reflection"}
                 className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/85 hover:text-white transition-colors bg-black/20 backdrop-blur-sm rounded-full px-3 py-1"
               >
                 <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.25 }}>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </motion.div>
-                <span>{expanded ? "Close" : "Today's reflection"}</span>
+                <span>
+                  {expanded ? "Close" : cardVerse?.truncated ? "Read full verse" : "Today's reflection"}
+                </span>
               </button>
             </motion.div>
           )}
@@ -324,6 +333,17 @@ export function DailyArtCard() {
             className="overflow-hidden"
           >
             <div className="bg-primary/5 border-b border-primary/10 px-5 py-4 flex flex-col gap-4">
+              {cardVerse?.truncated && (
+                <div className="space-y-2 pb-1 border-b border-primary/10">
+                  <p className="path-reminder-quote text-[16px] sm:text-[17px] text-foreground/90 leading-relaxed italic">
+                    &ldquo;{art.scripture}&rdquo;
+                  </p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary/60">
+                    {art.reference}
+                  </p>
+                </div>
+              )}
+
               <p className="text-[13px] text-muted-foreground leading-relaxed">
                 {art.reflection}
               </p>
