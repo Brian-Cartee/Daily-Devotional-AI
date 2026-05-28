@@ -61,7 +61,7 @@ function useBookmarkedSections() {
   return bookmarked;
 }
 
-export function NavBar() {
+export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   const [location] = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
@@ -124,6 +124,8 @@ export function NavBar() {
         }}
         onDecline={() => setCoachConsentOpen(false)}
       />
+      {showTop && (
+        <>
       {/* ── Top navigation bar — transparent on home so hero fills behind it ── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-40 ${
@@ -246,6 +248,8 @@ export function NavBar() {
           </div>
         </div>
       </nav>
+      </>
+      )}
 
       {/* ── Bottom tab bar — mobile only ── */}
       <nav

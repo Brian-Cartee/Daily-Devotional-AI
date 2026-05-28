@@ -35,6 +35,7 @@ import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
 import { FloatingAskAI } from "@/components/FloatingAskAI";
+import { NavBar } from "@/components/NavBar";
 import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
 import PrayerClosetPage from "@/pages/PrayerClosetPage";
 import AdminPage from "@/pages/AdminPage";
@@ -103,6 +104,7 @@ function ReferralCapture() {
 function Router() {
   const [location] = useLocation();
   const hideFloater = isSacredPresenceRoute(location);
+  const hideNav = isSacredPresenceRoute(location);
 
   return (
     <>
@@ -172,6 +174,7 @@ function Router() {
       </Route>
       <Route component={NotFound} />
     </Switch>
+    {!hideNav && <NavBar showTop={false} />}
     {!hideFloater && <FloatingAskAI />}
     </>
   );
