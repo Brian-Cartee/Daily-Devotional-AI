@@ -174,7 +174,7 @@ function Router() {
       </Route>
       <Route component={NotFound} />
     </Switch>
-    {!hideNav && <NavBar showTop={false} />}
+    {!hideNav && <NavBar showTop />}
     {!hideFloater && <FloatingAskAI />}
     </>
   );

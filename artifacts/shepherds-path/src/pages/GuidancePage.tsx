@@ -169,7 +169,12 @@ export default function GuidancePage() {
 
   useEffect(() => {
     let cancelled = false;
-    const fallbacks = [heroArtUrl, "/hero-landing.webp?v=guidance-hero-3", "/hero-landing.jpg?v=guidance-hero-3"];
+    const fallbacks = [
+      heroArtUrl,
+      "/hero-devotional-still.webp?v=guidance-hero-4",
+      "/hero-devotional-3.webp?v=guidance-hero-4",
+      "/hero-devotional-2.webp?v=guidance-hero-4",
+    ];
 
     const tryLoad = (index: number) => {
       if (cancelled || index >= fallbacks.length) return;

@@ -142,7 +142,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
               markReturningHome();
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className="shrink-0 mr-2"
+            className="hidden sm:block shrink-0 mr-2"
             title="Shepherd's Path"
           >
             <BrandIcon
