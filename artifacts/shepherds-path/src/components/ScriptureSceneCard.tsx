@@ -1,5 +1,6 @@
 import { Bookmark } from "lucide-react";
 import type { ReactNode } from "react";
+import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 
 interface ScriptureSceneCardProps {
   text: string;
@@ -35,7 +36,9 @@ export function ScriptureSceneCard({
         className="absolute inset-0 w-full h-full object-cover"
         style={{ filter: "brightness(0.72) saturate(1.1)" }}
         onError={(e) => {
-          (e.target as HTMLImageElement).src = "/hero-guidance.jpg";
+          const el = e.target as HTMLImageElement;
+          const fallback = getDevotionalHeroImage();
+          if (!el.src.includes(fallback)) el.src = fallback;
         }}
       />
       <div

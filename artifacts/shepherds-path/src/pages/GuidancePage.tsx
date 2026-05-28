@@ -12,7 +12,8 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { PrayerThatStays } from "@/components/prayer/PrayerThatStays";
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
-import { getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
+import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
+import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
 import { NamePrompt } from "@/components/NamePrompt";
 import { getSessionId } from "@/lib/session";
@@ -21,7 +22,7 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canUseAi } from "@/lib/aiUsage";
 import { apiSessionExtras } from "@/lib/requestExtras";
 import { refreshAiUsage, getGlobalAiUsage } from "@/hooks/use-ai-usage";
@@ -143,7 +144,40 @@ export default function GuidancePage() {
   const [isListening, setIsListening] = useState(false);
   const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
   const framework = getTodayFramework();
+  const queryClient = useQueryClient();
   const { data: dailyVerse } = useDailyVerse();
+  const verseDate = dailyVerse?.date ?? easternVerseDateKey();
+  const verseArtGenStarted = useRef(false);
+  const { data: verseArt } = useQuery({
+    queryKey: ["/api/verse-art", verseDate],
+    queryFn: async () => {
+      if (!verseDate) return null;
+      const res = await fetch(`/api/verse-art/${verseDate}`);
+      if (!res.ok) return null;
+      return res.json() as { imageUrl: string | null; cached: boolean };
+    },
+    enabled: !!verseDate,
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!dailyVerse || !verseDate || verseArt === undefined || verseArtGenStarted.current) return;
+    if (verseArt?.imageUrl) return;
+    verseArtGenStarted.current = true;
+    fetch("/api/verse-art/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        verseDate: dailyVerse.date,
+        verseText: dailyVerse.text,
+        verseReference: dailyVerse.reference,
+        ...apiSessionExtras(),
+      }),
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/verse-art", verseDate] }))
+      .catch(() => {});
+  }, [dailyVerse, verseDate, verseArt, queryClient]);
+
   const [showStillness, setShowStillness] = useState(false);
   const [showSlowVerse, setShowSlowVerse] = useState(false);
   const listenFirstTriggeredRef = useRef(false);
@@ -165,34 +199,36 @@ export default function GuidancePage() {
   const [pendingCoachRegenerate, setPendingCoachRegenerate] = useState(false);
 
   const heroArtUrl = getGuidanceHeroImage();
-  const [heroImageSrc, setHeroImageSrc] = useState<string>("");
+  const [heroImageSrc, setHeroImageSrc] = useState("");
+  const heroBlobRef = useRef<string | null>(null);
+  const heroFallbacksRef = useRef(getGuidanceHeroFallbacks(heroArtUrl));
+  heroFallbacksRef.current = getGuidanceHeroFallbacks(heroArtUrl);
 
   useEffect(() => {
     let cancelled = false;
-    const fallbacks = [
-      heroArtUrl,
-      "/hero-devotional-still.webp?v=guidance-hero-4",
-      "/hero-devotional-3.webp?v=guidance-hero-4",
-      "/hero-devotional-2.webp?v=guidance-hero-4",
-    ];
-
-    const tryLoad = (index: number) => {
-      if (cancelled || index >= fallbacks.length) return;
-      const candidate = fallbacks[index]!;
-      const img = new Image();
-      img.onload = () => {
-        if (!cancelled) setHeroImageSrc(candidate);
-      };
-      img.onerror = () => tryLoad(index + 1);
-      img.src = candidate;
-    };
-
+    if (heroBlobRef.current) {
+      URL.revokeObjectURL(heroBlobRef.current);
+      heroBlobRef.current = null;
+    }
     setHeroImageSrc("");
-    tryLoad(0);
+
+    void resolveGuidanceHeroBackground(verseDate, verseArt?.imageUrl ?? null).then((src) => {
+      if (cancelled) {
+        if (src.startsWith("blob:")) URL.revokeObjectURL(src);
+        return;
+      }
+      if (src.startsWith("blob:")) heroBlobRef.current = src;
+      setHeroImageSrc(src);
+    });
+
     return () => {
       cancelled = true;
+      if (heroBlobRef.current) {
+        URL.revokeObjectURL(heroBlobRef.current);
+        heroBlobRef.current = null;
+      }
     };
-  }, [heroArtUrl]);
+  }, [heroArtUrl, verseDate, verseArt?.imageUrl]);
 
   const carryVerseToday = () => {
     if (!verse) return;
@@ -682,6 +718,13 @@ export default function GuidancePage() {
                 !situation && !streamingText ? "opacity-100" : "opacity-0"
               }`}
               style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.05)", transformOrigin: "50% top" }}
+              onError={(e) => {
+                const el = e.currentTarget;
+                const fallbacks = heroFallbacksRef.current;
+                const idx = fallbacks.findIndex((u) => el.src.includes(u.split("?")[0]!));
+                const next = fallbacks[idx + 1];
+                if (next && !el.src.includes(next.split("?")[0]!)) el.src = next;
+              }}
             />
           )}
 
@@ -1199,7 +1242,7 @@ export default function GuidancePage() {
                     text={verse.text}
                     reference={verse.reference}
                     label="Scripture for you"
-                    imageSrc={heroArtUrl}
+                    imageSrc={heroImageSrc || "/hero-guidance.jpg"}
                     onBookmark={carryVerseToday}
                     footer={
                       <div className="flex flex-wrap gap-2">

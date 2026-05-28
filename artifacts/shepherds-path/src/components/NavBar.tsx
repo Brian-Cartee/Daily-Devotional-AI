@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Search, Check, Heart, Home } from "lucide-react";
+import { Compass, NotebookPen, Heart, Home } from "lucide-react";
 import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -16,17 +16,6 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
-import { BrandIcon } from "@/components/BrandIcon";
-
-
-const NAV_ITEMS = [
-  { href: "/devotional", label: "Devotional", icon: Sun },
-  { href: "/understand", label: "Journey",    icon: Compass },
-  { href: "/read",       label: "Bible",      icon: BookOpen },
-  { href: "/study",      label: "Study",      icon: Search },
-  { href: "/journal",    label: "Journal",    icon: NotebookPen },
-  { href: "/stories",    label: "Stories",    icon: Heart },
-];
 
 const BOTTOM_NAV_ITEMS = [
   { href: "/",           label: "For You",   icon: Home,        bookmark: null },
@@ -34,14 +23,6 @@ const BOTTOM_NAV_ITEMS = [
   { href: "/understand", label: "Journey",   icon: Compass,     bookmark: "journey" as BookmarkSection },
   { href: "/journal",    label: "Journal",   icon: NotebookPen, bookmark: "journal" as BookmarkSection },
 ];
-
-const NAV_BOOKMARK_MAP: Record<string, BookmarkSection> = {
-  "/devotional": "devotional",
-  "/understand": "journey",
-  "/read":       "read",
-  "/study":      "study",
-  "/journal":    "journal",
-};
 
 const BOOKMARK_DOT_SECTIONS = new Set<BookmarkSection>(["journey", "read"]);
 
@@ -109,7 +90,6 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     return () => document.removeEventListener("mousedown", handler);
   }, [moreOpen]);
 
-  const overHomeHero = location === "/";
   const needsNotificationNudge =
     typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted";
 
@@ -125,75 +105,13 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         onDecline={() => setCoachConsentOpen(false)}
       />
       {showTop && (
-        <>
-      {/* ── Top navigation bar — transparent on home so hero fills behind it ── */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-40 ${
-          overHomeHero ? "bg-transparent" : "bg-background/80 backdrop-blur-xl"
-        }`}
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-      >
-        <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
-
-          {/* Logo — icon only */}
-          <Link
-            href="/"
-            onClick={() => {
-              markReturningHome();
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="hidden sm:block shrink-0 mr-2"
-            title="Shepherd's Path"
-          >
-            <BrandIcon
-              size={40}
-              className={`rounded-[12px] shadow-sm select-none ring-1 ring-primary/15 ${
-                overHomeHero ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]" : ""
-              }`}
-            />
-          </Link>
-
-          {/* Nav items — desktop only, icon + tooltip */}
-          <div className="hidden sm:flex items-center gap-0.5 flex-1 min-w-0">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active = location === href || location.startsWith(href + "/");
-              const bm = NAV_BOOKMARK_MAP[href];
-              const hasPlace = bm && BOOKMARK_DOT_SECTIONS.has(bm) && bookmarked.has(bm) && !active;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  data-testid={`nav-${label.toLowerCase()}`}
-                  title={label}
-                  className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all group ${
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : overHomeHero
-                        ? "text-white/85 hover:text-white hover:bg-white/12"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                  }`}
-                >
-                  <Icon className="w-[18px] h-[18px] shrink-0" />
-                  {hasPlace && (
-                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
-                  )}
-                  {/* Tooltip */}
-                  <span className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-foreground text-background text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Spacer on mobile */}
-          <div className="flex-1 sm:hidden" />
-
-          {/* Utility icons */}
-          <div className="flex items-center gap-0.5 shrink-0">
-
+        <nav
+          className="fixed top-0 left-0 right-0 z-[60] pointer-events-none"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+          aria-label="App menu"
+        >
+          <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-end pointer-events-auto">
             <NavBarMoreMenu
-              overHero={overHomeHero}
               menuRef={moreRef}
               open={moreOpen}
               onToggle={() => {
@@ -215,7 +133,6 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
               hasNotificationBadge={needsNotificationNudge}
             />
 
-            {/* Language picker — floats independently */}
             <AnimatePresence>
               {langOpen && (
                 <motion.div
@@ -223,7 +140,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-4 top-14 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px]"
+                  className="absolute right-3 top-14 z-50 bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px] pointer-events-auto"
                 >
                   {LANGUAGES.map((l) => (
                     <button
@@ -233,22 +150,18 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                       className="w-full flex items-center justify-between px-3.5 py-2 text-sm hover:bg-muted/70 transition-colors"
                     >
                       <span className="font-medium">{l.native}</span>
-                      {lang === l.code && <Check className="w-3.5 h-3.5 text-primary" />}
+                      {lang === l.code && <span className="text-primary text-xs font-bold">✓</span>}
                     </button>
                   ))}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Email panel */}
             <AnimatePresence>
               {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
             </AnimatePresence>
-
           </div>
-        </div>
-      </nav>
-      </>
+        </nav>
       )}
 
       {/* ── Bottom tab bar — mobile only ── */}

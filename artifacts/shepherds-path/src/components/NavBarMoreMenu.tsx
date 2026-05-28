@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
+import { topMoreMenuButtonClass } from "@/lib/topMoreMenuButton";
 
 function MenuLabel({ children }: { children: string }) {
   return (
@@ -88,8 +89,6 @@ type Props = {
   onOpenNotifications: () => void;
   hasNotificationBadge?: boolean;
   menuRef: React.RefObject<HTMLDivElement | null>;
-  /** Home hero: purple pill buttons like bottom tab bar */
-  overHero?: boolean;
 };
 
 export function NavBarMoreMenu({
@@ -107,7 +106,6 @@ export function NavBarMoreMenu({
   onClose,
   menuRef,
   hasNotificationBadge = false,
-  overHero = false,
 }: Props) {
   const toneLabel = guidanceTone === "coach" ? "Direct & accountable" : "Gentle & encouraging";
   const voiceLabel = voicePref === "onyx" ? "Male voice" : "Female voice";
@@ -121,15 +119,7 @@ export function NavBarMoreMenu({
         aria-label="Settings and more"
         aria-expanded={open}
         title="Settings"
-        className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-          overHero
-            ? open
-              ? "bg-black/40 text-white shadow-md shadow-black/40 backdrop-blur-sm ring-1 ring-white/10"
-              : "bg-black/35 text-white shadow-md shadow-black/40 backdrop-blur-sm ring-1 ring-white/10 hover:bg-black/45"
-            : open
-              ? "bg-zinc-900/55 text-foreground ring-1 ring-white/10"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-        }`}
+        className={topMoreMenuButtonClass(open)}
       >
         <MoreHorizontal className="w-[18px] h-[18px]" />
         {hasNotificationBadge && (

@@ -11,6 +11,7 @@ import { recordStreakVisit } from "@/lib/streakApi";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
+import { resolveDevotionalHeroBackground } from "@/lib/resolveHeroBackground";
 import {
   buildFriendVerseShareText,
   buildVerseSharePreviewUrl,
@@ -168,7 +169,36 @@ export default function Devotional() {
 
   const verseDate = verse?.date ?? "";
   const bundledHeroSrc = getDevotionalHeroImage(verseDate || undefined);
+  const [heroBgSrc, setHeroBgSrc] = useState<string | null>(null);
+  const heroBgBlobRef = useRef<string | null>(null);
+  const heroBgForDisplay = heroBgSrc ?? bundledHeroSrc;
   const autoGeneratingVerseArtRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (heroBgBlobRef.current) {
+      URL.revokeObjectURL(heroBgBlobRef.current);
+      heroBgBlobRef.current = null;
+    }
+    setHeroBgSrc(null);
+
+    void resolveDevotionalHeroBackground(verseDate || undefined, verseArtUrl).then((src) => {
+      if (cancelled) {
+        if (src.startsWith("blob:")) URL.revokeObjectURL(src);
+        return;
+      }
+      if (src.startsWith("blob:")) heroBgBlobRef.current = src;
+      setHeroBgSrc(src);
+    });
+
+    return () => {
+      cancelled = true;
+      if (heroBgBlobRef.current) {
+        URL.revokeObjectURL(heroBgBlobRef.current);
+        heroBgBlobRef.current = null;
+      }
+    };
+  }, [verseDate, verseArtUrl]);
   useQuery({
     queryKey: ["/api/verse-art", verseDate],
     queryFn: async () => {
@@ -647,7 +677,7 @@ export default function Devotional() {
     if (!verse || sharingImage) return;
     setSharingImage(true);
     try {
-      const blob = await createShareImage(verse.text, verse.reference, verseArtUrl ?? bundledHeroSrc);
+      const blob = await createShareImage(verse.text, verse.reference, heroBgForDisplay);
       const url = URL.createObjectURL(blob);
       // Clean up any previous preview URL
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
@@ -700,7 +730,7 @@ export default function Devotional() {
     if (!verse || fmt === sharePreviewFormat || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
-      const activeBg = verseArtUrl ?? bundledHeroSrc;
+      const activeBg = heroBgForDisplay;
       const blob = fmt === "story"
         ? await createStoryShareImage(verse.text, verse.reference, activeBg)
         : await createShareImage(verse.text, verse.reference, activeBg);
@@ -718,7 +748,7 @@ export default function Devotional() {
     setRegeneratingPreview(true);
     try {
       // Build full pool: today's real photo + the curated fallback set
-      const activeBg = verseArtUrl ?? bundledHeroSrc;
+      const activeBg = heroBgForDisplay;
       const extendedPool = [bundledHeroSrc, ...PHOTO_POOL];
       const others = extendedPool.filter(u => u !== activeBg);
       const pool = others.length > 0 ? others : extendedPool;
@@ -857,10 +887,11 @@ export default function Devotional() {
             >
               {/* Photo layer — verse-specific AI art first, daily art as fallback */}
               <img
-                src={verseArtUrl ?? bundledHeroSrc}
+                src={heroBgForDisplay}
                 onError={(e) => {
                   const el = e.currentTarget as HTMLImageElement;
-                  if (el.src !== bundledHeroSrc) el.src = bundledHeroSrc;
+                  const fallback = bundledHeroSrc;
+                  if (!el.src.includes(fallback.split("?")[0]!)) el.src = fallback;
                 }}
                 alt=""
                 aria-hidden="true"
