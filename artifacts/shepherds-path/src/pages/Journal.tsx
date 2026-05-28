@@ -393,12 +393,12 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: nu
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.3 }}
-      className="bg-[#fdf8f0] dark:bg-amber-950/15 border border-amber-200/60 dark:border-amber-800/30 rounded-2xl p-5 relative group"
+      className="bg-[#fdf8f0] dark:bg-zinc-900/45 border border-amber-200/60 dark:border-white/10 rounded-2xl p-5 relative group"
       data-testid={`journal-entry-${entry.id}`}
     >
       {entry.reference && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-primary px-2 py-0.5 bg-primary/8 rounded-full">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-200 px-2 py-0.5 bg-zinc-900/55 border border-white/10 rounded-full">
             {entry.reference}
           </span>
           {entry.verseDate && (
@@ -558,11 +558,11 @@ function SermonRecorder({ onSave }: { onSave: () => void }) {
       <button
         onClick={startRecording}
         data-testid="btn-record-sermon"
-        className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20 text-primary hover:bg-primary/15 hover:border-primary/40 transition-all text-sm font-semibold"
+        className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-zinc-900/45 border-2 border-white/10 text-zinc-200 hover:bg-zinc-800/45 hover:border-white/15 transition-all text-sm font-semibold"
       >
         <Mic className="w-4 h-4" />
         Record a Sermon
-        <span className="text-[10px] font-bold text-primary/60 bg-primary/10 px-1.5 py-0.5 rounded-full ml-1">
+        <span className="text-[10px] font-bold text-zinc-300/75 bg-zinc-900/65 border border-white/10 px-1.5 py-0.5 rounded-full ml-1">
           {isProVerifiedLocally() ? "Pro" : canRecordSermon() ? "1 free/mo" : "Upgrade"}
         </span>
       </button>
@@ -664,7 +664,7 @@ function SermonRecorder({ onSave }: { onSave: () => void }) {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {result.scriptures.map((s, i) => (
-                <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{s}</span>
+                <span key={i} className="px-2.5 py-1 rounded-full bg-zinc-900/55 border border-white/10 text-zinc-200 text-xs font-semibold">{s}</span>
               ))}
             </div>
           </div>

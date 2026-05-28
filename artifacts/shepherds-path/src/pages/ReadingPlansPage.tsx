@@ -172,7 +172,7 @@ export default function ReadingPlansPage() {
           {phase === "intake-where" && (
             <motion.div key="intake-where" {...fadeUp}>
               <div className="mb-8 text-center">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/60 mb-3">Your Walk</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300/70 mb-3">Your Walk</p>
                 <h1 className="text-[28px] font-bold text-foreground leading-tight mb-3">
                   Where are you right now?
                 </h1>
@@ -188,16 +188,16 @@ export default function ReadingPlansPage() {
                     data-testid={`btn-where-${id}`}
                     onClick={() => handleWhereSelect(id)}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border border-border bg-card hover:border-primary/30 hover:bg-primary/4 transition-all group"
+                    className="w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border border-border bg-card hover:border-white/15 hover:bg-zinc-800/25 transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-primary/8 group-hover:bg-primary/14 flex items-center justify-center shrink-0 transition-colors">
-                      <Icon className="w-4.5 h-4.5 text-primary" />
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900/55 group-hover:bg-zinc-800/55 flex items-center justify-center shrink-0 transition-colors">
+                      <Icon className="w-4.5 h-4.5 text-zinc-200" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-foreground leading-snug">{label}</p>
                       <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">{sublabel}</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/50 transition-colors shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-zinc-200 transition-colors shrink-0" />
                   </motion.button>
                 ))}
               </div>
@@ -213,7 +213,7 @@ export default function ReadingPlansPage() {
               />
 
               <div className="mb-8 text-center">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/60 mb-3">Your Walk</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300/70 mb-3">Your Walk</p>
                 <h1 className="text-[28px] font-bold text-foreground leading-tight mb-3">
                   How much can you give each day?
                 </h1>
@@ -229,15 +229,15 @@ export default function ReadingPlansPage() {
                     data-testid={`btn-pace-${id}`}
                     onClick={() => handlePaceSelect(id)}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border border-border bg-card hover:border-primary/30 hover:bg-primary/4 transition-all group"
+                    className="w-full text-left flex items-center gap-4 px-5 py-4 rounded-2xl border border-border bg-card hover:border-white/15 hover:bg-zinc-800/25 transition-all group"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-foreground leading-snug">{label}</p>
                       <p className="text-[12px] text-muted-foreground mt-0.5">{sublabel}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-bold text-primary/60 bg-primary/8 px-2 py-0.5 rounded-full">{time}</span>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/50 transition-colors" />
+                      <span className="text-[11px] font-bold text-zinc-300/75 bg-zinc-900/55 px-2 py-0.5 rounded-full">{time}</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-zinc-200 transition-colors" />
                     </div>
                   </motion.button>
                 ))}
@@ -251,7 +251,7 @@ export default function ReadingPlansPage() {
             return (
               <motion.div key="recommendation" {...fadeUp}>
                 <div className="mb-6 text-center">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary/60 mb-1">Your Walk</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300/70 mb-1">Your Walk</p>
                   <p className="text-[14px] text-muted-foreground">Here's the path made for where you are.</p>
                 </div>
 
@@ -266,7 +266,7 @@ export default function ReadingPlansPage() {
                 >
                   <div className={`h-[3px] bg-gradient-to-r ${recPlan.accentFrom} ${recPlan.accentTo}`} />
                   <div className="px-6 pt-7 pb-6">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/55 mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-300/70 mb-3">
                       Your path — {recPlan.days} days
                     </p>
                     <h2 className="text-[22px] font-bold text-foreground leading-tight mb-4">
@@ -279,12 +279,12 @@ export default function ReadingPlansPage() {
                     {/* Verse */}
                     <div
                       className="rounded-xl px-4 py-4 mb-6"
-                      style={{ background: "hsl(258 45% 55% / 0.08)", border: "1px solid hsl(258 45% 55% / 0.15)" }}
+                      style={{ background: "hsl(252 8% 24% / 0.32)", border: "1px solid hsl(252 8% 70% / 0.20)" }}
                     >
                       <p className="text-[14px] text-foreground/85 leading-relaxed mb-1.5">
                         "{personalPath.verse}"
                       </p>
-                      <p className="text-[11px] text-primary/60 font-semibold tracking-wide">
+                      <p className="text-[11px] text-zinc-300/75 font-semibold tracking-wide">
                         — {personalPath.verseRef}
                       </p>
                     </div>
@@ -336,7 +336,7 @@ export default function ReadingPlansPage() {
                               setActivePlanIdState(plan.id);
                               setPhase("plan");
                             }}
-                            className="w-full text-left rounded-2xl border border-border bg-card px-5 py-4 hover:border-primary/20 hover:bg-primary/3 transition-all"
+                            className="w-full text-left rounded-2xl border border-border bg-card px-5 py-4 hover:border-white/15 hover:bg-zinc-800/25 transition-all"
                           >
                             <div className={`h-[2px] w-10 rounded-full bg-gradient-to-r ${plan.accentFrom} ${plan.accentTo} mb-3`} />
                             <p className="text-[14px] font-semibold text-foreground leading-snug">{plan.title}</p>
@@ -378,7 +378,7 @@ export default function ReadingPlansPage() {
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-1">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/55 mb-0.5">Your Walk</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-300/70 mb-0.5">Your Walk</p>
                     <h1 className="text-[20px] font-bold text-foreground leading-tight">
                       {personalPath?.planId === activePlanId ? personalPath.name : activePlan.title}
                     </h1>
