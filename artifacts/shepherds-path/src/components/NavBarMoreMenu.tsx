@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
-import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
+import { topMoreMenuButtonClass } from "@/lib/topMoreMenuButton";
 
 function MenuLabel({ children }: { children: string }) {
   return (
@@ -120,9 +120,8 @@ export function NavBarMoreMenu({
         aria-expanded={open}
         title="Settings"
         className={topMoreMenuButtonClass(open)}
-        style={topMoreMenuButtonStyle(open)}
       >
-        <MoreHorizontal className="w-[18px] h-[18px] text-white" strokeWidth={2.25} />
+        <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} />
         {hasNotificationBadge && (
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
         )}
