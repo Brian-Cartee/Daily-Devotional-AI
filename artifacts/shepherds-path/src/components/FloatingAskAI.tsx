@@ -44,6 +44,10 @@ function cleanResponse(text: string): string {
 /** Desktop / sm+ — bottom tab bar hidden above sm */
 const FAB_BOTTOM_DESKTOP =
   "calc(1.5rem + env(safe-area-inset-bottom, 0px))";
+const FAB_BOTTOM_MOBILE_HOME =
+  "calc(0.35rem + env(safe-area-inset-bottom, 0px))";
+const FAB_BOTTOM_MOBILE_INNER =
+  "calc(3.35rem + env(safe-area-inset-bottom, 0px))";
 
 export function FloatingAskAI() {
   const [location, navigate] = useLocation();
@@ -282,10 +286,14 @@ export function FloatingAskAI() {
       <div
         className={`fixed z-[45] flex items-center gap-2 right-2 sm:right-4 sm:bottom-[var(--fab-bottom-desktop)] ${
           isHome
-            ? "bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))]"
-            : "bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))]"
+            ? "bottom-[var(--fab-bottom-mobile-home)]"
+            : "bottom-[var(--fab-bottom-mobile-inner)]"
         }`}
-        style={{ ["--fab-bottom-desktop" as string]: FAB_BOTTOM_DESKTOP }}
+        style={{
+          ["--fab-bottom-desktop" as string]: FAB_BOTTOM_DESKTOP,
+          ["--fab-bottom-mobile-home" as string]: FAB_BOTTOM_MOBILE_HOME,
+          ["--fab-bottom-mobile-inner" as string]: FAB_BOTTOM_MOBILE_INNER,
+        }}
       >
         <AnimatePresence>
           {showPeek && !isOpen && (

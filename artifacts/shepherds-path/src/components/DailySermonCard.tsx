@@ -87,6 +87,7 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
   const [showUpsell, setShowUpsell] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
+  const retryOnceRef = useRef(false);
   const cacheKey = `sermon_daily_${new Date().toISOString().slice(0, 10)}_${verseId}`;
 
   const loadSermon = useCallback(async (force = false) => {
@@ -174,8 +175,19 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
 
   useEffect(() => {
     if (!reflectionContent || !verseId) return;
+    retryOnceRef.current = false;
     void loadSermon();
   }, [verseId, reflectionContent, loadSermon]);
+
+  useEffect(() => {
+    if (!loadError || sermon || loading || retryOnceRef.current) return;
+    retryOnceRef.current = true;
+    const t = window.setTimeout(() => {
+      fetchedRef.current = false;
+      void loadSermon(true);
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [loadError, loading, loadSermon, sermon]);
 
   const saveJournal = async () => {
     if (!journalText.trim() || journalSaving) return;
@@ -261,22 +273,38 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
                   >
                     {loadError}
                   </p>
-                  <button
-                    type="button"
-                    data-testid="btn-retry-daily-sermon"
-                    onClick={() => {
-                      fetchedRef.current = false;
-                      void loadSermon(true);
-                    }}
-                    className="w-full py-3 rounded-xl text-[13px] font-semibold"
-                    style={{
-                      background: "rgba(124,58,237,0.2)",
-                      border: "1px solid rgba(167,139,250,0.35)",
-                      color: "rgba(255,255,255,0.85)",
-                    }}
-                  >
-                    Try again
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      data-testid="btn-open-go-deeper-from-sermon-error"
+                      onClick={() => setCollapsed(true)}
+                      className="w-full py-3 rounded-xl text-[13px] font-semibold"
+                      style={{
+                        background: "rgba(124,58,237,0.2)",
+                        border: "1px solid rgba(167,139,250,0.35)",
+                        color: "rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      Open Go Deeper below
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="btn-retry-daily-sermon"
+                      onClick={() => {
+                        fetchedRef.current = false;
+                        retryOnceRef.current = true;
+                        void loadSermon(true);
+                      }}
+                      className="w-full py-2.5 rounded-xl text-[12px] font-medium"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "rgba(255,255,255,0.72)",
+                      }}
+                    >
+                      Retry this clip
+                    </button>
+                  </div>
                 </div>
               )}
 
