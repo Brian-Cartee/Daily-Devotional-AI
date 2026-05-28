@@ -261,12 +261,11 @@ export default function PrayerClosetPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-[#07050f] pb-36 pt-2">
-        <div className="relative max-w-2xl mx-auto">
-          <div
-            className="sticky top-14 z-50 flex items-center justify-between gap-2 px-2 sm:px-3 py-1.5 bg-[#07050f]/90 backdrop-blur-md border-b border-white/5"
-            data-testid="closet-page-header"
-          >
+      <main className="min-h-screen bg-[#07050f] pb-36">
+        <header
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-2 sm:px-3 pb-1.5 pt-[max(0.35rem,env(safe-area-inset-top))] bg-[#07050f]/92 backdrop-blur-md border-b border-white/5"
+          data-testid="closet-page-header"
+        >
             <BackButton
               backToPaths
               testId="button-back-prayer-closet"
@@ -291,8 +290,9 @@ export default function PrayerClosetPage() {
             >
               <Settings2 className="w-5 h-5" />
             </button>
-          </div>
+        </header>
 
+        <div className="relative max-w-2xl mx-auto pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]">
           {showIntro && (
             <p className="text-center text-[12px] text-white/55 leading-snug px-4 py-2 border-b border-white/5">
               This room is yours. Nothing here is shared unless you choose.{" "}
