@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { NavBar } from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
 import {
   Check, BookOpen, ChevronDown, ArrowRight, Trophy,
@@ -154,7 +153,6 @@ export default function ReadingPlansPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
         {/* Back — hidden on intake-pace which has its own inline back button */}

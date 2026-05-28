@@ -19,7 +19,6 @@ import {
 } from "@/lib/shareVerse";
 import { streamAI, AiLimitReachedError } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
@@ -797,8 +796,7 @@ export default function Devotional() {
   if (isVerseLoading) {
     return (
       <>
-        <NavBar />
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background pt-14">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
           <Loader2 className="w-6 h-6 animate-spin text-primary/40 mb-4" />
           <p className="text-muted-foreground text-sm font-medium">Loading today's word...</p>
         </div>
@@ -809,8 +807,7 @@ export default function Devotional() {
   if (verseError || !verse) {
     return (
       <>
-        <NavBar />
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background pt-14">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
           <div className="bg-card border border-border p-10 rounded-2xl text-center max-w-md shadow-sm">
             <HeartHandshake className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-bold text-foreground mb-2">Just a moment</h2>
@@ -832,10 +829,8 @@ export default function Devotional() {
 
   return (
     <>
-      <NavBar />
-
       {/* Main content */}
-      <main className="max-w-xl mx-auto px-4 pb-24 pt-16 relative z-10">
+      <main className="max-w-xl mx-auto px-4 pb-24 pt-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

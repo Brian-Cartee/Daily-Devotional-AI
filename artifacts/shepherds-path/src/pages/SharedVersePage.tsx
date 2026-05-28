@@ -2,7 +2,6 @@ import { Link, useRoute } from "wouter";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, BookOpen } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 import { buildVerseSharePreviewUrl } from "@/lib/shareVerse";
@@ -49,8 +48,7 @@ export default function SharedVersePage() {
 
   return (
     <>
-      <NavBar />
-      <main className="min-h-screen bg-background pt-14 pb-24">
+      <main className="min-h-screen bg-background pb-24">
         <div className="max-w-lg mx-auto px-4 py-8">
           {!/^\d{4}-\d{2}-\d{2}$/.test(date) && (
             <p className="text-center text-muted-foreground">This verse link isn&apos;t valid.</p>

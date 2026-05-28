@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Star, Send, Check, X, ChevronDown, ChevronRight } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { useLocation } from "wouter";
-import { NavBar } from "@/components/NavBar";
 
 const CATEGORIES = [
   "All",
@@ -143,8 +142,7 @@ export default function StoriesPage() {
 
   return (
     <>
-      <NavBar />
-      <div className="min-h-screen bg-background pt-14">
+      <div className="min-h-screen bg-background">
 
         {/* Hero */}
         <div className="relative w-full overflow-hidden" style={{ height: 260 }}>

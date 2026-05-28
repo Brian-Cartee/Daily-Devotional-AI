@@ -6,7 +6,6 @@ import {
   Flame, Trophy, ShieldCheck, Church,
   Sparkles, ArrowRight, Users, Share2, Check, Play, HandHeart, Loader2
 } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 import { BRAND_ICON } from "@/lib/brand";
 import {
   MINISTRY_SUPPORT_CLOSING,
@@ -85,10 +84,9 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #130636 0%, #0d0a1a 100%)" }}>
-      <NavBar />
 
       {/* HERO — cinematic, purple gradient */}
-      <div className="relative pt-14 pb-16 px-5 text-center overflow-hidden">
+      <div className="relative pt-4 pb-16 px-5 text-center overflow-hidden">
         {/* Radial glow */}
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(122,1,141,0.35) 0%, rgba(80,20,180,0.1) 60%, transparent 80%)"

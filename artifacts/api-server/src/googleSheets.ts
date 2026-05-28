@@ -30,8 +30,13 @@ async function getTodayVerseFromWebApp(): Promise<SheetVerse | null> {
     const data = (await res.json()) as Partial<SheetVerse>;
     const today = getEasternDateString();
     if (!data.verseText && !data.reference) return null;
+    const normalizedDate = normalizeDateString((data.date || '').trim());
+    if (normalizedDate && normalizedDate !== today) {
+      console.warn(`[sheets] Web app returned stale date ${normalizedDate}; expected ${today}.`);
+      return null;
+    }
     return {
-      date: data.date || today,
+      date: today,
       verseText: data.verseText?.trim() || '',
       reference: data.reference?.trim() || '',
       encouragement: data.encouragement?.trim() || '',

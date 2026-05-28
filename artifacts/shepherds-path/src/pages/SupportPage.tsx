@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, CheckCircle, ChevronDown, ChevronUp, Send, Loader2, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -96,7 +95,6 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
         {/* Header */}

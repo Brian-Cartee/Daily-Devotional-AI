@@ -7,7 +7,6 @@ import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
 import { useQuery } from "@tanstack/react-query";
-import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { BIBLE_BOOKS } from "@/data/bibleBooks";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
@@ -235,8 +234,7 @@ export default function ReadBible() {
 
   return (
     <>
-      <NavBar />
-      <main className="min-h-screen bg-background pt-14 pb-28 sm:pb-8">
+      <main className="min-h-screen bg-background pt-2 pb-28 sm:pb-8">
         {/* Hero */}
         <div className="relative h-44 sm:h-52 overflow-hidden">
           <img

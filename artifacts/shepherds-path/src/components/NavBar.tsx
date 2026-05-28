@@ -269,14 +269,14 @@ export function NavBar() {
                 className="flex flex-col items-center justify-center flex-1 h-full transition-all"
               >
                 {active ? (
-                  <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary shadow-sm shadow-primary/25">
+                  <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
                     <Icon className={`${href === "/" ? "w-5 h-5" : "w-[18px] h-[18px]"} text-white shrink-0`} />
                     <span className="text-[13px] font-bold text-white leading-none">{label}</span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-0.5 relative">
-                    <Icon className="w-[22px] h-[22px] text-zinc-400" />
-                    <span className="text-[11px] font-semibold text-zinc-400 leading-none">{label}</span>
+                  <div className="flex flex-col items-center gap-0.5 relative px-2.5 py-1.5 rounded-xl bg-zinc-900/35 border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                    <Icon className="w-[22px] h-[22px] text-zinc-300/85" />
+                    <span className="text-[11px] font-semibold text-zinc-300/80 leading-none">{label}</span>
                     {hasPlace && (
                       <span className="absolute -top-0.5 right-0 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
                     )}

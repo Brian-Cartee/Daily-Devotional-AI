@@ -16,5 +16,6 @@ function hashSeed(seed: string): number {
 export function getGuidanceHeroImage(): string {
   const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
   const idx = hashSeed(`sp-guidance-hero:${day}`) % GUIDANCE_HERO_VARIANTS.length;
-  return GUIDANCE_HERO_VARIANTS[idx]!;
+  const base = GUIDANCE_HERO_VARIANTS[idx]!;
+  return `${base}?v=guidance-hero-3&d=${day}`;
 }

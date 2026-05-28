@@ -10,7 +10,6 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 import { BackButton } from "@/components/BackButton";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
@@ -262,8 +261,7 @@ export default function PrayerClosetPage() {
 
   return (
     <>
-      <NavBar />
-      <main className="min-h-screen bg-[#07050f] pb-36 pt-14">
+      <main className="min-h-screen bg-[#07050f] pb-36 pt-2">
         <div className="relative max-w-2xl mx-auto">
           <div
             className="sticky top-14 z-50 flex items-center justify-between gap-2 px-2 sm:px-3 py-1.5 bg-[#07050f]/90 backdrop-blur-md border-b border-white/5"

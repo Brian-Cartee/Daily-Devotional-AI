@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { NavBar } from "@/components/NavBar";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -134,7 +133,6 @@ export default function PrayerWallPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
 
       {/* ── Cinematic hero ── */}
       <div className="relative overflow-hidden" style={{ height: "42vh", minHeight: "280px", maxHeight: "380px" }}>

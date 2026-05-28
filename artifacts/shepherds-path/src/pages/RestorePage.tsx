@@ -41,7 +41,7 @@ export default function RestorePage() {
 
       {/* Hero strip — matches app design language */}
       <div
-        className="relative pt-14 pb-10 px-6 text-center overflow-hidden"
+        className="relative pt-4 pb-10 px-6 text-center overflow-hidden"
         style={{ background: "linear-gradient(160deg, hsl(265 60% 8%) 0%, hsl(258 50% 5%) 60%, hsl(var(--background)) 100%)" }}
       >
         {/* Purple radial glow */}

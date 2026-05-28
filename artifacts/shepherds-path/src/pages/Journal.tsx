@@ -13,7 +13,6 @@ import {
   Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb, MessageCircle, Feather,
   // ArrowLeft removed — using BackButton component
 } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { ShareButton } from "@/components/ShareButton";
 import { getSessionId } from "@/lib/session";
@@ -1109,8 +1108,7 @@ export default function Journal() {
 
   return (
     <>
-      <NavBar />
-      <div className="min-h-screen bg-background pt-14" onClick={() => exportOpen && setExportOpen(false)}>
+      <div className="min-h-screen bg-background" onClick={() => exportOpen && setExportOpen(false)}>
 
         {/* Hero banner */}
         <div className="relative w-full overflow-hidden" style={{ height: 300 }}>

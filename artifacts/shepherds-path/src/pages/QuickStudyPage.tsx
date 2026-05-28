@@ -11,7 +11,6 @@ import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { getUserName } from "@/lib/userName";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { TRACKS, getTodaysPassage, getPassageIndex, type TrackId, type Track } from "@/data/trackPaths";
 import { useToast } from "@/hooks/use-toast";
@@ -497,10 +496,9 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
 
   return (
     <>
-      <NavBar />
 
       {/* Hero banner */}
-      <div className="relative w-full overflow-hidden pt-14" style={{ height: 194 }}>
+      <div className="relative w-full overflow-hidden pt-2" style={{ height: 194 }}>
         <img
           src="/hero-study.webp"
           alt=""

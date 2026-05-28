@@ -12,7 +12,6 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { PrayerThatStays } from "@/components/prayer/PrayerThatStays";
 import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
-import { NavBar } from "@/components/NavBar";
 import { getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
 import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
 import { NamePrompt } from "@/components/NamePrompt";
@@ -166,6 +165,29 @@ export default function GuidancePage() {
   const [pendingCoachRegenerate, setPendingCoachRegenerate] = useState(false);
 
   const heroArtUrl = getGuidanceHeroImage();
+  const [heroImageSrc, setHeroImageSrc] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const fallbacks = [heroArtUrl, "/hero-landing.webp?v=guidance-hero-3", "/hero-landing.jpg?v=guidance-hero-3"];
+
+    const tryLoad = (index: number) => {
+      if (cancelled || index >= fallbacks.length) return;
+      const candidate = fallbacks[index]!;
+      const img = new Image();
+      img.onload = () => {
+        if (!cancelled) setHeroImageSrc(candidate);
+      };
+      img.onerror = () => tryLoad(index + 1);
+      img.src = candidate;
+    };
+
+    setHeroImageSrc("");
+    tryLoad(0);
+    return () => {
+      cancelled = true;
+    };
+  }, [heroArtUrl]);
 
   const carryVerseToday = () => {
     if (!verse) return;
@@ -636,24 +658,27 @@ export default function GuidancePage() {
           setPendingCoachRegenerate(false);
         }}
       />
-      <NavBar />
       <main className="min-h-screen bg-background pb-32">
         {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
         <div
-          className={`relative pt-14 overflow-hidden transition-all duration-700 ease-in-out ${
+          className={`relative pt-2 sm:pt-3 overflow-hidden transition-all duration-700 ease-in-out ${
             !situation && !streamingText ? "min-h-[248px] sm:min-h-[268px]" : ""
           }`}
         >
-          <img
-            src={heroArtUrl}
-            alt=""
-            aria-hidden="true"
-            className={`absolute inset-0 w-full h-full object-cover object-[center_40%] transition-opacity duration-700 ${
-              !situation && !streamingText ? "opacity-100" : "opacity-0"
-            }`}
-            style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.05)", transformOrigin: "50% top" }}
-            onError={e => { (e.target as HTMLImageElement).src = "/hero-landing.jpg"; }}
-          />
+          {heroImageSrc && (
+            <img
+              src={heroImageSrc}
+              alt=""
+              aria-hidden="true"
+              loading="eager"
+              // @ts-ignore - valid HTML attribute supported by browsers
+              fetchpriority="high"
+              className={`absolute inset-0 w-full h-full object-cover object-[center_40%] transition-opacity duration-700 ${
+                !situation && !streamingText ? "opacity-100" : "opacity-0"
+              }`}
+              style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.05)", transformOrigin: "50% top" }}
+            />
+          )}
 
           <div
             className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${

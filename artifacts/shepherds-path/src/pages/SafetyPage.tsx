@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { Shield, BookOpen, Phone } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
-import { NavBar } from "@/components/NavBar";
 import {
   CRISIS_LIFELINE_DISPLAY,
   CRISIS_LIFELINE_TEL,
@@ -109,7 +108,6 @@ export default function SafetyPage() {
         </section>
       </div>
 
-      <NavBar />
     </div>
   );
 }

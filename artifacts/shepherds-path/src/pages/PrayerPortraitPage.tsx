@@ -3,7 +3,6 @@ import { PrayerPortrait } from "@/components/PrayerPortrait";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useState } from "react";
-import { NavBar } from "@/components/NavBar";
 import { motion } from "framer-motion";
 import { Heart, Lock, Camera, Sparkles } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
@@ -20,8 +19,7 @@ export default function PrayerPortraitPage() {
   if (!isPro) {
     return (
       <>
-        <NavBar />
-        <main className="min-h-screen bg-background pb-24 pt-14">
+        <main className="min-h-screen bg-background pb-24 pt-2">
 
           {/* ── Hero photo strip — outer is NOT overflow-hidden so icon badge can bleed out ── */}
           <div className="relative w-full" style={{ height: 220 }}>

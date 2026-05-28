@@ -7,7 +7,6 @@ import {
   Copy, Check, Star, Users, Sparkles, BookMarked, ImageIcon, Loader2, ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NavBar } from "@/components/NavBar";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import type { TriviaQuestion } from "@shared/schema";
@@ -259,7 +258,6 @@ export default function TriviaPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <NavBar />
       {/* Back button — fixed, out of flow so content centers cleanly */}
       {phase === "select" && (
         <BackButton
@@ -268,7 +266,7 @@ export default function TriviaPage() {
           className="fixed top-[60px] left-3 z-30"
         />
       )}
-      <div className="max-w-lg mx-auto px-4 pt-14">
+      <div className="max-w-lg mx-auto px-4 pt-2">
 
         {/* ── Category Selection ─────────────────────────────────────── */}
         <AnimatePresence mode="wait">

@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { ShoppingBag, ExternalLink, Package } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 import { BRAND_ICON } from "@/lib/brand";
 
 const STORE_URL = "https://my-store-10fb787.creator-spring.com/";
@@ -59,8 +58,7 @@ const PRODUCTS = [
 export default function StorePage() {
   return (
     <>
-      <NavBar />
-      <div className="min-h-screen bg-background pt-14 pb-32">
+      <div className="min-h-screen bg-background pt-2 pb-32">
 
         {/* Hero */}
         <div className="relative bg-gradient-to-br from-primary/10 via-violet-500/5 to-amber-500/5 border-b border-border/40">

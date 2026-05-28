@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { NavBar } from "@/components/NavBar";
 import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, Swords } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
@@ -457,10 +456,9 @@ export default function IronCirclePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <NavBar />
 
       {/* Hero */}
-      <div className="relative pt-14">
+      <div className="relative pt-2">
         <div className="relative w-full overflow-hidden" style={{ minHeight: 280 }}>
           {/* Friends photo — visible at bottom, fades into purple at top */}
           <img

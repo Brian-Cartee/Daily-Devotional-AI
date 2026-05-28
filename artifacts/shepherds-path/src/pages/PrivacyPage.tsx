@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { NavBar } from "@/components/NavBar";
 import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
 
@@ -13,7 +12,6 @@ export default function PrivacyPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
       <main className="max-w-2xl mx-auto px-5 pt-24 pb-28">
 
         <motion.div

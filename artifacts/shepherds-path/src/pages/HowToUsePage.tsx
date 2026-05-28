@@ -16,7 +16,6 @@ import {
   ArrowRight,
   Wind,
 } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 import { MinistrySupportSection } from "@/components/MinistrySupportSection";
 import { Link } from "wouter";
 
@@ -221,7 +220,6 @@ const faqs = [
 export default function HowToUsePage() {
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
 
       <div className="max-w-2xl mx-auto px-4 pt-20 pb-32">
         <motion.div {...fade(0)} className="text-center pt-8 pb-8">

@@ -194,7 +194,7 @@ async function syncTodayVerseFromSheet(): Promise<void> {
       text: sheetVerse.verseText,
       encouragement: sheetVerse.encouragement,
       reflectionPrompt: sheetVerse.reflectionPrompt,
-      date: sheetVerse.date,
+      date: today,
     });
 
     console.log(`Synced today's verse from Google Sheet: ${sheetVerse.reference}`);

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { NavBar } from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
 import { Heart, ChevronDown, ArrowRight, BookOpen, Compass, Sun, Sunrise, Check } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
@@ -141,7 +140,6 @@ export default function SalvationPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
 
       {/* ── Cinematic hero ── */}
       <div className="relative overflow-hidden" style={{ height: "46vh", minHeight: "300px", maxHeight: "420px" }}>
