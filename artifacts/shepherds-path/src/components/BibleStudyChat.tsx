@@ -10,7 +10,6 @@ import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { getUserName } from "@/lib/userName";
 import { useChatWithVerse } from "@/hooks/use-verses";
-import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 
 interface BibleStudyChatProps {
   verseId: number;
@@ -243,10 +242,6 @@ export function BibleStudyChat({
             <span className="text-[13px] text-muted-foreground italic">Searching the Scriptures…</span>
           </div>
         </motion.div>
-      )}
-
-      {!chatMutation.isPending && (
-        <ResourceSuggestionCard messages={messages} />
       )}
 
       <AnimatePresence>

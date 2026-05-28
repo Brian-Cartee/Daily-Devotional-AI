@@ -44,7 +44,6 @@ import { hasBeenPrompted } from "@/lib/userName";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
 import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer, clearDevotionalSession } from "@/lib/devotionalSession";
-import { DailySermonCard } from "@/components/DailySermonCard";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
 import { ScriptureContext } from "@/components/ScriptureContext";
 import { SessionStillness } from "@/components/SessionStillness";
@@ -100,7 +99,6 @@ export default function Devotional() {
   const [, navigate] = useLocation();
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
   const [reflectionContent, setReflectionContent] = useState("");
-  const [primarySermonChannel, setPrimarySermonChannel] = useState<string>("");
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [reflectionError, setReflectionError] = useState(false);
   const [prayerContent, setPrayerContent] = useState("");
@@ -1813,20 +1811,13 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {/* Daily sermon + Go Deeper section — appear after devotional is complete */}
+          {/* Go Deeper — optional teaching clips (user expands when ready) */}
           {reflectionContent && (
             <div className="px-4">
-              <DailySermonCard
-                verseId={verse.id}
-                verseReference={verse.reference}
-                reflectionContent={reflectionContent}
-                onSermonLoaded={setPrimarySermonChannel}
-              />
               <AdditionalSermonsSection
                 verseId={verse.id}
                 verseReference={verse.reference}
                 reflectionContent={reflectionContent}
-                primaryChannel={primarySermonChannel}
               />
             </div>
           )}

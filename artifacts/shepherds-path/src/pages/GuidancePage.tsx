@@ -30,7 +30,6 @@ import { AiPauseModal } from "@/components/AiPauseModal";
 import { isLateNight } from "@/lib/nightMode";
 import { getRelationshipAge } from "@/lib/relationship";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { ResourceSuggestionCard } from "@/components/ResourceSuggestionCard";
 import { SessionStillness } from "@/components/SessionStillness";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
@@ -1309,11 +1308,6 @@ export default function GuidancePage() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Curated resource — surfaces after deep back-and-forth */}
-          {responseComplete && !isSending && (
-            <ResourceSuggestionCard messages={messages} topic={situation} />
-          )}
 
           {/* Follow-up input */}
           <AnimatePresence>
