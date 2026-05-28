@@ -725,10 +725,10 @@ function LandingHomeInner() {
           {/* Time-aware greeting */}
           <GreetingHeader />
           {carryToday && (
-            <div className="rounded-2xl border border-primary/20 bg-primary/6 px-4 py-3" data-testid="card-carry-today">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70 mb-1">Carry this today</p>
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
               <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
-              <p className="text-[12px] font-semibold text-primary/70 mt-1">— {carryToday.reference}</p>
+              <p className="text-[12px] font-semibold text-zinc-300/75 mt-1">— {carryToday.reference}</p>
             </div>
           )}
 
@@ -757,7 +757,7 @@ function LandingHomeInner() {
 
           {/* Name prompt — shown once for returning users who haven't set their name */}
           {!getUserName() && !nameDismissed && streak >= 1 && (
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-primary/8 border border-primary/15">
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900/40 border border-white/10">
               <input
                 data-testid="input-name-prompt"
                 type="text"
@@ -776,7 +776,7 @@ function LandingHomeInner() {
                 <button
                   data-testid="btn-name-submit"
                   onClick={() => { setUserName(nameInput.trim()); setNameDismissed(true); }}
-                  className="text-[12px] font-semibold text-primary px-2 py-0.5 rounded-lg hover:bg-primary/10 transition-colors"
+                  className="text-[12px] font-semibold text-zinc-200 px-2 py-0.5 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   Save
                 </button>
@@ -829,30 +829,30 @@ function LandingHomeInner() {
             const journeyName = getJourneyName(journeyId);
             const focusLabel = FOCUS_LABELS[rhythm.focus];
             return (
-              <div className="relative rounded-2xl border border-primary/20 bg-card overflow-hidden shadow-sm">
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-indigo-400" />
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-primary to-violet-500 opacity-70 rounded-l-2xl" />
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/4 via-violet-500/3 to-transparent pointer-events-none" />
+              <div className="relative rounded-2xl border border-white/10 bg-card overflow-hidden shadow-sm">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-zinc-500/70 via-zinc-400/50 to-zinc-300/35" />
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-zinc-400/70 to-zinc-500/45 opacity-80 rounded-l-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-zinc-400/5 via-zinc-300/5 to-transparent pointer-events-none" />
                 <div className="relative z-10 px-5 pt-4 pb-4">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
                       <ShortcutPathIcon variant="pathways" size="sm" />
-                      <span className="text-[12px] font-bold uppercase tracking-widest text-primary/70">Your Rhythm Today</span>
+                      <span className="text-[12px] font-bold uppercase tracking-widest text-zinc-300/80">Your Rhythm Today</span>
                     </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/8 text-primary border border-primary/15">
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-zinc-900/55 text-zinc-200 border border-white/10">
                       Focused on {focusLabel}
                     </span>
                   </div>
 
                   {/* Today's verse */}
-                  <div className="mb-3 px-3.5 py-3 rounded-xl bg-primary/5 border border-primary/10">
-                    <p className="text-[13px] font-bold uppercase tracking-widest text-primary/50 mb-1.5">Today's Word</p>
+                  <div className="mb-3 px-3.5 py-3 rounded-xl bg-zinc-900/35 border border-white/10">
+                    <p className="text-[13px] font-bold uppercase tracking-widest text-zinc-300/70 mb-1.5">Today's Word</p>
                     <p className="path-reminder-quote text-[14px] text-foreground mb-1.5">
                       &ldquo;{verse.text}&rdquo;
                     </p>
                     <div className="flex items-center justify-between mt-1">
-                      <p className="text-[12px] font-bold text-primary/60">— {verse.ref}</p>
+                      <p className="text-[12px] font-bold text-zinc-300/75">— {verse.ref}</p>
                       <ShareVerseButton verseText={verse.text} verseRef={verse.ref} />
                     </div>
                   </div>
@@ -861,7 +861,7 @@ function LandingHomeInner() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
                     <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60">
                       <div className="flex items-center gap-1.5 mb-1.5">
-                        <HandHeart className="w-3.5 h-3.5 text-primary/60" />
+                        <HandHeart className="w-3.5 h-3.5 text-zinc-300/75" />
                         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bring to Prayer</p>
                       </div>
                       <p className="text-[12px] text-foreground/75 leading-snug italic">
@@ -869,12 +869,12 @@ function LandingHomeInner() {
                       </p>
                     </div>
                     <Link href={`/understand?j=${journeyId}`}>
-                      <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60 hover:border-primary/25 hover:bg-primary/4 transition-all cursor-pointer h-full group">
+                      <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60 hover:border-white/15 hover:bg-zinc-800/25 transition-all cursor-pointer h-full group">
                         <div className="flex items-center gap-1.5 mb-1.5">
-                          <BookMarked className="w-3.5 h-3.5 text-primary/60" />
+                          <BookMarked className="w-3.5 h-3.5 text-zinc-300/75" />
                           <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Your Journey</p>
                         </div>
-                        <p className="text-[12px] text-foreground/75 leading-snug font-semibold group-hover:text-primary transition-colors">
+                        <p className="text-[12px] text-foreground/75 leading-snug font-semibold group-hover:text-zinc-200 transition-colors">
                           {journeyName} →
                         </p>
                       </div>

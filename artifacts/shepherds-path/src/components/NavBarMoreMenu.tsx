@@ -127,7 +127,7 @@ export function NavBarMoreMenu({
               ? "bg-black/40 text-white shadow-md shadow-black/40 backdrop-blur-sm ring-1 ring-white/10"
               : "bg-black/35 text-white shadow-md shadow-black/40 backdrop-blur-sm ring-1 ring-white/10 hover:bg-black/45"
             : open
-              ? "bg-primary/10 text-primary"
+              ? "bg-zinc-900/55 text-foreground ring-1 ring-white/10"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
         }`}
       >

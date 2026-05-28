@@ -380,7 +380,7 @@ export function FloatingAskAI() {
                     <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                       {pageContext.subline}
                     </p>
-                    <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary/90 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5">
+                    <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-200 bg-zinc-900/55 border border-white/10 rounded-full px-2 py-0.5">
                       {pageContext.chipLabel}
                     </span>
                   </div>
@@ -394,7 +394,7 @@ export function FloatingAskAI() {
                           ? "bg-destructive/10 border-destructive/25 text-destructive"
                           : usage.remaining <= 4
                             ? "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400"
-                            : "bg-primary/10 border-primary/25 text-primary"
+                          : "bg-zinc-900/55 border-white/10 text-zinc-200"
                       }`}
                     >
                       {usage.remaining}/{usage.limit}
@@ -416,14 +416,14 @@ export function FloatingAskAI() {
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl px-4 py-3.5 mb-4 bg-gradient-to-br from-primary/8 via-violet-500/5 to-transparent border border-primary/15"
+                    className="rounded-2xl px-4 py-3.5 mb-4 bg-gradient-to-br from-zinc-900/70 via-zinc-800/40 to-transparent border border-white/10"
                   >
                     <p className="text-[15px] font-semibold text-foreground leading-snug">
                       {pageContext.greeting}
                     </p>
                     <p className="path-reminder-quote text-[13px] text-muted-foreground mt-2 leading-relaxed">
                       &ldquo;Ask and it will be given to you; seek and you will find.&rdquo;
-                      <span className="block not-italic text-[10px] font-semibold uppercase tracking-widest text-primary/60 mt-1.5">
+                      <span className="block not-italic text-[10px] font-semibold uppercase tracking-widest text-zinc-300/70 mt-1.5">
                         Matthew 7:7
                       </span>
                     </p>
@@ -500,7 +500,7 @@ export function FloatingAskAI() {
                           onClick={() => handlePrompt(p)}
                           className={`text-left px-3.5 py-3 rounded-xl border active:scale-[0.98] transition-all ${
                             p.navigateTo
-                              ? "border-primary/35 bg-primary/8 hover:bg-primary/12"
+                              ? "border-white/15 bg-zinc-900/60 hover:bg-zinc-800/55"
                               : "border-border/60 bg-muted/30 hover:bg-muted/50"
                           }`}
                         >
@@ -535,7 +535,7 @@ export function FloatingAskAI() {
                                 onClick={() => handlePrompt(p)}
                                 className={`text-left px-3.5 py-2.5 rounded-xl border text-[13px] text-foreground/85 ${
                                   p.navigateTo
-                                    ? "border-primary/35 bg-primary/8"
+                                    ? "border-white/15 bg-zinc-900/60"
                                     : "border-border/50 bg-muted/20"
                                 }`}
                               >
@@ -621,7 +621,7 @@ export function FloatingAskAI() {
                           handleClose();
                           navigate("/how-to-use");
                         }}
-                        className="w-full flex items-center justify-center gap-1.5 text-[12px] font-semibold text-primary/90 hover:text-primary py-2 min-h-[40px] rounded-lg hover:bg-primary/5 transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 text-[12px] font-semibold text-zinc-200/90 hover:text-zinc-100 py-2 min-h-[40px] rounded-lg hover:bg-zinc-800/35 transition-colors"
                       >
                         <HelpCircle className="w-3.5 h-3.5" />
                         How to use the app
