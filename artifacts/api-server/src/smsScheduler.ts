@@ -6,6 +6,10 @@ import { hasSmsSentToday, markSmsSentToday } from "./schedulerState";
 
 const openai = new OpenAI({ apiKey: config.openaiApiKey });
 
+function getEasternDateKey(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+}
+
 async function sendDailyDevotionalSms() {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -16,7 +20,7 @@ async function sendDailyDevotionalSms() {
     return;
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getEasternDateKey();
   const verse = await storage.getVerseByDate(today);
   if (!verse) {
     console.log("[sms] No verse found for today, skipping daily SMS");

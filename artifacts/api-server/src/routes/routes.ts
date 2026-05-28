@@ -165,12 +165,11 @@ async function syncTodayVerseFromSheet(): Promise<void> {
   try {
     const today = getEasternDateString();
     const existing = await storage.getVerseByDate(today);
-    if (existing) return; // Already have today's verse cached
 
     const sheetVerse = await getTodayVerseFromSheet();
     if (!sheetVerse) {
+      if (existing) return;
       console.warn("No matching row found in Google Sheet for today. Using fallback.");
-      // Fallback hardcoded verse if sheet has no data for today
       await storage.createVerse({
         reference: "Philippians 4:6-7",
         text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
@@ -179,6 +178,15 @@ async function syncTodayVerseFromSheet(): Promise<void> {
         date: today,
       });
       return;
+    }
+
+    if (existing) {
+      const sameReference = existing.reference === sheetVerse.reference;
+      const sameText = existing.text === sheetVerse.verseText;
+      const sameEncouragement = (existing.encouragement || "") === (sheetVerse.encouragement || "");
+      const samePrompt = (existing.reflectionPrompt || "") === (sheetVerse.reflectionPrompt || "");
+      if (sameReference && sameText && sameEncouragement && samePrompt) return;
+      await storage.deleteVerseByDate(today);
     }
 
     await storage.createVerse({
@@ -403,16 +411,20 @@ export async function registerRoutes(
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
     try {
-      const today = (req.query.date as string) || getEasternDateString();
+      const easternToday = getEasternDateString();
+      const requestedDate = (req.query.date as string) || easternToday;
       if (req.query.refresh === "1") {
-        await storage.deleteVerseByDate(today);
+        await storage.deleteVerseByDate(requestedDate);
       }
-      let verse = await storage.getVerseByDate(today);
+      if (requestedDate === easternToday) {
+        await syncTodayVerseFromSheet();
+      }
+      let verse = await storage.getVerseByDate(requestedDate);
 
       // If not cached yet, try syncing on-demand
       if (!verse) {
         await syncTodayVerseFromSheet();
-        verse = await storage.getVerseByDate(today);
+        verse = await storage.getVerseByDate(requestedDate);
       }
 
       if (!verse) {

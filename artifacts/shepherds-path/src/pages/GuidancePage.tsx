@@ -652,7 +652,7 @@ export default function GuidancePage() {
               !situation && !streamingText ? "opacity-100" : "opacity-0"
             }`}
             style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.05)", transformOrigin: "50% top" }}
-            onError={e => { (e.target as HTMLImageElement).src = "/hero-guidance.jpg"; }}
+            onError={e => { (e.target as HTMLImageElement).src = "/hero-landing.jpg"; }}
           />
 
           <div

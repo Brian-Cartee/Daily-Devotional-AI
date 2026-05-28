@@ -177,21 +177,9 @@ export async function getTodayVerseFromSheet(): Promise<SheetVerse | null> {
     }
   }
 
-  const pastRows = rows.filter((row) => {
-    const d = normalizeDateString(row[0]?.trim() || '');
-    return d && d <= today;
-  });
-
-  if (pastRows.length > 0) {
-    const lastRow = pastRows[pastRows.length - 1];
-    return {
-      date: today,
-      verseText: lastRow[1]?.trim() || '',
-      reference: lastRow[2]?.trim() || '',
-      encouragement: lastRow[5]?.trim() || '',
-      reflectionPrompt: lastRow[6]?.trim() || '',
-    };
-  }
+  // Important: do not silently reuse a past row when today's row is missing.
+  // That causes "yesterday's scripture" to persist into a new day.
+  console.warn(`[sheets] No exact row for ${today} in Sheet1.`);
 
   return null;
 }

@@ -1,4 +1,5 @@
-const todayKey = () => new Date().toISOString().slice(0, 10); // "2026-04-15"
+const todayKey = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); // "2026-04-15"
 
 interface DevotionalCache {
   date: string;

@@ -1,8 +1,8 @@
 /** Guidance hero backgrounds — separate from Take a Moment / daily-art. */
 
 const GUIDANCE_HERO_VARIANTS = [
-  "/hero-guidance.jpg",
   "/hero-landing.webp",
+  "/hero-landing.jpg",
   "/hero-devotional-still.webp",
   "/hero-devotional-2.webp",
 ] as const;

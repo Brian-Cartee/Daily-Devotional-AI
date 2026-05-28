@@ -3,6 +3,10 @@ import { api, type GenerateRequestInput, type GenerateResponseResult, type Verse
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 
+function getEasternDateKey(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+}
+
 function parseWithLogging<T>(schema: { parse: (data: unknown) => T }, data: unknown, label: string): T {
   try {
     return schema.parse(data);
@@ -13,11 +17,11 @@ function parseWithLogging<T>(schema: { parse: (data: unknown) => T }, data: unkn
 }
 
 export function useDailyVerse() {
+  const easternDate = getEasternDateKey();
   return useQuery({
-    queryKey: [api.verses.getDaily.path],
+    queryKey: [api.verses.getDaily.path, easternDate],
     queryFn: async () => {
-      const localDate = new Intl.DateTimeFormat("en-CA").format(new Date());
-      const res = await fetch(`${api.verses.getDaily.path}?date=${localDate}`, { credentials: "include" });
+      const res = await fetch(`${api.verses.getDaily.path}?date=${easternDate}`, { credentials: "include" });
       if (!res.ok) {
         if (res.status === 404) return null;
         throw new Error("Failed to fetch daily verse");

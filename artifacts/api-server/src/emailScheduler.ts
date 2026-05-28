@@ -14,6 +14,10 @@ const TARGET_HOUR_UTC = 12; // 12:00 UTC = 5 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM
 
 const CATCHUP_WINDOW_HOURS = 8; // Fire immediately if within 8 hours past scheduled time
 
+function getEasternDateKey(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+}
+
 // How many ms until the next occurrence of targetHour:00 UTC
 function msUntilNextHour(targetHour: number): number {
   const now = new Date();
@@ -119,7 +123,7 @@ Return JSON only in this exact format:
 }
 
 export async function sendDailyEmailsToAllSubscribers() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getEasternDateKey();
   console.log(`[email] Running daily email job for ${today}`);
 
   // Mark as sent immediately so a concurrent restart can't trigger a duplicate send

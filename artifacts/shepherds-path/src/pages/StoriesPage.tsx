@@ -171,8 +171,8 @@ export default function StoriesPage() {
         {/* Category filter */}
         <div className="sticky top-14 z-30 bg-background/95 backdrop-blur-sm border-b border-border/40">
           <div className="max-w-xl mx-auto px-4 py-3">
-            <div className="relative">
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <div className="relative -mx-1 sm:mx-0">
+              <div className="flex gap-2 max-sm:overflow-x-auto max-sm:overscroll-x-contain max-sm:pb-1 max-sm:pr-14 max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat}
@@ -188,9 +188,12 @@ export default function StoriesPage() {
                   </button>
                 ))}
               </div>
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end"
-                style={{ background: "linear-gradient(to right, transparent, hsl(var(--background)) 75%)" }}>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/50 mr-0.5" />
+              <div
+                className="pointer-events-none absolute inset-y-0 right-0 w-10 flex items-center justify-end sm:hidden"
+                style={{ background: "linear-gradient(to right, transparent, hsl(var(--background)) 70%)" }}
+                aria-hidden
+              >
+                <ChevronRight className="w-4 h-4 text-muted-foreground/60 mr-1" />
               </div>
             </div>
           </div>
