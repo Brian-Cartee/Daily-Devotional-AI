@@ -6,6 +6,7 @@ import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
 import {
   isNativeShellUiReady,
+  forceNotifyNativeShellReady,
   isNativeWebViewShell,
   notifyNativeShellReady,
   removeNativeBootPlaceholder,
@@ -83,7 +84,12 @@ if (typeof window !== "undefined" && isNativeWebViewShell()) {
     notifyNativeShellReady();
     if (attempts < 80) {
       setTimeout(() => pollReady(attempts + 1), 250);
+    } else if (!isNativeShellUiReady()) {
+      forceNotifyNativeShellReady();
     }
   };
   requestAnimationFrame(() => pollReady());
+  setTimeout(() => {
+    if (!isNativeShellUiReady()) forceNotifyNativeShellReady();
+  }, 6000);
 }

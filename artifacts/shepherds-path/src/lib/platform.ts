@@ -30,15 +30,35 @@ export function removeNativeBootPlaceholder(): void {
   document.getElementById("sp-boot")?.remove();
 }
 
+function postNativeAppReady(): void {
+  try {
+    (
+      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "app_ready" }));
+  } catch {
+    /* noop */
+  }
+}
+
 /** Tell the App Store iOS shell to hide its loading overlay */
 export function notifyNativeShellReady(): void {
   if (typeof window === "undefined") return;
   if (!isNativeShellUiReady()) return;
   try {
     window.dispatchEvent(new Event("sp-app-ready"));
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "app_ready" }));
+    postNativeAppReady();
+  } catch {
+    /* noop */
+  }
+}
+
+/** Last resort — dismiss native splash even if boot placeholder is stuck (iOS WebView edge cases) */
+export function forceNotifyNativeShellReady(): void {
+  if (typeof window === "undefined") return;
+  removeNativeBootPlaceholder();
+  try {
+    window.dispatchEvent(new Event("sp-app-ready"));
+    postNativeAppReady();
   } catch {
     /* noop */
   }

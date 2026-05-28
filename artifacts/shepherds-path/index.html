@@ -58,10 +58,12 @@
   <script>
     (function(){
       try {
-        if (window.ReactNativeWebView && navigator.serviceWorker) {
-          navigator.serviceWorker.getRegistrations().then(function(regs) {
-            regs.forEach(function(r) { r.unregister(); });
-          });
+        if (!window.ReactNativeWebView || !navigator.serviceWorker) return;
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: "SKIP_WAITING" });
         }
       } catch (e) {}
     })();
@@ -88,7 +90,7 @@
 
       function isBenignShellError(msg) {
         var s = String(msg || "");
-        return /ResizeObserver|AbortError|NotAllowedError|play\(\) request was interrupted|The operation was aborted|Non-Error promise rejection|Load failed|cancelled/i.test(s);
+        return /ResizeObserver|AbortError|NotAllowedError|play\(\) request was interrupted|The operation was aborted|Non-Error promise rejection|Load failed|cancelled|Script error\.|WebKit|MetaMask|postMessage|SecurityError|blocked a frame|Importing a module script failed|cancelled/i.test(s);
       }
 
       function reportShellError(msg, detail) {
@@ -113,8 +115,11 @@
       }
 
       var sent = false;
-      function notify() {
-        if (sent || !hasMountedApp()) return;
+      function notify(force) {
+        if (sent) return;
+        if (!force && !hasMountedApp()) return;
+        var boot = document.getElementById("sp-boot");
+        if (boot) boot.remove();
         sent = true;
         try {
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
@@ -138,7 +143,7 @@
       }
 
       function poll() {
-        notify();
+        notify(false);
         if (!sent) setTimeout(poll, 150);
       }
       if (document.readyState === "loading") {
@@ -147,7 +152,17 @@
         poll();
       }
 
-      window.addEventListener("sp-app-ready", notify);
+      window.addEventListener("sp-app-ready", function () {
+        notify(false);
+      });
+
+      setTimeout(function () {
+        if (!sent && hasMountedApp()) notify(false);
+      }, 2500);
+
+      setTimeout(function () {
+        if (!sent) notify(true);
+      }, 6500);
 
       setTimeout(function () {
         if (sent || hasMountedApp()) return;
@@ -160,9 +175,16 @@
           '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button></div>';
       }, 14000);
 
-      var mod = document.querySelector('script[type="module"]');
-      if (mod) {
-        mod.addEventListener("load", function () { setTimeout(poll, 50); });
+      function hookModuleScript() {
+        var mod = document.querySelector('script[type="module"]');
+        if (!mod) return;
+        function onModuleReady() {
+          setTimeout(function () { poll(); }, 0);
+          setTimeout(function () { poll(); }, 120);
+          setTimeout(function () { poll(); }, 600);
+          setTimeout(function () { poll(); }, 1800);
+        }
+        mod.addEventListener("load", onModuleReady);
         mod.addEventListener("error", function () {
           var root = document.getElementById("root");
           if (!root) return;
@@ -170,8 +192,13 @@
             '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:system-ui,sans-serif;">' +
             '<p style="font-size:18px;font-weight:600;margin:0 0 12px;">Could not load the app</p>' +
             '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;">Try again</button></div>';
+          notify(true);
         });
+        if (document.readyState === "complete") {
+          onModuleReady();
+        }
       }
+      hookModuleScript();
     })();
     </script>
   </body>
