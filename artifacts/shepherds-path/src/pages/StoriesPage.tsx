@@ -388,7 +388,7 @@ export default function StoriesPage() {
             whileHover={{ opacity: 1 }}
             onClick={openShareForm}
             data-testid="button-fab-share"
-            className="fixed bottom-24 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground text-[12px] font-semibold px-3.5 py-2.5 shadow-md shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all sm:bottom-6"
+            className="fixed bottom-24 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground text-[12px] font-semibold px-3.5 py-2.5 shadow-md shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all sm:bottom-6 sm:right-20"
           >
             <Heart className="w-3.5 h-3.5 fill-current" />
             Share your story
