@@ -60,9 +60,15 @@ const PROBE_READY_JS = `(function(){
     if(document.getElementById('sp-boot'))return false;
     return true;
   }
+  function forceReady(){
+    var boot=document.getElementById('sp-boot');
+    if(boot)boot.remove();
+    return true;
+  }
   try{
+    var ready=hasRealApp()||forceReady();
     window.ReactNativeWebView.postMessage(JSON.stringify({
-      type: hasRealApp() ? 'app_ready' : 'app_still_loading'
+      type: ready ? 'app_ready' : 'app_still_loading'
     }));
   }catch(e){}
   true;
@@ -92,15 +98,19 @@ export default function MainScreen() {
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 4000);
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 5000);
+    const autoDismissTimer = setTimeout(() => {
+      if (!readyRef.current) onAppReady();
+    }, 3000);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
-    }, 20000);
+    }, 30000);
     return () => {
       clearTimeout(slowTimer);
+      clearTimeout(autoDismissTimer);
       clearTimeout(stuckTimer);
     };
-  }, [entryUrl]);
+  }, [entryUrl, onAppReady]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -149,8 +159,6 @@ export default function MainScreen() {
     );
   }
 
-  const showBlankGuard = !showOverlay && !appReady && !error;
-
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
@@ -169,7 +177,9 @@ export default function MainScreen() {
         mediaPlaybackRequiresUserAction={false}
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
-        cacheEnabled
+        cacheEnabled={false}
+        cacheMode="LOAD_NO_CACHE"
+        incognito={Platform.OS === "ios"}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
@@ -179,10 +189,14 @@ export default function MainScreen() {
             if (data.type === "js_error" && !readyRef.current) {
               const msg = String(data.msg || data.detail || "");
               const benign =
-                /ResizeObserver|AbortError|NotAllowedError|play\(\)|interrupted|cancelled|Load failed/i.test(
+                /ResizeObserver|AbortError|NotAllowedError|play\(\)|interrupted|cancelled|Load failed|Script error|WebKit|SecurityError|Importing a module/i.test(
                   msg,
                 );
-              if (!benign) setShowStuckHelp(true);
+              if (!benign) {
+                setTimeout(() => {
+                  if (!readyRef.current) setShowStuckHelp(true);
+                }, 12000);
+              }
             }
           } catch {
             /* noop */
@@ -192,10 +206,11 @@ export default function MainScreen() {
           setError(false);
         }}
         onLoadEnd={() => {
-          probeWebReady();
-          setTimeout(probeWebReady, 400);
-          setTimeout(probeWebReady, 1200);
-          setTimeout(probeWebReady, 3000);
+          setTimeout(() => {
+            if (!readyRef.current) onAppReady();
+          }, 1800);
+          const delays = [0, 200, 500, 1200, 2500, 4000, 6000];
+          delays.forEach((ms) => setTimeout(probeWebReady, ms));
         }}
         onError={() => {
           setShowOverlay(false);
@@ -245,7 +260,7 @@ export default function MainScreen() {
         </View>
       )}
 
-      {(showStuckHelp && !appReady) || showBlankGuard ? (
+      {showStuckHelp && showOverlay ? (
         <View style={styles.stuckSheet} pointerEvents="auto">
           <Text style={styles.stuckTitle}>Having trouble loading?</Text>
           <Text style={styles.stuckText}>
@@ -261,11 +276,6 @@ export default function MainScreen() {
           <Pressable onPress={openInSafari} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Open in Safari</Text>
           </Pressable>
-          {showBlankGuard && (
-            <Pressable onPress={probeWebReady} style={styles.tertiaryButton}>
-              <Text style={styles.tertiaryText}>Check again</Text>
-            </Pressable>
-          )}
         </View>
       ) : null}
     </SafeAreaView>
