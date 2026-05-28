@@ -495,6 +495,7 @@ function LandingHomeInner() {
   const [homeVisitAfterThreshold] = useState(() =>
     isThresholdComplete() ? bumpHomeVisitAfterThreshold() : 0,
   );
+  const chapelWeekFocus = homeVisitAfterThreshold > 0 && homeVisitAfterThreshold <= 7;
   const sacredFirstHome = isSacredFirstHomeVisit(homeVisitAfterThreshold);
   const deferredOnboardingVisit = isDeferredOnboardingVisit(homeVisitAfterThreshold);
   const blockHomeOverlays = sacredFirstHome || skipIntrosForHome;
@@ -527,7 +528,12 @@ function LandingHomeInner() {
     if (skipIntrosForHome) clearReturningHome();
   }, [skipIntrosForHome]);
   const [showEntryScreen, setShowEntryScreen] = useState(
-    () => !inNativeApp && !blockHomeOverlays && homeVisitAfterThreshold > 2 && shouldShowHomeEntry(),
+    () =>
+      !inNativeApp &&
+      !blockHomeOverlays &&
+      !chapelWeekFocus &&
+      homeVisitAfterThreshold > 2 &&
+      shouldShowHomeEntry(),
   );
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
@@ -536,11 +542,23 @@ function LandingHomeInner() {
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
   const showWelcomeOverlay =
-    showWelcome && !showOnboarding && !blockHomeOverlays && homeVisitAfterThreshold > 2;
+    showWelcome &&
+    !showOnboarding &&
+    !blockHomeOverlays &&
+    !chapelWeekFocus &&
+    homeVisitAfterThreshold > 2;
   const [showWalkthrough, setShowWalkthrough] = useState(
-    () => !inNativeApp && !blockHomeOverlays && homeVisitAfterThreshold > 2 && shouldShowWalkthrough(),
+    () =>
+      !inNativeApp &&
+      !blockHomeOverlays &&
+      !chapelWeekFocus &&
+      homeVisitAfterThreshold > 2 &&
+      shouldShowWalkthrough(),
   );
-  useEffect(() => { recordWalkthroughVisit(); }, []);
+  useEffect(() => {
+    if (chapelWeekFocus) return;
+    recordWalkthroughVisit();
+  }, [chapelWeekFocus]);
   const [nameInput, setNameInput] = useState("");
   const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());
   useEffect(() => {
@@ -604,7 +622,7 @@ function LandingHomeInner() {
     !engagementBusy &&
     !isLateNight();
   const carryToday = getCarryToday();
-  const chapelExploreCollapsed = daysWithApp < 3 && visitCount < 2;
+  const chapelExploreCollapsed = chapelWeekFocus || (daysWithApp < 3 && visitCount < 2);
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -927,7 +945,7 @@ function LandingHomeInner() {
             </div>
           </Link>}
 
-          <HomeExploreSection chapelFirstWeek={chapelExploreCollapsed} />
+          {!chapelWeekFocus && <HomeExploreSection chapelFirstWeek={chapelExploreCollapsed} />}
 
           {!isLateNight() && <GoDeepCard />}
 

@@ -145,6 +145,7 @@ export default function Devotional() {
   const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
   const [friendShareDone, setFriendShareDone] = useState(false);
   const [postPrayerShareDone, setPostPrayerShareDone] = useState(false);
+  const [showPostCompletionCtas, setShowPostCompletionCtas] = useState(false);
   const [listenHintSeen, setListenHintSeen] = useState(() => !!localStorage.getItem("sp_listen_intro_seen"));
   const [showShareRow, setShowShareRow] = useState(false);
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | null>(null);
@@ -154,6 +155,15 @@ export default function Devotional() {
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
   const [verseInMemory, setVerseInMemory] = useState(false);
+
+  useEffect(() => {
+    if (!gratitudePrayer) {
+      setShowPostCompletionCtas(false);
+      return;
+    }
+    const t = window.setTimeout(() => setShowPostCompletionCtas(true), 7000);
+    return () => window.clearTimeout(t);
+  }, [gratitudePrayer]);
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -832,109 +842,6 @@ export default function Devotional() {
           transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="space-y-3"
         >
-
-          {/* Streak indicator + weekly tracker */}
-          <AnimatePresence>
-            {streak && streak.currentStreak >= 3 && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                className="flex flex-col items-center gap-2 py-1"
-                data-testid="streak-indicator"
-              >
-                {/* Day count row */}
-                <div className="flex items-center gap-2.5">
-                  <Flame className="w-3.5 h-3.5 text-amber-500/80" />
-                  <span className="text-[12px] font-medium text-muted-foreground">
-                    Day #{streak.currentStreak} of my Walk
-                  </span>
-                  {streak.longestStreak > streak.currentStreak && (
-                    <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
-                  )}
-                </div>
-                {/* Psalm 23 badge */}
-                {(() => {
-                  const badge = getBadge(streak.currentStreak);
-                  if (!badge) return null;
-                  return (
-                    <div
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/8 border border-primary/20"
-                      data-testid="streak-badge"
-                    >
-                      <span className="text-[10px] font-bold text-primary/70 tracking-wide">{badge.name}</span>
-                      <span className="text-[9px] text-muted-foreground/50">· {badge.verse}</span>
-                    </div>
-                  );
-                })()}
-
-                {/* Weekly dots */}
-                {(() => {
-                  const LABELS = ["M","T","W","T","F","S","S"];
-                  const today = new Date();
-                  const day = today.getDay();
-                  const monday = new Date(today);
-                  monday.setDate(today.getDate() - ((day === 0 ? 7 : day) - 1));
-                  const weekDates = Array.from({ length: 7 }, (_, i) => {
-                    const d = new Date(monday);
-                    d.setDate(monday.getDate() + i);
-                    return d.toISOString().split("T")[0];
-                  });
-                  const todayIdx = day === 0 ? 6 : day - 1;
-                  const visitSet = new Set(streak.visitDates ?? []);
-                  return (
-                    <div className="flex items-center gap-1.5">
-                      {LABELS.map((label, i) => {
-                        const visited = visitSet.has(weekDates[i]);
-                        const isToday = i === todayIdx;
-                        const isFuture = i > todayIdx;
-                        return (
-                          <div key={i} className="flex flex-col items-center gap-0.5">
-                            <span className={`text-[9px] font-bold uppercase tracking-widest ${isToday ? "text-primary/80" : "text-muted-foreground/30"}`}>
-                              {label}
-                            </span>
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                              visited && isToday
-                                ? "bg-primary shadow-sm"
-                                : visited
-                                ? "border border-primary/25 bg-transparent"
-                                : isToday
-                                ? "border border-primary/40 bg-primary/5"
-                                : isFuture
-                                ? "border border-muted-foreground/10 bg-muted/20"
-                                : "border border-muted-foreground/15 bg-muted/15"
-                            }`}>
-                              {visited && isToday && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
-                              {visited && !isToday && <div className="w-2 h-2 rounded-full bg-primary" />}
-                              {!visited && isToday && <div className="w-1 h-1 rounded-full bg-primary/60" />}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Streak Pro nudge — soft, contextual, only at 5+ days for non-Pro users */}
-          {streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.1, ease: "easeOut" }}
-            >
-              <Link
-                href="/pricing"
-                data-testid="link-streak-pro-nudge"
-                className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors group"
-              >
-                <Zap className="w-3 h-3 shrink-0" />
-                <span>{streak.currentStreak}-day streak — Pro includes one grace day per month if you miss a visit</span>
-              </Link>
-            </motion.div>
-          )}
 
           {/* High-observance day — quiet, inclusive, non-structural */}
           {todayObservance && (
@@ -1678,10 +1585,115 @@ export default function Devotional() {
             </motion.div>
           )}
 
+          {/* Streak indicator + weekly tracker (after completion, never before) */}
+          <AnimatePresence>
+            {gratitudePrayer && streak && streak.currentStreak >= 3 && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+                className="flex flex-col items-center gap-2 py-1"
+                data-testid="streak-indicator"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Flame className="w-3.5 h-3.5 text-amber-500/80" />
+                  <span className="text-[12px] font-medium text-muted-foreground">
+                    Day #{streak.currentStreak} of my Walk
+                  </span>
+                  {streak.longestStreak > streak.currentStreak && (
+                    <span className="text-[11px] text-muted-foreground/50">· best {streak.longestStreak}</span>
+                  )}
+                </div>
+                {(() => {
+                  const badge = getBadge(streak.currentStreak);
+                  if (!badge) return null;
+                  return (
+                    <div
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/8 border border-primary/20"
+                      data-testid="streak-badge"
+                    >
+                      <span className="text-[10px] font-bold text-primary/70 tracking-wide">{badge.name}</span>
+                      <span className="text-[9px] text-muted-foreground/50">· {badge.verse}</span>
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+                  const today = new Date();
+                  const day = today.getDay();
+                  const monday = new Date(today);
+                  monday.setDate(today.getDate() - ((day === 0 ? 7 : day) - 1));
+                  const weekDates = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + i);
+                    return d.toISOString().split("T")[0];
+                  });
+                  const todayIdx = day === 0 ? 6 : day - 1;
+                  const visitSet = new Set(streak.visitDates ?? []);
+                  return (
+                    <div className="flex items-center gap-1.5">
+                      {LABELS.map((label, i) => {
+                        const visited = visitSet.has(weekDates[i]);
+                        const isToday = i === todayIdx;
+                        const isFuture = i > todayIdx;
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-0.5">
+                            <span
+                              className={`text-[9px] font-bold uppercase tracking-widest ${isToday ? "text-primary/80" : "text-muted-foreground/30"}`}
+                            >
+                              {label}
+                            </span>
+                            <div
+                              className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                visited && isToday
+                                  ? "bg-primary shadow-sm"
+                                  : visited
+                                    ? "border border-primary/25 bg-transparent"
+                                    : isToday
+                                      ? "border border-primary/40 bg-primary/5"
+                                      : isFuture
+                                        ? "border border-muted-foreground/10 bg-muted/20"
+                                        : "border border-muted-foreground/15 bg-muted/15"
+                              }`}
+                            >
+                              {visited && isToday && (
+                                <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />
+                              )}
+                              {visited && !isToday && <div className="w-2 h-2 rounded-full bg-primary" />}
+                              {!visited && isToday && <div className="w-1 h-1 rounded-full bg-primary/60" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Streak Pro nudge only after gratitude close + quiet pause */}
+          {showPostCompletionCtas && gratitudePrayer && streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+            >
+              <Link
+                href="/pricing"
+                data-testid="link-streak-pro-nudge"
+                className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors group"
+              >
+                <Zap className="w-3 h-3 shrink-0" />
+                <span>If this rhythm is helping, Pro adds unlimited listening, full archive, and one grace day each month.</span>
+              </Link>
+            </motion.div>
+          )}
+
           {/* Daily email/SMS sign-up moved to home page footer — see LandingHome */}
 
           {/* Post-prayer prayer nudge — appears after prayer + benediction */}
-          {prayerContent && !postPrayerShareDone && (
+          {showPostCompletionCtas && prayerContent && !postPrayerShareDone && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

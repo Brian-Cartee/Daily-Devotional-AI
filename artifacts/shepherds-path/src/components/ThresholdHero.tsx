@@ -9,6 +9,7 @@ import { isIntroFlowComplete } from "@/lib/introState";
 import {
   getThresholdNeed,
   getThresholdNeedAcknowledgment,
+  type ThresholdNeed,
 } from "@/lib/thresholdState";
 import { hasWhyPanelDismissed } from "@/lib/homeHeroState";
 import { useDailyVerse } from "@/hooks/use-verses";
@@ -35,6 +36,11 @@ export type ThresholdData = {
 
 const BRAND_TAGLINE = "Find your way back to God";
 const BRAND_TAGLINE_SUB = "one moment at a time.";
+const NEED_LABEL: Record<ThresholdNeed, string> = {
+  comfort: "comfort",
+  honesty: "honesty",
+  hope: "hope",
+};
 
 export function ThresholdHero() {
   const sessionId = getSessionId();
@@ -44,7 +50,18 @@ export function ThresholdHero() {
   const [activeDoor, setActiveDoor] = useState<PresenceDoorId>(defaultPresenceDoor);
   const focusTalkAfterSelect = useRef(false);
   const thresholdNeed = getThresholdNeed();
+  const verseReference =
+    verse && typeof verse === "object" && "reference" in verse
+      ? String((verse as { reference?: unknown }).reference ?? "")
+      : "";
   const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
+  const chapelWeekFocus = daysWithApp <= 7;
+  const firstWeekDoor: PresenceDoorId =
+    thresholdNeed === "comfort"
+      ? "quiet"
+      : thresholdNeed === "hope"
+        ? "scripture"
+        : "talk";
   const needAck =
     thresholdNeed && daysWithApp < 14 ? getThresholdNeedAcknowledgment(thresholdNeed) : null;
 
@@ -177,6 +194,15 @@ export function ThresholdHero() {
               {needAck}
             </p>
           )}
+          {thresholdNeed && verseReference && (
+            <p
+              className="text-[13px] text-white/68 leading-relaxed mb-3"
+              data-testid="text-threshold-need-verse-bridge"
+            >
+              You asked for {NEED_LABEL[thresholdNeed]}. Today&apos;s Word meets you in{" "}
+              <span className="text-amber-200/85 font-semibold">{verseReference}</span>.
+            </p>
+          )}
           {threshold?.continuityLine && (
             <p
               className="hidden sm:block text-[15px] text-white/70 leading-relaxed mb-4 pl-3.5 border-l-2 border-amber-500/30"
@@ -188,10 +214,10 @@ export function ThresholdHero() {
 
           {showTalkPrompt && !thresholdLoading && (
             <>
-              <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} />
+              {!chapelWeekFocus && <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} />}
               <div className="mb-4" role="tabpanel" aria-label="Your chosen step">
                 <HomePresenceHero
-                  door={activeDoor}
+                  door={chapelWeekFocus ? firstWeekDoor : activeDoor}
                   phase={threshold?.phase}
                   thresholdNeed={thresholdNeed}
                   verse={verse ?? null}
@@ -201,7 +227,7 @@ export function ThresholdHero() {
             </>
           )}
 
-          {threshold?.secondaryCta && daysWithApp < 3 && (
+          {!chapelWeekFocus && threshold?.secondaryCta && daysWithApp < 3 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
               <Link href={threshold.secondaryCta.href}>
                 <span
@@ -214,7 +240,8 @@ export function ThresholdHero() {
             </div>
           )}
 
-          {(threshold?.listenFirstSuggested || listenFirst || !isProVerifiedLocally()) &&
+          {!chapelWeekFocus &&
+            (threshold?.listenFirstSuggested || listenFirst || !isProVerifiedLocally()) &&
             (isProVerifiedLocally() ? (
               <button
                 type="button"
