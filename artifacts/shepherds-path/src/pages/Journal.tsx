@@ -1110,58 +1110,67 @@ export default function Journal() {
     <>
       <div className="min-h-screen bg-background" onClick={() => exportOpen && setExportOpen(false)}>
 
-        {/* Hero banner */}
-        <div className="relative w-full overflow-hidden" style={{ height: 300 }}>
-          {/* Back */}
+        {/* Hero banner — inset crop so the image can breathe */}
+        <div className="relative w-full px-3.5 pt-2.5 pb-1" style={{ height: 284 }}>
           <BackButton
             testId="button-back-journal"
             backToPaths
-            className="absolute top-3 left-3 z-20"
+            className="absolute top-5 left-5 z-20"
           />
-          {/* Shimmer placeholder — fades out once image loads */}
-          <div
-            className="absolute inset-0 z-10 transition-opacity duration-500"
-            style={{
-              opacity: heroImageLoaded ? 0 : 1,
-              pointerEvents: "none",
-              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
-            }}
-          />
-          <img
-            src="/journal-hero.webp"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "center center" }}
-            // @ts-ignore — fetchpriority is a valid HTML attribute (lowercase)
-            fetchpriority="high"
-            decoding="async"
-            onLoad={() => setHeroImageLoaded(true)}
-          />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.12) 40%, rgba(0,0,0,0.68) 100%)" }} />
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">
-            <h2
+          <div className="relative h-full w-full overflow-hidden rounded-2xl ring-1 ring-black/10 shadow-lg shadow-black/20">
+            <div
+              className="absolute inset-0 z-10 transition-opacity duration-500"
               style={{
-                fontFamily: "var(--font-decorative)",
-                fontStyle: "italic",
-                fontSize: "2.4rem",
-                fontWeight: 700,
-                color: "rgba(255,255,255,0.97)",
-                textShadow: "0 2px 18px rgba(0,0,0,0.6)",
-                lineHeight: 1.1,
-                letterSpacing: "-0.01em",
+                opacity: heroImageLoaded ? 0 : 1,
+                pointerEvents: "none",
+                background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
               }}
-            >
-              Prayer Journal
-            </h2>
-            <p style={{
-              fontSize: "0.9rem",
-              color: "rgba(255,255,255,0.7)",
-              marginTop: "8px",
-              textShadow: "0 1px 6px rgba(0,0,0,0.5)",
-              letterSpacing: "0.04em",
-            }}>
-              A record of your walk with Jesus.
-            </p>
+            />
+            <img
+              src="/journal-hero.webp"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-[1.04]"
+              style={{ objectPosition: "center 38%" }}
+              // @ts-ignore — fetchpriority is a valid HTML attribute (lowercase)
+              fetchpriority="high"
+              decoding="async"
+              onLoad={() => setHeroImageLoaded(true)}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.08) 42%, rgba(0,0,0,0.62) 100%)",
+              }}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-end pb-7 text-center px-6">
+              <h2
+                style={{
+                  fontFamily: "var(--font-decorative)",
+                  fontStyle: "italic",
+                  fontSize: "2.15rem",
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.97)",
+                  textShadow: "0 2px 18px rgba(0,0,0,0.6)",
+                  lineHeight: 1.12,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                e-Prayer Journal
+              </h2>
+              <p
+                style={{
+                  fontSize: "0.88rem",
+                  color: "rgba(255,255,255,0.72)",
+                  marginTop: "8px",
+                  textShadow: "0 1px 6px rgba(0,0,0,0.5)",
+                  letterSpacing: "0.03em",
+                  maxWidth: "18rem",
+                }}
+              >
+                Saved from devotionals, guidance, and your quiet moments with God.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1174,8 +1183,8 @@ export default function Journal() {
                   <NotebookPen className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-base font-bold text-foreground tracking-tight">Prayer Journal</h1>
-                  <p className="text-[11px] text-muted-foreground">A place to remember your walk with Jesus.</p>
+                  <h1 className="text-base font-bold text-foreground tracking-tight">e-Prayer Journal</h1>
+                  <p className="text-[11px] text-muted-foreground">Saved as you pray, reflect, and sit with Scripture.</p>
                 </div>
               </div>
 
