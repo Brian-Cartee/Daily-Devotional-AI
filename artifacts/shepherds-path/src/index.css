@@ -74,10 +74,10 @@ button, a, input, textarea, select, [role="button"] {
     --background: 292 30% 5%;
     --foreground: 38 22% 93%;
 
-    --card: 292 38% 10%;
+    --card: 255 16% 11%;
     --card-foreground: 38 22% 93%;
 
-    --popover: 292 38% 10%;
+    --popover: 255 16% 11%;
     --popover-foreground: 38 22% 93%;
 
     /* Brand purple — bright vivid warm purple for dark mode readability */
@@ -87,17 +87,17 @@ button, a, input, textarea, select, [role="button"] {
     --secondary: 37 90% 57%;
     --secondary-foreground: 224 28% 10%;
 
-    --muted: 292 30% 14%;
-    --muted-foreground: 292 12% 68%;
+    --muted: 255 12% 17%;
+    --muted-foreground: 240 8% 72%;
 
-    --accent: 292 30% 14%;
+    --accent: 255 12% 17%;
     --accent-foreground: 38 22% 93%;
 
     --destructive: 0 62% 52%;
     --destructive-foreground: 38 22% 93%;
 
-    --border: 292 28% 18%;
-    --input: 292 28% 18%;
+    --border: 252 10% 24%;
+    --input: 252 10% 24%;
     --ring: 292 90% 54%;
   }
 }
