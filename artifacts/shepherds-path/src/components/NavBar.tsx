@@ -249,7 +249,7 @@ export function NavBar() {
 
       {/* ── Bottom tab bar — mobile only ── */}
       <nav
-        className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/50"
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/82 backdrop-blur-xl border-t border-white/10"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-around h-[60px] px-1">
@@ -269,14 +269,14 @@ export function NavBar() {
                 className="flex flex-col items-center justify-center flex-1 h-full transition-all"
               >
                 {active ? (
-                  <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary shadow-sm shadow-primary/30">
+                  <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary shadow-sm shadow-primary/25">
                     <Icon className={`${href === "/" ? "w-5 h-5" : "w-[18px] h-[18px]"} text-white shrink-0`} />
                     <span className="text-[13px] font-bold text-white leading-none">{label}</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-0.5 relative">
-                    <Icon className="w-[22px] h-[22px] text-muted-foreground" />
-                    <span className="text-[11px] font-semibold text-muted-foreground leading-none">{label}</span>
+                    <Icon className="w-[22px] h-[22px] text-zinc-400" />
+                    <span className="text-[11px] font-semibold text-zinc-400 leading-none">{label}</span>
                     {hasPlace && (
                       <span className="absolute -top-0.5 right-0 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
                     )}
