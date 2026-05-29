@@ -696,6 +696,9 @@ function LandingHomeInner() {
         )}
       </AnimatePresence>
 
+      {/* Always mounted so “Why we built this” works before first action */}
+      <WhyThisExistsPanel />
+
       {/* Desktop side vignette — frames the content column on wide screens only */}
       <div
         aria-hidden="true"
@@ -749,7 +752,6 @@ function LandingHomeInner() {
           {hasAction && (
             <>
               <SpiritualWeatherCard />
-              <WhyThisExistsPanel />
               <SimpleNotifNudge />
               <DeepNotifNudge />
             </>

@@ -21,6 +21,7 @@ import type { PresenceDoorId } from "@/components/HomePresenceDoors";
 import { HomePresenceHero } from "@/components/HomePresenceHero";
 import { ArrivalRitual, shouldShowArrivalRitual } from "@/components/ArrivalRitual";
 import type { HomePresenceContext } from "@/lib/homePresenceContext";
+import { openWhyPanel } from "@/lib/openWhyPanel";
 
 export type ThresholdData = {
   headline: string;
@@ -167,7 +168,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           <button
             type="button"
             data-testid="link-why-collapsed"
-            onClick={() => window.dispatchEvent(new Event("sp-open-why"))}
+            onClick={openWhyPanel}
             className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors"
           >
             Why we built this
