@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -8,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
@@ -83,16 +85,21 @@ export default function MainScreen() {
     setShowOverlay(false);
     setShowSlowOptions(false);
     setShowStuckHelp(false);
+    hideNativeSplashWhenWebReady();
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 6000);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
-    }, 45000);
+    }, 20000);
+    const splashCap = setTimeout(() => {
+      hideNativeSplashWhenWebReady();
+    }, 25000);
     return () => {
       clearTimeout(slowTimer);
       clearTimeout(stuckTimer);
+      clearTimeout(splashCap);
     };
   }, [entryUrl]);
 
@@ -188,8 +195,20 @@ export default function MainScreen() {
         onLoadStart={() => {
           setError(false);
         }}
+        startInLoadingState
+        renderLoading={() => (
+          <View style={styles.webviewLoading}>
+            <Image
+              source={require("../assets/images/icon.png")}
+              style={styles.webviewLoadingLogo}
+              resizeMode="contain"
+            />
+            <Text style={styles.loadingHint}>Shepherd&apos;s Path</Text>
+            <ActivityIndicator size="small" color="#E8C99B" style={{ marginTop: 12 }} />
+          </View>
+        )}
         onLoadEnd={() => {
-          const delays = [0, 200, 500, 1200, 2500, 4000, 6000, 9000];
+          const delays = [500, 1500, 3000, 6000, 10000, 15000];
           delays.forEach((ms) => setTimeout(probeWebReady, ms));
         }}
         onError={() => {
@@ -212,6 +231,11 @@ export default function MainScreen() {
 
       {showOverlay && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.overlayLogo}
+            resizeMode="contain"
+          />
           <ActivityIndicator size="large" color="#E8C99B" />
           <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
           <Text style={styles.loadingSubhint}>
@@ -270,6 +294,24 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
     backgroundColor: "#0d0612",
+    opacity: 1,
+  },
+  webviewLoading: {
+    flex: 1,
+    backgroundColor: "#0d0612",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  webviewLoadingLogo: {
+    width: 88,
+    height: 88,
+    marginBottom: 16,
+  },
+  overlayLogo: {
+    width: 72,
+    height: 72,
+    marginBottom: 8,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

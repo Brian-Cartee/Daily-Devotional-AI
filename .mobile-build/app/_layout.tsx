@@ -89,7 +89,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsReady) {
-      SplashScreen.hideAsync();
       rescheduleNotifications();
     }
   }, [fontsReady]);
