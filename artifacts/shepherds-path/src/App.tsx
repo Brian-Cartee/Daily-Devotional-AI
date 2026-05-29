@@ -220,14 +220,8 @@ function App() {
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    const fallback = window.setTimeout(() => {
-      observer.disconnect();
-      markNativeShellUiPainted();
-    }, 5000);
-
     return () => {
       observer.disconnect();
-      window.clearTimeout(fallback);
     };
   }, []);
 

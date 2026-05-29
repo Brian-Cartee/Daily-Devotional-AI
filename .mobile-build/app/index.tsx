@@ -55,25 +55,14 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
-const PROBE_READY_JS = `(function(){
+const VISIBILITY_PROBE_JS = `(function(){
   try{
-    var m=document.getElementById('sp-app-mount');
-    if(m&&m.childElementCount>0){
+    var sel='[data-testid="card-devotional"],[data-testid="bottom-nav-home"],[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
+    if(document.querySelector(sel)){
       document.documentElement.setAttribute('data-native-ui-ready','1');
       document.getElementById('sp-boot-splash')?.remove();
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'web_ui_visible' }));
     }
-    if(document.documentElement.getAttribute('data-native-ui-ready')==='1'){
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'app_ready' }));
-    }
-  }catch(e){}
-  true;
-})();`;
-
-const FORCE_REVEAL_JS = `(function(){
-  try{
-    document.documentElement.setAttribute('data-native-ui-ready','1');
-    document.getElementById('sp-boot-splash')?.remove();
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'app_ready' }));
   }catch(e){}
   true;
 })();`;
@@ -86,48 +75,62 @@ export default function MainScreen() {
   const [showStuckHelp, setShowStuckHelp] = useState(false);
   const [error, setError] = useState(false);
   const [appReady, setAppReady] = useState(false);
+  const [showBlankRecovery, setShowBlankRecovery] = useState(false);
   const readyRef = useRef(false);
+  const webUiConfirmedRef = useRef(false);
 
   const probeWebReady = useCallback(() => {
-    webviewRef.current?.injectJavaScript(PROBE_READY_JS);
+    webviewRef.current?.injectJavaScript(VISIBILITY_PROBE_JS);
   }, []);
 
-  const onAppReady = useCallback(() => {
-    if (readyRef.current) return;
+  const onWebUiVisible = useCallback(() => {
+    if (webUiConfirmedRef.current) return;
+    webUiConfirmedRef.current = true;
     readyRef.current = true;
     setAppReady(true);
     setShowOverlay(false);
     setShowSlowOptions(false);
     setShowStuckHelp(false);
+    setShowBlankRecovery(false);
     hideNativeSplashWhenWebReady();
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
-    /* Build 139: always reveal the WebView — Safari works; postMessage handshake is unreliable */
-    const revealTimer = setTimeout(() => {
-      if (!readyRef.current) onAppReady();
-    }, 8000);
+    webUiConfirmedRef.current = false;
+    readyRef.current = false;
+    setAppReady(false);
+    setShowOverlay(true);
+    setShowSlowOptions(false);
+    setShowStuckHelp(false);
+    setShowBlankRecovery(false);
+
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 4000);
     const stuckTimer = setTimeout(() => {
-      if (!readyRef.current) setShowStuckHelp(true);
-    }, 60000);
-    const splashCap = setTimeout(() => {
-      hideNativeSplashWhenWebReady();
-    }, 12000);
+      if (!webUiConfirmedRef.current) setShowStuckHelp(true);
+    }, 8000);
+    const blankTimer = setTimeout(() => {
+      if (!webUiConfirmedRef.current) setShowBlankRecovery(true);
+    }, 10000);
+    const probeInterval = setInterval(() => {
+      if (!webUiConfirmedRef.current) probeWebReady();
+    }, 1500);
+
     return () => {
       clearTimeout(slowTimer);
-      clearTimeout(revealTimer);
       clearTimeout(stuckTimer);
-      clearTimeout(splashCap);
+      clearTimeout(blankTimer);
+      clearInterval(probeInterval);
     };
-  }, [entryUrl, onAppReady]);
+  }, [entryUrl, probeWebReady]);
 
   const reload = useCallback(() => {
     setError(false);
     setShowOverlay(true);
     setShowSlowOptions(false);
     setShowStuckHelp(false);
+    setShowBlankRecovery(false);
     readyRef.current = false;
+    webUiConfirmedRef.current = false;
     setAppReady(false);
     setEntryUrl(shellEntryUrl());
   }, []);
@@ -140,7 +143,7 @@ export default function MainScreen() {
     const { url, navigationType } = event;
     if (!url || url === "about:blank") return true;
     if (url.startsWith("shepherdspath://app-ready")) {
-      onAppReady();
+      onWebUiVisible();
       return false;
     }
     if (hostAllowedInWebView(url)) return true;
@@ -192,14 +195,12 @@ export default function MainScreen() {
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
         cacheEnabled
-        applicationNameForUserAgent="Mobile"
-        userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
-            if (data.type === "app_ready") onAppReady();
+            if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
             if (data.type === "js_error" && !readyRef.current) {
               const msg = String(data.msg || data.detail || "");
               const benign =
@@ -232,9 +233,8 @@ export default function MainScreen() {
           </View>
         )}
         onLoadEnd={() => {
-          const delays = [400, 1200, 2500, 5000];
+          const delays = [400, 1200, 2500, 5000, 8000, 12000];
           delays.forEach((ms) => setTimeout(probeWebReady, ms));
-          setTimeout(() => webviewRef.current?.injectJavaScript(FORCE_REVEAL_JS), 3000);
         }}
         onError={() => {
           setShowOverlay(false);
@@ -289,12 +289,14 @@ export default function MainScreen() {
         </View>
       )}
 
-      {showStuckHelp && showOverlay ? (
-        <View style={styles.stuckSheet} pointerEvents="auto">
+      {(showStuckHelp || showBlankRecovery) && (
+        <View
+          style={[styles.stuckSheet, !showOverlay && styles.stuckSheetOverWebview]}
+          pointerEvents="auto"
+        >
           <Text style={styles.stuckTitle}>Having trouble loading?</Text>
           <Text style={styles.stuckText}>
-            The app didn&apos;t finish loading. Refresh for a clean start, or use Safari while we
-            catch up.
+            The app didn&apos;t finish loading. Refresh for a clean start, or use Safari.
           </Text>
           <Pressable
             onPress={reload}
@@ -306,7 +308,7 @@ export default function MainScreen() {
             <Text style={styles.secondaryText}>Open in Safari</Text>
           </Pressable>
         </View>
-      ) : null}
+      )}
     </SafeAreaView>
   );
 }
@@ -408,6 +410,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 14,
     zIndex: 30,
+  },
+  stuckSheetOverWebview: {
+    zIndex: 50,
   },
   stuckTitle: {
     fontSize: 22,

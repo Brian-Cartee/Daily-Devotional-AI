@@ -37,12 +37,6 @@ function postNativeAppReady(): void {
   } catch {
     /* noop */
   }
-  /* Backup when postMessage is ignored (some TestFlight WebView builds) */
-  try {
-    window.location.href = "shepherdspath://app-ready";
-  } catch {
-    /* noop */
-  }
 }
 
 /** Tell the App Store iOS shell to hide its loading overlay */
@@ -52,6 +46,9 @@ export function notifyNativeShellReady(): void {
   try {
     window.dispatchEvent(new Event("sp-app-ready"));
     postNativeAppReady();
+    (
+      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "web_ui_visible" }));
   } catch {
     /* noop */
   }

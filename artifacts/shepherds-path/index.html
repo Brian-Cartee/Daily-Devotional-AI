@@ -128,33 +128,37 @@
         reportShellError(reason, reason && reason.message);
       };
 
-      function hasMountedApp() {
-        return document.documentElement.getAttribute("data-native-ui-ready") === "1";
+      var visibleSelectors =
+        '[data-testid="card-devotional"], [data-testid="bottom-nav-home"], [data-testid="text-threshold-welcome"], [data-testid="threshold-arrival"], [data-testid="btn-threshold-enter"]';
+
+      function hasVisibleAppUi() {
+        return !!document.querySelector(visibleSelectors);
       }
 
       var sent = false;
       function notify() {
         if (sent) return;
-        if (!hasMountedApp()) return;
-        document.getElementById("sp-boot-splash")?.remove();
-        sent = true;
-        try {
-          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
-        } catch (e) {}
-      }
-
-      /** Unblock TestFlight shell — never trap user behind native overlay */
-      function forceShellOpen() {
-        if (sent) return;
+        if (!hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
         document.getElementById("sp-boot-splash")?.remove();
         sent = true;
         try {
+          bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
-        try {
-          window.location.href = "shepherdspath://app-ready";
-        } catch (e2) {}
+      }
+
+      function showWebReloadScreen() {
+        var splash = document.getElementById("sp-boot-splash");
+        if (splash) splash.style.display = "none";
+        var root = document.getElementById("root");
+        if (!root) return;
+        if (root.querySelector("[data-sp-reload-screen]")) return;
+        root.innerHTML =
+          '<div data-sp-reload-screen style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">' +
+          '<p style="font-size:20px;font-weight:700;margin:0 0 10px;">Having trouble loading</p>' +
+          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">Tap Reload to try again.</p>' +
+          '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button></div>';
       }
 
       function hardReloadApp() {
@@ -168,7 +172,7 @@
       }
       if (enterBtn) {
         enterBtn.addEventListener("click", function () {
-          if (!hasMountedApp()) hardReloadApp();
+          if (!hasVisibleAppUi()) hardReloadApp();
           else notify();
         });
       }
@@ -187,30 +191,10 @@
         notify();
       });
 
-      setTimeout(forceShellOpen, 5000);
-
-      /* Build 138: some WebViews drop postMessage — keep signaling until native overlay clears */
       setTimeout(function () {
-        var pulses = 0;
-        var heartbeat = setInterval(function () {
-          pulses += 1;
-          try {
-            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
-          } catch (e) {}
-          if (sent || pulses >= 20) clearInterval(heartbeat);
-        }, 1500);
-      }, 2500);
-
-      setTimeout(function () {
-        if (sent || hasMountedApp()) return;
-        var root = document.getElementById("root");
-        if (!root) return;
-        root.innerHTML =
-          '<div style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">' +
-          '<p style="font-size:20px;font-weight:700;margin:0 0 10px;">Having trouble loading</p>' +
-          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">Tap Reload, or open shepherdspathai.com in Safari.</p>' +
-          '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button></div>';
-      }, 14000);
+        if (hasVisibleAppUi()) return;
+        showWebReloadScreen();
+      }, 6000);
 
       function hookModuleScript() {
         var mod = document.querySelector('script[type="module"]');
@@ -220,9 +204,6 @@
           setTimeout(function () { poll(); }, 120);
           setTimeout(function () { poll(); }, 600);
           setTimeout(function () { poll(); }, 1800);
-          setTimeout(function () {
-            if (!sent) forceShellOpen();
-          }, 4500);
         }
         mod.addEventListener("load", onModuleReady);
         mod.addEventListener("error", function () {

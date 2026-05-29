@@ -53,7 +53,7 @@
         } catch (e) {}
       }
       if (inApp) {
-        location.replace("/?native=1&enter=1");
+        location.replace("/?native=1&enter=1&_=" + Date.now());
         return;
       }
       signalReady();
