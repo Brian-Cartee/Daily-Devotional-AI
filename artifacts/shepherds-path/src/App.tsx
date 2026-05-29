@@ -66,10 +66,13 @@ import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { scrollPageToTop } from "@/lib/scrollPageToTop";
 
 function ScrollToTop() {
   const [location] = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  useEffect(() => {
+    scrollPageToTop("auto");
+  }, [location]);
   return null;
 }
 

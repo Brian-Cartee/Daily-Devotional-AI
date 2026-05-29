@@ -17,6 +17,8 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
+import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
+import { scrollPageToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 
 const BOTTOM_NAV_ITEMS = [
@@ -197,8 +199,23 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                 key={href}
                 href={href}
                 data-testid={`bottom-nav-${label.toLowerCase()}`}
-                onClick={() => {
-                  if (href === "/") markReturningHome();
+                onClick={(e) => {
+                  if (href !== "/") return;
+                  markReturningHome();
+                  try {
+                    sessionStorage.removeItem(SCROLL_TO_EXPLORE_KEY);
+                  } catch {
+                    /* noop */
+                  }
+                  const onHome = location === "/" || location === "";
+                  if (onHome) {
+                    e.preventDefault();
+                    if (window.location.hash) {
+                      const url = `${window.location.pathname}${window.location.search}`;
+                      window.history.replaceState({}, "", url);
+                    }
+                    scrollPageToTop("auto");
+                  }
                 }}
                 className="flex flex-col items-center justify-center flex-1 h-full transition-all"
               >
