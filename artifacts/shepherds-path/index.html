@@ -77,6 +77,7 @@
   <body style="background-color:#0d0612;margin:0;padding:0;">
     <div id="root">
       <div id="sp-boot" style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+        <img src="/logo-mark-white.png" alt="" width="72" height="72" style="border-radius:18px;display:block;" />
         <p style="font-size:22px;font-weight:700;margin:0;">Shepherd&rsquo;s Path</p>
         <p id="sp-boot-status" style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;max-width:300px;">Loading&hellip;</p>
         <button type="button" id="sp-enter-btn" style="margin-top:8px;width:100%;max-width:300px;padding:16px 20px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e8c99b,#d4a574);color:#1a1208;-webkit-tap-highlight-color:transparent;">Continue</button>
@@ -165,9 +166,10 @@
         if (!sent && hasMountedApp()) notify(false);
       }, 2500);
 
+      /* Last resort only — never hide native overlay before React has painted */
       setTimeout(function () {
         if (!sent) notify(true);
-      }, 2800);
+      }, 18000);
 
       setTimeout(function () {
         if (sent || hasMountedApp()) return;

@@ -70,15 +70,12 @@ if (!rootEl) {
   throw new Error("Missing #root mount node");
 }
 
-/** iOS WebView: drop static boot HTML so React owns #root (avoids stuck chapel screen). */
+/** iOS WebView: tidy boot chrome — keep #sp-boot visible until React replaces it (avoids black flash). */
 if (isNativeWebViewShell()) {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
   const bootStatus = document.getElementById("sp-boot-status");
   if (bootStatus) bootStatus.textContent = "Loading…";
-  while (rootEl.firstChild) {
-    rootEl.removeChild(rootEl.firstChild);
-  }
 }
 
 createRoot(rootEl).render(

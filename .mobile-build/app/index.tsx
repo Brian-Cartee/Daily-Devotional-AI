@@ -98,19 +98,15 @@ export default function MainScreen() {
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 5000);
-    const autoDismissTimer = setTimeout(() => {
-      if (!readyRef.current) onAppReady();
-    }, 1200);
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
-    }, 30000);
+    }, 45000);
     return () => {
       clearTimeout(slowTimer);
-      clearTimeout(autoDismissTimer);
       clearTimeout(stuckTimer);
     };
-  }, [entryUrl, onAppReady]);
+  }, [entryUrl]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -205,10 +201,7 @@ export default function MainScreen() {
           setError(false);
         }}
         onLoadEnd={() => {
-          setTimeout(() => {
-            if (!readyRef.current) onAppReady();
-          }, 1800);
-          const delays = [0, 200, 500, 1200, 2500, 4000, 6000];
+          const delays = [0, 200, 500, 1200, 2500, 4000, 6000, 9000];
           delays.forEach((ms) => setTimeout(probeWebReady, ms));
         }}
         onError={() => {
