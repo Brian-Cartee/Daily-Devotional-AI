@@ -92,11 +92,8 @@ createRoot(mountEl).render(
 
 if (typeof window !== "undefined" && isNativeWebViewShell()) {
   const pollReady = (attempts = 0) => {
-    if (isNativeShellUiReady()) {
-      removeNativeBootPlaceholder();
-    }
     notifyNativeShellReady();
-    if (attempts < 80) {
+    if (!isNativeShellUiReady() && attempts < 120) {
       setTimeout(() => pollReady(attempts + 1), 250);
     }
   };

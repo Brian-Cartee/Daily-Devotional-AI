@@ -47,24 +47,15 @@ function hostAllowedInWebView(url: string): boolean {
 
 const BEFORE_CONTENT_JS = `(function(){
   document.documentElement.style.backgroundColor='#0d0612';
-  document.body.style.backgroundColor='#0d0612';
+  if(document.body){document.body.style.backgroundColor='#0d0612';}
   document.documentElement.setAttribute('data-sp-shell','native');
   document.documentElement.classList.add('sp-native-shell');
   true;
 })();`;
 
 const PROBE_READY_JS = `(function(){
-  function hasRealApp(){
-    var m=document.getElementById('sp-app-mount');
-    if(m&&m.childElementCount>0)return true;
-    var r=document.getElementById('root');
-    if(!r||r.children.length===0)return false;
-    if(document.getElementById('sp-boot-splash'))return false;
-    if(document.getElementById('sp-boot'))return false;
-    return true;
-  }
   try{
-    if(hasRealApp()){
+    if(document.documentElement.getAttribute('data-native-ui-ready')==='1'){
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'app_ready' }));
     }
   }catch(e){}

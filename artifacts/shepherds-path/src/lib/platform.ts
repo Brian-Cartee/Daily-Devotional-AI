@@ -11,17 +11,16 @@ export function isIOS(): boolean {
   );
 }
 
-/** Boot HTML in index.html — gone once React has replaced #root contents */
+/** Boot HTML in index.html — removed once real UI has painted */
 export function hasNativeBootPlaceholder(): boolean {
   if (typeof document === "undefined") return false;
   return !!document.getElementById("sp-boot-splash");
 }
 
-/** True when React has painted into #sp-app-mount (native shell can hide overlay) */
+/** True when home/threshold UI is actually on screen (not an empty React shell) */
 export function isNativeShellUiReady(): boolean {
   if (typeof document === "undefined") return false;
-  const mount = document.getElementById("sp-app-mount");
-  return !!(mount && mount.childElementCount > 0);
+  return document.documentElement.dataset.nativeUiReady === "1";
 }
 
 export function removeNativeBootPlaceholder(): void {
@@ -51,16 +50,14 @@ export function notifyNativeShellReady(): void {
   }
 }
 
-/** Last resort — dismiss native splash even if boot placeholder is stuck (iOS WebView edge cases) */
-export function forceNotifyNativeShellReady(): void {
-  if (typeof window === "undefined") return;
+/** Call when a real screen (home, threshold, nav) is visible in the WebView */
+export function markNativeShellUiPainted(): void {
+  if (typeof document === "undefined") return;
+  if (!isNativeWebViewShell()) return;
+  if (isNativeShellUiReady()) return;
+  document.documentElement.dataset.nativeUiReady = "1";
   removeNativeBootPlaceholder();
-  try {
-    window.dispatchEvent(new Event("sp-app-ready"));
-    postNativeAppReady();
-  } catch {
-    /* noop */
-  }
+  notifyNativeShellReady();
 }
 
 /** True inside the App Store WebView shell (.mobile-build loads shepherdspathai.com) */

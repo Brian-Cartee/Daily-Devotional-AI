@@ -63,7 +63,7 @@ import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
-import { isNativeWebViewShell, notifyNativeShellReady } from "@/lib/platform";
+import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ScrollToTop() {
@@ -203,13 +203,31 @@ function App() {
 
   useEffect(() => {
     if (!isNativeWebViewShell()) return;
-    const ping = () => notifyNativeShellReady();
-    ping();
-    const t1 = setTimeout(ping, 400);
-    const t2 = setTimeout(ping, 1200);
+
+    const visibleSelectors =
+      '[data-testid="card-devotional"], [data-testid="bottom-nav-home"], [data-testid="text-threshold-welcome"]';
+
+    const tryMark = () => {
+      if (!document.querySelector(visibleSelectors)) return false;
+      markNativeShellUiPainted();
+      return true;
+    };
+
+    if (tryMark()) return;
+
+    const observer = new MutationObserver(() => {
+      if (tryMark()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const fallback = window.setTimeout(() => {
+      observer.disconnect();
+      markNativeShellUiPainted();
+    }, 15000);
+
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      observer.disconnect();
+      window.clearTimeout(fallback);
     };
   }, []);
 

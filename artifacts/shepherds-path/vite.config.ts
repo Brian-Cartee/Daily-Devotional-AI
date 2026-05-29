@@ -51,9 +51,19 @@ function swCacheVersionPlugin() {
 
       const outIndex = path.resolve(import.meta.dirname, "dist/public/index.html");
       if (fs.existsSync(outIndex)) {
-        const html = fs
+        let html = fs
           .readFileSync(outIndex, "utf-8")
           .replace(/\s+crossorigin(?=[\s>])/g, "");
+        const moduleTag = html.match(/<script type="module"[^>]*><\/script>\s*/i);
+        if (moduleTag) {
+          html = html.replace(moduleTag[0], "");
+          html = html.replace("</body>", `${moduleTag[0]}</body>`);
+        }
+        const cssTag = html.match(/<link rel="stylesheet"[^>]*>\s*/i);
+        if (cssTag && !html.includes(cssTag[0] + "</head>")) {
+          html = html.replace(cssTag[0], "");
+          html = html.replace("</head>", `  ${cssTag[0]}</head>`);
+        }
         fs.writeFileSync(outIndex, html, "utf-8");
       }
     },

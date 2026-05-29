@@ -75,14 +75,14 @@
   </script>
   </head>
   <body style="background-color:#0d0612;margin:0;padding:0;">
+    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <img src="/logo-mark-white.png" alt="" width="72" height="72" style="border-radius:18px;display:block;" />
+      <p style="font-size:22px;font-weight:700;margin:0;">Shepherd&rsquo;s Path</p>
+      <p id="sp-boot-splash-status" style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;max-width:300px;">Loading&hellip;</p>
+      <button type="button" id="sp-enter-btn" style="margin-top:8px;width:100%;max-width:300px;padding:16px 20px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e8c99b,#d4a574);color:#1a1208;-webkit-tap-highlight-color:transparent;">Continue</button>
+      <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="font-size:15px;font-weight:600;color:#d4a574;text-decoration:underline;">Open in Safari instead</a>
+    </div>
     <div id="root">
-      <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:9999;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-        <img src="/logo-mark-white.png" alt="" width="72" height="72" style="border-radius:18px;display:block;" />
-        <p style="font-size:22px;font-weight:700;margin:0;">Shepherd&rsquo;s Path</p>
-        <p id="sp-boot-splash-status" style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;max-width:300px;">Loading&hellip;</p>
-        <button type="button" id="sp-enter-btn" style="margin-top:8px;width:100%;max-width:300px;padding:16px 20px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e8c99b,#d4a574);color:#1a1208;-webkit-tap-highlight-color:transparent;">Continue</button>
-        <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="font-size:15px;font-weight:600;color:#d4a574;text-decoration:underline;">Open in Safari instead</a>
-      </div>
       <div id="sp-app-mount"></div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
@@ -116,17 +116,13 @@
       };
 
       function hasMountedApp() {
-        var mount = document.getElementById("sp-app-mount");
-        return !!(mount && mount.childElementCount > 0);
+        return document.documentElement.getAttribute("data-native-ui-ready") === "1";
       }
 
       var sent = false;
-      function notify(force) {
+      function notify() {
         if (sent) return;
-        if (!hasMountedApp()) {
-          if (!force) return;
-          return;
-        }
+        if (!hasMountedApp()) return;
         document.getElementById("sp-boot-splash")?.remove();
         sent = true;
         try {
@@ -151,8 +147,8 @@
       }
 
       function poll() {
-        notify(false);
-        if (!sent) setTimeout(poll, 150);
+        notify();
+        if (!sent) setTimeout(poll, 200);
       }
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", poll);
@@ -161,12 +157,8 @@
       }
 
       window.addEventListener("sp-app-ready", function () {
-        notify(false);
+        notify();
       });
-
-      setTimeout(function () {
-        if (!sent && hasMountedApp()) notify(false);
-      }, 2500);
 
       setTimeout(function () {
         if (sent || hasMountedApp()) return;
@@ -196,7 +188,6 @@
             '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:system-ui,sans-serif;">' +
             '<p style="font-size:18px;font-weight:600;margin:0 0 12px;">Could not load the app</p>' +
             '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;">Try again</button></div>';
-          notify(true);
         });
         if (document.readyState === "complete") {
           onModuleReady();
