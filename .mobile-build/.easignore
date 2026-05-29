@@ -1,2 +1,14 @@
+# Installed fresh on EAS servers — do not upload
 node_modules/
+
+# App Store marketing screenshots — not needed to compile the app
 store-assets/
+
+# Local build artifacts
+dist/
+.expo/
+ios/
+android/
+*.ipa
+*.apk
+.git/
