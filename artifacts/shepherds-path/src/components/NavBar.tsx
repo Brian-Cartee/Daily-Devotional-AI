@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Sun, Compass, NotebookPen, Search, Heart, Home } from "lucide-react";
+import { Compass, NotebookPen, Heart, Home } from "lucide-react";
 import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -16,15 +16,6 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
-import { BrandIcon } from "@/components/BrandIcon";
-
-const NAV_ITEMS = [
-  { href: "/devotional", label: "Devotional", icon: Sun },
-  { href: "/understand", label: "Journey", icon: Compass },
-  { href: "/read", label: "Bible", icon: BookOpen },
-  { href: "/study", label: "Study", icon: Search },
-  { href: "/journal", label: "Journal", icon: NotebookPen },
-];
 
 const BOTTOM_NAV_ITEMS = [
   { href: "/", label: "For You", icon: Home, bookmark: null },
@@ -32,14 +23,6 @@ const BOTTOM_NAV_ITEMS = [
   { href: "/understand", label: "Journey", icon: Compass, bookmark: "journey" as BookmarkSection },
   { href: "/journal", label: "Journal", icon: NotebookPen, bookmark: "journal" as BookmarkSection },
 ];
-
-const NAV_BOOKMARK_MAP: Record<string, BookmarkSection> = {
-  "/devotional": "devotional",
-  "/understand": "journey",
-  "/read": "read",
-  "/study": "study",
-  "/journal": "journal",
-};
 
 const BOOKMARK_DOT_SECTIONS = new Set<BookmarkSection>(["journey", "read"]);
 
@@ -107,7 +90,6 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     return () => window.removeEventListener("mousedown", handler);
   }, [moreOpen]);
 
-  const overHomeHero = location === "/";
   const needsNotificationNudge =
     typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted";
 
@@ -124,120 +106,63 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       />
       {showTop && (
         <nav
-          className={`fixed top-0 left-0 right-0 z-[100] ${
-            overHomeHero
-              ? "bg-gradient-to-b from-[#09031e]/88 via-[#09031e]/45 to-transparent backdrop-blur-md"
-              : "bg-background/85 backdrop-blur-xl border-b border-border/40"
-          }`}
+          className="fixed top-0 left-0 right-0 z-[100] pointer-events-none"
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
-          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-1">
-            <Link
-              href="/"
-              onClick={() => {
-                markReturningHome();
-                window.scrollTo({ top: 0, behavior: "smooth" });
+          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-end pointer-events-auto">
+            <NavBarMoreMenu
+              menuRef={moreRef}
+              open={moreOpen}
+              onToggle={() => {
+                setMoreOpen((v) => !v);
+                setNotifOpen(false);
+                setEmailOpen(false);
+                setLangOpen(false);
               }}
-              className="hidden sm:block shrink-0 mr-1.5"
-              title="Shepherd's Path"
-              data-testid="nav-home-logo"
-            >
-              <BrandIcon
-                size={40}
-                className={`rounded-[12px] shadow-sm select-none ring-1 ring-primary/15 ${
-                  overHomeHero ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]" : ""
-                }`}
-              />
-            </Link>
+              onClose={() => setMoreOpen(false)}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              guidanceTone={guidanceTone}
+              onToggleTone={toggleTone}
+              voicePref={voicePref}
+              onToggleVoice={toggleVoice}
+              onOpenEmail={() => setEmailOpen(true)}
+              onOpenLanguage={() => setLangOpen(true)}
+              onOpenNotifications={() => setNotifOpen(true)}
+              hasNotificationBadge={needsNotificationNudge}
+            />
 
-            <div className="hidden sm:flex items-center gap-0.5 flex-1 min-w-0">
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                const active = location === href || location.startsWith(href + "/");
-                const bm = NAV_BOOKMARK_MAP[href];
-                const hasPlace = bm && BOOKMARK_DOT_SECTIONS.has(bm) && bookmarked.has(bm) && !active;
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    data-testid={`nav-${label.toLowerCase()}`}
-                    title={label}
-                    className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all group ${
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : overHomeHero
-                          ? "text-white/90 hover:text-white hover:bg-white/12"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                    }`}
-                  >
-                    <Icon className="w-[18px] h-[18px] shrink-0" />
-                    {hasPlace && (
-                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
-                    )}
-                    <span className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-foreground text-background text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[110]">
-                      {label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+            <AnimatePresence>
+              {langOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-3 top-14 z-[110] bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px]"
+                >
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.code}
+                      data-testid={`lang-${l.code}`}
+                      onClick={() => {
+                        setLang(l.code as LangCode);
+                        setLangOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-3.5 py-2 text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      <span className="font-medium">{l.native}</span>
+                      {lang === l.code && <span className="text-primary text-xs font-bold">✓</span>}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className="flex-1 sm:hidden" />
-
-            <div className="flex items-center gap-0.5 shrink-0 ml-auto sm:ml-0">
-              <NavBarMoreMenu
-                menuRef={moreRef}
-                open={moreOpen}
-                onToggle={() => {
-                  setMoreOpen((v) => !v);
-                  setNotifOpen(false);
-                  setEmailOpen(false);
-                  setLangOpen(false);
-                }}
-                onClose={() => setMoreOpen(false)}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                guidanceTone={guidanceTone}
-                onToggleTone={toggleTone}
-                voicePref={voicePref}
-                onToggleVoice={toggleVoice}
-                onOpenEmail={() => setEmailOpen(true)}
-                onOpenLanguage={() => setLangOpen(true)}
-                onOpenNotifications={() => setNotifOpen(true)}
-                hasNotificationBadge={needsNotificationNudge}
-              />
-
-              <AnimatePresence>
-                {langOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-3 top-14 z-[110] bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px]"
-                  >
-                    {LANGUAGES.map((l) => (
-                      <button
-                        key={l.code}
-                        data-testid={`lang-${l.code}`}
-                        onClick={() => {
-                          setLang(l.code as LangCode);
-                          setLangOpen(false);
-                        }}
-                        className="w-full flex items-center justify-between px-3.5 py-2 text-sm hover:bg-muted/70 transition-colors"
-                      >
-                        <span className="font-medium">{l.native}</span>
-                        {lang === l.code && <span className="text-primary text-xs font-bold">✓</span>}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
-              </AnimatePresence>
-            </div>
+            <AnimatePresence>
+              {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
+            </AnimatePresence>
           </div>
         </nav>
       )}
