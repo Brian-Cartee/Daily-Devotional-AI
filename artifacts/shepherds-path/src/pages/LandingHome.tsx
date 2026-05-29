@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,7 +38,6 @@ import { HomeEngagementStack } from "@/components/HomeEngagementStack";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
 import { shouldShowYourPathCard } from "@/lib/homePathProgress";
-import { HomeDailyTouchpoint } from "@/components/HomeDailyTouchpoint";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { isNativeWebViewShell } from "@/lib/platform";
@@ -56,9 +55,11 @@ import {
   SCRIPTURE_COMMITMENT_LINES,
 } from "@/content/scriptureCommitment";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
-import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
+import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import { ThresholdHero } from "@/components/ThresholdHero";
+import type { HomePresenceContext } from "@/lib/homePresenceContext";
+import { shouldShowArrivalRitual } from "@/components/ArrivalRitual";
 import { WitnessLetterCard } from "@/components/witness/WitnessLetterCard";
 import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
@@ -625,6 +626,18 @@ function LandingHomeInner() {
   const chapelExploreCollapsed = daysWithApp < 14;
   const showSecondaryHomeCards = daysWithApp >= 3;
 
+  const [presenceCtx, setPresenceCtx] = useState<HomePresenceContext>(() => ({
+    door: defaultPresenceDoor(),
+    arrivalOpen: shouldShowArrivalRitual(),
+  }));
+  const onPresenceContextChange = useCallback((ctx: HomePresenceContext) => {
+    setPresenceCtx(ctx);
+  }, []);
+  const hideHeavyLink = presenceCtx.door === "talk" || presenceCtx.arrivalOpen;
+  const hideDevotionalCard = presenceCtx.door === "scripture";
+  const hidePrayerClosetCard = presenceCtx.door === "quiet";
+  const showGreeting = Boolean(getUserName()) && daysWithApp > 1;
+
   useEffect(() => { setLastOpenDate(); }, []);
 
   const handleProNudgeDismiss = () => {
@@ -693,8 +706,8 @@ function LandingHomeInner() {
         }}
       />
 
-      <ThresholdHero />
-      <HomeHeavyMomentLink />
+      <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
+      {!hideHeavyLink && <HomeHeavyMomentLink />}
 
       {thresholdWelcome && (
         <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
@@ -723,8 +736,7 @@ function LandingHomeInner() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
-          {/* Time-aware greeting */}
-          <GreetingHeader />
+          {showGreeting && <GreetingHeader />}
           {carryToday && (
             <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
@@ -795,8 +807,8 @@ function LandingHomeInner() {
           {/* ══ Today's path — chapel first, marketplace later ══ */}
           <div className="flex flex-col gap-3">
 
-          <DevotionalCard />
-          <PrayerClosetHomeCard />
+          {!hideDevotionalCard && <DevotionalCard />}
+          {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
           {chapelWeekFocus ? <HomePathShortcuts /> : <HomeMorePathsLink />}
 
           <AnimatePresence>
@@ -885,7 +897,6 @@ function LandingHomeInner() {
             );
           })()}
 
-          <HomeDailyTouchpoint sessionId={sessionId} />
           {showSecondaryHomeCards && (
             <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
           )}
@@ -939,8 +950,6 @@ function LandingHomeInner() {
           </Link>}
 
           {!chapelWeekFocus && <HomeExploreSection chapelFirstWeek={chapelExploreCollapsed} />}
-
-          {!isLateNight() && <GoDeepCard />}
 
           {showProNudge && (
             <div

@@ -21,6 +21,7 @@ import { HomePresenceDoors, defaultPresenceDoor } from "@/components/HomePresenc
 import type { PresenceDoorId } from "@/components/HomePresenceDoors";
 import { HomePresenceHero } from "@/components/HomePresenceHero";
 import { ArrivalRitual, shouldShowArrivalRitual } from "@/components/ArrivalRitual";
+import type { HomePresenceContext } from "@/lib/homePresenceContext";
 
 export type ThresholdData = {
   headline: string;
@@ -42,7 +43,11 @@ const NEED_LABEL: Record<ThresholdNeed, string> = {
   hope: "hope",
 };
 
-export function ThresholdHero() {
+type ThresholdHeroProps = {
+  onPresenceContextChange?: (ctx: HomePresenceContext) => void;
+};
+
+export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = {}) {
   const sessionId = getSessionId();
   const daysWithApp = getRelationshipAge();
   const { data: verse } = useDailyVerse();
@@ -83,10 +88,16 @@ export function ThresholdHero() {
   const showTalkPrompt = !thresholdLoading;
   const [showArrival, setShowArrival] = useState(() => shouldShowArrivalRitual());
 
+  const effectiveDoor: PresenceDoorId = chapelWeekFocus ? firstWeekDoor : activeDoor;
+
   const selectDoor = (id: PresenceDoorId) => {
     setActiveDoor(id);
     if (id === "talk") focusTalkAfterSelect.current = true;
   };
+
+  useEffect(() => {
+    onPresenceContextChange?.({ door: effectiveDoor, arrivalOpen: showArrival });
+  }, [effectiveDoor, showArrival, onPresenceContextChange]);
 
   useEffect(() => {
     if (activeDoor !== "talk" || !focusTalkAfterSelect.current) return;
@@ -217,7 +228,7 @@ export function ThresholdHero() {
               {!chapelWeekFocus && <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} />}
               <div className="mb-4" role="tabpanel" aria-label="Your chosen step">
                 <HomePresenceHero
-                  door={chapelWeekFocus ? firstWeekDoor : activeDoor}
+                  door={effectiveDoor}
                   phase={threshold?.phase}
                   thresholdNeed={thresholdNeed}
                   verse={verse ?? null}
