@@ -116,7 +116,10 @@ export function NavBarMoreMenu({
     <div className="relative" ref={menuRef}>
       <button
         type="button"
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
         data-testid="button-more-menu"
         aria-label="Settings and more"
         aria-expanded={open}
@@ -136,7 +139,7 @@ export function NavBarMoreMenu({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.96 }}
           transition={{ duration: 0.15 }}
-          className="fixed right-2 top-[calc(env(safe-area-inset-top,0px)+3.4rem)] sm:absolute sm:right-0 sm:top-11 z-[110] bg-background border border-border rounded-2xl shadow-xl py-1 min-w-[240px] w-[min(280px,calc(100vw-1rem))] sm:w-auto max-h-[calc(100dvh-env(safe-area-inset-top,0px)-5rem)] sm:max-h-[min(80dvh,560px)] overflow-y-auto overscroll-contain"
+          className="fixed right-2 top-[calc(env(safe-area-inset-top,0px)+3.4rem)] sm:absolute sm:right-0 sm:top-11 z-[250] bg-background border border-border rounded-2xl shadow-xl py-1 min-w-[240px] w-[min(280px,calc(100vw-1rem))] sm:w-auto max-h-[calc(100dvh-env(safe-area-inset-top,0px)-5rem)] sm:max-h-[min(80dvh,560px)] overflow-y-auto overscroll-contain"
           role="menu"
         >
           <MenuLabel>Stay connected</MenuLabel>

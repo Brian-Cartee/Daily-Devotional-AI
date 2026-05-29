@@ -83,13 +83,20 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
 
   useEffect(() => {
     if (!moreOpen) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: Event) => {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
         setMoreOpen(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
+    const id = window.setTimeout(() => {
+      document.addEventListener("mousedown", handler, true);
+      document.addEventListener("touchstart", handler, true);
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("mousedown", handler, true);
+      document.removeEventListener("touchstart", handler, true);
+    };
   }, [moreOpen]);
 
   const needsNotificationNudge =
@@ -108,7 +115,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       />
       {showTop && (
         <nav
-          className="fixed top-0 left-0 right-0 z-[100] pointer-events-none"
+          className="fixed top-0 left-0 right-0 z-[200] pointer-events-none"
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
@@ -145,7 +152,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-3 top-14 z-[110] bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px]"
+                  className="absolute right-3 top-14 z-[250] bg-background border border-border rounded-xl shadow-lg py-1.5 min-w-[160px]"
                 >
                   {LANGUAGES.map((l) => (
                     <button

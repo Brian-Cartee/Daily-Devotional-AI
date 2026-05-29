@@ -6,6 +6,7 @@ import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 const EXPLORE_KEY = HOME_EXPLORE_OPEN_KEY;
 
@@ -33,12 +34,19 @@ const PREVIEW_HREFS = new Set(["/read", "/prayer-wall", "/reading-plans", "/stud
 const PREVIEW_ITEMS = EXPLORE_ITEMS.filter((item) => PREVIEW_HREFS.has(item.href));
 
 type Props = {
-  /** New users: hide path grid until they tap More paths */
-  chapelFirstWeek?: boolean;
+  /** When true, open the full paths grid on first paint (App Store shell). */
+  startExpanded?: boolean;
 };
 
-export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
+export function HomeExploreSection({ startExpanded = false }: Props) {
   const [expanded, setExpanded] = useState(() => {
+    if (startExpanded || isNativeWebViewShell()) {
+      try {
+        if (localStorage.getItem(EXPLORE_KEY) !== "0") return true;
+      } catch {
+        return true;
+      }
+    }
     try {
       return localStorage.getItem(EXPLORE_KEY) === "1";
     } catch {
@@ -118,7 +126,7 @@ export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
               ))}
             </div>
           </motion.div>
-        ) : chapelFirstWeek ? null : (
+        ) : (
           <motion.div
             key="preview"
             initial={{ opacity: 0, height: 0 }}

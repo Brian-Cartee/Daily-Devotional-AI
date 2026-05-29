@@ -847,7 +847,14 @@ function LandingHomeInner() {
 
           {!hideDevotionalCard && <DevotionalCard />}
           {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
-          {chapelWeekFocus ? <HomePathShortcuts /> : <HomeMorePathsLink />}
+          {chapelWeekFocus ? (
+            <>
+              <HomePathShortcuts />
+              {(inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
+            </>
+          ) : (
+            <HomeMorePathsLink />
+          )}
 
           <AnimatePresence>
             {showWalkthrough && (
@@ -987,7 +994,9 @@ function LandingHomeInner() {
             </div>
           </Link>}
 
-          {!chapelWeekFocus && <HomeExploreSection chapelFirstWeek={chapelExploreCollapsed} />}
+          {(!chapelWeekFocus || inNativeApp) && (
+            <HomeExploreSection startExpanded={inNativeApp} />
+          )}
 
           {showProNudge && (
             <div
