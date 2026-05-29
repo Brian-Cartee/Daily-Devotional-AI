@@ -11,7 +11,6 @@ import {
   getThresholdNeedAcknowledgment,
   type ThresholdNeed,
 } from "@/lib/thresholdState";
-import { hasWhyPanelDismissed } from "@/lib/homeHeroState";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listenFirst";
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
@@ -165,16 +164,14 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
-          {hasWhyPanelDismissed() && (
-            <button
-              type="button"
-              data-testid="link-why-collapsed"
-              onClick={() => window.dispatchEvent(new Event("sp-open-why"))}
-              className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40 hover:text-white/65 transition-colors"
-            >
-              Why we built this
-            </button>
-          )}
+          <button
+            type="button"
+            data-testid="link-why-collapsed"
+            onClick={() => window.dispatchEvent(new Event("sp-open-why"))}
+            className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors"
+          >
+            Why we built this
+          </button>
 
           <h1
             className="text-white font-bold leading-[1.18] mb-2 tracking-tight"
