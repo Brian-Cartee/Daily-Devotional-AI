@@ -111,6 +111,22 @@
 
       var debugPanel = /(?:\?|&)debugNative=1(?:&|$)/.test(location.search);
 
+      function diagViaScheme(event, detail) {
+        try {
+          var iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src =
+            "shepherdspath://diag?event=" +
+            encodeURIComponent(String(event || "")) +
+            "&detail=" +
+            encodeURIComponent(String(detail || "").slice(0, 200));
+          document.documentElement.appendChild(iframe);
+          setTimeout(function () {
+            iframe.remove();
+          }, 120);
+        } catch (e) {}
+      }
+
       function diag(event, detail) {
         var entry = {
           type: "sp_diag",
@@ -121,9 +137,12 @@
         window.__spDiagLogs = window.__spDiagLogs || [];
         window.__spDiagLogs.push(entry);
         if (window.__spDiagLogs.length > 48) window.__spDiagLogs.shift();
+        var posted = false;
         try {
           bridge.postMessage(JSON.stringify(entry));
+          posted = true;
         } catch (e) {}
+        if (!posted) diagViaScheme(entry.event, entry.detail);
         setBootStatus(entry.event + (entry.detail ? ": " + entry.detail : ""));
         if (debugPanel) updateDebugPanel();
       }
@@ -363,6 +382,7 @@
           startNativeBridge(bridge);
           return true;
         }
+        diagViaScheme("bridge_wait", "ReactNativeWebView missing");
         return false;
       }
 

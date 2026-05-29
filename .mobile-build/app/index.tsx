@@ -57,6 +57,15 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
+const INJECTED_BOOT_JS = `(function(){
+  try{
+    var b=window.ReactNativeWebView;
+    if(!b){return true;}
+    b.postMessage(JSON.stringify({type:'sp_diag',event:'injected_boot',detail:'rn bridge ok',ts:Date.now()}));
+  }catch(e){}
+  true;
+})();`;
+
 const INJECT_AFTER_LOAD_JS = `(function(){
   try{
     var b=window.ReactNativeWebView;
@@ -229,6 +238,18 @@ export default function MainScreen() {
       onWebUiVisible();
       return false;
     }
+    if (url.startsWith("shepherdspath://diag")) {
+      try {
+        const parsed = new URL(url.replace("shepherdspath://", "https://shepherdspath.app/"));
+        pushNativeDiag(
+          `web:${parsed.searchParams.get("event") || "diag"}`,
+          parsed.searchParams.get("detail") || "",
+        );
+      } catch {
+        pushNativeDiag("web:diag", url);
+      }
+      return false;
+    }
     if (hostAllowedInWebView(url)) return true;
     if (navigationType === "click" || url.startsWith("http")) {
       Linking.openURL(url).catch(() => {});
@@ -279,6 +300,7 @@ export default function MainScreen() {
         setSupportMultipleWindows={false}
         cacheEnabled={false}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
+        injectedJavaScript={INJECTED_BOOT_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
@@ -293,6 +315,9 @@ export default function MainScreen() {
               diagLogsRef.current.push(entry);
               if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
+              if (/error|failed|module_script_error/i.test(`${data.event || ""}${data.detail || ""}`)) {
+                showDiagAlert("WebView error");
+              }
             }
             if (data.type === "sp_diag_batch" && Array.isArray(data.lines)) {
               for (const line of data.lines) {
@@ -309,9 +334,6 @@ export default function MainScreen() {
                 diagLogsRef.current = diagLogsRef.current.slice(-48);
               }
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
-              if (/error|failed|module_script_error/i.test(entry.event + entry.detail)) {
-                showDiagAlert("WebView error");
-              }
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");
