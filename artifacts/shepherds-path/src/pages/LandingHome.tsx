@@ -21,7 +21,8 @@ import { fetchStreak } from "@/lib/streakApi";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
 import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
-import { scrollHomeToTop } from "@/lib/scrollPageToTop";
+import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
+import { scrollHomeToTop, captureHomeScrollGeneration, isExploreScrollCancelled } from "@/lib/scrollPageToTop";
 import { useDemoMode } from "@/components/DemoProvider";
 import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import {
@@ -581,18 +582,17 @@ function LandingHomeInner() {
   const [nameInput, setNameInput] = useState("");
   const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());
   useEffect(() => {
-    if (sessionStorage.getItem(SCROLL_TO_EXPLORE_KEY)) {
-      sessionStorage.removeItem(SCROLL_TO_EXPLORE_KEY);
-      const scrollToIt = () => {
-        const el = document.getElementById('explore-section');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      };
-      // Two-pass: attempt at 200ms then confirm at 500ms in case layout is still settling
-      setTimeout(scrollToIt, 200);
-      setTimeout(scrollToIt, 500);
-    }
+    if (isNativeWebViewShell()) return;
+    if (!sessionStorage.getItem(SCROLL_TO_EXPLORE_KEY)) return;
+    sessionStorage.removeItem(SCROLL_TO_EXPLORE_KEY);
+    const gen = captureHomeScrollGeneration();
+    const scrollToIt = () => {
+      if (isExploreScrollCancelled(gen)) return;
+      const el = document.getElementById("explore-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    setTimeout(scrollToIt, 200);
+    setTimeout(scrollToIt, 500);
   }, []);
   const [commitmentOpen, setCommitmentOpen] = useState(false);
   const [showDepthExtras, setShowDepthExtras] = useState(false);

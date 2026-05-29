@@ -525,28 +525,22 @@ button, a, input, textarea, select, [role="button"] {
 }
 
 /*
- * Native WebView scroll — Gmail-style: body is the one momentum scroller; touch-action
- * auto everywhere (overrides manipulation delay). MUST stay last in this file.
+ * Native WebView scroll — document-level (not body-in-a-box). scrollTo + anchor.
  */
-html[data-sp-shell="native"] {
-  height: 100% !important;
-  overflow: hidden !important;
-  overscroll-behavior: auto !important;
+html[data-sp-shell="native"],
+html[data-sp-shell="native"] body {
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: auto !important;
   touch-action: auto !important;
 }
 
 html[data-sp-shell="native"] body {
-  height: 100% !important;
-  overflow-x: hidden !important;
-  overflow-y: scroll !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior-y: auto !important;
-  touch-action: auto !important;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html[data-sp-shell="native"] #root {
-  min-height: 100%;
+  min-height: 100dvh;
   overflow: visible;
 }
 

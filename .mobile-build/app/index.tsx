@@ -403,6 +403,11 @@ export default function MainScreen() {
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
+            if (data.type === "scroll_home_top") {
+              webviewRef.current?.injectJavaScript(
+                `(function(){try{window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;var a=document.getElementById('sp-home-top');if(a)a.scrollIntoView({block:'start',behavior:'auto'});}catch(e){}true;})();`,
+              );
+            }
             if (data.type === "sp_diag") {
               const entry: WebViewDiagEntry = {
                 source: "web",

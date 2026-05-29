@@ -56,22 +56,15 @@
     })();
   </script>
   <style>
-    html[data-sp-shell="native"] {
-      height: 100% !important;
-      overflow: hidden !important;
-      background: #0d0612 !important;
-      touch-action: auto !important;
-    }
+    html[data-sp-shell="native"],
     html[data-sp-shell="native"] body {
-      height: 100% !important;
       overflow-x: hidden !important;
-      overflow-y: scroll !important;
       -webkit-overflow-scrolling: touch !important;
       overscroll-behavior-y: auto !important;
       touch-action: auto !important;
       background: #0d0612 !important;
     }
-    html[data-sp-shell="native"] #root { min-height: 100%; overflow: visible; }
+    html[data-sp-shell="native"] #root { min-height: 100dvh; overflow: visible; }
     html[data-sp-shell="native"] button,
     html[data-sp-shell="native"] a,
     html[data-sp-shell="native"] [role="button"],

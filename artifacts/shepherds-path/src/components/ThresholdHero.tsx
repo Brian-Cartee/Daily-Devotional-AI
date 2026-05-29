@@ -114,7 +114,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   };
 
   return (
-    <div className="relative bg-[#09031e]">
+    <div className="relative bg-[#09031e]" id="sp-home-top" data-testid="home-threshold-hero">
       <div
         className={`relative w-full overflow-hidden max-h-[460px] sm:max-h-[500px] ${
           showPhotoTaglines

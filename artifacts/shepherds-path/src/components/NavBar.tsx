@@ -46,7 +46,7 @@ function useBookmarkedSections() {
 }
 
 export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -187,24 +187,48 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       >
         <div className="flex items-center justify-around h-[60px] px-1">
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon: Icon, bookmark }) => {
-            const active =
-              href === "/"
-                ? location === "/"
-                : location === href || location.startsWith(href + "/");
+            const isHome = href === "/";
+            const active = isHome
+              ? location === "/" || location === ""
+              : location === href || location.startsWith(href + "/");
             const hasPlace =
               bookmark && BOOKMARK_DOT_SECTIONS.has(bookmark) && bookmarked.has(bookmark) && !active;
+
+            const goHome = () => {
+              markReturningHome();
+              scrollHomeToTop();
+              if (!active) setLocation("/");
+            };
+
+            if (isHome) {
+              return (
+                <button
+                  key={href}
+                  type="button"
+                  data-testid="bottom-nav-for-you"
+                  onClick={goHome}
+                  className="flex flex-col items-center justify-center flex-1 h-full transition-all border-0 bg-transparent p-0 cursor-pointer"
+                >
+                  {active ? (
+                    <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+                      <Icon className="w-5 h-5 text-white shrink-0" />
+                      <span className="text-[13px] font-bold text-white leading-none">{label}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-0.5 relative px-2.5 py-1.5 rounded-xl bg-zinc-900/35 border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <Icon className="w-[22px] h-[22px] text-zinc-300/85" />
+                      <span className="text-[11px] font-semibold text-zinc-300/80 leading-none">{label}</span>
+                    </div>
+                  )}
+                </button>
+              );
+            }
+
             return (
               <Link
                 key={href}
                 href={href}
                 data-testid={`bottom-nav-${label.toLowerCase()}`}
-                onClick={(e) => {
-                  if (href !== "/") return;
-                  markReturningHome();
-                  const onHome = location === "/" || location === "";
-                  if (onHome) e.preventDefault();
-                  scrollHomeToTop();
-                }}
                 className="flex flex-col items-center justify-center flex-1 h-full transition-all"
               >
                 {active ? (
