@@ -205,7 +205,7 @@ function App() {
     if (!isNativeWebViewShell()) return;
 
     const visibleSelectors =
-      '[data-testid="card-devotional"], [data-testid="bottom-nav-home"], [data-testid="text-threshold-welcome"]';
+      '[data-testid="card-devotional"], [data-testid="bottom-nav-home"], [data-testid="text-threshold-welcome"], [data-testid="threshold-arrival"], [data-testid="btn-threshold-enter"]';
 
     const tryMark = () => {
       if (!document.querySelector(visibleSelectors)) return false;
@@ -223,7 +223,7 @@ function App() {
     const fallback = window.setTimeout(() => {
       observer.disconnect();
       markNativeShellUiPainted();
-    }, 15000);
+    }, 5000);
 
     return () => {
       observer.disconnect();

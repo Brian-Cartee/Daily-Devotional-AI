@@ -1420,7 +1420,8 @@ function LandingHomeInner() {
 }
 
 export default function LandingHome() {
-  if (!isReturningHome() && shouldShowThresholdArrival()) {
+  // App Store shell: go straight to home — threshold onboarding is web-first only
+  if (!isNativeWebViewShell() && !isReturningHome() && shouldShowThresholdArrival()) {
     return <Redirect to="/threshold" />;
   }
   if (shouldRedirectToNightShepherd()) {

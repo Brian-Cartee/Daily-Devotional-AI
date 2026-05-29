@@ -4,9 +4,11 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { installApiFetch } from "./lib/api";
 import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
+import { markThresholdComplete } from "./lib/thresholdState";
 import {
   isNativeShellUiReady,
   isNativeWebViewShell,
+  markNativeShellUiPainted,
   notifyNativeShellReady,
   removeNativeBootPlaceholder,
 } from "./lib/platform";
@@ -78,6 +80,7 @@ if (!mountEl) {
 
 /** iOS WebView: splash stays as sibling until React paints into #sp-app-mount. */
 if (isNativeWebViewShell()) {
+  markThresholdComplete();
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
   const bootStatus = document.getElementById("sp-boot-splash-status");

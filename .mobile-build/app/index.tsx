@@ -92,7 +92,7 @@ export default function MainScreen() {
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 6000);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
-    }, 20000);
+    }, 35000);
     const splashCap = setTimeout(() => {
       hideNativeSplashWhenWebReady();
     }, 25000);
