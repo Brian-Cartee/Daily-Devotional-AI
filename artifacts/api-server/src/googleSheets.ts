@@ -35,13 +35,14 @@ async function getTodayVerseFromWebApp(): Promise<SheetVerse | null> {
       console.warn(`[sheets] Web app returned stale date ${normalizedDate}; expected ${today}.`);
       return null;
     }
-    return {
+    const { sanitizeSheetVerse } = await import("./verseTextSanitize");
+    return sanitizeSheetVerse({
       date: today,
-      verseText: data.verseText?.trim() || '',
-      reference: data.reference?.trim() || '',
-      encouragement: data.encouragement?.trim() || '',
-      reflectionPrompt: data.reflectionPrompt?.trim() || '',
-    };
+      verseText: data.verseText?.trim() || "",
+      reference: data.reference?.trim() || "",
+      encouragement: data.encouragement?.trim() || "",
+      reflectionPrompt: data.reflectionPrompt?.trim() || "",
+    });
   } catch (err) {
     console.error('[sheets] GOOGLE_SHEET_WEB_APP_URL fetch failed:', err);
     return null;
@@ -172,13 +173,14 @@ export async function getTodayVerseFromSheet(): Promise<SheetVerse | null> {
     const rawDate = row[0]?.trim() || '';
     const normalizedDate = normalizeDateString(rawDate);
     if (normalizedDate === today) {
-      return {
+      const { sanitizeSheetVerse } = await import('./verseTextSanitize');
+      return sanitizeSheetVerse({
         date: today,
         verseText: row[1]?.trim() || '',
         reference: row[2]?.trim() || '',
         encouragement: row[5]?.trim() || '',
         reflectionPrompt: row[6]?.trim() || '',
-      };
+      });
     }
   }
 

@@ -163,10 +163,16 @@ setInterval(() => {
 
 async function syncTodayVerseFromSheet(): Promise<void> {
   try {
+    const { sanitizeSheetVerse, verseTextHasRestoreSoulTypo } = await import("../verseTextSanitize");
     const today = getEasternDateString();
-    const existing = await storage.getVerseByDate(today);
+    let existing = await storage.getVerseByDate(today);
+    if (existing && verseTextHasRestoreSoulTypo(existing.text)) {
+      await storage.deleteVerseByDate(today);
+      existing = undefined;
+    }
 
-    const sheetVerse = await getTodayVerseFromSheet();
+    const sheetVerseRaw = await getTodayVerseFromSheet();
+    const sheetVerse = sheetVerseRaw ? sanitizeSheetVerse(sheetVerseRaw) : null;
     if (!sheetVerse) {
       if (existing) return;
       console.warn("No matching row found in Google Sheet for today. Using fallback.");
@@ -431,7 +437,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No verse found for today." });
       }
 
-      res.json(verse);
+      const { sanitizeStoredVerse } = await import("../verseTextSanitize");
+      res.json(sanitizeStoredVerse(verse));
     } catch (err) {
       console.error("getDaily verse error:", err);
       res.status(500).json({ message: "Could not load today's verse." });
@@ -1430,6 +1437,9 @@ Voice authenticity (internal constraint — never cite these rules in output):
         return res.status(404).json({ message: "Verse not found to reflect on." });
       }
 
+      const { sanitizeStoredVerse } = await import("../verseTextSanitize");
+      const safeVerse = sanitizeStoredVerse(verse);
+
       let systemPrompt = "";
       let userPrompt = "";
 
@@ -1484,9 +1494,9 @@ When a verse speaks to human worth, dignity, or being known — being formed, be
 When a verse carries hope in the middle of darkness — not easy comfort, but the kind that has earned the right to speak — write it for the person who genuinely cannot see how things could be different. The steadiness of biblical hope is not pretending the darkness isn't real. It is knowing something the darkness doesn't.
 
 Purpose of this reflection: You are not the destination. The Word is. This reflection exists to help a person hear scripture as a living thing spoken to them — and then to meet Jesus in it themselves. When you write well, a person does not think about the reflection. They think about God. Aim for that.${nameNote2}${relationshipNote2}${memoryNote2}${probeNote}${generateModeNote}${lateNightReflectionNote}${holidayNote2}${culturalMomentNote2}${daysWithApp2 <= 3 ? `\n\nSeeker safety — some people reading this reflection may not be sure what they believe. They may be curious, doubting, or simply in pain and reaching for something. This text is for all of them. Do not assume settled faith. Let the verse be what it is — something that speaks to a human life — and trust that it can do its own work. You do not need to assert what someone should believe. Simply show what is here: what this text says, and why it might matter to a person living a real life today.` : ""}${daysWithApp2 >= 30 ? `\n\nDepth note — this person has walked with this daily practice for ${daysWithApp2} days. The structure is familiar to them — that familiarity is part of the value, not a problem to solve. Do not add novelty or surprise. Instead, go deeper. Trust them with the harder angle on this scripture — the interpretation that requires more. The less obvious entry point. They don't need to be eased in anymore.` : ""}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}${langNote2}`;
-        userPrompt = `Write a brief reflection on: ${verse.reference} - "${verse.text}"`;
-        if (verse.reflectionPrompt) {
-          userPrompt += `\n\nReflection prompt to guide you: ${verse.reflectionPrompt}`;
+        userPrompt = `Write a brief reflection on: ${safeVerse.reference} - "${safeVerse.text}"`;
+        if (safeVerse.reflectionPrompt) {
+          userPrompt += `\n\nReflection prompt to guide you: ${safeVerse.reflectionPrompt}`;
         }
       } else if (input.type === "prayer") {
         systemPrompt =
@@ -1512,8 +1522,8 @@ Begin with "Lord," or "Heavenly Father," and close with "Amen."
 One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${culturalMomentNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}${langNote2}`;
         const reflCtx: string = (req.body as any).reflectionContext || "";
         userPrompt = reflCtx
-          ? `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
-          : `Please write a prayer based on this verse: ${verse.reference} - "${verse.text}"`;
+          ? `Please write a prayer based on this verse: ${safeVerse.reference} - "${safeVerse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
+          : `Please write a prayer based on this verse: ${safeVerse.reference} - "${safeVerse.text}"`;
       }
 
       const isProGen = parseProFlag((req.body as { isPro?: boolean }).isPro);
@@ -3243,6 +3253,13 @@ Return JSON: { "action": "...", "scripture": "..." }`
         await syncTodayVerseFromSheet();
         dailyVerse = await storage.getVerseByDate(today);
       }
+      const { sanitizeStoredVerse, verseTextHasRestoreSoulTypo } = await import(
+        "../verseTextSanitize"
+      );
+      const hadTypoInDb = !!(dailyVerse && verseTextHasRestoreSoulTypo(dailyVerse.text));
+      if (dailyVerse) {
+        dailyVerse = sanitizeStoredVerse(dailyVerse);
+      }
 
       const scriptureData = dailyVerse
         ? {
@@ -3263,9 +3280,18 @@ Return JSON: { "action": "...", "scripture": "..." }`
         process.env.UNSPLASH_ACCESS_KEY?.trim() || process.env.PEXELS_API_KEY?.trim()
       );
 
-      if (req.query.refresh === "1" && fs.existsSync(imgFile)) {
+      const forceRefresh = req.query.refresh === "1" || hadTypoInDb;
+
+      if (forceRefresh && fs.existsSync(imgFile)) {
         try {
           fs.unlinkSync(imgFile);
+        } catch {
+          /* continue */
+        }
+      }
+      if (forceRefresh && fs.existsSync(metaFile)) {
+        try {
+          fs.unlinkSync(metaFile);
         } catch {
           /* continue */
         }
