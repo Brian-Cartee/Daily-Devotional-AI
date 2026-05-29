@@ -9,13 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
       "backgroundColor": "#0d0612"
     },
     "ios": {
       "bundleIdentifier": "com.shepherdspath.app",
-      "buildNumber": "156",
+      "buildNumber": "157",
       "supportsTablet": true,
       "requireFullScreen": true,
       "infoPlist": {

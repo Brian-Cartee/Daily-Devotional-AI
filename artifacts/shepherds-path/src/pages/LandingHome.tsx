@@ -8,6 +8,7 @@ import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
 import { clearReturningHome, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
+import { hasWhyPanelDismissed, markWhyPanelAutoShown } from "@/lib/homeHeroState";
 import {
   consumeThresholdJustCompleted,
   shouldShowThresholdArrival,
@@ -507,6 +508,7 @@ function LandingHomeInner() {
     if (inNativeApp) {
       markIntroFlowComplete();
       markEntryShown();
+      if (hasWhyPanelDismissed()) markWhyPanelAutoShown();
     }
   }, [inNativeApp]);
 

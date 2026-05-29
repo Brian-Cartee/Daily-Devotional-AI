@@ -2,6 +2,7 @@
 
 import { getWelcomeVisitCount, isIntroFlowComplete } from "@/lib/introState";
 import { getRelationshipAge } from "@/lib/relationship";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 const WHY_DISMISSED_KEY = "sp_why_panel_dismissed";
 const WHY_AUTO_SHOWN_KEY = "sp_why_panel_auto_shown";
@@ -38,11 +39,14 @@ export function markWhyPanelAutoShown(): void {
   }
 }
 
-/** Open Why panel once after first real home landing */
+/** Open Why panel once after first real home landing (never nag returning users). */
 export function shouldAutoOpenWhyPanel(): boolean {
   if (hasWhyPanelDismissed() || hasWhyPanelAutoShown()) return false;
+  if (isNativeWebViewShell()) {
+    return true;
+  }
   const visits = getWelcomeVisitCount();
-  return visits <= 2 || !isIntroFlowComplete();
+  return visits <= 2 && !isIntroFlowComplete();
 }
 
 /** Day 2+ — verse before Talk It Through on home */
