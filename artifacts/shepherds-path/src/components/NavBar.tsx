@@ -198,14 +198,12 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
 
             const goHome = () => {
               markReturningHome();
-              if (!active) {
-                setLocation("/");
-                requestAnimationFrame(() => scrollHomeToTop());
-                window.setTimeout(() => scrollHomeToTop(), 80);
-                window.setTimeout(() => scrollHomeToTop(), 220);
-              } else {
-                scrollHomeToTop();
-              }
+              if (!active) setLocation("/");
+              scrollHomeToTop();
+              requestAnimationFrame(() => scrollHomeToTop());
+              window.setTimeout(() => scrollHomeToTop(), 80);
+              window.setTimeout(() => scrollHomeToTop(), 220);
+              window.setTimeout(() => scrollHomeToTop(), 450);
             };
 
             if (isHome) {

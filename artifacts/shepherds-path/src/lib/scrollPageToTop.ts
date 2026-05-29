@@ -9,20 +9,62 @@ function isNativeWebViewScrollShell(): boolean {
   return document.documentElement.dataset.spShell === "native";
 }
 
-/** iOS WKWebView: body is the momentum scroller — sync all roots WK might use. */
+function getNativeScrollY(): number {
+  return (
+    window.scrollY ||
+    window.pageYOffset ||
+    document.scrollingElement?.scrollTop ||
+    document.documentElement.scrollTop ||
+    document.body.scrollTop ||
+    0
+  );
+}
+
+function getHomeTopAnchor(): HTMLElement | null {
+  return (
+    document.getElementById(HOME_TOP_ANCHOR_ID) ||
+    (document.querySelector("[data-testid='home-threshold-hero']") as HTMLElement | null)
+  );
+}
+
+/** Sync every scroll root WKWebView may use (finger scroll ≠ body-only). */
 function setNativeScrollerTop(y: number, behavior: ScrollBehavior = "auto"): void {
   const opts: ScrollToOptions = { top: y, left: 0, behavior };
-  try {
-    document.body.scrollTo(opts);
-  } catch {
-    document.body.scrollTop = y;
+  const els: (Element | null | undefined)[] = [
+    document.scrollingElement,
+    document.documentElement,
+    document.body,
+    document.getElementById("root"),
+  ];
+  for (const el of els) {
+    if (!(el instanceof HTMLElement)) continue;
+    try {
+      el.scrollTo(opts);
+    } catch {
+      el.scrollTop = y;
+    }
+    el.scrollTop = y;
   }
-  document.body.scrollTop = y;
-  document.documentElement.scrollTop = y;
   try {
     window.scrollTo(opts);
   } catch {
     window.scrollTo(0, y);
+  }
+}
+
+/** Scroll to the hero anchor using the live scroll offset (works on any root). */
+function scrollNativeToHomeTop(behavior: ScrollBehavior = "auto"): void {
+  const anchor = getHomeTopAnchor();
+  if (!anchor) {
+    setNativeScrollerTop(0, behavior);
+    return;
+  }
+  const y = Math.max(0, Math.round(anchor.getBoundingClientRect().top + getNativeScrollY()));
+  setNativeScrollerTop(y, behavior);
+  try {
+    anchor.scrollIntoView({ block: "start", inline: "nearest", behavior });
+  } catch {
+    anchor.scrollIntoView(true);
   }
 }
 
@@ -55,15 +97,13 @@ export function scrollPageToTop(behavior: ScrollBehavior = "auto"): void {
   }
 }
 
-/** scrollIntoView on web; native shell scrolls body to 0 (hero anchor is page top). */
+/** scrollIntoView on web; native uses measured anchor offset. */
 export function scrollHomeAnchorIntoView(behavior: ScrollBehavior = "auto"): void {
   if (isNativeWebViewScrollShell()) {
-    setNativeScrollerTop(0, behavior);
+    scrollNativeToHomeTop(behavior);
     return;
   }
-  const anchor =
-    document.getElementById(HOME_TOP_ANCHOR_ID) ||
-    document.querySelector("[data-testid='home-threshold-hero']");
+  const anchor = getHomeTopAnchor();
   if (!anchor) return;
   try {
     anchor.scrollIntoView({ block: "start", inline: "nearest", behavior });
@@ -73,7 +113,7 @@ export function scrollHomeAnchorIntoView(behavior: ScrollBehavior = "auto"): voi
 }
 
 function flushNativeHomeScroll(behavior: ScrollBehavior = "auto"): void {
-  setNativeScrollerTop(0, behavior);
+  scrollNativeToHomeTop(behavior);
 }
 
 export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void {
@@ -82,6 +122,7 @@ export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void
     requestAnimationFrame(() => flushNativeHomeScroll(behavior));
     window.setTimeout(() => flushNativeHomeScroll(behavior), 50);
     window.setTimeout(() => flushNativeHomeScroll(behavior), 180);
+    window.setTimeout(() => flushNativeHomeScroll(behavior), 400);
     return;
   }
   scrollPageToTop(behavior);
@@ -92,8 +133,8 @@ export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void
   });
 }
 
-/** For You tab — always true top; cancels pending explore scrolls. */
-export function scrollHomeToTop(): void {
+/** Core scroll — safe to call from listeners without re-posting to native. */
+export function applyHomeScrollToTop(): void {
   homeScrollCancel += 1;
   try {
     sessionStorage.removeItem(SCROLL_TO_EXPLORE_KEY);
@@ -108,6 +149,11 @@ export function scrollHomeToTop(): void {
     history.scrollRestoration = "manual";
   }
   scrollPageToTopReliable("auto");
+}
+
+/** For You tab — scroll home to hero; notifies native shell once. */
+export function scrollHomeToTop(): void {
+  applyHomeScrollToTop();
   try {
     (
       window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
