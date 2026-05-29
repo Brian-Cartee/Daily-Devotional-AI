@@ -101,7 +101,7 @@ export default function MainScreen() {
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 5000);
     const autoDismissTimer = setTimeout(() => {
       if (!readyRef.current) onAppReady();
-    }, 3000);
+    }, 1200);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
     }, 30000);
@@ -179,7 +179,6 @@ export default function MainScreen() {
         setSupportMultipleWindows={false}
         cacheEnabled={false}
         cacheMode="LOAD_NO_CACHE"
-        incognito={Platform.OS === "ios"}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {

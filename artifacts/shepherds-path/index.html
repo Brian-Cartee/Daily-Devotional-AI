@@ -55,6 +55,11 @@
       try{var t=localStorage.getItem('sp-theme');if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}}
     })();
   </script>
+  <style>
+    html[data-sp-shell="native"] #sp-safari-link,
+    html[data-sp-shell="native"] #sp-enter-btn { display: none !important; }
+    html[data-sp-shell="native"] #sp-boot-status { opacity: 0.65; font-size: 14px; }
+  </style>
   <script>
     (function(){
       try {
@@ -73,7 +78,7 @@
     <div id="root">
       <div id="sp-boot" style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
         <p style="font-size:22px;font-weight:700;margin:0;">Shepherd&rsquo;s Path</p>
-        <p id="sp-boot-status" style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;max-width:300px;">Opening your chapel&hellip;</p>
+        <p id="sp-boot-status" style="font-size:15px;line-height:1.5;opacity:0.85;margin:0;max-width:300px;">Loading&hellip;</p>
         <button type="button" id="sp-enter-btn" style="margin-top:8px;width:100%;max-width:300px;padding:16px 20px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e8c99b,#d4a574);color:#1a1208;-webkit-tap-highlight-color:transparent;">Continue</button>
         <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="font-size:15px;font-weight:600;color:#d4a574;text-decoration:underline;">Open in Safari instead</a>
       </div>
@@ -162,7 +167,7 @@
 
       setTimeout(function () {
         if (!sent) notify(true);
-      }, 6500);
+      }, 2800);
 
       setTimeout(function () {
         if (sent || hasMountedApp()) return;
