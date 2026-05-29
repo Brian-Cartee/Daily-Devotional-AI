@@ -57,34 +57,46 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
-const INJECTED_BOOT_JS = `(function(){
+const NATIVE_BOOTSTRAP_JS = `(function(){
   try{
     var b=window.ReactNativeWebView;
     if(!b){return true;}
-    b.postMessage(JSON.stringify({type:'sp_diag',event:'injected_boot',detail:'rn bridge ok',ts:Date.now()}));
-  }catch(e){}
-  true;
-})();`;
-
-const INJECT_AFTER_LOAD_JS = `(function(){
-  try{
-    var b=window.ReactNativeWebView;
-    if(!b){return true;}
-    var mod=document.querySelector('script[type="module"]');
-    b.postMessage(JSON.stringify({
-      type:'sp_diag',
-      event:'inject_after_load',
-      detail:'readyState='+document.readyState+(mod?' module='+mod.getAttribute('src'):' NO_MODULE'),
-      ts:Date.now()
-    }));
-    if(typeof window.__spDiag==='function'){
-      window.__spDiag('inject_bridge_alive','1');
+    function diag(event,detail){
+      try{
+        b.postMessage(JSON.stringify({type:'sp_diag',event:String(event||''),detail:String(detail||'').slice(0,500),ts:Date.now()}));
+      }catch(e){}
+    }
+    if(!window.__spDiag){window.__spDiag=diag;}
+    diag('native_bootstrap','readyState='+document.readyState);
+    var scripts=document.getElementsByTagName('script');
+    var mod=null;
+    var i;
+    for(i=0;i<scripts.length;i++){
+      if(scripts[i].type==='module'){mod=scripts[i];break;}
+    }
+    var preload=document.querySelector('link[rel="modulepreload"]');
+    var src=mod?mod.getAttribute('src'):(preload?preload.getAttribute('href'):'');
+    if(!src){
+      diag('module_missing','no module tag or modulepreload');
+      return true;
+    }
+    if(!mod){
+      diag('module_inject',src);
+      mod=document.createElement('script');
+      mod.type='module';
+      mod.src=src;
+      document.body.appendChild(mod);
     }else{
-      b.postMessage(JSON.stringify({type:'sp_diag',event:'bridge_not_started',detail:'__spDiag missing',ts:Date.now()}));
+      diag('module_tag_present',src);
+    }
+    if(!mod._spHooked){
+      mod._spHooked=true;
+      mod.addEventListener('load',function(){diag('module_script_loaded',src);});
+      mod.addEventListener('error',function(){diag('module_script_error',src);});
     }
   }catch(e){
     try{
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'sp_diag',event:'inject_error',detail:String(e),ts:Date.now()}));
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'sp_diag',event:'bootstrap_error',detail:String(e),ts:Date.now()}));
     }catch(e2){}
   }
   true;
@@ -300,7 +312,7 @@ export default function MainScreen() {
         setSupportMultipleWindows={false}
         cacheEnabled={false}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
-        injectedJavaScript={INJECTED_BOOT_JS}
+        injectedJavaScript={NATIVE_BOOTSTRAP_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
@@ -383,11 +395,11 @@ export default function MainScreen() {
         )}
         onLoadEnd={() => {
           pushNativeDiag("onLoadEnd", entryUrl);
-          webviewRef.current?.injectJavaScript(INJECT_AFTER_LOAD_JS);
+          webviewRef.current?.injectJavaScript(NATIVE_BOOTSTRAP_JS);
           const delays = [200, 400, 1200, 2500, 5000, 8000, 12000];
           delays.forEach((ms) => {
             setTimeout(() => {
-              webviewRef.current?.injectJavaScript(INJECT_AFTER_LOAD_JS);
+              webviewRef.current?.injectJavaScript(NATIVE_BOOTSTRAP_JS);
               probeWebReady();
             }, ms);
           });

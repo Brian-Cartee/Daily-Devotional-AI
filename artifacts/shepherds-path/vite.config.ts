@@ -80,6 +80,18 @@ function swCacheVersionPlugin() {
           html = html.replace("</head>", `  ${cssTag[0]}</head>`);
         }
         fs.writeFileSync(outIndex, html, "utf-8");
+
+        if (moduleTag) {
+          const moduleSrc = moduleTag[0].match(/src="([^"]+)"/i)?.[1];
+          if (moduleSrc) {
+            const manifestPath = path.resolve(import.meta.dirname, "dist/public/native-manifest.json");
+            fs.writeFileSync(
+              manifestPath,
+              JSON.stringify({ mainJs: moduleSrc, builtAt: new Date().toISOString() }, null, 2),
+              "utf-8",
+            );
+          }
+        }
       }
     },
   };

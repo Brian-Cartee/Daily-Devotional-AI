@@ -401,5 +401,31 @@
     </script>
     <!-- SP_NATIVE_BRIDGE_END -->
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+    (function () {
+      function ensureModuleFromPreload() {
+        var scripts = document.getElementsByTagName("script");
+        var i;
+        for (i = 0; i < scripts.length; i++) {
+          if (scripts[i].type === "module") return;
+        }
+        var preload = document.querySelector('link[rel="modulepreload"]');
+        if (!preload) return;
+        var src = preload.getAttribute("href");
+        if (!src) return;
+        var s = document.createElement("script");
+        s.type = "module";
+        s.src = src;
+        document.body.appendChild(s);
+        if (window.__spDiag) window.__spDiag("module_injected_page", src);
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", ensureModuleFromPreload);
+      } else {
+        ensureModuleFromPreload();
+      }
+      window.addEventListener("load", ensureModuleFromPreload);
+    })();
+    </script>
   </body>
 </html>
