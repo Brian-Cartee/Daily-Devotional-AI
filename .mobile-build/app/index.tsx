@@ -57,9 +57,23 @@ const BEFORE_CONTENT_JS = `(function(){
 
 const PROBE_READY_JS = `(function(){
   try{
+    var m=document.getElementById('sp-app-mount');
+    if(m&&m.childElementCount>0){
+      document.documentElement.setAttribute('data-native-ui-ready','1');
+      document.getElementById('sp-boot-splash')?.remove();
+    }
     if(document.documentElement.getAttribute('data-native-ui-ready')==='1'){
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'app_ready' }));
     }
+  }catch(e){}
+  true;
+})();`;
+
+const FORCE_REVEAL_JS = `(function(){
+  try{
+    document.documentElement.setAttribute('data-native-ui-ready','1');
+    document.getElementById('sp-boot-splash')?.remove();
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'app_ready' }));
   }catch(e){}
   true;
 })();`;
@@ -210,6 +224,10 @@ export default function MainScreen() {
         onLoadEnd={() => {
           const delays = [500, 1500, 3000, 6000, 10000, 15000];
           delays.forEach((ms) => setTimeout(probeWebReady, ms));
+          setTimeout(() => webviewRef.current?.injectJavaScript(FORCE_REVEAL_JS), 9000);
+          setTimeout(() => {
+            if (!readyRef.current) onAppReady();
+          }, 18000);
         }}
         onError={() => {
           setShowOverlay(false);

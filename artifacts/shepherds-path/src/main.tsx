@@ -101,6 +101,7 @@ if (typeof window !== "undefined" && isNativeWebViewShell()) {
     }
   };
   requestAnimationFrame(() => pollReady());
+  window.setTimeout(() => markNativeShellUiPainted(), 6000);
 } else {
   requestAnimationFrame(() => removeNativeBootPlaceholder());
 }

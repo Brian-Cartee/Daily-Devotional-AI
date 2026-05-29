@@ -15,7 +15,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.shepherdspath.app",
-      "buildNumber": "137",
+      "buildNumber": "139",
       "supportsTablet": true,
       "requireFullScreen": true,
       "infoPlist": {

@@ -143,6 +143,17 @@
         } catch (e) {}
       }
 
+      /** Unblock TestFlight shell — never trap user behind native overlay */
+      function forceShellOpen() {
+        if (sent) return;
+        document.documentElement.setAttribute("data-native-ui-ready", "1");
+        document.getElementById("sp-boot-splash")?.remove();
+        sent = true;
+        try {
+          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+        } catch (e) {}
+      }
+
       function hardReloadApp() {
         var u = "/?native=1&enter=1&_=" + Date.now();
         location.replace(u);
@@ -173,6 +184,8 @@
         notify();
       });
 
+      setTimeout(forceShellOpen, 8000);
+
       setTimeout(function () {
         if (sent || hasMountedApp()) return;
         var root = document.getElementById("root");
@@ -192,6 +205,9 @@
           setTimeout(function () { poll(); }, 120);
           setTimeout(function () { poll(); }, 600);
           setTimeout(function () { poll(); }, 1800);
+          setTimeout(function () {
+            if (!sent) forceShellOpen();
+          }, 4500);
         }
         mod.addEventListener("load", onModuleReady);
         mod.addEventListener("error", function () {
