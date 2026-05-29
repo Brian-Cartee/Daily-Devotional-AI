@@ -123,6 +123,7 @@
         try {
           bridge.postMessage(JSON.stringify(entry));
         } catch (e) {}
+        setBootStatus(entry.event + (entry.detail ? ": " + entry.detail : ""));
         if (debugPanel) updateDebugPanel();
       }
       window.__spDiag = diag;
@@ -217,7 +218,22 @@
 
       function setBootStatus(text) {
         var el = document.getElementById("sp-boot-splash-status");
-        if (el) el.textContent = text;
+        if (!el) return;
+        el.textContent = text;
+        el.style.fontSize = "13px";
+        el.style.maxWidth = "320px";
+        el.style.wordBreak = "break-word";
+      }
+
+      function latestDiagSummary(max) {
+        var logs = window.__spDiagLogs || [];
+        if (!logs.length) return "No events yet";
+        return logs
+          .slice(-(max || 10))
+          .map(function (x) {
+            return x.event + (x.detail ? ": " + x.detail : "");
+          })
+          .join("\n");
       }
 
       /** Overlay only — never replace #root (that kills React mid-bundle on slow WebViews). */
@@ -246,6 +262,9 @@
           '<button type="button" id="sp-native-reload-btn" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button>';
         document.body.appendChild(layer);
         diag("recovery_screen_shown", diagText.slice(0, 200));
+        try {
+          alert("Shepherd's Path load status:\n\n" + diagText);
+        } catch (e2) {}
         document.getElementById("sp-native-reload-btn")?.addEventListener("click", function () {
           hardReloadApp();
         });
@@ -285,6 +304,13 @@
         if (hasVisibleAppUi()) return;
         setBootStatus("Still loading\u2026");
       }, 8000);
+
+      setTimeout(function () {
+        if (hasVisibleAppUi()) return;
+        try {
+          alert("Still loading (12s):\n\n" + latestDiagSummary(12));
+        } catch (e) {}
+      }, 12000);
 
       setTimeout(function () {
         if (hasVisibleAppUi()) return;

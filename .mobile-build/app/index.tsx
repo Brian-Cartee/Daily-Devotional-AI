@@ -56,6 +56,20 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
+const PULL_DIAG_JS = `(function(){
+  try{
+    var logs=window.__spDiagLogs||[];
+    var lines=logs.slice(-14).map(function(x){
+      return x.event+(x.detail?': '+x.detail:'');
+    });
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      type:'sp_diag_batch',
+      lines:lines
+    }));
+  }catch(e){}
+  true;
+})();`;
+
 const VISIBILITY_PROBE_JS = `(function(){
   try{
     var sel='[data-testid="card-devotional"],[data-testid="bottom-nav-home"],[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
@@ -123,11 +137,19 @@ export default function MainScreen() {
 
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
     const stuckTimer = setTimeout(() => {
-      if (!webUiConfirmedRef.current) setShowStuckHelp(true);
-    }, 35000);
+      if (!webUiConfirmedRef.current) {
+        setShowOverlay(false);
+        setShowStuckHelp(true);
+        webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+      }
+    }, 12000);
     const blankTimer = setTimeout(() => {
-      if (!webUiConfirmedRef.current) setShowBlankRecovery(true);
-    }, 40000);
+      if (!webUiConfirmedRef.current) {
+        setShowOverlay(false);
+        setShowBlankRecovery(true);
+        webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+      }
+    }, 15000);
     const probeInterval = setInterval(() => {
       if (!webUiConfirmedRef.current) probeWebReady();
     }, 1500);
@@ -229,7 +251,23 @@ export default function MainScreen() {
               };
               diagLogsRef.current.push(entry);
               if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
-              setDiagSummary(formatDiagLines(diagLogsRef.current, 10));
+              setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
+            }
+            if (data.type === "sp_diag_batch" && Array.isArray(data.lines)) {
+              for (const line of data.lines) {
+                const text = String(line || "");
+                if (!text) continue;
+                diagLogsRef.current.push({
+                  source: "web",
+                  event: text,
+                  detail: "",
+                  ts: Date.now(),
+                });
+              }
+              if (diagLogsRef.current.length > 48) {
+                diagLogsRef.current = diagLogsRef.current.slice(-48);
+              }
+              setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");
@@ -344,18 +382,16 @@ export default function MainScreen() {
 
       {(showStuckHelp || showBlankRecovery) && (
         <View
-          style={[styles.stuckSheet, !showOverlay && styles.stuckSheetOverWebview]}
+          style={[styles.stuckSheet, styles.stuckSheetOverWebview]}
           pointerEvents="auto"
         >
           <Text style={styles.stuckTitle}>Having trouble loading?</Text>
           <Text style={styles.stuckText}>
             The app didn&apos;t finish loading. Refresh for a clean start, or use Safari.
           </Text>
-          {diagSummary ? (
-            <Text style={styles.diagText} selectable>
-              {diagSummary}
-            </Text>
-          ) : null}
+          <Text style={styles.diagText} selectable>
+            {diagSummary || "Waiting for load diagnostics…"}
+          </Text>
           <Pressable
             onPress={reload}
             style={({ pressed }) => [styles.primaryButton, { opacity: pressed ? 0.85 : 1 }]}
