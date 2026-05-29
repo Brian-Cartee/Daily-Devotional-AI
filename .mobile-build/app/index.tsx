@@ -103,19 +103,24 @@ export default function MainScreen() {
   }, []);
 
   useEffect(() => {
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 6000);
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
+    /* Build 139: always reveal the WebView — Safari works; postMessage handshake is unreliable */
+    const revealTimer = setTimeout(() => {
+      if (!readyRef.current) onAppReady();
+    }, 8000);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
-    }, 45000);
+    }, 60000);
     const splashCap = setTimeout(() => {
       hideNativeSplashWhenWebReady();
-    }, 25000);
+    }, 12000);
     return () => {
       clearTimeout(slowTimer);
+      clearTimeout(revealTimer);
       clearTimeout(stuckTimer);
       clearTimeout(splashCap);
     };
-  }, [entryUrl]);
+  }, [entryUrl, onAppReady]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -186,8 +191,9 @@ export default function MainScreen() {
         mediaPlaybackRequiresUserAction={false}
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
-        cacheEnabled={false}
-        cacheMode="LOAD_NO_CACHE"
+        cacheEnabled
+        applicationNameForUserAgent="Mobile"
+        userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
@@ -226,12 +232,9 @@ export default function MainScreen() {
           </View>
         )}
         onLoadEnd={() => {
-          const delays = [500, 1500, 3000, 6000, 10000, 15000];
+          const delays = [400, 1200, 2500, 5000];
           delays.forEach((ms) => setTimeout(probeWebReady, ms));
-          setTimeout(() => webviewRef.current?.injectJavaScript(FORCE_REVEAL_JS), 9000);
-          setTimeout(() => {
-            if (!readyRef.current) onAppReady();
-          }, 12000);
+          setTimeout(() => webviewRef.current?.injectJavaScript(FORCE_REVEAL_JS), 3000);
         }}
         onError={() => {
           setShowOverlay(false);
