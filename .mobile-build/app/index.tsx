@@ -106,7 +106,7 @@ export default function MainScreen() {
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 6000);
     const stuckTimer = setTimeout(() => {
       if (!readyRef.current) setShowStuckHelp(true);
-    }, 35000);
+    }, 45000);
     const splashCap = setTimeout(() => {
       hideNativeSplashWhenWebReady();
     }, 25000);
@@ -134,6 +134,10 @@ export default function MainScreen() {
   const onShouldStartLoadWithRequest = (event: ShouldStartLoadRequest): boolean => {
     const { url, navigationType } = event;
     if (!url || url === "about:blank") return true;
+    if (url.startsWith("shepherdspath://app-ready")) {
+      onAppReady();
+      return false;
+    }
     if (hostAllowedInWebView(url)) return true;
     if (navigationType === "click" || url.startsWith("http")) {
       Linking.openURL(url).catch(() => {});
@@ -172,7 +176,7 @@ export default function MainScreen() {
         ref={webviewRef}
         source={{ uri: entryUrl }}
         style={styles.webview}
-        originWhitelist={["https://*", "http://*"]}
+        originWhitelist={["https://*", "http://*", "shepherdspath://*"]}
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled
@@ -227,7 +231,7 @@ export default function MainScreen() {
           setTimeout(() => webviewRef.current?.injectJavaScript(FORCE_REVEAL_JS), 9000);
           setTimeout(() => {
             if (!readyRef.current) onAppReady();
-          }, 18000);
+          }, 12000);
         }}
         onError={() => {
           setShowOverlay(false);

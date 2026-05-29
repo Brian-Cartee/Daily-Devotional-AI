@@ -152,6 +152,9 @@
         try {
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
+        try {
+          window.location.href = "shepherdspath://app-ready";
+        } catch (e2) {}
       }
 
       function hardReloadApp() {
@@ -184,7 +187,19 @@
         notify();
       });
 
-      setTimeout(forceShellOpen, 8000);
+      setTimeout(forceShellOpen, 5000);
+
+      /* Build 138: some WebViews drop postMessage — keep signaling until native overlay clears */
+      setTimeout(function () {
+        var pulses = 0;
+        var heartbeat = setInterval(function () {
+          pulses += 1;
+          try {
+            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+          } catch (e) {}
+          if (sent || pulses >= 20) clearInterval(heartbeat);
+        }, 1500);
+      }, 2500);
 
       setTimeout(function () {
         if (sent || hasMountedApp()) return;

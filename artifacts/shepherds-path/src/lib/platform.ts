@@ -29,10 +29,17 @@ export function removeNativeBootPlaceholder(): void {
 }
 
 function postNativeAppReady(): void {
+  const payload = JSON.stringify({ type: "app_ready" });
   try {
     (
       window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "app_ready" }));
+    ).ReactNativeWebView?.postMessage(payload);
+  } catch {
+    /* noop */
+  }
+  /* Backup when postMessage is ignored (some TestFlight WebView builds) */
+  try {
+    window.location.href = "shepherdspath://app-ready";
   } catch {
     /* noop */
   }
