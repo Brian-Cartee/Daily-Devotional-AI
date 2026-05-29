@@ -536,8 +536,7 @@ html[data-sp-shell="native"] {
 }
 
 html[data-sp-shell="native"] body {
-  min-height: 100% !important;
-  height: auto !important;
+  height: 100% !important;
   overflow-x: hidden !important;
   overflow-y: scroll !important;
   -webkit-overflow-scrolling: touch !important;

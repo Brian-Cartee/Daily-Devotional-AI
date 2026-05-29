@@ -24,7 +24,6 @@ import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
 import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
 import {
   applyHomeScrollToTop,
-  SCROLL_HOME_TOP_EVENT,
   captureHomeScrollGeneration,
   isExploreScrollCancelled,
 } from "@/lib/scrollPageToTop";
@@ -550,16 +549,6 @@ function LandingHomeInner() {
     if (!isReturningHome()) return;
     applyHomeScrollToTop();
     clearReturningHome();
-  }, []);
-
-  useEffect(() => {
-    const onForYouScroll = () => {
-      const path = window.location.pathname.replace(/\/$/, "") || "/";
-      if (path !== "/") return;
-      applyHomeScrollToTop();
-    };
-    window.addEventListener(SCROLL_HOME_TOP_EVENT, onForYouScroll);
-    return () => window.removeEventListener(SCROLL_HOME_TOP_EVENT, onForYouScroll);
   }, []);
 
   const [showEntryScreen, setShowEntryScreen] = useState(

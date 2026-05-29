@@ -9,62 +9,21 @@ function isNativeWebViewScrollShell(): boolean {
   return document.documentElement.dataset.spShell === "native";
 }
 
-function getNativeScrollY(): number {
-  return (
-    window.scrollY ||
-    window.pageYOffset ||
-    document.scrollingElement?.scrollTop ||
-    document.documentElement.scrollTop ||
-    document.body.scrollTop ||
-    0
-  );
+function nativeScrollElement(): HTMLElement {
+  return (document.scrollingElement as HTMLElement | null) || document.body;
 }
 
-function getHomeTopAnchor(): HTMLElement | null {
-  return (
-    document.getElementById(HOME_TOP_ANCHOR_ID) ||
-    (document.querySelector("[data-testid='home-threshold-hero']") as HTMLElement | null)
-  );
-}
-
-/** Sync every scroll root WKWebView may use (finger scroll ≠ body-only). */
-function setNativeScrollerTop(y: number, behavior: ScrollBehavior = "auto"): void {
-  const opts: ScrollToOptions = { top: y, left: 0, behavior };
-  const els: (Element | null | undefined)[] = [
-    document.scrollingElement,
-    document.documentElement,
-    document.body,
-    document.getElementById("root"),
-  ];
-  for (const el of els) {
-    if (!(el instanceof HTMLElement)) continue;
-    try {
-      el.scrollTo(opts);
-    } catch {
-      el.scrollTop = y;
-    }
-    el.scrollTop = y;
-  }
+/** Native shell: body is the viewport-height scroller — only touch that element. */
+function setNativeBodyScrollTop(y: number, behavior: ScrollBehavior = "auto"): void {
+  const scroller = nativeScrollElement();
   try {
-    window.scrollTo(opts);
+    scroller.scrollTo({ top: y, left: 0, behavior });
   } catch {
-    window.scrollTo(0, y);
+    scroller.scrollTop = y;
   }
-}
-
-/** Scroll to the hero anchor using the live scroll offset (works on any root). */
-function scrollNativeToHomeTop(behavior: ScrollBehavior = "auto"): void {
-  const anchor = getHomeTopAnchor();
-  if (!anchor) {
-    setNativeScrollerTop(0, behavior);
-    return;
-  }
-  const y = Math.max(0, Math.round(anchor.getBoundingClientRect().top + getNativeScrollY()));
-  setNativeScrollerTop(y, behavior);
-  try {
-    anchor.scrollIntoView({ block: "start", inline: "nearest", behavior });
-  } catch {
-    anchor.scrollIntoView(true);
+  scroller.scrollTop = y;
+  if (scroller !== document.body) {
+    document.body.scrollTop = y;
   }
 }
 
@@ -78,10 +37,9 @@ function scrollRoots(): Element[] {
   return out;
 }
 
-/** Scroll every known root — WKWebView native shell uses body as the momentum scroller. */
 export function scrollPageToTop(behavior: ScrollBehavior = "auto"): void {
   if (isNativeWebViewScrollShell()) {
-    setNativeScrollerTop(0, behavior);
+    setNativeBodyScrollTop(0, behavior);
     return;
   }
   try {
@@ -97,13 +55,14 @@ export function scrollPageToTop(behavior: ScrollBehavior = "auto"): void {
   }
 }
 
-/** scrollIntoView on web; native uses measured anchor offset. */
 export function scrollHomeAnchorIntoView(behavior: ScrollBehavior = "auto"): void {
   if (isNativeWebViewScrollShell()) {
-    scrollNativeToHomeTop(behavior);
+    setNativeBodyScrollTop(0, behavior);
     return;
   }
-  const anchor = getHomeTopAnchor();
+  const anchor =
+    document.getElementById(HOME_TOP_ANCHOR_ID) ||
+    document.querySelector("[data-testid='home-threshold-hero']");
   if (!anchor) return;
   try {
     anchor.scrollIntoView({ block: "start", inline: "nearest", behavior });
@@ -113,16 +72,14 @@ export function scrollHomeAnchorIntoView(behavior: ScrollBehavior = "auto"): voi
 }
 
 function flushNativeHomeScroll(behavior: ScrollBehavior = "auto"): void {
-  scrollNativeToHomeTop(behavior);
+  setNativeBodyScrollTop(0, behavior);
 }
 
 export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void {
   if (isNativeWebViewScrollShell()) {
     flushNativeHomeScroll(behavior);
     requestAnimationFrame(() => flushNativeHomeScroll(behavior));
-    window.setTimeout(() => flushNativeHomeScroll(behavior), 50);
-    window.setTimeout(() => flushNativeHomeScroll(behavior), 180);
-    window.setTimeout(() => flushNativeHomeScroll(behavior), 400);
+    window.setTimeout(() => flushNativeHomeScroll(behavior), 120);
     return;
   }
   scrollPageToTop(behavior);
@@ -133,7 +90,7 @@ export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void
   });
 }
 
-/** Core scroll — safe to call from listeners without re-posting to native. */
+/** Scroll home to top — no native bridge ping (avoids double-scroll). */
 export function applyHomeScrollToTop(): void {
   homeScrollCancel += 1;
   try {
@@ -151,7 +108,7 @@ export function applyHomeScrollToTop(): void {
   scrollPageToTopReliable("auto");
 }
 
-/** For You tab — scroll home to hero; notifies native shell once. */
+/** For You tab — scroll home to hero. */
 export function scrollHomeToTop(): void {
   applyHomeScrollToTop();
   try {

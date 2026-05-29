@@ -17,7 +17,7 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
-import { scrollHomeToTop } from "@/lib/scrollPageToTop";
+import { applyHomeScrollToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 
 const BOTTOM_NAV_ITEMS = [
@@ -199,11 +199,19 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
             const goHome = () => {
               markReturningHome();
               if (!active) setLocation("/");
-              scrollHomeToTop();
-              requestAnimationFrame(() => scrollHomeToTop());
-              window.setTimeout(() => scrollHomeToTop(), 80);
-              window.setTimeout(() => scrollHomeToTop(), 220);
-              window.setTimeout(() => scrollHomeToTop(), 450);
+              applyHomeScrollToTop();
+              requestAnimationFrame(() => applyHomeScrollToTop());
+              window.setTimeout(() => applyHomeScrollToTop(), 120);
+              window.setTimeout(() => {
+                applyHomeScrollToTop();
+                try {
+                  (
+                    window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+                  ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "scroll_home_top" }));
+                } catch {
+                  /* noop */
+                }
+              }, 280);
             };
 
             if (isHome) {

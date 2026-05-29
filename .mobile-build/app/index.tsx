@@ -408,7 +408,7 @@ export default function MainScreen() {
             const data = JSON.parse(e.nativeEvent.data);
             if (data.type === "scroll_home_top") {
               webviewRef.current?.injectJavaScript(
-                `(function(){try{var a=document.getElementById('sp-home-top')||document.querySelector('[data-testid="home-threshold-hero"]');var y=0;if(a){y=Math.max(0,Math.round(a.getBoundingClientRect().top+(window.scrollY||document.documentElement.scrollTop||document.body.scrollTop||0)));}var o={top:y,left:0,behavior:'auto'};var els=[document.scrollingElement,document.documentElement,document.body];for(var i=0;i<els.length;i++){var el=els[i];if(!el)continue;try{el.scrollTo(o);}catch(e){}el.scrollTop=y;}window.scrollTo(o);if(a){try{a.scrollIntoView({block:'start',inline:'nearest',behavior:'auto'});}catch(e){a.scrollIntoView(true);}}catch(e){}true;})();`,
+                `(function(){try{var s=document.scrollingElement||document.body;s.scrollTop=0;try{s.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){}}catch(e){}true;})();`,
               );
             }
             if (data.type === "sp_diag") {
