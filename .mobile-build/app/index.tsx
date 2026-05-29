@@ -104,13 +104,13 @@ export default function MainScreen() {
     setShowStuckHelp(false);
     setShowBlankRecovery(false);
 
-    const slowTimer = setTimeout(() => setShowSlowOptions(true), 4000);
+    const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
     const stuckTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) setShowStuckHelp(true);
-    }, 8000);
+    }, 35000);
     const blankTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) setShowBlankRecovery(true);
-    }, 10000);
+    }, 40000);
     const probeInterval = setInterval(() => {
       if (!webUiConfirmedRef.current) probeWebReady();
     }, 1500);
@@ -132,6 +132,7 @@ export default function MainScreen() {
     readyRef.current = false;
     webUiConfirmedRef.current = false;
     setAppReady(false);
+    webviewRef.current?.clearCache?.(true);
     setEntryUrl(shellEntryUrl());
   }, []);
 
@@ -194,7 +195,7 @@ export default function MainScreen() {
         mediaPlaybackRequiresUserAction={false}
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
-        cacheEnabled
+        cacheEnabled={false}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {

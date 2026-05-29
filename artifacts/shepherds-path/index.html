@@ -141,6 +141,7 @@
         if (!hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
         document.getElementById("sp-boot-splash")?.remove();
+        document.getElementById("sp-native-recovery")?.remove();
         sent = true;
         try {
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
@@ -148,17 +149,27 @@
         } catch (e) {}
       }
 
+      function setBootStatus(text) {
+        var el = document.getElementById("sp-boot-splash-status");
+        if (el) el.textContent = text;
+      }
+
+      /** Overlay only — never replace #root (that kills React mid-bundle on slow WebViews). */
       function showWebReloadScreen() {
-        var splash = document.getElementById("sp-boot-splash");
-        if (splash) splash.style.display = "none";
-        var root = document.getElementById("root");
-        if (!root) return;
-        if (root.querySelector("[data-sp-reload-screen]")) return;
-        root.innerHTML =
-          '<div data-sp-reload-screen style="min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">' +
+        if (document.getElementById("sp-native-recovery")) return;
+        setBootStatus("Still loading\u2026");
+        var layer = document.createElement("div");
+        layer.id = "sp-native-recovery";
+        layer.style.cssText =
+          "position:fixed;inset:0;z-index:100000;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:rgba(13,6,18,0.97);color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;";
+        layer.innerHTML =
           '<p style="font-size:20px;font-weight:700;margin:0 0 10px;">Having trouble loading</p>' +
-          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">Tap Reload to try again.</p>' +
-          '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button></div>';
+          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">The app may still be loading. Tap Reload to try again.</p>' +
+          '<button type="button" id="sp-native-reload-btn" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button>';
+        document.body.appendChild(layer);
+        document.getElementById("sp-native-reload-btn")?.addEventListener("click", function () {
+          hardReloadApp();
+        });
       }
 
       function hardReloadApp() {
@@ -193,8 +204,13 @@
 
       setTimeout(function () {
         if (hasVisibleAppUi()) return;
+        setBootStatus("Still loading\u2026");
+      }, 8000);
+
+      setTimeout(function () {
+        if (hasVisibleAppUi()) return;
         showWebReloadScreen();
-      }, 6000);
+      }, 30000);
 
       function hookModuleScript() {
         var mod = document.querySelector('script[type="module"]');
@@ -207,12 +223,7 @@
         }
         mod.addEventListener("load", onModuleReady);
         mod.addEventListener("error", function () {
-          var root = document.getElementById("root");
-          if (!root) return;
-          root.innerHTML =
-            '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:#0d0612;color:#f4efe6;font-family:system-ui,sans-serif;">' +
-            '<p style="font-size:18px;font-weight:600;margin:0 0 12px;">Could not load the app</p>' +
-            '<button type="button" onclick="location.reload()" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;">Try again</button></div>';
+          showWebReloadScreen();
         });
         if (document.readyState === "complete") {
           onModuleReady();
