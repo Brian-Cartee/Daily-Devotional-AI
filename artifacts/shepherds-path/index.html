@@ -409,15 +409,34 @@
         for (i = 0; i < scripts.length; i++) {
           if (scripts[i].type === "module") return;
         }
-        var preload = document.querySelector('link[rel="modulepreload"]');
-        if (!preload) return;
-        var src = preload.getAttribute("href");
-        if (!src) return;
-        var s = document.createElement("script");
-        s.type = "module";
-        s.src = src;
-        document.body.appendChild(s);
-        if (window.__spDiag) window.__spDiag("module_injected_page", src);
+        var src = null;
+        var links = document.getElementsByTagName("link");
+        for (i = 0; i < links.length; i++) {
+          if (links[i].rel === "modulepreload" && /\\/assets\\/index-/.test(links[i].href || "")) {
+            src = links[i].getAttribute("href");
+            break;
+          }
+        }
+        function inject(srcUrl) {
+          if (!srcUrl) return;
+          var s = document.createElement("script");
+          s.type = "module";
+          s.src = srcUrl;
+          document.head.appendChild(s);
+          if (window.__spDiag) window.__spDiag("module_injected_page", srcUrl);
+        }
+        if (src) {
+          inject(src);
+          return;
+        }
+        fetch("/native-manifest.json", { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (j) {
+            if (j && j.mainJs) inject(j.mainJs);
+          })
+          .catch(function () {});
       }
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", ensureModuleFromPreload);

@@ -67,37 +67,48 @@ const NATIVE_BOOTSTRAP_JS = `(function(){
       }catch(e){}
     }
     if(!window.__spDiag){window.__spDiag=diag;}
-    diag('native_bootstrap','readyState='+document.readyState);
-    var scripts=document.getElementsByTagName('script');
-    var mod=null;
-    var i;
-    for(i=0;i<scripts.length;i++){
-      if(scripts[i].type==='module'){mod=scripts[i];break;}
+    if(window.__spBootstrapDone){return true;}
+    function loadModule(src){
+      if(!src||window.__spModuleSrc===src){return;}
+      window.__spModuleSrc=src;
+      diag('module_load_start',src);
+      var s=document.createElement('script');
+      s.type='module';
+      s.src=src;
+      s.addEventListener('load',function(){window.__spBootstrapDone=true;diag('module_script_loaded',src);});
+      s.addEventListener('error',function(){diag('module_script_error',src);});
+      document.head.appendChild(s);
     }
-    var preload=document.querySelector('link[rel="modulepreload"]');
-    var src=mod?mod.getAttribute('src'):(preload?preload.getAttribute('href'):'');
-    if(!src){
-      diag('module_missing','no module tag or modulepreload');
-      return true;
+    function fromDom(){
+      var scripts=document.getElementsByTagName('script');
+      var i;
+      for(i=0;i<scripts.length;i++){
+        if(scripts[i].type==='module'){return scripts[i].getAttribute('src');}
+      }
+      var links=document.getElementsByTagName('link');
+      for(i=0;i<links.length;i++){
+        if(links[i].rel==='modulepreload'&&links[i].href&&/\\/assets\\/index-/.test(links[i].href)){
+          return links[i].getAttribute('href');
+        }
+      }
+      return null;
     }
-    if(!mod){
-      diag('module_inject',src);
-      mod=document.createElement('script');
-      mod.type='module';
-      mod.src=src;
-      document.body.appendChild(mod);
-    }else{
-      diag('module_tag_present',src);
-    }
-    if(!mod._spHooked){
-      mod._spHooked=true;
-      mod.addEventListener('load',function(){diag('module_script_loaded',src);});
-      mod.addEventListener('error',function(){diag('module_script_error',src);});
-    }
+    var domSrc=fromDom();
+    if(domSrc){diag('module_from_dom',domSrc);loadModule(domSrc);return true;}
+    diag('module_dom_missing','fetching manifest');
+    fetch('/native-manifest.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+      if(j&&j.mainJs){diag('module_from_manifest',j.mainJs);loadModule(j.mainJs);return;}
+      throw new Error('empty manifest');
+    }).catch(function(e1){
+      diag('manifest_fetch_failed',String(e1));
+      fetch(location.href.split('#')[0],{cache:'no-store'}).then(function(r){return r.text();}).then(function(html){
+        var m=html.match(/modulepreload" href="(\\/assets\\/index-[^"]+\\.js)"/);
+        if(m&&m[1]){diag('module_from_html',m[1]);loadModule(m[1]);return;}
+        diag('html_parse_failed','no index chunk in html');
+      }).catch(function(e2){diag('html_fetch_failed',String(e2));});
+    });
   }catch(e){
-    try{
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'sp_diag',event:'bootstrap_error',detail:String(e),ts:Date.now()}));
-    }catch(e2){}
+    try{b.postMessage(JSON.stringify({type:'sp_diag',event:'bootstrap_error',detail:String(e),ts:Date.now()}));}catch(e3){}
   }
   true;
 })();`;
