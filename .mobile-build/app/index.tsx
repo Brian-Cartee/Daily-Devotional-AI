@@ -57,6 +57,30 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
+const INJECT_AFTER_LOAD_JS = `(function(){
+  try{
+    var b=window.ReactNativeWebView;
+    if(!b){return true;}
+    var mod=document.querySelector('script[type="module"]');
+    b.postMessage(JSON.stringify({
+      type:'sp_diag',
+      event:'inject_after_load',
+      detail:'readyState='+document.readyState+(mod?' module='+mod.getAttribute('src'):' NO_MODULE'),
+      ts:Date.now()
+    }));
+    if(typeof window.__spDiag==='function'){
+      window.__spDiag('inject_bridge_alive','1');
+    }else{
+      b.postMessage(JSON.stringify({type:'sp_diag',event:'bridge_not_started',detail:'__spDiag missing',ts:Date.now()}));
+    }
+  }catch(e){
+    try{
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'sp_diag',event:'inject_error',detail:String(e),ts:Date.now()}));
+    }catch(e2){}
+  }
+  true;
+})();`;
+
 const PULL_DIAG_JS = `(function(){
   try{
     var logs=window.__spDiagLogs||[];
@@ -337,8 +361,14 @@ export default function MainScreen() {
         )}
         onLoadEnd={() => {
           pushNativeDiag("onLoadEnd", entryUrl);
-          const delays = [400, 1200, 2500, 5000, 8000, 12000];
-          delays.forEach((ms) => setTimeout(probeWebReady, ms));
+          webviewRef.current?.injectJavaScript(INJECT_AFTER_LOAD_JS);
+          const delays = [200, 400, 1200, 2500, 5000, 8000, 12000];
+          delays.forEach((ms) => {
+            setTimeout(() => {
+              webviewRef.current?.injectJavaScript(INJECT_AFTER_LOAD_JS);
+              probeWebReady();
+            }, ms);
+          });
         }}
         onError={(e) => {
           pushNativeDiag("onError", String(e.nativeEvent.description || "unknown"));

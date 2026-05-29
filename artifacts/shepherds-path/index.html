@@ -102,8 +102,9 @@
     <!-- SP_NATIVE_BRIDGE_START -->
     <script>
     (function () {
-      var bridge = window.ReactNativeWebView;
-      if (!bridge) return;
+      function startNativeBridge(bridge) {
+      if (window.__spNativeBridgeStarted) return;
+      window.__spNativeBridgeStarted = true;
 
       document.documentElement.setAttribute("data-sp-shell", "native");
       document.documentElement.classList.add("sp-native-shell");
@@ -354,6 +355,28 @@
         attach(0);
       }
       hookModuleScript();
+      }
+
+      function tryStartNativeBridge() {
+        var bridge = window.ReactNativeWebView;
+        if (bridge) {
+          startNativeBridge(bridge);
+          return true;
+        }
+        return false;
+      }
+
+      if (!tryStartNativeBridge()) {
+        var bridgeAttempts = 0;
+        var bridgeTimer = setInterval(function () {
+          bridgeAttempts += 1;
+          if (tryStartNativeBridge() || bridgeAttempts >= 120) {
+            clearInterval(bridgeTimer);
+          }
+        }, 50);
+        document.addEventListener("DOMContentLoaded", tryStartNativeBridge);
+        window.addEventListener("load", tryStartNativeBridge);
+      }
     })();
     </script>
     <!-- SP_NATIVE_BRIDGE_END -->
