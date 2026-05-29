@@ -57,7 +57,29 @@
   </script>
   <style>
     html[data-sp-shell="native"],
-    html[data-sp-shell="native"] body { background: #0d0612 !important; }
+    html[data-sp-shell="native"] body {
+      background: #0d0612 !important;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    html[data-sp-shell="native"] #root { min-height: 100dvh; overflow: visible; }
+    html[data-sp-shell="native"] button,
+    html[data-sp-shell="native"] a,
+    html[data-sp-shell="native"] input,
+    html[data-sp-shell="native"] textarea,
+    html[data-sp-shell="native"] select,
+    html[data-sp-shell="native"] label,
+    html[data-sp-shell="native"] [role="button"],
+    html[data-sp-shell="native"] .cursor-pointer {
+      touch-action: pan-x pan-y pinch-zoom;
+    }
+    html[data-sp-shell="native"] .overflow-x-auto,
+    html[data-sp-shell="native"] .overflow-y-auto {
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y pinch-zoom;
+    }
     html[data-sp-shell="native"] #sp-boot-splash {
       display: flex !important;
       visibility: visible !important;
