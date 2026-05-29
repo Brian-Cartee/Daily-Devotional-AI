@@ -63,7 +63,8 @@ import { WitnessLetterCard } from "@/components/witness/WitnessLetterCard";
 import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
-import { HomePathShortcuts } from "@/components/HomePathShortcuts";
+import { HomeHeavyMomentLink } from "@/components/HomeHeavyMomentLink";
+import { HomeMorePathsLink, HomePathShortcuts } from "@/components/HomePathShortcuts";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
@@ -621,7 +622,8 @@ function LandingHomeInner() {
     !engagementBusy &&
     !isLateNight();
   const carryToday = getCarryToday();
-  const chapelExploreCollapsed = chapelWeekFocus || (daysWithApp < 3 && visitCount < 2);
+  const chapelExploreCollapsed = daysWithApp < 14;
+  const showSecondaryHomeCards = daysWithApp >= 3;
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -692,6 +694,7 @@ function LandingHomeInner() {
       />
 
       <ThresholdHero />
+      <HomeHeavyMomentLink />
 
       {thresholdWelcome && (
         <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
@@ -749,7 +752,7 @@ function LandingHomeInner() {
             </p>
           )}
 
-          <WitnessLetterCard />
+          {showSecondaryHomeCards && <WitnessLetterCard />}
 
           <LamentSeasonHomeCard />
 
@@ -789,22 +792,12 @@ function LandingHomeInner() {
             </div>
           )}
 
-          {/* Streak whisper — quiet acknowledgment of consistency */}
-          {streak >= 2 && !isLateNight() && !isLamentSeasonActive() && (
-            <div className="flex items-center gap-1.5 px-0.5 -mt-0.5">
-              <Flame className="w-3 h-3 text-amber-400" />
-              <span className="text-[11px] font-semibold tracking-wide" style={{ color: "rgba(251,191,36,0.7)" }}>
-                Day {streak} in a row
-              </span>
-            </div>
-          )}
-
           {/* ══ Today's path — chapel first, marketplace later ══ */}
           <div className="flex flex-col gap-3">
 
           <DevotionalCard />
           <PrayerClosetHomeCard />
-          <HomePathShortcuts />
+          {chapelWeekFocus ? <HomePathShortcuts /> : <HomeMorePathsLink />}
 
           <AnimatePresence>
             {showWalkthrough && (
@@ -893,7 +886,9 @@ function LandingHomeInner() {
           })()}
 
           <HomeDailyTouchpoint sessionId={sessionId} />
-          <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
+          {showSecondaryHomeCards && (
+            <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
+          )}
 
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">
@@ -907,7 +902,7 @@ function LandingHomeInner() {
           </div>
 
           {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}
-          {new Date().getHours() >= 17 && <Link href="/alignment">
+          {showSecondaryHomeCards && new Date().getHours() >= 17 && <Link href="/alignment">
             <div
               data-testid="card-walk-today-entry"
               className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"

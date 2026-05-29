@@ -68,7 +68,7 @@ export function pickHomeEngagementSlot(daysWithApp: number): HomeEngagementSlot 
   if (wouldShowReturningUserCard()) return "returning";
   if (shouldShowFirstStepsCard(daysWithApp)) return "first-steps";
   if (wouldShowWalkMilestoneCard(daysWithApp)) return "milestone";
-  if (wouldShowNotificationNudgeCard()) return "notif";
+  /* Reminders: ⋯ menu only — keeps home calm */
   if (wouldShowTheReturnCard()) return "return-phase";
   if (wouldShowHomeHeartLink()) return "talk-link";
   return null;

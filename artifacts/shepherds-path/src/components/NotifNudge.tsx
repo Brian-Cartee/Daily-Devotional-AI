@@ -35,7 +35,13 @@ export function SimpleNotifNudge() {
 
   const handleYes = async () => {
     setStatus("loading");
-    const ok = await subscribePush({ morningEnabled: true, eveningEnabled: false, middayEnabled: false, streakReminder: true, weeklySummary: false });
+    const ok = await subscribePush({
+      morningEnabled: true,
+      eveningEnabled: false,
+      middayEnabled: false,
+      streakReminder: false,
+      weeklySummary: false,
+    });
     if (ok) {
       setStatus("done");
       // Also mark the deep nudge as done so they won't be asked again

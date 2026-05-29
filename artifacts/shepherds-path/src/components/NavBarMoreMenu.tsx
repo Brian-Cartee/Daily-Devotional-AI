@@ -140,8 +140,8 @@ export function NavBarMoreMenu({
           <MenuLabel>Stay connected</MenuLabel>
           <MenuRow
             icon={Bell}
-            label="Reminders & notifications"
-            hint="Schedule prayer nudges"
+            label="My rhythm"
+            hint="Gentle reminders & morning email"
             testId="button-reminders-open"
             onClick={() => {
               onClose();

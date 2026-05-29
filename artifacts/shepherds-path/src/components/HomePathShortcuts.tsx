@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
+import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
 import { ShortcutPathIcon, type ShortcutIconVariant } from "@/components/ShortcutPathIcon";
 
 const SHORTCUTS: {
@@ -34,16 +35,9 @@ const SHORTCUTS: {
     testid: "shortcut-journeys",
     accent: "from-indigo-500/10 to-violet-500/6 border-indigo-500/20",
   },
-  {
-    href: "/invite",
-    iconVariant: "invite",
-    label: "Invite & earn Pro",
-    desc: "Friends get a trial; you stack bonus Pro days",
-    testid: "shortcut-invite",
-    accent: "from-amber-500/12 to-orange-500/8 border-amber-500/25",
-  },
 ] as const;
 
+/** First week only — hero doors are simplified; these paths help discovery. */
 export function HomePathShortcuts() {
   return (
     <div className="flex flex-col gap-2" data-testid="home-path-shortcuts">
@@ -63,5 +57,32 @@ export function HomePathShortcuts() {
         </Link>
       ))}
     </div>
+  );
+}
+
+/** When hero doors are visible — one link instead of duplicating Talk it through. */
+export function HomeMorePathsLink() {
+  const openExplore = () => {
+    try {
+      localStorage.setItem(HOME_EXPLORE_OPEN_KEY, "1");
+    } catch {
+      /* noop */
+    }
+    window.dispatchEvent(new Event("sp-open-home-explore"));
+    requestAnimationFrame(() => {
+      document.getElementById("explore-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={openExplore}
+      data-testid="link-more-ways-to-walk"
+      className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-zinc-900/35 px-4 py-3 text-[13px] font-semibold text-foreground/85 hover:bg-zinc-900/50 hover:border-white/15 transition-colors"
+    >
+      More ways to walk
+      <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
+    </button>
   );
 }

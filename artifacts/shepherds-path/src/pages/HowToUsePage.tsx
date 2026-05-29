@@ -201,11 +201,11 @@ const faqs = [
   },
   {
     q: "Reminders?",
-    a: "Tap the bell at the top for push or email reminders (morning devotional, evening reflection, and more). Allow notifications when your phone asks — you can change times anytime in that panel.",
+    a: "Open ⋯ (top right) → My rhythm for phone reminders and optional daily email. Allow notifications when your device asks — pick one morning time to start; you can customize more under Customize in that panel.",
   },
   {
     q: "What if I miss a day?",
-    a: "Your streak may reset, but your journal and paths remain. The door stays open — come back when you can.",
+    a: "Nothing was lost — your journal and paths remain. The door stays open; come back when you can.",
   },
   {
     q: "Why do you ask for support or gifts?",

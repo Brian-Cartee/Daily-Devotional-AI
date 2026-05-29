@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -57,6 +57,19 @@ export function HomeExploreSection({ chapelFirstWeek = false }: Props) {
       return next;
     });
   };
+
+  useEffect(() => {
+    const onOpen = () => {
+      setExpanded(true);
+      try {
+        localStorage.setItem(EXPLORE_KEY, "1");
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener("sp-open-home-explore", onOpen);
+    return () => window.removeEventListener("sp-open-home-explore", onOpen);
+  }, []);
 
   return (
     <div id="explore-section" className="mt-4">

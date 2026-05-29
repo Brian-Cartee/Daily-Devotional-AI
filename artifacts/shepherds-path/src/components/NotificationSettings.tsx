@@ -22,11 +22,11 @@ interface PushSettings {
 const DEFAULT_SETTINGS: PushSettings = {
   morningEnabled: true,
   morningTime: "07:00",
-  eveningEnabled: true,
+  eveningEnabled: false,
   eveningTime: "20:00",
   middayEnabled: false,
-  streakReminder: true,
-  weeklySummary: true,
+  streakReminder: false,
+  weeklySummary: false,
 };
 
 const MORNING_TIMES = ["05:00","06:00","07:00","08:00","09:00","10:00"];
@@ -268,9 +268,9 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         {/* ── Header ── */}
         <div className="px-5 pt-5 pb-4 flex items-center justify-between sticky top-0 bg-card border-b border-border/30 z-10">
           <div>
-            <h2 className="text-[16px] font-bold text-foreground">Reminders</h2>
+            <h2 className="text-[16px] font-bold text-foreground">My rhythm</h2>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              Phone reminders · optional daily email
+              Gentle phone reminders · optional morning email
             </p>
           </div>
           <div className="flex items-center gap-2">
