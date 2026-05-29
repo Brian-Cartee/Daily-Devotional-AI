@@ -13,40 +13,9 @@ html, body {
   text-size-adjust: 100%;
 }
 
-/* App Store WebView shell — safe areas + easier vertical scroll in WKWebView */
-html[data-sp-shell="native"],
-html[data-sp-shell="native"] body {
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
+/* App Store WebView shell — safe areas (scroll tuning at end of file, after global touch rules) */
 html[data-sp-shell="native"] body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-html[data-sp-shell="native"] #root {
-  min-height: 100dvh;
-  overflow: visible;
-}
-
-/* manipulation blocks pan until tap resolves — bad for scroll starting on cards/links */
-html[data-sp-shell="native"] button,
-html[data-sp-shell="native"] a,
-html[data-sp-shell="native"] input,
-html[data-sp-shell="native"] textarea,
-html[data-sp-shell="native"] select,
-html[data-sp-shell="native"] label,
-html[data-sp-shell="native"] [role="button"],
-html[data-sp-shell="native"] .cursor-pointer {
-  touch-action: pan-x pan-y pinch-zoom;
-}
-
-html[data-sp-shell="native"] .overflow-x-auto,
-html[data-sp-shell="native"] .overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y pinch-zoom;
 }
 
 /* Remove Android tap highlight flash on all interactive elements */
@@ -558,4 +527,55 @@ button, a, input, textarea, select, [role="button"] {
   pointer-events: none;
   z-index: 20;
   box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
+}
+
+/*
+ * Native WebView scroll — MUST stay last so it overrides touch-action: manipulation
+ * on buttons/links above. Tuned for easier vertical pan without feeling "loose".
+ */
+html[data-sp-shell="native"],
+html[data-sp-shell="native"] body {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y pinch-zoom !important;
+}
+
+html[data-sp-shell="native"] #root {
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+html[data-sp-shell="native"] * {
+  touch-action: pan-y pinch-zoom !important;
+}
+
+html[data-sp-shell="native"] .overflow-x-auto,
+html[data-sp-shell="native"] .snap-x {
+  touch-action: pan-x pan-y pinch-zoom !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html[data-sp-shell="native"] .snap-x,
+html[data-sp-shell="native"] .snap-proximity,
+html[data-sp-shell="native"] .snap-mandatory {
+  scroll-snap-type: none !important;
+}
+
+html[data-sp-shell="native"] .snap-start {
+  scroll-snap-align: none !important;
+}
+
+/* Press-shrink fights vertical scroll on cards — keep tap, drop scale-while-dragging */
+html[data-sp-shell="native"] [class*="active:scale"]:active {
+  transform: none !important;
+}
+
+html[data-sp-shell="native"] .transition-transform:active {
+  transition-duration: 0.05s !important;
+}
+
+html[data-sp-shell="native"] .touch-none {
+  touch-action: none !important;
 }
