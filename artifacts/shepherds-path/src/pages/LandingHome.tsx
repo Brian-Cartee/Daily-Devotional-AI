@@ -997,7 +997,7 @@ function LandingHomeInner() {
           </Link>}
 
           {(!chapelWeekFocus || inNativeApp) && (
-            <HomeExploreSection startExpanded={inNativeApp} />
+            <HomeExploreSection />
           )}
 
           {showProNudge && (

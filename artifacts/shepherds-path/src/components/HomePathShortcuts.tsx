@@ -81,7 +81,7 @@ export function HomeMorePathsLink() {
       data-testid="link-more-ways-to-walk"
       className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-zinc-900/35 px-4 py-3 text-[13px] font-semibold text-foreground/85 hover:bg-zinc-900/50 hover:border-white/15 transition-colors"
     >
-      More ways to walk
+      Browse all 16 paths
       <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
     </button>
   );
