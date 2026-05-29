@@ -408,7 +408,7 @@ export default function MainScreen() {
             const data = JSON.parse(e.nativeEvent.data);
             if (data.type === "scroll_home_top") {
               webviewRef.current?.injectJavaScript(
-                `(function(){try{window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;var a=document.getElementById('sp-home-top');if(a)a.scrollIntoView({block:'start',behavior:'auto'});}catch(e){}true;})();`,
+                `(function(){try{var y=0;var o={top:y,left:0,behavior:'auto'};document.body.scrollTo(o);document.body.scrollTop=y;document.documentElement.scrollTop=y;window.scrollTo(o);}catch(e){}true;})();`,
               );
             }
             if (data.type === "sp_diag") {

@@ -5,6 +5,27 @@ export const HOME_TOP_ANCHOR_ID = "sp-home-top";
 
 let homeScrollCancel = 0;
 
+function isNativeWebViewScrollShell(): boolean {
+  return document.documentElement.dataset.spShell === "native";
+}
+
+/** iOS WKWebView: body is the momentum scroller — sync all roots WK might use. */
+function setNativeScrollerTop(y: number, behavior: ScrollBehavior = "auto"): void {
+  const opts: ScrollToOptions = { top: y, left: 0, behavior };
+  try {
+    document.body.scrollTo(opts);
+  } catch {
+    document.body.scrollTop = y;
+  }
+  document.body.scrollTop = y;
+  document.documentElement.scrollTop = y;
+  try {
+    window.scrollTo(opts);
+  } catch {
+    window.scrollTo(0, y);
+  }
+}
+
 function scrollRoots(): Element[] {
   const out: Element[] = [];
   const se = document.scrollingElement;
@@ -17,15 +38,8 @@ function scrollRoots(): Element[] {
 
 /** Scroll every known root — WKWebView native shell uses body as the momentum scroller. */
 export function scrollPageToTop(behavior: ScrollBehavior = "auto"): void {
-  const nativeShell = document.documentElement.dataset.spShell === "native";
-  if (nativeShell) {
-    try {
-      document.body.scrollTo({ top: 0, left: 0, behavior });
-    } catch {
-      document.body.scrollTop = 0;
-    }
-    document.body.scrollTop = 0;
-    document.body.scrollLeft = 0;
+  if (isNativeWebViewScrollShell()) {
+    setNativeScrollerTop(0, behavior);
     return;
   }
   try {
@@ -41,8 +55,12 @@ export function scrollPageToTop(behavior: ScrollBehavior = "auto"): void {
   }
 }
 
-/** scrollIntoView is the most reliable path on iOS when scrollTo misses. */
+/** scrollIntoView on web; native shell scrolls body to 0 (hero anchor is page top). */
 export function scrollHomeAnchorIntoView(behavior: ScrollBehavior = "auto"): void {
+  if (isNativeWebViewScrollShell()) {
+    setNativeScrollerTop(0, behavior);
+    return;
+  }
   const anchor =
     document.getElementById(HOME_TOP_ANCHOR_ID) ||
     document.querySelector("[data-testid='home-threshold-hero']");
@@ -54,7 +72,18 @@ export function scrollHomeAnchorIntoView(behavior: ScrollBehavior = "auto"): voi
   }
 }
 
+function flushNativeHomeScroll(behavior: ScrollBehavior = "auto"): void {
+  setNativeScrollerTop(0, behavior);
+}
+
 export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void {
+  if (isNativeWebViewScrollShell()) {
+    flushNativeHomeScroll(behavior);
+    requestAnimationFrame(() => flushNativeHomeScroll(behavior));
+    window.setTimeout(() => flushNativeHomeScroll(behavior), 50);
+    window.setTimeout(() => flushNativeHomeScroll(behavior), 180);
+    return;
+  }
   scrollPageToTop(behavior);
   scrollHomeAnchorIntoView(behavior);
   requestAnimationFrame(() => {
