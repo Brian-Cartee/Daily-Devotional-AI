@@ -82,6 +82,11 @@ function buildNativeBootstrapJs(appOrigin: string, mainJs = ""): string {
     function loadModule(src){
       var url=absUrl(src);
       if(!url||window.__spModuleSrc===url){return;}
+      var existing=document.querySelector('script[type="module"]');
+      if(existing){
+        var ex=existing.getAttribute('src')||'';
+        if(ex&&absUrl(ex)===url){diag('module_already_in_dom',url);window.__spModuleSrc=url;return;}
+      }
       window.__spModuleSrc=url;
       diag('module_load_start',url);
       var s=document.createElement('script');
@@ -99,7 +104,7 @@ function buildNativeBootstrapJs(appOrigin: string, mainJs = ""): string {
       }
       var links=document.getElementsByTagName('link');
       for(i=0;i<links.length;i++){
-        if(links[i].rel==='modulepreload'&&links[i].href&&/\\/assets\\/index-/.test(links[i].href)){
+        if(links[i].rel==='modulepreload'&&links[i].href&&links[i].href.indexOf('/assets/index-')>=0){
           return links[i].getAttribute('href');
         }
       }

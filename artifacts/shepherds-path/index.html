@@ -412,7 +412,7 @@
         var src = null;
         var links = document.getElementsByTagName("link");
         for (i = 0; i < links.length; i++) {
-          if (links[i].rel === "modulepreload" && /\\/assets\\/index-/.test(links[i].href || "")) {
+          if (links[i].rel === "modulepreload" && (links[i].href || "").indexOf("/assets/index-") !== -1) {
             src = links[i].getAttribute("href");
             break;
           }
