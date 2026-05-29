@@ -393,7 +393,9 @@ export default function MainScreen() {
         sharedCookiesEnabled
         allowsBackForwardNavigationGestures
         pullToRefreshEnabled={false}
-        {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : {})}
+        scrollEnabled
+        bounces
+        {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
         allowsFullscreenVideo

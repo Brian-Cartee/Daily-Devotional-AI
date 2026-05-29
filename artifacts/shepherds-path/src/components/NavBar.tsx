@@ -120,9 +120,11 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
-          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center pointer-events-auto">
-            <ConvictionTopWhisper />
-            <div className="ml-auto shrink-0 relative">
+          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center pointer-events-none">
+            <div className="pointer-events-auto shrink-0">
+              <ConvictionTopWhisper />
+            </div>
+            <div className="ml-auto shrink-0 relative pointer-events-auto">
               <NavBarMoreMenu
                 onOpenConviction={openConvictionPanel}
                 menuRef={moreRef}

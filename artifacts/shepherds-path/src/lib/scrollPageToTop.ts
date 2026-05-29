@@ -15,8 +15,19 @@ function scrollRoots(): Element[] {
   return out;
 }
 
-/** Scroll every known root — WKWebView may use body OR visual viewport. */
+/** Scroll every known root — WKWebView native shell uses body as the momentum scroller. */
 export function scrollPageToTop(behavior: ScrollBehavior = "auto"): void {
+  const nativeShell = document.documentElement.dataset.spShell === "native";
+  if (nativeShell) {
+    try {
+      document.body.scrollTo({ top: 0, left: 0, behavior });
+    } catch {
+      document.body.scrollTop = 0;
+    }
+    document.body.scrollTop = 0;
+    document.body.scrollLeft = 0;
+    return;
+  }
   try {
     window.scrollTo({ top: 0, left: 0, behavior });
   } catch {
@@ -50,18 +61,6 @@ export function scrollPageToTopReliable(behavior: ScrollBehavior = "auto"): void
     scrollPageToTop(behavior);
     scrollHomeAnchorIntoView(behavior);
   });
-  window.setTimeout(() => {
-    scrollPageToTop(behavior);
-    scrollHomeAnchorIntoView(behavior);
-  }, 80);
-  window.setTimeout(() => {
-    scrollPageToTop(behavior);
-    scrollHomeAnchorIntoView(behavior);
-  }, 220);
-  window.setTimeout(() => {
-    scrollPageToTop(behavior);
-    scrollHomeAnchorIntoView(behavior);
-  }, 450);
 }
 
 /** For You tab — always true top; cancels pending explore scrolls. */

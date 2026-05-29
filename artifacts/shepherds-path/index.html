@@ -56,17 +56,32 @@
     })();
   </script>
   <style>
+    html[data-sp-shell="native"] {
+      height: 100% !important;
+      overflow: hidden !important;
+      touch-action: auto !important;
+    }
     html[data-sp-shell="native"] body {
+      height: 100% !important;
+      overflow-x: hidden !important;
+      overflow-y: scroll !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: auto !important;
       padding-bottom: env(safe-area-inset-bottom, 0px);
-      -webkit-overflow-scrolling: touch;
       background: #0d0612 !important;
     }
+    html[data-sp-shell="native"] #root { min-height: 100%; overflow: visible; }
+    html[data-sp-shell="native"] button,
+    html[data-sp-shell="native"] a,
+    html[data-sp-shell="native"] [role="button"],
+    html[data-sp-shell="native"] .cursor-pointer { touch-action: auto !important; }
     html[data-sp-shell="native"] .snap-x,
     html[data-sp-shell="native"] .snap-proximity { scroll-snap-type: none !important; }
     html[data-sp-shell="native"] [class*="active:scale"]:active { transform: none !important; }
     html[data-sp-shell="native"] nav[aria-label="App menu"] { z-index: 200 !important; pointer-events: none !important; }
     html[data-sp-shell="native"] nav[aria-label="App menu"] [data-testid="button-more-menu"],
-    html[data-sp-shell="native"] nav[aria-label="App menu"] [role="menu"] { pointer-events: auto !important; }
+    html[data-sp-shell="native"] nav[aria-label="App menu"] [role="menu"],
+    html[data-sp-shell="native"] nav[aria-label="App menu"] [data-testid="button-conviction-tab"] { pointer-events: auto !important; }
     html[data-sp-shell="native"] #sp-boot-splash {
       display: flex !important;
       visibility: visible !important;

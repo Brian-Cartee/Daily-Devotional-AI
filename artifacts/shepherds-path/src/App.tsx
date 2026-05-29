@@ -67,12 +67,13 @@ import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
 import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { scrollPageToTopReliable } from "@/lib/scrollPageToTop";
+import { scrollPageToTop } from "@/lib/scrollPageToTop";
 
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
-    scrollPageToTopReliable("auto");
+    if (location === "/" || location === "") return;
+    scrollPageToTop("auto");
   }, [location]);
   return null;
 }
