@@ -122,7 +122,7 @@ export function ThresholdHero() {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(8,4,18,0.42) 0%, rgba(8,4,18,0.08) 18%, rgba(8,4,18,0) 42%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
+              "linear-gradient(to bottom, rgba(8,4,18,0.72) 0%, rgba(8,4,18,0.28) 14%, rgba(8,4,18,0) 38%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
           }}
         />
         {showPhotoTaglines && (
