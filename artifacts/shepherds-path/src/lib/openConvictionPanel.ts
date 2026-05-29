@@ -1,4 +1,4 @@
-/** Opens the left-edge conviction sheet (ConvictionPanel must be mounted). */
+/** Opens the conviction sheet (ConvictionPanel must be mounted). */
 
 export const CONVICTION_PANEL_OPEN_EVENT = "sp-open-conviction";
 

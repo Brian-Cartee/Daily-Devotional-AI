@@ -10,7 +10,7 @@ const HIDE_CONVICTION_PREFIXES = [
   "/threshold",
 ];
 
-/** Left-edge conviction tab — calm pages only; hidden on sacred focus routes. */
+/** Top-nav conviction whisper — calm pages only; hidden on sacred focus routes. */
 export function shouldShowConvictionTab(path: string): boolean {
   if (isSacredPresenceRoute(path)) return false;
   return !HIDE_CONVICTION_PREFIXES.some((p) => path.startsWith(p));

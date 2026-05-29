@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Compass, NotebookPen, Heart, Home } from "lucide-react";
 import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
+import { ConvictionTopWhisper } from "@/components/ConvictionTopWhisper";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EmailSubscribePanel } from "@/components/EmailSubscribe";
@@ -111,6 +112,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
           aria-label="App menu"
         >
           <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-end pointer-events-auto">
+            <ConvictionTopWhisper />
             <NavBarMoreMenu
               menuRef={moreRef}
               open={moreOpen}

@@ -35,7 +35,6 @@ import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import GuidancePage from "@/pages/GuidancePage";
 import { FloatingAskAI } from "@/components/FloatingAskAI";
-import { ConvictionEdgeTab } from "@/components/ConvictionEdgeTab";
 import { ConvictionPanel } from "@/components/ConvictionPanel";
 import { NavBar } from "@/components/NavBar";
 import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
@@ -178,7 +177,6 @@ function Router() {
     </Switch>
     {!hideNav && <NavBar showTop />}
     <ConvictionPanel />
-    {!hideNav && <ConvictionEdgeTab />}
     {!hideFloater && <FloatingAskAI />}
     </>
   );
