@@ -8,7 +8,6 @@ import { explorePathVariant } from "@/lib/explorePathVariants";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
 
 const EXPLORE_KEY = HOME_EXPLORE_OPEN_KEY;
-const PATH_COUNT = 16;
 
 const EXPLORE_ITEMS = [
   { href: "/salvation", label: "Beginning with Jesus", desc: "Meet Jesus without pressure", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-salvation" },
@@ -28,6 +27,8 @@ const EXPLORE_ITEMS = [
   { href: "/prayer-portrait", label: "Prayer Portrait", desc: "A prayer spoken over your life", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-prayer-portrait" },
   { href: "/display", label: "Scripture on Your TV", desc: "Ambient devotional screen", bg: "border-violet-500/20 bg-violet-500/6", testid: "explore-display-mode" },
 ] as const;
+
+const PATH_COUNT = EXPLORE_ITEMS.length;
 
 /** Default home view — four high-intent entry points; full grid on expand */
 const PREVIEW_HREFS: readonly string[] = [
