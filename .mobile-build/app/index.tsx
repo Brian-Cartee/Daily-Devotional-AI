@@ -55,6 +55,8 @@ const BEFORE_CONTENT_JS = `(function(){
 
 const PROBE_READY_JS = `(function(){
   function hasRealApp(){
+    var m=document.getElementById('sp-app-mount');
+    if(m&&m.childElementCount>0)return true;
     var r=document.getElementById('root');
     if(!r||r.children.length===0)return false;
     if(document.getElementById('sp-boot-splash'))return false;

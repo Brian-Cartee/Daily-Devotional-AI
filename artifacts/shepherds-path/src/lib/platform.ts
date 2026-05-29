@@ -17,12 +17,11 @@ export function hasNativeBootPlaceholder(): boolean {
   return !!document.getElementById("sp-boot-splash");
 }
 
-/** True when the native shell can hide its loading overlay */
+/** True when React has painted into #sp-app-mount (native shell can hide overlay) */
 export function isNativeShellUiReady(): boolean {
   if (typeof document === "undefined") return false;
-  const root = document.getElementById("root");
-  if (!root || root.children.length === 0) return false;
-  return !hasNativeBootPlaceholder();
+  const mount = document.getElementById("sp-app-mount");
+  return !!(mount && mount.childElementCount > 0);
 }
 
 export function removeNativeBootPlaceholder(): void {

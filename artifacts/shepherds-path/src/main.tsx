@@ -69,7 +69,14 @@ if (!rootEl) {
   throw new Error("Missing #root mount node");
 }
 
-/** iOS WebView: keep splash visible until React replaces #root (avoids black flash). */
+let mountEl = document.getElementById("sp-app-mount");
+if (!mountEl) {
+  mountEl = document.createElement("div");
+  mountEl.id = "sp-app-mount";
+  rootEl.appendChild(mountEl);
+}
+
+/** iOS WebView: splash stays as sibling until React paints into #sp-app-mount. */
 if (isNativeWebViewShell()) {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
@@ -77,7 +84,7 @@ if (isNativeWebViewShell()) {
   if (bootStatus) bootStatus.textContent = "Loading…";
 }
 
-createRoot(rootEl).render(
+createRoot(mountEl).render(
   <ErrorBoundary>
     <App />
   </ErrorBoundary>
@@ -94,4 +101,6 @@ if (typeof window !== "undefined" && isNativeWebViewShell()) {
     }
   };
   requestAnimationFrame(() => pollReady());
+} else {
+  requestAnimationFrame(() => removeNativeBootPlaceholder());
 }
