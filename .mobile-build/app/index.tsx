@@ -57,19 +57,14 @@ const PROBE_READY_JS = `(function(){
   function hasRealApp(){
     var r=document.getElementById('root');
     if(!r||r.children.length===0)return false;
+    if(document.getElementById('sp-boot-splash'))return false;
     if(document.getElementById('sp-boot'))return false;
     return true;
   }
-  function forceReady(){
-    var boot=document.getElementById('sp-boot');
-    if(boot)boot.remove();
-    return true;
-  }
   try{
-    var ready=hasRealApp()||forceReady();
-    window.ReactNativeWebView.postMessage(JSON.stringify({
-      type: ready ? 'app_ready' : 'app_still_loading'
-    }));
+    if(hasRealApp()){
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'app_ready' }));
+    }
   }catch(e){}
   true;
 })();`;

@@ -14,7 +14,7 @@ export function isIOS(): boolean {
 /** Boot HTML in index.html — gone once React has replaced #root contents */
 export function hasNativeBootPlaceholder(): boolean {
   if (typeof document === "undefined") return false;
-  return !!document.getElementById("sp-boot");
+  return !!document.getElementById("sp-boot-splash");
 }
 
 /** True when the native shell can hide its loading overlay */
@@ -27,7 +27,7 @@ export function isNativeShellUiReady(): boolean {
 
 export function removeNativeBootPlaceholder(): void {
   if (typeof document === "undefined") return;
-  document.getElementById("sp-boot")?.remove();
+  document.getElementById("sp-boot-splash")?.remove();
 }
 
 function postNativeAppReady(): void {

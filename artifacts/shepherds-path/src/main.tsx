@@ -6,7 +6,6 @@ import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
 import {
   isNativeShellUiReady,
-  forceNotifyNativeShellReady,
   isNativeWebViewShell,
   notifyNativeShellReady,
   removeNativeBootPlaceholder,
@@ -70,11 +69,11 @@ if (!rootEl) {
   throw new Error("Missing #root mount node");
 }
 
-/** iOS WebView: tidy boot chrome — keep #sp-boot visible until React replaces it (avoids black flash). */
+/** iOS WebView: keep splash visible until React replaces #root (avoids black flash). */
 if (isNativeWebViewShell()) {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
-  const bootStatus = document.getElementById("sp-boot-status");
+  const bootStatus = document.getElementById("sp-boot-splash-status");
   if (bootStatus) bootStatus.textContent = "Loading…";
 }
 
@@ -92,12 +91,7 @@ if (typeof window !== "undefined" && isNativeWebViewShell()) {
     notifyNativeShellReady();
     if (attempts < 80) {
       setTimeout(() => pollReady(attempts + 1), 250);
-    } else if (!isNativeShellUiReady()) {
-      forceNotifyNativeShellReady();
     }
   };
   requestAnimationFrame(() => pollReady());
-  setTimeout(() => {
-    if (!isNativeShellUiReady()) forceNotifyNativeShellReady();
-  }, 6000);
 }
