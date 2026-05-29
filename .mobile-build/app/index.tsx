@@ -21,7 +21,7 @@ const APP_ORIGIN = "https://www.shepherdspathai.com";
 
 /** Open the live app directly — skip the extra bootstrap tap. */
 function shellEntryUrl(): string {
-  return `${APP_ORIGIN}/?native=1&enter=1&debugNative=1&_=${Date.now()}`;
+  return `${APP_ORIGIN}/?native=1&enter=1&_=${Date.now()}`;
 }
 
 const IN_APP_HOST_SUFFIXES = [
@@ -93,7 +93,10 @@ function buildNativeBootstrapJs(appOrigin: string, mainJs = ""): string {
       s.type='module';
       s.src=url;
       s.addEventListener('load',function(){window.__spBootstrapDone=true;diag('module_script_loaded',url);});
-      s.addEventListener('error',function(){diag('module_script_error',url);});
+      s.addEventListener('error',function(){
+        if(window.__spBootstrapDone){diag('module_inject_error_ignored',url);return;}
+        diag('module_script_error',url);
+      });
       (document.head||document.documentElement).appendChild(s);
     }
     function fromDom(){
@@ -110,10 +113,14 @@ function buildNativeBootstrapJs(appOrigin: string, mainJs = ""): string {
       }
       return null;
     }
-    var shellMain='${mainChunk}';
-    if(shellMain){diag('module_from_native_shell',shellMain);loadModule(shellMain);return true;}
+    if(document.querySelector('script[type="module"]')){
+      diag('module_tag_in_html','skip inject');
+      return true;
+    }
     var domSrc=fromDom();
     if(domSrc){diag('module_from_dom',domSrc);loadModule(domSrc);return true;}
+    var shellMain='${mainChunk}';
+    if(shellMain){diag('module_from_native_shell',shellMain);loadModule(shellMain);return true;}
     diag('module_dom_missing','fetch manifest');
     fetch(ORIGIN+'/native-manifest.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
       if(j&&j.mainJs){diag('module_from_manifest',j.mainJs);loadModule(j.mainJs);return;}
@@ -405,7 +412,16 @@ export default function MainScreen() {
               diagLogsRef.current.push(entry);
               if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
-              if (/error|failed|module_script_error/i.test(`${data.event || ""}${data.detail || ""}`)) {
+              const ev = String(data.event || "");
+              const isBenignModuleNoise =
+                /module_script_error|module_inject_error_ignored|module_already_in_dom|module_tag_in_html/i.test(
+                  ev,
+                );
+              if (
+                !isBenignModuleNoise &&
+                /error|failed/i.test(`${ev}${data.detail || ""}`) &&
+                !webUiConfirmedRef.current
+              ) {
                 showDiagAlert("WebView error");
               }
             }

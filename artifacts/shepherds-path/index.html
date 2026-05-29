@@ -326,14 +326,14 @@
       }, 8000);
 
       setTimeout(function () {
-        if (hasVisibleAppUi()) return;
+        if (!debugPanel || hasVisibleAppUi()) return;
         try {
           alert("Still loading (6s):\n\n" + latestDiagSummary(10));
         } catch (e) {}
       }, 6000);
 
       setTimeout(function () {
-        if (hasVisibleAppUi()) return;
+        if (!debugPanel || hasVisibleAppUi()) return;
         try {
           alert("Still loading (12s):\n\n" + latestDiagSummary(12));
         } catch (e) {}
@@ -365,6 +365,7 @@
           mod.addEventListener("load", onModuleReady);
           mod.addEventListener("error", function () {
             diag("module_script_error", mod.getAttribute("src") || "");
+            if (window.__spModuleSrc || hasVisibleAppUi()) return;
             showWebReloadScreen();
           });
           if (document.readyState === "complete") {
