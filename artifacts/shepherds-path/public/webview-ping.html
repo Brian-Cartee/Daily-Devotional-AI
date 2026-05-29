@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>WebView ping</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 24px;
+        background: #0d0612;
+        color: #f4efe6;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        text-align: center;
+      }
+      button {
+        background: #d4a574;
+        color: #1a1208;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 22px;
+        font-size: 16px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="status">WebView ping…</h1>
+    <p id="detail">Checking JavaScript in the app shell.</p>
+    <button type="button" id="continue-btn" style="display: none">Continue to app</button>
+    <script>
+      (function () {
+        var status = document.getElementById("status");
+        var detail = document.getElementById("detail");
+        var btn = document.getElementById("continue-btn");
+        function diag(event, d) {
+          try {
+            window.ReactNativeWebView &&
+              window.ReactNativeWebView.postMessage(
+                JSON.stringify({ type: "sp_diag", event: event, detail: d || "", ts: Date.now() }),
+              );
+          } catch (e) {}
+        }
+        diag("webview_ping_html");
+        status.textContent = "WebView JavaScript works";
+        detail.textContent = "If you see this, the shell can run JS. Tap Continue to load the full app.";
+        btn.style.display = "inline-block";
+        btn.addEventListener("click", function () {
+          location.replace("/?native=1&enter=1&debugNative=1&_=" + Date.now());
+        });
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: "web_ui_visible" }));
+        } catch (e) {}
+      })();
+    </script>
+  </body>
+</html>

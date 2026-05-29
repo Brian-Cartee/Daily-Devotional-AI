@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Linking,
   Platform,
@@ -106,8 +107,16 @@ export default function MainScreen() {
     };
     diagLogsRef.current.push(entry);
     if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
-    setDiagSummary(formatDiagLines(diagLogsRef.current, 10));
+    setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
   }, []);
+
+  const showDiagAlert = useCallback(
+    (title: string) => {
+      const body = formatDiagLines(diagLogsRef.current, 14);
+      Alert.alert(title, body || "No diagnostic lines captured yet.");
+    },
+    [],
+  );
 
   const probeWebReady = useCallback(() => {
     webviewRef.current?.injectJavaScript(VISIBILITY_PROBE_JS);
@@ -136,11 +145,18 @@ export default function MainScreen() {
     pushNativeDiag("webview_session_start", entryUrl);
 
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
+    const diagPullTimer = setInterval(() => {
+      if (!webUiConfirmedRef.current) {
+        webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+      }
+    }, 2500);
+
     const stuckTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) {
         setShowOverlay(false);
         setShowStuckHelp(true);
         webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+        setTimeout(() => showDiagAlert("Load stalled"), 400);
       }
     }, 12000);
     const blankTimer = setTimeout(() => {
@@ -159,8 +175,9 @@ export default function MainScreen() {
       clearTimeout(stuckTimer);
       clearTimeout(blankTimer);
       clearInterval(probeInterval);
+      clearInterval(diagPullTimer);
     };
-  }, [entryUrl, probeWebReady, pushNativeDiag]);
+  }, [entryUrl, probeWebReady, pushNativeDiag, showDiagAlert]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -268,6 +285,9 @@ export default function MainScreen() {
                 diagLogsRef.current = diagLogsRef.current.slice(-48);
               }
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
+              if (/error|failed|module_script_error/i.test(entry.event + entry.detail)) {
+                showDiagAlert("WebView error");
+              }
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");

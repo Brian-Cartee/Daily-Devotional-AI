@@ -308,6 +308,13 @@
       setTimeout(function () {
         if (hasVisibleAppUi()) return;
         try {
+          alert("Still loading (6s):\n\n" + latestDiagSummary(10));
+        } catch (e) {}
+      }, 6000);
+
+      setTimeout(function () {
+        if (hasVisibleAppUi()) return;
+        try {
           alert("Still loading (12s):\n\n" + latestDiagSummary(12));
         } catch (e) {}
       }, 12000);
