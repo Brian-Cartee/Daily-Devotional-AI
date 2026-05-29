@@ -57,10 +57,15 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
-const NATIVE_BOOTSTRAP_JS = `(function(){
+function buildNativeBootstrapJs(appOrigin: string): string {
+  const origin = appOrigin.replace(/'/g, "\\'");
+  return `(function(){
   try{
     var b=window.ReactNativeWebView;
     if(!b){return true;}
+    var ORIGIN='${origin}';
+    var PAGE=ORIGIN+'/?native=1&enter=1';
+    if(!location.href||location.href.indexOf('about:')===0){location.replace(PAGE);}
     function diag(event,detail){
       try{
         b.postMessage(JSON.stringify({type:'sp_diag',event:String(event||''),detail:String(detail||'').slice(0,500),ts:Date.now()}));
@@ -68,16 +73,22 @@ const NATIVE_BOOTSTRAP_JS = `(function(){
     }
     if(!window.__spDiag){window.__spDiag=diag;}
     if(window.__spBootstrapDone){return true;}
+    function absUrl(path){
+      if(!path){return '';}
+      if(/^https?:/i.test(path)){return path;}
+      return ORIGIN+(path.charAt(0)==='/'?path:'/'+path);
+    }
     function loadModule(src){
-      if(!src||window.__spModuleSrc===src){return;}
-      window.__spModuleSrc=src;
-      diag('module_load_start',src);
+      var url=absUrl(src);
+      if(!url||window.__spModuleSrc===url){return;}
+      window.__spModuleSrc=url;
+      diag('module_load_start',url);
       var s=document.createElement('script');
       s.type='module';
-      s.src=src;
-      s.addEventListener('load',function(){window.__spBootstrapDone=true;diag('module_script_loaded',src);});
-      s.addEventListener('error',function(){diag('module_script_error',src);});
-      document.head.appendChild(s);
+      s.src=url;
+      s.addEventListener('load',function(){window.__spBootstrapDone=true;diag('module_script_loaded',url);});
+      s.addEventListener('error',function(){diag('module_script_error',url);});
+      (document.head||document.documentElement).appendChild(s);
     }
     function fromDom(){
       var scripts=document.getElementsByTagName('script');
@@ -95,16 +106,16 @@ const NATIVE_BOOTSTRAP_JS = `(function(){
     }
     var domSrc=fromDom();
     if(domSrc){diag('module_from_dom',domSrc);loadModule(domSrc);return true;}
-    diag('module_dom_missing','fetching manifest');
-    fetch('/native-manifest.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    diag('module_dom_missing','fetch manifest');
+    fetch(ORIGIN+'/native-manifest.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
       if(j&&j.mainJs){diag('module_from_manifest',j.mainJs);loadModule(j.mainJs);return;}
       throw new Error('empty manifest');
     }).catch(function(e1){
       diag('manifest_fetch_failed',String(e1));
-      fetch(location.href.split('#')[0],{cache:'no-store'}).then(function(r){return r.text();}).then(function(html){
+      fetch(PAGE,{cache:'no-store'}).then(function(r){return r.text();}).then(function(html){
         var m=html.match(/modulepreload" href="(\\/assets\\/index-[^"]+\\.js)"/);
         if(m&&m[1]){diag('module_from_html',m[1]);loadModule(m[1]);return;}
-        diag('html_parse_failed','no index chunk in html');
+        diag('html_parse_failed','no index chunk');
       }).catch(function(e2){diag('html_fetch_failed',String(e2));});
     });
   }catch(e){
@@ -112,6 +123,21 @@ const NATIVE_BOOTSTRAP_JS = `(function(){
   }
   true;
 })();`;
+}
+
+function isBlankWebViewUrl(url: string): boolean {
+  return !url || url === "about:blank" || url.startsWith("about:");
+}
+
+function shouldBootstrapWebView(url: string): boolean {
+  if (isBlankWebViewUrl(url)) return false;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return host === "shepherdspathai.com" || host.endsWith(".shepherdspathai.com");
+  } catch {
+    return false;
+  }
+}
 
 const PULL_DIAG_JS = `(function(){
   try{
@@ -170,6 +196,14 @@ export default function MainScreen() {
     (title: string) => {
       const body = formatDiagLines(diagLogsRef.current, 14);
       Alert.alert(title, body || "No diagnostic lines captured yet.");
+    },
+    [],
+  );
+
+  const runNativeBootstrap = useCallback(
+    (pageUrl: string) => {
+      if (!shouldBootstrapWebView(pageUrl)) return;
+      webviewRef.current?.injectJavaScript(buildNativeBootstrapJs(APP_ORIGIN));
     },
     [],
   );
@@ -323,7 +357,6 @@ export default function MainScreen() {
         setSupportMultipleWindows={false}
         cacheEnabled={false}
         injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
-        injectedJavaScript={NATIVE_BOOTSTRAP_JS}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
@@ -404,13 +437,15 @@ export default function MainScreen() {
             <ActivityIndicator size="small" color="#E8C99B" style={{ marginTop: 12 }} />
           </View>
         )}
-        onLoadEnd={() => {
-          pushNativeDiag("onLoadEnd", entryUrl);
-          webviewRef.current?.injectJavaScript(NATIVE_BOOTSTRAP_JS);
+        onLoadEnd={(e) => {
+          const pageUrl = e.nativeEvent.url || entryUrl;
+          pushNativeDiag("onLoadEnd", pageUrl);
+          if (!shouldBootstrapWebView(pageUrl)) return;
+          runNativeBootstrap(pageUrl);
           const delays = [200, 400, 1200, 2500, 5000, 8000, 12000];
           delays.forEach((ms) => {
             setTimeout(() => {
-              webviewRef.current?.injectJavaScript(NATIVE_BOOTSTRAP_JS);
+              runNativeBootstrap(pageUrl);
               probeWebReady();
             }, ms);
           });
@@ -432,8 +467,11 @@ export default function MainScreen() {
           reload();
         }}
         onNavigationStateChange={(nav) => {
-          if (nav.loading) return;
+          if (nav.loading || isBlankWebViewUrl(nav.url || "")) return;
           pushNativeDiag("navigation", `${nav.title || ""} | ${nav.url || ""}`.trim());
+          if (shouldBootstrapWebView(nav.url || "")) {
+            runNativeBootstrap(nav.url || entryUrl);
+          }
         }}
         {...(Platform.OS === "android"
           ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }

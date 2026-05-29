@@ -429,7 +429,11 @@
           inject(src);
           return;
         }
-        fetch("/native-manifest.json", { cache: "no-store" })
+        var origin =
+          location.protocol === "http:" || location.protocol === "https:"
+            ? location.origin
+            : "https://www.shepherdspathai.com";
+        fetch(origin + "/native-manifest.json", { cache: "no-store" })
           .then(function (r) {
             return r.json();
           })
