@@ -87,6 +87,7 @@ type Props = {
   onOpenEmail: () => void;
   onOpenLanguage: () => void;
   onOpenNotifications: () => void;
+  onOpenConviction: () => void;
   hasNotificationBadge?: boolean;
   menuRef: React.RefObject<HTMLDivElement | null>;
 };
@@ -103,6 +104,7 @@ export function NavBarMoreMenu({
   onOpenEmail,
   onOpenLanguage,
   onOpenNotifications,
+  onOpenConviction,
   onClose,
   menuRef,
   hasNotificationBadge = false,
@@ -200,6 +202,20 @@ export function NavBarMoreMenu({
             onClick={() => {
               onClose();
               onOpenLanguage();
+            }}
+          />
+
+          <div className="mx-3 my-1 h-px bg-border/50" />
+
+          <MenuLabel>About us</MenuLabel>
+          <MenuRow
+            icon={Shield}
+            label="Our conviction"
+            hint="Scripture, mission & how we use AI"
+            testId="nav-our-conviction"
+            onClick={() => {
+              onClose();
+              onOpenConviction();
             }}
           />
 

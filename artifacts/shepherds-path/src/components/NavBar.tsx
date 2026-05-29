@@ -17,6 +17,7 @@ import { CoachConsentModal } from "@/components/coach/CoachConsentModal";
 import { useTheme } from "@/lib/theme";
 import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
+import { openConvictionPanel } from "@/lib/openConvictionPanel";
 
 const BOTTOM_NAV_ITEMS = [
   { href: "/", label: "For You", icon: Home, bookmark: null },
@@ -111,9 +112,10 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
-          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-end pointer-events-auto">
+          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-end gap-2 pointer-events-auto">
             <ConvictionTopWhisper />
             <NavBarMoreMenu
+              onOpenConviction={openConvictionPanel}
               menuRef={moreRef}
               open={moreOpen}
               onToggle={() => {

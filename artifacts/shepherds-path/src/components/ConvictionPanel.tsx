@@ -16,6 +16,7 @@ import {
   CONVICTION_PANEL_OPEN_EVENT,
   scrollToScriptureCommitment,
 } from "@/lib/openConvictionPanel";
+import { markConvictionPanelOpened } from "@/lib/convictionWhisperState";
 
 const PANEL_BG = [
   "radial-gradient(ellipse 70% 55% at 18% 42%, rgba(212,165,116,0.22) 0%, transparent 58%)",
@@ -47,6 +48,7 @@ export function ConvictionPanel() {
   const revealPanel = useCallback(async () => {
     await controls.start({ x: "0%", transition: SLIDE_IN });
     setPanelVisible(true);
+    markConvictionPanelOpened();
     openingRef.current = false;
   }, [controls]);
 
