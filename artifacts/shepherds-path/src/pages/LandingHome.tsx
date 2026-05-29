@@ -54,6 +54,7 @@ import {
   SCRIPTURE_COMMITMENT_LEAD,
   SCRIPTURE_COMMITMENT_LINES,
 } from "@/content/scriptureCommitment";
+import { SCROLL_TO_SCRIPTURE_COMMITMENT_EVENT } from "@/lib/openConvictionPanel";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
@@ -580,6 +581,30 @@ function LandingHomeInner() {
   const [showDepthExtras, setShowDepthExtras] = useState(false);
   const demo = useDemoMode();
 
+  const revealScriptureCommitment = useCallback(() => {
+    setShowDepthExtras(true);
+    setCommitmentOpen(true);
+    const scrollToIt = () => {
+      document
+        .getElementById("scripture-commitment-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    setTimeout(scrollToIt, 120);
+    setTimeout(scrollToIt, 450);
+  }, []);
+
+  useEffect(() => {
+    const onScrollCommitment = () => revealScriptureCommitment();
+    window.addEventListener(SCROLL_TO_SCRIPTURE_COMMITMENT_EVENT, onScrollCommitment);
+    return () => window.removeEventListener(SCROLL_TO_SCRIPTURE_COMMITMENT_EVENT, onScrollCommitment);
+  }, [revealScriptureCommitment]);
+
+  useEffect(() => {
+    if (window.location.hash !== "#scripture-commitment") return;
+    revealScriptureCommitment();
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, [revealScriptureCommitment]);
+
   const isProStreak = isProVerifiedLocally();
   const { data: streakData } = useQuery({
     queryKey: ["/api/streak", isProStreak],
@@ -1072,7 +1097,11 @@ function LandingHomeInner() {
           </div>
 
           {/* ── Our Commitment to Scripture ── */}
-          <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(212,165,116,0.22)" }}>
+          <div
+            id="scripture-commitment-section"
+            className="mt-8 rounded-2xl overflow-hidden scroll-mt-24"
+            style={{ border: "1px solid rgba(212,165,116,0.22)" }}
+          >
 
             {/* Bible hero image — acts as the toggle header */}
             <button

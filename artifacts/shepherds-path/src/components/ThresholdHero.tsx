@@ -22,6 +22,8 @@ import { HomePresenceHero } from "@/components/HomePresenceHero";
 import { ArrivalRitual, shouldShowArrivalRitual } from "@/components/ArrivalRitual";
 import type { HomePresenceContext } from "@/lib/homePresenceContext";
 import { openWhyPanel } from "@/lib/openWhyPanel";
+import { openConvictionPanel } from "@/lib/openConvictionPanel";
+import { THRESHOLD_MANIFESTO_LINE } from "@/content/convictionManifesto";
 
 export type ThresholdData = {
   headline: string;
@@ -169,9 +171,22 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             type="button"
             data-testid="link-why-collapsed"
             onClick={openWhyPanel}
-            className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors"
+            className="mb-2 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors"
           >
             Why we built this
+          </button>
+          <button
+            type="button"
+            data-testid="link-threshold-manifesto"
+            onClick={openConvictionPanel}
+            className="mb-4 block text-left w-full max-w-md"
+          >
+            <p
+              className="text-[14px] sm:text-[15px] leading-snug text-amber-100/85 hover:text-amber-50/95 transition-colors"
+              style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+            >
+              {THRESHOLD_MANIFESTO_LINE}
+            </p>
           </button>
 
           <h1
