@@ -64,18 +64,15 @@ import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
+import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { scrollHomeToTop, scrollPageToTopReliable } from "@/lib/scrollPageToTop";
+import { scrollPageToTopReliable } from "@/lib/scrollPageToTop";
 
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
-    if (location === "/" || location === "") {
-      scrollHomeToTop();
-    } else {
-      scrollPageToTopReliable("auto");
-    }
+    scrollPageToTopReliable("auto");
   }, [location]);
   return null;
 }
@@ -222,11 +219,8 @@ function App() {
   useEffect(() => {
     if (!isNativeWebViewShell()) return;
 
-    const visibleSelectors =
-      '[data-testid="card-devotional"], [data-testid="bottom-nav-home"], [data-testid="text-threshold-welcome"], [data-testid="threshold-arrival"], [data-testid="btn-threshold-enter"]';
-
     const tryMark = () => {
-      if (!document.querySelector(visibleSelectors)) return false;
+      if (!document.querySelector(NATIVE_UI_READY_SELECTORS)) return false;
       markNativeShellUiPainted();
       return true;
     };

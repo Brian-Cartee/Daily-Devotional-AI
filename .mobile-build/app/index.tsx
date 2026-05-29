@@ -170,7 +170,7 @@ const PULL_DIAG_JS = `(function(){
 
 const VISIBILITY_PROBE_JS = `(function(){
   try{
-    var sel='[data-testid="card-devotional"],[data-testid="bottom-nav-home"],[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
+    var sel='[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
     if(document.querySelector(sel)){
       document.documentElement.setAttribute('data-native-ui-ready','1');
       document.getElementById('sp-boot-splash')?.remove();
@@ -229,6 +229,7 @@ export default function MainScreen() {
 
   const showDiagAlert = useCallback(
     (title: string) => {
+      if (!__DEV__) return;
       const body = formatDiagLines(diagLogsRef.current, 14);
       Alert.alert(title, body || "No diagnostic lines captured yet.");
     },
@@ -450,6 +451,7 @@ export default function MainScreen() {
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");
               hideNativeSplashWhenWebReady();
+              setTimeout(() => probeWebReady(), 100);
             }
             if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
             if (data.type === "js_error" && !readyRef.current) {
@@ -479,6 +481,7 @@ export default function MainScreen() {
           }
           if (nativeEvent.progress >= 0.99) {
             pushNativeDiag("onLoadProgress", "100%");
+            probeWebReady();
           }
         }}
         startInLoadingState
@@ -498,12 +501,8 @@ export default function MainScreen() {
           pushNativeDiag("onLoadEnd", pageUrl);
           if (!shouldBootstrapWebView(pageUrl)) return;
           runNativeBootstrap(pageUrl);
-          const delays = [200, 400, 1200, 2500, 5000, 8000, 12000];
-          delays.forEach((ms) => {
-            setTimeout(() => {
-              runNativeBootstrap(pageUrl);
-              probeWebReady();
-            }, ms);
+          [200, 800, 2000].forEach((ms) => {
+            setTimeout(() => probeWebReady(), ms);
           });
         }}
         onError={(e) => {

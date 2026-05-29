@@ -525,40 +525,11 @@ button, a, input, textarea, select, [role="button"] {
 }
 
 /*
- * Native WebView scroll — document-level (not body-in-a-box). scrollTo + anchor.
+ * Native WebView — momentum scroll; minimal touch overrides.
  */
-html[data-sp-shell="native"],
-html[data-sp-shell="native"] body {
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior-y: auto !important;
-  touch-action: auto !important;
-}
-
 html[data-sp-shell="native"] body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-html[data-sp-shell="native"] #root {
-  min-height: 100dvh;
-  overflow: visible;
-}
-
-html[data-sp-shell="native"] button,
-html[data-sp-shell="native"] a,
-html[data-sp-shell="native"] input,
-html[data-sp-shell="native"] textarea,
-html[data-sp-shell="native"] select,
-html[data-sp-shell="native"] label,
-html[data-sp-shell="native"] [role="button"],
-html[data-sp-shell="native"] .cursor-pointer {
-  touch-action: auto !important;
-}
-
-html[data-sp-shell="native"] .overflow-x-auto,
-html[data-sp-shell="native"] .overflow-y-auto {
-  -webkit-overflow-scrolling: touch !important;
-  touch-action: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 html[data-sp-shell="native"] .snap-x,
@@ -573,23 +544,4 @@ html[data-sp-shell="native"] .snap-start {
 
 html[data-sp-shell="native"] [class*="active:scale"]:active {
   transform: none !important;
-}
-
-html[data-sp-shell="native"] .transition-all,
-html[data-sp-shell="native"] .transition-transform {
-  transition-property: color, background-color, border-color, opacity, box-shadow, filter !important;
-}
-
-html[data-sp-shell="native"] .touch-none {
-  touch-action: none !important;
-}
-
-html[data-sp-shell="native"] nav[aria-label="App menu"] {
-  z-index: 200 !important;
-  pointer-events: none !important;
-}
-
-html[data-sp-shell="native"] nav[aria-label="App menu"] [data-testid="button-more-menu"],
-html[data-sp-shell="native"] nav[aria-label="App menu"] [role="menu"] {
-  pointer-events: auto !important;
 }
