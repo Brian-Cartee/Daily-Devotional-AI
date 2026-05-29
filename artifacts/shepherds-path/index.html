@@ -102,15 +102,6 @@
     <!-- SP_NATIVE_BRIDGE_START -->
     <script>
     (function () {
-      function startNativeBridge(bridge) {
-      if (window.__spNativeBridgeStarted) return;
-      window.__spNativeBridgeStarted = true;
-
-      document.documentElement.setAttribute("data-sp-shell", "native");
-      document.documentElement.classList.add("sp-native-shell");
-
-      var debugPanel = /(?:\?|&)debugNative=1(?:&|$)/.test(location.search);
-
       function diagViaScheme(event, detail) {
         try {
           var iframe = document.createElement("iframe");
@@ -126,6 +117,15 @@
           }, 120);
         } catch (e) {}
       }
+
+      function startNativeBridge(bridge) {
+      if (window.__spNativeBridgeStarted) return;
+      window.__spNativeBridgeStarted = true;
+
+      document.documentElement.setAttribute("data-sp-shell", "native");
+      document.documentElement.classList.add("sp-native-shell");
+
+      var debugPanel = /(?:\?|&)debugNative=1(?:&|$)/.test(location.search);
 
       function diag(event, detail) {
         var entry = {
