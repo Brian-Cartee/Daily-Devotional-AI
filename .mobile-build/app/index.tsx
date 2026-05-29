@@ -185,6 +185,18 @@ export default function MainScreen() {
   const [mainJsPath, setMainJsPath] = useState<string | null>(null);
   const mainJsPathRef = useRef<string | null>(null);
 
+  const pushNativeDiag = useCallback((event: string, detail = "") => {
+    const entry: WebViewDiagEntry = {
+      source: "native",
+      event,
+      detail,
+      ts: Date.now(),
+    };
+    diagLogsRef.current.push(entry);
+    if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
+    setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     fetch(`${APP_ORIGIN}/native-manifest.json`, { cache: "no-store" })
@@ -201,19 +213,7 @@ export default function MainScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const pushNativeDiag = useCallback((event: string, detail = "") => {
-    const entry: WebViewDiagEntry = {
-      source: "native",
-      event,
-      detail,
-      ts: Date.now(),
-    };
-    diagLogsRef.current.push(entry);
-    if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
-    setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
-  }, []);
+  }, [pushNativeDiag]);
 
   const showDiagAlert = useCallback(
     (title: string) => {
@@ -231,6 +231,11 @@ export default function MainScreen() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!mainJsPath) return;
+    runNativeBootstrap(entryUrl);
+  }, [mainJsPath, entryUrl, runNativeBootstrap]);
 
   const probeWebReady = useCallback(() => {
     webviewRef.current?.injectJavaScript(VISIBILITY_PROBE_JS);
