@@ -139,8 +139,19 @@ export default defineConfig(({ mode }) => {
     },
     root: path.resolve(import.meta.dirname),
     build: {
+      target: "es2020",
       outDir: path.resolve(import.meta.dirname, "dist/public"),
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (id.includes("react-dom") || /\/react\//.test(id)) return "vendor-react";
+            if (id.includes("@tanstack/react-query")) return "vendor-query";
+            if (id.includes("wouter")) return "vendor-router";
+          },
+        },
+      },
     },
     server: {
       port,

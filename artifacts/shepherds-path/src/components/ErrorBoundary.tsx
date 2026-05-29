@@ -22,6 +22,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[Shepherd's Path] Unhandled error:", error, info.componentStack);
+    void import("@/lib/nativeDiag").then(({ nativeDiag }) => {
+      nativeDiag("react_error_boundary", error?.message ?? String(error));
+      if (info?.componentStack) nativeDiag("react_error_stack", info.componentStack.slice(0, 400));
+    });
   }
 
   render() {

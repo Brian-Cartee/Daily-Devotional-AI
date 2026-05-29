@@ -73,6 +73,7 @@ export function markNativeShellUiPainted(): void {
   if (isNativeShellUiReady()) return;
   document.documentElement.dataset.nativeUiReady = "1";
   removeNativeBootPlaceholder();
+  void import("./nativeDiag").then(({ nativeDiag }) => nativeDiag("app_ready_sent"));
   notifyNativeShellReady();
 }
 

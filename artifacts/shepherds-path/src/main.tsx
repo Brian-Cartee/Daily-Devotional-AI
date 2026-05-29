@@ -13,6 +13,11 @@ import {
   notifyNativeShellReady,
   removeNativeBootPlaceholder,
 } from "./lib/platform";
+import { nativeDiag } from "./lib/nativeDiag";
+
+if (isNativeWebViewShell()) {
+  nativeDiag("react_entry_started");
+}
 
 installApiFetch();
 
@@ -88,6 +93,10 @@ if (isNativeWebViewShell()) {
   if (bootStatus) bootStatus.textContent = "Loading…";
 }
 
+if (isNativeWebViewShell()) {
+  nativeDiag("react_render_called");
+}
+
 createRoot(mountEl).render(
   <ErrorBoundary>
     <App />
@@ -95,7 +104,10 @@ createRoot(mountEl).render(
 );
 
 if (typeof window !== "undefined" && isNativeWebViewShell()) {
-  requestAnimationFrame(() => notifyNativeReactBooted());
+  requestAnimationFrame(() => {
+    nativeDiag("react_booted");
+    notifyNativeReactBooted();
+  });
   const pollReady = (attempts = 0) => {
     notifyNativeShellReady();
     if (!isNativeShellUiReady() && attempts < 120) {

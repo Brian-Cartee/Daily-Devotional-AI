@@ -41,6 +41,7 @@ import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { isNativeWebViewShell } from "@/lib/platform";
+import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import {
@@ -507,6 +508,16 @@ function LandingHomeInner() {
       markIntroFlowComplete();
       markEntryShown();
     }
+  }, [inNativeApp]);
+
+  useEffect(() => {
+    if (!inNativeApp) return;
+    nativeDiag("home_mount");
+    const t = window.setTimeout(() => {
+      const card = document.querySelector('[data-testid="card-devotional"]');
+      nativeDiag("devotional_card_rendered", card ? "visible" : "missing");
+    }, 800);
+    return () => window.clearTimeout(t);
   }, [inNativeApp]);
 
   const [showSplash, setShowSplash] = useState(

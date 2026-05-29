@@ -108,25 +108,91 @@
       document.documentElement.setAttribute("data-sp-shell", "native");
       document.documentElement.classList.add("sp-native-shell");
 
-      function isBenignShellError(msg) {
-        var s = String(msg || "");
-        return /ResizeObserver|AbortError|NotAllowedError|play\(\) request was interrupted|The operation was aborted|Non-Error promise rejection|Load failed|cancelled|Script error\.|WebKit|MetaMask|postMessage|SecurityError|blocked a frame|Importing a module script failed|cancelled/i.test(s);
+      var debugPanel = /(?:\?|&)debugNative=1(?:&|$)/.test(location.search);
+
+      function diag(event, detail) {
+        var entry = {
+          type: "sp_diag",
+          event: String(event || ""),
+          detail: String(detail || "").slice(0, 500),
+          ts: Date.now(),
+        };
+        window.__spDiagLogs = window.__spDiagLogs || [];
+        window.__spDiagLogs.push(entry);
+        if (window.__spDiagLogs.length > 48) window.__spDiagLogs.shift();
+        try {
+          bridge.postMessage(JSON.stringify(entry));
+        } catch (e) {}
+        if (debugPanel) updateDebugPanel();
+      }
+      window.__spDiag = diag;
+
+      function updateDebugPanel() {
+        var panel = document.getElementById("sp-native-debug-panel");
+        if (!panel) return;
+        var logs = window.__spDiagLogs || [];
+        panel.textContent = logs
+          .slice(-14)
+          .map(function (x) {
+            return new Date(x.ts).toISOString().slice(11, 19) + " " + x.event + (x.detail ? ": " + x.detail : "");
+          })
+          .join("\n");
       }
 
-      function reportShellError(msg, detail) {
-        if (isBenignShellError(msg) || isBenignShellError(detail)) return;
+      function initDebugPanel() {
+        if (!debugPanel || document.getElementById("sp-native-debug-panel")) return;
+        var panel = document.createElement("pre");
+        panel.id = "sp-native-debug-panel";
+        panel.style.cssText =
+          "position:fixed;left:0;right:0;bottom:0;z-index:100001;max-height:38vh;margin:0;padding:8px 10px;font:11px/1.35 ui-monospace,Menlo,monospace;color:#f4efe6;background:rgba(0,0,0,0.88);overflow:auto;white-space:pre-wrap;border-top:1px solid rgba(212,165,116,0.35);";
+        document.body.appendChild(panel);
+        updateDebugPanel();
+      }
+
+      diag("html_loaded", location.pathname + location.search);
+
+      function isBenignShellError(msg) {
+        var s = String(msg || "");
+        return /ResizeObserver|AbortError|NotAllowedError|play\(\) request was interrupted|The operation was aborted|Non-Error promise rejection|cancelled|Script error\.|MetaMask|postMessage|SecurityError|blocked a frame|cancelled/i.test(s);
+      }
+
+      function reportShellError(msg, detail, eventName) {
+        var text = String(msg || "");
+        var extra = String(detail || "");
+        diag(eventName || "js_error", text + (extra ? " | " + extra : ""));
+        if (isBenignShellError(text) || isBenignShellError(extra)) return;
         try {
-          bridge.postMessage(JSON.stringify({ type: "js_error", msg: String(msg), detail: detail || "" }));
+          bridge.postMessage(JSON.stringify({ type: "js_error", msg: text, detail: extra }));
         } catch (e) {}
       }
 
-      window.onerror = function (msg, _url, _line, _col, err) {
-        reportShellError(msg, err && err.message);
+      window.onerror = function (msg, url, line, col, err) {
+        reportShellError(msg, (url || "") + ":" + line + ":" + col + " " + (err && err.message), "window_onerror");
       };
       window.onunhandledrejection = function (ev) {
         var reason = ev && ev.reason;
-        reportShellError(reason, reason && reason.message);
+        reportShellError(reason, reason && (reason.stack || reason.message), "unhandledrejection");
       };
+
+      window.addEventListener(
+        "error",
+        function (ev) {
+          var t = ev && ev.target;
+          if (!t || t === window) return;
+          var tag = t.tagName || "unknown";
+          if (tag === "SCRIPT" || tag === "LINK" || tag === "IMG") {
+            var src = t.src || t.href || "";
+            diag("resource_error", tag + " " + src);
+          }
+        },
+        true,
+      );
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initDebugPanel);
+      } else {
+        initDebugPanel();
+      }
 
       var visibleSelectors =
         '[data-testid="card-devotional"], [data-testid="bottom-nav-home"], [data-testid="text-threshold-welcome"], [data-testid="threshold-arrival"], [data-testid="btn-threshold-enter"]';
@@ -162,11 +228,24 @@
         layer.id = "sp-native-recovery";
         layer.style.cssText =
           "position:fixed;inset:0;z-index:100000;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:rgba(13,6,18,0.97);color:#f4efe6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;";
+        var logs = window.__spDiagLogs || [];
+        var diagText = logs.length
+          ? logs
+              .slice(-8)
+              .map(function (x) {
+                return x.event + (x.detail ? ": " + x.detail : "");
+              })
+              .join("\n")
+          : "No diagnostic events captured.";
         layer.innerHTML =
           '<p style="font-size:20px;font-weight:700;margin:0 0 10px;">Having trouble loading</p>' +
-          '<p style="font-size:15px;line-height:1.5;opacity:0.9;margin:0 0 22px;max-width:300px;">The app may still be loading. Tap Reload to try again.</p>' +
+          '<p style="font-size:14px;line-height:1.45;opacity:0.9;margin:0 0 12px;max-width:320px;">The app may still be loading. Tap Reload to try again.</p>' +
+          '<pre style="font:11px/1.35 ui-monospace,Menlo,monospace;text-align:left;max-width:320px;max-height:28vh;overflow:auto;padding:10px;margin:0 0 16px;background:rgba(0,0,0,0.35);border-radius:8px;white-space:pre-wrap;">' +
+          diagText.replace(/</g, "&lt;") +
+          "</pre>" +
           '<button type="button" id="sp-native-reload-btn" style="background:#d4a574;color:#1a1208;border:none;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:700;">Reload</button>';
         document.body.appendChild(layer);
+        diag("recovery_screen_shown", diagText.slice(0, 200));
         document.getElementById("sp-native-reload-btn")?.addEventListener("click", function () {
           hardReloadApp();
         });
@@ -219,7 +298,9 @@
             if (attempts < 80) setTimeout(function () { attach(attempts + 1); }, 50);
             return;
           }
+          diag("module_script_seen", mod.getAttribute("src") || "");
           function onModuleReady() {
+            diag("module_script_loaded", mod.getAttribute("src") || "");
             setBootStatus("Loading app\u2026");
             setTimeout(function () { poll(); }, 0);
             setTimeout(function () { poll(); }, 120);
@@ -230,6 +311,7 @@
           }
           mod.addEventListener("load", onModuleReady);
           mod.addEventListener("error", function () {
+            diag("module_script_error", mod.getAttribute("src") || "");
             showWebReloadScreen();
           });
           if (document.readyState === "complete") {

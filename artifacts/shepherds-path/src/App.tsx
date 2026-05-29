@@ -64,6 +64,7 @@ import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
+import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ScrollToTop() {
@@ -102,6 +103,15 @@ function ReferralCapture() {
   return null;
 }
 
+function NativeRouteBeacon() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (!isNativeWebViewShell()) return;
+    nativeDiag("first_route_rendered", location);
+  }, [location]);
+  return null;
+}
+
 function Router() {
   const [location] = useLocation();
   const hideFloater = isSacredPresenceRoute(location);
@@ -109,6 +119,7 @@ function Router() {
 
   return (
     <>
+    <NativeRouteBeacon />
     <Switch>
       <Route path="/threshold" component={ThresholdArrivalPage} />
       <Route path="/sigh" component={SighRoomPage} />

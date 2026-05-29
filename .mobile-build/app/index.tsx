@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
+import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
@@ -19,7 +20,7 @@ const APP_ORIGIN = "https://www.shepherdspathai.com";
 
 /** Open the live app directly — skip the extra bootstrap tap. */
 function shellEntryUrl(): string {
-  return `${APP_ORIGIN}/?native=1&enter=1&_=${Date.now()}`;
+  return `${APP_ORIGIN}/?native=1&enter=1&debugNative=1&_=${Date.now()}`;
 }
 
 const IN_APP_HOST_SUFFIXES = [
@@ -78,6 +79,21 @@ export default function MainScreen() {
   const [showBlankRecovery, setShowBlankRecovery] = useState(false);
   const readyRef = useRef(false);
   const webUiConfirmedRef = useRef(false);
+  const reloadCountRef = useRef(0);
+  const diagLogsRef = useRef<WebViewDiagEntry[]>([]);
+  const [diagSummary, setDiagSummary] = useState("");
+
+  const pushNativeDiag = useCallback((event: string, detail = "") => {
+    const entry: WebViewDiagEntry = {
+      source: "native",
+      event,
+      detail,
+      ts: Date.now(),
+    };
+    diagLogsRef.current.push(entry);
+    if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
+    setDiagSummary(formatDiagLines(diagLogsRef.current, 10));
+  }, []);
 
   const probeWebReady = useCallback(() => {
     webviewRef.current?.injectJavaScript(VISIBILITY_PROBE_JS);
@@ -103,6 +119,7 @@ export default function MainScreen() {
     setShowSlowOptions(false);
     setShowStuckHelp(false);
     setShowBlankRecovery(false);
+    pushNativeDiag("webview_session_start", entryUrl);
 
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
     const stuckTimer = setTimeout(() => {
@@ -121,7 +138,7 @@ export default function MainScreen() {
       clearTimeout(blankTimer);
       clearInterval(probeInterval);
     };
-  }, [entryUrl, probeWebReady]);
+  }, [entryUrl, probeWebReady, pushNativeDiag]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -133,8 +150,10 @@ export default function MainScreen() {
     webUiConfirmedRef.current = false;
     setAppReady(false);
     webviewRef.current?.clearCache?.(true);
+    reloadCountRef.current += 1;
+    pushNativeDiag("reload", `count=${reloadCountRef.current}`);
     setEntryUrl(shellEntryUrl());
-  }, []);
+  }, [pushNativeDiag]);
 
   const openInSafari = () => {
     Linking.openURL(`${APP_ORIGIN}/?native=1&enter=1`).catch(() => {});
@@ -201,9 +220,24 @@ export default function MainScreen() {
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
-            if (data.type === "react_booted") hideNativeSplashWhenWebReady();
+            if (data.type === "sp_diag") {
+              const entry: WebViewDiagEntry = {
+                source: "web",
+                event: String(data.event || ""),
+                detail: String(data.detail || ""),
+                ts: Number(data.ts) || Date.now(),
+              };
+              diagLogsRef.current.push(entry);
+              if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
+              setDiagSummary(formatDiagLines(diagLogsRef.current, 10));
+            }
+            if (data.type === "react_booted") {
+              pushNativeDiag("web_react_booted");
+              hideNativeSplashWhenWebReady();
+            }
             if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
             if (data.type === "js_error" && !readyRef.current) {
+              pushNativeDiag("web_js_error", `${data.msg || ""} ${data.detail || ""}`.trim());
               const msg = String(data.msg || data.detail || "");
               const benign =
                 /ResizeObserver|AbortError|NotAllowedError|play\(\)|interrupted|cancelled|Load failed|Script error|WebKit|SecurityError|Importing a module/i.test(
@@ -221,6 +255,15 @@ export default function MainScreen() {
         }}
         onLoadStart={() => {
           setError(false);
+          pushNativeDiag("onLoadStart", entryUrl);
+        }}
+        onLoadProgress={({ nativeEvent }) => {
+          if (nativeEvent.progress >= 0.25 && nativeEvent.progress < 0.3) {
+            pushNativeDiag("onLoadProgress", `${Math.round(nativeEvent.progress * 100)}%`);
+          }
+          if (nativeEvent.progress >= 0.99) {
+            pushNativeDiag("onLoadProgress", "100%");
+          }
         }}
         startInLoadingState
         renderLoading={() => (
@@ -235,21 +278,29 @@ export default function MainScreen() {
           </View>
         )}
         onLoadEnd={() => {
+          pushNativeDiag("onLoadEnd", entryUrl);
           const delays = [400, 1200, 2500, 5000, 8000, 12000];
           delays.forEach((ms) => setTimeout(probeWebReady, ms));
         }}
-        onError={() => {
+        onError={(e) => {
+          pushNativeDiag("onError", String(e.nativeEvent.description || "unknown"));
           setShowOverlay(false);
           setError(true);
         }}
         onHttpError={(e) => {
           if (e.nativeEvent.statusCode >= 400) {
+            pushNativeDiag("onHttpError", String(e.nativeEvent.statusCode));
             setShowOverlay(false);
             setError(true);
           }
         }}
         onContentProcessDidTerminate={() => {
+          pushNativeDiag("onContentProcessDidTerminate", "reload");
           reload();
+        }}
+        onNavigationStateChange={(nav) => {
+          if (nav.loading) return;
+          pushNativeDiag("navigation", `${nav.title || ""} | ${nav.url || ""}`.trim());
         }}
         {...(Platform.OS === "android"
           ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }
@@ -300,6 +351,11 @@ export default function MainScreen() {
           <Text style={styles.stuckText}>
             The app didn&apos;t finish loading. Refresh for a clean start, or use Safari.
           </Text>
+          {diagSummary ? (
+            <Text style={styles.diagText} selectable>
+              {diagSummary}
+            </Text>
+          ) : null}
           <Pressable
             onPress={reload}
             style={({ pressed }) => [styles.primaryButton, { opacity: pressed ? 0.85 : 1 }]}
@@ -428,6 +484,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 8,
+  },
+  diagText: {
+    fontSize: 10,
+    lineHeight: 14,
+    color: "#a89ab0",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    textAlign: "left",
+    width: "100%",
+    maxWidth: 320,
+    maxHeight: 140,
+    marginBottom: 8,
+    padding: 10,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 8,
   },
   primaryButton: {
     width: "100%",
