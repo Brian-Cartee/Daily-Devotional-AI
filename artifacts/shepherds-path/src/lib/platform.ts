@@ -39,6 +39,18 @@ function postNativeAppReady(): void {
   }
 }
 
+/** React mounted — hide purple cross; keep web splash until home paints */
+export function notifyNativeReactBooted(): void {
+  if (typeof window === "undefined" || !isNativeWebViewShell()) return;
+  try {
+    (
+      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "react_booted" }));
+  } catch {
+    /* noop */
+  }
+}
+
 /** Tell the App Store iOS shell to hide its loading overlay */
 export function notifyNativeShellReady(): void {
   if (typeof window === "undefined") return;

@@ -201,6 +201,7 @@ export default function MainScreen() {
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
+            if (data.type === "react_booted") hideNativeSplashWhenWebReady();
             if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
             if (data.type === "js_error" && !readyRef.current) {
               const msg = String(data.msg || data.detail || "");

@@ -9,6 +9,7 @@ import {
   isNativeShellUiReady,
   isNativeWebViewShell,
   markNativeShellUiPainted,
+  notifyNativeReactBooted,
   notifyNativeShellReady,
   removeNativeBootPlaceholder,
 } from "./lib/platform";
@@ -94,6 +95,7 @@ createRoot(mountEl).render(
 );
 
 if (typeof window !== "undefined" && isNativeWebViewShell()) {
+  requestAnimationFrame(() => notifyNativeReactBooted());
   const pollReady = (attempts = 0) => {
     notifyNativeShellReady();
     if (!isNativeShellUiReady() && attempts < 120) {

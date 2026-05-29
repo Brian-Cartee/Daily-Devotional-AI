@@ -56,8 +56,23 @@ function swCacheVersionPlugin() {
           .replace(/\s+crossorigin(?=[\s>])/g, "");
         const moduleTag = html.match(/<script type="module"[^>]*><\/script>\s*/i);
         if (moduleTag) {
+          const moduleSrc = moduleTag[0].match(/src="([^"]+)"/i)?.[1];
+          if (moduleSrc && !html.includes(`modulepreload" href="${moduleSrc}"`)) {
+            html = html.replace(
+              "</head>",
+              `  <link rel="modulepreload" href="${moduleSrc}">\n</head>`,
+            );
+          }
           html = html.replace(moduleTag[0], "");
-          html = html.replace("</body>", `${moduleTag[0]}</body>`);
+          const bridgeEnd = html.indexOf("<!-- SP_NATIVE_BRIDGE_END -->");
+          if (bridgeEnd >= 0) {
+            html = html.replace(
+              /<!-- SP_NATIVE_BRIDGE_END -->/,
+              `${moduleTag[0]}\n    <!-- SP_NATIVE_BRIDGE_END -->`,
+            );
+          } else {
+            html = html.replace("</body>", `${moduleTag[0]}</body>`);
+          }
         }
         const cssTag = html.match(/<link rel="stylesheet"[^>]*>\s*/i);
         if (cssTag && !html.includes(cssTag[0] + "</head>")) {

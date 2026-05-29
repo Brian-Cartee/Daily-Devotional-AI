@@ -98,8 +98,8 @@
     <div id="root">
       <div id="sp-app-mount"></div>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
-    <!-- App Store WebView: runs before React — tells native shell when UI is ready (no new iOS build needed) -->
+    <!-- App Store WebView bridge (module script is inserted after this block in production builds) -->
+    <!-- SP_NATIVE_BRIDGE_START -->
     <script>
     (function () {
       var bridge = window.ReactNativeWebView;
@@ -213,24 +213,35 @@
       }, 30000);
 
       function hookModuleScript() {
-        var mod = document.querySelector('script[type="module"]');
-        if (!mod) return;
-        function onModuleReady() {
-          setTimeout(function () { poll(); }, 0);
-          setTimeout(function () { poll(); }, 120);
-          setTimeout(function () { poll(); }, 600);
-          setTimeout(function () { poll(); }, 1800);
+        function attach(attempts) {
+          var mod = document.querySelector('script[type="module"]');
+          if (!mod) {
+            if (attempts < 80) setTimeout(function () { attach(attempts + 1); }, 50);
+            return;
+          }
+          function onModuleReady() {
+            setBootStatus("Loading app\u2026");
+            setTimeout(function () { poll(); }, 0);
+            setTimeout(function () { poll(); }, 120);
+            setTimeout(function () { poll(); }, 600);
+            setTimeout(function () { poll(); }, 1800);
+            setTimeout(function () { poll(); }, 4000);
+            setTimeout(function () { poll(); }, 8000);
+          }
+          mod.addEventListener("load", onModuleReady);
+          mod.addEventListener("error", function () {
+            showWebReloadScreen();
+          });
+          if (document.readyState === "complete") {
+            onModuleReady();
+          }
         }
-        mod.addEventListener("load", onModuleReady);
-        mod.addEventListener("error", function () {
-          showWebReloadScreen();
-        });
-        if (document.readyState === "complete") {
-          onModuleReady();
-        }
+        attach(0);
       }
       hookModuleScript();
     })();
     </script>
+    <!-- SP_NATIVE_BRIDGE_END -->
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
