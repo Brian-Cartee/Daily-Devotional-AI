@@ -57,8 +57,9 @@ const BEFORE_CONTENT_JS = `(function(){
   true;
 })();`;
 
-function buildNativeBootstrapJs(appOrigin: string): string {
+function buildNativeBootstrapJs(appOrigin: string, mainJs = ""): string {
   const origin = appOrigin.replace(/'/g, "\\'");
+  const mainChunk = mainJs.replace(/'/g, "\\'");
   return `(function(){
   try{
     var b=window.ReactNativeWebView;
@@ -104,6 +105,8 @@ function buildNativeBootstrapJs(appOrigin: string): string {
       }
       return null;
     }
+    var shellMain='${mainChunk}';
+    if(shellMain){diag('module_from_native_shell',shellMain);loadModule(shellMain);return true;}
     var domSrc=fromDom();
     if(domSrc){diag('module_from_dom',domSrc);loadModule(domSrc);return true;}
     diag('module_dom_missing','fetch manifest');
@@ -179,6 +182,26 @@ export default function MainScreen() {
   const reloadCountRef = useRef(0);
   const diagLogsRef = useRef<WebViewDiagEntry[]>([]);
   const [diagSummary, setDiagSummary] = useState("");
+  const [mainJsPath, setMainJsPath] = useState<string | null>(null);
+  const mainJsPathRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${APP_ORIGIN}/native-manifest.json`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: { mainJs?: string }) => {
+        if (cancelled || !j?.mainJs) return;
+        mainJsPathRef.current = j.mainJs;
+        setMainJsPath(j.mainJs);
+        pushNativeDiag("manifest_loaded", j.mainJs);
+      })
+      .catch((err) => {
+        if (!cancelled) pushNativeDiag("manifest_load_failed", String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pushNativeDiag = useCallback((event: string, detail = "") => {
     const entry: WebViewDiagEntry = {
@@ -203,7 +226,8 @@ export default function MainScreen() {
   const runNativeBootstrap = useCallback(
     (pageUrl: string) => {
       if (!shouldBootstrapWebView(pageUrl)) return;
-      webviewRef.current?.injectJavaScript(buildNativeBootstrapJs(APP_ORIGIN));
+      const main = mainJsPathRef.current ?? "";
+      webviewRef.current?.injectJavaScript(buildNativeBootstrapJs(APP_ORIGIN, main));
     },
     [],
   );
