@@ -21,7 +21,7 @@ import { fetchStreak } from "@/lib/streakApi";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
 import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
-import { scrollPageToTop } from "@/lib/scrollPageToTop";
+import { scrollHomeToTop } from "@/lib/scrollPageToTop";
 import { useDemoMode } from "@/components/DemoProvider";
 import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import {
@@ -542,9 +542,10 @@ function LandingHomeInner() {
   });
   useEffect(() => {
     if (!isReturningHome()) return;
-    scrollPageToTop("auto");
-    if (skipIntrosForHome) clearReturningHome();
-  }, [skipIntrosForHome]);
+    scrollHomeToTop();
+    clearReturningHome();
+  }, []);
+
   const [showEntryScreen, setShowEntryScreen] = useState(
     () =>
       !inNativeApp &&
