@@ -112,32 +112,33 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
-          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-end gap-2 pointer-events-auto">
+          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center pointer-events-auto">
             <ConvictionTopWhisper />
-            <NavBarMoreMenu
-              onOpenConviction={openConvictionPanel}
-              menuRef={moreRef}
-              open={moreOpen}
-              onToggle={() => {
-                setMoreOpen((v) => !v);
-                setNotifOpen(false);
-                setEmailOpen(false);
-                setLangOpen(false);
-              }}
-              onClose={() => setMoreOpen(false)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              guidanceTone={guidanceTone}
-              onToggleTone={toggleTone}
-              voicePref={voicePref}
-              onToggleVoice={toggleVoice}
-              onOpenEmail={() => setEmailOpen(true)}
-              onOpenLanguage={() => setLangOpen(true)}
-              onOpenNotifications={() => setNotifOpen(true)}
-              hasNotificationBadge={needsNotificationNudge}
-            />
+            <div className="ml-auto shrink-0 relative">
+              <NavBarMoreMenu
+                onOpenConviction={openConvictionPanel}
+                menuRef={moreRef}
+                open={moreOpen}
+                onToggle={() => {
+                  setMoreOpen((v) => !v);
+                  setNotifOpen(false);
+                  setEmailOpen(false);
+                  setLangOpen(false);
+                }}
+                onClose={() => setMoreOpen(false)}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                guidanceTone={guidanceTone}
+                onToggleTone={toggleTone}
+                voicePref={voicePref}
+                onToggleVoice={toggleVoice}
+                onOpenEmail={() => setEmailOpen(true)}
+                onOpenLanguage={() => setLangOpen(true)}
+                onOpenNotifications={() => setNotifOpen(true)}
+                hasNotificationBadge={needsNotificationNudge}
+              />
 
-            <AnimatePresence>
+              <AnimatePresence>
               {langOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.96 }}
@@ -164,9 +165,10 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
               )}
             </AnimatePresence>
 
-            <AnimatePresence>
-              {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
-            </AnimatePresence>
+              <AnimatePresence>
+                {emailOpen && <EmailSubscribePanel onClose={() => setEmailOpen(false)} />}
+              </AnimatePresence>
+            </div>
           </div>
         </nav>
       )}
