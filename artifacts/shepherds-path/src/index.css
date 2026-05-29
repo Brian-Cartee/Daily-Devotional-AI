@@ -13,11 +13,6 @@ html, body {
   text-size-adjust: 100%;
 }
 
-/* App Store WebView shell — safe areas (scroll tuning at end of file, after global touch rules) */
-html[data-sp-shell="native"] body {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* Remove Android tap highlight flash on all interactive elements */
 * {
   -webkit-tap-highlight-color: transparent;
@@ -530,31 +525,46 @@ button, a, input, textarea, select, [role="button"] {
 }
 
 /*
- * Native WebView scroll — MUST stay last so it overrides touch-action: manipulation
- * on buttons/links above. Tuned for easier vertical pan without feeling "loose".
+ * Native WebView scroll — Gmail-style: body is the one momentum scroller; touch-action
+ * auto everywhere (overrides manipulation delay). MUST stay last in this file.
  */
-html[data-sp-shell="native"],
-html[data-sp-shell="native"] body {
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
+html[data-sp-shell="native"] {
+  height: 100% !important;
+  overflow: hidden !important;
   overscroll-behavior: auto !important;
+  touch-action: auto !important;
+}
+
+html[data-sp-shell="native"] body {
+  height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: scroll !important;
   -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-y pinch-zoom !important;
+  overscroll-behavior-y: auto !important;
+  touch-action: auto !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html[data-sp-shell="native"] #root {
-  min-height: 100dvh;
+  min-height: 100%;
   overflow: visible;
 }
 
-html[data-sp-shell="native"] * {
-  touch-action: pan-y pinch-zoom !important;
+html[data-sp-shell="native"] button,
+html[data-sp-shell="native"] a,
+html[data-sp-shell="native"] input,
+html[data-sp-shell="native"] textarea,
+html[data-sp-shell="native"] select,
+html[data-sp-shell="native"] label,
+html[data-sp-shell="native"] [role="button"],
+html[data-sp-shell="native"] .cursor-pointer {
+  touch-action: auto !important;
 }
 
 html[data-sp-shell="native"] .overflow-x-auto,
-html[data-sp-shell="native"] .snap-x {
-  touch-action: pan-x pan-y pinch-zoom !important;
+html[data-sp-shell="native"] .overflow-y-auto {
   -webkit-overflow-scrolling: touch !important;
+  touch-action: auto !important;
 }
 
 html[data-sp-shell="native"] .snap-x,
@@ -567,13 +577,13 @@ html[data-sp-shell="native"] .snap-start {
   scroll-snap-align: none !important;
 }
 
-/* Press-shrink fights vertical scroll on cards — keep tap, drop scale-while-dragging */
 html[data-sp-shell="native"] [class*="active:scale"]:active {
   transform: none !important;
 }
 
-html[data-sp-shell="native"] .transition-transform:active {
-  transition-duration: 0.05s !important;
+html[data-sp-shell="native"] .transition-all,
+html[data-sp-shell="native"] .transition-transform {
+  transition-property: color, background-color, border-color, opacity, box-shadow, filter !important;
 }
 
 html[data-sp-shell="native"] .touch-none {

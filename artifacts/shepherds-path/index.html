@@ -56,22 +56,26 @@
     })();
   </script>
   <style>
-    html[data-sp-shell="native"],
-    html[data-sp-shell="native"] body {
+    html[data-sp-shell="native"] {
+      height: 100% !important;
+      overflow: hidden !important;
       background: #0d0612 !important;
+      touch-action: auto !important;
+    }
+    html[data-sp-shell="native"] body {
+      height: 100% !important;
       overflow-x: hidden !important;
-      overflow-y: auto !important;
-      overscroll-behavior: auto !important;
+      overflow-y: scroll !important;
       -webkit-overflow-scrolling: touch !important;
-      touch-action: pan-y pinch-zoom !important;
+      overscroll-behavior-y: auto !important;
+      touch-action: auto !important;
+      background: #0d0612 !important;
     }
-    html[data-sp-shell="native"] #root { min-height: 100dvh; overflow: visible; }
-    html[data-sp-shell="native"] * { touch-action: pan-y pinch-zoom !important; }
-    html[data-sp-shell="native"] .overflow-x-auto,
-    html[data-sp-shell="native"] .snap-x {
-      touch-action: pan-x pan-y pinch-zoom !important;
-      -webkit-overflow-scrolling: touch !important;
-    }
+    html[data-sp-shell="native"] #root { min-height: 100%; overflow: visible; }
+    html[data-sp-shell="native"] button,
+    html[data-sp-shell="native"] a,
+    html[data-sp-shell="native"] [role="button"],
+    html[data-sp-shell="native"] .cursor-pointer { touch-action: auto !important; }
     html[data-sp-shell="native"] .snap-x,
     html[data-sp-shell="native"] .snap-proximity { scroll-snap-type: none !important; }
     html[data-sp-shell="native"] [class*="active:scale"]:active { transform: none !important; }
