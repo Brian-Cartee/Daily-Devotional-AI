@@ -3,6 +3,7 @@ import { getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { canPrewarmListen, type ListenScope } from "@/lib/listenPolicy";
+import { truncateForListen } from "@/lib/listenText";
 
 export type { ListenScope };
 
@@ -16,6 +17,7 @@ export type ListenLimitCode =
   | "pro_required"
   | "listen_daily_cap"
   | "verse_too_long"
+  | "text_too_long"
   | "session_required";
 
 export type FetchTTSOptions = {
@@ -24,10 +26,11 @@ export type FetchTTSOptions = {
 };
 
 function ttsPayload(text: string, voice: string, opts?: FetchTTSOptions) {
+  const scope = opts?.scope ?? "snippet";
   return {
-    text: text.slice(0, 4096),
+    text: truncateForListen(text, scope),
     voice,
-    scope: opts?.scope ?? "snippet",
+    scope,
     chainStart: opts?.chainStart === true,
     sessionId: getSessionId(),
     isPro: isProVerifiedLocally(),

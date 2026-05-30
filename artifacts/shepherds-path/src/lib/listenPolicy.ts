@@ -50,4 +50,12 @@ export const LISTEN_LIMIT_COPY = {
     "You've used today's free full listen. Pro lets you hear every devotional, replay, and Talk It Through session without limits.",
   guidance:
     "Hear this guidance — verse, response, and prayer in one flow — is included with Pro.",
+  snippet: "Daily listen limit reached. Pro includes unlimited audio.",
+  verse: "This passage is too long for a single listen. Try a shorter section.",
+  text_too_long: "This section is long — we're reading the first part aloud.",
+  listen_daily_cap: "Daily listen limit reached. Pro includes unlimited audio.",
+  pro_required: "Full listen for this section is included with Pro.",
+  session_required: "Please refresh and try listen again.",
 } as const;
+
+export type ListenLimitMessageKey = keyof typeof LISTEN_LIMIT_COPY;

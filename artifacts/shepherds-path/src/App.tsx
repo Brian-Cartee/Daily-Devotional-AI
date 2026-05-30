@@ -67,6 +67,7 @@ import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
 import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ListenLimitListener } from "@/components/ListenLimitListener";
 import { scrollPageToTop } from "@/lib/scrollPageToTop";
 
 function ScrollToTop() {
@@ -249,6 +250,7 @@ function App() {
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <DemoProvider>
                 <Toaster />
+                <ListenLimitListener />
                 <BrandedDomainRedirect />
                 <ScrollToTop />
                 <ReferralCapture />
