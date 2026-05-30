@@ -31,6 +31,7 @@ import { isLateNight } from "@/lib/nightMode";
 import { getRelationshipAge } from "@/lib/relationship";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { SessionStillness } from "@/components/SessionStillness";
+import { GuidanceCompletionThreshold } from "@/components/GuidanceCompletionThreshold";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { easternVerseDateKey } from "@/lib/shareVerse";
@@ -292,6 +293,8 @@ export default function GuidancePage() {
   const floatRef = useRef<HTMLTextAreaElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
   const [revealStage, setRevealStage] = useState(0);
+  /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
+  const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
   const latestResponseRef = useRef<HTMLDivElement>(null);
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
@@ -299,6 +302,9 @@ export default function GuidancePage() {
   const streamResponse = async (conversationMessages: Message[], explicitMode?: GuidanceMode) => {
     setStreamingText("");
     setResponseComplete(false);
+    setCompletionPath(null);
+    setRevealStage(0);
+    listenFirstTriggeredRef.current = false;
     setWalkToday(null);
     setWalkLoading(false);
     walkFetchedRef.current = false;
@@ -396,6 +402,9 @@ export default function GuidancePage() {
   };
 
   const startGuidanceFlow = () => {
+    setCompletionPath(null);
+    setRevealStage(0);
+    listenFirstTriggeredRef.current = false;
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
@@ -532,6 +541,11 @@ export default function GuidancePage() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [responseComplete]);
 
+  const guidanceListenReady =
+    !!verse &&
+    !!prayer?.trim() &&
+    !vpLoading;
+
   const startGuidanceListen = async () => {
     if (ttsChain.playing || ttsChain.loading) {
       ttsChain.stop();
@@ -542,15 +556,21 @@ export default function GuidancePage() {
       setShowListenUpgrade(true);
       return;
     }
-    if (!verse) return;
+    if (!guidanceListenReady) {
+      toast({
+        title: !prayer?.trim() || vpLoading ? "Prayer is still preparing" : "Scripture is still preparing",
+        description: "Full listen plays Scripture, guidance, then prayer — one continuous flow. One moment.",
+      });
+      return;
+    }
     const firstResponse = messages.find(m => m.role === "assistant")?.content ?? streamingText;
     if (!firstResponse) return;
 
     const sections: Array<{ key: string; text: string; voice?: string }> = [
-      { key: "scripture", text: `${verse.text}. ${verse.reference}.` },
+      { key: "scripture", text: `${verse!.text}. ${verse!.reference}.` },
       { key: "guidance", text: firstResponse },
+      { key: "prayer", text: prayer!.trim(), voice: "nova" },
     ];
-    if (prayer) sections.push({ key: "prayer", text: prayer, voice: "nova" });
 
     await ttsChain.playChain(
       sections,
@@ -565,14 +585,14 @@ export default function GuidancePage() {
   };
 
   useEffect(() => {
-    if (!responseComplete || !verse || listenFirstTriggeredRef.current) return;
+    if (!guidanceListenReady || !responseComplete || listenFirstTriggeredRef.current) return;
     if (!canUseListenFirstAuto() || !getListenFirstPreference()) return;
     listenFirstTriggeredRef.current = true;
     const t = setTimeout(() => {
       void startGuidanceListen();
     }, 600);
     return () => clearTimeout(t);
-  }, [responseComplete, verse]);
+  }, [guidanceListenReady, responseComplete]);
 
   // Scroll follow-up response into view as soon as it starts streaming
   useEffect(() => {
@@ -1122,47 +1142,33 @@ export default function GuidancePage() {
                         ) : (
                           <>
                             <p className="text-[13px] font-semibold text-foreground leading-none">Hear this guidance</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Scripture · Guidance{prayer ? " · Prayer" : ""}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">
+                              {guidanceListenReady
+                                ? "Scripture · Guidance · Prayer — one listen"
+                                : "Scripture · Guidance · Prayer preparing…"}
+                            </p>
                           </>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={startGuidanceListen}
+                      disabled={!guidanceListenReady && !chainSection && !ttsChain.loading}
                       data-testid="button-guidance-listen-chain"
                       className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
                         chainSection || ttsChain.loading
                           ? "bg-primary/20 text-primary hover:bg-primary/30"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                          : guidanceListenReady
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                            : "bg-muted text-muted-foreground/70 cursor-not-allowed"
                       }`}
                     >
                       {ttsChain.loading || chainSection
                         ? <><VolumeX className="w-3 h-3" /> Stop</>
-                        : <><Volume2 className="w-3 h-3" /> Listen instead</>
+                        : !guidanceListenReady
+                          ? <><Loader2 className="w-3 h-3 animate-spin" /> Preparing</>
+                          : <><Volume2 className="w-3 h-3" /> Listen</>
                       }
-                    </button>
-                  </div>
-                )}
-                {responseComplete && (
-                  <div className="mt-5 flex flex-col items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowStillness(true)}
-                      data-testid="btn-guidance-stillness"
-                      className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm transition-colors"
-                    >
-                      Sit in silence
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        inputRef.current?.focus();
-                        if (!followUp.trim()) setFollowUp("Can you guide me one step deeper?");
-                      }}
-                      data-testid="btn-guidance-more-guidance"
-                      className="text-[13px] font-semibold text-muted-foreground/85 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
-                    >
-                      More guidance
                     </button>
                   </div>
                 )}
@@ -1313,9 +1319,9 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {/* Follow-up input */}
+          {/* Follow-up input — stay path only, after prayer lands */}
           <AnimatePresence>
-            {responseComplete && (
+            {responseComplete && completionPath === "stay" && revealStage >= 3 && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1338,7 +1344,7 @@ export default function GuidancePage() {
                     )}
                     {/* Desktop-only inline input — on mobile the floating bar takes over */}
                     <div className="hidden sm:block">
-                      <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-[0.14em] mb-2 ml-1">Continue</p>
+                      <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-[0.14em] mb-2 ml-1">Keep talking (optional)</p>
                       <div className="bg-background border-2 border-border/70 hover:border-primary/30 focus-within:border-primary/50 rounded-2xl px-4 pt-3 pb-2 flex flex-col gap-2 shadow-md transition-colors">
                         <textarea
                           ref={inputRef}
@@ -1509,16 +1515,53 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
+          {/* Completion fork — after prayer, before optional depth */}
+          {responseComplete && revealStage >= 3 && completionPath === null && (
+            <GuidanceCompletionThreshold
+              onCarry={() => setCompletionPath("carry")}
+              onStay={() => setCompletionPath("stay")}
+            />
+          )}
+
+          {responseComplete && completionPath === "carry" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="mb-8 flex flex-col items-center gap-3"
+            >
+              <p className="text-[13px] text-muted-foreground/65 italic text-center" style={{ fontFamily: "'Georgia', serif" }}>
+                Go in peace. What you received is enough for today.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowStillness(true)}
+                data-testid="btn-guidance-stillness"
+                className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm transition-colors"
+              >
+                Sit in silence
+              </button>
+              <button
+                type="button"
+                data-testid="btn-guidance-switch-to-stay"
+                onClick={() => setCompletionPath("stay")}
+                className="text-[12px] text-muted-foreground/50 hover:text-primary/80 transition-colors"
+              >
+                Actually — I have a few more minutes
+              </button>
+            </motion.div>
+          )}
+
           {/* Bridge text — connects the response to the journey below */}
-          {responseComplete && revealStage >= 4 && (
+          {responseComplete && completionPath === "stay" && revealStage >= 4 && (
             <p className="text-[13px] text-muted-foreground/75 leading-relaxed mb-6 -mt-2">
-              Here's where I'd walk with you next.
+              Here&apos;s where I&apos;d walk with you next.
             </p>
           )}
 
           {/* Journey card */}
           <AnimatePresence>
-            {responseComplete && revealStage >= 4 && (journeyLoading || journey || journeyError || !isProVerifiedLocally()) && (
+            {responseComplete && completionPath === "stay" && revealStage >= 4 && (journeyLoading || journey || journeyError || !isProVerifiedLocally()) && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1632,7 +1675,7 @@ export default function GuidancePage() {
 
           {/* Release Moment — a quiet word of release after everything has arrived */}
           <AnimatePresence>
-            {responseComplete && revealStage >= 4 && journey && (
+            {responseComplete && completionPath === "stay" && revealStage >= 4 && journey && (
               <motion.div
                 key="release"
                 initial={{ opacity: 0 }}
@@ -1651,7 +1694,7 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {responseComplete && revealStage >= 4 && (
+          {responseComplete && completionPath === "stay" && revealStage >= 4 && (
             <div className="mt-8 mb-4">
               <ShareInviteCard variant="compact" />
             </div>
@@ -1698,7 +1741,7 @@ export default function GuidancePage() {
 
       {/* ── Floating input bar — mobile only, docks above NavBar ── */}
       <AnimatePresence>
-        {responseComplete && canUseAi() && (
+        {responseComplete && completionPath === "stay" && revealStage >= 3 && canUseAi() && (
           <motion.div
             key="float-bar"
             initial={{ opacity: 0, y: 20 }}
