@@ -299,6 +299,8 @@ export default function GuidancePage() {
   const latestResponseRef = useRef<HTMLDivElement>(null);
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
+  /** Prevents double-start; cleared when situation query is empty */
+  const guidanceStartedForRef = useRef<string | null>(null);
 
   const streamResponse = async (conversationMessages: Message[], explicitMode?: GuidanceMode) => {
     setStreamingText("");
@@ -431,27 +433,51 @@ export default function GuidancePage() {
     setShowNamePrompt(false);
     if (pendingGuidanceFlow.current) {
       pendingGuidanceFlow.current = false;
+      if (situation.trim()) guidanceStartedForRef.current = situation.trim();
       startGuidanceFlow();
     }
   };
 
-  useEffect(() => {
-    if (!situation.trim()) return;
+  const tryStartGuidanceFromUrl = () => {
+    const trimmed = situation.trim();
+    if (!trimmed) {
+      guidanceStartedForRef.current = null;
+      return;
+    }
+    if (guidanceStartedForRef.current === trimmed) return;
 
-    if (!canUseAi()) { setShowAiPause(true); return; }
+    if (!canUseAi()) {
+      setShowAiPause(true);
+      return;
+    }
 
-    // Name gate: if the user hasn't been asked yet and has no name,
-    // show the prompt first so the very first response can address them personally.
     if (!getUserName() && !hasBeenPrompted()) {
       setShowNamePrompt(true);
       pendingGuidanceFlow.current = true;
-      // Still show the "reflecting" breathing animation while they fill in their name
       setTimeout(() => setIsReflecting(false), 2500);
       return;
     }
 
+    guidanceStartedForRef.current = trimmed;
     startGuidanceFlow();
-  }, []);
+  };
+
+  const beginGuidanceEntry = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setHeartInput(trimmed);
+    saveLastGuidanceSession();
+    const nextPath = `/guidance?situation=${encodeURIComponent(trimmed)}`;
+    if (situation.trim() !== trimmed) {
+      navigate(nextPath);
+      return;
+    }
+    tryStartGuidanceFromUrl();
+  };
+
+  useEffect(() => {
+    tryStartGuidanceFromUrl();
+  }, [situation]);
 
   // Save guidance memory silently when first response completes
   useEffect(() => {
@@ -641,10 +667,7 @@ export default function GuidancePage() {
   };
 
   const handleHeartSubmit = () => {
-    const text = heartInput.trim();
-    if (!text) return;
-    saveLastGuidanceSession();
-    window.location.href = `/guidance?situation=${encodeURIComponent(text)}`;
+    beginGuidanceEntry(heartInput);
   };
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -847,7 +870,7 @@ export default function GuidancePage() {
                       className="mb-4"
                       onSelect={(situationText, id) => {
                         setSituationTopicId(id);
-                        setHeartInput(situationText);
+                        beginGuidanceEntry(situationText);
                       }}
                     />
 
@@ -922,7 +945,7 @@ export default function GuidancePage() {
 
                   {/* Today's framework — secondary option, styled as a real card-button */}
                   <button
-                    onClick={() => { window.location.href = `/guidance?situation=${encodeURIComponent(framework.guidanceHint)}`; }}
+                    onClick={() => beginGuidanceEntry(framework.guidanceHint)}
                     data-testid="button-framework-guidance-hint"
                     className="group text-left w-full rounded-2xl border border-primary/25 bg-primary/5 hover:bg-primary/9 hover:border-primary/45 px-5 py-4 transition-all"
                   >
