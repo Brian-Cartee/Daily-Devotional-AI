@@ -11,6 +11,7 @@ import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { fetchVapidPublicKey } from "@/lib/push";
 import {
   isReturningUser,
   isReturnCardDismissedToday,
@@ -964,8 +965,11 @@ export function NotificationNudgeCard() {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") { setStatus("denied"); return; }
       const reg = await navigator.serviceWorker.ready;
-      const vapidRes = await fetch("/api/push/vapid-key");
-      const { publicKey } = await vapidRes.json();
+      const publicKey = await fetchVapidPublicKey();
+      if (!publicKey) {
+        setStatus("denied");
+        return;
+      }
       const convertedKey = await urlBase64ToUint8Array(publicKey);
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
       const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
@@ -1194,8 +1198,11 @@ export function FirstDayCard({ isFirstDay }: { isFirstDay: boolean }) {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") { setStatus("denied"); return; }
       const reg = await navigator.serviceWorker.ready;
-      const vapidRes = await fetch("/api/push/vapid-key");
-      const { publicKey } = await vapidRes.json();
+      const publicKey = await fetchVapidPublicKey();
+      if (!publicKey) {
+        setStatus("email");
+        return;
+      }
       const convertedKey = await urlBase64ToUint8Array(publicKey);
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
       const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };

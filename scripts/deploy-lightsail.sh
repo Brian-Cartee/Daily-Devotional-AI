@@ -46,6 +46,22 @@ if [[ -f "$API_CWD/.env" ]]; then
 fi
 curl -s -o /dev/null -w "API HTTP %{http_code}\n" "http://127.0.0.1:${API_PORT}/api/health" || echo "WARN: API health check failed — run: pm2 logs api-server --lines 40"
 
+if [[ -f "$API_CWD/.env" ]]; then
+  if ! grep -qE '^VAPID_PUBLIC_KEY=.+' "$API_CWD/.env" 2>/dev/null || ! grep -qE '^VAPID_PRIVATE_KEY=.+' "$API_CWD/.env" 2>/dev/null; then
+    echo ""
+    echo "WARN: VAPID keys missing — browser push is disabled."
+    echo "  cd $REPO_ROOT/artifacts/api-server && pnpm run generate-vapid"
+    echo "  # paste output into $API_CWD/.env then: pm2 restart api-server --update-env"
+  else
+    VAPID_CHECK=$(curl -s "http://127.0.0.1:${API_PORT}/api/push/vapid-key" 2>/dev/null || true)
+    if [[ "$VAPID_CHECK" == *'"configured":true'* ]] || [[ "$VAPID_CHECK" == *'"configured": true'* ]]; then
+      echo "==> Push (VAPID): configured"
+    else
+      echo "WARN: VAPID in .env but /api/push/vapid-key not configured — check keys and restart api-server"
+    fi
+  fi
+fi
+
 echo "==> Worship bed audio (stillness local)..."
 if [[ ! -f "$REPO_ROOT/artifacts/shepherds-path/public/worship/morning-stillness.wav" ]]; then
   if command -v python3 >/dev/null 2>&1; then

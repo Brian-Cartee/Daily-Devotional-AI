@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
+import { fetchVapidPublicKey } from "@/lib/push";
 import { useToast } from "@/hooks/use-toast";
 
 interface PushSettings {
@@ -200,8 +201,16 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
       setPermission(perm);
       if (perm !== "granted") { setLoading(false); return; }
       const reg = await navigator.serviceWorker.ready;
-      const vapidRes = await fetch("/api/push/vapid-key");
-      const { publicKey } = await vapidRes.json();
+      const publicKey = await fetchVapidPublicKey();
+      if (!publicKey) {
+        toast({
+          description:
+            "Push reminders aren't available on the server yet. Try again later or use daily email in My rhythm.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       const convertedKey = await urlBase64ToUint8Array(publicKey);
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
       const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };

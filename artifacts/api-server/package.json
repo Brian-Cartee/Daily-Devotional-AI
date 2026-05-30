@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps --env-file=.env ./dist/index.mjs",
     "start:prod": "NODE_ENV=production node --enable-source-maps --env-file=.env ./dist/index.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate-vapid": "node ../../scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {
     "@workspace/api-zod": "file:../../lib/api-zod",

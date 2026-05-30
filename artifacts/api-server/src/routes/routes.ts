@@ -1006,7 +1006,9 @@ ${transcript.slice(0, 3000)}`,
 
   // Push notification VAPID public key
   app.get("/api/push/vapid-key", (_req, res) => {
-    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || "" });
+    const publicKey = process.env.VAPID_PUBLIC_KEY?.trim() || "";
+    const configured = !!(publicKey && process.env.VAPID_PRIVATE_KEY?.trim());
+    res.json({ publicKey: configured ? publicKey : "", configured });
   });
 
   // Subscribe or update push subscription

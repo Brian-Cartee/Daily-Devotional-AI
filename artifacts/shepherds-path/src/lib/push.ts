@@ -15,14 +15,29 @@ export function isPushGranted(): boolean {
   return "Notification" in window && Notification.permission === "granted";
 }
 
+/** Returns VAPID public key when the server has push configured; otherwise null. */
+export async function fetchVapidPublicKey(): Promise<string | null> {
+  try {
+    const vapidRes = await fetch("/api/push/vapid-key");
+    const { publicKey, configured } = (await vapidRes.json()) as {
+      publicKey?: string;
+      configured?: boolean;
+    };
+    if (!configured || !publicKey?.trim()) return null;
+    return publicKey;
+  } catch {
+    return null;
+  }
+}
+
 export async function subscribePush(overrideSettings?: Record<string, unknown>): Promise<boolean> {
   if (!isPushSupported()) return false;
   try {
     const perm = await Notification.requestPermission();
     if (perm !== "granted") return false;
     const reg = await navigator.serviceWorker.ready;
-    const vapidRes = await fetch("/api/push/vapid-key");
-    const { publicKey } = await vapidRes.json();
+    const publicKey = await fetchVapidPublicKey();
+    if (!publicKey) return false;
     const convertedKey = await urlBase64ToUint8Array(publicKey);
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
     const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
