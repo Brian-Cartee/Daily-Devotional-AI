@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, History, Lock, Sparkles, X, Calendar } from "lucide-react";
@@ -87,7 +87,11 @@ export function JournalArchiveSection({ onSelectDay, selectedDay, onUpgrade }: P
   const isPro = isProVerifiedLocally();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (selectedDay) setExpanded(true);
+  }, [selectedDay]);
 
   const { data: archive, isLoading } = useQuery<JournalArchiveResponse>({
     queryKey: ["/api/journal/archive", sessionId, isPro, search, typeFilter, selectedDay],
@@ -110,6 +114,10 @@ export function JournalArchiveSection({ onSelectDay, selectedDay, onUpgrade }: P
   const days = archive?.devotionalDays ?? [];
   const hasOlderLocked = !isPro && (archive?.lockedCount ?? 0) > 0;
 
+  useEffect(() => {
+    if (days.length >= 7) setExpanded(true);
+  }, [days.length]);
+
   return (
     <div className="mb-6" data-testid="section-journal-archive">
       <button
@@ -120,7 +128,7 @@ export function JournalArchiveSection({ onSelectDay, selectedDay, onUpgrade }: P
       >
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-primary" />
-          <span className="text-[13px] font-bold text-foreground">Sacred archive</span>
+          <span className="text-[13px] font-bold text-foreground">Search past entries</span>
           {!isPro && (
             <span className="text-[10px] text-muted-foreground">
               Last {FREE_ARCHIVE_VISIBLE_DAYS} days free
@@ -133,7 +141,7 @@ export function JournalArchiveSection({ onSelectDay, selectedDay, onUpgrade }: P
             </span>
           )}
         </div>
-        <span className="text-[11px] text-muted-foreground">{expanded ? "Hide" : "Show"}</span>
+        <span className="text-[11px] text-muted-foreground">{expanded ? "Hide" : "Open"}</span>
       </button>
 
       <AnimatePresence initial={false}>
@@ -275,10 +283,16 @@ export function JournalArchiveSection({ onSelectDay, selectedDay, onUpgrade }: P
             )}
 
             {!showResults && !isLoading && archive && archive.totalCount > 0 && (
-              <p className="text-[12px] text-muted-foreground text-center">
-                {archive.totalCount} entries in your archive
+              <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
+                {archive.totalCount} entries saved
                 {isPro ? "" : ` · ${archive.visibleCount} visible on free`}
-                . Search or pick a day to revisit your walk.
+                . Search or pick a devotional day to revisit your walk.
+              </p>
+            )}
+
+            {!showResults && !isLoading && archive && archive.totalCount === 0 && (
+              <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
+                When you save from For You or Guidance, entries appear here for search and revisit.
               </p>
             )}
 

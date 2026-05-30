@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { JournalArchiveSection } from "@/components/JournalArchiveSection";
+import { JournalLastSaved } from "@/components/JournalLastSaved";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FREE_ARCHIVE_VISIBLE_DAYS } from "@/lib/journalArchive";
 import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
@@ -991,6 +992,9 @@ export default function Journal() {
   const [exportOpen, setExportOpen] = useState(false);
   const [archiveDay, setArchiveDay] = useState<string | null>(null);
   const [showArchiveUpgrade, setShowArchiveUpgrade] = useState(false);
+  const [autoSaveHintDismissed, setAutoSaveHintDismissed] = useState(
+    () => !!localStorage.getItem("sp_journal_autosave_hint_dismissed"),
+  );
   const isPro = isProVerifiedLocally();
 
   useEffect(() => {
@@ -1073,6 +1077,15 @@ export default function Journal() {
   const activeTabConfig = TABS.find(t => t.key === activeTab)!;
 
   const textEntryCount = entries.filter(e => e.type !== "note").length;
+
+  const latestEntry = useMemo(() => {
+    if (!entries.length) return null;
+    return [...entries].sort((a, b) => {
+      const ta = new Date(String(a.createdAt)).getTime();
+      const tb = new Date(String(b.createdAt)).getTime();
+      return tb - ta;
+    })[0];
+  }, [entries]);
   const [letter, setLetter] = useState<string | null>(null);
   const [letterLoading, setLetterLoading] = useState(false);
   const [letterDismissed, setLetterDismissed] = useState(() => !!localStorage.getItem("sp_letter_dismissed"));
@@ -1133,10 +1146,10 @@ export default function Journal() {
               e-Prayer Journal
             </h2>
             <p
-              className="mt-2 text-[14px] text-white/72 max-w-[18rem] leading-snug"
+              className="mt-2 text-[14px] text-white/72 max-w-[20rem] leading-snug"
               style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
             >
-              Saved from devotionals, guidance, and your quiet moments with God.
+              Everything you save from For You and Guidance lives here — come back when you want to remember what God showed you.
             </p>
           </div>
         </CinematicPageHero>
@@ -1151,7 +1164,7 @@ export default function Journal() {
                 </div>
                 <div>
                   <h1 className="text-base font-bold text-foreground tracking-tight">e-Prayer Journal</h1>
-                  <p className="text-[11px] text-muted-foreground">Saved as you pray, reflect, and sit with Scripture.</p>
+                  <p className="text-[11px] text-muted-foreground">Prayers and reflections gathered as you go.</p>
                 </div>
               </div>
 
@@ -1225,11 +1238,78 @@ export default function Journal() {
         {/* Content */}
         <main className="max-w-xl mx-auto px-5 py-6 pb-24">
 
-          <JournalArchiveSection
-            selectedDay={archiveDay}
-            onSelectDay={setArchiveDay}
-            onUpgrade={() => setShowArchiveUpgrade(true)}
-          />
+          {!isLoading && entries.length > 0 && latestEntry && (
+            <JournalLastSaved entry={latestEntry} onOpenTab={setActiveTab} />
+          )}
+
+          {!isLoading && !autoSaveHintDismissed && entries.length < 5 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 relative"
+              data-testid="banner-journal-autosave"
+            >
+              <button
+                type="button"
+                aria-label="Dismiss"
+                onClick={() => {
+                  localStorage.setItem("sp_journal_autosave_hint_dismissed", "1");
+                  setAutoSaveHintDismissed(true);
+                }}
+                className="absolute top-2.5 right-2.5 text-muted-foreground/50 hover:text-muted-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <p className="text-[13px] text-foreground/85 leading-relaxed pr-6">
+                Tap <span className="font-semibold">Save to Journal</span> on For You or Guidance — it appears here so you can revisit it later.
+              </p>
+            </motion.div>
+          )}
+
+          {/* ── Looking Back — why revisit matters */}
+          <AnimatePresence>
+            {!flashbackDismissed && flashbackEntry && (
+              <motion.div
+                key="flashback-card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.4 }}
+                data-testid="card-journal-flashback"
+                className="relative mb-6 rounded-2xl overflow-hidden border border-teal-200/60 dark:border-teal-800/40 bg-gradient-to-br from-teal-50/70 via-emerald-50/40 to-background dark:from-teal-950/20 dark:via-emerald-950/10 dark:to-background"
+              >
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400" />
+                <button
+                  onClick={() => setFlashbackDismissed(true)}
+                  className="absolute top-3 right-3 text-teal-400 hover:text-teal-600 transition-colors"
+                  aria-label="Dismiss"
+                  data-testid="button-dismiss-flashback"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="px-5 pt-5 pb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                      <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
+                      From a little while ago…
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mb-2">
+                    {new Date(flashbackEntry.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    {flashbackEntry.type === "prayer" ? " · Prayer" : " · Reflection"}
+                  </p>
+                  {flashbackEntry.title && (
+                    <p className="text-[13px] font-bold text-foreground mb-1.5">{flashbackEntry.title}</p>
+                  )}
+                  <p className="text-[14px] leading-relaxed text-foreground/85 line-clamp-5">
+                    {flashbackEntry.content}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {archiveDay && (
             <p className="text-[12px] text-muted-foreground mb-4 -mt-2">
@@ -1364,86 +1444,6 @@ export default function Journal() {
             )}
           </AnimatePresence>
 
-          {/* ── Looking Back — journal flashback from ~1–6 months ago ── */}
-          <AnimatePresence>
-            {!flashbackDismissed && flashbackEntry && (
-              <motion.div
-                key="flashback-card"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.4 }}
-                data-testid="card-journal-flashback"
-                className="relative mb-6 rounded-2xl overflow-hidden border border-teal-200/60 dark:border-teal-800/40 bg-gradient-to-br from-teal-50/70 via-emerald-50/40 to-background dark:from-teal-950/20 dark:via-emerald-950/10 dark:to-background"
-              >
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400" />
-                <button
-                  onClick={() => setFlashbackDismissed(true)}
-                  className="absolute top-3 right-3 text-teal-400 hover:text-teal-600 transition-colors"
-                  aria-label="Dismiss"
-                  data-testid="button-dismiss-flashback"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="px-5 pt-5 pb-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
-                      <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    </div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
-                      From a little while ago…
-                    </p>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mb-2">
-                    {new Date(flashbackEntry.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                    {flashbackEntry.type === "prayer" ? " · Prayer" : " · Reflection"}
-                  </p>
-                  {flashbackEntry.title && (
-                    <p className="text-[13px] font-bold text-foreground mb-1.5">{flashbackEntry.title}</p>
-                  )}
-                  <p className="text-[14px] leading-relaxed text-foreground/85 line-clamp-5">
-                    {flashbackEntry.content}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* First-time guide — shown only when there are zero entries across all tabs */}
-          {!isLoading && entries.length === 0 && activeTab !== "note" && activeTab !== "memory" && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mb-6 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-amber-50/60 dark:from-primary/10 dark:to-amber-950/20 overflow-hidden"
-            >
-              <div className="px-5 pt-4 pb-2">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Your Prayer Journal</p>
-                <p className="text-[15px] font-bold text-foreground leading-snug">Over time, this becomes a record of your walk.</p>
-                <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">Prayers, reflections, scriptures — gathered here as you go.</p>
-              </div>
-              <div className="px-5 pb-4 pt-2 space-y-2">
-                {[
-                  { icon: HandIcon,  color: "text-violet-500 bg-violet-500/10", label: "Prayers",      desc: "Written or spoken in the Pray section" },
-                  { icon: Sparkles,  color: "text-amber-500 bg-amber-500/10",   label: "Reflections",  desc: "Saved while reading a devotional or journey" },
-                  { icon: BookOpen,  color: "text-blue-500 bg-blue-500/10",     label: "Scriptures",   desc: "Bookmarked chapters from the Bible section" },
-                  { icon: PenLine,   color: "text-green-600 bg-green-500/10",   label: "Sermon Notes", desc: "Recorded or typed during a message" },
-                  { icon: Star,      color: "text-yellow-500 bg-yellow-500/10", label: "Memory",       desc: "Verses starred for memorization" },
-                ].map(({ icon: Ic, color, label, desc }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
-                      <Ic className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-[12px] font-semibold text-foreground">{label} </span>
-                      <span className="text-[12px] text-muted-foreground">— {desc}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="w-5 h-5 animate-spin text-primary/40" />
@@ -1497,19 +1497,40 @@ export default function Journal() {
               <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
                 <activeTabConfig.icon className="w-6 h-6 text-muted-foreground/40" />
               </div>
-              <p className="text-sm font-semibold text-foreground max-w-[220px]">{activeTabConfig.emptyText}</p>
-              <p className="text-[12px] text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
-                {activeTabConfig.emptyHint}
-              </p>
-              {activeTabConfig.actionLabel && activeTabConfig.actionPath && (
-                <Link href={activeTabConfig.actionPath}>
-                  <button
-                    data-testid={`btn-empty-action-${activeTabConfig.key}`}
-                    className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-sm"
-                  >
-                    {activeTabConfig.actionLabel} →
-                  </button>
-                </Link>
+              {entries.length === 0 ? (
+                <>
+                  <p className="text-[15px] font-semibold text-foreground max-w-[280px] leading-snug">
+                    When you save from For You or Guidance, it appears here.
+                  </p>
+                  <p className="text-[12px] text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
+                    A quiet record of your walk — worth revisiting when God brings something back to mind.
+                  </p>
+                  <Link href="/devotional">
+                    <button
+                      data-testid="btn-journal-empty-devotional"
+                      className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                    >
+                      Open today&apos;s devotional →
+                    </button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-foreground max-w-[220px]">{activeTabConfig.emptyText}</p>
+                  <p className="text-[12px] text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
+                    {activeTabConfig.emptyHint}
+                  </p>
+                  {activeTabConfig.actionLabel && activeTabConfig.actionPath && (
+                    <Link href={activeTabConfig.actionPath}>
+                      <button
+                        data-testid={`btn-empty-action-${activeTabConfig.key}`}
+                        className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                      >
+                        {activeTabConfig.actionLabel} →
+                      </button>
+                    </Link>
+                  )}
+                </>
               )}
             </motion.div>
           ) : (
@@ -1521,6 +1542,14 @@ export default function Journal() {
               </div>
             </AnimatePresence>
           )}
+
+          <div className="mt-10 pt-6 border-t border-border/40">
+            <JournalArchiveSection
+              selectedDay={archiveDay}
+              onSelectDay={setArchiveDay}
+              onUpgrade={() => setShowArchiveUpgrade(true)}
+            />
+          </div>
 
           <ShareInviteCard variant="compact" />
         </main>

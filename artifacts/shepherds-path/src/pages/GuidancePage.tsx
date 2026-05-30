@@ -25,6 +25,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canUseAi } from "@/lib/aiUsage";
 import { apiSessionExtras } from "@/lib/requestExtras";
+import { journalSavedToast } from "@/lib/journalToast";
 import { refreshAiUsage, getGlobalAiUsage } from "@/hooks/use-ai-usage";
 import { AiPauseModal } from "@/components/AiPauseModal";
 import { isLateNight } from "@/lib/nightMode";
@@ -693,6 +694,8 @@ export default function GuidancePage() {
         content: prayer,
       });
       setPrayerSaved(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
+      toast(journalSavedToast(() => navigate("/journal")));
     } catch {
       toast({ title: "Couldn't save to journal", description: "Please try again.", variant: "destructive" });
     }

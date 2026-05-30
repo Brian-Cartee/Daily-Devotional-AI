@@ -54,6 +54,7 @@ import { DevotionalCompletionThreshold } from "@/components/DevotionalCompletion
 import { ScriptureContext } from "@/components/ScriptureContext";
 import { SessionStillness } from "@/components/SessionStillness";
 import { getListenFirstPreference } from "@/lib/listenFirst";
+import { journalSavedToast } from "@/lib/journalToast";
 import {
   canStartDevotionalChain,
   canUseListenFirstAuto,
@@ -346,6 +347,11 @@ export default function Devotional() {
   const queryClient = useQueryClient();
   const sessionId = getSessionId();
 
+  const notifyJournalSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/journal", sessionId] });
+    toast(journalSavedToast(() => navigate("/journal")));
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (body: { type: string; content: string; reference?: string; verseDate?: string }) => {
       const res = await fetch("/api/journal", {
@@ -361,7 +367,7 @@ export default function Devotional() {
       if (variables.type === "reflection") setSavedReflection(true);
       if (variables.type === "prayer") setSavedPrayer(true);
       if (variables.type === "verse") setSavedVerse(true);
-      toast({ description: "Saved to your journal." });
+      notifyJournalSaved();
     },
     onError: () => toast({ description: "Could not save. Please try again.", variant: "destructive" }),
   });
@@ -1249,6 +1255,7 @@ export default function Devotional() {
                                 }),
                               });
                               setListenReplySaved(true);
+                              notifyJournalSaved();
                             } catch { setListenReplySaved(true); }
                           }}
                           className="text-[12px] font-bold rounded-full bg-primary text-primary-foreground px-3 py-1 disabled:opacity-40 hover:bg-primary/90 transition-colors"
@@ -1352,6 +1359,7 @@ export default function Devotional() {
                                     }),
                                   });
                                   setReflectionReplySaved(true);
+                                  notifyJournalSaved();
                                 } catch { setReflectionReplySaved(true); }
                               }
                             }}
@@ -1378,6 +1386,7 @@ export default function Devotional() {
                                   }),
                                 });
                                 setReflectionReplySaved(true);
+                                notifyJournalSaved();
                               } catch { setReflectionReplySaved(true); }
                             }}
                             className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
