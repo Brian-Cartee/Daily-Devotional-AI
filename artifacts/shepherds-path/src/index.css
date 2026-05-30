@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Instrument+Serif:ital@0;1&family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+/* Web fonts loaded via index.html <link> (skipped in App Store WebView — system fonts below). */
 
 @tailwind base;
 @tailwind components;
@@ -533,6 +533,10 @@ html[data-sp-shell="native"] {
   overflow: hidden !important;
   overscroll-behavior: auto !important;
   touch-action: auto !important;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "New York", "Georgia", "Times New Roman", ui-serif, serif;
+  --font-reading: "New York", Georgia, "Times New Roman", serif;
+  --font-decorative: Georgia, "Times New Roman", serif;
 }
 
 html[data-sp-shell="native"] body {

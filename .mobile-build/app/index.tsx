@@ -423,8 +423,8 @@ export default function MainScreen() {
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
               const ev = String(data.event || "");
               const isBenignModuleNoise =
-                /module_script_error|module_inject_error_ignored|module_already_in_dom|module_tag_in_html/i.test(
-                  ev,
+                /module_script_error|module_inject_error_ignored|module_already_in_dom|module_tag_in_html|resource_error.*fonts\.googleapis|resource_error.*fonts\.gstatic/i.test(
+                  `${ev}${data.detail || ""}`,
                 );
               if (
                 !isBenignModuleNoise &&
