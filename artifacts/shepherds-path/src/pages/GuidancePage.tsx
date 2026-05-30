@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearch, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw } from "lucide-react";
 import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import {
@@ -43,6 +43,12 @@ import { markReturningHome } from "@/lib/introState";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import { SituationPills } from "@/components/SituationPills";
 import { ScriptureSceneCard } from "@/components/ScriptureSceneCard";
+import {
+  fetchGuidanceVerseAndPrayer,
+  GUIDANCE_FALLBACK_PRAYER,
+  isLikelyPrayerText,
+  extractVerseFromGuidanceText,
+} from "@/lib/guidanceVersePrayer";
 
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,7 +64,7 @@ interface Message {
 
 interface GuidanceMovements {
   reflection: string;
-  scripture: string;
+  scripture: string | null;
   prayer: string;
 }
 
@@ -76,9 +82,48 @@ function splitGuidanceMovements(raw: string, verse?: VerseResult | null, prayer?
   const reflection = paras.slice(0, 2).join("\n\n") || "You’re not alone in this moment.";
   const scripture = verse
     ? `"${verse.text}"\n— ${verse.reference}`
-    : (paras.find((p) => /\b\d?\s?[A-Za-z]+\s+\d+:\d+\b/.test(p)) ?? "Scripture is near — take one verse slowly.");
-  const prayerBody = prayer?.trim() || paras.slice(2).join("\n\n") || "Jesus, meet me here. Give me peace, clarity, and courage for my next faithful step. Amen.";
+    : extractVerseFromGuidanceText(raw);
+  const prayerFromApi = prayer?.trim();
+  const candidate = paras.slice(2).join("\n\n").trim();
+  const prayerBody =
+    prayerFromApi ||
+    (isLikelyPrayerText(candidate) ? candidate : "");
   return { reflection, scripture, prayer: prayerBody };
+}
+
+function GuidanceVpRetry({
+  label,
+  onRetry,
+  loading,
+}: {
+  label: string;
+  onRetry: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-[15px] leading-relaxed text-muted-foreground italic">{label}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        disabled={loading}
+        data-testid="button-guidance-vp-retry"
+        className="inline-flex items-center gap-2 text-[13px] font-semibold text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+      >
+        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        {loading ? "Preparing…" : "Try again"}
+      </button>
+    </div>
+  );
+}
+
+function GuidanceVpLoading({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2.5 text-muted-foreground/80 italic text-[15px]">
+      <Loader2 className="w-4 h-4 animate-spin shrink-0 text-primary/70" />
+      <span>{message}</span>
+    </div>
+  );
 }
 
 function getEmpathyReflection(situation: string): string {
@@ -273,6 +318,7 @@ export default function GuidancePage() {
   const [verse, setVerse] = useState<VerseResult | null>(null);
   const [prayer, setPrayer] = useState<string | null>(null);
   const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
+  const [vpError, setVpError] = useState(false);
 
   interface ContextPhoto { url: string; thumb: string; photographerName: string; photographerLink: string; }
   const [contextPhoto, setContextPhoto] = useState<ContextPhoto | null>(null);
@@ -404,29 +450,50 @@ export default function GuidancePage() {
       });
   };
 
+  const loadVerseAndPrayer = useCallback(async () => {
+    const trimmed = situation.trim();
+    if (!trimmed) return;
+
+    setVpLoading(true);
+    setVpError(false);
+
+    const result = await fetchGuidanceVerseAndPrayer(trimmed);
+    setVpLoading(false);
+
+    if (!result.ok) {
+      if (result.limitReached) {
+        setShowAiPause(true);
+        void refreshAiUsage();
+      } else {
+        setVpError(true);
+        toast({
+          title: "Scripture & prayer still preparing",
+          description: "Your connection may have been slow — tap Try again on the verse or prayer section.",
+        });
+      }
+      return;
+    }
+
+    if (result.verse) setVerse(result.verse);
+    if (result.prayer) setPrayer(result.prayer);
+    if (!result.verse) setVpError(true);
+  }, [situation, toast]);
+
   const startGuidanceFlow = () => {
     setCompletionPath(null);
     setRevealStage(0);
     listenFirstTriggeredRef.current = false;
+    setVerse(null);
+    setPrayer(null);
+    setVpLoading(true);
+    setVpError(false);
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     streamResponse([initialUserMsg]);
     setTimeout(() => setIsReflecting(false), 2500);
 
     fetchJourney();
-
-    fetch("/api/guidance/verse-and-prayer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim(), sessionId: getSessionId(), userName: getUserName() ?? undefined }),
-    })
-      .then(r => r.json())
-      .then((data: { verse?: VerseResult; prayer?: string }) => {
-        if (data.verse) setVerse(data.verse);
-        if (data.prayer) setPrayer(data.prayer);
-        setVpLoading(false);
-      })
-      .catch(() => setVpLoading(false));
+    void loadVerseAndPrayer();
   };
 
   const handleNameDone = () => {
@@ -1019,7 +1086,7 @@ export default function GuidancePage() {
                       { key: "reflection", title: "What I’m hearing", text: movements.reflection },
                       { key: "scripture", title: "A verse for this moment", text: movements.scripture },
                       { key: "prayer", title: "A simple prayer", text: movements.prayer },
-                    ];
+                    ] as const;
                     return (
                       <div className="space-y-5" data-testid="text-guidance-response">
                         {sections.map((section) => (
@@ -1027,16 +1094,53 @@ export default function GuidancePage() {
                             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-2">
                               {section.title}
                             </p>
-                            <div
-                              className={section.key === "scripture"
-                                ? "text-[20px] leading-[1.78] text-foreground italic"
-                                : "text-[17px] leading-[1.78] text-foreground"}
-                              style={{ fontFamily: "var(--font-reading)" }}
-                            >
-                              {section.text.split("\n\n").map((para, i) => (
-                                <p key={i} className="mb-3 last:mb-0">{para}</p>
-                              ))}
-                            </div>
+                            {section.key === "scripture" && !verse && !section.text ? (
+                              vpLoading ? (
+                                <GuidanceVpLoading message="Finding Scripture for this moment…" />
+                              ) : (
+                                <GuidanceVpRetry
+                                  label="Scripture for your situation is still on its way — a slow connection sometimes needs a second try."
+                                  onRetry={() => void loadVerseAndPrayer()}
+                                  loading={vpLoading}
+                                />
+                              )
+                            ) : section.key === "prayer" && !movements.prayer.trim() ? (
+                              vpLoading ? (
+                                <GuidanceVpLoading message="Writing a prayer in your words…" />
+                              ) : (
+                                <div className="space-y-3">
+                                  <div
+                                    className="text-[17px] leading-[1.78] text-foreground italic"
+                                    style={{ fontFamily: "var(--font-reading)" }}
+                                  >
+                                    {GUIDANCE_FALLBACK_PRAYER}
+                                  </div>
+                                  {vpError && (
+                                    <GuidanceVpRetry
+                                      label="A personalized prayer couldn't load yet — you can pray this now, or try again."
+                                      onRetry={() => void loadVerseAndPrayer()}
+                                      loading={vpLoading}
+                                    />
+                                  )}
+                                </div>
+                              )
+                            ) : (
+                              <div
+                                className={section.key === "scripture"
+                                  ? "text-[20px] leading-[1.78] text-foreground italic"
+                                  : "text-[17px] leading-[1.78] text-foreground"}
+                                style={{ fontFamily: "var(--font-reading)" }}
+                              >
+                                {(section.key === "prayer" && section.text.trim()
+                                  ? section.text
+                                  : section.text || ""
+                                )
+                                  .split("\n\n")
+                                  .map((para, i) => (
+                                    <p key={i} className="mb-3 last:mb-0">{para}</p>
+                                  ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1251,7 +1355,7 @@ export default function GuidancePage() {
 
           {/* ── A Word For This Moment ── */}
           <AnimatePresence>
-            {revealStage >= 2 && (vpLoading || verse) && (
+            {revealStage >= 2 && (vpLoading || verse || vpError) && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1298,7 +1402,15 @@ export default function GuidancePage() {
                       </div>
                     }
                   />
-                ) : null}
+                ) : (
+                  <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 py-5">
+                    <GuidanceVpRetry
+                      label="Scripture for your moment is still preparing — tap Try again."
+                      onRetry={() => void loadVerseAndPrayer()}
+                      loading={vpLoading}
+                    />
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1453,7 +1565,7 @@ export default function GuidancePage() {
 
           {/* ── A Prayer Written For You ── */}
           <AnimatePresence>
-            {responseComplete && revealStage >= 3 && (prayer || vpLoading) && (
+            {responseComplete && revealStage >= 3 && (prayer || vpLoading || vpError) && (
               <motion.div
                 key="prayer-card"
                 initial={{ opacity: 0, y: 12 }}
@@ -1472,12 +1584,28 @@ export default function GuidancePage() {
                   </div>
 
                   {!prayer ? (
-                    <div className="space-y-2 animate-pulse">
-                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
-                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-5/6" />
-                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
-                      <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-4/5" />
-                    </div>
+                    vpLoading ? (
+                      <div className="space-y-2 animate-pulse">
+                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
+                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-5/6" />
+                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
+                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-4/5" />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic leading-relaxed">
+                          This can be your prayer — or a place to start.
+                        </p>
+                        <p className="text-[15px] leading-[1.8] text-foreground/90 italic">
+                          {GUIDANCE_FALLBACK_PRAYER}
+                        </p>
+                        <GuidanceVpRetry
+                          label="Personalized prayer couldn't load — pray this now, or try again."
+                          onRetry={() => void loadVerseAndPrayer()}
+                          loading={vpLoading}
+                        />
+                      </div>
+                    )
                   ) : (
                     <>
                       <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic mb-4 leading-relaxed">
