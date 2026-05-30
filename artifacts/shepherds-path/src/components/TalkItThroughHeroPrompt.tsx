@@ -111,23 +111,25 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
           rows={2}
           className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.05] px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed text-white placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-amber-500/35 focus:border-amber-500/25 transition-shadow"
         />
-        <div
-          className="pointer-events-none absolute inset-0 px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed overflow-hidden"
-          aria-hidden
-        >
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={placeholders[placeholderIdx]}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.22 }}
-              className="block text-white/38"
-            >
-              {placeholders[placeholderIdx]}
-            </motion.span>
-          </AnimatePresence>
-        </div>
+        {!value.trim() && (
+          <div
+            className="pointer-events-none absolute inset-0 px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed overflow-hidden"
+            aria-hidden
+          >
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={placeholders[placeholderIdx]}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22 }}
+                className="block text-white/38"
+              >
+                {placeholders[placeholderIdx]}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       <button
