@@ -120,6 +120,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   }, [moreOpen]);
 
   const overHomeHero = location === "/" || location === "";
+  const overCinematicHero = overHomeHero || location === "/guidance" || location.startsWith("/guidance/");
   const needsNotificationNudge =
     typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted";
 
@@ -214,7 +215,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       {showTop && !inNativeApp && (
         <nav
           className={`fixed top-0 left-0 right-0 z-[100] ${
-            overHomeHero
+            overCinematicHero
               ? "bg-gradient-to-b from-[#09031e]/88 via-[#09031e]/45 to-transparent backdrop-blur-md"
               : "bg-background/85 backdrop-blur-xl border-b border-border/40"
           }`}

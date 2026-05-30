@@ -698,44 +698,46 @@ export default function GuidancePage() {
           setPendingCoachRegenerate(false);
         }}
       />
-      <main className="min-h-screen bg-background pb-32 sp-app-top-clearance">
-        {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
+      <main className="min-h-screen pb-32 bg-background">
+        {/* Hero image must start at y=0 (no sp-app-top-clearance on main) — matches For You / ThresholdHero */}
         <div
-          className={`relative pt-2 sm:pt-3 overflow-hidden transition-all duration-700 ease-in-out ${
-            !situation && !streamingText ? "min-h-[248px] sm:min-h-[268px]" : ""
+          className={`transition-all duration-700 ease-in-out ${
+            !situation && !streamingText
+              ? "relative w-full overflow-hidden bg-[#09031e] h-[48vh] min-h-[300px] sm:h-[50vh] sm:min-h-[320px] max-h-[480px]"
+              : "relative sp-app-top-clearance pt-2 sm:pt-3 overflow-hidden"
           }`}
+          data-testid="guidance-hero"
         >
-          {heroImageSrc && (
-            <img
-              src={heroImageSrc}
-              alt=""
-              aria-hidden="true"
-              loading="eager"
-              // @ts-ignore - valid HTML attribute supported by browsers
-              fetchpriority="high"
-              className={`absolute inset-0 w-full h-full object-cover object-[center_40%] transition-opacity duration-700 ${
-                !situation && !streamingText ? "opacity-100" : "opacity-0"
-              }`}
-              style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.05)", transformOrigin: "50% top" }}
-              onError={(e) => {
-                const el = e.currentTarget;
-                const fallbacks = heroFallbacksRef.current;
-                const idx = fallbacks.findIndex((u) => el.src.includes(u.split("?")[0]!));
-                const next = fallbacks[idx + 1];
-                if (next && !el.src.includes(next.split("?")[0]!)) el.src = next;
-              }}
-            />
+          {!situation && !streamingText && (
+            <>
+              {heroImageSrc && (
+                <img
+                  src={heroImageSrc}
+                  alt=""
+                  aria-hidden="true"
+                  loading="eager"
+                  // @ts-ignore - valid HTML attribute supported by browsers
+                  fetchpriority="high"
+                  className="absolute inset-0 w-full h-full object-cover object-[center_28%]"
+                  style={{ filter: "brightness(0.82) saturate(1.15)", transform: "scale(1.08)", transformOrigin: "50% top" }}
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    const fallbacks = heroFallbacksRef.current;
+                    const idx = fallbacks.findIndex((u) => el.src.includes(u.split("?")[0]!));
+                    const next = fallbacks[idx + 1];
+                    if (next && !el.src.includes(next.split("?")[0]!)) el.src = next;
+                  }}
+                />
+              )}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, rgba(8,4,18,0.72) 0%, rgba(8,4,18,0.28) 14%, rgba(8,4,18,0) 38%, rgba(9,3,30,0.55) 78%, hsl(var(--background)) 100%)",
+                }}
+              />
+            </>
           )}
-
-          <div
-            className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
-              !situation && !streamingText ? "opacity-100" : "opacity-0"
-            }`}
-            style={{
-              background:
-                "linear-gradient(to bottom, rgba(8,4,18,0.2) 0%, rgba(8,4,18,0.05) 35%, rgba(9,3,30,0.45) 72%, hsl(var(--background)) 100%)",
-            }}
-          />
 
           <AnimatePresence mode="wait">
             {!situation && !streamingText ? (
@@ -745,7 +747,7 @@ export default function GuidancePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-10 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[240px] text-center px-5 pb-6"
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]"
               >
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80 select-none mb-4">
                   Talk It Through

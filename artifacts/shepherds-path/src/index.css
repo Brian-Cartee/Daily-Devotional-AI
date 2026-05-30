@@ -554,7 +554,7 @@ html[data-sp-shell="native"] #root {
   overflow: visible;
 }
 
-/* Fixed native top bar (conviction + menu) — keep page titles from sitting underneath */
+/* Fixed native top bar (conviction + menu) — compact headers only; never on Guidance main */
 html[data-sp-shell="native"] .sp-app-top-clearance {
   padding-top: calc(env(safe-area-inset-top, 0px) + 3.25rem);
 }
