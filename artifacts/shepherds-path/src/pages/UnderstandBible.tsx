@@ -34,6 +34,7 @@ import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
 import { BiblePassageText } from "@/components/BiblePassageText";
 import { CinematicPageHero } from "@/components/CinematicPageHero";
+import { scrollPageToTopReliable } from "@/lib/scrollPageToTop";
 
 function usePassageText(apiRef: string, enabled: boolean) {
   const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
@@ -734,7 +735,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
   const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
 
   return (
-    <main className="min-h-screen bg-background pb-28 sm:pb-16">
+    <main id="journey-detail-top" className="min-h-screen bg-background pb-28 sm:pb-16">
       <CinematicPageHero
         compact
         imageSrc={journey.image || getHeroImage("understand")}
@@ -794,7 +795,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
             className="flex flex-wrap gap-2 justify-center mb-5"
           >
             <button
-              onClick={() => { setActiveTheme(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              onClick={() => { setActiveTheme(null); scrollPageToTopReliable("smooth"); }}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${activeTheme === null ? "bg-primary text-primary-foreground" : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"}`}
             >
               All
@@ -802,7 +803,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
             {themes.map((theme) => (
               <button
                 key={theme}
-                onClick={() => { setActiveTheme(activeTheme === theme ? null : theme); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                onClick={() => { setActiveTheme(activeTheme === theme ? null : theme); scrollPageToTopReliable("smooth"); }}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${activeTheme === theme ? "bg-primary text-primary-foreground" : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"}`}
               >
                 {theme}
@@ -855,6 +856,24 @@ export default function UnderstandBible() {
 
   const activeJourney = selectedJourney ?? lifeSeasonJourney;
 
+  const scrollJourneyToTop = () => {
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+    scrollPageToTopReliable("auto");
+  };
+
+  useEffect(() => {
+    if (!activeJourney?.id) return;
+    scrollJourneyToTop();
+    const t1 = window.setTimeout(scrollJourneyToTop, 80);
+    const t2 = window.setTimeout(scrollJourneyToTop, 280);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [activeJourney?.id]);
+
   useEffect(() => {
     if (selectedJourney) {
       if (!canAccessJourney(selectedJourney)) {
@@ -878,12 +897,15 @@ export default function UnderstandBible() {
       setShowUpgrade(true);
       return;
     }
-    window.scrollTo({ top: 0, behavior: "instant" });
+    scrollJourneyToTop();
     navigate(`/understand?j=${journey.id}`);
   };
-  const handleLifeSeasonSelect = (journey: Journey) => { window.scrollTo({ top: 0, behavior: "instant" }); setLifeSeasonJourney(journey); };
+  const handleLifeSeasonSelect = (journey: Journey) => {
+    scrollJourneyToTop();
+    setLifeSeasonJourney(journey);
+  };
   const handleBack = () => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    scrollJourneyToTop();
     if (lifeSeasonJourney && situation) {
       navigate(`/guidance?situation=${encodeURIComponent(situation)}`);
     } else if (lifeSeasonJourney) {
@@ -915,7 +937,11 @@ export default function UnderstandBible() {
                       <ResumeBar
                         key="journey-resume"
                         label={bm.label}
-                        onResume={() => { navigate(`/understand?j=${bm.journeyId}`); setResumeDismissed(true); }}
+                        onResume={() => {
+                          scrollJourneyToTop();
+                          navigate(`/understand?j=${bm.journeyId}`);
+                          setResumeDismissed(true);
+                        }}
                         onDismiss={() => setResumeDismissed(true)}
                       />
                     ) : null;

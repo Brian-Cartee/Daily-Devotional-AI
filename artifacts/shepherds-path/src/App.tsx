@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { Switch, Route, useLocation, useSearch, Router as WouterRouter } from "wouter";
 import ThresholdArrivalPage from "@/pages/ThresholdArrivalPage";
 import SighRoomPage from "@/pages/SighRoomPage";
 import NightShepherdPage from "@/pages/NightShepherdPage";
@@ -72,10 +72,11 @@ import { scrollPageToTop } from "@/lib/scrollPageToTop";
 
 function ScrollToTop() {
   const [location] = useLocation();
+  const search = useSearch();
   useEffect(() => {
     if (location === "/" || location === "") return;
     scrollPageToTop("auto");
-  }, [location]);
+  }, [location, search]);
   return null;
 }
 
