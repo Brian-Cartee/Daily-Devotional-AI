@@ -4754,6 +4754,7 @@ ${historyNote}`;
 {
   "theme": "2–4 words describing the message theme (e.g. 'persistent prayer', 'lament before God', 'endurance in trials')",
   "preacher": "exactly ONE approved preacher whose gift fits this verse — do not default to Tony Evans",
+  "emotionTags": ["2–5 lowercase tags from: grief, loss, anxiety, fear, hopelessness, depression, anger, loneliness, doubt, confusion, shame, guilt, identity, purpose, direction, hope, gratitude, forgiveness, marriage, prodigal, addiction, suffering, healing, trust, surrender, waiting, courage, failure, rejection, betrayal, comparison, envy, pride, control, worth, relationship"],
   "searchQuery": "[preacher name] + theme words from the verse + 'sermon clip' or 'short teaching' (5–10 min)",
   "framing": "2 warm, unhurried sentences that begin with 'After sitting with' — explain why this short message was found for this person today. Reference the verse's emotional or spiritual theme, not the reference number. Write as a pastoral friend who found this specifically for them, not a curator. Never mention AI, algorithm, or technology."
 }
@@ -4768,9 +4769,46 @@ ${PASTOR_TIER_AI_GUIDE}`,
       });
 
       const analysis = JSON.parse(analysisRes.choices[0]?.message?.content || "{}");
+      const emotionTags: string[] = Array.isArray(analysis.emotionTags) ? analysis.emotionTags : [];
+
+      // Step 2: Library-first — indexed transcript segments (most accurate when populated)
+      const { findBestDailySegment, formatClipDuration } = await import("../sermonIngestion");
+      const librarySeg =
+        emotionTags.length > 0
+          ? await findBestDailySegment({
+              emotionTags,
+              pastorHint: analysis.preacher,
+              rotationSeed: cacheKey,
+            })
+          : null;
+
+      if (librarySeg) {
+        const clipSecs = librarySeg.endSeconds - librarySeg.startSeconds;
+        const result = {
+          found: true,
+          source: "library" as const,
+          sermon: {
+            videoId: librarySeg.youtubeId,
+            title: librarySeg.momentTitle || librarySeg.summary,
+            channel: librarySeg.preacher,
+            thumbnail: `https://img.youtube.com/vi/${librarySeg.youtubeId}/hqdefault.jpg`,
+            duration: formatClipDuration(clipSecs),
+            theme: analysis.theme || "",
+            framing: analysis.framing || "",
+            startSeconds: librarySeg.startSeconds,
+            quote: librarySeg.quote || null,
+          },
+        };
+        dailySermonCache.set(cacheKey, result);
+        if (dailySermonCache.size > 20) {
+          dailySermonCache.delete(dailySermonCache.keys().next().value!);
+        }
+        return res.json(result);
+      }
+
       if (!analysis.searchQuery) return res.json({ found: false });
 
-      // Step 2: YouTube search — medium-length videos (4–20 min), embeddable, trusted channels ranked first
+      // Step 3: YouTube search fallback — medium-length videos (4–20 min), trusted channels ranked first
       const ytKey = process.env.YOUTUBE_API_KEY;
       if (!ytKey) return res.json({ found: false });
 
@@ -4797,7 +4835,6 @@ ${PASTOR_TIER_AI_GUIDE}`,
       const videoId = video.id.videoId;
       const snippet = video.snippet!;
 
-      // Step 3: Get duration
       const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${ytKey}`;
       const detailsRes = await fetch(detailsUrl);
       const detailsData = (await detailsRes.json()) as any;
@@ -4815,6 +4852,7 @@ ${PASTOR_TIER_AI_GUIDE}`,
 
       const result = {
         found: true,
+        source: "youtube" as const,
         sermon: {
           videoId,
           title: snippet.title,
@@ -5364,6 +5402,42 @@ When in doubt, return shouldSuggest: false. One wrong recommendation breaks trus
       return res.json(result);
     } catch (err) {
       console.error("[admin/sermons/ingest] error:", err);
+      return res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.get("/api/admin/sermons/curated", async (req, res) => {
+    const adminPw = req.headers["x-admin-password"] || req.query.adminPassword;
+    if (adminPw !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const { CURATED_SERMON_SEED } = await import("../curatedSermonSeed");
+    const { getSermonLibraryStats } = await import("../sermonIngestion");
+    const stats = await getSermonLibraryStats();
+    return res.json({ curated: CURATED_SERMON_SEED, stats });
+  });
+
+  app.post("/api/admin/sermons/seed-curated", async (req, res) => {
+    const adminPw = req.headers["x-admin-password"] || req.body.adminPassword;
+    if (adminPw !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    try {
+      const { CURATED_SERMON_SEED } = await import("../curatedSermonSeed");
+      const { ingestSermon, getSermonLibraryStats } = await import("../sermonIngestion");
+      const delayMs = Math.min(5000, Math.max(800, Number(req.body?.delayMs) || 1500));
+      const results: Array<{ youtubeId: string; success: boolean; segmentsCreated?: number; error?: string }> = [];
+
+      for (const sermon of CURATED_SERMON_SEED) {
+        const result = await ingestSermon(sermon.youtubeId, sermon.title, sermon.preacher);
+        results.push({ youtubeId: sermon.youtubeId, ...result });
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+
+      const stats = await getSermonLibraryStats();
+      return res.json({ ok: true, results, stats });
+    } catch (err) {
+      console.error("[admin/sermons/seed-curated] error:", err);
       return res.status(500).json({ error: String(err) });
     }
   });

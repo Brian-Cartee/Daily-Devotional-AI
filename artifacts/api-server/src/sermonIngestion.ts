@@ -166,22 +166,92 @@ ${transcript.slice(0, 14000)}`;
   }
 }
 
+function hashSeed(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function preacherMatches(hint: string | undefined, preacher: string): boolean {
+  if (!hint?.trim()) return false;
+  const h = hint.toLowerCase().replace(/\./g, "").trim();
+  const p = preacher.toLowerCase().replace(/\./g, "").trim();
+  return p.includes(h) || h.includes(p) || h.split(/\s+/).some((w) => w.length > 2 && p.includes(w));
+}
+
+/** Format seconds as m:ss or h:mm:ss for UI badges */
+export function formatClipDuration(totalSeconds: number): string {
+  const secs = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 // Find the best matching segment(s) for a set of detected emotion tags
 export async function findMatchingSegments(
   emotionTags: string[],
-  limit = 3
+  limit = 3,
 ) {
   if (!emotionTags || emotionTags.length === 0) return [];
 
   const all = await db.select().from(sermonSegments);
   if (all.length === 0) return [];
 
-  // Score each segment by how many emotion tags overlap
-  const scored = all.map(seg => {
-    const overlap = seg.emotionTags.filter((t: string) => emotionTags.includes(t)).length;
-    return { ...seg, score: overlap };
-  }).filter(s => s.score > 0);
+  const scored = all
+    .map((seg) => {
+      const overlap = seg.emotionTags.filter((t: string) => emotionTags.includes(t)).length;
+      return { ...seg, score: overlap };
+    })
+    .filter((s) => s.score > 0);
 
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, limit);
+}
+
+/**
+ * Library-first pick for daily devotional — scored by emotion tags, optional preacher fit,
+ * stable rotation so the same verse/day doesn't always return the same segment when ties exist.
+ */
+export async function findBestDailySegment(opts: {
+  emotionTags: string[];
+  pastorHint?: string;
+  rotationSeed?: string;
+}) {
+  const { emotionTags, pastorHint, rotationSeed } = opts;
+  if (!emotionTags?.length) return null;
+
+  const all = await db.select().from(sermonSegments);
+  if (all.length === 0) return null;
+
+  const scored = all
+    .map((seg) => {
+      const overlap = seg.emotionTags.filter((t: string) => emotionTags.includes(t)).length;
+      let score = overlap * 10;
+      if (pastorHint && preacherMatches(pastorHint, seg.preacher)) score += 4;
+      const clipLen = seg.endSeconds - seg.startSeconds;
+      if (clipLen >= 120 && clipLen <= 720) score += 2;
+      return { ...seg, score };
+    })
+    .filter((s) => s.score > 0);
+
+  if (scored.length === 0) return null;
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, Math.min(5, scored.length));
+  const idx = rotationSeed ? hashSeed(rotationSeed) % top.length : 0;
+  return top[idx] ?? null;
+}
+
+export async function getSermonLibraryStats() {
+  const videos = await db.select().from(sermonVideos);
+  const segments = await db.select().from(sermonSegments);
+  return {
+    videoCount: videos.length,
+    segmentCount: segments.length,
+    readyForDailyMatching: segments.length > 0,
+  };
 }

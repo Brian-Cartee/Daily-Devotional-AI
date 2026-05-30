@@ -20,20 +20,15 @@ const SUGGESTED_PREACHERS = [
   "Matt Chandler",
 ];
 
-const CURATED_SERMONS = [
-  { youtubeId: "HBKJkRpFJgE", title: "Walking with God Through Pain and Suffering", preacher: "Tim Keller" },
-  { youtubeId: "PZ5q00eKLq4", title: "The Prodigal God", preacher: "Tim Keller" },
-  { youtubeId: "eCNE0_V3wbI", title: "Identity in Christ", preacher: "Tim Keller" },
-  { youtubeId: "PV2yEHi5KLQ", title: "Waiting on God — When He Seems Silent", preacher: "Louie Giglio" },
-  { youtubeId: "UJGX5nFfbhU", title: "Anxiety and the Peace That Passes Understanding", preacher: "Louie Giglio" },
-  { youtubeId: "FZiOmaTFnzU", title: "Facing Suffering with Faith", preacher: "David Platt" },
-  { youtubeId: "6_GJRN0Z8MY", title: "Forgiveness: Releasing What We Cannot Hold", preacher: "David Platt" },
-  { youtubeId: "oBxuVTgXI0M", title: "Crazy Love — Stop Settling for Comfortable", preacher: "Francis Chan" },
-  { youtubeId: "CgqEUoA_V5g", title: "Doubt and the Darkness Before Dawn", preacher: "Matt Chandler" },
-  { youtubeId: "w5FbxJ_E9kU", title: "Marriage: Two Broken People Becoming One", preacher: "Matt Chandler" },
-];
+type CuratedSermon = { youtubeId: string; title: string; preacher: string };
 
 type IngestStatus = "idle" | "loading" | "success" | "error";
+
+type LibraryStats = {
+  videoCount: number;
+  segmentCount: number;
+  readyForDailyMatching: boolean;
+};
 
 interface SermonStatus {
   status: IngestStatus;
@@ -64,6 +59,10 @@ export default function AdminSermonsPage() {
   const [activeTab, setActiveTab] = useState<"curated" | "search">("search");
 
   // Curated state
+  const [curatedSermons, setCuratedSermons] = useState<CuratedSermon[]>([]);
+  const [libraryStats, setLibraryStats] = useState<LibraryStats | null>(null);
+  const [seedRunning, setSeedRunning] = useState(false);
+  const [seedMessage, setSeedMessage] = useState("");
   const [statuses, setStatuses] = useState<Record<string, SermonStatus>>({});
 
   // Search state
@@ -76,6 +75,18 @@ export default function AdminSermonsPage() {
   const [preacherName, setPreacherName] = useState("");
   const [lastSearched, setLastSearched] = useState("");
 
+  const loadCuratedMeta = async (pw: string) => {
+    try {
+      const res = await fetch("/api/admin/sermons/curated?adminPassword=" + encodeURIComponent(pw));
+      if (!res.ok) return;
+      const data = await res.json();
+      setCuratedSermons(data.curated || []);
+      setLibraryStats(data.stats || null);
+    } catch {
+      /* non-fatal */
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -83,6 +94,7 @@ export default function AdminSermonsPage() {
       const res = await fetch("/api/admin/sermons?adminPassword=" + encodeURIComponent(password));
       if (res.status === 401) { setAuthError("Incorrect password."); return; }
       setAuthenticated(true);
+      await loadCuratedMeta(password);
     } catch { setAuthError("Server error. Try again."); }
   };
 
@@ -107,10 +119,47 @@ export default function AdminSermonsPage() {
   };
 
   const ingestAll = async () => {
-    for (const sermon of CURATED_SERMONS) {
+    for (const sermon of curatedSermons) {
       if (statuses[sermon.youtubeId]?.status === "success") continue;
       await ingest(sermon, false);
       await new Promise(r => setTimeout(r, 1500));
+    }
+    await loadCuratedMeta(password);
+  };
+
+  const seedCuratedOnServer = async () => {
+    setSeedRunning(true);
+    setSeedMessage("");
+    try {
+      const res = await fetch("/api/admin/sermons/seed-curated", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-password": password },
+        body: JSON.stringify({ delayMs: 1500 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSeedMessage(data.error || "Seed failed");
+        return;
+      }
+      const ok = (data.results || []).filter((r: { success: boolean }) => r.success).length;
+      setSeedMessage(
+        `Indexed ${ok}/${data.results?.length ?? 0} sermons · ${data.stats?.segmentCount ?? 0} segments in library`,
+      );
+      if (data.stats) setLibraryStats(data.stats);
+      for (const r of data.results || []) {
+        setStatuses(prev => ({
+          ...prev,
+          [r.youtubeId]: {
+            status: r.success ? "success" : "error",
+            segmentsCreated: r.segmentsCreated,
+            error: r.error,
+          },
+        }));
+      }
+    } catch (err) {
+      setSeedMessage(String(err));
+    } finally {
+      setSeedRunning(false);
     }
   };
 
@@ -426,19 +475,46 @@ export default function AdminSermonsPage() {
         {/* ── CURATED TAB ────────────────────────────────────────── */}
         {activeTab === "curated" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>Pre-selected sermon library starter pack.</p>
-              <button
-                onClick={ingestAll}
-                data-testid="btn-ingest-all"
-                className="text-sm font-bold px-4 py-2 rounded-xl"
-                style={{ background: "linear-gradient(135deg, #7a018d, #442f74)", color: "white" }}
-              >
-                Ingest All
-              </button>
+            <div className="rounded-xl px-4 py-3 mb-4" style={{ background: "rgba(122,1,141,0.12)", border: "1px solid rgba(122,1,141,0.25)" }}>
+              <p className="text-[13px] leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
+                <strong style={{ color: "rgba(220,170,255,0.95)" }}>Library-first daily clip:</strong> after indexing,
+                the devotional tries emotion-tagged segments before YouTube search — more accurate moments, exact start times.
+              </p>
+              {libraryStats && (
+                <p className="text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  {libraryStats.videoCount} videos · {libraryStats.segmentCount} segments ·{" "}
+                  {libraryStats.readyForDailyMatching ? "daily matching ON" : "run seed to enable matching"}
+                </p>
+              )}
             </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>Starter pack ({curatedSermons.length} sermons).</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void seedCuratedOnServer()}
+                  disabled={seedRunning}
+                  data-testid="btn-seed-curated-server"
+                  className="text-sm font-bold px-4 py-2 rounded-xl flex items-center gap-2"
+                  style={{ background: "rgba(120,220,120,0.15)", color: "rgba(180,255,180,0.95)", border: "1px solid rgba(120,220,120,0.35)" }}
+                >
+                  {seedRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  Seed library (server)
+                </button>
+                <button
+                  onClick={() => void ingestAll()}
+                  data-testid="btn-ingest-all"
+                  className="text-sm font-bold px-4 py-2 rounded-xl"
+                  style={{ background: "linear-gradient(135deg, #7a018d, #442f74)", color: "white" }}
+                >
+                  Ingest All (browser)
+                </button>
+              </div>
+            </div>
+            {seedMessage && (
+              <p className="text-xs mb-3" style={{ color: "rgba(180,255,180,0.85)" }}>{seedMessage}</p>
+            )}
             <div className="space-y-3">
-              {CURATED_SERMONS.map(sermon => {
+              {curatedSermons.map(sermon => {
                 const status = statuses[sermon.youtubeId];
                 return (
                   <div

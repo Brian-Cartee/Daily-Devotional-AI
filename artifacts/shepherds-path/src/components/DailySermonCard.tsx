@@ -24,6 +24,9 @@ interface Sermon {
   duration: string;
   theme: string;
   framing: string;
+  /** Indexed library clip — start at this timestamp in the embed */
+  startSeconds?: number;
+  source?: "library" | "youtube";
 }
 
 interface DailySermonCardProps {
@@ -57,7 +60,7 @@ function showSermonUpsell(verseId: number): boolean {
   return ids.length >= SERMON_LIMIT && !ids.includes(verseId);
 }
 
-function youtubeEmbedUrl(videoId: string): string {
+function youtubeEmbedUrl(videoId: string, startSeconds?: number): string {
   const origin = typeof window !== "undefined" ? encodeURIComponent(window.location.origin) : "";
   const params = new URLSearchParams({
     autoplay: "1",
@@ -68,6 +71,7 @@ function youtubeEmbedUrl(videoId: string): string {
     enablejsapi: "1",
   });
   if (origin) params.set("origin", origin);
+  if (startSeconds != null && startSeconds > 0) params.set("start", String(startSeconds));
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 }
 
@@ -170,7 +174,8 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
 
   const openOnYouTube = () => {
     if (!sermon) return;
-    window.open(`https://www.youtube.com/watch?v=${sermon.videoId}`, "_blank", "noopener,noreferrer");
+    const t = sermon.startSeconds != null && sermon.startSeconds > 0 ? `&t=${sermon.startSeconds}` : "";
+    window.open(`https://www.youtube.com/watch?v=${sermon.videoId}${t}`, "_blank", "noopener,noreferrer");
   };
 
   useEffect(() => {
@@ -509,9 +514,9 @@ export function DailySermonCard({ verseId, verseReference, reflectionContent, on
               </div>
               <div className="relative" style={{ paddingBottom: "56.25%" }}>
                 <iframe
-                  key={sermon.videoId}
+                  key={`${sermon.videoId}-${sermon.startSeconds ?? 0}`}
                   title={decodeHtmlEntities(sermon.title)}
-                  src={youtubeEmbedUrl(sermon.videoId)}
+                  src={youtubeEmbedUrl(sermon.videoId, sermon.startSeconds)}
                   className="absolute inset-0 w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
