@@ -49,6 +49,8 @@ import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { FirstDayCard } from "@/components/EngagementCards";
 import { getCachedReflection, getCachedPrayer, cacheReflection, cachePrayer, clearDevotionalSession } from "@/lib/devotionalSession";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
+import { DailySermonCard } from "@/components/DailySermonCard";
+import { DevotionalCompletionThreshold } from "@/components/DevotionalCompletionThreshold";
 import { ScriptureContext } from "@/components/ScriptureContext";
 import { SessionStillness } from "@/components/SessionStillness";
 import { getListenFirstPreference } from "@/lib/listenFirst";
@@ -148,6 +150,9 @@ export default function Devotional() {
   const [friendShareDone, setFriendShareDone] = useState(false);
   const [postPrayerShareDone, setPostPrayerShareDone] = useState(false);
   const [showPostCompletionCtas, setShowPostCompletionCtas] = useState(false);
+  /** After closing gratitude: null = gentle fork; carry = send-off; stay = daily message + optional depth */
+  const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
+  const [primarySermonChannel, setPrimarySermonChannel] = useState<string | undefined>();
   const [listenHintSeen, setListenHintSeen] = useState(() => !!localStorage.getItem("sp_listen_intro_seen"));
   const [showShareRow, setShowShareRow] = useState(false);
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | null>(null);
@@ -159,13 +164,18 @@ export default function Devotional() {
   const [verseInMemory, setVerseInMemory] = useState(false);
 
   useEffect(() => {
-    if (!gratitudePrayer) {
+    if (!gratitudePrayer || completionPath !== "stay") {
       setShowPostCompletionCtas(false);
       return;
     }
-    const t = window.setTimeout(() => setShowPostCompletionCtas(true), 7000);
+    const t = window.setTimeout(() => setShowPostCompletionCtas(true), 5000);
     return () => window.clearTimeout(t);
-  }, [gratitudePrayer]);
+  }, [gratitudePrayer, completionPath]);
+
+  useEffect(() => {
+    setCompletionPath(null);
+    setPrimarySermonChannel(undefined);
+  }, [verse?.id]);
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -569,6 +579,16 @@ export default function Devotional() {
     setListenSection(null);
   };
 
+  const fullListenReady =
+    !!verse &&
+    !!reflectionContent.trim() &&
+    !reflectionLoading &&
+    !!prayerContent.trim() &&
+    !prayerLoading;
+
+  const showFullListenBar =
+    !!verse && (!!reflectionContent.trim() || reflectionLoading || !!prayerContent.trim() || prayerLoading);
+
   const startFullListen = async () => {
     if (ttsListen.playing || ttsListen.loading) { stopFullListen(); return; }
     if (!listenHintSeen) { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }
@@ -578,8 +598,13 @@ export default function Devotional() {
       return;
     }
 
-    // Don't start if content is still generating — wait for at least reflection
-    if (reflectionLoading || (!reflectionContent && !prayerContent)) return;
+    if (!fullListenReady) {
+      toast({
+        title: prayerLoading || !prayerContent.trim() ? "Prayer is still preparing" : "Reflection is still preparing",
+        description: "Full listen plays all three parts in order — verse, reflection, then prayer. One moment.",
+      });
+      return;
+    }
 
     setShowListenReply(false);
     setListenReplySaved(false);
@@ -589,11 +614,11 @@ export default function Devotional() {
       .replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "")
       .trim();
 
-    const sections: Array<{ key: string; text: string }> = [];
-    if (verse) sections.push({ key: "verse", text: `${verse.text}. ${verse.reference}.` });
-    if (reflectionContent.trim()) sections.push({ key: "reflection", text: reflectionContent });
-    if (cleanPrayer.trim()) sections.push({ key: "prayer", text: cleanPrayer });
-    if (sections.length === 0) return;
+    const sections: Array<{ key: string; text: string }> = [
+      { key: "verse", text: `${verse!.text}. ${verse!.reference}.` },
+      { key: "reflection", text: reflectionContent.trim() },
+      { key: "prayer", text: cleanPrayer },
+    ];
 
     recordDevotionalChainStarted();
 
@@ -615,15 +640,14 @@ export default function Devotional() {
   };
 
   useEffect(() => {
-    if (!reflectionContent || listenFirstTriggeredRef.current) return;
+    if (!fullListenReady || listenFirstTriggeredRef.current) return;
     if (!canUseListenFirstAuto() || !getListenFirstPreference()) return;
-    if (reflectionLoading) return;
     listenFirstTriggeredRef.current = true;
     const t = setTimeout(() => {
       void startFullListen();
     }, 800);
     return () => clearTimeout(t);
-  }, [reflectionContent, reflectionLoading]);
+  }, [fullListenReady]);
 
   const handleShare = async () => {
     if (!verse) return;
@@ -1078,7 +1102,7 @@ export default function Devotional() {
               )}
 
               {/* ── Full Devotional Listen Mode ──────────────────── */}
-              {(reflectionContent || prayerContent) && (
+              {showFullListenBar && (
                 <div className="mx-4 mb-4 mt-1 rounded-xl border border-primary/18 px-4 py-3 flex items-center justify-between gap-3 overflow-hidden relative" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.07) 0%, hsl(var(--primary)/0.03) 100%)" }}>
                   {/* Subtle top line */}
                   <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary)/0.35), transparent)" }} />
@@ -1131,22 +1155,31 @@ export default function Devotional() {
                       ) : (
                         <>
                           <p className="text-[13px] font-semibold text-foreground leading-none">Full devotional</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">Verse · Reflection · Prayer</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">
+                            {fullListenReady
+                              ? "Verse · Reflection · Prayer — one continuous listen"
+                              : prayerLoading || !prayerContent.trim()
+                                ? "Verse · Reflection · Prayer preparing…"
+                                : "Verse · Reflection · Prayer preparing…"}
+                          </p>
                         </>
                       )}
                     </div>
                   </div>
                   <button
                     onClick={ttsListen.blocked ? ttsListen.resumeAfterBlock : startFullListen}
+                    disabled={!fullListenReady && !ttsListen.blocked && !listenSection && !ttsListen.loading}
                     data-testid="button-full-devotional-listen"
                     className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
                       ttsListen.blocked
                         ? "bg-amber-500 text-white shadow-sm"
                         : listenSection || ttsListen.loading
                         ? "bg-primary/20 text-primary"
-                        : "bg-primary text-primary-foreground shadow-sm"
+                        : fullListenReady
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground/70 cursor-not-allowed"
                     }`}
-                    style={!listenSection && !ttsListen.loading && !ttsListen.blocked ? { boxShadow: "0 4px 14px hsl(var(--primary)/0.28)" } : {}}
+                    style={fullListenReady && !listenSection && !ttsListen.loading && !ttsListen.blocked ? { boxShadow: "0 4px 14px hsl(var(--primary)/0.28)" } : {}}
                   >
                     {ttsListen.blocked ? (
                       <><Headphones className="w-3 h-3" /> Tap to play</>
@@ -1154,6 +1187,8 @@ export default function Devotional() {
                       <><Square className="w-3 h-3 fill-current" /> Stop</>
                     ) : listenSection ? (
                       <><Square className="w-3 h-3 fill-current" /> Stop</>
+                    ) : !fullListenReady ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Preparing</>
                     ) : (
                       <><Headphones className="w-3 h-3" /> Listen</>
                     )}
@@ -1563,8 +1598,8 @@ export default function Devotional() {
             </AnimatePresence>
           </div>
 
-          {/* Devotional benediction — shown after prayer loads for all users */}
-          {prayerContent && (
+          {/* Devotional benediction — after today's closing prayer */}
+          {gratitudePrayer && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1596,22 +1631,68 @@ export default function Devotional() {
                   ? "You came back again. That matters more than you realize."
                   : "You spent time in the Word today. Let it stay with you."}
               </p>
-              <div className="mt-5 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowStillness(true)}
-                  data-testid="btn-devotional-stillness"
-                  className="text-[13px] font-semibold text-muted-foreground/80 hover:text-foreground px-4 py-2 rounded-full border border-border/50 hover:border-primary/30 transition-colors"
-                >
-                  Close in stillness
-                </button>
-              </div>
             </motion.div>
           )}
 
-          {/* Streak indicator + weekly tracker (after completion, never before) */}
+          {/* Gentle fork — ease in after benediction; reduces end-of-page decision fatigue */}
+          {gratitudePrayer && completionPath === null && (
+            <DevotionalCompletionThreshold
+              onCarry={() => {
+                setCompletionPath("carry");
+                window.setTimeout(() => setShowStillness(true), 450);
+              }}
+              onStay={() => setCompletionPath("stay")}
+            />
+          )}
+
+          {gratitudePrayer && completionPath === "carry" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-center px-4 pb-2 space-y-3"
+            >
+              <p className="text-[13px] text-muted-foreground/65 italic" style={{ fontFamily: "'Georgia', serif" }}>
+                Go in peace. The Word goes with you.
+              </p>
+              <button
+                type="button"
+                data-testid="btn-devotional-stillness-again"
+                onClick={() => setShowStillness(true)}
+                className="text-[12px] font-medium text-muted-foreground/70 hover:text-foreground underline-offset-2 hover:underline"
+              >
+                Pause in stillness again
+              </button>
+              <button
+                type="button"
+                data-testid="btn-devotional-switch-to-stay"
+                onClick={() => setCompletionPath("stay")}
+                className="block mx-auto text-[12px] text-muted-foreground/50 hover:text-primary/80 transition-colors"
+              >
+                Actually — I have a few more minutes
+              </button>
+            </motion.div>
+          )}
+
+          {gratitudePrayer && completionPath === "stay" && verse && reflectionContent && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className="px-1"
+            >
+              <DailySermonCard
+                verseId={verse.id}
+                verseReference={verse.reference}
+                reflectionContent={reflectionContent}
+                onSermonLoaded={setPrimarySermonChannel}
+              />
+            </motion.div>
+          )}
+
+          {/* Streak indicator + weekly tracker (after they choose a path) */}
           <AnimatePresence>
-            {gratitudePrayer && streak && streak.currentStreak >= 3 && (
+            {gratitudePrayer && completionPath !== null && streak && streak.currentStreak >= 3 && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1696,8 +1777,8 @@ export default function Devotional() {
             )}
           </AnimatePresence>
 
-          {/* Streak Pro nudge only after gratitude close + quiet pause */}
-          {showPostCompletionCtas && gratitudePrayer && streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
+          {/* Streak Pro nudge — only on "stay" path, after quiet pause */}
+          {showPostCompletionCtas && completionPath === "stay" && gratitudePrayer && streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1716,8 +1797,8 @@ export default function Devotional() {
 
           {/* Daily email/SMS sign-up moved to home page footer — see LandingHome */}
 
-          {/* Post-prayer prayer nudge — appears after prayer + benediction */}
-          {showPostCompletionCtas && prayerContent && !postPrayerShareDone && (
+          {/* Post-prayer prayer nudge — stay path only */}
+          {showPostCompletionCtas && completionPath === "stay" && prayerContent && !postPrayerShareDone && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1758,8 +1839,8 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {/* Save Today's Devotional — slim inline bar */}
-          {(reflectionContent || prayerContent) && (
+          {/* Save Today's Devotional — after fork choice */}
+          {completionPath !== null && (reflectionContent || prayerContent) && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1811,22 +1892,32 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {/* Go Deeper — optional teaching clips (user expands when ready) */}
-          {reflectionContent && (
-            <div className="px-4">
+          {/* More teaching — secondary to the one daily message */}
+          {completionPath === "stay" && reflectionContent && verse && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35 }}
+              className="px-4"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/40 text-center mb-2">
+                Optional
+              </p>
               <AdditionalSermonsSection
                 verseId={verse.id}
                 verseReference={verse.reference}
                 reflectionContent={reflectionContent}
+                primaryChannel={primarySermonChannel}
               />
-            </div>
+            </motion.div>
           )}
 
-          {/* Day 1 → Day 2 hook — shown to first-day users after prayer loads */}
-          <FirstDayCard isFirstDay={streak?.currentStreak === 1 && !!prayerContent} />
-
-          {/* Share & Invite — at the very bottom */}
-          <ShareInviteCard />
+          {completionPath !== null && (
+            <>
+              <FirstDayCard isFirstDay={streak?.currentStreak === 1 && !!prayerContent} />
+              <ShareInviteCard />
+            </>
+          )}
 
 
         </motion.div>

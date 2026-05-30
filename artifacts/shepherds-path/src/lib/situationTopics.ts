@@ -39,3 +39,20 @@ export const SITUATION_TOPICS: SituationTopic[] = [
     situation: "Everything feels like too much right now. I need Scripture and prayer that steadies my heart.",
   },
 ];
+
+/** Short chips on the home “You’re safe here” arrival card → full Guidance situation text. */
+export const ARRIVAL_CARE_PRESETS = [
+  { chip: "I feel alone", topicId: "loneliness" },
+  { chip: "I'm anxious", topicId: "anxiety" },
+  { chip: "I'm grieving", topicId: "grief" },
+  { chip: "I'm exhausted", topicId: "overwhelm" },
+] as const;
+
+export function situationForArrivalChip(chip: string): string {
+  const preset = ARRIVAL_CARE_PRESETS.find((p) => p.chip === chip);
+  if (preset) {
+    const topic = SITUATION_TOPICS.find((t) => t.id === preset.topicId);
+    if (topic) return topic.situation;
+  }
+  return chip.trim();
+}

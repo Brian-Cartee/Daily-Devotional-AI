@@ -3,16 +3,11 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wind, ArrowRight, Moon } from "lucide-react";
 import { isLateNight } from "@/lib/nightMode";
+import { ARRIVAL_CARE_PRESETS, situationForArrivalChip } from "@/lib/situationTopics";
 
 const ARRIVAL_KEY = "sp_arrival_shown_v1";
 
 type NextStep = "talk" | "scripture" | "breathe";
-const CARE_PATHS = [
-  "I feel alone",
-  "I’m anxious",
-  "I’m grieving",
-  "I’m exhausted",
-];
 
 function encodeSituation(s: string): string {
   return encodeURIComponent(s.trim());
@@ -91,13 +86,17 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
     navigate(`/guidance${q}`);
   };
 
+  const canSubmit = value.trim().length >= 3;
+
   const submit = () => {
+    if (!canSubmit) return;
     setSubmitted(true);
-    markArrivalRitualShown();
-    onComplete?.();
   };
 
-  const canSubmit = value.trim().length >= 3;
+  const selectCareChip = (chip: string) => {
+    setValue(situationForArrivalChip(chip));
+    setSubmitted(true);
+  };
 
   return (
     <div className={className}>
@@ -169,20 +168,15 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  {CARE_PATHS.map((path) => (
+                  {ARRIVAL_CARE_PRESETS.map(({ chip }) => (
                     <button
-                      key={path}
+                      key={chip}
                       type="button"
-                      onClick={() => {
-                        setValue(path);
-                        setSubmitted(true);
-                        markArrivalRitualShown();
-                        onComplete?.();
-                      }}
+                      onClick={() => selectCareChip(chip)}
                       className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white/70 transition-colors"
-                      data-testid={`chip-care-${path.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                      data-testid={`chip-care-${chip.toLowerCase().replace(/[^a-z]+/g, "-")}`}
                     >
-                      {path}
+                      {chip}
                     </button>
                   ))}
                 </div>
