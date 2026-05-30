@@ -24,6 +24,7 @@ import { getUserName } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
 import { getHeroImage } from "@/lib/heroImage";
 import { createShareImage } from "@/lib/shareImage";
+import { shareImageBlob, shareImageFilename } from "@/lib/shareVerse";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 import { GuidedPathwaysSection } from "@/components/GuidedPathwaysSection";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -163,17 +164,15 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
     try {
       const verseText = textQuery.data.text.replace(/\[\d+\]/g, "").trim();
       const blob = await createShareImage(verseText, chapter.reference, null);
-      const file = new File([blob], `shepherd-path-${chapter.reference.replace(/\s/g, "-")}.png`, { type: "image/png" });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${chapter.reference} — Shepherd's Path` });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = file.name;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast({ description: "Scripture card saved!" });
+      const result = await shareImageBlob(blob, {
+        filename: shareImageFilename(chapter.reference),
+        title: `${chapter.reference} — Shepherd's Path`,
+        text: `"${verseText.slice(0, 200)}${verseText.length > 200 ? "…" : ""}"\n— ${chapter.reference}\n\nShepherd's Path`,
+      });
+      if (result === "shared") {
+        toast({ description: "Choose where to send your scripture card." });
+      } else if (result === "saved") {
+        toast({ description: "Scripture card saved — share from Photos." });
       }
       setCardDone(true);
       setTimeout(() => setCardDone(false), 2500);

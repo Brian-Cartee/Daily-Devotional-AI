@@ -91,6 +91,44 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+/** Save a generated share card to the device (Photos / Downloads). */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+export function shareImageFilename(reference: string): string {
+  const slug = reference.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "") || "verse";
+  return `shepherds-path-${slug}.png`;
+}
+
+/** Native share with image file; falls back to download when the OS can't share files. */
+export async function shareImageBlob(
+  blob: Blob,
+  opts: { filename: string; title?: string; text: string; url?: string },
+): Promise<"shared" | "saved" | "cancelled" | "failed"> {
+  const file = new File([blob], opts.filename, { type: "image/png" });
+  const canTryFiles = !navigator.canShare || navigator.canShare({ files: [file] });
+  if (canTryFiles && navigator.share) {
+    const result = await shareNative({
+      title: opts.title ?? "Shepherd's Path",
+      text: opts.text,
+      url: opts.url,
+      files: [file],
+    });
+    if (result === "shared" || result === "cancelled") return result;
+  }
+  downloadBlob(blob, opts.filename);
+  return "saved";
+}
+
 export async function shareNative(payload: {
   title?: string;
   text: string;

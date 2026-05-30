@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download, RefreshCw } from "lucide-react";
-import { isProVerifiedLocally } from "@/lib/proStatus";
+import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download, RefreshCw, Copy, MessageCircle } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UpgradeModal } from "@/components/UpgradeModal";
 import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage, PHOTO_POOL } from "@/lib/shareImage";
+import { copyToClipboard, downloadBlob, shareImageBlob, shareImageFilename, shareNative } from "@/lib/shareVerse";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
@@ -115,8 +114,6 @@ export default function CallingPage() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [previewFormat, setPreviewFormat] = useState<"square" | "story">("square");
   const [regenerating, setRegenerating] = useState(false);
-  const [showShareUpgrade, setShowShareUpgrade] = useState(false);
-
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GeneratedCard | null>(null);
@@ -211,60 +208,97 @@ export default function CallingPage() {
   };
 
   const handleNativeShare = async () => {
-    if (!isProVerifiedLocally()) { setShowShareUpgrade(true); return; }
     if (!preview) return;
-    try {
-      const file = new File([preview.blob], "shepherds-path.png", { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: preview.title });
-      } else {
-        handleDownload();
-      }
-    } catch { }
+    const filename = shareImageFilename(preview.reference);
+    const result = await shareImageBlob(preview.blob, {
+      filename,
+      title: preview.title,
+      text: preview.shareText,
+    });
+    if (result === "shared") {
+      toast({
+        title: "Ready to send",
+        description: "Choose Messages, Instagram, or any app in the share sheet.",
+      });
+    } else if (result === "saved") {
+      toast({
+        title: "Saved to your device",
+        description: "Open Photos and share from there, or try again with the share sheet.",
+      });
+    }
   };
 
   const handleDownload = () => {
     if (!preview) return;
-    const a = document.createElement("a");
-    a.href = preview.url;
-    a.download = "shepherds-path.png";
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    downloadBlob(preview.blob, shareImageFilename(preview.reference));
+    toast({
+      title: "Saved",
+      description: "Your verse image is in Photos or Downloads — share it anywhere.",
+    });
   };
 
-  const shareTextOnPlatform = (platform: "x" | "facebook" | "whatsapp" | "instagram" | "telegram" | "pinterest") => {
+  const handleCopyCaption = async () => {
+    if (!preview) return;
+    const ok = await copyToClipboard(preview.shareText);
+    toast({
+      title: ok ? "Caption copied" : "Couldn't copy",
+      description: ok ? "Paste it beside your image when you post or text." : "Try selecting the text manually.",
+      variant: ok ? "default" : "destructive",
+    });
+  };
+
+  const handleTextMessage = async () => {
+    if (!preview) return;
+    const result = await shareNative({ title: preview.title, text: preview.shareText, url: APP_URL });
+    if (result === "shared") {
+      toast({ title: "Pick Messages", description: "Your caption is ready to send." });
+      return;
+    }
+    const body = encodeURIComponent(`${preview.shareText}\n\n${APP_URL}`);
+    window.location.href = `sms:?&body=${body}`;
+  };
+
+  const shareTextOnPlatform = async (platform: "x" | "facebook" | "whatsapp" | "instagram" | "telegram" | "pinterest") => {
     if (!preview) return;
     const text = preview.shareText;
     const encodedText = encodeURIComponent(text);
     const encodedUrl = encodeURIComponent(APP_URL);
-    // openLink uses anchor-click navigation — more reliable than window.open on iOS Safari
+    const fullWhatsApp = encodeURIComponent(`${text}\n\n${APP_URL}`);
+
     switch (platform) {
       case "x":
-        openLink(`https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`);
+        openLink(`https://x.com/intent/tweet?text=${encodedText}`);
+        closePreview();
         break;
       case "facebook":
         openLink(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`);
+        closePreview();
         break;
       case "whatsapp":
-        openLink(`https://wa.me/?text=${encodedText}`);
+        openLink(`https://wa.me/?text=${fullWhatsApp}`);
+        closePreview();
         break;
-      case "instagram":
-        // Open Instagram first (synchronous) before any async clipboard work
+      case "instagram": {
+        handleDownload();
+        const copied = await copyToClipboard(text);
         openLink("https://www.instagram.com");
-        navigator.clipboard?.writeText(text).then(() => {
-          toast({ description: "Caption copied — paste it into your Instagram story or post." });
-        }).catch(() => {});
+        toast({
+          title: copied ? "Ready for Instagram" : "Image saved",
+          description: copied
+            ? "Image saved & caption copied — open Stories, add from Photos, paste caption."
+            : "Image saved — add from Photos in Stories or feed.",
+        });
         break;
+      }
       case "telegram":
         openLink(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`);
+        closePreview();
         break;
       case "pinterest":
         openLink(`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedText}`);
+        closePreview();
         break;
     }
-    closePreview();
   };
 
   const handleGenerate = async () => {
@@ -299,7 +333,11 @@ export default function CallingPage() {
       const blob = await createPurpleShareImage(card.verseText, card.scripture);
       showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText, card.verseText, card.scripture, "purple");
     } catch {
-      navigator.share?.({ text: card.shareText }).catch(() => {});
+      const r = await shareNative({ title: card.scripture, text: card.shareText, url: APP_URL });
+      if (r === "failed") {
+        toast({ title: "Couldn't build image", description: "Caption copied — try Share again.", variant: "destructive" });
+        await copyToClipboard(card.shareText);
+      }
     }
     setLoading(null);
   };
@@ -312,7 +350,10 @@ export default function CallingPage() {
       const blob = await createShareImage(card.verseText, card.scripture, artUrl);
       showPreview(blob, `${card.scripture} — Shepherd's Path`, card.shareText, card.verseText, card.scripture, "landscape");
     } catch {
-      navigator.share?.({ text: card.shareText }).catch(() => {});
+      const r = await shareNative({ title: card.scripture, text: card.shareText, url: APP_URL });
+      if (r === "failed") {
+        toast({ title: "Couldn't build image", description: "Try again in a moment.", variant: "destructive" });
+      }
     }
     setLoading(null);
   };
@@ -325,14 +366,14 @@ export default function CallingPage() {
       const blob = await createShareImage(todayVerse.text, todayVerse.reference, artUrl);
       showPreview(blob, `${todayVerse.reference} — Shepherd's Path`, shareText, todayVerse.text, todayVerse.reference, "landscape");
     } catch {
-      navigator.share?.({ text: shareText }).catch(() => {});
+      await shareNative({ title: `${todayVerse.reference} — Shepherd's Path`, text: shareText, url: APP_URL });
     }
     setLoading(null);
   };
 
-  const handleSendPrayer = () => {
+  const handleSendPrayer = async () => {
     const text = `I prayed for you today. 🙏\n\nWhatever you're carrying right now — you're not carrying it alone. I thought of you and brought you before God.\n\nShepherd's Path · ${APP_URL}`;
-    navigator.share?.({ text }).catch(() => {});
+    await shareNative({ title: "Prayed for you", text, url: APP_URL });
   };
 
   const handleShareScripture = async () => {
@@ -345,14 +386,18 @@ export default function CallingPage() {
       const shareText = `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}`;
       showPreview(blob, "Matthew 28:19 — Shepherd's Path", shareText, scriptureVerse, scriptureRef, "purple");
     } catch {
-      navigator.share?.({ text: `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}` }).catch(() => {});
+      await shareNative({
+        title: "Matthew 28:19 — Shepherd's Path",
+        text: `"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}`,
+        url: APP_URL,
+      });
     }
     setSharingScripture(false);
   };
 
-  const handleShareApp = () => {
+  const handleShareApp = async () => {
     const text = `This has been meaningful to me and I thought of you.\n\nShepherd's Path — daily scripture, prayer, and guidance. Come as you are.\n\n${APP_URL}`;
-    navigator.share?.({ text }).catch(() => {});
+    await shareNative({ title: "Shepherd's Path", text, url: APP_URL });
   };
 
   return (
@@ -847,7 +892,13 @@ export default function CallingPage() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="fixed bottom-0 left-0 right-0 bg-[#0d0a1a] rounded-t-2xl shadow-2xl flex flex-col"
-              style={{ zIndex: 200, maxWidth: 480, margin: "0 auto", maxHeight: "92dvh" }}
+              style={{
+                zIndex: 200,
+                maxWidth: 480,
+                margin: "0 auto",
+                maxHeight: "92dvh",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+              }}
               onClick={e => e.stopPropagation()}
               onTouchMove={e => e.stopPropagation()}
             >
@@ -940,30 +991,52 @@ export default function CallingPage() {
               </div>
 
               {/* Primary actions */}
-              <div className="px-4 pb-3 flex gap-3">
+              <div className="px-4 pb-2 flex gap-2">
                 <button
-                  onClick={handleNativeShare}
+                  onClick={() => void handleNativeShare()}
                   data-testid="button-calling-share-native"
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-[14px] active:scale-95 transition-transform"
                   style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", color: "#ffffff" }}
                 >
                   <Share2 className="w-4 h-4" />
-                  Share image
+                  Share
                 </button>
                 <button
                   onClick={handleDownload}
                   data-testid="button-calling-download"
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[14px] font-semibold active:scale-95 transition-transform"
                   style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.65)" }}
+                  title="Save to Photos"
                 >
                   <Download className="w-4 h-4" />
                   Save
                 </button>
               </div>
 
+              <div className="px-4 pb-3 flex gap-2">
+                <button
+                  onClick={() => void handleTextMessage()}
+                  data-testid="button-calling-text-message"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-medium active:scale-95 transition-transform"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.85)" }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Text a friend
+                </button>
+                <button
+                  onClick={() => void handleCopyCaption()}
+                  data-testid="button-calling-copy-caption"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-medium active:scale-95 transition-transform"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.85)" }}
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy caption
+                </button>
+              </div>
+
               {/* Social row */}
-              <div className="px-4 pb-6 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-[11px] text-white/30 font-medium tracking-wide uppercase text-center mb-3 mt-3">Or share to</p>
+              <div className="px-4 pb-4 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-[11px] text-white/30 font-medium tracking-wide uppercase text-center mb-3 mt-3">Or open in</p>
                 <div className="flex items-center justify-center gap-2.5">
                   <button data-testid="share-calling-x" onClick={() => shareTextOnPlatform("x")} title="Share on X"
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white active:scale-95 transition-transform shadow-md">
@@ -995,16 +1068,6 @@ export default function CallingPage() {
               </div>{/* end scroll wrapper */}
             </motion.div>
           </>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showShareUpgrade && (
-          <UpgradeModal
-            onClose={() => setShowShareUpgrade(false)}
-            title="You've created something beautiful today"
-            subtitle="Browse any scene freely. Pro unlocks sharing — send this image into the world."
-          />
         )}
       </AnimatePresence>
 

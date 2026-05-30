@@ -9,6 +9,8 @@ import {
   buildVerseShareText,
   copyToClipboard,
   easternVerseDateKey,
+  shareImageBlob,
+  shareImageFilename,
   shareNative,
 } from "@/lib/shareVerse";
 import { getUserName } from "@/lib/userName";
@@ -134,33 +136,24 @@ export function ShareVerseSheet({
       blob = await generateImage(format);
       if (!blob) return;
     }
-    const file = new File([blob], `shepherds-path-${reference.replace(/\s/g, "-")}.png`, {
-      type: "image/png",
-    });
     const caption = isMoment ? imageShareCaption : shareText;
-
-    if (navigator.canShare?.({ files: [file] })) {
-      const result = await shareNative({
-        title: `${reference} — Shepherd's Path`,
-        text: isMoment ? caption : shareText,
-        files: [file],
-      });
-      if (result === "shared") setDone("image");
-      return;
-    }
-
-    const url = previewUrl ?? URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    a.click();
-    if (!previewUrl) URL.revokeObjectURL(url);
-    toast({
-      title: "Image saved",
-      description: isMoment
-        ? "Verse is on the image — share from Photos or paste the link separately."
-        : "Share it from your photos app.",
+    const result = await shareImageBlob(blob, {
+      filename: shareImageFilename(reference),
+      title: `${reference} — Shepherd's Path`,
+      text: isMoment ? caption : shareText,
     });
+    if (result === "shared") {
+      setDone("image");
+      toast({ title: "Ready to send", description: "Pick Messages, Instagram, or any app." });
+    } else if (result === "saved") {
+      setDone("image");
+      toast({
+        title: "Image saved",
+        description: isMoment
+          ? "Verse is on the image — share from Photos or paste the link separately."
+          : "Share it from your photos app.",
+      });
+    }
   };
 
   if (!open) return null;

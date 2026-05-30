@@ -30,6 +30,16 @@ import { REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } from "@/lib/referralC
 
 export type FeatureLine = { icon: LucideIcon; text: string };
 
+/**
+ * Growth stack — never gate behind Pro (viral loop + trust).
+ * Scripture cards, verse links, Calling, achievements, trivia scores, referrals, invite.
+ */
+export const GROWTH_ALWAYS_FREE = [
+  "Share verse image cards (devotional, Calling, Bible, achievements)",
+  "Share verse links with OG previews (/v/date)",
+  "Referral & invite links",
+] as const;
+
 /** What free users actually get today */
 export const FREE_FEATURES: FeatureLine[] = [
   {
@@ -38,6 +48,7 @@ export const FREE_FEATURES: FeatureLine[] = [
   },
   { icon: BookOpen, text: "Full Bible reading (KJV, WEB, ASV)" },
   { icon: Sun, text: "Daily devotional — scripture, reflection & prayer" },
+  { icon: Sparkles, text: "Share today's verse & image cards — always free" },
   { icon: Volume2, text: "One full devotional listen/day + today's verse anytime" },
   { icon: Compass, text: "Core Bible journeys & reading plans" },
   {

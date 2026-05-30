@@ -16,7 +16,11 @@ import {
   buildFriendVerseShareText,
   buildVerseSharePreviewUrl,
   buildVerseShareText,
+  copyToClipboard,
+  downloadBlob,
   easternVerseDateKey,
+  shareImageBlob,
+  shareImageFilename,
 } from "@/lib/shareVerse";
 import { streamAI, AiLimitReachedError } from "@/lib/streamAI";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -687,34 +691,23 @@ export default function Devotional() {
 
   const handleNativeShareImage = async () => {
     if (!sharePreviewBlob || !verse) return;
-    try {
-      const file = new File([sharePreviewBlob], "shepherds-path-devotional.png", { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${verse.reference} — Shepherd's Path` });
-      } else {
-        handleDownloadImage();
-      }
-    } catch { }
+    const filename = shareImageFilename(verse.reference);
+    const result = await shareImageBlob(sharePreviewBlob, {
+      filename,
+      title: `${verse.reference} — Shepherd's Path`,
+      text: buildShareText(),
+    });
+    if (result === "shared") {
+      toast({ title: "Ready to send", description: "Choose Messages, Instagram, or any app." });
+    } else if (result === "saved") {
+      toast({ title: "Saved to your device", description: "Share from Photos or try the share sheet again." });
+    }
   };
 
-  const handleDownloadImage = async () => {
-    if (!sharePreviewBlob) return;
-    try {
-      const file = new File([sharePreviewBlob], "shepherds-path-devotional.png", { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${verse?.reference ?? "Today's Verse"} — Shepherd's Path` });
-        return;
-      }
-    } catch {}
-    if (sharePreviewUrl) {
-      const a = document.createElement("a");
-      a.href = sharePreviewUrl;
-      a.download = "shepherds-path-devotional.png";
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+  const handleDownloadImage = () => {
+    if (!sharePreviewBlob || !verse) return;
+    downloadBlob(sharePreviewBlob, shareImageFilename(verse.reference));
+    toast({ title: "Saved", description: "Your verse image is in Photos or Downloads." });
   };
 
   const closeSharePreview = () => {
@@ -793,15 +786,22 @@ export default function Devotional() {
     openLink(`https://wa.me/?text=${text}`);
   };
 
-  const shareOnInstagram = () => {
-    // Open Instagram first (synchronous — keeps the user-gesture token alive)
-    openLink("https://www.instagram.com");
-    // Clipboard write is async but doesn't block the navigation above
+  const shareOnInstagram = async () => {
+    if (sharePreviewBlob && verse) {
+      downloadBlob(sharePreviewBlob, shareImageFilename(verse.reference));
+    }
     const text = buildShareText();
-    navigator.clipboard?.writeText(text).then(() => {
-      toast({ description: "Caption copied — paste it into your Instagram story or post." });
-    }).catch(() => {
-      toast({ description: "Open Instagram and share today's verse.", variant: "default" });
+    const copied = await copyToClipboard(text);
+    openLink("https://www.instagram.com");
+    toast({
+      title: sharePreviewBlob ? (copied ? "Ready for Instagram" : "Image saved") : copied ? "Caption copied" : "Open Instagram",
+      description: sharePreviewBlob
+        ? copied
+          ? "Image saved & caption copied — add from Photos in Stories, paste caption."
+          : "Image saved — add from Photos in Stories or feed."
+        : copied
+          ? "Paste the caption into your story or post."
+          : "Share today's verse from the app.",
     });
   };
 

@@ -118,7 +118,7 @@ export default function SubmitPrayerScreen() {
         <Feather name="lock" size={36} color={colors.mutedForeground} />
         <Text style={[styles.successTitle, { color: colors.foreground }]}>You've shared today's prayer request.</Text>
         <Text style={[styles.successBody, { color: colors.mutedForeground }]}>
-          Free members can post once per day. Pro gives you more room to share, reflect, and keep your prayer journey without interruption.
+          Free members can post one request on the Prayer Wall each day. Pro adds more daily posts on the wall — plus unlimited listen, AI, and your full journal archive. Sharing scripture from the app is always free.
         </Text>
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: colors.primary }]}

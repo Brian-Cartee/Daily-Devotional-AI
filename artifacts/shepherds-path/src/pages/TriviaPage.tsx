@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import type { TriviaQuestion } from "@shared/schema";
 import { createTriviaScoreCardImage } from "@/lib/shareImage";
+import { copyToClipboard, shareImageBlob, shareNative } from "@/lib/shareVerse";
 
 const CATEGORIES = [
   { id: "life-of-jesus",    label: "Life of Jesus",     emoji: "✝️", from: "from-rose-500",    to: "to-amber-500",   bg: "from-rose-50 to-amber-50",   border: "border-rose-200",   dark: "dark:from-rose-950/40 dark:to-amber-950/30 dark:border-rose-800/40" },
@@ -232,24 +233,40 @@ export default function TriviaPage() {
     } catch { imageBlob = null; }
     setIsGeneratingCard(false);
 
-    try {
-      if (imageBlob && typeof navigator.canShare === "function") {
-        const file = new File([imageBlob], "bible-challenge.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], text: shareText, url });
-          return;
-        }
-      }
-      if (navigator.share) {
-        await navigator.share({ title: "Bible Challenge — Shepherd's Path", text: shareText, url });
+    if (imageBlob) {
+      const imgResult = await shareImageBlob(imageBlob, {
+        filename: "shepherds-path-bible-challenge.png",
+        title: "Bible Challenge — Shepherd's Path",
+        text: `${shareText}\n\n${url}`,
+        url,
+      });
+      if (imgResult === "shared") return;
+      if (imgResult === "cancelled") return;
+      if (imgResult === "saved") {
+        toast({
+          title: "Score card saved",
+          description: "Share the image from Photos and paste the challenge link in your caption.",
+        });
         return;
       }
-    } catch { /* user cancelled — do nothing */ }
+    }
 
-    await navigator.clipboard.writeText(`${shareText}\n${url}`);
+    const textResult = await shareNative({
+      title: "Bible Challenge — Shepherd's Path",
+      text: shareText,
+      url,
+    });
+    if (textResult === "shared") return;
+    if (textResult === "cancelled") return;
+
+    const ok = await copyToClipboard(`${shareText}\n\n${url}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-    toast({ title: "Copied to clipboard!", description: "Paste it anywhere to share your challenge." });
+    toast({
+      title: ok ? "Copied to clipboard!" : "Couldn't share",
+      description: ok ? "Paste it anywhere to share your challenge." : "Try again in a moment.",
+      variant: ok ? "default" : "destructive",
+    });
   }
 
   const score = answers.filter((a, i) => a === questions[i]?.correctIndex).length;

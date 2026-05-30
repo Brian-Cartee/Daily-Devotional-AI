@@ -7,6 +7,7 @@ import type { Achievement } from "@/lib/achievements";
 import { useTTS } from "@/hooks/use-tts";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { createAchievementShareImage } from "@/lib/shareImage";
+import { shareImageBlob } from "@/lib/shareVerse";
 
 interface AchievementModalProps {
   achievement: Achievement;
@@ -25,22 +26,12 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
     setSharing(true);
     try {
       const blob = await createAchievementShareImage(achievement);
-      const file = new File([blob], `shepherds-path-${achievement.id}.png`, { type: "image/png" });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: achievement.title,
-          text: `${achievement.emoji} ${achievement.title} — ${achievement.subtitle} | Shepherd's Path`,
-        });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `shepherds-path-${achievement.id}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    } catch (e) {
+      await shareImageBlob(blob, {
+        filename: `shepherds-path-${achievement.id}.png`,
+        title: achievement.title,
+        text: `${achievement.emoji} ${achievement.title} — ${achievement.subtitle} | Shepherd's Path`,
+      });
+    } catch {
       // User cancelled share or error — silently ignore
     } finally {
       setSharing(false);
