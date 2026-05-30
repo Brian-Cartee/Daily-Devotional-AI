@@ -98,7 +98,7 @@ const steps = [
     color: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
     iconColor: "text-amber-600 dark:text-amber-400",
     title: "Daily devotional",
-    where: "Devotional card on For You, or Devotional in the menu",
+    where: "Sun icon (Today) in the bottom bar, or the devotional card on For You",
     description:
       "Each day opens with a Bible verse chosen for today. Read or listen without rushing, receive reflection and prayer, and close with gratitude. Tap Share to send the verse or an image to someone on your heart.",
     tip: "Listen-first works well in the car or with coffee — look for play buttons throughout.",
@@ -142,7 +142,7 @@ const steps = [
     color: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50",
     iconColor: "text-sky-600 dark:text-sky-400",
     title: "Journal",
-    where: "Bottom tab Journal",
+    where: "For You shortcuts, More menu → Journal, or after Save to Journal",
     description:
       "Your private space for prayers, reflections, and what God showed you. No one else sees it. Even one honest sentence is worth keeping — especially on days when showing up felt hard.",
     tip: "Path AI can save a conversation into your journal with one tap after an answer.",

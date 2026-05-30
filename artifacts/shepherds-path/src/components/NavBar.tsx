@@ -31,11 +31,53 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_NAV_ITEMS = [
-  { href: "/", label: "For You", icon: Home, bookmark: null },
-  { href: "/guidance", label: "Guidance", icon: Heart, bookmark: null },
-  { href: "/understand", label: "Journey", icon: Compass, bookmark: "journey" as BookmarkSection },
-  { href: "/journal", label: "Journal", icon: NotebookPen, bookmark: "journal" as BookmarkSection },
-];
+  { href: "/", label: "For You", icon: Home, bookmark: null, navId: "for-you" },
+  { href: "/guidance", label: "Guidance", icon: Heart, bookmark: null, navId: "guidance" },
+  {
+    href: "/devotional",
+    label: "Today",
+    icon: Sun,
+    bookmark: "devotional" as BookmarkSection,
+    navId: "today",
+  },
+  {
+    href: "/understand",
+    label: "Journey",
+    icon: Compass,
+    bookmark: "journey" as BookmarkSection,
+    navId: "journey",
+  },
+] as const;
+
+function BottomNavVisual({
+  active,
+  label,
+  icon: Icon,
+  hasPlace,
+}: {
+  active: boolean;
+  label: string;
+  icon: typeof Home;
+  hasPlace: boolean;
+}) {
+  if (active) {
+    return (
+      <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+        <Icon className="w-[18px] h-[18px] text-white shrink-0" aria-hidden />
+        <span className="text-[13px] font-bold text-white leading-none">{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex items-center justify-center w-11 h-11 rounded-xl">
+      <Icon className="w-[22px] h-[22px] text-zinc-300/85" aria-hidden />
+      {hasPlace && (
+        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
+      )}
+    </div>
+  );
+}
 
 const NAV_BOOKMARK_MAP: Record<string, BookmarkSection> = {
   "/devotional": "devotional",
@@ -124,6 +166,8 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     overHomeHero ||
     location === "/guidance" ||
     location.startsWith("/guidance/") ||
+    location === "/devotional" ||
+    location.startsWith("/devotional/") ||
     location === "/understand" ||
     location.startsWith("/understand/") ||
     location === "/journal" ||
@@ -296,15 +340,20 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       <nav
         className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/82 backdrop-blur-xl border-t border-white/10"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        aria-label="Main"
       >
-        <div className="flex items-center justify-around h-[60px] px-1">
-          {BOTTOM_NAV_ITEMS.map(({ href, label, icon: Icon, bookmark }) => {
+        <div className="flex items-center justify-around h-[56px] px-0.5">
+          {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";
             const active = isHome
               ? location === "/" || location === ""
               : location === href || location.startsWith(href + "/");
-            const hasPlace =
-              bookmark && BOOKMARK_DOT_SECTIONS.has(bookmark) && bookmarked.has(bookmark) && !active;
+            const hasPlace = Boolean(
+              bookmark && BOOKMARK_DOT_SECTIONS.has(bookmark) && bookmarked.has(bookmark) && !active,
+            );
+            const visual = (
+              <BottomNavVisual active={active} label={label} icon={icon} hasPlace={hasPlace} />
+            );
 
             const goHome = () => {
               markReturningHome();
@@ -329,21 +378,13 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                 <button
                   key={href}
                   type="button"
-                  data-testid="bottom-nav-for-you"
+                  data-testid={`bottom-nav-${navId}`}
+                  aria-label={label}
+                  aria-current={active ? "page" : undefined}
                   onClick={goHome}
-                  className="flex flex-col items-center justify-center flex-1 h-full transition-all border-0 bg-transparent p-0 cursor-pointer"
+                  className="flex items-center justify-center flex-1 h-full transition-all border-0 bg-transparent p-0 cursor-pointer"
                 >
-                  {active ? (
-                    <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-                      <Icon className="w-5 h-5 text-white shrink-0" />
-                      <span className="text-[13px] font-bold text-white leading-none">{label}</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-0.5 relative px-2.5 py-1.5 rounded-xl bg-zinc-900/35 border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                      <Icon className="w-[22px] h-[22px] text-zinc-300/85" />
-                      <span className="text-[11px] font-semibold text-zinc-300/80 leading-none">{label}</span>
-                    </div>
-                  )}
+                  {visual}
                 </button>
               );
             }
@@ -352,25 +393,12 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
               <Link
                 key={href}
                 href={href}
-                data-testid={`bottom-nav-${label.toLowerCase()}`}
-                className="flex flex-col items-center justify-center flex-1 h-full transition-all"
+                data-testid={`bottom-nav-${navId}`}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                className="flex items-center justify-center flex-1 h-full transition-all"
               >
-                {active ? (
-                  <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-                    <Icon
-                      className={`${href === "/" ? "w-5 h-5" : "w-[18px] h-[18px]"} text-white shrink-0`}
-                    />
-                    <span className="text-[13px] font-bold text-white leading-none">{label}</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-0.5 relative px-2.5 py-1.5 rounded-xl bg-zinc-900/35 border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                    <Icon className="w-[22px] h-[22px] text-zinc-300/85" />
-                    <span className="text-[11px] font-semibold text-zinc-300/80 leading-none">{label}</span>
-                    {hasPlace && (
-                      <span className="absolute -top-0.5 right-0 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
-                    )}
-                  </div>
-                )}
+                {visual}
               </Link>
             );
           })}

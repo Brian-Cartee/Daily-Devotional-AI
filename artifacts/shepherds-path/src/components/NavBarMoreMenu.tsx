@@ -9,6 +9,7 @@ import {
   Mail,
   Moon,
   MoreHorizontal,
+  NotebookPen,
   Shield,
   ShoppingBag,
   Sun,
@@ -167,6 +168,14 @@ export function NavBarMoreMenu({
           <div className="mx-3 my-1 h-px bg-border/50" />
 
           <MenuLabel>Your experience</MenuLabel>
+          <MenuRow
+            icon={NotebookPen}
+            label="Journal"
+            hint="Prayers & reflections you saved"
+            href="/journal"
+            testId="nav-journal-more"
+            onClick={onClose}
+          />
           <MenuRow
             icon={theme === "dark" ? Sun : Moon}
             label="Appearance"
