@@ -2770,7 +2770,7 @@ Rules:
         messages: [
           {
             role: "system",
-            content: `You extract a brief spiritual memory note from a guidance conversation. Return 1-2 plain sentences summarizing: what is this person going through, and what matters most to them right now. This will be used in future sessions to personalize responses. Be specific, not generic. No fluff. No quotes. Just the essence of their situation and inner life.`,
+            content: `You extract a brief spiritual memory note from a guidance conversation. Return 1-2 plain sentences summarizing what they brought to God in this conversation and what mattered most in the moment. Use careful tense: "they shared…" or "they were sitting with…" — do NOT permanently label them as "in grief" or "in crisis" unless it is clearly ongoing. One conversation about grief is not the same as their whole life season. This note may be read weeks later. Be specific, not generic. No fluff. No quotes.`,
           },
           {
             role: "user",

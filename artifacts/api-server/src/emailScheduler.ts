@@ -41,10 +41,25 @@ interface SeasonalContent {
   subject: string;       // replaces the generic subject line
 }
 
+/** How far back we read journal / guidance notes for email personalization */
+const EMAIL_CONTEXT_LOOKBACK_DAYS = 14;
+/** Heavy themes (grief, loss, etc.) only anchor the email if seen this recently */
+const EMAIL_ACTIVE_HEAVY_DAYS = 5;
+
+const HEAVY_SEASON_RE =
+  /\b(grief|grieving|mourning|bereavement|loss|passed away|funeral|widow|widower|died|death of)\b/i;
+
+function entryDaysAgo(createdAt: Date | string): number {
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function mentionsHeavySeason(text: string): boolean {
+  return HEAVY_SEASON_RE.test(text);
+}
+
 // Build a season-aware email for subscribers with a linked session.
-// Looks 21 days back across guidance memories, prayers, and reflections to
-// understand what this person is actually walking through, then writes the
-// encouragement body and subject line specifically for their season.
+// Uses recent prayers, reflections, and guidance memories — with strict recency
+// rules so a one-time grief conversation does not define every morning email.
 async function getSeasonalContent(
   sessionId: string,
   verseRef: string,
@@ -53,29 +68,57 @@ async function getSeasonalContent(
 ): Promise<SeasonalContent | null> {
   try {
     const entries = await storage.getJournalEntries(sessionId);
-    const cutoff = Date.now() - 21 * 24 * 60 * 60 * 1000; // 21 days
+    const cutoff = Date.now() - EMAIL_CONTEXT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
-    const memories = entries
-      .filter(e => e.type === "guidance_memory" && new Date(e.createdAt).getTime() > cutoff)
-      .slice(0, 4);
+    const recent = entries
+      .filter((e) => new Date(e.createdAt).getTime() > cutoff)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const humanEntries = entries
-      .filter(e =>
-        e.type !== "guidance_memory" &&
-        new Date(e.createdAt).getTime() > cutoff
-      )
-      .slice(0, 4);
-
+    const memories = recent.filter((e) => e.type === "guidance_memory").slice(0, 3);
+    const humanEntries = recent.filter((e) => e.type !== "guidance_memory").slice(0, 4);
     const allContext = [...memories, ...humanEntries];
     if (allContext.length === 0) return null;
 
-    const contextBlock = allContext.map(e => {
-      const label = e.type === "guidance_memory" ? "Guidance conversation"
-        : e.type === "prayer" ? "Prayer"
-        : e.type === "reflection" ? "Reflection"
-        : "Note";
-      return `[${label}]: ${e.content.replace(/\n+/g, " ").slice(0, 250)}`;
-    }).join("\n");
+    const newestDaysAgo = entryDaysAgo(allContext[0]!.createdAt);
+    const hasRecentHeavy = allContext.some(
+      (e) => entryDaysAgo(e.createdAt) <= EMAIL_ACTIVE_HEAVY_DAYS && mentionsHeavySeason(e.content),
+    );
+    const hasStaleHeavyOnly =
+      allContext.some((e) => mentionsHeavySeason(e.content)) && !hasRecentHeavy;
+
+    // Old grief / loss notes with nothing current → use the standard verse email instead
+    if (hasStaleHeavyOnly) {
+      console.log(
+        `[email] Skipping heavy seasonal personalization for session ${sessionId.slice(0, 8)}… — grief/loss only in stale context`,
+      );
+      return null;
+    }
+
+    const contextBlock = allContext
+      .map((e) => {
+        const daysAgo = entryDaysAgo(e.createdAt);
+        const recency =
+          daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+        const label =
+          e.type === "guidance_memory"
+            ? "Guidance conversation"
+            : e.type === "prayer"
+              ? "Prayer"
+              : e.type === "reflection"
+                ? "Reflection"
+                : "Note";
+        const heavy =
+          mentionsHeavySeason(e.content) && daysAgo > EMAIL_ACTIVE_HEAVY_DAYS
+            ? " (background only — not necessarily current)"
+            : "";
+        return `[${label}, ${recency}]${heavy}: ${e.content.replace(/\n+/g, " ").slice(0, 250)}`;
+      })
+      .join("\n");
+
+    const recencyNote =
+      newestDaysAgo > EMAIL_ACTIVE_HEAVY_DAYS
+        ? `Newest note is ${newestDaysAgo} days old — write for their present life, not an old crisis unless the notes are clearly still current.`
+        : "Recent activity is fresh — you may reflect their current season gently.";
 
     const nameClause = name ? ` Their name is ${name}.` : "";
     const openai = new OpenAI();
@@ -83,7 +126,7 @@ async function getSeasonalContent(
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 220,
-      temperature: 0.82,
+      temperature: 0.72,
       messages: [
         {
           role: "system",
@@ -91,18 +134,25 @@ async function getSeasonalContent(
 
 Today's verse: "${verseText}" — ${verseRef}
 
-Below is what this person has been carrying over the past few weeks — their prayers, reflections, and conversations. Your job is to write:
+You will see notes from their app (prayers, reflections, guidance). Each line is dated. Your job:
 
-1. ENCOURAGEMENT (3–4 sentences): Replace the generic devotional text entirely. Write as if you personally know what this person is walking through. Let today's verse arrive for their specific season — not universally, but for them. Warm, honest, not preachy. Do not repeat the verse reference robotically. No clichés. Sound like a trusted friend who has been paying attention.
+1. ENCOURAGEMENT (3–4 sentences): Warm, honest, not preachy. Let today's verse meet them where they are NOW. Sound like a caring friend who has been paying attention — not a therapist diagnosing an old wound.
 
-2. SUBJECT: A personal email subject line (under 60 characters) that speaks to their season. Do not use the verse reference. Make it feel like the sender knows them.
+CRITICAL — recency and accuracy:
+- Do NOT say "this season of grief," "during this time of grief," "in your grief," or similar unless grief/loss is clearly CURRENT (marked today/yesterday/within a few days, present-tense, still walking it).
+- A single old mention of grief, or a guidance note from weeks ago, is BACKGROUND — not their defining season today.
+- If recent notes are about gratitude, growth, anxiety, work, family, or general faith — write to THAT, not to grief they mentioned once.
+- If context is mixed or unclear, default to hope-filled encouragement tied to the verse without assuming crisis.
+- Never invent suffering they did not describe. Never repeat the verse reference robotically. No clichés.
 
-Return JSON only in this exact format:
+2. SUBJECT: Under 60 characters, personal, no verse reference. Match their CURRENT tone, not a past heavy theme.
+
+Return JSON only:
 {"encouragement":"...","subject":"..."}`,
         },
         {
           role: "user",
-          content: `What they have been carrying:\n\n${contextBlock}`,
+          content: `${recencyNote}\n\nWhat they have shared recently (newest first):\n\n${contextBlock}`,
         },
       ],
     });
