@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
-import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1112,11 +1111,6 @@ export default function Journal() {
 
         {/* Hero banner — inset crop so the image can breathe */}
         <div className="relative w-full px-3.5 pt-2.5 pb-1" style={{ height: 284 }}>
-          <BackButton
-            testId="button-back-journal"
-            backToPaths
-            className="absolute top-5 left-5 z-20"
-          />
           <div className="relative h-full w-full overflow-hidden rounded-2xl ring-1 ring-black/10 shadow-lg shadow-black/20">
             <div
               className="absolute inset-0 z-10 transition-opacity duration-500"

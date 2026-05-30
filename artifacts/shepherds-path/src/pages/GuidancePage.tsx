@@ -698,7 +698,7 @@ export default function GuidancePage() {
           setPendingCoachRegenerate(false);
         }}
       />
-      <main className="min-h-screen bg-background pb-32">
+      <main className="min-h-screen bg-background pb-32 sp-app-top-clearance">
         {/* Cinematic hero — full atmospheric image when empty, compact strip once conversation begins */}
         <div
           className={`relative pt-2 sm:pt-3 overflow-hidden transition-all duration-700 ease-in-out ${
@@ -773,10 +773,12 @@ export default function GuidancePage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="relative z-10 max-w-2xl mx-auto px-3 sm:px-5 pt-8 pb-7"
+                className="relative z-10 max-w-2xl mx-auto px-3 sm:px-5 pt-2 pb-7"
                 style={{ background: "linear-gradient(180deg, hsl(265 60% 8% / 0.85) 0%, transparent 100%)" }}
               >
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1">Talk It Through</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/70 leading-none mb-1.5 pl-0">
+                  Talk It Through
+                </p>
                 <h1 className="text-[22px] font-extrabold text-foreground leading-tight tracking-tight">
                   {getHeroHeadingCompact(situation, isFirstVisit)}
                 </h1>

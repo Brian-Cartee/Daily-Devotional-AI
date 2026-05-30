@@ -7,7 +7,6 @@ import {
   Bookmark, BookmarkCheck, BookOpen, ArrowLeft, Lightbulb,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { BackButton } from "@/components/BackButton";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
 import { canUseAi, recordAiUsage } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
@@ -544,11 +543,6 @@ function JourneyHub({
         <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
           <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
-          <BackButton
-            testId="button-back-understand"
-            backToPaths
-            className="absolute top-3 left-3 z-20"
-          />
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}

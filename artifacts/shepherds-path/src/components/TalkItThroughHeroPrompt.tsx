@@ -44,6 +44,14 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
     return () => clearInterval(t);
   }, [placeholders.length]);
 
+  const goToGuidance = (text: string) => {
+    if (text) {
+      navigate(`/guidance?situation=${encodeURIComponent(text)}`);
+    } else {
+      navigate("/guidance");
+    }
+  };
+
   const begin = async () => {
     if (beginning) return;
     setBeginning(true);
@@ -52,13 +60,13 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
     } catch {
       /* noop */
     }
-    await waitMs(420);
     const text = value.trim();
-    if (text) {
-      navigate(`/guidance?situation=${encodeURIComponent(text)}`);
-    } else {
-      navigate("/guidance");
+    if (!text) {
+      await waitMs(280);
+      goToGuidance("");
+      return;
     }
+    goToGuidance(text);
   };
 
   const focusInput = () => {
@@ -89,6 +97,12 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
         onSelect={(situationText, id) => {
           setTopicId(id);
           setValue(situationText);
+          try {
+            if ("vibrate" in navigator) navigator.vibrate(8);
+          } catch {
+            /* noop */
+          }
+          goToGuidance(situationText);
         }}
       />
 
