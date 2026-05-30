@@ -146,9 +146,7 @@ export default function Devotional() {
   const [streakForTip, setStreakForTip] = useState(0);
   const [verseArtUrl, setVerseArtUrl] = useState<string | null>(null);
   const [showAiArt, setShowAiArt] = useState(true);
-  const [friendPromptDismissed, setFriendPromptDismissed] = useState(false);
-  const [friendShareDone, setFriendShareDone] = useState(false);
-  const [postPrayerShareDone, setPostPrayerShareDone] = useState(false);
+  const [friendIntercessionDismissed, setFriendIntercessionDismissed] = useState(false);
   const [showPostCompletionCtas, setShowPostCompletionCtas] = useState(false);
   /** After closing gratitude: null = gentle fork; carry = send-off; stay = daily message + optional depth */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
@@ -175,6 +173,7 @@ export default function Devotional() {
   useEffect(() => {
     setCompletionPath(null);
     setPrimarySermonChannel(undefined);
+    setFriendIntercessionDismissed(false);
   }, [verse?.id]);
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
@@ -1397,40 +1396,6 @@ export default function Devotional() {
                     </div>
                   )}
 
-                  {!reflectionLoading && reflectionContent && !friendPromptDismissed && (
-                    <motion.div
-                      key="friend-prompt"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.2, duration: 0.7, ease: "easeOut" }}
-                      className="mt-5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3.5 flex items-start gap-3"
-                    >
-                      <Heart className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[15px] text-foreground/90 leading-snug">
-                          Did someone come to mind while reading this?
-                        </p>
-                        <p className="text-[14px] text-muted-foreground/80 leading-snug mt-1">
-                          That's often the Spirit stirring something in you. Pause and pray for them.
-                        </p>
-                        <button
-                          data-testid="button-pray-for-friend"
-                          onClick={() => navigate(`/guidance?situation=${encodeURIComponent("I want to pray for someone who came to mind while I was reading Scripture today.")}`)}
-                          className="mt-2 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors"
-                        >
-                          Pray for them →
-                        </button>
-                      </div>
-                      <button
-                        data-testid="button-dismiss-friend-prompt"
-                        onClick={() => setFriendPromptDismissed(true)}
-                        className="text-muted-foreground/40 hover:text-muted-foreground transition-colors text-lg leading-none mt-0.5 flex-shrink-0"
-                        aria-label="Dismiss"
-                      >
-                        ×
-                      </button>
-                    </motion.div>
-                  )}
                 </motion.div>
               )}
               {reflectionError && (
@@ -1797,48 +1762,6 @@ export default function Devotional() {
 
           {/* Daily email/SMS sign-up moved to home page footer — see LandingHome */}
 
-          {/* Post-prayer prayer nudge — stay path only */}
-          {showPostCompletionCtas && completionPath === "stay" && prayerContent && !postPrayerShareDone && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-              className="rounded-2xl overflow-hidden border border-amber-500/25 bg-gradient-to-br from-amber-950/50 to-orange-950/30"
-              data-testid="post-prayer-friend-card"
-            >
-              <div className="px-7 py-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <Heart className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-amber-200 leading-snug mb-1">
-                      Did someone come to mind?
-                    </p>
-                    <p className="text-[13px] text-amber-200/70 leading-snug">
-                      That's often the Spirit stirring something in you. Take a moment to pray for them — even just a few words is enough.
-                    </p>
-                    <button
-                      data-testid="button-pray-for-friend-post-prayer"
-                      onClick={() => navigate(`/guidance?situation=${encodeURIComponent("I want to pray for someone who came to mind while I was in prayer and reading Scripture today.")}`)}
-                      className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-amber-950 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 rounded-full px-4 py-1.5 transition-all shadow-sm shadow-amber-500/30"
-                    >
-                      Bring them to prayer →
-                    </button>
-                  </div>
-                  <button
-                    data-testid="button-dismiss-post-prayer-friend"
-                    onClick={() => setPostPrayerShareDone(true)}
-                    className="shrink-0 text-amber-500/40 hover:text-amber-400 transition-colors text-lg leading-none mt-0.5"
-                    aria-label="Dismiss"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           {/* Save Today's Devotional — after fork choice */}
           {completionPath !== null && (reflectionContent || prayerContent) && (
             <motion.div
@@ -1889,6 +1812,48 @@ export default function Devotional() {
                     : "Save All"}
                 </Button>
               </div>
+            </motion.div>
+          )}
+
+          {/* Intercession nudge — once devotional is complete, after journal save offer */}
+          {completionPath === "stay" && gratitudePrayer && !friendIntercessionDismissed && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: "easeOut" }}
+              className="mx-1 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3.5 flex items-start gap-3"
+              data-testid="friend-intercession-card"
+            >
+              <Heart className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] text-foreground/90 leading-snug">
+                  Did someone come to mind?
+                </p>
+                <p className="text-[13px] text-muted-foreground/80 leading-snug mt-1">
+                  That&apos;s often the Spirit stirring something in you. A few words of prayer for them is enough.
+                </p>
+                <button
+                  data-testid="button-pray-for-friend"
+                  onClick={() =>
+                    navigate(
+                      `/guidance?situation=${encodeURIComponent(
+                        "I want to pray for someone who came to mind while I was in prayer and reading Scripture today.",
+                      )}`,
+                    )
+                  }
+                  className="mt-2.5 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  Pray for them →
+                </button>
+              </div>
+              <button
+                data-testid="button-dismiss-friend-prompt"
+                onClick={() => setFriendIntercessionDismissed(true)}
+                className="text-muted-foreground/40 hover:text-muted-foreground transition-colors text-lg leading-none mt-0.5 flex-shrink-0"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
             </motion.div>
           )}
 
