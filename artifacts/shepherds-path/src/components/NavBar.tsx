@@ -120,7 +120,14 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   }, [moreOpen]);
 
   const overHomeHero = location === "/" || location === "";
-  const overCinematicHero = overHomeHero || location === "/guidance" || location.startsWith("/guidance/");
+  const overCinematicHero =
+    overHomeHero ||
+    location === "/guidance" ||
+    location.startsWith("/guidance/") ||
+    location === "/understand" ||
+    location.startsWith("/understand/") ||
+    location === "/journal" ||
+    location.startsWith("/journal/");
   const needsNotificationNudge =
     typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted";
 

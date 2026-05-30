@@ -33,6 +33,7 @@ import { apiSessionExtras } from "@/lib/requestExtras";
 import { saveSnippet } from "@/lib/snippets";
 import { useToast } from "@/hooks/use-toast";
 import { BiblePassageText } from "@/components/BiblePassageText";
+import { CinematicPageHero } from "@/components/CinematicPageHero";
 
 function usePassageText(apiRef: string, enabled: boolean) {
   const url = `/api/bible?ref=${encodeURIComponent(apiRef)}`;
@@ -537,26 +538,25 @@ function JourneyHub({
   };
 
   return (
-    <main className="min-h-screen bg-background pt-2 pb-28 sm:pb-16 px-4">
-      <div className="max-w-2xl mx-auto">
+    <main className="min-h-screen bg-background pb-28 sm:pb-16">
+      <CinematicPageHero imageSrc={getHeroImage("understand")} testId="journey-hub-hero" objectPosition="center 30%">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-1 flex-col items-center justify-end text-center"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white/80 text-[11px] font-semibold uppercase tracking-widest mb-2">
+            <Compass className="w-3 h-3" />
+            Journeys
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Start where you are</h1>
+          <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">There&apos;s a path for this moment.</p>
+        </motion.div>
+      </CinematicPageHero>
+
+      <div className="max-w-2xl mx-auto px-4 pt-4">
         {resumeBar}
-        <div className="relative h-52 sm:h-64 rounded-2xl overflow-hidden mb-8">
-          <img src={getHeroImage("understand")} alt="Bible Journeys" className="absolute inset-0 w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="relative z-10 flex flex-col items-center justify-end h-full pb-6 text-center px-4"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/25 backdrop-blur-sm text-white/80 text-[11px] font-semibold uppercase tracking-widest mb-2">
-              <Compass className="w-3 h-3" />
-              Journeys
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">Start where you are</h1>
-            <p className="text-white/85 text-[14px] mt-1.5 max-w-xs drop-shadow">There's a path for this moment.</p>
-          </motion.div>
-        </div>
 
         <GuidedPathwaysSection
           pathways={proPathways()}
@@ -734,39 +734,43 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
   const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
 
   return (
-    <main className="min-h-screen bg-background pt-2 pb-28 sm:pb-16 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="relative h-44 sm:h-52 rounded-2xl overflow-hidden mb-6">
-          <img src={journey.image || getHeroImage("understand")} alt={journey.title} className="absolute inset-0 w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/65" />
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="relative z-10 flex flex-col h-full pb-5 px-5"
+    <main className="min-h-screen bg-background pb-28 sm:pb-16">
+      <CinematicPageHero
+        compact
+        imageSrc={journey.image || getHeroImage("understand")}
+        imageAlt={journey.title}
+        testId="journey-detail-hero"
+        objectPosition="center 28%"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-1 flex-col"
+        >
+          <button
+            type="button"
+            onClick={onBack}
+            data-testid="btn-journey-back"
+            className="self-start flex items-center gap-1.5 text-white/85 hover:text-white text-sm font-medium transition-colors"
           >
-            <button
-              onClick={onBack}
-              data-testid="btn-journey-back"
-              className="mt-4 self-start flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> {backLabel}
-            </button>
-            <div className="flex-1 flex flex-col justify-end">
-              {journey.badgeText && (
-                <span className={`self-start text-[11px] font-bold uppercase tracking-widest text-white px-2.5 py-0.5 rounded-full mb-2 ${journey.badgeBg}`}>
-                  {journey.badgeText}
-                </span>
-              )}
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
-                  <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
-                </div>
-                {!journey.id.startsWith("life-season") && (
-                  <a
-                    href={`/present?j=${journey.id}`}
-                    target="_blank"
+            <ArrowLeft className="w-4 h-4" /> {backLabel}
+          </button>
+          <div className="flex-1 flex flex-col justify-end pb-1">
+            {journey.badgeText && (
+              <span className={`self-start text-[11px] font-bold uppercase tracking-widest text-white px-2.5 py-0.5 rounded-full mb-2 ${journey.badgeBg}`}>
+                {journey.badgeText}
+              </span>
+            )}
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
+                <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
+              </div>
+              {!journey.id.startsWith("life-season") && (
+                <a
+                  href={`/present?j=${journey.id}`}
+                  target="_blank"
                     rel="noopener noreferrer"
                     data-testid="btn-present-journey"
                     className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[12px] font-semibold backdrop-blur-sm transition-all"
@@ -778,9 +782,10 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
                 )}
               </div>
             </div>
-          </motion.div>
-        </div>
+        </motion.div>
+      </CinematicPageHero>
 
+      <div className="max-w-2xl mx-auto px-4 pt-4">
         {themes.length > 1 && (
           <motion.div
             initial={{ opacity: 0 }}

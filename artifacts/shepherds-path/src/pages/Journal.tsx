@@ -25,6 +25,7 @@ import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
 import { printJournalEntries } from "@/lib/journalPrint";
 import type { JournalEntry, MemoryVerse } from "@shared/schema";
 import { markJournalPathVisited } from "@/lib/homePathProgress";
+import { CinematicPageHero } from "@/components/CinematicPageHero";
 
 const SERMON_USAGE_KEY = "sp_sermon_recordings";
 
@@ -1109,64 +1110,36 @@ export default function Journal() {
     <>
       <div className="min-h-screen bg-background" onClick={() => exportOpen && setExportOpen(false)}>
 
-        {/* Hero banner — inset crop so the image can breathe */}
-        <div className="relative w-full px-3.5 pt-2.5 pb-1" style={{ height: 284 }}>
-          <div className="relative h-full w-full overflow-hidden rounded-2xl ring-1 ring-black/10 shadow-lg shadow-black/20">
-            <div
-              className="absolute inset-0 z-10 transition-opacity duration-500"
+        <CinematicPageHero
+          imageSrc="/journal-hero.webp"
+          testId="journal-hero"
+          objectPosition="center 38%"
+          imageReady={heroImageLoaded}
+          onImageLoad={() => setHeroImageLoaded(true)}
+        >
+          <div className="flex flex-1 flex-col items-center justify-end text-center">
+            <h2
               style={{
-                opacity: heroImageLoaded ? 0 : 1,
-                pointerEvents: "none",
-                background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
+                fontFamily: "var(--font-decorative)",
+                fontStyle: "italic",
+                fontSize: "clamp(1.75rem, 6vw, 2.15rem)",
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.97)",
+                textShadow: "0 2px 18px rgba(0,0,0,0.6)",
+                lineHeight: 1.12,
+                letterSpacing: "-0.01em",
               }}
-            />
-            <img
-              src="/journal-hero.webp"
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover scale-[1.04]"
-              style={{ objectPosition: "center 38%" }}
-              // @ts-ignore — fetchpriority is a valid HTML attribute (lowercase)
-              fetchpriority="high"
-              decoding="async"
-              onLoad={() => setHeroImageLoaded(true)}
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.08) 42%, rgba(0,0,0,0.62) 100%)",
-              }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-end pb-7 text-center px-6">
-              <h2
-                style={{
-                  fontFamily: "var(--font-decorative)",
-                  fontStyle: "italic",
-                  fontSize: "2.15rem",
-                  fontWeight: 700,
-                  color: "rgba(255,255,255,0.97)",
-                  textShadow: "0 2px 18px rgba(0,0,0,0.6)",
-                  lineHeight: 1.12,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                e-Prayer Journal
-              </h2>
-              <p
-                style={{
-                  fontSize: "0.88rem",
-                  color: "rgba(255,255,255,0.72)",
-                  marginTop: "8px",
-                  textShadow: "0 1px 6px rgba(0,0,0,0.5)",
-                  letterSpacing: "0.03em",
-                  maxWidth: "18rem",
-                }}
-              >
-                Saved from devotionals, guidance, and your quiet moments with God.
-              </p>
-            </div>
+            >
+              e-Prayer Journal
+            </h2>
+            <p
+              className="mt-2 text-[14px] text-white/72 max-w-[18rem] leading-snug"
+              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
+            >
+              Saved from devotionals, guidance, and your quiet moments with God.
+            </p>
           </div>
-        </div>
+        </CinematicPageHero>
 
         {/* Header */}
         <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-14 z-30">
