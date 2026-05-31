@@ -209,12 +209,17 @@ ${emailPreheader(preheader)}
 </html>`;
 }
 
-// ── Welcome email — sent once on new subscriber signup ──────────────────────
+// ── Welcome + onboarding drip emails ────────────────────────────────────────
 export {
   buildWelcomeEmailHtml,
   buildWelcomeEmailText,
   type WelcomeEmailData,
 } from "./welcomeEmail";
+export {
+  getOnboardingEmailContent,
+  type OnboardingEmailStep,
+  type OnboardingEmailData,
+} from "./onboardingEmail";
 
 export interface WeeklyWeatherEmailData {
   appUrl: string;

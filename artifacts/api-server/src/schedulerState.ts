@@ -8,6 +8,7 @@ interface SchedulerState {
   lastSmsSentDate?: string;
   /** email → ISO week id (e.g. 2026-w21) for Pro weekly spiritual weather */
   proWeeklyEmailSent?: Record<string, string>;
+  lastOnboardingEmailSentDate?: string;
 }
 
 function today(): string {
@@ -65,5 +66,15 @@ export function markProWeeklyEmailSent(email: string, weekId: string): void {
   const state = readState();
   if (!state.proWeeklyEmailSent) state.proWeeklyEmailSent = {};
   state.proWeeklyEmailSent[email.toLowerCase()] = weekId;
+  writeState(state);
+}
+
+export function hasOnboardingSentToday(): boolean {
+  return readState().lastOnboardingEmailSentDate === today();
+}
+
+export function markOnboardingSentToday(): void {
+  const state = readState();
+  state.lastOnboardingEmailSentDate = today();
   writeState(state);
 }

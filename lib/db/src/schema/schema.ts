@@ -38,6 +38,8 @@ export const subscribers = pgTable("subscribers", {
   includeDailyArt: boolean("include_daily_art").default(false).notNull(),
   sessionId: text("session_id"),
   lastEmailSentDate: text("last_email_sent_date"),
+  /** Sent onboarding drip keys: day2, day4, day7_winback, day7_journeys */
+  onboardingEmailsSent: jsonb("onboarding_emails_sent").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
 });
 
 export const insertSubscriberSchema = createInsertSchema(subscribers).omit({

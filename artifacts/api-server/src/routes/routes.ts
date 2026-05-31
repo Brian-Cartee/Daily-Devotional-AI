@@ -24,6 +24,7 @@ import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText, buildWelcomeEmailHtml, buildWelcomeEmailText } from "../resend";
 import { scheduleDailyEmails } from "../emailScheduler";
+import { scheduleOnboardingEmails } from "../onboardingEmailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
 import { scheduleDailySms } from "../smsScheduler";
@@ -238,6 +239,7 @@ export async function registerRoutes(
   // subscriber email addresses but maintain separate databases.
   if (config.shouldRunSchedulers) {
     scheduleDailyEmails().catch(console.error);
+    scheduleOnboardingEmails().catch(console.error);
     scheduleProWeeklySpiritualWeatherEmails();
   } else {
     console.log("[email] Scheduler skipped. Set ENABLE_EMAIL_SCHEDULER=true on your VPS to enable.");
@@ -5618,5 +5620,12 @@ async function db_reactivate(email: string) {
   const { db } = await import("../db");
   const { subscribers } = await import("@workspace/db");
   const { eq } = await import("drizzle-orm");
-  await db.update(subscribers).set({ active: true }).where(eq(subscribers.email, email));
+  await db
+    .update(subscribers)
+    .set({
+      active: true,
+      subscribedAt: new Date(),
+      onboardingEmailsSent: [],
+    })
+    .where(eq(subscribers.email, email));
 }

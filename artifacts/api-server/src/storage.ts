@@ -21,6 +21,8 @@ export interface IStorage {
   updateSubscriberSession(email: string, sessionId: string): Promise<void>;
   updateSubscriberLastEmailDate(id: number, date: string): Promise<void>;
   claimSubscriberEmailSlot(id: number, date: string): Promise<boolean>;
+  claimOnboardingEmailStep(id: number, step: string): Promise<boolean>;
+  markOnboardingEmailSent(id: number, step: string): Promise<void>;
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
@@ -173,6 +175,33 @@ export class DatabaseStorage implements IStorage {
       ))
       .returning({ id: subscribers.id });
     return result.length > 0;
+  }
+
+  async claimOnboardingEmailStep(id: number, step: string): Promise<boolean> {
+    const [subscriber] = await db.select().from(subscribers).where(eq(subscribers.id, id));
+    if (!subscriber) return false;
+
+    const sent = Array.isArray(subscriber.onboardingEmailsSent)
+      ? subscriber.onboardingEmailsSent
+      : [];
+    if (sent.includes(step)) return false;
+
+    return true;
+  }
+
+  async markOnboardingEmailSent(id: number, step: string): Promise<void> {
+    const [subscriber] = await db.select().from(subscribers).where(eq(subscribers.id, id));
+    if (!subscriber) return;
+
+    const sent = Array.isArray(subscriber.onboardingEmailsSent)
+      ? subscriber.onboardingEmailsSent
+      : [];
+    if (sent.includes(step)) return;
+
+    await db
+      .update(subscribers)
+      .set({ onboardingEmailsSent: [...sent, step] })
+      .where(eq(subscribers.id, id));
   }
 
   async getJournalEntries(sessionId: string): Promise<JournalEntry[]> {
