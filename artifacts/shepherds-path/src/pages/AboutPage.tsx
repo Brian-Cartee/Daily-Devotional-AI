@@ -94,14 +94,20 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #130636 0%, #0d0a1a 100%)" }}>
 
-      {/* HERO — cinematic, purple gradient */}
-      <div className="relative pt-4 pb-16 px-5 text-center overflow-hidden">
-        {/* Radial glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(122,1,141,0.35) 0%, rgba(80,20,180,0.1) 60%, transparent 80%)"
-        }} />
+      {/* HERO — content clears fixed app top bar (conviction + menu), same as For You */}
+      <div className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(122,1,141,0.35) 0%, rgba(80,20,180,0.1) 60%, transparent 80%)",
+          }}
+        />
 
-        <motion.div {...fadeUp(0)} className="relative z-10 flex flex-col items-center">
+        <motion.div
+          {...fadeUp(0)}
+          className="relative z-10 flex flex-col items-center px-5 pb-16 text-center pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]"
+        >
           {/* App icon */}
           <div className="mb-6" style={{ filter: "drop-shadow(0 8px 24px rgba(122,1,141,0.5))" }}>
             <img src={BRAND_ICON} alt="Shepherd's Path" className="w-24 h-24 rounded-[22px] object-cover" />
