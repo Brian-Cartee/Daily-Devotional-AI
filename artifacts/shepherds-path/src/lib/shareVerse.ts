@@ -19,6 +19,24 @@ export function sharePageUrl(path = "/"): string {
   return `${SHARE_SITE_ORIGIN}${normalized}`;
 }
 
+const APP_STORE_URL = "https://apps.apple.com/app/id6760953522";
+
+/** Homepage link for "Share App" — skips native-shell interstitial on load. */
+export function shareAppUrl(): string {
+  const url = new URL(sharePageUrl("/"));
+  url.searchParams.set("enter", "1");
+  return url.toString();
+}
+
+/** Invite copy with App Store + web link (iOS). */
+export function shareAppInviteText(tagline: string): string {
+  const web = shareAppUrl();
+  if (isIOSDevice()) {
+    return `${tagline}\n\nGet the app: ${APP_STORE_URL}\n${web}`;
+  }
+  return `${tagline}\n\n${web}`;
+}
+
 function ensureShareUrl(url?: string): string | undefined {
   if (!url?.trim()) return undefined;
   const trimmed = url.trim();
@@ -202,9 +220,16 @@ export async function shareNative(payload: {
       : `${payload.text}\n\n${shareUrl}`
     : payload.text;
 
-  // Native shell: only hand off to RN Share when the app build advertises the bridge.
-  // Never return "shared" from postMessage alone — that caused a fake "Shared!" with no sheet.
-  if (isNativeWebViewShell() && !payload.files?.length && hasNativeShareBridge()) {
+  // Native shell: prefer WebView navigator.share (same UI as the rest of the app).
+  // RN Share bridge is fallback only when the WebView API is missing.
+  const canWebShare =
+    typeof navigator !== "undefined" && typeof navigator.share === "function";
+  if (
+    isNativeWebViewShell() &&
+    !payload.files?.length &&
+    !canWebShare &&
+    hasNativeShareBridge()
+  ) {
     if (
       shareViaNativeShell({
         title: payload.title,
@@ -216,7 +241,7 @@ export async function shareNative(payload: {
     }
   }
 
-  if (!navigator.share) {
+  if (!canWebShare) {
     const ok = await copyToClipboard(clipboardBody);
     return ok ? "copied" : "failed";
   }

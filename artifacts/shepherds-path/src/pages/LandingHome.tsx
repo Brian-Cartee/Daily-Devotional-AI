@@ -48,7 +48,7 @@ import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { isNativeWebViewShell } from "@/lib/platform";
-import { shareNative, sharePageUrl } from "@/lib/shareVerse";
+import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
@@ -693,15 +693,15 @@ function LandingHomeInner() {
   };
 
   const handleShareApp = async () => {
-    const text =
+    const tagline =
       "Your daily walk with Jesus — AI-guided devotionals, Bible journeys, prayer & more.";
-    const url = sharePageUrl("/");
     const result = await shareNative({
       title: "Shepherd's Path",
-      text,
-      url,
+      text: shareAppInviteText(tagline),
+      url: shareAppUrl(),
     });
-    if (result === "shared") {
+    if (result === "cancelled" || result === "delegated") return;
+    if (result === "shared" || result === "copied") {
       setShared(true);
       setTimeout(() => setShared(false), 2500);
     }

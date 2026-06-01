@@ -4,7 +4,15 @@ import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Do
 import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage, PHOTO_POOL } from "@/lib/shareImage";
-import { copyToClipboard, downloadBlob, shareImageBlob, shareImageFilename, shareNative } from "@/lib/shareVerse";
+import {
+  copyToClipboard,
+  downloadBlob,
+  shareAppInviteText,
+  shareAppUrl,
+  shareImageBlob,
+  shareImageFilename,
+  shareNative,
+} from "@/lib/shareVerse";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,7 +28,7 @@ const openLink = (url: string) => {
   document.body.removeChild(a);
 };
 
-const APP_URL = "https://www.shepherdspathai.com";
+const APP_URL = shareAppUrl();
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1080&q=85&auto=format&fit=crop";
 
 const CALLING_CARDS = [
@@ -396,8 +404,13 @@ export default function CallingPage() {
   };
 
   const handleShareApp = async () => {
-    const text = `This has been meaningful to me and I thought of you.\n\nShepherd's Path — daily scripture, prayer, and guidance. Come as you are.\n\n${APP_URL}`;
-    await shareNative({ title: "Shepherd's Path", text, url: APP_URL });
+    const tagline =
+      "This has been meaningful to me and I thought of you.\n\nShepherd's Path — daily scripture, prayer, and guidance. Come as you are.";
+    await shareNative({
+      title: "Shepherd's Path",
+      text: shareAppInviteText(tagline),
+      url: shareAppUrl(),
+    });
   };
 
   return (

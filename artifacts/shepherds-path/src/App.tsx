@@ -239,6 +239,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("enter")) return;
+    params.delete("enter");
+    const qs = params.toString();
+    const next = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", next);
+  }, []);
+
+  useEffect(() => {
     if (!isNativeWebViewShell()) return;
 
     const tryMark = () => {

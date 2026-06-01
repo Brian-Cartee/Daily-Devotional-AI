@@ -5,7 +5,7 @@ import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { apiSessionExtras } from "@/lib/requestExtras";
-import { shareNative, sharePageUrl } from "@/lib/shareVerse";
+import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 
 function decodeHtml(str: string): string {
   return str
@@ -40,7 +40,7 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
   const videoUrl = `https://www.youtube.com/watch?v=${sermon.videoId}`;
 
   const handleShare = async () => {
-    const shareText = `"${decodeHtml(sermon.title)}" — ${decodeHtml(sermon.channel)}\n\nFound this message after today's devotional on Shepherd's Path.\n\nGet the app: ${sharePageUrl("/")}`;
+    const shareText = `"${decodeHtml(sermon.title)}" — ${decodeHtml(sermon.channel)}\n\nFound this message after today's devotional on Shepherd's Path.\n\n${shareAppInviteText("Get the app")}`;
     const result = await shareNative({
       title: decodeHtml(sermon.title),
       text: `${shareText}\n\n${videoUrl}`,

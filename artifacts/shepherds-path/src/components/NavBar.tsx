@@ -248,11 +248,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       />
       {showTop && compactTopNav && (
         <nav
-          className={`fixed top-0 left-0 right-0 z-[200] pointer-events-none ${
-            !inNativeApp && overCinematicHero
-              ? "bg-gradient-to-b from-[#09031e]/88 via-[#09031e]/45 to-transparent backdrop-blur-md"
-              : ""
-          }`}
+          className="fixed top-0 left-0 right-0 z-[200] pointer-events-none"
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
