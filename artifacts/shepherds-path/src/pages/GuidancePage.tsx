@@ -17,6 +17,7 @@ import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
 import { NamePrompt } from "@/components/NamePrompt";
 import { getSessionId } from "@/lib/session";
+import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
@@ -278,13 +279,11 @@ export default function GuidancePage() {
 
   const carryVerseToday = () => {
     if (!verse) return;
-    const payload = {
-      date: new Date().toISOString().split("T")[0],
+    saveCarryToday({
       text: verse.text,
       reference: verse.reference,
       source: "guidance",
-    };
-    localStorage.setItem("sp_carry_today", JSON.stringify(payload));
+    });
     toast({ description: "Saved. Carry this verse with you today." });
   };
 

@@ -47,6 +47,7 @@ import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
 import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
+import { readCarryToday } from "@/lib/devotionalContinuity";
 import { isNativeWebViewShell } from "@/lib/platform";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { nativeDiag } from "@/lib/nativeDiag";
@@ -103,16 +104,9 @@ function formatVisitDate(dateStr: string): string {
 }
 
 function getCarryToday(): { text: string; reference: string } | null {
-  try {
-    const raw = localStorage.getItem("sp_carry_today");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { date?: string; text?: string; reference?: string };
-    const today = new Date().toISOString().split("T")[0];
-    if (parsed.date !== today || !parsed.text || !parsed.reference) return null;
-    return { text: parsed.text, reference: parsed.reference };
-  } catch {
-    return null;
-  }
+  const payload = readCarryToday();
+  if (!payload) return null;
+  return { text: payload.text, reference: payload.reference };
 }
 
 function DevotionalCard() {

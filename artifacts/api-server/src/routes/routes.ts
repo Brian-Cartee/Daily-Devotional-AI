@@ -1241,6 +1241,42 @@ Voice authenticity (internal constraint — never cite these rules in output):
     } catch { return { context: "", count: 0 }; }
   }
 
+  /** Optional devotional continuity — never includes guidance_memory; max 48h. */
+  async function getDevotionalContinuityEcho(sessionId: string): Promise<string> {
+    if (!sessionId) return "";
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      if (!entries || entries.length === 0) return "";
+      const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+      const recent = entries
+        .filter(
+          (e) =>
+            e.type !== "guidance_memory" &&
+            new Date(e.createdAt).getTime() > cutoff,
+        )
+        .slice(0, 3);
+      if (recent.length === 0) return "";
+      return recent
+        .map((e) => {
+          const dayLabel = (() => {
+            const diffDays = Math.floor(
+              (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+            );
+            if (diffDays === 0) return "today";
+            if (diffDays === 1) return "yesterday";
+            return `${diffDays} days ago`;
+          })();
+          const label =
+            e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : "Note";
+          const snippet = e.content.replace(/\n+/g, " ").slice(0, 160);
+          return `[${label}, written ${dayLabel}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
+        })
+        .join("\n");
+    } catch {
+      return "";
+    }
+  }
+
   // Recent personal journal entries from the last 7 days (reflections, prayers, notes — not AI memories)
   async function getRecentJournalEcho(sessionId: string): Promise<string> {
     if (!sessionId) return "";
@@ -1453,10 +1489,17 @@ Voice authenticity (internal constraint — never cite these rules in output):
       const generateMode: string = (req.body as any).guidanceMode || "encouraging";
       const generateModeNote = buildModeNote(generateMode);
       const nameNote2 = userName2 ? ` You are speaking with ${userName2}. Address them by name naturally once in your response.` : "";
-      const { context: journalCtx2, count: journalCount2 } = await getJournalContext(sessionId2);
-      const memoryNote2 = journalCtx2
-        ? `\n\nRecent spiritual context for this person — use to make your response more personal and connected to their journey; do not quote these entries directly unless it flows naturally:\n${journalCtx2}`
-        : "";
+      const continuityIntent: string = (req.body as { continuityIntent?: string }).continuityIntent === "continue"
+        ? "continue"
+        : "fresh";
+      const { count: journalCount2 } = await getJournalContext(sessionId2);
+      let memoryNote2 = "";
+      if (continuityIntent === "continue" && sessionId2) {
+        const echo = await getDevotionalContinuityEcho(sessionId2);
+        if (echo) {
+          memoryNote2 = `\n\nThe person chose to connect today's devotional to what may still be on their heart. Recent journal only (last 48 hours — never assume older burdens still apply):\n${echo}\n\nHold this lightly: let today's verse lead. Only weave prior context if it truly fits; they may have moved on.`;
+        }
+      }
       const relationshipNote2 = buildRelationshipNote(daysWithApp2, journalCount2);
       const probeNote = `\n\nApproximately 1 in 4 responses — when it feels genuinely earned, not formulaic — close with a single question. Not a prompt, not a challenge. A real question a caring friend would ask because they are genuinely curious about this person's life. Make it specific to this verse and this moment.`;
 

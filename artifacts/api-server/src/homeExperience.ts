@@ -104,35 +104,17 @@ export async function buildThresholdPayload(
       const newest = entries[0]?.createdAt;
       if (newest) lastVisitDays = daysSince(String(newest));
     }
-    const { theme, snippet: lastSnippet, memoryLine } = recentJournalContext(entries, isPro ? 21 : 14);
-
-    if (lastVisitDays >= 3) {
+    if (lastVisitDays >= 2) {
       return {
         headline: "Nothing has been lost.",
-        subtext: "Pick up where you left off — or tell me what's on your heart today.",
-        primaryCta: { label: "Talk it through", href: "/guidance" },
-        secondaryCta: { label: "Today's devotional", href: "/devotional" },
+        subtext:
+          "Today's Scripture is a fresh start. If something is still on your heart, Talk it through is here — we won't assume what you're carrying.",
+        primaryCta: { label: "Today's devotional", href: "/devotional" },
+        secondaryCta: { label: "Talk it through", href: "/guidance" },
         phase: "returning",
         daysWithApp,
         streak,
         listenFirstSuggested,
-        continuityLine: isPro && memoryLine ? `Last time we talked, you were carrying: “${memoryLine}”` : undefined,
-      };
-    }
-
-    if (theme && lastSnippet && daysWithApp >= (isPro ? 3 : 5)) {
-      return {
-        headline: "What are you carrying today?",
-        subtext: isPro && memoryLine
-          ? `You've been walking through ${theme}. Something from our last conversation may still be with you — we can pick that up, or start fresh.`
-          : `You've been walking through ${theme} lately. If that's still with you, we can stay there — or start fresh.`,
-        primaryCta: { label: "Talk it through", href: `/guidance?situation=${encodeURIComponent(`I'm still carrying ${theme} and need God's presence today`)}` },
-        secondaryCta: { label: "Just read today's verse", href: "/devotional" },
-        phase: "remembered",
-        daysWithApp,
-        streak,
-        listenFirstSuggested,
-        continuityLine: isPro && memoryLine ? memoryLine : undefined,
       };
     }
   } catch {
@@ -167,7 +149,7 @@ export async function buildThresholdPayload(
 
   if (hour >= 5 && hour < 11) {
     return {
-      headline: daysWithApp <= 3 ? "Good morning — you don't have to walk alone." : "What are you carrying into today?",
+      headline: daysWithApp <= 3 ? "Good morning — you don't have to walk alone." : "Good morning.",
       subtext: "One honest step is enough. Scripture and prayer can meet you before the day rushes in.",
       primaryCta: { label: "Talk it through", href: "/guidance" },
       secondaryCta: { label: "Today's devotional", href: "/devotional" },

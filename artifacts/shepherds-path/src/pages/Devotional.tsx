@@ -62,6 +62,11 @@ import {
   LISTEN_LIMIT_COPY,
 } from "@/lib/listenPolicy";
 import { markReturningHome } from "@/lib/introState";
+import {
+  type DevotionalContinuityIntent,
+  markDevotionalVisited,
+  shouldOfferDevotionalContinuityChoice,
+} from "@/lib/devotionalContinuity";
 
 /** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
 const openLink = (url: string) => {
@@ -127,6 +132,11 @@ export default function Devotional() {
   const prayerAbortRef = useRef<AbortController | null>(null);
   const generationStartedRef = useRef(false);
   const hydratedVerseIdRef = useRef<number | null>(null);
+  const continuityIntentRef = useRef<DevotionalContinuityIntent>("fresh");
+  const [continuityResolved, setContinuityResolved] = useState(
+    () => !shouldOfferDevotionalContinuityChoice(),
+  );
+  const [continuityIntent, setContinuityIntent] = useState<DevotionalContinuityIntent>("fresh");
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [gratitudePrayer, setGratitudePrayer] = useState("");
   const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
@@ -400,6 +410,22 @@ export default function Devotional() {
     }
   }, [verse]);
 
+  useEffect(() => {
+    continuityIntentRef.current = continuityIntent;
+  }, [continuityIntent]);
+
+  useEffect(() => {
+    markDevotionalVisited();
+  }, []);
+
+  const resolveContinuity = (intent: DevotionalContinuityIntent) => {
+    setContinuityIntent(intent);
+    continuityIntentRef.current = intent;
+    setContinuityResolved(true);
+    setEntryTriggered(true);
+    generationStartedRef.current = false;
+  };
+
   // Hydrate reflection/prayer from session only when they match today's verse
   useEffect(() => {
     if (!verse?.id) return;
@@ -414,9 +440,9 @@ export default function Devotional() {
     if (cachedRefl) setEntryTriggered(true);
   }, [verse?.id]);
 
-  // Effect 2: Generate reflection/prayer once the user begins (or auto-triggers after 3s)
+  // Effect 2: Generate reflection/prayer once the user begins (after continuity choice when applicable)
   useEffect(() => {
-    if (!verse || !entryTriggered || generationStartedRef.current) return;
+    if (!verse || !entryTriggered || !continuityResolved || generationStartedRef.current) return;
     generationStartedRef.current = true;
     const lang = getStoredLang();
     const userName = getUserName() ?? undefined;
@@ -429,14 +455,14 @@ export default function Devotional() {
     } else {
       generateReflection(verse.id, lang, userName);
     }
-  }, [verse, entryTriggered]);
+  }, [verse, entryTriggered, continuityResolved]);
 
-  // Effect 3: Passive auto-trigger — after 3 seconds of dwelling on the verse, begin naturally
+  // Effect 3: Passive auto-trigger when no return visit choice is needed
   useEffect(() => {
-    if (!verse || entryTriggered) return;
+    if (!verse || entryTriggered || !continuityResolved) return;
     const timer = setTimeout(() => setEntryTriggered(true), 1200);
     return () => clearTimeout(timer);
-  }, [verse, entryTriggered]);
+  }, [verse, entryTriggered, continuityResolved]);
 
   // Effect 4: Post-value name prompt — ask for name after prayer loads, any time it hasn't been done yet.
   // The only acceptable reason for no name is the user explicitly skipping this prompt.
@@ -465,6 +491,7 @@ export default function Devotional() {
         verseId, type: "reflection", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
         isLateNight: isLateNight(),
+        continuityIntent: continuityIntentRef.current,
       }, (text) => setReflectionContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
         const finalText = capitalizeDivinePronouns(result);
@@ -497,6 +524,7 @@ export default function Devotional() {
         verseId, type: "prayer", lang, userName,
         sessionId: getSessionId(), daysWithApp: getRelationshipAge(),
         isLateNight: isLateNight(),
+        continuityIntent: continuityIntentRef.current,
         ...(reflectionContext ? { reflectionContext } : {}),
       }, (text) => setPrayerContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
@@ -1270,9 +1298,46 @@ export default function Devotional() {
             </div>
           </div>
 
-          {/* Progressive entry — shown on fresh sessions before reflection begins */}
+          {/* Return visit — fresh vs continue (default: fresh, verse-led) */}
           <AnimatePresence>
-            {!entryTriggered && !reflectionContent && !reflectionLoading && (
+            {!continuityResolved && !entryTriggered && !reflectionContent && !reflectionLoading && (
+              <motion.div
+                key="continuity-choice"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="flex flex-col items-center gap-4 py-6 px-2"
+                data-testid="devotional-continuity-choice"
+              >
+                <p className="text-[13px] text-muted-foreground/70 text-center leading-relaxed max-w-[300px]">
+                  Welcome back. Today&apos;s Scripture stands on its own — unless something is still on your heart.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-[320px]">
+                  <button
+                    type="button"
+                    data-testid="button-devotional-fresh"
+                    onClick={() => resolveContinuity("fresh")}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-primary text-primary-foreground text-[14px] font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-95"
+                  >
+                    Start fresh
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="button-devotional-continue"
+                    onClick={() => resolveContinuity("continue")}
+                    className="flex-1 inline-flex items-center justify-center px-5 py-3 rounded-full border border-border/70 bg-muted/40 text-[14px] font-semibold text-foreground/90 hover:bg-muted/60 transition-all active:scale-95"
+                  >
+                    Still on my heart
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Progressive entry — shown when no return choice is needed */}
+          <AnimatePresence>
+            {continuityResolved && !entryTriggered && !reflectionContent && !reflectionLoading && (
               <motion.div
                 key="begin-entry"
                 initial={{ opacity: 0, y: 8 }}
