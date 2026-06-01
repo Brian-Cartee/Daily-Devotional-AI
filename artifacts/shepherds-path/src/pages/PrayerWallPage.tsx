@@ -6,9 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getSessionId } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
 
 type WallTab = "recent" | "praying" | "answered";
 
@@ -56,7 +54,6 @@ export default function PrayerWallPage() {
   const sessionId = getSessionId();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
 
   const [request, setRequest] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -144,13 +141,6 @@ export default function PrayerWallPage() {
         />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(6,3,18,0.65) 0%, rgba(10,5,20,0.08) 38%, rgba(6,3,18,0.88) 100%)" }} />
         <div className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(80,30,0,0.18) 0%, transparent 100%)" }} />
-
-        {/* Back button */}
-        <BackButton
-          backToPaths
-          testId="button-back-prayer-wall"
-          className="absolute top-[62px] left-4 z-10"
-        />
 
         {/* Hero text */}
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 px-6 text-center">
