@@ -167,6 +167,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     overHomeHero ||
     location === "/about" ||
     location === "/prayer-wall" ||
+    location === "/greatest-gift" ||
     location === "/guidance" ||
     location.startsWith("/guidance/") ||
     location === "/devotional" ||
