@@ -6,12 +6,17 @@ import {
   Linking,
   Platform,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
+import { injectApplePro, reloadEmbeddedWeb } from "@/lib/inject-pro";
+import { useSubscription } from "@/lib/revenuecat";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
@@ -53,6 +58,7 @@ const BEFORE_CONTENT_JS = `(function(){
   document.documentElement.style.backgroundColor='#0d0612';
   if(document.body){document.body.style.backgroundColor='#0d0612';}
   document.documentElement.setAttribute('data-sp-shell','native');
+  document.documentElement.setAttribute('data-sp-native-share','1');
   document.documentElement.classList.add('sp-native-shell');
   true;
 })();`;
@@ -181,7 +187,10 @@ const VISIBILITY_PROBE_JS = `(function(){
 })();`;
 
 export default function MainScreen() {
+  const router = useRouter();
+  const { isSubscribed } = useSubscription();
   const webviewRef = useRef<WebView>(null);
+  const wasSubscribedRef = useRef(false);
   const [entryUrl, setEntryUrl] = useState(() => shellEntryUrl());
   const [showOverlay, setShowOverlay] = useState(true);
   const [showSlowOptions, setShowSlowOptions] = useState(false);
@@ -265,6 +274,31 @@ export default function MainScreen() {
     setShowBlankRecovery(false);
     hideNativeSplashWhenWebReady();
   }, []);
+
+  const syncAppleProToWeb = useCallback(
+    (reloadAfterInject = false) => {
+      injectApplePro(webviewRef);
+      if (reloadAfterInject) {
+        reloadEmbeddedWeb(webviewRef);
+      }
+    },
+    [],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSubscribed) return;
+      const firstUnlock = !wasSubscribedRef.current;
+      wasSubscribedRef.current = true;
+      syncAppleProToWeb(firstUnlock);
+    }, [isSubscribed, syncAppleProToWeb]),
+  );
+
+  useEffect(() => {
+    if (isSubscribed && appReady) {
+      syncAppleProToWeb(false);
+    }
+  }, [isSubscribed, appReady, syncAppleProToWeb]);
 
   useEffect(() => {
     webUiConfirmedRef.current = false;
@@ -456,6 +490,28 @@ export default function MainScreen() {
               setTimeout(() => probeWebReady(), 100);
             }
             if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
+            if (data.type === "open_subscription") {
+              router.push("/subscription");
+            }
+            if (data.type === "share") {
+              const shareUrl =
+                typeof data.url === "string" && data.url.startsWith("http")
+                  ? data.url
+                  : APP_ORIGIN;
+              const message =
+                typeof data.text === "string" && data.text.trim()
+                  ? String(data.text)
+                  : shareUrl;
+              void Share.share(
+                Platform.OS === "ios"
+                  ? { message: message.includes(shareUrl) ? message : `${message}\n\n${shareUrl}` }
+                  : {
+                      title: String(data.title || "Shepherd's Path"),
+                      message,
+                      url: shareUrl,
+                    },
+              ).catch(() => {});
+            }
             if (data.type === "js_error" && !readyRef.current) {
               pushNativeDiag("web_js_error", `${data.msg || ""} ${data.detail || ""}`.trim());
               const msg = String(data.msg || data.detail || "");

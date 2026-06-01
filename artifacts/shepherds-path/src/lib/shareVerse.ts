@@ -11,7 +11,7 @@ export const APP_ORIGIN =
     ? window.location.origin.replace(/\/$/, "")
     : SHARE_SITE_ORIGIN;
 
-export type ShareOutcome = "shared" | "copied" | "cancelled" | "failed";
+export type ShareOutcome = "shared" | "copied" | "cancelled" | "failed" | "delegated";
 
 /** Absolute https URL for sharing, e.g. sharePageUrl("/about"). */
 export function sharePageUrl(path = "/"): string {
@@ -202,7 +202,9 @@ export async function shareNative(payload: {
       : `${payload.text}\n\n${shareUrl}`
     : payload.text;
 
-  if (isNativeWebViewShell() && !payload.files?.length) {
+  // Native shell: only hand off to RN Share when the app build advertises the bridge.
+  // Never return "shared" from postMessage alone — that caused a fake "Shared!" with no sheet.
+  if (isNativeWebViewShell() && !payload.files?.length && hasNativeShareBridge()) {
     if (
       shareViaNativeShell({
         title: payload.title,
@@ -210,7 +212,7 @@ export async function shareNative(payload: {
         url: shareUrl,
       })
     ) {
-      return "shared";
+      return "delegated";
     }
   }
 

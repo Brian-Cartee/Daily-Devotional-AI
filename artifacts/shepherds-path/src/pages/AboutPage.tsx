@@ -76,7 +76,7 @@ export default function AboutPage() {
       text: blurb,
       url,
     });
-    if (result === "cancelled") return;
+    if (result === "cancelled" || result === "delegated") return;
     if (result === "shared") {
       setShareFeedback("shared");
       setTimeout(() => setShareFeedback("idle"), 2500);
