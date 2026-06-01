@@ -168,6 +168,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     location === "/about" ||
     location === "/prayer-wall" ||
     location === "/greatest-gift" ||
+    location === "/how-to-use" ||
     location === "/guidance" ||
     location.startsWith("/guidance/") ||
     location === "/devotional" ||

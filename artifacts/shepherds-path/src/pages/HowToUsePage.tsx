@@ -32,8 +32,8 @@ const quickStarts = [
     title: "For You home",
     desc: "Choose Talk, Scripture, or Breathe — then today's devotional right below.",
     testId: "how-to-quick-home",
-    accent: "border-primary/25 bg-primary/8",
-    iconColor: "text-primary",
+    accent: "border-violet-400/25 bg-violet-500/10",
+    iconColor: "text-violet-300",
   },
   {
     href: "/devotional",
@@ -41,8 +41,8 @@ const quickStarts = [
     title: "Morning with God",
     desc: "Today's verse, reflection, prayer, and gratitude — about five minutes.",
     testId: "how-to-quick-devotional",
-    accent: "border-amber-500/25 bg-amber-500/8",
-    iconColor: "text-amber-600 dark:text-amber-400",
+    accent: "border-amber-400/25 bg-amber-500/10",
+    iconColor: "text-amber-300",
   },
   {
     href: "/guidance",
@@ -50,8 +50,8 @@ const quickStarts = [
     title: "Something heavy today",
     desc: "Talk it through — Scripture and prayer shaped for what you typed.",
     testId: "how-to-quick-guidance",
-    accent: "border-violet-500/25 bg-violet-500/8",
-    iconColor: "text-violet-600 dark:text-violet-400",
+    accent: "border-fuchsia-400/25 bg-fuchsia-500/10",
+    iconColor: "text-fuchsia-300",
   },
   {
     href: "/prayer-closet",
@@ -59,8 +59,8 @@ const quickStarts = [
     title: "Quiet before God",
     desc: "Your prayer closet — worship, stillness, and a private journal.",
     testId: "how-to-quick-closet",
-    accent: "border-indigo-500/25 bg-indigo-500/8",
-    iconColor: "text-indigo-600 dark:text-indigo-400",
+    accent: "border-indigo-400/25 bg-indigo-500/10",
+    iconColor: "text-indigo-300",
   },
   {
     href: "/sigh",
@@ -68,8 +68,8 @@ const quickStarts = [
     title: "Just breathe",
     desc: "A quieter room when you need stillness — no performance.",
     testId: "how-to-quick-breathe",
-    accent: "border-sky-500/25 bg-sky-500/8",
-    iconColor: "text-sky-600 dark:text-sky-400",
+    accent: "border-sky-400/25 bg-sky-500/10",
+    iconColor: "text-sky-300",
   },
 ];
 
@@ -84,8 +84,8 @@ const steps = [
   {
     number: "1",
     icon: LayoutGrid,
-    color: "bg-primary/5 border-primary/20",
-    iconColor: "text-primary",
+    color: "bg-violet-500/10 border-violet-400/20 backdrop-blur-md",
+    iconColor: "text-violet-300",
     title: "For You — choose your step",
     where: "Home (For You tab) — \"How do you want to begin?\"",
     description:
@@ -95,8 +95,8 @@ const steps = [
   {
     number: "2",
     icon: Sun,
-    color: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
-    iconColor: "text-amber-600 dark:text-amber-400",
+    color: "bg-amber-500/10 border-amber-400/20 backdrop-blur-md",
+    iconColor: "text-amber-300",
     title: "Daily devotional",
     where: "Sun icon (Today) in the bottom bar, or the devotional card on For You",
     description:
@@ -106,8 +106,8 @@ const steps = [
   {
     number: "3",
     icon: Sparkles,
-    color: "bg-fuchsia-50 dark:bg-fuchsia-950/30 border-fuchsia-200 dark:border-fuchsia-800/50",
-    iconColor: "text-fuchsia-600 dark:text-fuchsia-400",
+    color: "bg-fuchsia-500/10 border-fuchsia-400/20 backdrop-blur-md",
+    iconColor: "text-fuchsia-300",
     title: "Path AI (quick help)",
     where: "Purple Path AI button — bottom-right on most screens",
     description:
@@ -117,8 +117,8 @@ const steps = [
   {
     number: "4",
     icon: MessageCircle,
-    color: "bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800/50",
-    iconColor: "text-violet-600 dark:text-violet-400",
+    color: "bg-violet-500/10 border-violet-400/20 backdrop-blur-md",
+    iconColor: "text-violet-300",
     title: "Talk it through",
     where: "For You tab, bottom tab Guidance, or More paths",
     description:
@@ -128,8 +128,8 @@ const steps = [
   {
     number: "5",
     icon: DoorOpen,
-    color: "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/50",
-    iconColor: "text-indigo-600 dark:text-indigo-400",
+    color: "bg-indigo-500/10 border-indigo-400/20 backdrop-blur-md",
+    iconColor: "text-indigo-300",
     title: "Prayer closet",
     where: "Prayer closet card on For You, or More paths → Prayer closet",
     description:
@@ -139,8 +139,8 @@ const steps = [
   {
     number: "6",
     icon: NotebookPen,
-    color: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50",
-    iconColor: "text-sky-600 dark:text-sky-400",
+    color: "bg-sky-500/10 border-sky-400/20 backdrop-blur-md",
+    iconColor: "text-sky-300",
     title: "Journal",
     where: "For You shortcuts, More menu → Journal, or after Save to Journal",
     description:
@@ -150,8 +150,8 @@ const steps = [
   {
     number: "7",
     icon: Compass,
-    color: "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50",
-    iconColor: "text-rose-600 dark:text-rose-400",
+    color: "bg-rose-500/10 border-rose-400/20 backdrop-blur-md",
+    iconColor: "text-rose-300",
     title: "Journey & guided pathways",
     where: "Bottom tab Journey",
     description:
@@ -161,8 +161,8 @@ const steps = [
   {
     number: "8",
     icon: BookOpen,
-    color: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
+    color: "bg-emerald-500/10 border-emerald-400/20 backdrop-blur-md",
+    iconColor: "text-emerald-300",
     title: "Bible & study",
     where: "Top menu: Bible and Study, or More paths on For You",
     description:
@@ -172,8 +172,8 @@ const steps = [
   {
     number: "9",
     icon: Users,
-    color: "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50",
-    iconColor: "text-orange-600 dark:text-orange-400",
+    color: "bg-orange-500/10 border-orange-400/20 backdrop-blur-md",
+    iconColor: "text-orange-300",
     title: "Prayer Wall & community",
     where: "For You → More paths → Prayer Wall",
     description:
@@ -219,20 +219,50 @@ const faqs = [
 
 export default function HowToUsePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative overflow-x-hidden bg-[#0a0618]">
+      {/* Soft guide atmosphere — readable, not busy */}
+      <div className="fixed inset-0 pointer-events-none z-0" aria-hidden>
+        <img
+          src="/hero-guidance.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.14]"
+          style={{ objectPosition: "center 40%" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(14,8,32,0.94) 0%, rgba(8,4,20,0.9) 45%, rgba(6,3,16,0.96) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 85% 50% at 50% 0%, rgba(139,92,246,0.18) 0%, rgba(99,102,241,0.06) 50%, transparent 72%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 80%, rgba(56,189,248,0.08) 0%, transparent 45%), radial-gradient(circle at 85% 25%, rgba(167,139,250,0.1) 0%, transparent 40%)",
+          }}
+        />
+      </div>
 
-      <div className="max-w-2xl mx-auto px-4 pt-20 pb-32">
-        <motion.div {...fade(0)} className="text-center pt-8 pb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/8 border border-primary/20 mb-5">
-            <HelpCircle className="w-3.5 h-3.5 text-primary/70" />
-            <span className="text-[11px] font-bold uppercase tracking-widest text-primary/70">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 pb-32 sp-app-top-clearance pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]">
+        <motion.div {...fade(0)} className="text-center pb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-400/25 mb-5 backdrop-blur-sm">
+            <HelpCircle className="w-3.5 h-3.5 text-violet-300/90" />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-violet-300/90">
               How to Use
             </span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground mb-3">
+          <h1 className="text-3xl font-black tracking-tight text-white mb-3">
             Your map of Shepherd&apos;s Path
           </h1>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
+          <p className="text-base text-white/60 leading-relaxed max-w-md mx-auto">
             Start on For You — choose Talk, Scripture, or Breathe — then explore one step below.
             You do not need to learn everything today.
           </p>
@@ -240,7 +270,7 @@ export default function HowToUsePage() {
 
         {/* Quick start */}
         <motion.div {...fade(0.06)} className="mb-10">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-3 px-0.5">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3 px-0.5">
             Start here
           </p>
           <div className="grid gap-2.5">
@@ -248,16 +278,16 @@ export default function HowToUsePage() {
               <Link key={href} href={href}>
                 <div
                   data-testid={testId}
-                  className={`flex items-center gap-3 rounded-2xl border p-4 active:scale-[0.99] transition-transform ${accent}`}
+                  className={`flex items-center gap-3 rounded-2xl border p-4 active:scale-[0.99] transition-transform backdrop-blur-md ${accent}`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-background/80 flex items-center justify-center shrink-0 border border-border/40">
+                  <div className="w-10 h-10 rounded-xl bg-black/25 flex items-center justify-center shrink-0 border border-white/10">
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-bold text-foreground leading-tight">{title}</p>
-                    <p className="text-[13px] text-muted-foreground leading-snug mt-0.5">{desc}</p>
+                    <p className="text-[15px] font-bold text-white leading-tight">{title}</p>
+                    <p className="text-[13px] text-white/55 leading-snug mt-0.5">{desc}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                  <ArrowRight className="w-4 h-4 text-white/35 shrink-0" />
                 </div>
               </Link>
             ))}
@@ -267,33 +297,33 @@ export default function HowToUsePage() {
         {/* Navigation */}
         <motion.div
           {...fade(0.12)}
-          className="mb-10 rounded-2xl border border-border/60 bg-muted/25 p-5"
+          className="mb-10 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md p-5"
           data-testid="how-to-navigation"
         >
           <div className="flex items-center gap-2 mb-3">
-            <LayoutGrid className="w-4 h-4 text-primary/70" />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            <LayoutGrid className="w-4 h-4 text-violet-300/80" />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-white/40">
               Find your way around
             </p>
           </div>
-          <p className="text-[14px] text-foreground/85 leading-relaxed mb-4">
-            On your phone, the <strong className="font-semibold">bottom bar</strong> is home base.
-            The <strong className="font-semibold">⋯ menu</strong> (top right) has Bible, Study,
-            How to use, and more. The <strong className="font-semibold">bell</strong> sets
+          <p className="text-[14px] text-white/75 leading-relaxed mb-4">
+            On your phone, the <strong className="font-semibold text-white">bottom bar</strong> is home base.
+            The <strong className="font-semibold text-white">⋯ menu</strong> (top right) has Bible, Study,
+            How to use, and more. The <strong className="font-semibold text-white">bell</strong> sets
             reminders.
           </p>
           <ul className="space-y-2.5 mb-4">
             {bottomNav.map((item) => (
               <li key={item.label} className="flex gap-2 text-[13px]">
-                <span className="font-bold text-foreground shrink-0 w-[4.5rem]">{item.label}</span>
-                <span className="text-muted-foreground leading-snug">{item.desc}</span>
+                <span className="font-bold text-white shrink-0 w-[4.5rem]">{item.label}</span>
+                <span className="text-white/55 leading-snug">{item.desc}</span>
               </li>
             ))}
           </ul>
-          <p className="text-[13px] text-muted-foreground leading-relaxed flex items-start gap-2">
-            <Bell className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
+          <p className="text-[13px] text-white/55 leading-relaxed flex items-start gap-2">
+            <Bell className="w-4 h-4 shrink-0 mt-0.5 text-violet-300/70" />
             <span>
-              Scroll For You to <strong className="font-medium text-foreground/80">More paths</strong>{" "}
+              Scroll For You to <strong className="font-medium text-white/80">More paths</strong>{" "}
               for Prayer Wall, reading plans, salvation, and dozens of other doors.
             </span>
           </p>
@@ -302,25 +332,25 @@ export default function HowToUsePage() {
         {/* Path AI vs Talk */}
         <motion.div
           {...fade(0.16)}
-          className="mb-10 rounded-2xl border border-primary/20 bg-primary/[0.05] p-5"
+          className="mb-10 rounded-2xl border border-violet-400/20 bg-violet-500/[0.08] backdrop-blur-md p-5"
           data-testid="how-to-path-ai-vs-guidance"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-primary/80">
+            <Sparkles className="w-4 h-4 text-violet-300" />
+            <p className="text-[11px] font-bold uppercase tracking-widest text-violet-300/80">
               Two kinds of help
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3 text-[13px] leading-relaxed">
-            <div className="rounded-xl border border-border/50 bg-background/70 p-3.5">
-              <p className="font-bold text-foreground mb-1">Path AI</p>
-              <p className="text-muted-foreground">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3.5">
+              <p className="font-bold text-white mb-1">Path AI</p>
+              <p className="text-white/55">
                 Fast answer, suggested starters, one screen. Floating button almost everywhere.
               </p>
             </div>
-            <div className="rounded-xl border border-border/50 bg-background/70 p-3.5">
-              <p className="font-bold text-foreground mb-1">Talk it through</p>
-              <p className="text-muted-foreground">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3.5">
+              <p className="font-bold text-white mb-1">Talk it through</p>
+              <p className="text-white/55">
                 Longer conversation, prayer chains, your words carried forward. Guidance tab.
               </p>
             </div>
@@ -329,7 +359,7 @@ export default function HowToUsePage() {
 
         {/* Walkthrough steps */}
         <motion.div {...fade(0.2)}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-3 px-0.5">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3 px-0.5">
             Everything else, step by step
           </p>
         </motion.div>
@@ -346,34 +376,34 @@ export default function HowToUsePage() {
                 data-testid={`how-to-step-${step.number}`}
               >
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white/70 dark:bg-black/20 border border-white/60 dark:border-white/10">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-black/25 border border-white/10">
                     <Icon className={`w-5 h-5 ${step.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span
-                      className={`text-[11px] font-bold uppercase tracking-widest ${step.iconColor} opacity-70`}
+                      className={`text-[11px] font-bold uppercase tracking-widest ${step.iconColor} opacity-80`}
                     >
                       Step {step.number}
                     </span>
-                    <h2 className="text-[17px] font-bold text-foreground leading-snug mt-0.5">
+                    <h2 className="text-[17px] font-bold text-white leading-snug mt-0.5">
                       {step.title}
                     </h2>
                     <div className="flex items-start gap-1 mt-1">
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/60 shrink-0 mt-0.5" />
-                      <span className="text-[12px] text-muted-foreground font-medium leading-snug">
+                      <ChevronRight className="w-3 h-3 text-white/40 shrink-0 mt-0.5" />
+                      <span className="text-[12px] text-white/50 font-medium leading-snug">
                         {step.where}
                       </span>
                     </div>
                   </div>
                 </div>
-                <p className="text-[15px] text-foreground/80 leading-relaxed mb-3">
+                <p className="text-[15px] text-white/70 leading-relaxed mb-3">
                   {step.description}
                 </p>
-                <div className="flex items-start gap-2 bg-white/50 dark:bg-black/10 rounded-xl px-3.5 py-2.5 border border-white/60 dark:border-white/5">
-                  <span className="text-[13px] font-bold text-muted-foreground/60 shrink-0 mt-px">
+                <div className="flex items-start gap-2 bg-black/20 rounded-xl px-3.5 py-2.5 border border-white/10">
+                  <span className="text-[13px] font-bold text-white/40 shrink-0 mt-px">
                     TIP
                   </span>
-                  <p className="text-[13px] text-muted-foreground leading-snug">{step.tip}</p>
+                  <p className="text-[13px] text-white/55 leading-snug">{step.tip}</p>
                 </div>
               </motion.div>
             );
@@ -381,31 +411,31 @@ export default function HowToUsePage() {
         </div>
 
         <motion.div {...fade(0.55)} className="mt-12" id="ministry-support-heading">
-          <MinistrySupportSection theme="light" />
+          <MinistrySupportSection theme="dark" />
         </motion.div>
 
         <motion.div {...fade(0.6)} className="mt-12">
-          <h2 className="text-xl font-bold text-foreground mb-5 text-center">Common questions</h2>
+          <h2 className="text-xl font-bold text-white mb-5 text-center">Common questions</h2>
           <div className="space-y-3">
             {faqs.map((faq, i) => (
               <div
                 key={faq.q}
-                className="rounded-2xl border border-border/60 bg-muted/30 px-5 py-4"
+                className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm px-5 py-4"
                 data-testid={`faq-item-${i}`}
               >
-                <p className="text-[15px] font-bold text-foreground mb-1.5">{faq.q}</p>
-                <p className="text-[14px] text-muted-foreground leading-relaxed">{faq.a}</p>
+                <p className="text-[15px] font-bold text-white mb-1.5">{faq.q}</p>
+                <p className="text-[14px] text-white/55 leading-relaxed">{faq.a}</p>
               </div>
             ))}
           </div>
         </motion.div>
 
         <motion.div {...fade(0.7)} className="mt-12 text-center space-y-4">
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 px-6 py-6">
-            <Smartphone className="w-6 h-6 text-primary/60 mx-auto mb-3" />
-            <p className="text-[15px] text-foreground/80 leading-relaxed max-w-sm mx-auto">
+          <div className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.08] backdrop-blur-md px-6 py-6">
+            <Smartphone className="w-6 h-6 text-violet-300/70 mx-auto mb-3" />
+            <p className="text-[15px] text-white/70 leading-relaxed max-w-sm mx-auto">
               Open Path AI on For You and tap{" "}
-              <span className="font-semibold text-foreground">How does this app work?</span> anytime
+              <span className="font-semibold text-white">How does this app work?</span> anytime
               you want this guide again.
             </p>
           </div>
@@ -413,7 +443,7 @@ export default function HowToUsePage() {
           <Link
             href="/devotional"
             data-testid="how-to-cta-devotional"
-            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-primary-foreground font-bold text-[15px] hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold text-[15px] hover:opacity-90 transition-opacity shadow-lg shadow-violet-900/30"
           >
             <Sun className="w-4 h-4" />
             Open today&apos;s devotional
@@ -423,7 +453,7 @@ export default function HowToUsePage() {
             <Link
               href="/support"
               data-testid="how-to-link-support"
-              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+              className="text-[13px] text-white/45 hover:text-white/75 transition-colors underline underline-offset-2"
             >
               Still stuck? Contact support
             </Link>
