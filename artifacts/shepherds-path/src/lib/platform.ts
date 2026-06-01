@@ -91,11 +91,21 @@ export function youtubeNeedsSideVolumeOnThisDevice(): boolean {
   return isIOS() && isMobileTouchDevice();
 }
 
-function isMobileTouchDevice(): boolean {
+export function isMobileTouchDevice(): boolean {
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const narrow = window.matchMedia("(max-width: 768px)").matches;
   const ua = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   return (coarse && narrow) || ua;
+}
+
+/** iPhone Safari or App Store shell — same two-icon top bar as native. */
+export function usesCompactTopNav(): boolean {
+  return isNativeWebViewShell() || (isIOS() && isMobileTouchDevice());
+}
+
+/** Mobile Safari tab bar (not PWA / not App Store WebView). */
+export function isIosMobileBrowser(): boolean {
+  return isIOS() && isMobileTouchDevice() && !isNativeWebViewShell() && !isStandalone();
 }
 
 export function isStandalone(): boolean {
@@ -112,8 +122,14 @@ export function hasDigitalGoodsAPI(): boolean {
   return typeof (window as any).getDigitalGoodsService === "function";
 }
 
-export function getPaymentPlatform(): "play" | "ios" | "web" {
+/** App Store WebView shell — use native Apple IAP via RevenueCat, not Stripe. */
+export function shouldUseNativeAppleIap(): boolean {
+  return isNativeWebViewShell();
+}
+
+export function getPaymentPlatform(): "play" | "ios" | "apple-native" | "web" {
   if (hasDigitalGoodsAPI()) return "play";
+  if (shouldUseNativeAppleIap()) return "apple-native";
   if (isIOS() && isStandalone()) return "ios";
   return "web";
 }

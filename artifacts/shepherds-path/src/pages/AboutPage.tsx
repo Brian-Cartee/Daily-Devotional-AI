@@ -94,8 +94,8 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #130636 0%, #0d0a1a 100%)" }}>
 
-      {/* HERO — content clears fixed app top bar (conviction + menu), same as For You */}
-      <div className="relative overflow-hidden">
+      {/* HERO — clears fixed top bar (hand-heart + menu); overflow visible so icon glow isn't clipped */}
+      <div className="relative overflow-visible" data-testid="about-page-hero">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -106,10 +106,10 @@ export default function AboutPage() {
 
         <motion.div
           {...fadeUp(0)}
-          className="relative z-10 flex flex-col items-center px-5 pb-16 text-center pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]"
+          className="relative z-10 flex flex-col items-center px-5 pb-16 text-center sp-app-top-clearance pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]"
         >
           {/* App icon */}
-          <div className="mb-6" style={{ filter: "drop-shadow(0 8px 24px rgba(122,1,141,0.5))" }}>
+          <div className="mb-6 mt-1" style={{ filter: "drop-shadow(0 8px 24px rgba(122,1,141,0.5))" }}>
             <img src={BRAND_ICON} alt="Shepherd's Path" className="w-24 h-24 rounded-[22px] object-cover" />
           </div>
 

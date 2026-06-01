@@ -425,7 +425,7 @@ export default function MainScreen() {
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled
-        allowsBackForwardNavigationGestures
+        allowsBackForwardNavigationGestures={false}
         pullToRefreshEnabled={false}
         scrollEnabled
         bounces

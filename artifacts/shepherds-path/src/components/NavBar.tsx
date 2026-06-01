@@ -20,7 +20,7 @@ import { getUserVoice, setUserVoice } from "@/lib/userName";
 import { markReturningHome } from "@/lib/introState";
 import { applyHomeScrollToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
-import { isNativeWebViewShell } from "@/lib/platform";
+import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -115,6 +115,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   const [coachConsentOpen, setCoachConsentOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const inNativeApp = isNativeWebViewShell();
+  const compactTopNav = usesCompactTopNav();
 
   const applyGuidanceTone = (mode: GuidanceMode) => {
     saveGuidanceMode(mode);
@@ -245,9 +246,13 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         }}
         onDecline={() => setCoachConsentOpen(false)}
       />
-      {showTop && inNativeApp && (
+      {showTop && compactTopNav && (
         <nav
-          className="fixed top-0 left-0 right-0 z-[200] pointer-events-none"
+          className={`fixed top-0 left-0 right-0 z-[200] pointer-events-none ${
+            !inNativeApp && overCinematicHero
+              ? "bg-gradient-to-b from-[#09031e]/88 via-[#09031e]/45 to-transparent backdrop-blur-md"
+              : ""
+          }`}
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           aria-label="App menu"
         >
@@ -264,7 +269,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         </nav>
       )}
 
-      {showTop && !inNativeApp && (
+      {showTop && !compactTopNav && (
         <nav
           className={`fixed top-0 left-0 right-0 z-[100] ${
             overCinematicHero

@@ -556,7 +556,12 @@ html[data-sp-shell="native"] #root {
 
 /* Fixed native top bar (conviction + menu) — compact headers only; never on Guidance main */
 html[data-sp-shell="native"] .sp-app-top-clearance {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 3.25rem);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3.75rem);
+}
+
+/* iPhone Safari: extra bottom inset so content isn't hidden under the browser URL bar */
+html.sp-ios-browser body {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.25rem);
 }
 
 html[data-sp-shell="native"] button,

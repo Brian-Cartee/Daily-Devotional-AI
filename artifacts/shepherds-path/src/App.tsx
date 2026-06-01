@@ -63,7 +63,11 @@ import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
-import { isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
+import {
+  isIosMobileBrowser,
+  isNativeWebViewShell,
+  markNativeShellUiPainted,
+} from "@/lib/platform";
 import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -228,6 +232,11 @@ function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("sp-ios-browser", isIosMobileBrowser());
+  }, []);
 
   useEffect(() => {
     if (!isNativeWebViewShell()) return;
