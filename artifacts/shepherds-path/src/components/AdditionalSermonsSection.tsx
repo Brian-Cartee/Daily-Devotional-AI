@@ -5,6 +5,7 @@ import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { apiSessionExtras } from "@/lib/requestExtras";
+import { shareNative, sharePageUrl } from "@/lib/shareVerse";
 
 function decodeHtml(str: string): string {
   return str
@@ -39,16 +40,16 @@ function AdditionalSermonCard({ sermon }: { sermon: AdditionalSermon }) {
   const videoUrl = `https://www.youtube.com/watch?v=${sermon.videoId}`;
 
   const handleShare = async () => {
-    const shareText = `"${decodeHtml(sermon.title)}" — ${decodeHtml(sermon.channel)}\n\nFound this message after today's devotional on Shepherd's Path.\n\nGet the app: shepherdspath.app`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: decodeHtml(sermon.title), text: shareText, url: videoUrl });
-      } else {
-        await navigator.clipboard.writeText(`${shareText}\n\n${videoUrl}`);
-        setShared(true);
-        setTimeout(() => setShared(false), 2200);
-      }
-    } catch {}
+    const shareText = `"${decodeHtml(sermon.title)}" — ${decodeHtml(sermon.channel)}\n\nFound this message after today's devotional on Shepherd's Path.\n\nGet the app: ${sharePageUrl("/")}`;
+    const result = await shareNative({
+      title: decodeHtml(sermon.title),
+      text: `${shareText}\n\n${videoUrl}`,
+      url: videoUrl,
+    });
+    if (result === "shared") {
+      setShared(true);
+      setTimeout(() => setShared(false), 2200);
+    }
   };
 
   return (

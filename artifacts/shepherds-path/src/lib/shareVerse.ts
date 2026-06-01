@@ -1,9 +1,35 @@
 /** Verse sharing — consistent text, URLs, and native share helpers */
 
+import { isNativeWebViewShell } from "@/lib/platform";
+import { shareViaNativeShell } from "@/lib/nativeBridge";
+
+/** Canonical public site for share links — never use shepherdspath.app (dead domain). */
+export const SHARE_SITE_ORIGIN = "https://www.shepherdspathai.com";
+
 export const APP_ORIGIN =
   typeof window !== "undefined" && window.location?.origin?.startsWith("http")
     ? window.location.origin.replace(/\/$/, "")
-    : "https://www.shepherdspathai.com";
+    : SHARE_SITE_ORIGIN;
+
+export type ShareOutcome = "shared" | "copied" | "cancelled" | "failed";
+
+/** Absolute https URL for sharing, e.g. sharePageUrl("/about"). */
+export function sharePageUrl(path = "/"): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${SHARE_SITE_ORIGIN}${normalized}`;
+}
+
+function ensureShareUrl(url?: string): string | undefined {
+  if (!url?.trim()) return undefined;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("http://")) return trimmed.replace(/^http:\/\//i, "https://");
+  if (trimmed.startsWith("www.")) return `https://${trimmed}`;
+  if (trimmed.includes(".") && !trimmed.includes(" ")) {
+    return `https://${trimmed.replace(/^\/+/, "")}`;
+  }
+  return undefined;
+}
 
 export function easternVerseDateKey(d = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
@@ -82,10 +108,43 @@ export function buildGuidanceEncouragementShareText(
   });
 }
 
+function isIOSDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+/** App Store shell with native Share bridge (set in injected JS from .mobile-build). */
+export function hasNativeShareBridge(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.dataset.spNativeShare === "1";
+}
+
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(text);
-    return true;
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.width = "2em";
+    ta.style.height = "2em";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
   } catch {
     return false;
   }
@@ -101,7 +160,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  window.setTimeout(() => URL.revokeObjectURL(url), 2500);
 }
 
 export function shareImageFilename(reference: string): string {
@@ -123,7 +182,7 @@ export async function shareImageBlob(
       url: opts.url,
       files: [file],
     });
-    if (result === "shared" || result === "cancelled") return result;
+    if (result === "shared" || result === "copied" || result === "cancelled") return result;
   }
   downloadBlob(blob, opts.filename);
   return "saved";
@@ -134,23 +193,68 @@ export async function shareNative(payload: {
   text: string;
   url?: string;
   files?: File[];
-}): Promise<"shared" | "cancelled" | "failed"> {
-  if (!navigator.share) {
-    const ok = await copyToClipboard(
-      payload.url ? `${payload.text}\n\n${payload.url}` : payload.text,
-    );
-    return ok ? "shared" : "failed";
+}): Promise<ShareOutcome> {
+  const shareUrl = ensureShareUrl(payload.url) ?? (payload.url?.startsWith("/") ? sharePageUrl(payload.url) : undefined);
+
+  const clipboardBody = shareUrl
+    ? payload.text.includes(shareUrl)
+      ? payload.text
+      : `${payload.text}\n\n${shareUrl}`
+    : payload.text;
+
+  if (isNativeWebViewShell() && !payload.files?.length) {
+    if (
+      shareViaNativeShell({
+        title: payload.title,
+        text: shareUrl ? `${payload.text}\n\n${shareUrl}` : clipboardBody,
+        url: shareUrl,
+      })
+    ) {
+      return "shared";
+    }
   }
+
+  if (!navigator.share) {
+    const ok = await copyToClipboard(clipboardBody);
+    return ok ? "copied" : "failed";
+  }
+
+  const ios = isIOSDevice();
+
   try {
-    await navigator.share({
-      title: payload.title,
-      text: payload.text,
-      url: payload.url,
-      files: payload.files,
-    });
+    if (payload.files?.length) {
+      const sharePayload: ShareData = {
+        title: payload.title,
+        text: payload.text,
+        url: payload.url,
+        files: payload.files,
+      };
+      if (navigator.canShare && !navigator.canShare(sharePayload)) {
+        const ok = await copyToClipboard(clipboardBody);
+        return ok ? "copied" : "failed";
+      }
+      await navigator.share(sharePayload);
+      return "shared";
+    }
+
+    // iOS: share the https URL only — avoids broken links like ".app" in Messages.
+    const sharePayload: ShareData = ios && shareUrl
+      ? { title: payload.title, url: shareUrl }
+      : {
+          title: payload.title,
+          text: payload.text,
+          url: shareUrl,
+        };
+
+    if (navigator.canShare && !navigator.canShare(sharePayload)) {
+      const ok = await copyToClipboard(clipboardBody);
+      return ok ? "copied" : "failed";
+    }
+    await navigator.share(sharePayload);
     return "shared";
   } catch (e) {
     if ((e as Error).name === "AbortError") return "cancelled";
-    return "failed";
+    const ok = await copyToClipboard(clipboardBody);
+    return ok ? "copied" : "failed";
   }
 }

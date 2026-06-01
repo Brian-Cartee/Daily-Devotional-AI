@@ -48,6 +48,7 @@ import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { isNativeWebViewShell } from "@/lib/platform";
+import { shareNative, sharePageUrl } from "@/lib/shareVerse";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
 import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
@@ -692,20 +693,18 @@ function LandingHomeInner() {
   };
 
   const handleShareApp = async () => {
-    const shareData = {
+    const text =
+      "Your daily walk with Jesus — AI-guided devotionals, Bible journeys, prayer & more.";
+    const url = sharePageUrl("/");
+    const result = await shareNative({
       title: "Shepherd's Path",
-      text: "Your daily walk with Jesus — AI-guided devotionals, Bible journeys, prayer & more.",
-      url: "https://www.shepherdspathai.com",
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-      }
+      text,
+      url,
+    });
+    if (result === "shared") {
       setShared(true);
       setTimeout(() => setShared(false), 2500);
-    } catch { }
+    }
   };
 
   const handleDismissWelcome = () => {
@@ -1371,7 +1370,7 @@ function LandingHomeInner() {
               className="min-h-[44px] flex items-center justify-center gap-1.5 hover:text-foreground transition-colors touch-manipulation"
             >
               {shared
-                ? <><Check className="w-4 h-4 text-green-500" aria-hidden /> Copied!</>
+                ? <><Check className="w-4 h-4 text-green-500" aria-hidden /> Shared!</>
                 : <><Share2 className="w-4 h-4" aria-hidden /> Share App</>
               }
             </button>

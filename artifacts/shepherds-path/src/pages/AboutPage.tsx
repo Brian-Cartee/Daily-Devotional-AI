@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import {
   Sun, Compass, BookOpen, Search, NotebookPen, Heart,
   Flame, Trophy, ShieldCheck, Church,
-  Sparkles, ArrowRight, Users, Share2, Check, Play, HandHeart, Loader2
+  Sparkles, ArrowRight, Users, Share2, Check, HandHeart, Loader2
 } from "lucide-react";
 import { BRAND_ICON } from "@/lib/brand";
+import { shareNative, sharePageUrl } from "@/lib/shareVerse";
 import {
   MINISTRY_SUPPORT_CLOSING,
   MINISTRY_SUPPORT_HEADLINE,
@@ -46,7 +47,7 @@ const DONATION_AMOUNTS = [
 ];
 
 export default function AboutPage() {
-  const [copied, setCopied] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<"idle" | "shared" | "copied" | "failed">("idle");
   const [donating, setDonating] = useState<number | null>(null);
   const search = useSearch();
   const giftReceived = new URLSearchParams(search).get("gift") === "thank-you";
@@ -67,19 +68,27 @@ export default function AboutPage() {
   };
 
   const handleShare = async () => {
-    const url = "https://shepherdspath.app/about";
-    const shareData = {
+    const url = sharePageUrl("/about");
+    const blurb =
+      "A daily faith app for Scripture, prayer, and reflection. Bible-first. Free to start.";
+    const result = await shareNative({
       title: "Shepherd's Path — Your Daily Companion in Faith",
-      text: "A daily faith app for Scripture, prayer, and reflection. Bible-first. Free to start.",
+      text: blurb,
       url,
-    };
-    if (navigator.share) {
-      try { await navigator.share(shareData); } catch {}
-    } else {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    });
+    if (result === "cancelled") return;
+    if (result === "shared") {
+      setShareFeedback("shared");
+      setTimeout(() => setShareFeedback("idle"), 2500);
+      return;
     }
+    if (result === "copied") {
+      setShareFeedback("copied");
+      setTimeout(() => setShareFeedback("idle"), 2500);
+      return;
+    }
+    setShareFeedback("failed");
+    setTimeout(() => setShareFeedback("idle"), 3000);
   };
 
   return (
@@ -115,8 +124,14 @@ export default function AboutPage() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all active:scale-95"
             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.8)" }}
           >
-            {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-            {copied ? "Link copied!" : "Share this page"}
+            {shareFeedback !== "idle" ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            {shareFeedback === "copied"
+              ? "Link copied!"
+              : shareFeedback === "shared"
+                ? "Shared!"
+                : shareFeedback === "failed"
+                  ? "Tap to try again"
+                  : "Share this page"}
           </button>
         </motion.div>
       </div>
@@ -307,19 +322,6 @@ export default function AboutPage() {
             </button>
           </Link>
           <p className="text-white/25 text-[12px] mt-3">Free · No account required · Bible-first</p>
-
-          <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-white/25 text-[12px] mb-3">Want to hear the welcome message again?</p>
-            <a
-              href="/?intro"
-              data-testid="btn-replay-intro"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all active:scale-95"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }}
-            >
-              <Play className="w-3.5 h-3.5" style={{ color: "#a855f7" }} />
-              Replay the intro
-            </a>
-          </div>
         </motion.div>
 
       </main>

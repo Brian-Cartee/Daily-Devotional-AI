@@ -86,6 +86,16 @@ function ReferralCapture() {
     checkReferralProStatus(sessionId).catch(() => {});
     silentlyRevalidatePro().catch(() => {});
     refreshAiUsage().catch(() => {});
+
+    const onProUpdated = () => {
+      refreshAiUsage().catch(() => {});
+    };
+    window.addEventListener("sp-pro-updated", onProUpdated);
+    return () => window.removeEventListener("sp-pro-updated", onProUpdated);
+  }, []);
+
+  useEffect(() => {
+    const sessionId = getSessionId();
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (!ref) return;
