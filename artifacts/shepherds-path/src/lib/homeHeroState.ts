@@ -41,8 +41,8 @@ function migrateWhyPanelStorage(): void {
     if (localStorage.getItem(WHY_DISMISSED_KEY) === "1" && readCount(WHY_DISMISS_COUNT_KEY) < WHY_PANEL_MAX_AUTO_SHOWS) {
       writeCount(WHY_DISMISS_COUNT_KEY, WHY_PANEL_MAX_AUTO_SHOWS);
     }
-    if (localStorage.getItem(WHY_AUTO_SHOWN_KEY) === "1" && readCount(WHY_AUTO_SHOW_COUNT_KEY) === 0) {
-      writeCount(WHY_AUTO_SHOW_COUNT_KEY, 1);
+    if (localStorage.getItem(WHY_AUTO_SHOWN_KEY) === "1" && readCount(WHY_AUTO_SHOW_COUNT_KEY) < WHY_PANEL_MAX_AUTO_SHOWS) {
+      writeCount(WHY_AUTO_SHOW_COUNT_KEY, WHY_PANEL_MAX_AUTO_SHOWS);
     }
   } catch {
     /* noop */
