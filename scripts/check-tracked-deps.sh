@@ -12,6 +12,13 @@ REQUIRED=(
   artifacts/shepherds-path/src/hooks/use-reduced-motion.ts
   artifacts/shepherds-path/src/lib/haptics.ts
   artifacts/shepherds-path/src/lib/thresholdModePlan.ts
+  artifacts/shepherds-path/src/lib/whyPanelApi.ts
+  artifacts/shepherds-path/src/lib/homeHeroState.ts
+)
+
+# Export / symbol checks (file exists but wrong revision on GitHub)
+SYMBOL_CHECKS=(
+  "artifacts/shepherds-path/src/lib/homeHeroState.ts|hydrateWhyPanelFromServer"
 )
 
 MISS=0
@@ -21,6 +28,18 @@ for f in "${REQUIRED[@]}"; do
   else
     echo "MISSING on $REF (commit from Mac): $f"
     MISS=1
+  fi
+done
+
+for entry in "${SYMBOL_CHECKS[@]}"; do
+  path="${entry%%|*}"
+  pattern="${entry#*|}"
+  content="$(git show "$REF:$path" 2>/dev/null || true)"
+  if [[ -z "$content" ]] || ! grep -Fq -- "$pattern" <<< "$content"; then
+    echo "INCOMPLETE on $REF: $path (missing: $pattern)"
+    MISS=1
+  else
+    echo "OK symbol: $path ← $pattern"
   fi
 done
 

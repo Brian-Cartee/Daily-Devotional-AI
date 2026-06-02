@@ -3,3 +3,5 @@
 artifacts/shepherds-path/src/pages/Devotional.tsx|btn-save-devotional-name
 artifacts/shepherds-path/src/pages/Devotional.tsx|quickPersonalizeRef
 artifacts/api-server/src/routes/routes.ts|quickPersonalize
+artifacts/shepherds-path/src/lib/homeHeroState.ts|hydrateWhyPanelFromServer
+artifacts/shepherds-path/src/lib/whyPanelApi.ts|fetchWhyPanelFromServer
