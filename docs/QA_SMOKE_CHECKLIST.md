@@ -10,6 +10,8 @@ bash scripts/safe-deploy-preflight.sh
 bash scripts/production-smoke.sh
 ```
 
+Note: API may report `"status":"degraded"` when Twilio SMS is not configured — that is OK if database and OpenAI show `"ok":true`.
+
 ## iPhone / App Store app
 
 1. Force-quit the app → reopen.

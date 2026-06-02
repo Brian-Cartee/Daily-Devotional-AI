@@ -41,7 +41,32 @@ echo "==> Production smoke: $BASE"
 check_body "Home HTML" "$BASE/" "assets/index-"
 check_http "Support route" "$BASE/support"
 check_http "Feedback route" "$BASE/feedback"
-check_body "API health" "$BASE/api/health" '"status":"ok"'
+# "degraded" is normal when optional SMS (Twilio) is not configured
+check_api_health() {
+  local body
+  body="$(curl -fsS "$BASE/api/health" 2>/dev/null || true)"
+  if [[ -z "$body" ]]; then
+    echo "FAIL: API health — no response"
+    FAIL=1
+    return
+  fi
+  if grep -Fq '"status":"down"' <<< "$body"; then
+    echo "FAIL: API health — status down"
+    FAIL=1
+    return
+  fi
+  if ! grep -Fq '"database":{"ok":true' <<< "$body" || ! grep -Fq '"openai":{"ok":true' <<< "$body"; then
+    echo "FAIL: API health — database or OpenAI not OK"
+    echo "$body" | head -c 280
+    FAIL=1
+    return
+  fi
+  local status
+  status="$(grep -o '"status":"[^"]*"' <<< "$body" | head -1 || true)"
+  echo "OK: API health ($status, core services up)"
+}
+
+check_api_health
 
 BUNDLE="$(curl -fsS "$BASE/" | grep -o 'assets/index-[^"]*\.js' | head -1 || true)"
 echo "==> Live bundle: ${BUNDLE:-unknown}"
