@@ -6,6 +6,16 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+echo "==> Safe deploy preflight..."
+if ! bash "$REPO_ROOT/scripts/safe-deploy-preflight.sh"; then
+  echo ""
+  echo "Deploy aborted. See docs/SAFE_DEPLOY.md"
+  exit 1
+fi
+
+echo "==> Backing up current frontend dist..."
+bash "$REPO_ROOT/scripts/backup-lightsail-dist.sh"
+
 echo "==> Pulling latest from GitHub..."
 git fetch origin
 git reset --hard origin/main

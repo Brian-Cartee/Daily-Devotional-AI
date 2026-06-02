@@ -68,11 +68,13 @@ import {
   isNativeWebViewShell,
   markNativeShellUiPainted,
 } from "@/lib/platform";
+import { syncUserNameFromServer } from "@/lib/userName";
 import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ListenLimitListener } from "@/components/ListenLimitListener";
 import { scrollPageToTop } from "@/lib/scrollPageToTop";
+import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -214,6 +216,13 @@ function Router() {
   );
 }
 
+function WhyPanelBootstrap() {
+  useEffect(() => {
+    void hydrateWhyPanelFromServer();
+  }, []);
+  return null;
+}
+
 function BrandedDomainRedirect() {
   useEffect(() => {
     const host = window.location.hostname;
@@ -236,6 +245,10 @@ function App() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("sp-ios-browser", isIosMobileBrowser());
+  }, []);
+
+  useEffect(() => {
+    void syncUserNameFromServer();
   }, []);
 
   useEffect(() => {
@@ -284,6 +297,7 @@ function App() {
                 <ScrollToTop />
                 <ReferralCapture />
                 <ReferralWelcomeToast />
+                <WhyPanelBootstrap />
                 <Router />
                 <DemoFloatingBar />
                 {!isNativeWebViewShell() && <InstallPrompt />}

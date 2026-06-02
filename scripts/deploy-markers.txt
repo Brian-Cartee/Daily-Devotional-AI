@@ -1,0 +1,5 @@
+# Required strings on origin/main before running deploy-lightsail.sh
+# Format: path|grep pattern
+artifacts/shepherds-path/src/pages/Devotional.tsx|Save & personalize
+artifacts/shepherds-path/src/pages/Devotional.tsx|quickPersonalizeRef
+artifacts/api-server/src/routes/routes.ts|quickPersonalize

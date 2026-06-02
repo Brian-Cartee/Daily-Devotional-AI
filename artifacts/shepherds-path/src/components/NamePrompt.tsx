@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { setUserName, markNamePrompted } from "@/lib/userName";
+import { setUserNameAsync, markNamePrompted } from "@/lib/userName";
 
 interface Props {
   onDone: () => void;
@@ -8,12 +8,19 @@ interface Props {
 
 export function NamePrompt({ onDone }: Props) {
   const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    if (saving) return;
     const trimmed = name.trim();
-    if (trimmed) setUserName(trimmed);
-    else markNamePrompted();
-    onDone();
+    setSaving(true);
+    try {
+      if (trimmed) await setUserNameAsync(trimmed);
+      else markNamePrompted();
+    } finally {
+      setSaving(false);
+      onDone();
+    }
   };
 
   const handleSkip = () => {
@@ -71,11 +78,12 @@ export function NamePrompt({ onDone }: Props) {
           />
 
           <button
-            onClick={handleContinue}
+            onClick={() => void handleContinue()}
+            disabled={saving}
             data-testid="btn-name-continue"
-            className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 text-[15px] font-bold hover:opacity-90 transition-opacity mb-3"
+            className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 text-[15px] font-bold hover:opacity-90 transition-opacity mb-3 disabled:opacity-60"
           >
-            {firstName ? `Continue as ${firstName}` : "Continue"}
+            {saving ? "Saving…" : firstName ? `Continue as ${firstName}` : "Continue"}
           </button>
 
           <button

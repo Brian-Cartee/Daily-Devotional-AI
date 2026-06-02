@@ -394,22 +394,38 @@ export async function registerRoutes(
   // ── User profile name (persists across Safari/iOS localStorage clears) ────────
   app.get("/api/user-name", async (req, res) => {
     const sessionId = req.query.sessionId as string;
-    if (!sessionId) return res.json({ name: null });
+    if (!sessionId) return res.json({ name: null, prompted: false });
     try {
+      const { getNamePromptedOnServer } = await import("../userNameState");
       const name = await storage.getUserProfileName(sessionId);
-      res.json({ name });
+      const prompted = !!name || (await getNamePromptedOnServer(sessionId));
+      res.json({ name, prompted });
     } catch {
-      res.json({ name: null });
+      res.json({ name: null, prompted: false });
     }
   });
 
   app.post("/api/user-name", async (req, res) => {
-    const { sessionId, name } = req.body as { sessionId?: string; name?: string };
-    if (!sessionId || typeof name !== "string" || !name.trim()) {
-      return res.status(400).json({ message: "sessionId and name required" });
+    const { sessionId, name, prompted } = req.body as {
+      sessionId?: string;
+      name?: string;
+      prompted?: boolean;
+    };
+    if (!sessionId) {
+      return res.status(400).json({ message: "sessionId required" });
+    }
+    const trimmed = typeof name === "string" ? name.trim() : "";
+    if (!trimmed && prompted !== true) {
+      return res.status(400).json({ message: "name or prompted required" });
     }
     try {
-      await storage.setUserProfileName(sessionId, name.trim());
+      const { setNamePromptedOnServer } = await import("../userNameState");
+      if (trimmed) {
+        await storage.setUserProfileName(sessionId, trimmed);
+        await setNamePromptedOnServer(sessionId);
+      } else if (prompted === true) {
+        await setNamePromptedOnServer(sessionId);
+      }
       res.json({ ok: true });
     } catch {
       res.status(500).json({ message: "failed" });
@@ -1483,18 +1499,33 @@ Voice authenticity (internal constraint — never cite these rules in output):
       let systemPrompt = "";
       let userPrompt = "";
 
-      const userName2: string = (req.body as any).userName || "";
       const sessionId2: string = (req.body as any).sessionId || "";
+      let userName2: string = String((req.body as any).userName || "").trim();
+      if (!userName2 && sessionId2) {
+        try {
+          userName2 = (await storage.getUserProfileName(sessionId2))?.trim() || "";
+        } catch {
+          /* noop */
+        }
+      }
+      const firstName2 = userName2.split(/\s+/)[0] || "";
       const daysWithApp2: number = Number((req.body as any).daysWithApp) || 1;
       const generateMode: string = (req.body as any).guidanceMode || "encouraging";
       const generateModeNote = buildModeNote(generateMode);
-      const nameNote2 = userName2 ? ` You are speaking with ${userName2}. Address them by name naturally once in your response.` : "";
-      const continuityIntent: string = (req.body as { continuityIntent?: string }).continuityIntent === "continue"
-        ? "continue"
-        : "fresh";
-      const { count: journalCount2 } = await getJournalContext(sessionId2);
+      const nameNote2 = firstName2
+        ? ` The reader's first name is ${firstName2}. You must address them as "${firstName2}" exactly once in the first paragraph (for example: "${firstName2}, this verse..." or "...and ${firstName2}, that matters"). Do not skip the name. Do not use it more than once.`
+        : "";
+      const quickPersonalize = !!(req.body as { quickPersonalize?: boolean }).quickPersonalize;
+      const continuityIntent: string = quickPersonalize
+        ? "fresh"
+        : (req.body as { continuityIntent?: string }).continuityIntent === "continue"
+          ? "continue"
+          : "fresh";
+      const journalCount2 = quickPersonalize
+        ? 0
+        : (await getJournalContext(sessionId2)).count;
       let memoryNote2 = "";
-      if (continuityIntent === "continue" && sessionId2) {
+      if (!quickPersonalize && continuityIntent === "continue" && sessionId2) {
         const echo = await getDevotionalContinuityEcho(sessionId2);
         if (echo) {
           memoryNote2 = `\n\nThe person chose to connect today's devotional to what may still be on their heart. Recent journal only (last 48 hours — never assume older burdens still apply):\n${echo}\n\nHold this lightly: let today's verse lead. Only weave prior context if it truly fits; they may have moved on.`;
@@ -1590,12 +1621,19 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
         }).catch(() => {});
       }
 
+      const maxTokens = quickPersonalize
+        ? input.type === "reflection"
+          ? 380
+          : 200
+        : undefined;
+
       await streamCompletion(
         [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        res
+        res,
+        { maxTokens },
       );
     } catch (err) {
       console.error(err);
@@ -2106,6 +2144,45 @@ What you never do:
       res.json(result);
     } catch (err) {
       res.status(500).json({ message: "Failed to record streak" });
+    }
+  });
+
+  // ── Client UI flags (Why panel caps — survives WebView storage loss) ─────────
+
+  app.get("/api/client/why-panel", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const { getWhyPanelServerState } = await import("../whyPanelState");
+      const state = await getWhyPanelServerState(sessionId);
+      res.json(
+        state ?? { autoShows: 0, dismissals: 0, done: false },
+      );
+    } catch (err) {
+      console.error("[why-panel] get failed:", err);
+      res.status(500).json({ message: "Failed to load why panel state" });
+    }
+  });
+
+  app.post("/api/client/why-panel", async (req, res) => {
+    const body = req.body as {
+      sessionId?: string;
+      autoShows?: number;
+      dismissals?: number;
+      done?: boolean;
+    };
+    if (!body.sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const { saveWhyPanelServerState } = await import("../whyPanelState");
+      const merged = await saveWhyPanelServerState(body.sessionId, {
+        autoShows: Math.max(0, Number(body.autoShows) || 0),
+        dismissals: Math.max(0, Number(body.dismissals) || 0),
+        done: body.done === true,
+      });
+      res.json(merged);
+    } catch (err) {
+      console.error("[why-panel] save failed:", err);
+      res.status(500).json({ message: "Failed to save why panel state" });
     }
   });
 
