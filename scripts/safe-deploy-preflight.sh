@@ -30,9 +30,12 @@ fi
 echo "==> Checking deploy markers on $REF ($(git rev-parse --short "$REF"))..."
 MISS=0
 while IFS= read -r line || [[ -n "$line" ]]; do
+  line="${line//$'\r'/}"
   [[ -z "$line" || "$line" =~ ^# ]] && continue
   path="${line%%|*}"
   pattern="${line#*|}"
+  path="${path%"${path##*[![:space:]]}"}"
+  pattern="${pattern#"${pattern%%[![:space:]]*}"}"
   if [[ -z "$path" || -z "$pattern" ]]; then
     echo "WARN: Bad marker line: $line"
     continue
@@ -42,11 +45,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     MISS=1
     continue
   fi
-  if ! git show "$REF:$path" | grep -Fq "$pattern"; then
+  content="$(git show "$REF:$path" 2>/dev/null || true)"
+  if [[ -z "$content" ]] || ! grep -Fq -- "$pattern" <<< "$content"; then
     echo "MISSING on $REF: $path (expected: $pattern)"
     MISS=1
   else
-    echo "OK: $path"
+    echo "OK: $path ← $pattern"
   fi
 done < "$MARKERS"
 
