@@ -7,10 +7,12 @@ import {
   HandHeart,
   HelpCircle,
   Mail,
+  MessageCircle,
   Moon,
   MoreHorizontal,
   NotebookPen,
   Shield,
+  Star,
   ShoppingBag,
   Sun,
   Zap,
@@ -240,6 +242,22 @@ export function NavBarMoreMenu({
             hint="Walkthrough of every path"
             href="/how-to-use"
             testId="nav-how-to-use"
+            onClick={onClose}
+          />
+          <MenuRow
+            icon={MessageCircle}
+            label="Contact support"
+            hint="Bug, billing, or something broken"
+            href="/support"
+            testId="nav-support"
+            onClick={onClose}
+          />
+          <MenuRow
+            icon={Star}
+            label="Send feedback"
+            hint="Ideas and how we're doing"
+            href="/feedback"
+            testId="nav-feedback"
             onClick={onClose}
           />
           <MenuRow

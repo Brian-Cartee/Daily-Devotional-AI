@@ -73,11 +73,10 @@ bash scripts/deploy-lightsail.sh
 On Mac:
 
 ```bash
-curl -sS 'https://www.shepherdspathai.com/' | grep -o 'assets/index-[^"]*\.js' | head -1
-curl -sS 'https://www.shepherdspathai.com/api/health' | head -c 200
+bash scripts/production-smoke.sh
 ```
 
-On iPhone: force-quit app → Daily Devotional → name box or personalized reflection works.
+Full phone checklist: `docs/QA_SMOKE_CHECKLIST.md`.
 
 ## Emergency rollback (server)
 
