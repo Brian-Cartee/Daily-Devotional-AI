@@ -60,6 +60,13 @@ if command -v curl >/dev/null 2>&1; then
   [[ -n "$LIVE_BUNDLE" ]] && echo "==> Live site bundle: $LIVE_BUNDLE"
 fi
 
+echo "==> Checking required tracked build files..."
+if ! bash "$REPO_ROOT/scripts/check-tracked-deps.sh" "$REF"; then
+  echo ""
+  echo "DEPLOY BLOCKED: commit the missing files on your Mac, push, then re-run preflight."
+  exit 1
+fi
+
 if [[ "$MISS" -ne 0 ]]; then
   echo ""
   echo "DEPLOY BLOCKED: origin/main is behind production or your Mac."
