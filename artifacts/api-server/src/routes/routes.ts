@@ -24,6 +24,7 @@ import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText, buildWelcomeEmailHtml, buildWelcomeEmailText } from "../resend";
 import { scheduleDailyEmails } from "../emailScheduler";
+import { scheduleDailyVerseSync } from "../verseSyncScheduler";
 import { scheduleOnboardingEmails } from "../onboardingEmailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
@@ -238,6 +239,7 @@ export async function registerRoutes(
   // Skipped in dev to prevent duplicate sends when both environments share the same
   // subscriber email addresses but maintain separate databases.
   if (config.shouldRunSchedulers) {
+    scheduleDailyVerseSync(syncTodayVerseFromSheet);
     scheduleDailyEmails().catch(console.error);
     scheduleOnboardingEmails().catch(console.error);
     scheduleProWeeklySpiritualWeatherEmails();
@@ -326,13 +328,14 @@ export async function registerRoutes(
       services.database = { ok: false, message: err?.message ?? "Query failed" };
     }
 
-    // 2. Today's verse cached in DB
+    // 2. Today's verse cached in DB (sync first — same as /api/verses/daily)
     try {
+      await syncTodayVerseFromSheet();
       const today = getEasternDateString();
       const verse = await storage.getVerseByDate(today);
       services.dailyVerse = verse
-        ? { ok: true, message: "Today's verse available" }
-        : { ok: false, message: "No verse cached for today — check Google Sheets sync" };
+        ? { ok: true, message: `Today's verse: ${verse.reference}` }
+        : { ok: false, message: "No verse cached for today — check Google Sheet row or GOOGLE_SHEET_WEB_APP_URL" };
     } catch {
       services.dailyVerse = { ok: false, message: "Could not query verse table" };
     }
