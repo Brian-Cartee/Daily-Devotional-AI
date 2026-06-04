@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,7 +58,6 @@ import {
   isHomeMarketplaceCollapsed,
   isSacredFirstHomeVisit,
 } from "@/lib/firstSession";
-import { HomeSecondaryPathsRow } from "@/components/HomeSecondaryPathsRow";
 import { isThresholdComplete } from "@/lib/thresholdState";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import {
@@ -77,14 +76,9 @@ import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomeHeavyMomentLink } from "@/components/HomeHeavyMomentLink";
-import {
-  HomeMorePathsLink,
-  HomePathShortcuts,
-  HomePathsPeekRow,
-} from "@/components/HomePathShortcuts";
+import { HomePathsBlock } from "@/components/HomePathsBlock";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
-import { HomeExploreSection } from "@/components/HomeExploreSection";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
 import { BrandIcon } from "@/components/BrandIcon";
 import { ThresholdModeRhythmCard } from "@/components/ThresholdModeRhythmCard";
@@ -650,33 +644,6 @@ function LandingHomeInner() {
   const carryToday = getCarryToday();
   const chapelExploreCollapsed = daysWithApp < 14;
   const showSecondaryHomeCards = !homeMarketplaceCollapsed && daysWithApp >= 3;
-  const showsMorePathsLink =
-    (homeDevotionalFocus && (inNativeApp || !chapelExploreCollapsed)) ||
-    (!homeDevotionalFocus &&
-      (homeMarketplaceCollapsed ||
-        !chapelWeekFocus ||
-        inNativeApp ||
-        !chapelExploreCollapsed));
-  const showHomePathShortcuts =
-    !homeDevotionalFocus && !homeMarketplaceCollapsed && chapelWeekFocus;
-  const showHomeExploreSection =
-    showsMorePathsLink ||
-    (!homeDevotionalFocus &&
-      !homeMarketplaceCollapsed &&
-      (!chapelWeekFocus || inNativeApp));
-  const showPathsPeek =
-    !homeDevotionalFocus &&
-    showsMorePathsLink &&
-    !showHomePathShortcuts &&
-    !showHomeExploreSection;
-  const showStandaloneBrowseLink = showsMorePathsLink && !showHomeExploreSection;
-  const explorePreviewExclude = useMemo(() => {
-    const ex = new Set<string>();
-    if (homeDevotionalFocus) ex.add("/prayer-closet");
-    if (showHomePathShortcuts) ex.add("/journal");
-    return [...ex];
-  }, [homeDevotionalFocus, showHomePathShortcuts]);
-
   const [presenceCtx, setPresenceCtx] = useState<HomePresenceContext>(() => ({
     door: defaultPresenceDoor(),
     arrivalOpen: shouldShowArrivalRitual(),
@@ -829,8 +796,6 @@ function LandingHomeInner() {
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
 
-          {homeDevotionalFocus && <HomeSecondaryPathsRow />}
-
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
           )}
@@ -838,12 +803,13 @@ function LandingHomeInner() {
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && <LamentSeasonHomeCard />}
 
           {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
-          {showHomePathShortcuts && <HomePathShortcuts />}
-          {showPathsPeek && <HomePathsPeekRow />}
-          {showStandaloneBrowseLink && <HomeMorePathsLink />}
-          {showHomeExploreSection && (
-            <HomeExploreSection excludePreviewHrefs={explorePreviewExclude} />
-          )}
+          <HomePathsBlock
+            homeDevotionalFocus={homeDevotionalFocus}
+            chapelWeekFocus={chapelWeekFocus}
+            homeMarketplaceCollapsed={homeMarketplaceCollapsed}
+            inNativeApp={inNativeApp}
+            chapelExploreCollapsed={chapelExploreCollapsed}
+          />
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (

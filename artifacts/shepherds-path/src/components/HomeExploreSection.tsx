@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -6,8 +6,6 @@ import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 import { buildHomeExplorePreviewHrefs } from "@/lib/homeExplorePreview";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
-
-const EXPLORE_KEY = HOME_EXPLORE_OPEN_KEY;
 
 const EXPLORE_ITEMS = [
   { href: "/salvation", label: "Beginning with Jesus", desc: "Meet Jesus without pressure", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-salvation" },
@@ -33,51 +31,38 @@ export const HOME_EXPLORE_PATH_COUNT = EXPLORE_ITEMS.length;
 function PathCard({
   href,
   label,
-  desc,
   bg,
   testid,
-  compact,
-}: (typeof EXPLORE_ITEMS)[number] & { compact?: boolean }) {
+}: (typeof EXPLORE_ITEMS)[number]) {
   return (
     <Link href={href}>
       <div
         data-testid={`card-${testid}`}
-        className={`rounded-2xl border ${bg} cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all h-full ${
-          compact ? "p-3 min-h-[84px]" : "p-3.5 min-h-[108px]"
-        }`}
+        className={`rounded-xl border ${bg} cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all h-full p-2.5 min-h-[76px] flex flex-col`}
       >
-        <div className={compact ? "mb-1.5" : "mb-2.5"}>
-          <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
-        </div>
-        <p className={`font-bold text-foreground leading-tight ${compact ? "text-[12px]" : "text-[13px]"}`}>
+        <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
+        <p className="font-bold text-foreground leading-tight text-[12px] mt-1.5 line-clamp-2">
           {label}
         </p>
-        {!compact && (
-          <p className="text-[11px] text-muted-foreground/65 mt-0.5 leading-snug">{desc}</p>
-        )}
       </div>
     </Link>
   );
 }
 
 type HomeExploreSectionProps = {
-  /** Hrefs already featured above the grid (e.g. prayer closet row) — skip in preview */
   excludePreviewHrefs?: readonly string[];
 };
 
 export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSectionProps) {
   const [expanded, setExpanded] = useState(() => {
     try {
-      return localStorage.getItem(EXPLORE_KEY) === "1";
+      return localStorage.getItem(HOME_EXPLORE_OPEN_KEY) === "1";
     } catch {
       return false;
     }
   });
 
-  const excludeSet = useMemo(
-    () => new Set(excludePreviewHrefs),
-    [excludePreviewHrefs],
-  );
+  const excludeSet = useMemo(() => new Set(excludePreviewHrefs), [excludePreviewHrefs]);
 
   const previewItems = useMemo(() => {
     const hrefs = buildHomeExplorePreviewHrefs(excludeSet);
@@ -89,79 +74,70 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
   const setExpandedPersisted = (next: boolean) => {
     setExpanded(next);
     try {
-      localStorage.setItem(EXPLORE_KEY, next ? "1" : "0");
+      localStorage.setItem(HOME_EXPLORE_OPEN_KEY, next ? "1" : "0");
     } catch {
       /* noop */
     }
   };
-
-  const openAll = () => setExpandedPersisted(true);
-  const collapse = () => setExpandedPersisted(false);
-
-  useEffect(() => {
-    const onOpen = () => openAll();
-    window.addEventListener("sp-open-home-explore", onOpen);
-    return () => window.removeEventListener("sp-open-home-explore", onOpen);
-  }, []);
 
   const previewCount = previewItems.length;
 
   return (
     <section
       id="explore-section"
-      className="mt-2 scroll-mt-28 rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/[0.07] to-card/40 p-3.5 shadow-sm"
-      aria-label="More paths through the app"
+      className="scroll-mt-28 rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/[0.07] to-card/40 p-3 shadow-sm"
+      aria-label="All paths through the app"
+      data-testid="home-explore-section"
     >
-      <div className="flex items-center gap-2 w-full mb-3 px-1">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/35" />
-        <div className="shrink-0 text-center">
+      <div className="flex items-center justify-between gap-2 mb-2.5 px-0.5">
+        <div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/75">
-            More paths
+            All paths
           </p>
           <p className="text-[10px] font-semibold text-muted-foreground/80 mt-0.5 tabular-nums">
             {expanded
-              ? `All ${HOME_EXPLORE_PATH_COUNT} ways to walk`
-              : `${previewCount} of ${HOME_EXPLORE_PATH_COUNT} paths`}
+              ? `${HOME_EXPLORE_PATH_COUNT} ways to walk`
+              : `${previewCount} shown · ${HOME_EXPLORE_PATH_COUNT} total`}
           </p>
         </div>
-        <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/35" />
+        {expanded && (
+          <button
+            type="button"
+            onClick={() => setExpandedPersisted(false)}
+            data-testid="btn-collapse-explore"
+            className="text-[12px] font-semibold text-muted-foreground hover:text-foreground px-2 py-1"
+          >
+            Fewer
+          </button>
+        )}
       </div>
 
       <AnimatePresence initial={false} mode="wait">
         {expanded ? (
-          <motion.div key="full" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
-            <div className="grid grid-cols-2 gap-2.5">
+          <motion.div
+            key="full"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="grid grid-cols-2 gap-2">
               {EXPLORE_ITEMS.map((item) => (
+                <PathCard key={item.href} {...item} />
+              ))}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="grid grid-cols-2 gap-2">
+              {previewItems.map((item) => (
                 <PathCard key={item.href} {...item} />
               ))}
             </div>
             <button
               type="button"
-              onClick={collapse}
-              data-testid="btn-collapse-explore"
-              className="mt-3 w-full min-h-[44px] text-center text-[12px] font-semibold text-muted-foreground hover:text-foreground py-2"
-            >
-              Show fewer paths
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="preview"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="grid grid-cols-2 gap-2.5">
-              {previewItems.map((item) => (
-                <PathCard key={item.href} {...item} compact />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={openAll}
+              onClick={() => setExpandedPersisted(true)}
               data-testid="btn-expand-explore"
-              className="mt-3 w-full flex items-center justify-center gap-2 min-h-[48px] rounded-xl border border-primary/30 bg-primary/12 px-4 py-3 text-[14px] font-bold text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] hover:bg-primary/18 active:scale-[0.99] transition-all"
+              className="mt-2.5 w-full flex items-center justify-center gap-2 min-h-[48px] rounded-xl border border-primary/30 bg-primary/12 px-4 py-3 text-[14px] font-bold text-primary hover:bg-primary/18 active:scale-[0.99] transition-all"
             >
               See all {HOME_EXPLORE_PATH_COUNT} paths
               <ChevronDown className="w-4 h-4 shrink-0" aria-hidden />

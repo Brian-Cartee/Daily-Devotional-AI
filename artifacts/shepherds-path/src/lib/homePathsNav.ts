@@ -1,8 +1,8 @@
 /** Session flag read by LandingHome to scroll to #explore-section */
 export const SCROLL_TO_EXPLORE_KEY = "scrollToExplore";
 
-/** Persisted so HomeExploreSection opens the full paths grid on return */
-export const HOME_EXPLORE_OPEN_KEY = "sp_home_explore_open";
+/** Persisted expand state — bump suffix when home paths layout changes */
+export const HOME_EXPLORE_OPEN_KEY = "sp_home_explore_open_v3";
 
 export function markReturnToHomePaths(): void {
   sessionStorage.setItem(SCROLL_TO_EXPLORE_KEY, "1");

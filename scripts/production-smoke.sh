@@ -71,6 +71,26 @@ check_api_health
 BUNDLE="$(curl -fsS "$BASE/" | grep -o 'assets/index-[^"]*\.js' | head -1 || true)"
 echo "==> Live bundle: ${BUNDLE:-unknown}"
 
+if [[ -n "$BUNDLE" ]]; then
+  JS_URL="$BASE/$BUNDLE"
+  JS_BODY="$(curl -fsS "$JS_URL" 2>/dev/null || true)"
+  if [[ -z "$JS_BODY" ]]; then
+    echo "FAIL: Could not fetch $JS_URL"
+    FAIL=1
+  elif ! grep -Fq "See all" <<< "$JS_BODY" || ! grep -Fq "home-paths-block" <<< "$JS_BODY"; then
+    echo "FAIL: Live bundle missing home paths v3 (See all + home-paths-block)"
+    FAIL=1
+  elif grep -Fq "Browse all 16" <<< "$JS_BODY"; then
+    echo "FAIL: Live bundle still has old Browse all 16 paths button"
+    FAIL=1
+  elif ! grep -Fq "home-paths-block" <<< "$JS_BODY"; then
+    echo "FAIL: Live bundle missing home-paths-block"
+    FAIL=1
+  else
+    echo "OK: Home paths v3 markers in live bundle"
+  fi
+fi
+
 if [[ "$FAIL" -ne 0 ]]; then
   echo ""
   echo "Smoke checks failed."
