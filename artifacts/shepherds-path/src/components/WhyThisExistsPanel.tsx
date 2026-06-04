@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion, useAnimation } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
 import {
   markWhyPanelAutoShown,
   markWhyPanelDismissed,
-  shouldAutoOpenWhyPanel,
 } from "@/lib/homeHeroState";
 import { WHY_PANEL_OPEN_EVENT } from "@/lib/openWhyPanel";
 
-/** Five beats — manifesto, not a feature pitch */
+/** Manifesto beats — not a feature pitch */
 const PARAGRAPHS: { text: string; strong?: boolean }[] = [
   {
     text: "This wasn't built for when life feels put together.",
@@ -18,6 +17,9 @@ const PARAGRAPHS: { text: string; strong?: boolean }[] = [
   },
   {
     text: "It was built for the quiet moments — when something feels heavy and you don't know what to do with it.",
+  },
+  {
+    text: "It's also for daily Scripture, worship, and going deeper — not only the hard days.",
   },
   {
     text: "You don't need the right words. Just honesty.",
@@ -53,18 +55,22 @@ const SLIDE_OUT = {
 };
 
 export function WhyThisExistsPanel() {
-  const [location] = useLocation();
   const [mounted, setMounted] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
   const controls = useAnimation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const openingRef = useRef(false);
   const savedScrollYRef = useRef(0);
+  const autoShownThisDisplayRef = useRef(false);
 
   const revealPanel = useCallback(async () => {
     await controls.start({ y: "0%", transition: SLIDE_IN });
     setPanelVisible(true);
     openingRef.current = false;
+    if (!autoShownThisDisplayRef.current) {
+      autoShownThisDisplayRef.current = true;
+      markWhyPanelAutoShown();
+    }
   }, [controls]);
 
   const open = useCallback(() => {
@@ -80,14 +86,6 @@ export function WhyThisExistsPanel() {
     window.addEventListener(WHY_PANEL_OPEN_EVENT, onOpen);
     return () => window.removeEventListener(WHY_PANEL_OPEN_EVENT, onOpen);
   }, [open]);
-
-  useEffect(() => {
-    if (location !== "/") return;
-    if (!shouldAutoOpenWhyPanel()) return;
-    markWhyPanelAutoShown();
-    const t = window.setTimeout(open, 600);
-    return () => window.clearTimeout(t);
-  }, [location, open]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -115,11 +113,12 @@ export function WhyThisExistsPanel() {
   }, [mounted]);
 
   const close = async () => {
-    setPanelVisible(false);
     markWhyPanelDismissed();
+    setPanelVisible(false);
     await controls.start({ y: "-102%", transition: SLIDE_OUT });
     setMounted(false);
     openingRef.current = false;
+    autoShownThisDisplayRef.current = false;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   };
 

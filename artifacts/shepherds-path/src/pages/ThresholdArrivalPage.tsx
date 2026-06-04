@@ -150,7 +150,17 @@ export default function ThresholdArrivalPage() {
     }
   })();
 
-  const visibleModes = showAllModes ? NEED_OPTIONS : NEED_OPTIONS.slice(0, 5);
+  const defaultVisibleNeedIds: ThresholdNeed[] = [
+    "peace",
+    "grief",
+    "battle",
+    "stillness",
+    "worship",
+    "deep-dive",
+  ];
+  const visibleModes = showAllModes
+    ? NEED_OPTIONS
+    : NEED_OPTIONS.filter((opt) => defaultVisibleNeedIds.includes(opt.id));
 
   const handleNameContinue = async () => {
     const trimmed = nameInput.trim();
@@ -224,6 +234,9 @@ export default function ThresholdArrivalPage() {
               <p className="mt-4 text-[14px] text-white/52 leading-relaxed">
                 This is a quiet place. Nothing to prove.
               </p>
+              <p className="mt-3 text-[13px] text-white/45 leading-relaxed">
+                Whether you&apos;re carrying something heavy or walking steady — same path, your pace.
+              </p>
               {arriveReady && (
                 <motion.button
                   initial={{ opacity: 0 }}
@@ -275,7 +288,7 @@ export default function ThresholdArrivalPage() {
             <motion.div key="need" {...fade} className="w-full max-w-sm">
               {nativeFastPath && (
                 <p className="text-center text-[14px] text-white/55 mb-4 leading-relaxed">
-                  Welcome to Shepherd&apos;s Path — a quiet companion, not a performance.
+                  Welcome to Shepherd&apos;s Path — steady or struggling, a quiet companion, not a performance.
                 </p>
               )}
               <p className="text-center text-[1.1rem] text-white/88 font-medium mb-2">
