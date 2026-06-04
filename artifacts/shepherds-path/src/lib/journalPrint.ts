@@ -14,7 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
   reflection: "Reflection",
   verse: "Scripture",
   note: "Sermon note",
-  guidance_memory: "Guidance",
+  guidance_memory: "Talk it through",
 };
 
 /** Opens the browser print dialog — user can save as PDF. Pro export path. */

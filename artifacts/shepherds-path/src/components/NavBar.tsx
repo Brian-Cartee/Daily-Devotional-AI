@@ -10,6 +10,7 @@ import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import { TALK_IT_THROUGH_LABEL } from "@/lib/navigationLabels";
 import {
   grantCoachConsentThisSession,
   hasCoachConsentThisSession,
@@ -32,7 +33,7 @@ const NAV_ITEMS = [
 
 const BOTTOM_NAV_ITEMS = [
   { href: "/", label: "For You", icon: Home, bookmark: null, navId: "for-you" },
-  { href: "/guidance", label: "Guidance", icon: Heart, bookmark: null, navId: "guidance" },
+  { href: "/guidance", label: TALK_IT_THROUGH_LABEL, icon: Heart, bookmark: null, navId: "guidance" },
   {
     href: "/devotional",
     label: "Today",

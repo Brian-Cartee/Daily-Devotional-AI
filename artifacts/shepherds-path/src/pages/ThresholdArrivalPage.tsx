@@ -20,7 +20,7 @@ import { fireHaptic } from "@/lib/haptics";
 import { getThresholdInteractionProfile } from "@/lib/thresholdModePlan";
 import { isNativeWebViewShell } from "@/lib/platform";
 
-type Step = "arrive" | "promise" | "need" | "sync-name" | "name" | "breath" | "enter";
+type Step = "arrive" | "need" | "sync-name" | "name" | "breath" | "enter";
 
 function initialThresholdStep(): Step {
   if (isNativeWebViewShell() && !isThresholdReplay()) return "need";
@@ -81,8 +81,8 @@ export default function ThresholdArrivalPage() {
 
   useEffect(() => {
     if (step !== "arrive") return;
-    const readyTimer = setTimeout(() => setArriveReady(true), 1400);
-    const autoTimer = setTimeout(() => setStep("promise"), 12_000);
+    const readyTimer = setTimeout(() => setArriveReady(true), 900);
+    const autoTimer = setTimeout(() => setStep("need"), 4_000);
     return () => {
       clearTimeout(readyTimer);
       clearTimeout(autoTimer);
@@ -208,9 +208,7 @@ export default function ThresholdArrivalPage() {
         <p className="sr-only" aria-live="polite">
           {step === "arrive"
             ? "Arrival screen. You don't have to be okay to come in."
-            : step === "promise"
-              ? "Gentle promise screen."
-              : step === "need"
+            : step === "need"
                 ? "Choose what you need right now."
                 : step === "name"
                   ? "Optional name screen."
@@ -237,6 +235,12 @@ export default function ThresholdArrivalPage() {
               <p className="mt-3 text-[13px] text-white/45 leading-relaxed">
                 Whether you&apos;re carrying something heavy or walking steady — same path, your pace.
               </p>
+              <p className="mt-4 text-[14px] text-white/52 leading-relaxed">
+                One step at a time. Scripture, prayer, stillness — without noise.
+              </p>
+              <p className="mt-2 text-[13px] text-white/42 leading-relaxed">
+                No noise. No shame. No pressure.
+              </p>
               {arriveReady && (
                 <motion.button
                   initial={{ opacity: 0 }}
@@ -245,42 +249,13 @@ export default function ThresholdArrivalPage() {
                   data-testid="btn-threshold-arrive-continue"
                   onClick={() => {
                     fireHaptic("soft");
-                    setStep("promise");
+                    setStep("need");
                   }}
-                  className="mt-12 min-h-[44px] text-[14px] font-semibold text-white/65 hover:text-white px-6 py-2.5 rounded-full border border-white/15 hover:border-white/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                  className="mt-10 min-h-[44px] text-[14px] font-semibold text-white/65 hover:text-white px-6 py-2.5 rounded-full border border-white/15 hover:border-white/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
                 >
-                  Come in
+                  Continue
                 </motion.button>
               )}
-            </motion.div>
-          )}
-
-          {step === "promise" && (
-            <motion.div
-              key="promise"
-              {...fade}
-              className="flex flex-col items-center text-center max-w-md"
-            >
-              <p
-                className="text-[1.2rem] sm:text-[1.3rem] leading-snug text-white/90 font-medium"
-                style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
-              >
-                We&apos;ll go gently.
-              </p>
-              <p className="mt-4 text-[14px] text-white/56 leading-relaxed">
-                No noise. No shame. No pressure.
-              </p>
-              <button
-                type="button"
-                data-testid="btn-threshold-promise-continue"
-                onClick={() => {
-                  fireHaptic("soft");
-                  setStep("need");
-                }}
-                className="mt-10 min-h-[44px] text-[14px] font-semibold text-white/70 hover:text-white px-6 py-2.5 rounded-full border border-white/15 hover:border-white/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
-              >
-                Okay
-              </button>
             </motion.div>
           )}
 
@@ -295,7 +270,7 @@ export default function ThresholdArrivalPage() {
                 What do you need right now?
               </p>
               <p className="text-center text-[13px] text-white/48 mb-7">
-                Just for today. You can change this anytime.
+                We&apos;ll shape today&apos;s tone — you can change it anytime.
               </p>
               <div className="flex flex-col gap-3">
                 {visibleModes.map((opt) => (
@@ -330,8 +305,8 @@ export default function ThresholdArrivalPage() {
 
           {step === "name" && (
             <motion.div key="name" {...fade} className="w-full max-w-sm text-center">
-              <p className="text-[1.1rem] text-white/88 font-medium mb-2">How should we greet you?</p>
-              <p className="text-[13px] text-white/45 mb-6">Only if it helps this feel personal.</p>
+              <p className="text-[1.1rem] text-white/88 font-medium mb-2">First name?</p>
+              <p className="text-[13px] text-white/45 mb-6">Optional — for prayer and reflection.</p>
               <input
                 data-testid="input-threshold-name"
                 type="text"

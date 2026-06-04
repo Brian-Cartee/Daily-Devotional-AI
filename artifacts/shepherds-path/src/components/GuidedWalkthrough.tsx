@@ -48,7 +48,7 @@ const STEPS = [
     id: "talk",
     title: "Talk it through",
     subtitle: "When you need more than reading",
-    script: `When life is heavy, tap Talk it through — on For You or the Guidance tab. Share what's on your heart in your own words. You'll receive Scripture, reflection, and prayer shaped for your moment — not generic advice. You can share encouragement too, without sharing your private words.`,
+    script: `When life is heavy, tap Talk it through — on For You or the bottom tab. Share what's on your heart in your own words. You'll receive Scripture, reflection, and prayer shaped for your moment — not generic advice. You can share encouragement too, without sharing your private words.`,
   },
   {
     id: "listen",

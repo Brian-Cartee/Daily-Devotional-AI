@@ -8,10 +8,11 @@ import {
 } from "@/lib/introState";
 import { isNativeWebViewShell } from "@/lib/platform";
 
-export function useWelcomeOverlay() {
+export function useWelcomeOverlay(enabled = true) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
     if (isNativeWebViewShell()) return;
 
     const params = new URLSearchParams(window.location.search);
@@ -39,7 +40,7 @@ export function useWelcomeOverlay() {
       setShow(true);
     }, 800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [enabled]);
 
   const dismiss = () => {
     recordWelcomeShownThisSession();

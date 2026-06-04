@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Star, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2 } from "lucide-react";
 import { getSessionId } from "@/lib/session";
 
 const FEATURES = [
   "Daily Devotional",
-  "Ask Path AI (Guidance)",
+  "Ask Path AI (Talk it through)",
   "Bible Reading",
   "Prayer Wall",
   "Life Season Journey",
@@ -96,11 +96,7 @@ export default function FeedbackPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-foreground/55 hover:text-foreground transition-colors mb-6" data-testid="link-back-home">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to app
-          </Link>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 sp-app-top-clearance pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-white text-sm font-bold">t</span>
             </div>

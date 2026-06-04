@@ -21,7 +21,7 @@ const DAILY_VERSES = [
 const HEART_EMOTIONS = [
   { label: "Peace",     icon: "🕊️", color: "#3b82f6", desc: "Seeking stillness",       verse: { text: "Peace I leave with you; my peace I give you.", ref: "John 14:27" } },
   { label: "Joy",       icon: "☀️", color: "#f97316", desc: "My heart is full",         verse: { text: "In your presence there is fullness of joy; at your right hand are pleasures forevermore.", ref: "Psalm 16:11" } },
-  { label: "Guidance",  icon: "🧭", color: "#8b5cf6", desc: "Looking for direction",    verse: { text: "Your word is a lamp for my feet, a light on my path.", ref: "Psalm 119:105" } },
+  { label: "Talk it through", icon: "🧭", color: "#8b5cf6", desc: "Looking for direction", verse: { text: "Your word is a lamp for my feet, a light on my path.", ref: "Psalm 119:105" } },
   { label: "Strength",  icon: "⚡", color: "#f59e0b", desc: "I'm feeling weak",         verse: { text: "The Lord is my strength and my shield; my heart trusts in him.", ref: "Psalm 28:7" } },
   { label: "Grief",     icon: "💧", color: "#6366f1", desc: "I'm hurting",              verse: { text: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.", ref: "Psalm 34:18" } },
   { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks",    verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },

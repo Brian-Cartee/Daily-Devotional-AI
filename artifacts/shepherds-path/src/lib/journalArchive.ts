@@ -46,6 +46,6 @@ export const ARCHIVE_TYPE_LABELS: Record<string, string> = {
   reflection: "Reflection",
   verse: "Scripture",
   note: "Sermon note",
-  guidance_memory: "Guidance",
+  guidance_memory: "Talk it through",
   all: "All",
 };

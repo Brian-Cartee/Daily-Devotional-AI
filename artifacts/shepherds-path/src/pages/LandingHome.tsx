@@ -6,7 +6,8 @@ import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, B
 import { DailyArtCard } from "@/components/DailyArtCard";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
-import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
+import { SplashScreen } from "@/components/SplashScreen";
+import { pickHomeReturnOverlay } from "@/lib/homeReturnOverlay";
 import { clearReturningHome, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
 import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 import {
@@ -35,7 +36,7 @@ import {
   FOCUS_LABELS, type FaithRhythm,
 } from "@/lib/faithRhythm";
 import { FaithRhythmSetup } from "@/components/FaithRhythmSetup";
-import { GuidedWalkthrough, shouldShowWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
+import { GuidedWalkthrough, recordWalkthroughVisit } from "@/components/GuidedWalkthrough";
 import {
   GreetingHeader, ShareVerseButton, SundaySummaryCard,
   LateNightBannerCard,
@@ -50,7 +51,7 @@ import { readCarryToday } from "@/lib/devotionalContinuity";
 import { isNativeWebViewShell } from "@/lib/platform";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { nativeDiag } from "@/lib/nativeDiag";
-import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
+import { HomeEntryScreen, markEntryShown } from "@/components/HomeEntryScreen";
 import {
   bumpHomeVisitAfterThreshold,
   isHomeDevotionalFocusPeriod,
@@ -505,6 +506,18 @@ function LandingHomeInner() {
   const chapelWeekFocus = homeVisitAfterThreshold > 0 && homeVisitAfterThreshold <= 7;
   const sacredFirstHome = isSacredFirstHomeVisit(homeVisitAfterThreshold);
   const blockHomeOverlays = sacredFirstHome || skipIntrosForHome;
+  const forceIntro =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("intro");
+  const [homeReturnOverlay] = useState(() =>
+    pickHomeReturnOverlay({
+      blockHomeOverlays,
+      inNativeApp,
+      homeVisitAfterThreshold,
+      chapelWeekFocus,
+      forceIntro,
+    }),
+  );
 
   useEffect(() => {
     if (inNativeApp) {
@@ -522,9 +535,7 @@ function LandingHomeInner() {
     return () => window.clearTimeout(t);
   }, [inNativeApp]);
 
-  const [showSplash, setShowSplash] = useState(
-    () => !blockHomeOverlays && shouldShowSplash(),
-  );
+  const [showSplash, setShowSplash] = useState(() => homeReturnOverlay === "splash");
   const [thresholdWelcome, setThresholdWelcome] = useState(() => consumeThresholdJustCompleted());
   useEffect(() => {
     if (!isReturningHome()) return;
@@ -532,37 +543,20 @@ function LandingHomeInner() {
     clearReturningHome();
   }, []);
 
-  const [showEntryScreen, setShowEntryScreen] = useState(
-    () =>
-      !inNativeApp &&
-      !blockHomeOverlays &&
-      !chapelWeekFocus &&
-      homeVisitAfterThreshold > 2 &&
-      shouldShowHomeEntry(),
-  );
+  const [showEntryScreen, setShowEntryScreen] = useState(() => homeReturnOverlay === "entry");
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
-  const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
-  const showWelcomeOverlay =
-    showWelcome &&
-    !blockHomeOverlays &&
-    !chapelWeekFocus &&
-    homeVisitAfterThreshold > 2;
-  const [showWalkthrough, setShowWalkthrough] = useState(
-    () =>
-      !inNativeApp &&
-      !blockHomeOverlays &&
-      !chapelWeekFocus &&
-      homeVisitAfterThreshold > 2 &&
-      shouldShowWalkthrough(),
-  );
+  const welcomeOverlayEnabled = homeReturnOverlay === "welcome";
+  const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
+  const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
+  const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
-    if (chapelWeekFocus) return;
+    if (!showWalkthrough) return;
     recordWalkthroughVisit();
-  }, [chapelWeekFocus]);
+  }, [showWalkthrough]);
   useEffect(() => {
     if (isNativeWebViewShell()) return;
     if (!sessionStorage.getItem(SCROLL_TO_EXPLORE_KEY)) return;

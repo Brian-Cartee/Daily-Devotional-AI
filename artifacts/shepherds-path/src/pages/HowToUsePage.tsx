@@ -75,7 +75,7 @@ const quickStarts = [
 
 const bottomNav = [
   { label: "For You", desc: "Home — three ways to begin, devotional, closet, shortcuts" },
-  { label: "Guidance", desc: "Talk it through (full pastoral conversation)" },
+  { label: "Talk it through", desc: "Full pastoral conversation when you need more than today's verse" },
   { label: "Journey", desc: "Bible journeys and guided pathways" },
   { label: "Journal", desc: "Prayers and reflections you save" },
 ];
@@ -120,7 +120,7 @@ const steps = [
     color: "bg-violet-500/10 border-violet-400/20 backdrop-blur-md",
     iconColor: "text-violet-300",
     title: "Talk it through",
-    where: "For You tab, bottom tab Guidance, or More paths",
+    where: "For You tab, bottom tab Talk it through, or More paths",
     description:
       "When life is heavy — grief, fear, a hard decision, loneliness — bring it in your own words. You receive Scripture, reflection, and prayer for your moment. After a response, you can share encouragement (not your private situation).",
     tip: "Path AI (floating button) is one quick answer; Talk it through is the full conversation.",
@@ -193,7 +193,7 @@ const faqs = [
   },
   {
     q: "What's the difference between Path AI and Talk it through?",
-    a: "Path AI is a quick, faithful answer from the floating button — one exchange, starters, save to journal. Talk it through (Guidance tab) is the full conversation when you want Scripture and prayer to unfold over several back-and-forths.",
+    a: "Path AI is a quick, faithful answer from the floating button — one exchange, starters, save to journal. Talk it through is the full conversation when you want Scripture and prayer to unfold over several back-and-forths.",
   },
   {
     q: "App Store app vs Safari?",
@@ -351,7 +351,7 @@ export default function HowToUsePage() {
             <div className="rounded-xl border border-white/10 bg-black/20 p-3.5">
               <p className="font-bold text-white mb-1">Talk it through</p>
               <p className="text-white/55">
-                Longer conversation, prayer chains, your words carried forward. Guidance tab.
+                Longer conversation, prayer chains, your words carried forward. Talk it through tab.
               </p>
             </div>
           </div>
