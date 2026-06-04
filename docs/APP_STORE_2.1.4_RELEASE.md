@@ -67,23 +67,37 @@ Users get these on refresh or after install once the site loads:
 
 ## Build commands (Mac)
 
+**Always use the isolated build script** — do not run raw `eas build` from `.mobile-build` unless you know the lockfile is fresh. A stale `package-lock.json` caused build `19edb728` to fail in ~10s (“Build complete hook”).
+
 ```bash
-cd ~/Daily-Devotional-AI/.mobile-build
-
-# Commit is on main — pull first
+cd ~/Daily-Devotional-AI
 git pull origin main
+bash .mobile-build/build-mac.sh
+```
 
-# iOS (EAS production)
-eas build --platform ios --profile production
+`build-mac.sh` copies only mobile source into `/tmp/eas-isolated-build`, runs `npm ci`, and starts EAS from a clean mini-repo (avoids monorepo upload issues).
 
-# Android (when ready for Play closed/open testing)
-eas build --platform android --profile production
+After a **successful** build:
 
-# Submit iOS after TestFlight smoke
+```bash
+cd /tmp/eas-isolated-build
 eas submit --platform ios --latest
 ```
 
-Or use existing scripts if configured: `submit-ios.sh`, `build-android.sh`.
+Android (when ready):
+
+```bash
+cd ~/Daily-Devotional-AI/.mobile-build
+eas build --platform android --profile production
+```
+
+### If EAS fails again
+
+1. Open the build log on expo.dev and expand the **first** red phase (not only “Build complete hook”).
+2. Run locally: `cd .mobile-build && npm ci && npx expo-doctor`
+3. Regenerate lockfile: `rm package-lock.json && npm install`
+4. Do **not** set a custom Xcode `image` in `eas.json` unless Expo docs list it — use the default.
+5. Credit limit: your account showed **100% of included build credits** — extra builds are pay-as-you-go.
 
 ---
 

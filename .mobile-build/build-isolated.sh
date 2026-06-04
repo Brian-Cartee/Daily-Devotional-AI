@@ -30,7 +30,7 @@ cp -r "$SRC/scripts"        "$BUILD_DIR/"
 cp    "$SRC/app.json"        "$BUILD_DIR/"
 cp    "$SRC/eas.json"        "$BUILD_DIR/"
 cp    "$SRC/package.json"    "$BUILD_DIR/"
-cp    "$SRC/pnpm-lock.yaml"  "$BUILD_DIR/"
+cp    "$SRC/package-lock.json" "$BUILD_DIR/" 2>/dev/null || true
 cp    "$SRC/babel.config.js" "$BUILD_DIR/"
 cp    "$SRC/metro.config.js" "$BUILD_DIR/"
 cp    "$SRC/tsconfig.json"   "$BUILD_DIR/"
@@ -38,7 +38,7 @@ cp    "$SRC/store.config.yaml" "$BUILD_DIR/" 2>/dev/null || true
 
 echo "=== Installing dependencies (so EAS can resolve plugins) ==="
 cd "$BUILD_DIR"
-pnpm install --no-frozen-lockfile
+npm ci
 
 echo "=== Initializing fresh git repo ==="
 git init
