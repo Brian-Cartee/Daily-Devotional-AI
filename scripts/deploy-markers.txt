@@ -6,5 +6,5 @@ artifacts/api-server/src/routes/routes.ts|quickPersonalize
 artifacts/shepherds-path/src/lib/homeHeroState.ts|hydrateWhyPanelFromServer
 artifacts/shepherds-path/src/lib/whyPanelApi.ts|fetchWhyPanelFromServer
 artifacts/shepherds-path/src/components/HomePathsBlock.tsx|home-paths-block
-artifacts/shepherds-path/src/components/HomeExploreSection.tsx|See all 16 paths
+artifacts/shepherds-path/src/components/HomeExploreSection.tsx|btn-expand-explore
 artifacts/shepherds-path/src/components/HomePathsBlock.tsx|focus-v3
