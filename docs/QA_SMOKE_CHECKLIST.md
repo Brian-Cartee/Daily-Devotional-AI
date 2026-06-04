@@ -19,6 +19,8 @@ Note: API may report `"status":"degraded"` when Twilio SMS is not configured —
 3. **Daily Devotional** → Reflection: name box or personalized text (no blocking name popup on launch).
 4. Purple **Why we built this** does not auto-open; manual open still works.
 5. Optional: tap **Save & personalize** once if testing name flow.
+6. **2.1.4+:** Pull down on home to refresh the live site; bottom tab reads **Talk it through**.
+7. **2.1.4+:** Fresh install → threshold need picker before home (not auto-skipped).
 
 ## Safari (quick)
 

@@ -16,6 +16,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
 import { injectApplePro, reloadEmbeddedWeb } from "@/lib/inject-pro";
+import {
+  buildNativeProfileSeedJs,
+  loadNativeUserProfile,
+  saveNativeUserProfile,
+} from "@/lib/native-profile";
 import { useSubscription } from "@/lib/revenuecat";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -205,6 +210,21 @@ export default function MainScreen() {
   const [diagSummary, setDiagSummary] = useState("");
   const [mainJsPath, setMainJsPath] = useState<string | null>(null);
   const mainJsPathRef = useRef<string | null>(null);
+  const [beforeContentJs, setBeforeContentJs] = useState(BEFORE_CONTENT_JS);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadNativeUserProfile().then(({ sessionId, name, prompted }) => {
+      if (cancelled) return;
+      setBeforeContentJs(
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted)}`,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pushNativeDiag = useCallback((event: string, detail = "") => {
     const entry: WebViewDiagEntry = {
@@ -360,6 +380,12 @@ export default function MainScreen() {
     setEntryUrl(shellEntryUrl());
   }, [pushNativeDiag]);
 
+  const onPullRefresh = useCallback(() => {
+    setPullRefreshing(true);
+    pushNativeDiag("pull_refresh");
+    webviewRef.current?.reload();
+  }, [pushNativeDiag]);
+
   const openInSafari = () => {
     Linking.openURL(`${APP_ORIGIN}/?native=1&enter=1`).catch(() => {});
   };
@@ -426,7 +452,9 @@ export default function MainScreen() {
         domStorageEnabled
         sharedCookiesEnabled
         allowsBackForwardNavigationGestures={false}
-        pullToRefreshEnabled={false}
+        pullToRefreshEnabled={Platform.OS === "ios"}
+        refreshing={pullRefreshing}
+        onRefresh={onPullRefresh}
         scrollEnabled
         bounces
         {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
@@ -435,11 +463,18 @@ export default function MainScreen() {
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
         cacheEnabled={false}
-        injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
+        injectedJavaScriptBeforeContentLoaded={beforeContentJs}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
+            if (data.type === "sp_user_profile") {
+              const sessionId =
+                typeof data.sessionId === "string" ? data.sessionId : "";
+              const name = typeof data.name === "string" ? data.name : "";
+              const prompted = data.prompted === true || !!name.trim();
+              void saveNativeUserProfile(sessionId, name, prompted);
+            }
             if (data.type === "scroll_home_top") {
               webviewRef.current?.injectJavaScript(
                 `(function(){try{var s=document.scrollingElement||document.body;s.scrollTop=0;try{s.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){}}catch(e){}true;})();`,
@@ -555,6 +590,7 @@ export default function MainScreen() {
           </View>
         )}
         onLoadEnd={(e) => {
+          setPullRefreshing(false);
           const pageUrl = e.nativeEvent.url || entryUrl;
           pushNativeDiag("onLoadEnd", pageUrl);
           if (!shouldBootstrapWebView(pageUrl)) return;
@@ -564,6 +600,7 @@ export default function MainScreen() {
           });
         }}
         onError={(e) => {
+          setPullRefreshing(false);
           pushNativeDiag("onError", String(e.nativeEvent.description || "unknown"));
           setShowOverlay(false);
           setError(true);
