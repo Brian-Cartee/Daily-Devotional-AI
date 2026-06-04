@@ -16,6 +16,8 @@ export const EXPLORE_PATH_VARIANT: Record<string, ShortcutIconVariant> = {
   "/prayer-portrait": "portrait",
   "/display": "display",
   "/prayer-closet": "closet",
+  "/lament": "evening",
+  "/surrender": "evening",
 };
 
 export function explorePathVariant(href: string): ShortcutIconVariant {

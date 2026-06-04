@@ -77,7 +77,11 @@ import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomeHeavyMomentLink } from "@/components/HomeHeavyMomentLink";
-import { HomeMorePathsLink, HomePathShortcuts } from "@/components/HomePathShortcuts";
+import {
+  HomeMorePathsLink,
+  HomePathShortcuts,
+  HomePathsPeekRow,
+} from "@/components/HomePathShortcuts";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
@@ -646,6 +650,22 @@ function LandingHomeInner() {
   const carryToday = getCarryToday();
   const chapelExploreCollapsed = daysWithApp < 14;
   const showSecondaryHomeCards = !homeMarketplaceCollapsed && daysWithApp >= 3;
+  const showsMorePathsLink =
+    (homeDevotionalFocus && (inNativeApp || !chapelExploreCollapsed)) ||
+    (!homeDevotionalFocus &&
+      (homeMarketplaceCollapsed ||
+        !chapelWeekFocus ||
+        inNativeApp ||
+        !chapelExploreCollapsed));
+  const showHomePathShortcuts =
+    !homeDevotionalFocus && !homeMarketplaceCollapsed && chapelWeekFocus;
+  const showPathsPeek =
+    !homeDevotionalFocus && showsMorePathsLink && !showHomePathShortcuts;
+  const showHomeExploreSection =
+    showsMorePathsLink ||
+    (!homeDevotionalFocus &&
+      !homeMarketplaceCollapsed &&
+      (!chapelWeekFocus || inNativeApp));
 
   const [presenceCtx, setPresenceCtx] = useState<HomePresenceContext>(() => ({
     door: defaultPresenceDoor(),
@@ -808,19 +828,10 @@ function LandingHomeInner() {
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && <LamentSeasonHomeCard />}
 
           {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
-          {!homeDevotionalFocus && (
-            homeMarketplaceCollapsed ? (
-              <HomeMorePathsLink />
-            ) : chapelWeekFocus ? (
-              <>
-                <HomePathShortcuts />
-                {(inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
-              </>
-            ) : (
-              <HomeMorePathsLink />
-            )
-          )}
-          {homeDevotionalFocus && (inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
+          {showHomePathShortcuts && <HomePathShortcuts />}
+          {showPathsPeek && <HomePathsPeekRow />}
+          {showsMorePathsLink && <HomeMorePathsLink />}
+          {showHomeExploreSection && <HomeExploreSection />}
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (
@@ -974,10 +985,6 @@ function LandingHomeInner() {
               </div>
             </div>
           </Link>}
-
-          {!homeDevotionalFocus && !homeMarketplaceCollapsed && (!chapelWeekFocus || inNativeApp) && (
-            <HomeExploreSection />
-          )}
 
           {showProNudge && (
             <div

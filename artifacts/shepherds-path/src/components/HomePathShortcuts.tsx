@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
+import { explorePathVariant } from "@/lib/explorePathVariants";
 import { ShortcutPathIcon, type ShortcutIconVariant } from "@/components/ShortcutPathIcon";
 
 const SHORTCUTS: {
@@ -37,6 +38,52 @@ const SHORTCUTS: {
   },
 ] as const;
 
+/** Two discoverable paths above “Browse all” when the full shortcut stack is hidden. */
+const PEEK_PATHS: {
+  href: string;
+  label: string;
+  desc: string;
+  testid: string;
+  accent: string;
+}[] = [
+  {
+    href: "/understand#pathways",
+    label: "Guided Pathways",
+    desc: "7-day walks for grief, anxiety, and hard seasons",
+    testid: "peek-journeys",
+    accent: "from-indigo-500/10 to-violet-500/6 border-indigo-500/20",
+  },
+  {
+    href: "/lament",
+    label: "Lament Pathway",
+    desc: "Seven days for grief — no streak pressure",
+    testid: "peek-lament",
+    accent: "from-slate-500/12 to-slate-400/6 border-slate-500/25",
+  },
+];
+
+export function HomePathsPeekRow() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="home-paths-peek">
+      {PEEK_PATHS.map(({ href, label, desc, testid, accent }) => (
+        <Link key={href} href={href}>
+          <div
+            data-testid={testid}
+            className={`group flex items-center gap-3 rounded-xl border bg-gradient-to-br ${accent} px-4 py-3 active:scale-[0.99] transition-transform h-full`}
+          >
+            <ShortcutPathIcon variant={explorePathVariant(href.replace(/#.*$/, ""))} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-bold text-foreground leading-tight">{label}</p>
+              <p className="text-[12px] text-muted-foreground/75 leading-snug mt-0.5">{desc}</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/70 shrink-0 transition-colors" />
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 /** First week only — hero doors are simplified; these paths help discovery. */
 export function HomePathShortcuts() {
   return (
@@ -61,6 +108,15 @@ export function HomePathShortcuts() {
 }
 
 /** When hero doors are visible — one link instead of duplicating Talk it through. */
+function scrollToExploreSection() {
+  const el = document.getElementById("explore-section");
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    return true;
+  }
+  return false;
+}
+
 export function HomeMorePathsLink() {
   const openExplore = () => {
     try {
@@ -70,7 +126,10 @@ export function HomeMorePathsLink() {
     }
     window.dispatchEvent(new Event("sp-open-home-explore"));
     requestAnimationFrame(() => {
-      document.getElementById("explore-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!scrollToExploreSection()) {
+        window.setTimeout(scrollToExploreSection, 120);
+        window.setTimeout(scrollToExploreSection, 400);
+      }
     });
   };
 

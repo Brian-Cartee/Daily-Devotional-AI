@@ -30,12 +30,14 @@ const EXPLORE_ITEMS = [
 
 const PATH_COUNT = EXPLORE_ITEMS.length;
 
-/** Default home view — four high-intent entry points; full grid on expand */
+/** Default home view — six high-intent entry points; full grid on expand */
 const PREVIEW_HREFS: readonly string[] = [
   "/salvation",
   "/journal",
   "/prayer-closet",
   "/understand",
+  "/lament",
+  "/reading-plans",
 ];
 
 const PREVIEW_ITEMS = PREVIEW_HREFS.map(
@@ -121,7 +123,7 @@ export function HomeExploreSection() {
               More paths
             </p>
             <p className="text-[10px] font-semibold text-primary/80 mt-0.5 tabular-nums">
-              {expanded ? `All ${PATH_COUNT} ways to walk` : `4 of ${PATH_COUNT} · tap to expand`}
+              {expanded ? `All ${PATH_COUNT} ways to walk` : `${PREVIEW_ITEMS.length} of ${PATH_COUNT} · tap to expand`}
             </p>
           </div>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/35" />
