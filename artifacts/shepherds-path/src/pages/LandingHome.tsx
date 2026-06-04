@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { isIOS, isAndroid } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -659,13 +659,23 @@ function LandingHomeInner() {
         !chapelExploreCollapsed));
   const showHomePathShortcuts =
     !homeDevotionalFocus && !homeMarketplaceCollapsed && chapelWeekFocus;
-  const showPathsPeek =
-    !homeDevotionalFocus && showsMorePathsLink && !showHomePathShortcuts;
   const showHomeExploreSection =
     showsMorePathsLink ||
     (!homeDevotionalFocus &&
       !homeMarketplaceCollapsed &&
       (!chapelWeekFocus || inNativeApp));
+  const showPathsPeek =
+    !homeDevotionalFocus &&
+    showsMorePathsLink &&
+    !showHomePathShortcuts &&
+    !showHomeExploreSection;
+  const showStandaloneBrowseLink = showsMorePathsLink && !showHomeExploreSection;
+  const explorePreviewExclude = useMemo(() => {
+    const ex = new Set<string>();
+    if (homeDevotionalFocus) ex.add("/prayer-closet");
+    if (showHomePathShortcuts) ex.add("/journal");
+    return [...ex];
+  }, [homeDevotionalFocus, showHomePathShortcuts]);
 
   const [presenceCtx, setPresenceCtx] = useState<HomePresenceContext>(() => ({
     door: defaultPresenceDoor(),
@@ -830,8 +840,10 @@ function LandingHomeInner() {
           {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
           {showHomePathShortcuts && <HomePathShortcuts />}
           {showPathsPeek && <HomePathsPeekRow />}
-          {showsMorePathsLink && <HomeMorePathsLink />}
-          {showHomeExploreSection && <HomeExploreSection />}
+          {showStandaloneBrowseLink && <HomeMorePathsLink />}
+          {showHomeExploreSection && (
+            <HomeExploreSection excludePreviewHrefs={explorePreviewExclude} />
+          )}
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (

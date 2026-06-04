@@ -38,7 +38,7 @@ const SHORTCUTS: {
   },
 ] as const;
 
-/** Two discoverable paths above “Browse all” when the full shortcut stack is hidden. */
+/** Two discoverable paths when explore grid is not on screen (week-one collapsed). */
 const PEEK_PATHS: {
   href: string;
   label: string;
@@ -140,7 +140,7 @@ export function HomeMorePathsLink() {
       data-testid="link-more-ways-to-walk"
       className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-zinc-900/35 px-4 py-3 text-[13px] font-semibold text-foreground/85 hover:bg-zinc-900/50 hover:border-white/15 transition-colors"
     >
-      Browse all 16 paths
+      See all 16 paths
       <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
     </button>
   );
