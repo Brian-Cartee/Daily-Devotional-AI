@@ -55,6 +55,7 @@ import { HomeEntryScreen, markEntryShown } from "@/components/HomeEntryScreen";
 import {
   bumpHomeVisitAfterThreshold,
   isHomeDevotionalFocusPeriod,
+  isHomeMarketplaceCollapsed,
   isSacredFirstHomeVisit,
 } from "@/lib/firstSession";
 import { HomeSecondaryPathsRow } from "@/components/HomeSecondaryPathsRow";
@@ -628,6 +629,7 @@ function LandingHomeInner() {
   const visitCount = streakData?.visitDates?.length ?? 0;
   const daysWithApp = getRelationshipAge();
   const homeDevotionalFocus = isHomeDevotionalFocusPeriod(daysWithApp, visitCount);
+  const homeMarketplaceCollapsed = isHomeMarketplaceCollapsed(daysWithApp, visitCount);
   const isPro = isProVerifiedLocally();
   const showYourPath = shouldShowYourPathCard(daysWithApp, visitCount);
   const engagementBusy =
@@ -643,7 +645,7 @@ function LandingHomeInner() {
     !isLateNight();
   const carryToday = getCarryToday();
   const chapelExploreCollapsed = daysWithApp < 14;
-  const showSecondaryHomeCards = daysWithApp >= 3;
+  const showSecondaryHomeCards = !homeMarketplaceCollapsed && daysWithApp >= 3;
 
   const [presenceCtx, setPresenceCtx] = useState<HomePresenceContext>(() => ({
     door: defaultPresenceDoor(),
@@ -755,8 +757,8 @@ function LandingHomeInner() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
-          {!homeDevotionalFocus && showGreeting && <GreetingHeader />}
-          {!homeDevotionalFocus && carryToday && (
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && showGreeting && <GreetingHeader />}
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && carryToday && (
             <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
               <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
@@ -765,7 +767,7 @@ function LandingHomeInner() {
           )}
 
           {/* Keep the first screen calm: only show these after a first meaningful action */}
-          {!homeDevotionalFocus && hasAction && (
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && hasAction && (
             <>
               <SpiritualWeatherCard />
               <SimpleNotifNudge />
@@ -799,21 +801,26 @@ function LandingHomeInner() {
 
           {homeDevotionalFocus && <HomeSecondaryPathsRow />}
 
-          {!homeDevotionalFocus && showSecondaryHomeCards && <WitnessLetterCard />}
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
+            <WitnessLetterCard />
+          )}
 
-          {!homeDevotionalFocus && <LamentSeasonHomeCard />}
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && <LamentSeasonHomeCard />}
 
           {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
-          {!homeDevotionalFocus && chapelWeekFocus ? (
-            <>
-              <HomePathShortcuts />
-              {(inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
-            </>
-          ) : !homeDevotionalFocus ? (
-            <HomeMorePathsLink />
-          ) : (
-            (inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />
+          {!homeDevotionalFocus && (
+            homeMarketplaceCollapsed ? (
+              <HomeMorePathsLink />
+            ) : chapelWeekFocus ? (
+              <>
+                <HomePathShortcuts />
+                {(inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
+              </>
+            ) : (
+              <HomeMorePathsLink />
+            )
           )}
+          {homeDevotionalFocus && (inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (
@@ -830,12 +837,14 @@ function LandingHomeInner() {
             )}
           </AnimatePresence>
 
-          {showYourPath && !homeDevotionalFocus && (
+          {showYourPath && !homeDevotionalFocus && !homeMarketplaceCollapsed && (
             <HomeYourPathCard daysWithApp={daysWithApp} devotionalVisitCount={visitCount} />
           )}
 
-          {!homeDevotionalFocus && <LateNightBannerCard />}
-          {!homeDevotionalFocus && !showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && <LateNightBannerCard />}
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && !showYourPath && (
+            <HomeEngagementStack daysWithApp={daysWithApp} />
+          )}
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {
@@ -914,7 +923,7 @@ function LandingHomeInner() {
             <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
           )}
 
-          {!homeDevotionalFocus && (
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && (
             <>
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">
@@ -930,7 +939,7 @@ function LandingHomeInner() {
           )}
 
           {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}
-          {!homeDevotionalFocus && showSecondaryHomeCards && new Date().getHours() >= 17 && <Link href="/alignment">
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && new Date().getHours() >= 17 && <Link href="/alignment">
             <div
               data-testid="card-walk-today-entry"
               className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
@@ -966,7 +975,7 @@ function LandingHomeInner() {
             </div>
           </Link>}
 
-          {!homeDevotionalFocus && (!chapelWeekFocus || inNativeApp) && (
+          {!homeDevotionalFocus && !homeMarketplaceCollapsed && (!chapelWeekFocus || inNativeApp) && (
             <HomeExploreSection />
           )}
 

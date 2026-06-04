@@ -61,3 +61,11 @@ export function isHomeDevotionalFocusPeriod(
   if (daysWithApp >= 7 && devotionalVisitCount >= 1) return false;
   return daysWithApp < 7 || devotionalVisitCount < 1;
 }
+
+/** Week-one home: keep extra cards behind “More paths” until rhythm is established. */
+export function isHomeMarketplaceCollapsed(
+  daysWithApp: number,
+  devotionalVisitCount: number,
+): boolean {
+  return isChapelFirstWeek(daysWithApp, devotionalVisitCount);
+}

@@ -72,6 +72,7 @@ import {
   markDevotionalVisited,
   shouldOfferDevotionalContinuityChoice,
 } from "@/lib/devotionalContinuity";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 /** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
 const openLink = (url: string) => {
@@ -184,6 +185,8 @@ export default function Devotional() {
   const [personalizePhase, setPersonalizePhase] = useState<"reflection" | "prayer" | null>(null);
   const quickPersonalizeRef = useRef(false);
   const autoPersonalizeVerseRef = useRef<number | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const inNativeApp = isNativeWebViewShell();
   const AI_PERSONALIZE_TIMEOUT_MS = 75_000;
 
   const resolvedProfileName = savedProfileName ?? getUserName();
@@ -1050,7 +1053,11 @@ export default function Devotional() {
   return (
     <>
       {/* Main content */}
-      <main className="max-w-xl mx-auto px-4 pb-24 pt-4 relative z-10">
+      <main
+        className={`max-w-xl mx-auto px-4 pt-4 relative z-10 ${
+          inNativeApp ? "pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]" : "pb-24"
+        }`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1495,20 +1502,29 @@ export default function Devotional() {
             )}
           </AnimatePresence>
 
-          {/* STEP 2: REFLECTION */}
-          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError) && (
-          <div className="bg-card border border-border/60 rounded-2xl px-5 py-8 shadow-sm">
-            <StepLabel number={2} label="Reflection" />
-            {nameHydrated && !resolvedProfileName && verse?.id && (
-              <div className="mb-5 rounded-xl border border-border/50 bg-muted/30 px-4 py-3.5" data-testid="banner-add-name">
-                <p className="text-[14px] font-medium text-foreground/90 leading-snug mb-1">
-                  Add your first name once — we&apos;ll use it in today&apos;s reflection and prayer.
+          {/* Name — after verse, before reflection (iOS-safe layout) */}
+          <AnimatePresence>
+            {entryTriggered && nameHydrated && !resolvedProfileName && verse?.id && (
+              <motion.div
+                key="devotional-name-prompt"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-card border border-primary/25 rounded-2xl px-5 py-6 shadow-sm"
+                data-testid="card-devotional-name-prompt"
+              >
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary/80 mb-2">
+                  Before your reflection
                 </p>
-                <p className="text-[12px] text-muted-foreground/80 leading-snug mb-2.5">
-                  Tap Save, then wait about 30 seconds while we refresh both for you.
+                <p className="text-[15px] font-semibold text-foreground/95 leading-snug mb-1">
+                  What should we call you?
+                </p>
+                <p className="text-[13px] text-muted-foreground/85 leading-snug mb-4">
+                  Your first name shapes today&apos;s reflection and prayer. Tap Save — we&apos;ll refresh both in about 30 seconds.
                 </p>
                 <form
-                  className="flex flex-col gap-2.5 w-full min-w-0"
+                  className="flex flex-col gap-3 w-full min-w-0"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const trimmed = nameDraft.trim();
@@ -1528,34 +1544,54 @@ export default function Devotional() {
                         });
                         return;
                       }
-                        setSavedProfileName(trimmed);
-                        autoPersonalizeVerseRef.current = null;
-                        regenerateWithMyName(verse.id, trimmed);
-                      });
+                      setSavedProfileName(trimmed);
+                      autoPersonalizeVerseRef.current = null;
+                      regenerateWithMyName(verse.id, trimmed);
+                    });
                   }}
                 >
                   <input
+                    ref={nameInputRef}
                     type="text"
                     value={nameDraft}
                     onChange={(e) => setNameDraft(e.target.value)}
+                    onFocus={() => {
+                      requestAnimationFrame(() => {
+                        nameInputRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+                      });
+                    }}
                     placeholder="Your first name"
                     maxLength={40}
                     autoComplete="given-name"
                     enterKeyHint="done"
                     data-testid="input-devotional-name"
-                    className="w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full min-w-0 rounded-xl border border-border bg-background px-3 py-3 text-[16px] outline-none focus:ring-2 focus:ring-primary/40"
                   />
-                  <button
-                    type="submit"
-                    disabled={!nameDraft.trim() || savingNameDraft}
-                    data-testid="btn-save-devotional-name"
-                    className="w-full rounded-xl bg-primary px-4 py-3 text-[15px] font-bold text-primary-foreground disabled:opacity-50 active:scale-[0.98] transition-transform"
+                  <div
+                    className={
+                      inNativeApp
+                        ? "sticky bottom-0 z-10 -mx-1 px-1 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-card/95 backdrop-blur-sm"
+                        : undefined
+                    }
                   >
-                    {savingNameDraft ? "Saving…" : "Save & personalize"}
-                  </button>
+                    <button
+                      type="submit"
+                      disabled={!nameDraft.trim() || savingNameDraft}
+                      data-testid="btn-save-devotional-name"
+                      className="w-full min-h-[48px] rounded-xl bg-primary px-4 py-3.5 text-[16px] font-bold text-primary-foreground disabled:opacity-50 active:scale-[0.98] transition-transform shadow-sm"
+                    >
+                      {savingNameDraft ? "Saving…" : "Save name"}
+                    </button>
+                  </div>
                 </form>
-              </div>
+              </motion.div>
             )}
+          </AnimatePresence>
+
+          {/* STEP 2: REFLECTION */}
+          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError) && (
+          <div className="bg-card border border-border/60 rounded-2xl px-5 py-8 shadow-sm">
+            <StepLabel number={2} label="Reflection" />
             {resolvedProfileName && verse?.id && reflectionContent && !reflectionLoading && !reflectionIncludesName(reflectionContent, resolvedProfileName) && (
               <div
                 className="mb-5 rounded-xl border border-primary/30 px-4 py-3.5"
@@ -1578,7 +1614,7 @@ export default function Devotional() {
             )}
             {!resolvedProfileName && reflectionContent && !refreshingForName && !reflectionLoading && (
               <p className="text-[12px] text-muted-foreground/75 mb-4 leading-snug">
-                This reflection is general — add your name above and tap Save to personalize it.
+                This reflection is general — add your name in the card above and tap Save to personalize it.
               </p>
             )}
             {(personalizePhase || savingNameDraft) && (
