@@ -14,8 +14,7 @@ import { saveLastGuidanceSession } from "@/lib/engagementCards";
 import { getTodayFramework } from "@/lib/faithFramework";
 import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
-import { getUserName, getUserVoice, hasBeenPrompted } from "@/lib/userName";
-import { NamePrompt } from "@/components/NamePrompt";
+import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
@@ -228,8 +227,6 @@ export default function GuidancePage() {
   const [showStillness, setShowStillness] = useState(false);
   const [showSlowVerse, setShowSlowVerse] = useState(false);
   const listenFirstTriggeredRef = useRef(false);
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
-  const pendingGuidanceFlow = useRef(false);
 
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
@@ -495,15 +492,6 @@ export default function GuidancePage() {
     void loadVerseAndPrayer();
   };
 
-  const handleNameDone = () => {
-    setShowNamePrompt(false);
-    if (pendingGuidanceFlow.current) {
-      pendingGuidanceFlow.current = false;
-      if (situation.trim()) guidanceStartedForRef.current = situation.trim();
-      startGuidanceFlow();
-    }
-  };
-
   const tryStartGuidanceFromUrl = () => {
     const trimmed = situation.trim();
     if (!trimmed) {
@@ -514,13 +502,6 @@ export default function GuidancePage() {
 
     if (!canUseAi()) {
       setShowAiPause(true);
-      return;
-    }
-
-    if (!getUserName() && !hasBeenPrompted()) {
-      setShowNamePrompt(true);
-      pendingGuidanceFlow.current = true;
-      setTimeout(() => setIsReflecting(false), 2500);
       return;
     }
 
@@ -1951,7 +1932,7 @@ export default function GuidancePage() {
       {showListenUpgrade && (
         <UpgradeModal
           onClose={() => setShowListenUpgrade(false)}
-          title="Hear this guidance"
+          title="Hear this guidance in one flow"
           subtitle={LISTEN_LIMIT_COPY.guidance}
         />
       )}
@@ -1969,9 +1950,6 @@ export default function GuidancePage() {
         }}
       />
 
-      <AnimatePresence>
-        {showNamePrompt && <NamePrompt onDone={handleNameDone} />}
-      </AnimatePresence>
     </>
   );
 }

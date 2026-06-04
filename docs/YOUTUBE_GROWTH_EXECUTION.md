@@ -19,6 +19,8 @@ Use this with **[YOUTUBE_APP_GROWTH_MASTER.md](./YOUTUBE_APP_GROWTH_MASTER.md)**
 
 **Not recommended at start:** expensive course platforms, 4 different schedulers, buying ads before organic hooks work.
 
+**Google Play closed testers (TikTok):** [GOOGLE_PLAY_TESTER_TIKTOK_CAMPAIGN.md](./GOOGLE_PLAY_TESTER_TIKTOK_CAMPAIGN.md) — video script, caption, DM template, promo code `PLAYBETA12`.
+
 ---
 
 ## Your product links (bookmark these)

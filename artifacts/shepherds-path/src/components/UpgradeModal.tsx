@@ -3,11 +3,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartphone } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { AI_FREE_LIMIT } from "@/lib/aiUsage";
 import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
+import {
+  UPGRADE_MODAL_BADGE_DEFAULT,
+  UPGRADE_MODAL_CTA_DEFAULT,
+  UPGRADE_MODAL_FOOTER_LINE,
+  UPGRADE_MODAL_SUBTITLE_DEFAULT,
+  UPGRADE_MODAL_TITLE_DEFAULT,
+  UPGRADE_TOAST_ACTIVATED_BODY,
+  UPGRADE_TOAST_ACTIVATED_TITLE,
+  upgradeModalResetLine,
+} from "@/lib/proUpgradeCopy";
 import { markProVerified, activateProCode } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
 import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
+import { openNativeSubscription } from "@/lib/nativeBridge";
 import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
 
 const PRO_FEATURES = PRO_FEATURE_BULLETS;
@@ -94,7 +104,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
       const verified = await verifyPlayPurchase(result.purchaseToken, result.productId);
       if (verified) {
         markProVerified();
-        toast({ title: "Pro Activated!", description: "Welcome to Shepherd's Path Pro." });
+        toast({ title: UPGRADE_TOAST_ACTIVATED_TITLE, description: UPGRADE_TOAST_ACTIVATED_BODY });
         onProActivated?.();
         onClose();
       } else {
@@ -107,7 +117,20 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
     }
   };
 
-  const handleCheckout = platform === "play" ? handlePlayCheckout : handleStripeCheckout;
+  const handleNativeAppleSubscribe = () => {
+    if (openNativeSubscription()) {
+      onClose();
+      return;
+    }
+    toast({ description: "Could not open subscription — try again." });
+  };
+
+  const handleCheckout =
+    platform === "apple-native"
+      ? handleNativeAppleSubscribe
+      : platform === "play"
+        ? handlePlayCheckout
+        : handleStripeCheckout;
 
   const handleActivateCode = async () => {
     if (!promoCode.trim() || activatingCode) return;
@@ -115,7 +138,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
     setPromoError("");
     const result = await activateProCode(promoCode.trim());
     if (result.success) {
-      toast({ title: "Pro activated!", description: "Welcome to Shepherd's Path Pro." });
+      toast({ title: UPGRADE_TOAST_ACTIVATED_TITLE, description: UPGRADE_TOAST_ACTIVATED_BODY });
       onProActivated?.();
       onClose();
     } else {
@@ -166,20 +189,23 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
             </div>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-3">
-              <Sparkles className="w-3 h-3" /> {title ? "Shepherd's Path Pro" : "You're Going Deep Today"}
+              <Sparkles className="w-3 h-3" /> {title ? "Shepherd's Path Pro" : UPGRADE_MODAL_BADGE_DEFAULT}
             </div>
 
             <h2 className="text-xl font-extrabold text-white tracking-tight">
-              {title ?? `You've used your ${AI_FREE_LIMIT} free AI responses`}
+              {title ?? UPGRADE_MODAL_TITLE_DEFAULT}
             </h2>
             <p className="text-white/80 text-sm mt-2 leading-snug">
-              {subtitle ?? "That's a sign of real engagement with God's Word. Go Pro to keep the conversation going — no limits, ever."}
+              {subtitle ?? UPGRADE_MODAL_SUBTITLE_DEFAULT}
             </p>
 
             {!title && (
-              <div className="flex items-center justify-center gap-1.5 mt-3 text-white/60 text-xs">
-                <RefreshCw className="w-3 h-3" />
-                Free responses reset in {resetTime}
+              <div className="flex flex-col items-center gap-1 mt-3 text-white/60 text-xs leading-relaxed max-w-[280px] mx-auto">
+                <div className="flex items-center justify-center gap-1.5">
+                  <RefreshCw className="w-3 h-3 shrink-0" />
+                  <span>Resets in {resetTime}</span>
+                </div>
+                <span className="text-white/50 text-[11px]">{upgradeModalResetLine()}</span>
               </div>
             )}
           </div>
@@ -187,7 +213,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
           {/* Pull-up card */}
           <div className="-mt-6 bg-background rounded-t-3xl px-7 pt-7 pb-6 space-y-4">
 
-            {/* iOS standalone notice */}
+            {/* iOS PWA — subscribe in Safari */}
             {platform === "ios" && (
               <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3">
                 <Smartphone className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
@@ -200,6 +226,15 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                     shepherdspathai.com
                   </a>
                   {" "}in Safari to complete your purchase.
+                </p>
+              </div>
+            )}
+
+            {platform === "apple-native" && (
+              <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                <Smartphone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  Subscribe securely with your Apple ID. Pro unlocks immediately in the app.
                 </p>
               </div>
             )}
@@ -293,7 +328,9 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                     ? "Processing…"
                     : platform === "play"
                       ? "Subscribe via Google Play"
-                      : "Upgrade to Pro"
+                      : platform === "apple-native"
+                        ? "Subscribe with Apple"
+                        : UPGRADE_MODAL_CTA_DEFAULT
                   }
                 </Button>
 
@@ -323,8 +360,8 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
               </>
             )}
 
-            <p className="text-center text-[11px] text-muted-foreground/50 italic -mt-1">
-              Joining thousands of believers walking the path daily
+            <p className="text-center text-[11px] text-muted-foreground/50 italic -mt-1 leading-relaxed">
+              {UPGRADE_MODAL_FOOTER_LINE}
             </p>
 
             <button
@@ -358,14 +395,29 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
 
             {/* Already have Pro + Promo code */}
             <div className="border-t border-border pt-3 space-y-2 text-center">
-              <a
-                href="/restore"
-                data-testid="btn-already-pro"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <RefreshCw className="w-3 h-3" />
-                Already subscribed? Restore access
-              </a>
+              {platform === "apple-native" ? (
+                <button
+                  type="button"
+                  data-testid="btn-already-pro"
+                  onClick={() => {
+                    openNativeSubscription();
+                    onClose();
+                  }}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Already subscribed? Restore with Apple
+                </button>
+              ) : (
+                <a
+                  href="/restore"
+                  data-testid="btn-already-pro"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Already subscribed? Restore access
+                </a>
+              )}
 
               {showPromoInput ? (
                 <div>

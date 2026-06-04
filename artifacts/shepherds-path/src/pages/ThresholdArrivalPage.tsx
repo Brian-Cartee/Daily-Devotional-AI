@@ -18,8 +18,14 @@ import {
 import { useReducedMotionPreference } from "@/hooks/use-reduced-motion";
 import { fireHaptic } from "@/lib/haptics";
 import { getThresholdInteractionProfile } from "@/lib/thresholdModePlan";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 type Step = "arrive" | "promise" | "need" | "sync-name" | "name" | "breath" | "enter";
+
+function initialThresholdStep(): Step {
+  if (isNativeWebViewShell() && !isThresholdReplay()) return "need";
+  return "arrive";
+}
 
 const NEED_OPTIONS: { id: ThresholdNeed; label: string; sub: string }[] = [
   { id: "peace", label: "Peace", sub: "Help me settle." },
@@ -36,7 +42,8 @@ const NEED_OPTIONS: { id: ThresholdNeed; label: string; sub: string }[] = [
 export default function ThresholdArrivalPage() {
   const [, navigate] = useLocation();
   const reduceMotion = useReducedMotionPreference();
-  const [step, setStep] = useState<Step>("arrive");
+  const nativeFastPath = isNativeWebViewShell() && !isThresholdReplay();
+  const [step, setStep] = useState<Step>(initialThresholdStep);
   const [need, setNeed] = useState<ThresholdNeed | null>(null);
   const [nameInput, setNameInput] = useState("");
   const [arriveReady, setArriveReady] = useState(false);
@@ -65,8 +72,12 @@ export default function ThresholdArrivalPage() {
 
   useEffect(() => {
     if (step !== "sync-name" || !nameHydrated) return;
+    if (nativeFastPath) {
+      setStep(nameKnown ? "enter" : "name");
+      return;
+    }
     setStep(nameKnown ? "breath" : "name");
-  }, [step, nameHydrated, nameKnown]);
+  }, [step, nameHydrated, nameKnown, nativeFastPath]);
 
   useEffect(() => {
     if (step !== "arrive") return;
@@ -87,6 +98,18 @@ export default function ThresholdArrivalPage() {
   const handleNeed = (n: ThresholdNeed) => {
     fireHaptic("soft");
     setNeed(n);
+    if (nativeFastPath) {
+      if (nameKnown) {
+        setStep("enter");
+        return;
+      }
+      if (!nameHydrated) {
+        setStep("sync-name");
+        return;
+      }
+      setStep("name");
+      return;
+    }
     if (nameKnown) {
       setStep("breath");
       return;
@@ -139,7 +162,7 @@ export default function ThresholdArrivalPage() {
       markNamePrompted();
       setNameKnown(true);
     }
-    setStep("breath");
+    setStep(nativeFastPath ? "enter" : "breath");
   };
 
   const fade = {
@@ -250,6 +273,11 @@ export default function ThresholdArrivalPage() {
 
           {step === "need" && (
             <motion.div key="need" {...fade} className="w-full max-w-sm">
+              {nativeFastPath && (
+                <p className="text-center text-[14px] text-white/55 mb-4 leading-relaxed">
+                  Welcome to Shepherd&apos;s Path — a quiet companion, not a performance.
+                </p>
+              )}
               <p className="text-center text-[1.1rem] text-white/88 font-medium mb-2">
                 What do you need right now?
               </p>
@@ -316,7 +344,7 @@ export default function ThresholdArrivalPage() {
                 onClick={() => {
                   fireHaptic("soft");
                   markNamePrompted();
-                  setStep("breath");
+                  setStep(nativeFastPath ? "enter" : "breath");
                 }}
                 className="mt-4 min-h-[44px] px-3 text-[13px] text-white/45 hover:text-white/65 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
               >

@@ -10,7 +10,7 @@ import {
   NotebookPen, PenLine, Plus, X, ChevronDown, Church, User, BookMarked, Calendar,
   Download, FileText, FileType2, Lock, Star, Check,
   Mic, Square, ChevronRight, ListChecks, BookText, Lightbulb, MessageCircle, Feather,
-  // ArrowLeft removed — using BackButton component
+  // Page back uses global top nav (hand-heart + menu) — no inline back control
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShareButton } from "@/components/ShareButton";
@@ -1559,7 +1559,7 @@ export default function Journal() {
         <UpgradeModal
           onClose={() => setShowArchiveUpgrade(false)}
           title="Your full sacred archive"
-          subtitle="Pro unlocks every prayer, reflection, and devotional day you've saved — searchable across your whole walk."
+          subtitle="Pro keeps every prayer, reflection, and devotional you've saved — searchable across your walk. Reading today is still free."
         />
       )}
     </>

@@ -13,7 +13,7 @@ const PAUSE_MESSAGES = [
   },
   {
     heading: "This is a gentle limit, not a wall.",
-    body: "We pause so the app doesn't replace prayer. Scripture, your closet, and quiet are always here.",
+    body: "We pause so the app doesn't replace prayer. Today's Scripture, your closet, and quiet rooms stay here — free.",
   },
 ];
 
@@ -95,7 +95,7 @@ export function AiPauseModal({ onClose }: AiPauseModalProps) {
               }}
               className="w-full py-2 text-[12px] text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
-              Need more depth today? See Pro →
+              Want more depth today? See Pro — Scripture stays free →
             </button>
             <button
               type="button"

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Headphones } from "lucide-react";
+import { ArrowRight, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
@@ -22,6 +22,10 @@ import { HomePresenceHero } from "@/components/HomePresenceHero";
 import { ArrivalRitual, shouldShowArrivalRitual } from "@/components/ArrivalRitual";
 import type { HomePresenceContext } from "@/lib/homePresenceContext";
 import { openWhyPanel } from "@/lib/openWhyPanel";
+import { getModeCompanionLine, getThresholdAtmosphere, getThresholdModePlan } from "@/lib/thresholdModePlan";
+import { fireHaptic } from "@/lib/haptics";
+import { isHomeDevotionalFocusPeriod } from "@/lib/firstSession";
+import { fetchStreak } from "@/lib/streakApi";
 
 export type ThresholdData = {
   headline: string;
@@ -38,6 +42,15 @@ export type ThresholdData = {
 const BRAND_TAGLINE = "Find your way back to God";
 const BRAND_TAGLINE_SUB = "one moment at a time.";
 const NEED_LABEL: Record<ThresholdNeed, string> = {
+  peace: "peace",
+  grief: "grief support",
+  battle: "strength",
+  worship: "worship",
+  gratitude: "gratitude",
+  stillness: "stillness",
+  "deep-dive": "depth in Scripture",
+  "morning-surrender": "morning surrender",
+  "night-prayer": "night prayer",
   comfort: "comfort",
   honesty: "honesty",
   hope: "hope",
@@ -55,18 +68,23 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   const [activeDoor, setActiveDoor] = useState<PresenceDoorId>(defaultPresenceDoor);
   const focusTalkAfterSelect = useRef(false);
   const thresholdNeed = getThresholdNeed();
+  const modePlan = getThresholdModePlan(thresholdNeed);
   const verseReference =
     verse && typeof verse === "object" && "reference" in verse
       ? String((verse as { reference?: unknown }).reference ?? "")
       : "";
   const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
   const chapelWeekFocus = daysWithApp <= 7;
-  const firstWeekDoor: PresenceDoorId =
-    thresholdNeed === "comfort"
-      ? "quiet"
-      : thresholdNeed === "hope"
-        ? "scripture"
-        : "talk";
+
+  const { data: streakData } = useQuery({
+    queryKey: ["/api/streak", isProVerifiedLocally()],
+    queryFn: fetchStreak,
+    staleTime: 60_000,
+  });
+  const devotionalVisitCount = streakData?.visitDates?.length ?? 0;
+  const homeDevotionalFocus = isHomeDevotionalFocusPeriod(daysWithApp, devotionalVisitCount);
+
+  const firstWeekDoor: PresenceDoorId = modePlan.defaultDoor;
   const needAck =
     thresholdNeed && daysWithApp < 14 ? getThresholdNeedAcknowledgment(thresholdNeed) : null;
 
@@ -87,10 +105,13 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   const threshold = thresholdRes?.threshold;
   const showTalkPrompt = !thresholdLoading;
   const [showArrival, setShowArrival] = useState(() => shouldShowArrivalRitual());
+  const companionLine = getModeCompanionLine(thresholdNeed);
+  const atmosphere = getThresholdAtmosphere(thresholdNeed);
 
-  const effectiveDoor: PresenceDoorId = chapelWeekFocus ? firstWeekDoor : activeDoor;
+  const effectiveDoor: PresenceDoorId = homeDevotionalFocus ? "scripture" : chapelWeekFocus ? firstWeekDoor : activeDoor;
 
   const selectDoor = (id: PresenceDoorId) => {
+    fireHaptic("soft");
     setActiveDoor(id);
     if (id === "talk") focusTalkAfterSelect.current = true;
   };
@@ -132,8 +153,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background:
-              "linear-gradient(to bottom, rgba(8,4,18,0.72) 0%, rgba(8,4,18,0.28) 14%, rgba(8,4,18,0) 38%, rgba(9,3,30,0.55) 78%, #09031e 100%)",
+            background: atmosphere.heroOverlay,
           }}
         />
         {showPhotoTaglines && (
@@ -169,7 +189,8 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             type="button"
             data-testid="link-why-collapsed"
             onClick={openWhyPanel}
-            className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors"
+            aria-label="Open why we built this"
+            className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
           >
             Why we built this
           </button>
@@ -188,7 +209,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             {thresholdLoading
               ? "…"
               : threshold?.subtext ??
-                "One honest step is enough. Scripture and prayer can meet you before the noise starts."}
+                modePlan.firstSessionLine}
           </p>
           {showArrival && (
             <div className="mb-3">
@@ -201,6 +222,14 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
               data-testid="text-threshold-need-line"
             >
               {needAck}
+            </p>
+          )}
+          {companionLine && (
+            <p
+              className={`text-[13px] text-white/72 leading-relaxed mb-3 pl-3 border-l-2 ${atmosphere.accentBorderClass}`}
+              data-testid="text-threshold-mode-companion"
+            >
+              {companionLine}
             </p>
           )}
           {thresholdNeed && verseReference && (
@@ -222,29 +251,67 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           )}
 
           {showTalkPrompt && !thresholdLoading && (
-            <>
-              {!chapelWeekFocus && <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} />}
-              <div className="mb-4" role="tabpanel" aria-label="Your chosen step">
-                <HomePresenceHero
-                  door={effectiveDoor}
-                  phase={threshold?.phase}
-                  thresholdNeed={thresholdNeed}
-                  verse={verse ?? null}
-                  onSelectTalk={() => selectDoor("talk")}
-                />
+            homeDevotionalFocus ? (
+              <div className="mb-3" data-testid="home-hero-devotional-focus">
+                {verse ? (
+                  <div className="rounded-xl border border-amber-500/20 bg-black/35 px-3.5 py-3 mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200/70 mb-1.5">
+                      Today&apos;s Word
+                    </p>
+                    <p
+                      className="text-[15px] text-white/88 line-clamp-3 leading-snug italic"
+                      style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+                    >
+                      &ldquo;{verse.text}&rdquo;
+                    </p>
+                    <p className="text-[13px] font-semibold text-amber-200/75 mt-1.5">— {verse.reference}</p>
+                  </div>
+                ) : (
+                  <p className="text-[14px] text-white/55 mb-3 leading-relaxed">
+                    Your verse, reflection, and prayer are ready below.
+                  </p>
+                )}
+                <Link href="/devotional">
+                  <span
+                    data-testid="btn-hero-open-devotional-focus"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 shadow-md shadow-black/20 active:scale-[0.99]"
+                  >
+                    Open today&apos;s Word
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
+                </Link>
+                <p className="text-[12px] text-center text-white/48 mt-2.5 leading-snug">
+                  One step: verse, reflection, prayer. Talk it through is below when you need it.
+                </p>
               </div>
-            </>
+            ) : (
+              <>
+                {!chapelWeekFocus && (
+                  <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} panelId="home-presence-panel" />
+                )}
+                <div className="mb-4" role="tabpanel" id="home-presence-panel" aria-label="Your chosen step">
+                  <HomePresenceHero
+                    door={effectiveDoor}
+                    phase={threshold?.phase}
+                    thresholdNeed={thresholdNeed}
+                    verse={verse ?? null}
+                    onSelectTalk={() => selectDoor("talk")}
+                  />
+                </div>
+              </>
+            )
           )}
 
           {!chapelWeekFocus && threshold?.secondaryCta && daysWithApp < 3 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
               <Link href={threshold.secondaryCta.href}>
-                <span
+                <a
                   data-testid="btn-threshold-secondary"
-                  className="text-[14px] font-semibold text-white/55 hover:text-white/80 underline-offset-4 hover:underline transition-colors"
+                  className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-white/55 hover:text-white/80 underline-offset-4 hover:underline transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                  aria-label={threshold.secondaryCta.label}
                 >
                   {threshold.secondaryCta.label} →
-                </span>
+                </a>
               </Link>
             </div>
           )}
@@ -265,13 +332,13 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
               </button>
             ) : (
               <Link href="/pricing">
-                <span
+                <a
                   data-testid="btn-listen-first-pro"
-                  className="mt-5 flex items-center gap-2 text-[13px] font-medium text-white/40 hover:text-white/60 transition-colors"
+                  className="mt-5 inline-flex min-h-[44px] items-center gap-2 text-[13px] font-medium text-white/40 hover:text-white/60 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
                 >
                   <Headphones className="w-4 h-4" />
-                  Pro: mornings start with listen
-                </span>
+                  Optional: listen-first mornings with Pro
+                </a>
               </Link>
             ))}
         </motion.div>

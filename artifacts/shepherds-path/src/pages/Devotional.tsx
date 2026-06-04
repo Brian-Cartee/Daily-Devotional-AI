@@ -2060,7 +2060,7 @@ export default function Devotional() {
                 className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors group"
               >
                 <Zap className="w-3 h-3 shrink-0" />
-                <span>If this rhythm is helping, Pro adds unlimited listening, full archive, and one grace day each month.</span>
+                <span>If this rhythm is helping, Pro adds more listening, your full archive, and one grace day each month — optional.</span>
               </Link>
             </motion.div>
           )}
@@ -2209,7 +2209,7 @@ export default function Devotional() {
         {showListenUpgrade && (
           <UpgradeModal
             onClose={() => setShowListenUpgrade(false)}
-            title="Unlimited listen"
+            title="Hear today's Word without limits"
             subtitle={LISTEN_LIMIT_COPY.devotional}
           />
         )}

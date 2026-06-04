@@ -8,7 +8,7 @@ import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen, shouldShowSplash } from "@/components/SplashScreen";
 import { clearReturningHome, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
-import { hasWhyPanelDismissed, markWhyPanelAutoShown } from "@/lib/homeHeroState";
+import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 import {
   consumeThresholdJustCompleted,
   shouldShowThresholdArrival,
@@ -21,14 +21,13 @@ import { fetchStreak } from "@/lib/streakApi";
 import { isProVerifiedLocally, isProNudgeDismissed, dismissProNudge } from "@/lib/proStatus";
 import { getRelationshipAge } from "@/lib/relationship";
 import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
-import { SCROLL_TO_EXPLORE_KEY } from "@/lib/homePathsNav";
 import {
   applyHomeScrollToTop,
   captureHomeScrollGeneration,
   isExploreScrollCancelled,
 } from "@/lib/scrollPageToTop";
 import { useDemoMode } from "@/components/DemoProvider";
-import { getUserName, setUserName, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
+import { getUserName } from "@/lib/userName";
 import {
   getRhythm, hasFirstAction,
   getRhythmDismissed, incrementRhythmDismissed,
@@ -52,12 +51,12 @@ import { isNativeWebViewShell } from "@/lib/platform";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, shouldShowHomeEntry, markEntryShown } from "@/components/HomeEntryScreen";
-import { OnboardingFlow, shouldShowOnboarding } from "@/components/OnboardingFlow";
 import {
   bumpHomeVisitAfterThreshold,
-  isDeferredOnboardingVisit,
+  isHomeDevotionalFocusPeriod,
   isSacredFirstHomeVisit,
 } from "@/lib/firstSession";
+import { HomeSecondaryPathsRow } from "@/components/HomeSecondaryPathsRow";
 import { isThresholdComplete } from "@/lib/thresholdState";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import {
@@ -82,6 +81,7 @@ import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { HomeExploreSection } from "@/components/HomeExploreSection";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
 import { BrandIcon } from "@/components/BrandIcon";
+import { ThresholdModeRhythmCard } from "@/components/ThresholdModeRhythmCard";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 import { apiSessionExtras } from "@/lib/requestExtras";
@@ -109,7 +109,7 @@ function getCarryToday(): { text: string; reference: string } | null {
   return { text: payload.text, reference: payload.reference };
 }
 
-function DevotionalCard() {
+function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
   const isPro = isProVerifiedLocally();
   const { data } = useQuery({
     queryKey: ["/api/streak", isPro],
@@ -200,18 +200,20 @@ function DevotionalCard() {
               </span>
               {visitedToday && (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
-                  <Check className="w-3 h-3" strokeWidth={3} /> Done today
+                  <Check className="w-3 h-3" strokeWidth={3} /> You returned today
                 </span>
               )}
             </div>
             <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
-              Daily Devotional
+              {homeFocus ? "Today's Word" : "Daily Devotional"}
             </h2>
             <p className="text-[15px] text-foreground/80 leading-relaxed">
-              Each day brings a new scripture, a personal reflection, and an AI-guided moment to hear from God — grounded in the actual passage, shaped for your real life. Open it, sit with it, let it speak.
+              {homeFocus
+                ? "Today's verse, a short reflection, and a prayer you can make your own. Read slowly — no rush."
+                : "Each day brings a new scripture, a personal reflection, and a guided moment to hear from God — grounded in the passage, shaped for your real life. Open it, sit with it, let it speak."}
             </p>
             <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
-              {visitedToday ? "Continue today's devotional" : "Sit with today's message"}
+              {visitedToday ? "Return to today's devotional" : homeFocus ? "Begin today's Word" : "Sit with today's message"}
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
           </div>
@@ -502,14 +504,11 @@ function LandingHomeInner() {
   );
   const chapelWeekFocus = homeVisitAfterThreshold > 0 && homeVisitAfterThreshold <= 7;
   const sacredFirstHome = isSacredFirstHomeVisit(homeVisitAfterThreshold);
-  const deferredOnboardingVisit = isDeferredOnboardingVisit(homeVisitAfterThreshold);
   const blockHomeOverlays = sacredFirstHome || skipIntrosForHome;
 
   useEffect(() => {
     if (inNativeApp) {
-      markIntroFlowComplete();
-      markEntryShown();
-      if (hasWhyPanelDismissed()) markWhyPanelAutoShown();
+      void hydrateWhyPanelFromServer();
     }
   }, [inNativeApp]);
 
@@ -527,19 +526,6 @@ function LandingHomeInner() {
     () => !blockHomeOverlays && shouldShowSplash(),
   );
   const [thresholdWelcome, setThresholdWelcome] = useState(() => consumeThresholdJustCompleted());
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (blockHomeOverlays || inNativeApp) return false;
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("onboarding")) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("onboarding");
-      window.history.replaceState({}, "", url.toString());
-      return true;
-    }
-    if (deferredOnboardingVisit) return shouldShowOnboarding();
-    if (homeVisitAfterThreshold > 0 && homeVisitAfterThreshold !== 2) return false;
-    return shouldShowOnboarding();
-  });
   useEffect(() => {
     if (!isReturningHome()) return;
     applyHomeScrollToTop();
@@ -562,7 +548,6 @@ function LandingHomeInner() {
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay();
   const showWelcomeOverlay =
     showWelcome &&
-    !showOnboarding &&
     !blockHomeOverlays &&
     !chapelWeekFocus &&
     homeVisitAfterThreshold > 2;
@@ -578,8 +563,6 @@ function LandingHomeInner() {
     if (chapelWeekFocus) return;
     recordWalkthroughVisit();
   }, [chapelWeekFocus]);
-  const [nameInput, setNameInput] = useState("");
-  const [nameDismissed, setNameDismissed] = useState(() => hasBeenPrompted());
   useEffect(() => {
     if (isNativeWebViewShell()) return;
     if (!sessionStorage.getItem(SCROLL_TO_EXPLORE_KEY)) return;
@@ -650,6 +633,7 @@ function LandingHomeInner() {
   const streak = streakData?.currentStreak ?? 0;
   const visitCount = streakData?.visitDates?.length ?? 0;
   const daysWithApp = getRelationshipAge();
+  const homeDevotionalFocus = isHomeDevotionalFocusPeriod(daysWithApp, visitCount);
   const isPro = isProVerifiedLocally();
   const showYourPath = shouldShowYourPathCard(daysWithApp, visitCount);
   const engagementBusy =
@@ -674,9 +658,10 @@ function LandingHomeInner() {
   const onPresenceContextChange = useCallback((ctx: HomePresenceContext) => {
     setPresenceCtx(ctx);
   }, []);
-  const hideHeavyLink = presenceCtx.door === "talk" || presenceCtx.arrivalOpen;
-  const hideDevotionalCard = presenceCtx.door === "scripture";
-  const hidePrayerClosetCard = presenceCtx.door === "quiet";
+  const hideHeavyLink =
+    !homeDevotionalFocus && (presenceCtx.door === "talk" || presenceCtx.arrivalOpen);
+  const hideDevotionalCard = !homeDevotionalFocus && presenceCtx.door === "scripture";
+  const hidePrayerClosetCard = homeDevotionalFocus || presenceCtx.door === "quiet";
   const showGreeting = Boolean(getUserName()) && daysWithApp > 1;
 
   useEffect(() => { setLastOpenDate(); }, []);
@@ -714,21 +699,9 @@ function LandingHomeInner() {
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>
       <AnimatePresence>
-        {showOnboarding && (
-          <OnboardingFlow
-            onComplete={(options) => {
-              setShowOnboarding(false);
-              if (options?.startInPrayerCloset) {
-                window.location.href = "/prayer-closet?firstPrayer=1&source=onboarding";
-              }
-            }}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
         {showWelcomeOverlay && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
-      {showEntryScreen && !showOnboarding && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      {showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
@@ -757,13 +730,23 @@ function LandingHomeInner() {
             className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2"
             data-testid="text-threshold-welcome"
           >
-            You stepped inside. Take your time — there&apos;s no rush here.
+            You stepped inside. Welcome back.
           </p>
         </div>
       )}
 
+      {(thresholdWelcome || sacredFirstHome) && (
+        <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 mb-1 relative z-10">
+          <ThresholdModeRhythmCard />
+        </div>
+      )}
+
       {/* Section cards */}
-      <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 pb-32 sm:pb-28 relative z-10 -mt-4">
+      <div
+        className={`max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 pb-32 sm:pb-28 relative z-10 ${
+          thresholdWelcome ? "mt-1" : "-mt-4"
+        }`}
+      >
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
         <div className="hidden xl:block absolute pointer-events-none select-none" style={{ left: "calc((100% - 100vw) / 4 - 72px)", top: "30%", transform: "translateY(-50%)" }} aria-hidden="true">
@@ -778,8 +761,8 @@ function LandingHomeInner() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
-          {showGreeting && <GreetingHeader />}
-          {carryToday && (
+          {!homeDevotionalFocus && showGreeting && <GreetingHeader />}
+          {!homeDevotionalFocus && carryToday && (
             <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
               <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
@@ -788,7 +771,7 @@ function LandingHomeInner() {
           )}
 
           {/* Keep the first screen calm: only show these after a first meaningful action */}
-          {hasAction && (
+          {!homeDevotionalFocus && hasAction && (
             <>
               <SpiritualWeatherCard />
               <SimpleNotifNudge />
@@ -796,81 +779,69 @@ function LandingHomeInner() {
             </>
           )}
 
-          {sacredFirstHome && (
+          {(sacredFirstHome || homeDevotionalFocus) && (
             <p
               className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2 -mt-1"
               data-testid="text-sacred-first-hint"
             >
-              Start with today&apos;s Word below — one honest step is enough.
+              {homeDevotionalFocus
+                ? "Tap Today's Word — verse, reflection, and prayer are ready."
+                : "Start with today&apos;s Word below — one honest step is enough."}
             </p>
           )}
 
-          {showSecondaryHomeCards && <WitnessLetterCard />}
-
-          <LamentSeasonHomeCard />
-
-          {/* Name prompt — shown once for returning users who haven't set their name */}
-          {!getUserName() && !nameDismissed && streak >= 1 && (
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900/40 border border-white/10">
-              <input
-                data-testid="input-name-prompt"
-                type="text"
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && nameInput.trim()) {
-                    setUserName(nameInput.trim());
-                    setNameDismissed(true);
-                  }
-                }}
-                placeholder="What should we call you?"
-                className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none"
-              />
-              {nameInput.trim() && (
-                <button
-                  data-testid="btn-name-submit"
-                  onClick={() => { setUserName(nameInput.trim()); setNameDismissed(true); }}
-                  className="text-[12px] font-semibold text-zinc-200 px-2 py-0.5 rounded-lg hover:bg-white/10 transition-colors"
-                >
-                  Save
-                </button>
-              )}
-              <button
-                data-testid="btn-name-dismiss"
-                onClick={() => { markNamePrompted(); setNameDismissed(true); }}
-                className="text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors text-[16px] leading-none"
-              >
-                ×
-              </button>
-            </div>
+          {/* ══ Today's step first — week one / until first devotional visit ══ */}
+          <div className="flex flex-col gap-3">
+          {homeDevotionalFocus && !hideDevotionalCard && (
+            <p
+              className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/80 px-0.5"
+              data-testid="label-todays-step"
+            >
+              Today&apos;s step
+            </p>
           )}
 
-          {/* ══ Today's path — chapel first, marketplace later ══ */}
-          <div className="flex flex-col gap-3">
+          {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
 
-          {!hideDevotionalCard && <DevotionalCard />}
+          {homeDevotionalFocus && <HomeSecondaryPathsRow />}
+
+          {!homeDevotionalFocus && showSecondaryHomeCards && <WitnessLetterCard />}
+
+          {!homeDevotionalFocus && <LamentSeasonHomeCard />}
+
           {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
-          {chapelWeekFocus ? (
+          {!homeDevotionalFocus && chapelWeekFocus ? (
             <>
               <HomePathShortcuts />
               {(inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />}
             </>
-          ) : (
+          ) : !homeDevotionalFocus ? (
             <HomeMorePathsLink />
+          ) : (
+            (inNativeApp || !chapelExploreCollapsed) && <HomeMorePathsLink />
+          )}
+
+          {homeDevotionalFocus && showGreeting && <GreetingHeader />}
+          {homeDevotionalFocus && carryToday && (
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
+              <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
+              <p className="text-[12px] font-semibold text-zinc-300/75 mt-1">— {carryToday.reference}</p>
+            </div>
           )}
 
           <AnimatePresence>
-            {showWalkthrough && (
+            {showWalkthrough && !homeDevotionalFocus && (
               <GuidedWalkthrough onDismiss={() => setShowWalkthrough(false)} />
             )}
           </AnimatePresence>
 
-          {showYourPath && (
+          {showYourPath && !homeDevotionalFocus && (
             <HomeYourPathCard daysWithApp={daysWithApp} devotionalVisitCount={visitCount} />
           )}
 
-          <LateNightBannerCard />
-          {!showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
+          {!homeDevotionalFocus && <LateNightBannerCard />}
+          {!homeDevotionalFocus && !showYourPath && <HomeEngagementStack daysWithApp={daysWithApp} />}
 
           {/* Today's Rhythm card — shown once rhythm is set up */}
           {rhythm && (() => {
@@ -949,6 +920,8 @@ function LandingHomeInner() {
             <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
           )}
 
+          {!homeDevotionalFocus && (
+            <>
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
@@ -959,9 +932,11 @@ function LandingHomeInner() {
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
             <DailyArtCard />
           </div>
+            </>
+          )}
 
           {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}
-          {showSecondaryHomeCards && new Date().getHours() >= 17 && <Link href="/alignment">
+          {!homeDevotionalFocus && showSecondaryHomeCards && new Date().getHours() >= 17 && <Link href="/alignment">
             <div
               data-testid="card-walk-today-entry"
               className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
@@ -997,7 +972,7 @@ function LandingHomeInner() {
             </div>
           </Link>}
 
-          {(!chapelWeekFocus || inNativeApp) && (
+          {!homeDevotionalFocus && (!chapelWeekFocus || inNativeApp) && (
             <HomeExploreSection />
           )}
 
@@ -1443,8 +1418,7 @@ function LandingHomeInner() {
 }
 
 export default function LandingHome() {
-  // App Store shell: go straight to home — threshold onboarding is web-first only
-  if (!isNativeWebViewShell() && !isReturningHome() && shouldShowThresholdArrival()) {
+  if (!isReturningHome() && shouldShowThresholdArrival()) {
     return <Redirect to="/threshold" />;
   }
   if (shouldRedirectToNightShepherd()) {

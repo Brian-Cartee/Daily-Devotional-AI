@@ -49,3 +49,15 @@ export function isDeferredOnboardingVisit(visitCount: number): boolean {
 export function isChapelFirstWeek(daysWithApp: number, devotionalVisits: number): boolean {
   return daysWithApp < 7 || devotionalVisits < 4;
 }
+
+/**
+ * Home should center on Today's Word — one obvious step, minimal competing cards.
+ * Through day 7, or until the user has opened the devotional at least once.
+ */
+export function isHomeDevotionalFocusPeriod(
+  daysWithApp: number,
+  devotionalVisitCount: number,
+): boolean {
+  if (daysWithApp >= 7 && devotionalVisitCount >= 1) return false;
+  return daysWithApp < 7 || devotionalVisitCount < 1;
+}

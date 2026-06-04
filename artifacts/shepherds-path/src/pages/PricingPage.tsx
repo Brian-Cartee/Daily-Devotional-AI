@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { BackButton } from "@/components/BackButton";
 import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw, Volume2 } from "lucide-react";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } from "@/lib/referralConfig";
@@ -9,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { AI_FREE_LIMIT, AI_HONEYMOON_DAYS, AI_LIMIT_HONEYMOON_DISPLAY } from "@/lib/aiLimits";
 import { FREE_FEATURES, PRO_FEATURES, PRO_SCENARIOS, PRO_EMAIL_FAQ_NOTE } from "@/lib/proFeatures";
-import { isIOS } from "@/lib/platform";
+import { isIOS, isNativeWebViewShell } from "@/lib/platform";
+import { openNativeSubscription } from "@/lib/nativeBridge";
 
 const WHITE_LABEL_TIERS = [
   {
@@ -143,20 +143,12 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
 
-      {/* Back nav */}
-      <div className="px-5 pt-5">
-        <BackButton
-          onClick={() => setLocation("/")}
-          testId="btn-pricing-back"
-        />
-      </div>
-
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="px-5 pt-8 pb-6 text-center max-w-xl mx-auto"
+        className="px-5 sp-app-top-clearance pt-[calc(env(safe-area-inset-top,0px)+3.75rem)] pb-6 text-center max-w-xl mx-auto"
       >
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-widest mb-5">
           <Sparkles className="w-3 h-3" />
@@ -169,7 +161,7 @@ export default function PricingPage() {
           Pro simply takes you deeper.
         </p>
         <p className="text-[13px] text-muted-foreground/70 leading-relaxed max-w-sm mx-auto">
-          More of what already matters — deeper Scripture, more personal guidance, every day without limits.
+          More listening, more guided conversation, and your full journal — Scripture and daily verse stay free.
         </p>
       </motion.div>
 
@@ -294,7 +286,27 @@ export default function PricingPage() {
           </div>
 
           <div className="px-6 pb-6 space-y-2">
-            {isIOS() ? (
+            {isNativeWebViewShell() ? (
+              <>
+                <Button
+                  data-testid="btn-pricing-pro-cta-native"
+                  className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity border-0"
+                  onClick={() => openNativeSubscription()}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Subscribe with Apple
+                </Button>
+                <Button
+                  data-testid="btn-pricing-restore-native"
+                  variant="ghost"
+                  className="w-full rounded-2xl text-sm text-muted-foreground"
+                  onClick={() => openNativeSubscription()}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                  Restore Purchases
+                </Button>
+              </>
+            ) : isIOS() ? (
               <>
                 <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3 mb-1">
                   <Smartphone className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
