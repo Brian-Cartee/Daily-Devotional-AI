@@ -659,7 +659,7 @@ function LandingHomeInner() {
   const hideDevotionalCard = !homeDevotionalFocus && presenceCtx.door === "scripture";
   const showPrayerClosetCard = shouldShowPrayerClosetOnHome(presenceCtx.door === "quiet");
   const prayerClosetCompactTeaser = isPrayerClosetCompactTeaser(homeDevotionalFocus, daysWithApp);
-  const showDailyArt = shouldShowHomeDailyArt(homeVisitAfterThreshold);
+  const showDailyArt = shouldShowHomeDailyArt();
   const showGreeting = Boolean(getUserName()) && daysWithApp > 1;
 
   useEffect(() => { setLastOpenDate(); }, []);
@@ -820,14 +820,6 @@ function LandingHomeInner() {
           {showPrayerClosetCard && (
             <PrayerClosetHomeCard compactTeaser={prayerClosetCompactTeaser} />
           )}
-          <HomePathsBlock
-            homeDevotionalFocus={homeDevotionalFocus}
-            chapelWeekFocus={chapelWeekFocus}
-            homeMarketplaceCollapsed={homeMarketplaceCollapsed}
-            inNativeApp={inNativeApp}
-            chapelExploreCollapsed={chapelExploreCollapsed}
-            showPrayerClosetBanner={showPrayerClosetCard}
-          />
 
           {showDailyArt && (
             <>
@@ -842,6 +834,15 @@ function LandingHomeInner() {
               </div>
             </>
           )}
+
+          <HomePathsBlock
+            homeDevotionalFocus={homeDevotionalFocus}
+            chapelWeekFocus={chapelWeekFocus}
+            homeMarketplaceCollapsed={homeMarketplaceCollapsed}
+            inNativeApp={inNativeApp}
+            chapelExploreCollapsed={chapelExploreCollapsed}
+            showPrayerClosetBanner={showPrayerClosetCard}
+          />
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (

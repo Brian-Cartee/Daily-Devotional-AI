@@ -70,11 +70,9 @@ export function isHomeMarketplaceCollapsed(
   return isChapelFirstWeek(daysWithApp, devotionalVisitCount);
 }
 
-/** Daily art — after first return home (not sacred visit 1); keep visible in week-one focus. */
-export function shouldShowHomeDailyArt(homeVisitsAfterThreshold: number): boolean {
-  if (!isThresholdComplete()) return false;
-  if (isSacredFirstHomeVisit(homeVisitsAfterThreshold)) return false;
-  return homeVisitsAfterThreshold >= 2;
+/** Daily art — show on home whenever the user has passed the threshold welcome. */
+export function shouldShowHomeDailyArt(): boolean {
+  return isThresholdComplete();
 }
 
 /** Prayer closet doorway banner — always on home unless quiet door is selected. */

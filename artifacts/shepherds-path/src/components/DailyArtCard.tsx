@@ -129,7 +129,19 @@ export function DailyArtCard() {
   }, []);
 
   if (hidden) return null;
-  if (!artLoading && !art) return null;
+
+  if (!artLoading && !art) {
+    return (
+      <div
+        className="relative w-full flex flex-col items-center justify-center gap-2 text-white/70 px-6 text-center"
+        style={{ aspectRatio: "4/3", background: "linear-gradient(160deg, hsl(258 30% 18%) 0%, hsl(38 25% 22%) 100%)" }}
+        data-testid="daily-art-loading-fallback"
+      >
+        <Loader2 className="w-5 h-5 animate-spin text-white/50" />
+        <span className="text-sm tracking-wide">Today&apos;s moment is on its way…</span>
+      </div>
+    );
+  }
 
   const cardVerse = art ? verseExcerptForCard(art.scripture) : null;
 
