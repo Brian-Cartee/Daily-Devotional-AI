@@ -10,6 +10,7 @@ import {
 } from "@/lib/prayerCloset";
 
 const CLOSET_DOORWAY_SRC = "/closet-doorway.png";
+const CLOSET_FALLBACK_SRC = "/hero-landing.webp";
 
 type Props = {
   /** Week-one focus: shorter card, still shows doorway art */
@@ -20,6 +21,7 @@ export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
   const settings = loadClosetSettings();
   const title = closetDisplayName(settings, "Your prayer closet");
   const [visited] = useState(hasVisitedCloset);
+  const [imgSrc, setImgSrc] = useState(CLOSET_DOORWAY_SRC);
   const statusLine = closetHomeStatus(settings);
 
   return (
@@ -28,27 +30,31 @@ export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
         data-testid="card-home-prayer-closet"
         onClick={() => markClosetVisit()}
         className={`group relative rounded-2xl overflow-hidden border border-violet-500/30 active:scale-[0.99] transition-transform shadow-lg shadow-violet-950/30 ${
-          compactTeaser ? "min-h-[108px] md:min-h-[160px]" : "min-h-[132px] md:min-h-[212px]"
+          compactTeaser ? "min-h-[120px] md:min-h-[160px]" : "min-h-[148px] md:min-h-[212px]"
         }`}
+        style={{ background: "linear-gradient(145deg, #1a0f2e 0%, #0d0618 100%)" }}
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400/90 via-violet-500 to-primary z-20" />
 
-        {/* Doorway — mobile: full-bleed banner crop; desktop: right panel */}
+        {/* Doorway — full-bleed on mobile; right panel on desktop */}
         <img
-          src={CLOSET_DOORWAY_SRC}
+          src={imgSrc}
           alt=""
           loading="eager"
           decoding="async"
-          className="absolute inset-0 w-full h-[115%] object-cover object-[center_22%] scale-[1.06] group-hover:scale-[1.08] transition-transform duration-500 md:inset-y-0 md:left-[40%] md:right-0 md:w-auto md:h-full md:object-[center_38%] md:scale-100 group-hover:md:scale-[1.04]"
+          onError={() => {
+            if (imgSrc !== CLOSET_FALLBACK_SRC) setImgSrc(CLOSET_FALLBACK_SRC);
+          }}
+          className="absolute inset-0 z-0 w-full h-[118%] object-cover object-[center_22%] scale-[1.04] group-hover:scale-[1.06] transition-transform duration-500 md:inset-y-0 md:left-[38%] md:right-0 md:w-auto md:h-full md:object-[center_38%] md:scale-100 group-hover:md:scale-[1.03]"
         />
 
-        {/* Mobile overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/55 to-black/25 z-[1] md:hidden" />
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-950/50 via-transparent to-violet-950/40 z-[1] md:hidden" />
+        {/* Mobile overlays — lighter so doorway stays visible */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/45 to-black/15 z-[1] md:hidden" />
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-950/55 via-transparent to-transparent z-[1] md:hidden" />
 
         {/* Desktop overlays — readable copy left, doorway visible right */}
-        <div className="absolute inset-0 z-[1] hidden md:block bg-gradient-to-r from-[#0a0514]/97 via-[#0d0618]/88 to-transparent" />
-        <div className="absolute inset-y-0 right-0 w-[48%] z-[1] hidden md:block bg-gradient-to-l from-black/55 via-black/20 to-transparent" />
+        <div className="absolute inset-0 z-[1] hidden md:block bg-gradient-to-r from-[#0a0514]/92 via-[#0d0618]/75 to-transparent" />
+        <div className="absolute inset-y-0 right-0 w-[52%] z-[1] hidden md:block bg-gradient-to-l from-black/45 via-black/15 to-transparent" />
 
         <div
           className="absolute inset-x-0 top-0 h-16 z-[2] pointer-events-none opacity-70 md:h-24 md:w-[55%]"
@@ -61,8 +67,8 @@ export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
         <div
           className={`relative z-10 px-4 flex flex-col justify-end md:max-w-[56%] md:px-8 md:justify-center ${
             compactTeaser
-              ? "py-3 min-h-[108px] md:min-h-[160px] md:py-5"
-              : "py-4 min-h-[132px] md:min-h-[212px] md:py-7"
+              ? "py-3 min-h-[120px] md:min-h-[160px] md:py-5"
+              : "py-4 min-h-[148px] md:min-h-[212px] md:py-7"
           }`}
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200/90 mb-1 md:text-[11px] md:mb-2">

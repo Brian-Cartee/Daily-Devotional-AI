@@ -9,4 +9,4 @@ artifacts/shepherds-path/src/components/HomePathsBlock.tsx|home-paths-block
 artifacts/shepherds-path/src/components/HomeExploreSection.tsx|btn-expand-explore
 artifacts/shepherds-path/src/pages/Devotional.tsx|devotional-journal-save
 artifacts/shepherds-path/src/components/ThresholdHero.tsx|hero-returning-verse-snippet
-artifacts/shepherds-path/src/components/HomeHeavyMomentLink.tsx|section-something-heavy
+artifacts/shepherds-path/src/pages/LandingHome.tsx|section-take-a-moment

@@ -657,17 +657,9 @@ function LandingHomeInner() {
   const hideHeavyLink =
     !homeDevotionalFocus && (presenceCtx.door === "talk" || presenceCtx.arrivalOpen);
   const hideDevotionalCard = !homeDevotionalFocus && presenceCtx.door === "scripture";
-  const showPrayerClosetCard = shouldShowPrayerClosetOnHome(
-    homeDevotionalFocus,
-    daysWithApp,
-    presenceCtx.door === "quiet",
-  );
+  const showPrayerClosetCard = shouldShowPrayerClosetOnHome(presenceCtx.door === "quiet");
   const prayerClosetCompactTeaser = isPrayerClosetCompactTeaser(homeDevotionalFocus, daysWithApp);
-  const showDailyArt = shouldShowHomeDailyArt(
-    homeVisitAfterThreshold,
-    homeDevotionalFocus,
-    homeMarketplaceCollapsed,
-  );
+  const showDailyArt = shouldShowHomeDailyArt(homeVisitAfterThreshold);
   const showGreeting = Boolean(getUserName()) && daysWithApp > 1;
 
   useEffect(() => { setLastOpenDate(); }, []);
@@ -837,6 +829,20 @@ function LandingHomeInner() {
             showPrayerClosetBanner={showPrayerClosetCard}
           />
 
+          {showDailyArt && (
+            <>
+              <div className="flex items-center gap-3 mt-1 px-0.5" data-testid="section-take-a-moment">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
+                <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Take a moment</p>
+                <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
+                <DailyArtCard />
+              </div>
+            </>
+          )}
+
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (
             <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
@@ -936,21 +942,6 @@ function LandingHomeInner() {
 
           {showSecondaryHomeCards && (
             <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
-          )}
-
-          {showDailyArt && (
-            <>
-          {/* ── Take a moment — closing grace note for the daily visit ── */}
-          <div className="flex items-center gap-3 mt-4 px-0.5">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
-            <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Take a moment</p>
-            <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
-          </div>
-          <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
-            <DailyArtCard />
-          </div>
-            </>
           )}
 
           {/* ── Your Walk Today — end-of-day alignment card (5pm+) ── */}

@@ -78,8 +78,8 @@ if [[ -n "$BUNDLE" ]]; then
   if [[ -z "$JS_BODY" ]]; then
     echo "FAIL: Could not fetch $JS_URL"
     FAIL=1
-  elif ! grep -Fq "devotional-journal-save" <<< "$JS_BODY" || ! grep -Fq "hero-returning-verse-snippet" <<< "$JS_BODY"; then
-    echo "FAIL: Live bundle missing home wow + journal UX markers (devotional-journal-save, hero-returning-verse-snippet)"
+    elif ! grep -Fq "devotional-journal-save" <<< "$JS_BODY" || ! grep -Fq "section-take-a-moment" <<< "$JS_BODY"; then
+    echo "FAIL: Live bundle missing home wow + journal UX markers (devotional-journal-save, section-take-a-moment)"
     FAIL=1
   elif ! grep -Fq "See all" <<< "$JS_BODY" || ! grep -Fq "home-paths-block" <<< "$JS_BODY"; then
     echo "FAIL: Live bundle missing home paths v3 (See all + home-paths-block)"
