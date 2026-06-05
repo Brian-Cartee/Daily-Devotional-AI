@@ -3,10 +3,10 @@ import { ArrowRight } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 
 /** Compact secondaries during home devotional focus — not full shortcut stack. */
-export function HomeSecondaryPathsRow() {
+export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boolean }) {
   return (
     <div
-      className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+      className={`grid gap-2 ${hideCloset ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}
       data-testid="home-secondary-paths"
     >
       <Link href="/guidance">
@@ -24,6 +24,7 @@ export function HomeSecondaryPathsRow() {
           <ArrowRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/70 shrink-0" />
         </div>
       </Link>
+      {!hideCloset && (
       <Link href="/prayer-closet">
         <div
           data-testid="home-secondary-closet"
@@ -39,6 +40,7 @@ export function HomeSecondaryPathsRow() {
           <ArrowRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-teal-500/70 shrink-0" />
         </div>
       </Link>
+      )}
     </div>
   );
 }

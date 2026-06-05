@@ -728,7 +728,17 @@ function LandingHomeInner() {
       />
 
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
-      {!hideHeavyLink && <HomeHeavyMomentLink />}
+      {!hideHeavyLink && (
+        <HomeHeavyMomentLink
+          footerHint={
+            homeDevotionalFocus || sacredFirstHome
+              ? homeDevotionalFocus
+                ? "Tap Today's Word — verse, reflection, and prayer are ready."
+                : "Start with today's Word below — one honest step is enough."
+              : undefined
+          }
+        />
+      )}
 
       {thresholdWelcome && (
         <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
@@ -785,14 +795,14 @@ function LandingHomeInner() {
             </>
           )}
 
-          {(sacredFirstHome || homeDevotionalFocus) && (
+          {(sacredFirstHome || homeDevotionalFocus) && hideHeavyLink && (
             <p
               className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2 -mt-1"
               data-testid="text-sacred-first-hint"
             >
               {homeDevotionalFocus
                 ? "Tap Today's Word — verse, reflection, and prayer are ready."
-                : "Start with today&apos;s Word below — one honest step is enough."}
+                : "Start with today\u2019s Word below — one honest step is enough."}
             </p>
           )}
 
@@ -824,6 +834,7 @@ function LandingHomeInner() {
             homeMarketplaceCollapsed={homeMarketplaceCollapsed}
             inNativeApp={inNativeApp}
             chapelExploreCollapsed={chapelExploreCollapsed}
+            showPrayerClosetBanner={showPrayerClosetCard}
           />
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}

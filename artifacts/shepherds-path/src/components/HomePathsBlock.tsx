@@ -10,6 +10,8 @@ type HomePathsBlockProps = {
   homeMarketplaceCollapsed: boolean;
   inNativeApp: boolean;
   chapelExploreCollapsed: boolean;
+  /** Doorway banner shown above — hide duplicate icon row */
+  showPrayerClosetBanner?: boolean;
 };
 
 /**
@@ -22,7 +24,9 @@ export function HomePathsBlock({
   homeMarketplaceCollapsed,
   inNativeApp,
   chapelExploreCollapsed,
+  showPrayerClosetBanner = false,
 }: HomePathsBlockProps) {
+  const hideSecondaryCloset = showPrayerClosetBanner;
   const showCatalog =
     homeDevotionalFocus
       ? inNativeApp || !chapelExploreCollapsed
@@ -32,14 +36,14 @@ export function HomePathsBlock({
         !chapelExploreCollapsed;
 
   if (homeDevotionalFocus) {
-    if (!showCatalog) return <HomeSecondaryPathsRow />;
+    if (!showCatalog) return <HomeSecondaryPathsRow hideCloset={hideSecondaryCloset} />;
     return (
       <div
         className="flex flex-col gap-2.5"
         data-testid="home-paths-block"
         data-paths-layout={HOME_PATHS_LAYOUT_ID}
       >
-        <HomeSecondaryPathsRow />
+        <HomeSecondaryPathsRow hideCloset={hideSecondaryCloset} />
         <HomeExploreSection excludePreviewHrefs={["/prayer-closet"]} />
       </div>
     );
