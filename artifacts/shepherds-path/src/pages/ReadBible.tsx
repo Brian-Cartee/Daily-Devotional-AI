@@ -6,6 +6,10 @@ import { BackButton } from "@/components/BackButton";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
+import { FloatingBiblePlayer } from "@/components/FloatingBiblePlayer";
+import { useTTS, prewarmTTS } from "@/hooks/use-tts";
+import { getUserVoice } from "@/lib/userName";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { BIBLE_BOOKS } from "@/data/bibleBooks";
@@ -119,6 +123,8 @@ export default function ReadBible() {
   const [savedSnippets, setSavedSnippets] = useState<Set<string>>(new Set());
   const [isSavingSnippet, setIsSavingSnippet] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [listenSession, setListenSession] = useState(false);
+  const tts = useTTS();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -137,8 +143,30 @@ export default function ReadBible() {
 
   const book = BIBLE_BOOKS.find((b) => b.name === selectedBook);
   const chapterText = useChapterText(selectedBook ?? "", selectedChapter, translation);
+  const chapterListenText = chapterText.data?.text.replace(/\[\d+\]/g, "").trim() ?? "";
 
   useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [chatMessages]);
+
+  useEffect(() => {
+    if (!chapterListenText || !isProVerifiedLocally()) return;
+    prewarmTTS(chapterListenText, getUserVoice(), "snippet");
+  }, [chapterListenText, selectedBook, selectedChapter, translation]);
+
+  useEffect(() => {
+    if (!listenSession || !chapterListenText || chapterText.isLoading) return;
+    void tts.play(chapterListenText, getUserVoice(), { scope: "snippet" });
+  }, [selectedChapter, translation]);
+
+  useEffect(() => {
+    return () => { tts.stop(); };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedBook) {
+      setListenSession(false);
+      tts.stop();
+    }
+  }, [selectedBook]);
 
   const handleBookSelect = (bookName: string) => {
     setSelectedBook(bookName);
@@ -156,6 +184,7 @@ export default function ReadBible() {
     setActivePanel(null);
     setAiResult("");
     setChatMessages([]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const changeFontSize = (delta: number) => {
@@ -458,13 +487,12 @@ export default function ReadBible() {
                                 {savedSnippets.has(`${selectedBook}-${selectedChapter}-${translation}`) ? "Saved" : "Save"}
                               </span>
                             </button>
-                            <ListenButton text={chapterText.data!.text.replace(/\[\d+\]/g, "")} label="Listen instead" size="md" />
                           </div>
                         </div>
                         <div className="h-px bg-border mt-4" />
                       </div>
 
-                      <div className="reading-text text-foreground/85" style={{ fontSize: `${fontSize}%` }}>
+                      <div className="reading-text text-foreground/85 pb-28" style={{ fontSize: `${fontSize}%` }}>
                         <BiblePassageText
                           text={chapterText.data.text}
                           className="leading-[2]"
@@ -604,6 +632,21 @@ export default function ReadBible() {
           )}
         </div>
       </main>
+
+      {selectedBook && chapterText.data && (
+        <FloatingBiblePlayer
+          book={selectedBook}
+          chapter={selectedChapter}
+          listenText={chapterListenText}
+          canPrev={selectedChapter > 1}
+          canNext={!!book && selectedChapter < book.chapters}
+          onPrev={() => navigateChapter(-1)}
+          onNext={() => navigateChapter(1)}
+          tts={tts}
+          onListenStart={() => setListenSession(true)}
+          onListenStop={() => setListenSession(false)}
+        />
+      )}
 
       <AnimatePresence>
         {showAiPause && <AiPauseModal onClose={() => setShowAiPause(false)} />}

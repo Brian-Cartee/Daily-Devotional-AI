@@ -27,6 +27,7 @@ import { createShareImage } from "@/lib/shareImage";
 import { shareImageBlob, shareImageFilename } from "@/lib/shareVerse";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 import { GuidedPathwaysSection } from "@/components/GuidedPathwaysSection";
+import { JourneyMoodTiles } from "@/components/JourneyMoodTiles";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { canAccessJourney, getJourneyById, proPathways } from "@/lib/journeyCatalog";
@@ -557,6 +558,12 @@ function JourneyHub({
 
       <div className="max-w-2xl mx-auto px-4 pt-4">
         {resumeBar}
+
+        <JourneyMoodTiles
+          isPro={isPro}
+          onSelect={onSelect}
+          onLockedSelect={onLockedSelect}
+        />
 
         <GuidedPathwaysSection
           pathways={proPathways()}
