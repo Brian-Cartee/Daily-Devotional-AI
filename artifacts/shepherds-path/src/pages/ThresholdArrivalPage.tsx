@@ -47,7 +47,6 @@ export default function ThresholdArrivalPage() {
   const [need, setNeed] = useState<ThresholdNeed | null>(null);
   const [nameInput, setNameInput] = useState("");
   const [arriveReady, setArriveReady] = useState(false);
-  const [showAllModes, setShowAllModes] = useState(false);
   const [nameKnown, setNameKnown] = useState(() => !!getUserName() || hasBeenPrompted());
   const [nameHydrated, setNameHydrated] = useState(() => !!getUserName() || hasBeenPrompted());
   const interaction = getThresholdInteractionProfile(need);
@@ -157,10 +156,11 @@ export default function ThresholdArrivalPage() {
     "stillness",
     "worship",
     "deep-dive",
+    "morning-surrender",
+    "night-prayer",
+    "gratitude",
   ];
-  const visibleModes = showAllModes
-    ? NEED_OPTIONS
-    : NEED_OPTIONS.filter((opt) => defaultVisibleNeedIds.includes(opt.id));
+  const visibleModes = NEED_OPTIONS.filter((opt) => defaultVisibleNeedIds.includes(opt.id));
 
   const handleNameContinue = async () => {
     const trimmed = nameInput.trim();
@@ -204,7 +204,11 @@ export default function ThresholdArrivalPage() {
         }}
       />
 
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-[max(2.75rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+      <div
+        className={`relative z-10 flex-1 flex flex-col min-h-0 w-full px-6 pb-[max(2.75rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] ${
+          step === "need" ? "" : "items-center justify-center"
+        }`}
+      >
         <p className="sr-only" aria-live="polite">
           {step === "arrive"
             ? "Arrival screen. You don't have to be okay to come in."
@@ -260,45 +264,37 @@ export default function ThresholdArrivalPage() {
           )}
 
           {step === "need" && (
-            <motion.div key="need" {...fade} className="w-full max-w-sm">
+            <motion.div key="need" {...fade} className="w-full max-w-sm mx-auto flex flex-col flex-1 min-h-0">
               {nativeFastPath && (
-                <p className="text-center text-[14px] text-white/55 mb-4 leading-relaxed">
+                <p className="text-center text-[14px] text-white/55 mb-4 leading-relaxed shrink-0">
                   Welcome to Shepherd&apos;s Path — steady or struggling, a quiet companion, not a performance.
                 </p>
               )}
-              <p className="text-center text-[1.1rem] text-white/88 font-medium mb-2">
+              <p className="text-center text-[1.1rem] text-white/88 font-medium mb-2 shrink-0">
                 What do you need right now?
               </p>
-              <p className="text-center text-[13px] text-white/48 mb-7">
+              <p className="text-center text-[13px] text-white/48 mb-5 shrink-0">
                 We&apos;ll shape today&apos;s tone — you can change it anytime.
               </p>
-              <div className="flex flex-col gap-3">
-                {visibleModes.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    data-testid={`btn-threshold-need-${opt.id}`}
-                    aria-label={`${opt.label}: ${opt.sub}`}
-                    onClick={() => handleNeed(opt.id)}
-                    className="w-full min-h-[56px] text-left rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 px-5 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
-                  >
-                    <span className="block text-[16px] font-semibold text-white/92">{opt.label}</span>
-                    <span className="block text-[13px] text-white/50 mt-0.5">{opt.sub}</span>
-                  </button>
-                ))}
-                {!showAllModes && (
-                  <button
-                    type="button"
-                    data-testid="btn-threshold-show-more-modes"
-                    onClick={() => {
-                      fireHaptic("soft");
-                      setShowAllModes(true);
-                    }}
-                    className="min-h-[44px] text-[13px] font-semibold text-white/56 hover:text-white/80 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 rounded-lg"
-                  >
-                    More modes
-                  </button>
-                )}
+              <div
+                className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain -mx-1 px-1"
+                data-testid="threshold-need-scroll"
+              >
+                <div className="flex flex-col gap-3 pb-3">
+                  {visibleModes.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      data-testid={`btn-threshold-need-${opt.id}`}
+                      aria-label={`${opt.label}: ${opt.sub}`}
+                      onClick={() => handleNeed(opt.id)}
+                      className="w-full min-h-[56px] text-left rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 px-5 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                    >
+                      <span className="block text-[16px] font-semibold text-white/92">{opt.label}</span>
+                      <span className="block text-[13px] text-white/50 mt-0.5">{opt.sub}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}

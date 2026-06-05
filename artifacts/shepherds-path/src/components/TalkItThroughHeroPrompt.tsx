@@ -14,7 +14,11 @@ const PLACEHOLDERS = [
   "Help me pray honestly about this…",
 ];
 
-const NEED_PLACEHOLDERS: Record<ThresholdNeed, string> = {
+const NEED_PLACEHOLDERS: Partial<Record<ThresholdNeed, string>> = {
+  peace: "I can't quiet my mind tonight…",
+  grief: "I'm carrying something heavy today…",
+  battle: "I need strength for what's in front of me…",
+  stillness: "I just need to be quiet before God…",
   comfort: "I'm tired and need gentleness…",
   honesty: "I haven't said this out loud yet…",
   hope: "I'm afraid hope is running out…",
@@ -33,8 +37,8 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
   const [beginning, setBeginning] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const placeholders = thresholdNeed
-    ? [NEED_PLACEHOLDERS[thresholdNeed], ...PLACEHOLDERS]
+  const placeholders = thresholdNeed && NEED_PLACEHOLDERS[thresholdNeed]
+    ? [NEED_PLACEHOLDERS[thresholdNeed]!, ...PLACEHOLDERS]
     : PLACEHOLDERS;
 
   useEffect(() => {

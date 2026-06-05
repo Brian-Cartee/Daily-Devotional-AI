@@ -10,7 +10,19 @@ export const THRESHOLD_COMPLETE_KEY = "sp_threshold_complete";
 export const THRESHOLD_NEED_KEY = "sp_threshold_need";
 export const THRESHOLD_JUST_COMPLETED_KEY = "sp_threshold_just_completed";
 
-export type ThresholdNeed = "comfort" | "honesty" | "hope";
+export type ThresholdNeed =
+  | "peace"
+  | "grief"
+  | "battle"
+  | "stillness"
+  | "worship"
+  | "deep-dive"
+  | "morning-surrender"
+  | "night-prayer"
+  | "gratitude"
+  | "comfort"
+  | "honesty"
+  | "hope";
 
 function storageGet(key: string): string | null {
   try {
@@ -36,9 +48,24 @@ export function isThresholdComplete(): boolean {
   return false;
 }
 
+const THRESHOLD_NEEDS: ThresholdNeed[] = [
+  "peace",
+  "grief",
+  "battle",
+  "stillness",
+  "worship",
+  "deep-dive",
+  "morning-surrender",
+  "night-prayer",
+  "gratitude",
+  "comfort",
+  "honesty",
+  "hope",
+];
+
 export function getThresholdNeed(): ThresholdNeed | null {
   const v = storageGet(THRESHOLD_NEED_KEY);
-  if (v === "comfort" || v === "honesty" || v === "hope") return v;
+  if (v && (THRESHOLD_NEEDS as string[]).includes(v)) return v as ThresholdNeed;
   return null;
 }
 
@@ -72,6 +99,24 @@ export function markThresholdComplete(need?: ThresholdNeed): void {
 
 export function getThresholdNeedAcknowledgment(need: ThresholdNeed): string {
   switch (need) {
+    case "peace":
+      return "You said you needed peace — we'll move softly today.";
+    case "grief":
+      return "You said you're carrying grief — you don't have to do that alone.";
+    case "battle":
+      return "You said you needed strength — you're not weak for asking.";
+    case "stillness":
+      return "You said you needed stillness — the quiet is enough here.";
+    case "worship":
+      return "You said you wanted to worship — let's turn toward God together.";
+    case "gratitude":
+      return "You said you wanted gratitude — small thanks still count.";
+    case "deep-dive":
+      return "You said you wanted depth in Scripture — we'll go slowly.";
+    case "morning-surrender":
+      return "You said you wanted a gentle morning start — one step is enough.";
+    case "night-prayer":
+      return "You said you needed to release today — you can rest here.";
     case "honesty":
       return "You said you needed space for honesty — start wherever you are.";
     case "hope":

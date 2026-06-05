@@ -559,17 +559,11 @@ function JourneyHub({
       <div className="max-w-2xl mx-auto px-4 pt-4">
         {resumeBar}
 
-        <JourneyMoodTiles
-          isPro={isPro}
-          onSelect={onSelect}
-          onLockedSelect={onLockedSelect}
-        />
+        <JourneyMoodTiles onSelect={onSelect} />
 
         <GuidedPathwaysSection
           pathways={proPathways()}
-          isPro={isPro}
           onSelect={onSelect}
-          onLockedSelect={onLockedSelect}
         />
 
         {/* Life Season Journey — Pro: AI-shaped from your words */}
@@ -597,7 +591,7 @@ function JourneyHub({
                 After Talk It Through, Pro can shape a journey from your exact situation.
               </p>
               <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
-                Free users still have every core Bible journey below. Guided Pathways above cover grief, anxiety, and more.
+                Pro can shape a personal journey from your exact words after Talk It Through. Guided Pathways above are free for everyone.
               </p>
             </button>
           ) : lifePhase === "idle" ? (

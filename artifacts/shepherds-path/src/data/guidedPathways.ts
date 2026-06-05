@@ -1,10 +1,9 @@
 import type { Journey } from "./journeys";
 
-/** Pro-only 7-day guided pathways — curated, no AI generation cost */
+/** Curated 7-day guided pathways — free, no AI generation cost */
 export const PRO_GUIDED_PATHWAYS: Journey[] = [
   {
     id: "pathway-grief",
-    proOnly: true,
     title: "Walking Through Grief",
     subtitle: "7 days when someone or something is gone",
     description: "Scripture for the valley — not rushing you past the pain, but sitting with you in it.",
@@ -20,8 +19,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
     iconColor: "text-slate-600 dark:text-slate-300",
     pillBg: "bg-slate-500/10",
     pillText: "text-slate-600 dark:text-slate-300",
-    badgeText: "Pro",
-    badgeBg: "bg-violet-600",
     image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=70&auto=format&fit=crop",
     entries: [
       {
@@ -98,7 +95,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
   },
   {
     id: "pathway-anxiety",
-    proOnly: true,
     title: "Peace for Anxious Days",
     subtitle: "7 days when worry will not let go",
     description: "Gentle Scripture for racing thoughts, tight chests, and nights that will not quiet.",
@@ -114,8 +110,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
     iconColor: "text-teal-600",
     pillBg: "bg-teal-500/10",
     pillText: "text-teal-700",
-    badgeText: "Pro",
-    badgeBg: "bg-violet-600",
     image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=70&auto=format&fit=crop",
     entries: [
       {
@@ -192,7 +186,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
   },
   {
     id: "pathway-loneliness",
-    proOnly: true,
     title: "When You Feel Alone",
     subtitle: "7 days for disconnection and quiet ache",
     description: "For seasons when the room is empty, the text never comes, or no one seems to understand.",
@@ -208,8 +201,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
     iconColor: "text-indigo-500",
     pillBg: "bg-indigo-500/10",
     pillText: "text-indigo-600",
-    badgeText: "Pro",
-    badgeBg: "bg-violet-600",
     image: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=800&q=70&auto=format&fit=crop",
     entries: [
       {
@@ -286,7 +277,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
   },
   {
     id: "pathway-doubt",
-    proOnly: true,
     title: "Faith in the Fog",
     subtitle: "7 days when belief feels thin",
     description: "For honest questions, shaken trust, and seasons when God feels far or unclear.",
@@ -302,8 +292,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
     iconColor: "text-amber-600",
     pillBg: "bg-amber-500/10",
     pillText: "text-amber-700",
-    badgeText: "Pro",
-    badgeBg: "bg-violet-600",
     image: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=70&auto=format&fit=crop",
     entries: [
       {
@@ -380,7 +368,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
   },
   {
     id: "pathway-anger",
-    proOnly: true,
     title: "Anger, Forgiveness, and Peace",
     subtitle: "7 days when bitterness or rage has a grip",
     description: "Scripture for heated moments, wounded pride, and the long road back to peace.",
@@ -396,8 +383,6 @@ export const PRO_GUIDED_PATHWAYS: Journey[] = [
     iconColor: "text-rose-600",
     pillBg: "bg-rose-500/10",
     pillText: "text-rose-700",
-    badgeText: "Pro",
-    badgeBg: "bg-violet-600",
     image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=70&auto=format&fit=crop",
     entries: [
       {
