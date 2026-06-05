@@ -2,9 +2,10 @@
 export const HOME_EXPLORE_PREVIEW_POOL: readonly string[] = [
   "/salvation",
   "/understand",
-  "/lament",
+  "/read",
   "/reading-plans",
   "/journal",
+  "/lament",
   "/calling",
   "/study",
   "/prayer-closet",
