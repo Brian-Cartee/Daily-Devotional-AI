@@ -821,20 +821,6 @@ function LandingHomeInner() {
             <PrayerClosetHomeCard compactTeaser={prayerClosetCompactTeaser} />
           )}
 
-          {showDailyArt && (
-            <>
-              <div className="flex items-center gap-3 mt-1 px-0.5" data-testid="section-take-a-moment">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
-                <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Take a moment</p>
-                <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
-              </div>
-              <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
-                <DailyArtCard />
-              </div>
-            </>
-          )}
-
           <HomePathsBlock
             homeDevotionalFocus={homeDevotionalFocus}
             chapelWeekFocus={chapelWeekFocus}
@@ -1020,6 +1006,21 @@ function LandingHomeInner() {
                 </Link>
               </div>
             </div>
+          )}
+
+          {showDailyArt && (
+            <>
+              {/* Closing grace note — after paths, before depth extras */}
+              <div className="flex items-center gap-3 mt-4 px-0.5" data-testid="section-take-a-moment">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
+                <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Take a moment</p>
+                <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
+                <DailyArtCard />
+              </div>
+            </>
           )}
 
           <button
