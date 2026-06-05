@@ -56,7 +56,10 @@ import {
   bumpHomeVisitAfterThreshold,
   isHomeDevotionalFocusPeriod,
   isHomeMarketplaceCollapsed,
+  isPrayerClosetCompactTeaser,
   isSacredFirstHomeVisit,
+  shouldShowHomeDailyArt,
+  shouldShowPrayerClosetOnHome,
 } from "@/lib/firstSession";
 import { isThresholdComplete } from "@/lib/thresholdState";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
@@ -654,7 +657,17 @@ function LandingHomeInner() {
   const hideHeavyLink =
     !homeDevotionalFocus && (presenceCtx.door === "talk" || presenceCtx.arrivalOpen);
   const hideDevotionalCard = !homeDevotionalFocus && presenceCtx.door === "scripture";
-  const hidePrayerClosetCard = homeDevotionalFocus || presenceCtx.door === "quiet";
+  const showPrayerClosetCard = shouldShowPrayerClosetOnHome(
+    homeDevotionalFocus,
+    daysWithApp,
+    presenceCtx.door === "quiet",
+  );
+  const prayerClosetCompactTeaser = isPrayerClosetCompactTeaser(homeDevotionalFocus, daysWithApp);
+  const showDailyArt = shouldShowHomeDailyArt(
+    homeVisitAfterThreshold,
+    homeDevotionalFocus,
+    homeMarketplaceCollapsed,
+  );
   const showGreeting = Boolean(getUserName()) && daysWithApp > 1;
 
   useEffect(() => { setLastOpenDate(); }, []);
@@ -802,7 +815,9 @@ function LandingHomeInner() {
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && <LamentSeasonHomeCard />}
 
-          {!hidePrayerClosetCard && <PrayerClosetHomeCard />}
+          {showPrayerClosetCard && (
+            <PrayerClosetHomeCard compactTeaser={prayerClosetCompactTeaser} />
+          )}
           <HomePathsBlock
             homeDevotionalFocus={homeDevotionalFocus}
             chapelWeekFocus={chapelWeekFocus}
@@ -912,7 +927,7 @@ function LandingHomeInner() {
             <SundaySummaryCard streak={streak} visitCount={streakData?.visitDates?.length ?? 0} />
           )}
 
-          {!homeDevotionalFocus && !homeMarketplaceCollapsed && (
+          {showDailyArt && (
             <>
           {/* ── Take a moment — closing grace note for the daily visit ── */}
           <div className="flex items-center gap-3 mt-4 px-0.5">

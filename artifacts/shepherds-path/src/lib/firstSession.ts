@@ -69,3 +69,39 @@ export function isHomeMarketplaceCollapsed(
 ): boolean {
   return isChapelFirstWeek(daysWithApp, devotionalVisitCount);
 }
+
+/** Daily art — after 2nd home visit, not waiting for 4th devotional. */
+export function shouldShowHomeDailyArt(
+  homeVisitsAfterThreshold: number,
+  homeDevotionalFocus: boolean,
+  homeMarketplaceCollapsed: boolean,
+): boolean {
+  if (homeVisitsAfterThreshold >= 2) return true;
+  return !homeDevotionalFocus && !homeMarketplaceCollapsed;
+}
+
+/** Prayer closet — hidden days 1–2 in week-one focus; compact teaser from day 3. */
+export function shouldShowPrayerClosetOnHome(
+  homeDevotionalFocus: boolean,
+  daysWithApp: number,
+  quietDoorSelected: boolean,
+): boolean {
+  if (quietDoorSelected) return false;
+  if (!homeDevotionalFocus) return true;
+  return daysWithApp >= 3;
+}
+
+export function isPrayerClosetCompactTeaser(
+  homeDevotionalFocus: boolean,
+  daysWithApp: number,
+): boolean {
+  return homeDevotionalFocus && daysWithApp >= 3 && daysWithApp < 7;
+}
+
+/** Returning users (day 8+): verse snippet on home hero when not in week-one focus mode. */
+export function shouldShowHeroVerseSnippet(
+  daysWithApp: number,
+  homeDevotionalFocus: boolean,
+): boolean {
+  return daysWithApp >= 8 && !homeDevotionalFocus;
+}

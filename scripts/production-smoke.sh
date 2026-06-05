@@ -41,6 +41,7 @@ echo "==> Production smoke: $BASE"
 check_body "Home HTML" "$BASE/" "assets/index-"
 check_http "Support route" "$BASE/support"
 check_http "Feedback route" "$BASE/feedback"
+check_http "Closet doorway asset" "$BASE/closet-doorway.png"
 # "degraded" is normal when optional SMS (Twilio) is not configured
 check_api_health() {
   local body
@@ -76,6 +77,9 @@ if [[ -n "$BUNDLE" ]]; then
   JS_BODY="$(curl -fsS "$JS_URL" 2>/dev/null || true)"
   if [[ -z "$JS_BODY" ]]; then
     echo "FAIL: Could not fetch $JS_URL"
+    FAIL=1
+  elif ! grep -Fq "devotional-journal-save" <<< "$JS_BODY" || ! grep -Fq "hero-returning-verse-snippet" <<< "$JS_BODY"; then
+    echo "FAIL: Live bundle missing home wow + journal UX markers (devotional-journal-save, hero-returning-verse-snippet)"
     FAIL=1
   elif ! grep -Fq "See all" <<< "$JS_BODY" || ! grep -Fq "home-paths-block" <<< "$JS_BODY"; then
     echo "FAIL: Live bundle missing home paths v3 (See all + home-paths-block)"

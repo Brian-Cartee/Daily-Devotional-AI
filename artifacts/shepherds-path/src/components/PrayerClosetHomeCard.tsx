@@ -11,7 +11,12 @@ import {
 
 const CLOSET_DOORWAY_SRC = "/closet-doorway.png";
 
-export function PrayerClosetHomeCard() {
+type Props = {
+  /** Week-one focus: shorter card, still shows doorway art */
+  compactTeaser?: boolean;
+};
+
+export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
   const settings = loadClosetSettings();
   const title = closetDisplayName(settings, "Your prayer closet");
   const [visited] = useState(hasVisitedCloset);
@@ -22,7 +27,9 @@ export function PrayerClosetHomeCard() {
       <div
         data-testid="card-home-prayer-closet"
         onClick={() => markClosetVisit()}
-        className="group relative rounded-2xl overflow-hidden border border-violet-500/30 active:scale-[0.99] transition-transform shadow-lg shadow-violet-950/30 min-h-[132px] md:min-h-[212px]"
+        className={`group relative rounded-2xl overflow-hidden border border-violet-500/30 active:scale-[0.99] transition-transform shadow-lg shadow-violet-950/30 ${
+          compactTeaser ? "min-h-[108px] md:min-h-[160px]" : "min-h-[132px] md:min-h-[212px]"
+        }`}
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400/90 via-violet-500 to-primary z-20" />
 
@@ -30,6 +37,8 @@ export function PrayerClosetHomeCard() {
         <img
           src={CLOSET_DOORWAY_SRC}
           alt=""
+          loading="eager"
+          decoding="async"
           className="absolute inset-0 w-full h-[115%] object-cover object-[center_22%] scale-[1.06] group-hover:scale-[1.08] transition-transform duration-500 md:inset-y-0 md:left-[40%] md:right-0 md:w-auto md:h-full md:object-[center_38%] md:scale-100 group-hover:md:scale-[1.04]"
         />
 
@@ -49,17 +58,35 @@ export function PrayerClosetHomeCard() {
           }}
         />
 
-        <div className="relative z-10 px-4 py-4 min-h-[132px] flex flex-col justify-end md:min-h-[212px] md:max-w-[56%] md:px-8 md:py-7 md:justify-center">
+        <div
+          className={`relative z-10 px-4 flex flex-col justify-end md:max-w-[56%] md:px-8 md:justify-center ${
+            compactTeaser
+              ? "py-3 min-h-[108px] md:min-h-[160px] md:py-5"
+              : "py-4 min-h-[132px] md:min-h-[212px] md:py-7"
+          }`}
+        >
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200/90 mb-1 md:text-[11px] md:mb-2">
-            {visited ? "Your space" : "New · your space"}
+            {visited ? "Your space" : compactTeaser ? "When you're ready" : "New · your space"}
           </p>
-          <p className="text-[18px] font-bold text-white leading-tight drop-shadow-sm md:text-[22px] md:leading-snug">
+          <p
+            className={`font-bold text-white leading-tight drop-shadow-sm ${
+              compactTeaser ? "text-[16px] md:text-[18px]" : "text-[18px] md:text-[22px] md:leading-snug"
+            }`}
+          >
             {title}
           </p>
-          <p className="text-[12px] text-white/70 leading-snug mt-1 max-w-[90%] md:text-[14px] md:leading-relaxed md:max-w-[95%] md:mt-2">
-            {statusLine ?? "Worship, vision board, and honest prayer inside"}
+          <p
+            className={`text-white/70 leading-snug max-w-[90%] md:max-w-[95%] ${
+              compactTeaser
+                ? "text-[11px] mt-0.5 line-clamp-2 md:text-[13px]"
+                : "text-[12px] mt-1 md:text-[14px] md:leading-relaxed md:mt-2"
+            }`}
+          >
+            {compactTeaser
+              ? "Your prayer closet — worship, vision board, honest prayer"
+              : (statusLine ?? "Worship, vision board, and honest prayer inside")}
           </p>
-          <div className="flex items-center justify-between mt-3 md:mt-5 md:max-w-[280px]">
+          <div className={`flex items-center justify-between md:max-w-[280px] ${compactTeaser ? "mt-2 md:mt-3" : "mt-3 md:mt-5"}`}>
             <span className="text-[11px] font-semibold text-violet-200/90 uppercase tracking-wider md:text-[12px]">
               Enter closet
             </span>

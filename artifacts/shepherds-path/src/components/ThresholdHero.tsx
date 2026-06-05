@@ -24,7 +24,7 @@ import type { HomePresenceContext } from "@/lib/homePresenceContext";
 import { openWhyPanel } from "@/lib/openWhyPanel";
 import { getModeCompanionLine, getThresholdAtmosphere, getThresholdModePlan } from "@/lib/thresholdModePlan";
 import { fireHaptic } from "@/lib/haptics";
-import { isHomeDevotionalFocusPeriod } from "@/lib/firstSession";
+import { isHomeDevotionalFocusPeriod, shouldShowHeroVerseSnippet } from "@/lib/firstSession";
 import { fetchStreak } from "@/lib/streakApi";
 
 export type ThresholdData = {
@@ -83,6 +83,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   });
   const devotionalVisitCount = streakData?.visitDates?.length ?? 0;
   const homeDevotionalFocus = isHomeDevotionalFocusPeriod(daysWithApp, devotionalVisitCount);
+  const showReturningVerseSnippet = shouldShowHeroVerseSnippet(daysWithApp, homeDevotionalFocus);
 
   const firstWeekDoor: PresenceDoorId = modePlan.defaultDoor;
   const needAck =
@@ -248,6 +249,24 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             >
               {threshold.continuityLine}
             </p>
+          )}
+
+          {showReturningVerseSnippet && verse && (
+            <div
+              className="rounded-xl border border-amber-500/22 bg-black/38 px-3.5 py-3 mb-3 backdrop-blur-sm"
+              data-testid="hero-returning-verse-snippet"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/65 mb-1.5">
+                Today&apos;s Word
+              </p>
+              <p
+                className="text-[15px] text-white/90 line-clamp-2 leading-snug italic"
+                style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+              >
+                &ldquo;{verse.text}&rdquo;
+              </p>
+              <p className="text-[12px] font-semibold text-amber-200/75 mt-1.5">— {verse.reference}</p>
+            </div>
           )}
 
           {showTalkPrompt && !thresholdLoading && (
