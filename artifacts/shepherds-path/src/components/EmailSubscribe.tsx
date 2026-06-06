@@ -1,39 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
 import { subscribeWithIdentity } from "@/lib/identity";
+import { getRelationshipAge } from "@/lib/relationship";
+import { getStoredSubscriberEmail } from "@/lib/subscriberState";
 import { motion } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getSessionId } from "@/lib/session";
-
-const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
-const SUBSCRIBED_EMAIL_KEY = "sp-subscribed-email";
+import {
+  getStoredSubscriberEmail,
+  isEmailSubscribedLocally,
+  persistSubscriberState,
+} from "@/lib/subscriberState";
 
 export function isEmailSubscribed(): boolean {
-  try {
-    return localStorage.getItem(EMAIL_SUBSCRIBED_KEY) === "true";
-  } catch {
-    return false;
-  }
+  return isEmailSubscribedLocally();
 }
 
 export function getSubscribedEmail(): string | null {
-  try {
-    const email = localStorage.getItem(SUBSCRIBED_EMAIL_KEY)?.trim();
-    return email || null;
-  } catch {
-    return null;
-  }
+  return getStoredSubscriberEmail();
 }
 
 export function markEmailSubscribed(email?: string) {
+  if (email?.trim()) {
+    persistSubscriberState(email);
+    return;
+  }
   try {
-    localStorage.setItem(EMAIL_SUBSCRIBED_KEY, "true");
-    const normalized = email?.trim().toLowerCase();
-    if (normalized) {
-      localStorage.setItem(SUBSCRIBED_EMAIL_KEY, normalized);
-    }
+    localStorage.setItem("sp-email-subscribed", "true");
   } catch {}
 }
 
@@ -367,6 +362,10 @@ export function InlineSubscribeToggle() {
     );
   }
 
+  if (getRelationshipAge() >= 7 && !getStoredSubscriberEmail()) {
+    return null;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -430,6 +429,32 @@ export function InlineSubscribeToggle() {
         </form>
       </div>
     </motion.div>
+  );
+}
+
+/** Home footer block — hides entirely for long-term users not linked on this device. */
+export function HomeFooterEmailSubscribeSection({
+  anchorId,
+  className,
+  children,
+}: {
+  anchorId: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  const { subscribed, hydrated } = useEmailSubscriptionStatus();
+  const storedEmail = getStoredSubscriberEmail();
+  const established = getRelationshipAge() >= 7;
+
+  if (hydrated && !subscribed && established && !storedEmail) {
+    return null;
+  }
+
+  return (
+    <div id={anchorId} className={className} data-testid="home-footer-email-subscribe">
+      {children}
+      <InlineSubscribeToggle />
+    </div>
   );
 }
 

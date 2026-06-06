@@ -4,6 +4,7 @@ import {
   isEmailSubscribed,
   markEmailSubscribed,
 } from "@/components/EmailSubscribe";
+import { getStoredSubscriberEmail, isEmailSubscribedLocally } from "@/lib/subscriberState";
 import { getProEmail, hasRealProEmail } from "@/lib/proStatus";
 import { getSessionId } from "@/lib/session";
 
@@ -15,22 +16,12 @@ type SubscriptionStatus = {
 
 /** Any email this device has stored from subscribe, Pro connect, or notification prefs. */
 export function getKnownDeviceEmail(): string | null {
-  const subscribed = getSubscribedEmail();
-  if (subscribed?.includes("@")) return subscribed;
+  const stored = getStoredSubscriberEmail();
+  if (stored) return stored;
 
   if (hasRealProEmail()) {
     const pro = getProEmail();
     if (pro?.includes("@")) return pro.toLowerCase();
-  }
-
-  try {
-    const prefs = JSON.parse(localStorage.getItem("sp_notif_prefs") || "{}") as {
-      email?: string;
-    };
-    const notifEmail = prefs.email?.trim().toLowerCase();
-    if (notifEmail?.includes("@")) return notifEmail;
-  } catch {
-    /* ignore */
   }
 
   return null;
@@ -39,10 +30,14 @@ export function getKnownDeviceEmail(): string | null {
 let syncPromise: Promise<SubscriptionStatus> | null = null;
 
 export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus> {
-  if (isEmailSubscribed()) {
+  if (isEmailSubscribedLocally()) {
+    const knownEmail = getStoredSubscriberEmail();
+    if (knownEmail) {
+      void linkStoredEmailToSession(knownEmail);
+    }
     return {
       subscribed: true,
-      email: getSubscribedEmail(),
+      email: knownEmail ?? getSubscribedEmail(),
       hydrated: true,
     };
   }
@@ -86,11 +81,29 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
   return syncPromise;
 }
 
+async function linkStoredEmailToSession(email: string): Promise<void> {
+  try {
+    const params = new URLSearchParams({
+      sessionId: getSessionId(),
+      email,
+    });
+    const res = await fetch(`/api/subscribe/status?${params.toString()}`, {
+      credentials: "include",
+    });
+    const data = (await res.json()) as { subscribed?: boolean; email?: string | null };
+    if (data.subscribed && data.email) {
+      markEmailSubscribed(data.email);
+    }
+  } catch {
+    /* non-blocking */
+  }
+}
+
 export function useEmailSubscriptionStatus(): SubscriptionStatus {
   const [status, setStatus] = useState<SubscriptionStatus>(() => ({
-    subscribed: isEmailSubscribed(),
-    email: getSubscribedEmail(),
-    hydrated: isEmailSubscribed(),
+    subscribed: isEmailSubscribedLocally(),
+    email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
+    hydrated: isEmailSubscribedLocally(),
   }));
 
   useEffect(() => {

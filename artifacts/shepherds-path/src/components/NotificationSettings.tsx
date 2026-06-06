@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { fetchVapidPublicKey } from "@/lib/push";
 import { useToast } from "@/hooks/use-toast";
+import { markEmailSubscribed } from "@/components/EmailSubscribe";
+import { subscribeWithIdentity } from "@/lib/identity";
 
 interface PushSettings {
   morningEnabled: boolean;
@@ -99,19 +101,17 @@ function EmailSection() {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
-    try {
-      const res = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      if (res.ok || res.status === 409) {
-        setSubscribed(true);
-        const current = JSON.parse(localStorage.getItem("sp_notif_prefs") || "{}");
-        localStorage.setItem("sp_notif_prefs", JSON.stringify({ ...current, email: email.trim(), emailSubscribed: true }));
-        toast({ description: "Daily verse email confirmed! 🙏" });
-      }
-    } catch {}
+    const result = await subscribeWithIdentity({
+      email: email.trim(),
+      source: "notification-settings",
+    });
+    if (result.ok) {
+      markEmailSubscribed(email.trim());
+      setSubscribed(true);
+      toast({ description: result.message || "Daily verse email confirmed! 🙏" });
+    } else {
+      toast({ description: result.message, variant: "destructive" });
+    }
     setLoading(false);
   };
 

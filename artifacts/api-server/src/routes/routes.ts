@@ -1890,7 +1890,12 @@ What you never do:
         typeof req.query.sessionId === "string" ? req.query.sessionId.trim() : undefined;
       const emailRaw =
         typeof req.query.email === "string" ? req.query.email.trim() : undefined;
-      const email = emailRaw?.includes("@") ? normalizeEmail(emailRaw) : undefined;
+      const cookieEmail =
+        typeof req.cookies?.sp_subscriber_email === "string"
+          ? req.cookies.sp_subscriber_email.trim()
+          : undefined;
+      const resolvedRaw = emailRaw || cookieEmail;
+      const email = resolvedRaw?.includes("@") ? normalizeEmail(resolvedRaw) : undefined;
 
       let subscriber = sessionId
         ? await storage.getActiveSubscriberBySession(sessionId)
@@ -1901,6 +1906,23 @@ What you never do:
         if (subscriber && sessionId) {
           await storage.updateSubscriberSession(subscriber.email, sessionId);
         }
+      }
+
+      if (subscriber) {
+        res.cookie("sp_subscriber_email", subscriber.email, {
+          maxAge: 63072000000,
+          httpOnly: false,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+        res.cookie("sp_email_subscribed", "true", {
+          maxAge: 63072000000,
+          httpOnly: false,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
       }
 
       res.json({
@@ -1932,6 +1954,20 @@ What you never do:
               source,
             });
           }
+          res.cookie("sp_subscriber_email", normalizeEmail(input.email), {
+            maxAge: 63072000000,
+            httpOnly: false,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+          });
+          res.cookie("sp_email_subscribed", "true", {
+            maxAge: 63072000000,
+            httpOnly: false,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+          });
           return res.status(409).json({ message: "This email is already subscribed." });
         }
         await db_reactivate(input.email);
@@ -1944,6 +1980,20 @@ What you never do:
             source,
           });
         }
+        res.cookie("sp_subscriber_email", normalizeEmail(input.email), {
+          maxAge: 63072000000,
+          httpOnly: false,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+        res.cookie("sp_email_subscribed", "true", {
+          maxAge: 63072000000,
+          httpOnly: false,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
         return res.status(200).json({ message: "Welcome back! Your subscription has been reactivated." });
       }
 
@@ -1971,6 +2021,20 @@ What you never do:
         console.error("Welcome email failed (non-fatal):", emailErr);
       }
 
+      res.cookie("sp_subscriber_email", normalizeEmail(input.email), {
+        maxAge: 63072000000,
+        httpOnly: false,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+      });
+      res.cookie("sp_email_subscribed", "true", {
+        maxAge: 63072000000,
+        httpOnly: false,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+      });
       res.status(201).json({ message: "You're subscribed! Check your inbox for a welcome email." });
     } catch (err) {
       if (err instanceof z.ZodError) {

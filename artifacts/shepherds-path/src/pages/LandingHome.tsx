@@ -74,7 +74,7 @@ import {
   isHomeEmailSubscribeHash,
   scrollHomeEmailSubscribeIntoView,
 } from "@/lib/homeEmailSubscribe";
-import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
+import { HomeFooterEmailSubscribeSection } from "@/components/EmailSubscribe";
 import { HomeEmailSubscribeTeaser } from "@/components/HomeEmailSubscribeTeaser";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
@@ -1302,14 +1302,12 @@ function LandingHomeInner() {
             ))}
           </div>
 
-          <div
-            id={HOME_EMAIL_SUBSCRIBE_ANCHOR_ID}
+          <HomeFooterEmailSubscribeSection
+            anchorId={HOME_EMAIL_SUBSCRIBE_ANCHOR_ID}
             className="mb-8 sm:mb-10 scroll-mt-24 scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
-            data-testid="home-footer-email-subscribe"
           >
             <HomeSectionLabel>Start your morning with Scripture</HomeSectionLabel>
-            <InlineSubscribeToggle />
-          </div>
+          </HomeFooterEmailSubscribeSection>
 
           <FaqSection />
 

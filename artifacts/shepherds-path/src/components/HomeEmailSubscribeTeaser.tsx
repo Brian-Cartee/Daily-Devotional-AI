@@ -1,10 +1,16 @@
 import { Mail, ArrowDown } from "lucide-react";
 import { scrollToHomeEmailSubscribe } from "@/lib/homeEmailSubscribe";
 import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import { getRelationshipAge } from "@/lib/relationship";
+import { getStoredSubscriberEmail } from "@/lib/subscriberState";
 
 export function HomeEmailSubscribeTeaser() {
   const { subscribed, hydrated } = useEmailSubscriptionStatus();
+  const established = getRelationshipAge() >= 7;
+  const storedEmail = getStoredSubscriberEmail();
+
   if (subscribed || !hydrated) return null;
+  if (established && !storedEmail) return null;
 
   return (
     <button
