@@ -68,7 +68,14 @@ import {
   SCRIPTURE_COMMITMENT_LINES,
 } from "@/content/scriptureCommitment";
 import { SCROLL_TO_SCRIPTURE_COMMITMENT_EVENT } from "@/lib/openConvictionPanel";
+import {
+  HOME_EMAIL_SUBSCRIBE_ANCHOR_ID,
+  SCROLL_TO_HOME_EMAIL_SUBSCRIBE_EVENT,
+  isHomeEmailSubscribeHash,
+  scrollHomeEmailSubscribeIntoView,
+} from "@/lib/homeEmailSubscribe";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
+import { HomeEmailSubscribeTeaser } from "@/components/HomeEmailSubscribeTeaser";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import { ThresholdHero } from "@/components/ThresholdHero";
@@ -572,6 +579,19 @@ function LandingHomeInner() {
     setTimeout(scrollToIt, 200);
     setTimeout(scrollToIt, 500);
   }, []);
+  useEffect(() => {
+    const scrollToSubscribe = () => {
+      scrollHomeEmailSubscribeIntoView("smooth");
+    };
+    window.addEventListener(SCROLL_TO_HOME_EMAIL_SUBSCRIBE_EVENT, scrollToSubscribe);
+    return () => window.removeEventListener(SCROLL_TO_HOME_EMAIL_SUBSCRIBE_EVENT, scrollToSubscribe);
+  }, []);
+  useEffect(() => {
+    if (!isHomeEmailSubscribeHash()) return;
+    const scrollToIt = () => scrollHomeEmailSubscribeIntoView("smooth");
+    setTimeout(scrollToIt, 200);
+    setTimeout(scrollToIt, 550);
+  }, []);
   const [commitmentOpen, setCommitmentOpen] = useState(false);
   const [showDepthExtras, setShowDepthExtras] = useState(false);
   const demo = useDemoMode();
@@ -810,6 +830,8 @@ function LandingHomeInner() {
           )}
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
+
+          <HomeEmailSubscribeTeaser />
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
@@ -1257,12 +1279,6 @@ function LandingHomeInner() {
           </>
           )}
 
-          {/* ── Daily Scripture Sign-Up ── */}
-          <div className="mt-10 sm:mt-12 max-w-xl mx-auto w-full">
-            <HomeSectionLabel>Start your morning with Scripture</HomeSectionLabel>
-            <InlineSubscribeToggle />
-          </div>
-
           </div>
 
         </motion.div>
@@ -1284,6 +1300,15 @@ function LandingHomeInner() {
                 {tag}
               </span>
             ))}
+          </div>
+
+          <div
+            id={HOME_EMAIL_SUBSCRIBE_ANCHOR_ID}
+            className="mb-8 sm:mb-10 scroll-mt-24 scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+            data-testid="home-footer-email-subscribe"
+          >
+            <HomeSectionLabel>Start your morning with Scripture</HomeSectionLabel>
+            <InlineSubscribeToggle />
           </div>
 
           <FaqSection />

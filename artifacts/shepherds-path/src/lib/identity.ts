@@ -66,7 +66,7 @@ export async function connectIdentity(input: ConnectIdentityInput): Promise<{
 
     markIdentityConnected(email);
     if (input.subscribeDaily !== false) {
-      markEmailSubscribed();
+      markEmailSubscribed(email);
     }
     void linkProSessionForContinuity(email, sessionId);
     return { connected: true, isPro: data.isPro };
@@ -99,7 +99,7 @@ export async function subscribeWithIdentity(input: ConnectIdentityInput): Promis
     });
     const data = await res.json();
     if (res.ok || res.status === 409) {
-      markEmailSubscribed();
+      markEmailSubscribed(email);
       setProEmail(email);
       void linkProSessionForContinuity(email, getSessionId());
       return { ok: true, message: data.message || "You're subscribed!" };

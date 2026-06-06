@@ -7,6 +7,7 @@ import { getSessionId } from "@/lib/session";
 import { subscribeWithIdentity } from "@/lib/identity";
 
 const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
+const SUBSCRIBED_EMAIL_KEY = "sp-subscribed-email";
 
 export function isEmailSubscribed(): boolean {
   try {
@@ -16,9 +17,22 @@ export function isEmailSubscribed(): boolean {
   }
 }
 
-export function markEmailSubscribed() {
+export function getSubscribedEmail(): string | null {
+  try {
+    const email = localStorage.getItem(SUBSCRIBED_EMAIL_KEY)?.trim();
+    return email || null;
+  } catch {
+    return null;
+  }
+}
+
+export function markEmailSubscribed(email?: string) {
   try {
     localStorage.setItem(EMAIL_SUBSCRIBED_KEY, "true");
+    const normalized = email?.trim().toLowerCase();
+    if (normalized) {
+      localStorage.setItem(SUBSCRIBED_EMAIL_KEY, normalized);
+    }
   } catch {}
 }
 
@@ -45,7 +59,7 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
       if (res.ok || res.status === 200) {
         setStatus("success");
         setMessage(data.message || "You're subscribed!");
-        markEmailSubscribed();
+        markEmailSubscribed(email.trim());
       } else {
         setStatus("error");
         setMessage(data.message || "We can try that again.");
@@ -134,6 +148,59 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function SubscribedEmailSuccess({
+  title,
+  detail,
+  variant = "compact",
+}: {
+  title: string;
+  detail: string;
+  variant?: "compact" | "footer";
+}) {
+  const subscribedEmail = getSubscribedEmail();
+  const isFooter = variant === "footer";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className={`relative rounded-2xl border border-green-500/20 bg-green-500/5 flex gap-3 ${
+        isFooter
+          ? "border-green-500/25 bg-green-500/8 px-5 sm:px-6 py-5 items-start sm:items-center gap-4"
+          : "px-5 py-4 items-center"
+      }`}
+    >
+      <div
+        className={`rounded-full bg-green-500/15 flex items-center justify-center shrink-0 ${
+          isFooter ? "w-10 h-10 sm:w-11 sm:h-11" : "w-8 h-8"
+        }`}
+      >
+        <Check
+          className={`text-green-600 dark:text-green-400 ${isFooter ? "w-5 h-5" : "w-4 h-4"}`}
+          strokeWidth={2.5}
+        />
+      </div>
+      <div className="min-w-0">
+        <p
+          className={`font-semibold text-foreground leading-snug ${
+            isFooter ? "text-[15px] sm:text-base" : "text-[13px] leading-tight"
+          }`}
+        >
+          {title}
+        </p>
+        <p
+          className={`text-muted-foreground ${isFooter ? "text-[14px] sm:text-[15px] mt-1 leading-relaxed" : "text-[12px] mt-0.5"}`}
+        >
+          {detail}
+        </p>
+        {subscribedEmail && (
+          <p className="text-[12px] text-muted-foreground/90 mt-1 truncate">{subscribedEmail}</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 export function InlineEmailSignup() {
   const [alreadySubscribed] = useState(() => isEmailSubscribed());
   const [email, setEmail] = useState("");
@@ -163,20 +230,10 @@ export function InlineEmailSignup() {
 
   if (alreadySubscribed || status === "success") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative rounded-2xl border border-green-500/20 bg-green-500/5 px-5 py-4 flex items-center gap-3"
-      >
-        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
-          <Check className="w-4 h-4 text-green-600 dark:text-green-400" strokeWidth={2.5} />
-        </div>
-        <div>
-          <p className="text-[13px] font-semibold text-foreground leading-tight">You're receiving daily Scripture by email</p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">Each morning, a verse delivered to your inbox.</p>
-        </div>
-      </motion.div>
+      <SubscribedEmailSuccess
+        title="You're receiving daily Scripture by email"
+        detail="Each morning, a verse delivered to your inbox."
+      />
     );
   }
 
@@ -276,6 +333,7 @@ export function InlineSubscribeToggle() {
       source: "home-footer",
     });
     if (result.ok) {
+      markEmailSubscribed(email.trim());
       setEmailStatus("success");
       setEmailMsg(result.message);
       setEmailSubscribed(true);
@@ -287,24 +345,11 @@ export function InlineSubscribeToggle() {
 
   if (emailSubscribed) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative rounded-2xl border border-green-500/25 bg-green-500/8 px-5 sm:px-6 py-5 flex items-start sm:items-center gap-4"
-      >
-        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
-          <Check className="w-5 h-5 text-green-600 dark:text-green-400" strokeWidth={2.5} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[15px] sm:text-base font-semibold text-foreground leading-snug">
-            You&apos;re receiving daily Scripture by email
-          </p>
-          <p className="text-[14px] sm:text-[15px] text-muted-foreground mt-1 leading-relaxed">
-            A quiet word each morning — straight to your inbox.
-          </p>
-        </div>
-      </motion.div>
+      <SubscribedEmailSuccess
+        variant="footer"
+        title="You're receiving daily Scripture by email"
+        detail="A quiet word each morning — straight to your inbox."
+      />
     );
   }
 
