@@ -458,7 +458,8 @@ export function HomeDailyEmailStatus({
     }
   }, [email, linkEmail]);
 
-  const showSubscribed = subscribed || linked || isEmailSubscribedLocally();
+  const showSubscribed =
+    subscribed || linked || isEmailSubscribedLocally() || !!getKnownDeviceEmail();
 
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();

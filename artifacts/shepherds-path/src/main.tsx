@@ -13,6 +13,13 @@ import {
   removeNativeBootPlaceholder,
 } from "./lib/platform";
 import { nativeDiag } from "./lib/nativeDiag";
+import { syncEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import {
+  hydrateSubscriberFromUrlParam,
+  hydrateSubscriberStateFromIndexedDB,
+  hydrateSubscriberStateFromStorage,
+  requestNativeSubscriberBootstrap,
+} from "@/lib/subscriberState";
 
 if (isNativeWebViewShell()) {
   nativeDiag("react_entry_started");
@@ -36,17 +43,14 @@ if ("serviceWorker" in navigator) {
           );
         };
 
-        // A SW was already waiting when the page loaded (e.g. dismissed last time)
         if (registration.waiting) {
           notifyWaiting(registration);
         }
 
-        // A new SW is found and begins installing
         registration.addEventListener("updatefound", () => {
           const incoming = registration.installing;
           if (!incoming) return;
           incoming.addEventListener("statechange", () => {
-            // "installed" + existing controller = new SW waiting behind the current one
             if (incoming.state === "installed" && navigator.serviceWorker.controller) {
               notifyWaiting(registration);
             }
@@ -55,7 +59,6 @@ if ("serviceWorker" in navigator) {
 
       }).catch(() => {});
 
-      // Only reload when the user explicitly triggered an update (not on first SW activation)
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (swState.updateInitiated) {
           window.location.reload();
@@ -83,36 +86,42 @@ if (!mountEl) {
   rootEl.appendChild(mountEl);
 }
 
-/** iOS/Android WebView: splash stays as sibling until React paints into #sp-app-mount. */
-if (isNativeWebViewShell()) {
-  document.getElementById("sp-safari-link")?.remove();
-  document.getElementById("sp-enter-btn")?.remove();
-  const bootStatus = document.getElementById("sp-boot-splash-status");
-  if (bootStatus) bootStatus.textContent = "Loading…";
+async function mountApp() {
+  if (isNativeWebViewShell()) {
+    document.getElementById("sp-safari-link")?.remove();
+    document.getElementById("sp-enter-btn")?.remove();
+    const bootStatus = document.getElementById("sp-boot-splash-status");
+    if (bootStatus) bootStatus.textContent = "Loading…";
+    hydrateSubscriberFromUrlParam();
+    hydrateSubscriberStateFromStorage();
+    await requestNativeSubscriberBootstrap();
+    hydrateSubscriberStateFromStorage();
+    await hydrateSubscriberStateFromIndexedDB();
+    await syncEmailSubscriptionStatus();
+    nativeDiag("react_render_called");
+  }
+
+  createRoot(mountEl!).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+
+  if (typeof window !== "undefined" && isNativeWebViewShell()) {
+    requestAnimationFrame(() => {
+      nativeDiag("react_booted");
+      notifyNativeReactBooted();
+    });
+    const pollReady = (attempts = 0) => {
+      notifyNativeShellReady();
+      if (!isNativeShellUiReady() && attempts < 120) {
+        setTimeout(() => pollReady(attempts + 1), 250);
+      }
+    };
+    requestAnimationFrame(() => pollReady());
+  } else {
+    requestAnimationFrame(() => removeNativeBootPlaceholder());
+  }
 }
 
-if (isNativeWebViewShell()) {
-  nativeDiag("react_render_called");
-}
-
-createRoot(mountEl).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
-
-if (typeof window !== "undefined" && isNativeWebViewShell()) {
-  requestAnimationFrame(() => {
-    nativeDiag("react_booted");
-    notifyNativeReactBooted();
-  });
-  const pollReady = (attempts = 0) => {
-    notifyNativeShellReady();
-    if (!isNativeShellUiReady() && attempts < 120) {
-      setTimeout(() => pollReady(attempts + 1), 250);
-    }
-  };
-  requestAnimationFrame(() => pollReady());
-} else {
-  requestAnimationFrame(() => removeNativeBootPlaceholder());
-}
+void mountApp();

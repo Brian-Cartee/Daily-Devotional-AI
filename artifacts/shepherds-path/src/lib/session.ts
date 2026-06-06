@@ -15,7 +15,9 @@ function readCookie(name: string): string | null {
 function writeCookie(name: string, value: string): void {
   try {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=63072000; SameSite=Lax${secure}`;
+    const host = window.location.hostname;
+    const domain = host.endsWith("shepherdspathai.com") ? "; domain=.shepherdspathai.com" : "";
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=63072000; SameSite=Lax${secure}${domain}`;
   } catch {
     /* ignore */
   }

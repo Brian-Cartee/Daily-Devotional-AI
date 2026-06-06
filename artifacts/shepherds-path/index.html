@@ -23,12 +23,32 @@
       function writeCookie(name, value) {
         try {
           var secure = location.protocol === "https:" ? "; Secure" : "";
+          var domain =
+            location.hostname.indexOf("shepherdspathai.com") >= 0
+              ? "; domain=.shepherdspathai.com"
+              : "";
           document.cookie =
             name +
             "=" +
             encodeURIComponent(value) +
             "; path=/; max-age=63072000; SameSite=Lax" +
-            secure;
+            secure +
+            domain;
+        } catch (e) {}
+      }
+      function notifyNativeEmail(email) {
+        try {
+          if (!window.ReactNativeWebView || !email || email.indexOf("@") < 1) return;
+          window.ReactNativeWebView.postMessage(
+            JSON.stringify({ type: "sp_subscriber_profile", email: email }),
+          );
+          window.ReactNativeWebView.postMessage(
+            JSON.stringify({
+              type: "sp_user_profile",
+              subscriberEmail: email,
+              sessionId: localStorage.getItem("sp_session_id") || readCookie("sp_session_id") || "",
+            }),
+          );
         } catch (e) {}
       }
       try {
@@ -60,6 +80,11 @@
             .toLowerCase();
           if (pro.indexOf("@") > 0) em = pro;
         }
+        var params = new URLSearchParams(location.search);
+        var se = params.get("se");
+        if (se && se.indexOf("@") > 0) {
+          em = se.trim().toLowerCase();
+        }
         if (em && em.indexOf("@") > 0) {
           localStorage.setItem("sp-subscribed-email", em);
           localStorage.setItem("sp-email-subscribed", "true");
@@ -69,6 +94,16 @@
             sessionStorage.setItem("sp-subscribed-email", em);
             sessionStorage.setItem("sp-email-subscribed", "true");
           } catch (e) {}
+          notifyNativeEmail(em);
+          if (sid) {
+            fetch(
+              "/api/subscribe/status?sessionId=" +
+                encodeURIComponent(sid) +
+                "&email=" +
+                encodeURIComponent(em),
+              { credentials: "include" },
+            ).catch(function () {});
+          }
         } else if (sub) {
           localStorage.setItem("sp-email-subscribed", "true");
         }

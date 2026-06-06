@@ -22,6 +22,7 @@ import {
   loadNativeUserProfile,
   saveNativeSubscriberProfile,
   saveNativeUserProfile,
+  SCRAPE_WEB_SUBSCRIBER_JS,
 } from "@/lib/native-profile";
 import { useSubscription } from "@/lib/revenuecat";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -31,9 +32,15 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 
-/** Open the live app directly — skip the extra bootstrap tap. */
-function shellEntryUrl(): string {
-  return `${APP_ORIGIN}/?native=1&enter=1&_=${Date.now()}`;
+/** Open the live app directly — pass saved email so WebView can restore subscription state. */
+function shellEntryUrl(subscriberEmail?: string): string {
+  let url = `${APP_ORIGIN}/?native=1&enter=1`;
+  const email = subscriberEmail?.trim().toLowerCase();
+  if (email?.includes("@")) {
+    url += `&se=${encodeURIComponent(email)}`;
+  }
+  url += `&_=${Date.now()}`;
+  return url;
 }
 
 const IN_APP_HOST_SUFFIXES = [
@@ -198,7 +205,7 @@ export default function MainScreen() {
   const { isSubscribed } = useSubscription();
   const webviewRef = useRef<WebView>(null);
   const wasSubscribedRef = useRef(false);
-  const [entryUrl, setEntryUrl] = useState(() => shellEntryUrl());
+  const [entryUrl, setEntryUrl] = useState<string | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
   const [showSlowOptions, setShowSlowOptions] = useState(false);
   const [showStuckHelp, setShowStuckHelp] = useState(false);
@@ -222,6 +229,7 @@ export default function MainScreen() {
       setBeforeContentJs(
         `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
       );
+      setEntryUrl(shellEntryUrl(subscriberEmail));
     });
     return () => {
       cancelled = true;
@@ -231,7 +239,9 @@ export default function MainScreen() {
   const injectProfileSeed = useCallback(() => {
     void loadNativeUserProfile().then(({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
       const seed = buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed);
-      webviewRef.current?.injectJavaScript(`${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}true;`);
+      webviewRef.current?.injectJavaScript(
+        `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
+      );
     });
   }, []);
 
@@ -392,7 +402,9 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    setEntryUrl(shellEntryUrl());
+    void loadNativeUserProfile().then(({ subscriberEmail }) => {
+      setEntryUrl(shellEntryUrl(subscriberEmail));
+    });
   }, [pushNativeDiag]);
 
   const onPullRefresh = useCallback(() => {
@@ -454,7 +466,7 @@ export default function MainScreen() {
     );
   }
 
-  if (!beforeContentJs) {
+  if (!beforeContentJs || !entryUrl) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <StatusBar style="light" />
@@ -469,7 +481,7 @@ export default function MainScreen() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
       <WebView
-        key={entryUrl}
+        key="sp-main-webview"
         ref={webviewRef}
         source={{ uri: entryUrl }}
         style={styles.webview}
@@ -500,13 +512,30 @@ export default function MainScreen() {
                 typeof data.sessionId === "string" ? data.sessionId : "";
               const name = typeof data.name === "string" ? data.name : "";
               const prompted = data.prompted === true || !!name.trim();
+              const subscriberEmail =
+                typeof data.subscriberEmail === "string" ? data.subscriberEmail : "";
               void saveNativeUserProfile(sessionId, name, prompted);
+              if (subscriberEmail.includes("@")) {
+                void saveNativeSubscriberProfile(subscriberEmail);
+              }
             }
             if (data.type === "sp_subscriber_profile") {
               const email = typeof data.email === "string" ? data.email : "";
               if (email.includes("@")) {
                 void saveNativeSubscriberProfile(email);
               }
+            }
+            if (data.type === "sp_request_native_profile") {
+              void loadNativeUserProfile().then((profile) => {
+                const payload = JSON.stringify({
+                  sessionId: profile.sessionId,
+                  subscriberEmail: profile.subscriberEmail,
+                  emailSubscribed: profile.emailSubscribed,
+                });
+                webviewRef.current?.injectJavaScript(
+                  `(function(){try{if(window.__spResolveNativeProfile){window.__spResolveNativeProfile(${payload});}}catch(e){}}true;)();`,
+                );
+              });
             }
             if (data.type === "scroll_home_top") {
               webviewRef.current?.injectJavaScript(

@@ -35,12 +35,12 @@ export function getKnownDeviceEmail(): string | null {
 
 function buildLocalStatus(): SubscriptionStatus {
   hydrateSubscriberStateFromStorage();
-  const subscribed = isEmailSubscribedLocally();
   const email = getStoredSubscriberEmail() ?? getSubscribedEmail();
+  const subscribed = isEmailSubscribedLocally() || !!email;
   return {
     subscribed,
     email,
-    hydrated: subscribed,
+    hydrated: true,
   };
 }
 
@@ -77,14 +77,22 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
       /* non-blocking */
     }
 
-    if (local.subscribed) {
-      if (local.email) void linkStoredEmailToSession(local.email);
-      return { ...local, hydrated: true };
+    if (local.subscribed || knownEmail) {
+      const email = local.email ?? knownEmail;
+      if (email) {
+        persistSubscriberState(email);
+        void linkStoredEmailToSession(email);
+      }
+      return {
+        subscribed: true,
+        email,
+        hydrated: true,
+      };
     }
 
     return {
       subscribed: false,
-      email: knownEmail,
+      email: null,
       hydrated: true,
     };
   })().finally(() => {

@@ -1,3 +1,4 @@
+import { subscriberCookieOptions } from "../subscriberCookies";
 import { config } from "../config";
 import express from "express";
 import type { Express } from "express";
@@ -67,6 +68,12 @@ import {
 } from "../pastorTiers";
 
 const stripe = new Stripe(config.stripeSecretKey!, { apiVersion: "2026-04-22.dahlia" });
+
+function setSubscriberCookies(res: express.Response, email: string): void {
+  const opts = subscriberCookieOptions(process.env.NODE_ENV === "production");
+  res.cookie("sp_subscriber_email", normalizeEmail(email), opts);
+  res.cookie("sp_email_subscribed", "true", opts);
+}
 
 // Daily sermon cache — key: "YYYY-MM-DD:verseId", value: sermon result object
 // One sermon per verse per day; cleared on server restart (fine — sessionStorage handles client-side persistence)
@@ -1928,20 +1935,7 @@ What you never do:
       }
 
       if (subscriber) {
-        res.cookie("sp_subscriber_email", subscriber.email, {
-          maxAge: 63072000000,
-          httpOnly: false,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-        });
-        res.cookie("sp_email_subscribed", "true", {
-          maxAge: 63072000000,
-          httpOnly: false,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-        });
+        setSubscriberCookies(res, subscriber.email);
       }
 
       res.json({
@@ -1973,20 +1967,7 @@ What you never do:
               source,
             });
           }
-          res.cookie("sp_subscriber_email", normalizeEmail(input.email), {
-            maxAge: 63072000000,
-            httpOnly: false,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
-          res.cookie("sp_email_subscribed", "true", {
-            maxAge: 63072000000,
-            httpOnly: false,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
+          setSubscriberCookies(res, input.email);
           return res.status(409).json({ message: "This email is already subscribed." });
         }
         await db_reactivate(input.email);
@@ -1999,20 +1980,7 @@ What you never do:
             source,
           });
         }
-        res.cookie("sp_subscriber_email", normalizeEmail(input.email), {
-          maxAge: 63072000000,
-          httpOnly: false,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-        });
-        res.cookie("sp_email_subscribed", "true", {
-          maxAge: 63072000000,
-          httpOnly: false,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-        });
+        setSubscriberCookies(res, input.email);
         return res.status(200).json({ message: "Welcome back! Your subscription has been reactivated." });
       }
 
@@ -2040,20 +2008,7 @@ What you never do:
         console.error("Welcome email failed (non-fatal):", emailErr);
       }
 
-      res.cookie("sp_subscriber_email", normalizeEmail(input.email), {
-        maxAge: 63072000000,
-        httpOnly: false,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-      });
-      res.cookie("sp_email_subscribed", "true", {
-        maxAge: 63072000000,
-        httpOnly: false,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-      });
+      setSubscriberCookies(res, input.email);
       res.status(201).json({ message: "You're subscribed! Check your inbox for a welcome email." });
     } catch (err) {
       if (err instanceof z.ZodError) {

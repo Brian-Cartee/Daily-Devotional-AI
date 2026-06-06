@@ -1,13 +1,18 @@
+import { getUserName, hasBeenPrompted } from "@/lib/userName";
 import { isNativeWebViewShell } from "@/lib/platform";
 import { getSessionId } from "@/lib/session";
+import { writeSubscriberCookie } from "@/lib/subscriberCookie";
 
 const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
 const SUBSCRIBED_EMAIL_KEY = "sp-subscribed-email";
 const NOTIF_PREFS_KEY = "sp_notif_prefs";
-const COOKIE_MAX_AGE = 63072000;
+const IDB_NAME = "sp_subscriber_idb";
+const IDB_STORE = "state";
+const IDB_KEY = "profile";
 
 let memorySubscribed = false;
 let memoryEmail: string | null = null;
+let idbReady: Promise<void> | null = null;
 
 function readCookie(name: string): string | null {
   try {
@@ -20,8 +25,7 @@ function readCookie(name: string): string | null {
 }
 
 function writeCookie(name: string, value: string): void {
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
+  writeSubscriberCookie(name, value);
 }
 
 function readSessionMirror(key: string): string | null {
@@ -56,17 +60,74 @@ function normalizeEmail(email: string): string | null {
   return normalized.includes("@") ? normalized : null;
 }
 
+function openIdb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    try {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function writeIdbProfile(email: string): Promise<void> {
+  try {
+    const db = await openIdb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put({ email, subscribed: true }, IDB_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch {
+    /* ignore */
+  }
+}
+
+async function readIdbProfile(): Promise<{ email?: string; subscribed?: boolean } | null> {
+  try {
+    const db = await openIdb();
+    const value = await new Promise<{ email?: string; subscribed?: boolean } | null>((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+      req.onsuccess = () => resolve((req.result as { email?: string; subscribed?: boolean } | undefined) ?? null);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 function notifyNativeSubscriberProfile(email: string): void {
   if (!isNativeWebViewShell()) return;
   try {
-    (
+    const bridge = (
       window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(
+    ).ReactNativeWebView;
+    if (!bridge) return;
+    const sessionId = getSessionId();
+    const payload = JSON.stringify({
+      type: "sp_subscriber_profile",
+      sessionId,
+      email,
+      subscribed: true,
+    });
+    bridge.postMessage(payload);
+    bridge.postMessage(
       JSON.stringify({
-        type: "sp_subscriber_profile",
-        sessionId: getSessionId(),
-        email,
-        subscribed: true,
+        type: "sp_user_profile",
+        sessionId,
+        name: getUserName() ?? "",
+        prompted: hasBeenPrompted(),
+        subscriberEmail: email,
       }),
     );
   } catch {
@@ -74,11 +135,67 @@ function notifyNativeSubscriberProfile(email: string): void {
   }
 }
 
-/** Restore local hints from cookies/sessionStorage (survives some WebView resets). */
+/** iOS shell: ask native app for saved email (AsyncStorage) before React boots. */
+export function requestNativeSubscriberBootstrap(): Promise<void> {
+  if (!isNativeWebViewShell()) return Promise.resolve();
+  const win = window as Window & {
+    __spNativeProfilePromise?: Promise<void>;
+    __spResolveNativeProfile?: (profile: NativeProfilePayload | null) => void;
+    ReactNativeWebView?: { postMessage: (s: string) => void };
+  };
+  if (win.__spNativeProfilePromise) return win.__spNativeProfilePromise;
+
+  win.__spNativeProfilePromise = new Promise((resolve) => {
+    win.__spResolveNativeProfile = (profile) => {
+      if (profile?.subscriberEmail?.includes("@")) {
+        persistSubscriberState(profile.subscriberEmail);
+      } else if (profile?.sessionId) {
+        try {
+          localStorage.setItem("sp_session_id", profile.sessionId);
+          writeSubscriberCookie("sp_session_id", profile.sessionId);
+        } catch {
+          /* ignore */
+        }
+      }
+      resolve();
+    };
+    try {
+      win.ReactNativeWebView?.postMessage(JSON.stringify({ type: "sp_request_native_profile" }));
+    } catch {
+      resolve();
+    }
+    window.setTimeout(() => resolve(), 1500);
+  });
+
+  return win.__spNativeProfilePromise;
+}
+
+export type NativeProfilePayload = {
+  sessionId?: string;
+  subscriberEmail?: string;
+  emailSubscribed?: boolean;
+};
+
+/** Read `?se=` param injected by iOS shell on each cold start. */
+export function hydrateSubscriberFromUrlParam(): boolean {
+  try {
+    const se = new URLSearchParams(window.location.search).get("se");
+    const normalized = se ? normalizeEmail(se) : null;
+    if (!normalized) return false;
+    persistSubscriberState(normalized);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Restore local hints from cookies/sessionStorage/IndexedDB. */
 export function hydrateSubscriberStateFromStorage(): boolean {
   let restored = false;
 
   try {
+    hydrateSubscriberFromUrlParam();
+
     const cookieSubscribed = readCookie("sp_email_subscribed") === "true";
     const cookieEmail = normalizeEmail(readCookie("sp_subscriber_email") ?? "");
     const mirrorSubscribed =
@@ -117,6 +234,7 @@ export function hydrateSubscriberStateFromStorage(): boolean {
         writeCookie("sp_subscriber_email", email);
         writeSessionMirror(EMAIL_SUBSCRIBED_KEY, "true");
         writeSessionMirror(SUBSCRIBED_EMAIL_KEY, email);
+        notifyNativeSubscriberProfile(email);
       }
     }
   } catch {
@@ -124,6 +242,18 @@ export function hydrateSubscriberStateFromStorage(): boolean {
   }
 
   return restored;
+}
+
+export async function hydrateSubscriberStateFromIndexedDB(): Promise<boolean> {
+  if (idbReady) await idbReady;
+  idbReady = (async () => {
+    const profile = await readIdbProfile();
+    if (profile?.email?.includes("@")) {
+      persistSubscriberState(profile.email);
+    }
+  })();
+  await idbReady;
+  return isEmailSubscribedLocally();
 }
 
 export function isEmailSubscribedLocally(): boolean {
@@ -227,6 +357,7 @@ export function persistSubscriberState(email: string): void {
     /* ignore */
   }
 
+  void writeIdbProfile(normalized);
   notifyNativeSubscriberProfile(normalized);
 
   try {
