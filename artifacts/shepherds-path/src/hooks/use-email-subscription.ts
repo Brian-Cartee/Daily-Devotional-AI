@@ -103,11 +103,10 @@ export function useEmailSubscriptionStatus(): SubscriptionStatus {
   const [status, setStatus] = useState<SubscriptionStatus>(() => ({
     subscribed: isEmailSubscribedLocally(),
     email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
-    hydrated: isEmailSubscribedLocally(),
+    hydrated: false,
   }));
 
   useEffect(() => {
-    if (status.hydrated) return;
     let cancelled = false;
     void syncEmailSubscriptionStatus().then((next) => {
       if (!cancelled) setStatus(next);
@@ -115,7 +114,7 @@ export function useEmailSubscriptionStatus(): SubscriptionStatus {
     return () => {
       cancelled = true;
     };
-  }, [status.hydrated]);
+  }, []);
 
   return status;
 }

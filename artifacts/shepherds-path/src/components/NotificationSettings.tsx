@@ -11,6 +11,8 @@ import { fetchVapidPublicKey } from "@/lib/push";
 import { useToast } from "@/hooks/use-toast";
 import { markEmailSubscribed } from "@/components/EmailSubscribe";
 import { subscribeWithIdentity } from "@/lib/identity";
+import { getStoredSubscriberEmail } from "@/lib/subscriberState";
+import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 
 interface PushSettings {
   morningEnabled: boolean;
@@ -89,13 +91,16 @@ function TimeSelect({ value, options, onChange }: { value: string; options: stri
 
 function EmailSection() {
   const { toast } = useToast();
-  const [email, setEmail] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("sp_notif_prefs") || "{}").email ?? ""; } catch { return ""; }
-  });
-  const [subscribed, setSubscribed] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("sp_notif_prefs") || "{}").emailSubscribed ?? false; } catch { return false; }
-  });
+  const { subscribed, email: syncedEmail, hydrated } = useEmailSubscriptionStatus();
+  const [email, setEmail] = useState(() => getStoredSubscriberEmail() ?? "");
   const [loading, setLoading] = useState(false);
+  const [justLinked, setJustLinked] = useState(false);
+
+  useEffect(() => {
+    if (syncedEmail && !email) setEmail(syncedEmail);
+  }, [syncedEmail, email]);
+
+  const isActive = subscribed || justLinked;
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,8 +112,8 @@ function EmailSection() {
     });
     if (result.ok) {
       markEmailSubscribed(email.trim());
-      setSubscribed(true);
-      toast({ description: result.message || "Daily verse email confirmed! 🙏" });
+      setJustLinked(true);
+      toast({ description: result.message || "Daily verse email linked on this device." });
     } else {
       toast({ description: result.message, variant: "destructive" });
     }
@@ -125,7 +130,7 @@ function EmailSection() {
           <p className="text-[13px] font-semibold text-foreground">Daily email verse</p>
           <p className="text-[11px] text-muted-foreground">Delivered every morning at 7 AM ET</p>
         </div>
-        {subscribed && (
+        {hydrated && isActive && (
           <div className="flex items-center gap-1 text-emerald-600 shrink-0">
             <Check className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wide">Active</span>
@@ -133,25 +138,33 @@ function EmailSection() {
         )}
       </div>
       <div className="px-4 py-3">
-        {subscribed ? (
-          <p className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            Sending to <span className="text-foreground font-medium">{email}</span>
-          </p>
+        {hydrated && isActive ? (
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">You&apos;re receiving daily Scripture by email</p>
+            <p className="text-[12px] text-muted-foreground mt-1 flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              Sending to <span className="text-foreground font-medium">{syncedEmail || email}</span>
+            </p>
+          </div>
         ) : (
-          <form onSubmit={handleSubscribe} className="flex gap-2">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              data-testid="notif-email-input"
-              className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
-            />
-            <Button type="submit" size="sm" disabled={loading || !email.trim()} className="rounded-xl shrink-0 text-[12px]" data-testid="notif-email-submit">
-              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Subscribe"}
-            </Button>
+          <form onSubmit={handleSubscribe} className="space-y-2">
+            <p className="text-[12px] text-muted-foreground">
+              Already on our list? Enter your address once to link this device.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                data-testid="notif-email-input"
+                className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
+              />
+              <Button type="submit" size="sm" disabled={loading || !email.trim()} className="rounded-xl shrink-0 text-[12px]" data-testid="notif-email-submit">
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Link"}
+              </Button>
+            </div>
           </form>
         )}
       </div>

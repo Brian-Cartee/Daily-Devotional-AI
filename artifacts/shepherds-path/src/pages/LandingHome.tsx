@@ -68,6 +68,8 @@ import {
   SCRIPTURE_COMMITMENT_LINES,
 } from "@/content/scriptureCommitment";
 import { SCROLL_TO_SCRIPTURE_COMMITMENT_EVENT } from "@/lib/openConvictionPanel";
+import { HOME_EMAIL_SUBSCRIBE_ANCHOR_ID } from "@/lib/homeEmailSubscribe";
+import { HomeDailyEmailStatus } from "@/components/EmailSubscribe";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import { ThresholdHero } from "@/components/ThresholdHero";
@@ -1278,6 +1280,13 @@ function LandingHomeInner() {
               </span>
             ))}
           </div>
+
+          <HomeDailyEmailStatus
+            anchorId={HOME_EMAIL_SUBSCRIBE_ANCHOR_ID}
+            className="mb-8 sm:mb-10 scroll-mt-24 scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+          >
+            <HomeSectionLabel>Your daily email</HomeSectionLabel>
+          </HomeDailyEmailStatus>
 
           <FaqSection />
 

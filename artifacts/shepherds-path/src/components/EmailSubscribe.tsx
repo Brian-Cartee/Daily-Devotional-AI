@@ -431,8 +431,8 @@ export function InlineSubscribeToggle() {
   );
 }
 
-/** Home footer — success only. Signup lives in Settings / nav menu, not Home. */
-export function HomeFooterEmailSubscribeSection({
+/** Home footer — subscribed status, or one-step link for existing list members. No signup form. */
+export function HomeDailyEmailStatus({
   anchorId,
   className,
   children,
@@ -441,22 +441,104 @@ export function HomeFooterEmailSubscribeSection({
   className?: string;
   children?: ReactNode;
 }) {
-  const { subscribed, hydrated } = useEmailSubscriptionStatus();
+  const { subscribed, email, hydrated } = useEmailSubscriptionStatus();
+  const [linkEmail, setLinkEmail] = useState("");
+  const [linkStatus, setLinkStatus] = useState<Status>("idle");
+  const [linkMsg, setLinkMsg] = useState("");
+  const [linked, setLinked] = useState(false);
 
-  if (!hydrated || !subscribed) {
-    return null;
+  useEffect(() => {
+    if (!linkEmail && email) setLinkEmail(email);
+    if (!linkEmail) {
+      const known = getKnownDeviceEmail();
+      if (known) setLinkEmail(known);
+    }
+  }, [email, linkEmail]);
+
+  const showSubscribed = subscribed || linked;
+
+  const handleLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkEmail.trim()) return;
+    setLinkStatus("loading");
+    const result = await subscribeWithIdentity({
+      email: linkEmail,
+      source: "home-footer-link",
+    });
+    if (result.ok) {
+      markEmailSubscribed(linkEmail.trim());
+      setLinked(true);
+      setLinkStatus("success");
+      setLinkMsg(result.message);
+    } else {
+      setLinkStatus("error");
+      setLinkMsg(result.message);
+    }
+  };
+
+  if (!hydrated) {
+    return (
+      <div className={className} aria-hidden="true">
+        <div className="rounded-2xl border border-border/40 bg-card/30 h-24 animate-pulse" />
+      </div>
+    );
   }
 
   return (
     <div id={anchorId} className={className} data-testid="home-footer-email-subscribe">
       {children}
-      <SubscribedEmailSuccess
-        variant="footer"
-        title="You're receiving daily Scripture by email"
-        detail="A quiet word each morning — straight to your inbox."
-      />
+      {showSubscribed ? (
+        <SubscribedEmailSuccess
+          variant="footer"
+          title="You're receiving daily Scripture by email"
+          detail="A quiet word each morning — straight to your inbox."
+        />
+      ) : (
+        <div className="rounded-2xl border border-border/50 bg-card/40 px-5 sm:px-6 py-5">
+          <p className="text-[15px] font-semibold text-foreground leading-snug">Daily email verse</p>
+          <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+            Already on our list? Link the address you subscribed with — one step, no duplicate signup.
+          </p>
+          <form onSubmit={handleLink} className="mt-4 space-y-2">
+            <Input
+              data-testid="input-home-link-email"
+              type="email"
+              placeholder="your@email.com"
+              value={linkEmail}
+              onChange={(e) => setLinkEmail(e.target.value)}
+              required
+              autoComplete="email"
+              className="text-base h-12 rounded-xl bg-background"
+              disabled={linkStatus === "loading"}
+            />
+            {linkStatus === "error" && <p className="text-sm text-destructive">{linkMsg}</p>}
+            <Button
+              data-testid="button-home-link-email"
+              type="submit"
+              variant="secondary"
+              disabled={!linkEmail.trim() || linkStatus === "loading"}
+              className="w-full min-h-[44px] rounded-xl font-semibold"
+            >
+              {linkStatus === "loading" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Link my email"
+              )}
+            </Button>
+          </form>
+        </div>
+      )}
     </div>
   );
+}
+
+/** @deprecated Use HomeDailyEmailStatus */
+export function HomeFooterEmailSubscribeSection(props: {
+  anchorId: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  return <HomeDailyEmailStatus {...props} />;
 }
 
 // ─── SMS Signup ───────────────────────────────────────────────────────────────
