@@ -1,7 +1,23 @@
+import { isNativeWebViewShell } from "@/lib/platform";
+
 let memorySessionId: string | null = null;
 
 const SESSION_KEY = "sp_session_id";
 const SESSION_COOKIE = "sp_session_id";
+
+type WindowWithBootstrap = Window & {
+  __SP_SESSION_BOOT__?: string;
+};
+
+function readBootstrapSessionId(): string | null {
+  try {
+    const boot = (window as WindowWithBootstrap).__SP_SESSION_BOOT__?.trim();
+    if (boot) return boot;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 function readCookie(name: string): string | null {
   try {
@@ -39,6 +55,19 @@ function writeSessionMirror(id: string): void {
   }
 }
 
+function notifyNativeSessionId(id: string): void {
+  if (!isNativeWebViewShell()) return;
+  try {
+    (
+      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+    ).ReactNativeWebView?.postMessage(
+      JSON.stringify({ type: "sp_user_profile", sessionId: id, subscriberEmail: "" }),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
 function persistSessionId(id: string): void {
   memorySessionId = id;
   try {
@@ -48,13 +77,20 @@ function persistSessionId(id: string): void {
   }
   writeSessionMirror(id);
   writeCookie(SESSION_COOKIE, id);
+  try {
+    (window as WindowWithBootstrap).__SP_SESSION_BOOT__ = id;
+  } catch {
+    /* ignore */
+  }
+  notifyNativeSessionId(id);
 }
 
 export function getSessionId(): string {
   if (memorySessionId) return memorySessionId;
 
   try {
-    let id = localStorage.getItem(SESSION_KEY);
+    let id = readBootstrapSessionId();
+    if (!id) id = localStorage.getItem(SESSION_KEY);
     if (!id) id = readSessionMirror();
     if (!id) id = readCookie(SESSION_COOKIE);
     if (!id) id = crypto.randomUUID();

@@ -14,6 +14,23 @@ let memorySubscribed = false;
 let memoryEmail: string | null = null;
 let idbReady: Promise<void> | null = null;
 
+type SubscriberBootstrap = {
+  subscribed?: boolean;
+  email?: string;
+  sessionId?: string;
+};
+
+function readBootstrapSubscriber(): SubscriberBootstrap | null {
+  try {
+    const boot = (window as Window & { __SP_SUBSCRIBER_BOOT__?: SubscriberBootstrap })
+      .__SP_SUBSCRIBER_BOOT__;
+    if (boot?.email?.includes("@")) return boot;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 function readCookie(name: string): string | null {
   try {
     const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
@@ -194,6 +211,12 @@ export function hydrateSubscriberStateFromStorage(): boolean {
   let restored = false;
 
   try {
+    const bootstrap = readBootstrapSubscriber();
+    if (bootstrap?.email) {
+      persistSubscriberState(bootstrap.email);
+      return true;
+    }
+
     hydrateSubscriberFromUrlParam();
 
     const cookieSubscribed = readCookie("sp_email_subscribed") === "true";
@@ -287,6 +310,12 @@ export function isEmailSubscribedLocally(): boolean {
 
 export function getStoredSubscriberEmail(): string | null {
   if (memoryEmail?.includes("@")) return memoryEmail;
+
+  const bootstrapEmail = readBootstrapSubscriber()?.email;
+  if (bootstrapEmail?.includes("@")) {
+    memoryEmail = normalizeEmail(bootstrapEmail);
+    if (memoryEmail) return memoryEmail;
+  }
 
   try {
     const fromKey = normalizeEmail(localStorage.getItem(SUBSCRIBED_EMAIL_KEY) ?? "");

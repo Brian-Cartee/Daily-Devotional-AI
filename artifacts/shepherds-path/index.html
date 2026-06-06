@@ -36,6 +36,37 @@
             domain;
         } catch (e) {}
       }
+      function persistLocalSubscriber(email, sessionId) {
+        if (!email || email.indexOf("@") < 1) return;
+        localStorage.setItem("sp-subscribed-email", email);
+        localStorage.setItem("sp-email-subscribed", "true");
+        writeCookie("sp_subscriber_email", email);
+        writeCookie("sp_email_subscribed", "true");
+        try {
+          sessionStorage.setItem("sp-subscribed-email", email);
+          sessionStorage.setItem("sp-email-subscribed", "true");
+        } catch (e) {}
+        window.__SP_SUBSCRIBER_BOOT__ = { subscribed: true, email: email, sessionId: sessionId || "" };
+        notifyNativeEmail(email);
+      }
+      function syncStatusFromServer(sessionId, emailHint) {
+        if (!sessionId) return null;
+        try {
+          var url =
+            "/api/subscribe/status?sessionId=" + encodeURIComponent(sessionId);
+          if (emailHint && emailHint.indexOf("@") > 0) {
+            url += "&email=" + encodeURIComponent(emailHint);
+          }
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.withCredentials = true;
+          xhr.send(null);
+          if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+            return JSON.parse(xhr.responseText);
+          }
+        } catch (e) {}
+        return null;
+      }
       function notifyNativeEmail(email) {
         try {
           if (!window.ReactNativeWebView || !email || email.indexOf("@") < 1) return;
@@ -86,26 +117,36 @@
           em = se.trim().toLowerCase();
         }
         if (em && em.indexOf("@") > 0) {
-          localStorage.setItem("sp-subscribed-email", em);
-          localStorage.setItem("sp-email-subscribed", "true");
-          writeCookie("sp_subscriber_email", em);
-          writeCookie("sp_email_subscribed", "true");
-          try {
-            sessionStorage.setItem("sp-subscribed-email", em);
-            sessionStorage.setItem("sp-email-subscribed", "true");
-          } catch (e) {}
-          notifyNativeEmail(em);
-          if (sid) {
-            fetch(
-              "/api/subscribe/status?sessionId=" +
-                encodeURIComponent(sid) +
-                "&email=" +
-                encodeURIComponent(em),
-              { credentials: "include" },
-            ).catch(function () {});
-          }
+          persistLocalSubscriber(em, sid);
+          if (sid) syncStatusFromServer(sid, em);
         } else if (sub) {
           localStorage.setItem("sp-email-subscribed", "true");
+          if (sid && (!em || em.indexOf("@") < 1)) {
+            var subStatus = syncStatusFromServer(sid, null);
+            if (subStatus && subStatus.subscribed && subStatus.email) {
+              em = String(subStatus.email).trim().toLowerCase();
+              persistLocalSubscriber(em, sid);
+            }
+          }
+        } else if (sid) {
+          var serverStatus = syncStatusFromServer(sid, em || null);
+          if (serverStatus && serverStatus.subscribed && serverStatus.email) {
+            em = String(serverStatus.email).trim().toLowerCase();
+            persistLocalSubscriber(em, sid);
+          }
+        }
+        if (sid) {
+          window.__SP_SESSION_BOOT__ = sid;
+          try {
+            window.ReactNativeWebView &&
+              window.ReactNativeWebView.postMessage(
+                JSON.stringify({
+                  type: "sp_user_profile",
+                  sessionId: sid,
+                  subscriberEmail: em || "",
+                }),
+              );
+          } catch (e) {}
         }
       } catch (e) {}
     })();
