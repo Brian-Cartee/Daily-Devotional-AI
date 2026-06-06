@@ -12,8 +12,8 @@ import { getUserTimezone } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 import { markEmailSubscribed } from "@/components/EmailSubscribe";
 import { subscribeWithIdentity } from "@/lib/identity";
-import { getStoredSubscriberEmail, isEmailSubscribedLocally } from "@/lib/subscriberState";
-import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
+import { getStoredSubscriberEmail } from "@/lib/subscriberState";
+import { useEmailSubscriptionStatus, getKnownDeviceEmail, isDailyEmailLinked } from "@/hooks/use-email-subscription";
 
 interface PushSettings {
   morningEnabled: boolean;
@@ -95,11 +95,14 @@ function EmailSection() {
   const { subscribed, email: syncedEmail } = useEmailSubscriptionStatus();
   const [email, setEmail] = useState(() => getStoredSubscriberEmail() ?? "");
   const [loading, setLoading] = useState(false);
-  const [localActive, setLocalActive] = useState(() => isEmailSubscribedLocally());
+  const [linkSuccess, setLinkSuccess] = useState(false);
+  const [localActive, setLocalActive] = useState(() => isDailyEmailLinked());
 
   useEffect(() => {
     const refresh = () => {
-      setLocalActive(isEmailSubscribedLocally());
+      const active = isDailyEmailLinked();
+      setLocalActive(active);
+      if (active) setLinkSuccess(true);
       const stored = getStoredSubscriberEmail();
       if (stored) setEmail(stored);
     };
@@ -112,7 +115,7 @@ function EmailSection() {
     if (syncedEmail) setEmail(syncedEmail);
   }, [syncedEmail]);
 
-  const isActive = localActive || subscribed;
+  const isActive = linkSuccess || localActive || subscribed || isDailyEmailLinked();
   const displayEmail =
     getStoredSubscriberEmail() || syncedEmail || email || getKnownDeviceEmail();
 
@@ -127,6 +130,7 @@ function EmailSection() {
     if (result.ok) {
       markEmailSubscribed(email.trim());
       setLocalActive(true);
+      setLinkSuccess(true);
       toast({ description: result.message || "Daily verse email linked on this device." });
     } else {
       toast({ description: result.message, variant: "destructive" });

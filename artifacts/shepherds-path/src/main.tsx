@@ -87,9 +87,9 @@ if (!mountEl) {
 }
 
 async function mountApp() {
+  document.getElementById("sp-safari-link")?.remove();
+  document.getElementById("sp-enter-btn")?.remove();
   if (isNativeWebViewShell()) {
-    document.getElementById("sp-safari-link")?.remove();
-    document.getElementById("sp-enter-btn")?.remove();
     const bootStatus = document.getElementById("sp-boot-splash-status");
     if (bootStatus) bootStatus.textContent = "Loading…";
     hydrateSubscriberFromUrlParam();
@@ -97,9 +97,9 @@ async function mountApp() {
     await requestNativeSubscriberBootstrap();
     hydrateSubscriberStateFromStorage();
     await hydrateSubscriberStateFromIndexedDB();
-    await syncEmailSubscriptionStatus();
     nativeDiag("react_render_called");
   }
+  await syncEmailSubscriptionStatus();
 
   createRoot(mountEl!).render(
     <ErrorBoundary>

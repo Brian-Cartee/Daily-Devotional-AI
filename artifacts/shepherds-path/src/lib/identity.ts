@@ -97,11 +97,16 @@ export async function subscribeWithIdentity(input: ConnectIdentityInput): Promis
       }),
       credentials: "include",
     });
-    const data = await res.json();
+    const data = (await res.json()) as {
+      message?: string;
+      subscribed?: boolean;
+      email?: string | null;
+    };
     if (res.ok || res.status === 409) {
-      markEmailSubscribed(email);
-      setProEmail(email);
-      void linkProSessionForContinuity(email, getSessionId());
+      const linkedEmail = (data.email || email).trim().toLowerCase();
+      markEmailSubscribed(linkedEmail);
+      setProEmail(linkedEmail);
+      void linkProSessionForContinuity(linkedEmail, getSessionId());
       const message =
         res.status === 409
           ? "You're connected — daily Scripture continues in your inbox."

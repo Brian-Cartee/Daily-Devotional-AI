@@ -1968,7 +1968,11 @@ What you never do:
             });
           }
           setSubscriberCookies(res, input.email);
-          return res.status(409).json({ message: "This email is already subscribed." });
+          return res.status(409).json({
+            message: "This email is already subscribed.",
+            subscribed: true,
+            email: normalizeEmail(input.email),
+          });
         }
         await db_reactivate(input.email);
         if (input.sessionId) {
@@ -2009,7 +2013,11 @@ What you never do:
       }
 
       setSubscriberCookies(res, input.email);
-      res.status(201).json({ message: "You're subscribed! Check your inbox for a welcome email." });
+      res.status(201).json({
+        message: "You're subscribed! Check your inbox for a welcome email.",
+        subscribed: true,
+        email: normalizeEmail(input.email),
+      });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });

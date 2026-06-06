@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
+import { useEmailSubscriptionStatus, getKnownDeviceEmail, isDailyEmailLinked } from "@/hooks/use-email-subscription";
 import { subscribeWithIdentity } from "@/lib/identity";
 import { getRelationshipAge } from "@/lib/relationship";
 import { motion } from "framer-motion";
@@ -459,7 +459,10 @@ export function HomeDailyEmailStatus({
   }, [email, linkEmail]);
 
   const showSubscribed =
-    subscribed || linked || isEmailSubscribedLocally() || !!getKnownDeviceEmail();
+    subscribed ||
+    linked ||
+    linkStatus === "success" ||
+    isDailyEmailLinked();
 
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();

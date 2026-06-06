@@ -18,6 +18,8 @@ type SubscriptionStatus = {
   hydrated: boolean;
 };
 
+type StatusResponse = { subscribed?: boolean; email?: string | null };
+
 /** Any email this device has stored from subscribe, Pro connect, or notification prefs. */
 export function getKnownDeviceEmail(): string | null {
   hydrateSubscriberStateFromStorage();
@@ -33,10 +35,16 @@ export function getKnownDeviceEmail(): string | null {
   return null;
 }
 
+/** Single source of truth for both Home footer and My rhythm email UI. */
+export function isDailyEmailLinked(): boolean {
+  hydrateSubscriberStateFromStorage();
+  return isEmailSubscribedLocally() || !!getKnownDeviceEmail();
+}
+
 function buildLocalStatus(): SubscriptionStatus {
   hydrateSubscriberStateFromStorage();
   const email = getStoredSubscriberEmail() ?? getSubscribedEmail();
-  const subscribed = isEmailSubscribedLocally() || !!email;
+  const subscribed = isDailyEmailLinked();
   return {
     subscribed,
     email,
@@ -46,6 +54,16 @@ function buildLocalStatus(): SubscriptionStatus {
 
 let syncPromise: Promise<SubscriptionStatus> | null = null;
 
+async function fetchSubscriptionStatus(query: string): Promise<StatusResponse | null> {
+  try {
+    const res = await fetch(`/api/subscribe/status${query}`, { credentials: "include" });
+    if (!res.ok) return null;
+    return (await res.json()) as StatusResponse;
+  } catch {
+    return null;
+  }
+}
+
 export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus> {
   hydrateSubscriberStateFromStorage();
   const local = buildLocalStatus();
@@ -54,18 +72,26 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
 
   syncPromise = (async () => {
     const sessionId = getSessionId();
-    const params = new URLSearchParams({ sessionId });
     const knownEmail = getKnownDeviceEmail();
-    if (knownEmail) {
-      params.set("email", knownEmail);
-    }
 
-    try {
-      const res = await fetch(`/api/subscribe/status?${params.toString()}`, {
-        credentials: "include",
-      });
-      const data = (await res.json()) as { subscribed?: boolean; email?: string | null };
-      if (data.subscribed && data.email) {
+    const attempts: string[] = [];
+    const primary = new URLSearchParams();
+    if (sessionId) primary.set("sessionId", sessionId);
+    if (knownEmail) primary.set("email", knownEmail);
+    if ([...primary.keys()].length > 0) {
+      attempts.push(`?${primary.toString()}`);
+    }
+    if (sessionId) {
+      attempts.push(`?sessionId=${encodeURIComponent(sessionId)}`);
+    }
+    if (knownEmail) {
+      attempts.push(`?email=${encodeURIComponent(knownEmail)}`);
+    }
+    attempts.push("");
+
+    for (const query of attempts) {
+      const data = await fetchSubscriptionStatus(query);
+      if (data?.subscribed && data.email) {
         persistSubscriberState(data.email);
         return {
           subscribed: true,
@@ -73,8 +99,6 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
           hydrated: true,
         };
       }
-    } catch {
-      /* non-blocking */
     }
 
     if (local.subscribed || knownEmail) {
@@ -108,11 +132,8 @@ async function linkStoredEmailToSession(email: string): Promise<void> {
       sessionId: getSessionId(),
       email,
     });
-    const res = await fetch(`/api/subscribe/status?${params.toString()}`, {
-      credentials: "include",
-    });
-    const data = (await res.json()) as { subscribed?: boolean; email?: string | null };
-    if (data.subscribed && data.email) {
+    const data = await fetchSubscriptionStatus(`?${params.toString()}`);
+    if (data?.subscribed && data.email) {
       persistSubscriberState(data.email);
     }
   } catch {
@@ -134,7 +155,7 @@ export function useEmailSubscriptionStatus(): SubscriptionStatus {
     void syncEmailSubscriptionStatus().then((next) => {
       if (cancelled) return;
       setStatus((prev) => ({
-        subscribed: prev.subscribed || next.subscribed || isEmailSubscribedLocally(),
+        subscribed: prev.subscribed || next.subscribed || isDailyEmailLinked(),
         email: next.email ?? prev.email ?? getStoredSubscriberEmail(),
         hydrated: true,
       }));

@@ -50,13 +50,13 @@
         notifyNativeEmail(email);
       }
       function syncStatusFromServer(sessionId, emailHint) {
-        if (!sessionId) return null;
         try {
-          var url =
-            "/api/subscribe/status?sessionId=" + encodeURIComponent(sessionId);
+          var parts = [];
+          if (sessionId) parts.push("sessionId=" + encodeURIComponent(sessionId));
           if (emailHint && emailHint.indexOf("@") > 0) {
-            url += "&email=" + encodeURIComponent(emailHint);
+            parts.push("email=" + encodeURIComponent(emailHint));
           }
+          var url = "/api/subscribe/status" + (parts.length ? "?" + parts.join("&") : "");
           var xhr = new XMLHttpRequest();
           xhr.open("GET", url, false);
           xhr.withCredentials = true;
@@ -133,6 +133,13 @@
           if (serverStatus && serverStatus.subscribed && serverStatus.email) {
             em = String(serverStatus.email).trim().toLowerCase();
             persistLocalSubscriber(em, sid);
+          }
+        }
+        if (!em || em.indexOf("@") < 1) {
+          var cookieStatus = syncStatusFromServer("", null);
+          if (cookieStatus && cookieStatus.subscribed && cookieStatus.email) {
+            em = String(cookieStatus.email).trim().toLowerCase();
+            persistLocalSubscriber(em, sid || "");
           }
         }
         if (sid) {
