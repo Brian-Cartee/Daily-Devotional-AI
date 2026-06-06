@@ -6,7 +6,7 @@ import { BackButton } from "@/components/BackButton";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
-import { FloatingBiblePlayer } from "@/components/FloatingBiblePlayer";
+import { FloatingListenPlayer } from "@/components/FloatingListenPlayer";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { getUserVoice } from "@/lib/userName";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -634,9 +634,8 @@ export default function ReadBible() {
       </main>
 
       {selectedBook && chapterText.data && (
-        <FloatingBiblePlayer
-          book={selectedBook}
-          chapter={selectedChapter}
+        <FloatingListenPlayer
+          titleLine={`${selectedBook} · Ch. ${selectedChapter}`}
           listenText={chapterListenText}
           canPrev={selectedChapter > 1}
           canNext={!!book && selectedChapter < book.chapters}
@@ -645,6 +644,7 @@ export default function ReadBible() {
           tts={tts}
           onListenStart={() => setListenSession(true)}
           onListenStop={() => setListenSession(false)}
+          testId="floating-bible-player"
         />
       )}
 

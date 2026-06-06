@@ -290,12 +290,21 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                     Your verse, reflection, and prayer are ready below.
                   </p>
                 )}
+                <Link href="/devotional?listen=1">
+                  <span
+                    data-testid="btn-hero-play-devotional"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-primary shadow-md shadow-black/25 active:scale-[0.99] mb-2.5"
+                  >
+                    <Headphones className="w-4 h-4" />
+                    Play today&apos;s Word
+                  </span>
+                </Link>
                 <Link href="/devotional">
                   <span
                     data-testid="btn-hero-open-devotional-focus"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 shadow-md shadow-black/20 active:scale-[0.99]"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white/90 border border-white/25 active:scale-[0.99]"
                   >
-                    Open today&apos;s Word
+                    Read instead
                     <ArrowRight className="w-4 h-4" />
                   </span>
                 </Link>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -115,6 +115,8 @@ function PrayerText({ text }: { text: string }) {
 
 export default function Devotional() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const listenFromHome = new URLSearchParams(search).get("listen") === "1";
   const { data: verse, isLoading: isVerseLoading, error: verseError } = useDailyVerse();
   const [reflectionContent, setReflectionContent] = useState("");
   const [reflectionLoading, setReflectionLoading] = useState(false);
@@ -128,6 +130,7 @@ export default function Devotional() {
   const [devotionalStarted, setDevotionalStarted] = useState(false);
   const [showStillness, setShowStillness] = useState(false);
   const listenFirstTriggeredRef = useRef(false);
+  const homeListenTriggeredRef = useRef(false);
   const [entryTriggered, setEntryTriggered] = useState(false);
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
@@ -819,6 +822,13 @@ export default function Devotional() {
     }, 800);
     return () => clearTimeout(t);
   }, [fullListenReady]);
+
+  useEffect(() => {
+    if (!listenFromHome || homeListenTriggeredRef.current) return;
+    if (!fullListenReady) return;
+    homeListenTriggeredRef.current = true;
+    void startFullListen();
+  }, [listenFromHome, fullListenReady]);
 
   const handleShare = async () => {
     if (!verse) return;

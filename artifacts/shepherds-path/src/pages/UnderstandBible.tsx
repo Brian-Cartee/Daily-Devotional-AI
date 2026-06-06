@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,8 +20,12 @@ import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
-import { getUserName } from "@/lib/userName";
+import { getUserName, getUserVoice } from "@/lib/userName";
 import { ListenButton } from "@/components/ListenButton";
+import { FloatingListenPlayer } from "@/components/FloatingListenPlayer";
+import { JourneyStepListenBar } from "@/components/JourneyStepListenBar";
+import { useTTS, prewarmTTS } from "@/hooks/use-tts";
+import { buildJourneyStepListenText, journeyDayStorageKey } from "@/lib/journeyListenText";
 import { getHeroImage } from "@/lib/heroImage";
 import { createShareImage } from "@/lib/shareImage";
 import { shareImageBlob, shareImageFilename } from "@/lib/shareVerse";
@@ -44,8 +48,17 @@ function usePassageText(apiRef: string, enabled: boolean) {
 }
 
 
-function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
-  const [open, setOpen] = useState(false);
+function ChapterCard({
+  chapter,
+  open,
+  onToggle,
+  isActive = false,
+}: {
+  chapter: GuidedChapter;
+  open: boolean;
+  onToggle: () => void;
+  isActive?: boolean;
+}) {
   const [aiMode, setAiMode] = useState<"reflect" | "pray" | "explain" | "chat" | null>(null);
   const [aiContent, setAiContent] = useState("");
   const [chatInput, setChatInput] = useState("");
@@ -184,9 +197,14 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
   };
 
   return (
-    <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-2xl overflow-hidden">
+    <div
+      id={`chapter-card-${chapter.id}`}
+      className={`bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-2xl overflow-hidden transition-shadow ${
+        isActive ? "ring-2 ring-primary/25 shadow-md shadow-primary/5" : ""
+      }`}
+    >
       <button
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
         className="w-full text-left p-5 flex items-start gap-4 hover:bg-white/30 dark:hover:bg-slate-700/20 transition-colors"
         data-testid={`chapter-toggle-${chapter.id}`}
       >
@@ -232,7 +250,6 @@ function ChapterCard({ chapter }: { chapter: GuidedChapter }) {
                         {sharingCard ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : cardDone ? <Check className="w-3.5 h-3.5 text-green-500" /> : <ImageDown className="w-3.5 h-3.5" />}
                         {sharingCard ? "Creating…" : cardDone ? "Done!" : "Card"}
                       </button>
-                      <ListenButton text={textQuery.data.text} label="Listen instead" className="text-[11px]" />
                       {/* Remember this — quiet bookmark, not a primary action */}
                       <button
                         onClick={handleSaveSnippet}
@@ -733,6 +750,87 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
   const themes = Array.from(new Set(journey.entries.map((e) => e.theme)));
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const filtered = activeTheme ? journey.entries.filter((e) => e.theme === activeTheme) : journey.entries;
+  const storageKey = journeyDayStorageKey(journey.id);
+
+  const resolveInitialIndex = () => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const idx = filtered.findIndex((e) => e.id === saved);
+        if (idx >= 0) return idx;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 0;
+  };
+
+  const [activeIndex, setActiveIndex] = useState(resolveInitialIndex);
+  const [expandedId, setExpandedId] = useState<string | null>(() => filtered[resolveInitialIndex()]?.id ?? null);
+  const [listenSession, setListenSession] = useState(false);
+  const tts = useTTS();
+  const themeFilterMounted = useRef(false);
+
+  const activeChapter = filtered[activeIndex];
+  const passageQuery = usePassageText(activeChapter?.apiRef ?? "", !!activeChapter);
+  const listenText =
+    passageQuery.data && activeChapter
+      ? buildJourneyStepListenText(activeChapter, passageQuery.data.text)
+      : "";
+
+  useEffect(() => {
+    if (!themeFilterMounted.current) {
+      themeFilterMounted.current = true;
+      return;
+    }
+    setActiveIndex(0);
+    setExpandedId(filtered[0]?.id ?? null);
+  }, [activeTheme, filtered]);
+
+  useEffect(() => {
+    if (!listenText || !isProVerifiedLocally()) return;
+    prewarmTTS(listenText, getUserVoice(), "snippet");
+  }, [listenText, activeChapter?.id]);
+
+  useEffect(() => {
+    if (!listenSession || !listenText || passageQuery.isLoading) return;
+    void tts.play(listenText, getUserVoice(), { scope: "snippet" });
+  }, [activeIndex, activeTheme]);
+
+  useEffect(() => () => { tts.stop(); }, []);
+
+  const goToStep = (nextIndex: number) => {
+    if (nextIndex < 0 || nextIndex >= filtered.length) return;
+    const chapter = filtered[nextIndex];
+    setActiveIndex(nextIndex);
+    setExpandedId(chapter.id);
+    try {
+      localStorage.setItem(storageKey, chapter.id);
+    } catch {
+      /* ignore */
+    }
+    document.getElementById(`chapter-card-${chapter.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const startListen = () => {
+    if (!listenText.trim()) return;
+    if (activeChapter && expandedId !== activeChapter.id) {
+      setExpandedId(activeChapter.id);
+    }
+    setListenSession(true);
+    void tts.play(listenText, getUserVoice(), { scope: "snippet" });
+  };
+
+  const stopListen = () => {
+    setListenSession(false);
+    tts.stop();
+  };
+
+  const listenReady = !!listenText.trim() && !passageQuery.isLoading;
+  const dayLabel = activeChapter ? `Play Day ${activeChapter.order}` : "Play this step";
+  const listenSubtitle = activeChapter
+    ? `${activeChapter.reference} · passage and why it matters`
+    : "Loading this step…";
 
   return (
     <main id="journey-detail-top" className="min-h-screen bg-background pb-28 sm:pb-16">
@@ -828,17 +926,59 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
           </motion.div>
         )}
 
+        <JourneyStepListenBar
+          dayLabel={dayLabel}
+          subtitle={listenSubtitle}
+          ready={listenReady}
+          tts={tts}
+          onPlay={startListen}
+          onStop={stopListen}
+        />
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
           className="space-y-3"
         >
-          {filtered.map((entry) => (
-            <ChapterCard key={entry.id} chapter={entry} />
+          {filtered.map((entry, index) => (
+            <ChapterCard
+              key={entry.id}
+              chapter={entry}
+              open={expandedId === entry.id}
+              isActive={activeIndex === index}
+              onToggle={() => {
+                if (expandedId === entry.id) {
+                  setExpandedId(null);
+                  return;
+                }
+                setExpandedId(entry.id);
+                setActiveIndex(index);
+                try {
+                  localStorage.setItem(storageKey, entry.id);
+                } catch {
+                  /* ignore */
+                }
+              }}
+            />
           ))}
         </motion.div>
       </div>
+
+      {activeChapter && listenText && (
+        <FloatingListenPlayer
+          titleLine={`Day ${activeChapter.order} · ${activeChapter.reference}`}
+          listenText={listenText}
+          canPrev={activeIndex > 0}
+          canNext={activeIndex < filtered.length - 1}
+          onPrev={() => goToStep(activeIndex - 1)}
+          onNext={() => goToStep(activeIndex + 1)}
+          tts={tts}
+          onListenStart={() => setListenSession(true)}
+          onListenStop={() => setListenSession(false)}
+          testId="floating-journey-player"
+        />
+      )}
     </main>
   );
 }
