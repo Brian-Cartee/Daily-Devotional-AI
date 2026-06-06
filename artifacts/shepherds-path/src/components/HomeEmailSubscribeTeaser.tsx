@@ -22,7 +22,7 @@ export function HomeEmailSubscribeTeaser() {
             Get tomorrow&apos;s verse by email
           </p>
           <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5 leading-relaxed">
-            One quiet email each morning — free, no account.
+            Already subscribed or new — one email at the bottom of Home.
           </p>
         </div>
         <ArrowDown className="w-4 h-4 text-primary/70 shrink-0 group-hover:translate-y-0.5 transition-transform" />

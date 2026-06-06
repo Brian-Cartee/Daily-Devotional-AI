@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import { useState, useEffect } from "react";
+import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
 import { subscribeWithIdentity } from "@/lib/identity";
 import { motion } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-react";
@@ -313,39 +313,19 @@ export function InlineEmailSignup() {
 // ─── Email Subscribe (SMS tab hidden until carrier registration is complete) ──
 
 export function InlineSubscribeToggle() {
-  // SMS tab hidden until Twilio A2P 10DLC registration is approved.
-  // To re-enable: restore the tab toggle state and SMS form below.
-
   const { subscribed: serverSubscribed, hydrated } = useEmailSubscriptionStatus();
   const [emailSubscribed, setEmailSubscribed] = useState(() => isEmailSubscribed());
   const isSubscribed = emailSubscribed || serverSubscribed;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [socialHandle, setSocialHandle] = useState("");
   const [emailStatus, setEmailStatus] = useState<Status>("idle");
   const [emailMsg, setEmailMsg] = useState("");
-  const [connectEmail, setConnectEmail] = useState("");
-  const [connectStatus, setConnectStatus] = useState<Status>("idle");
-  const [connectMsg, setConnectMsg] = useState("");
 
-  const handleConnectSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!connectEmail.trim()) return;
-    setConnectStatus("loading");
-    const result = await subscribeWithIdentity({
-      email: connectEmail,
-      source: "home-footer-connect",
-    });
-    if (result.ok) {
-      markEmailSubscribed(connectEmail.trim());
-      setEmailSubscribed(true);
-      setConnectStatus("success");
-      setConnectMsg(result.message);
-    } else {
-      setConnectStatus("error");
-      setConnectMsg(result.message);
-    }
-  };
+  useEffect(() => {
+    if (!hydrated || isSubscribed || email.trim()) return;
+    const known = getKnownDeviceEmail();
+    if (known) setEmail(known);
+  }, [hydrated, isSubscribed, email]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,7 +334,6 @@ export function InlineSubscribeToggle() {
     const result = await subscribeWithIdentity({
       email,
       name,
-      socialHandle,
       source: "home-footer",
     });
     if (result.ok) {
@@ -381,7 +360,7 @@ export function InlineSubscribeToggle() {
   if (!hydrated) {
     return (
       <div
-        className="rounded-2xl border border-border/40 bg-card/30 h-[280px] animate-pulse"
+        className="rounded-2xl border border-border/40 bg-card/30 h-[200px] animate-pulse"
         aria-hidden="true"
         data-testid="home-footer-email-subscribe-loading"
       />
@@ -397,65 +376,17 @@ export function InlineSubscribeToggle() {
     >
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400" />
       <div className="px-5 sm:px-6 pt-6 pb-6 sm:pb-7">
-        <div className="mb-5 rounded-xl border border-green-500/25 bg-green-500/8 px-4 py-4">
-          <p className="text-[15px] font-semibold text-foreground leading-snug">
-            Already getting our daily email?
-          </p>
-          <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">
-            Connect this device with the email you subscribed with — no duplicate signup.
-          </p>
-          <form onSubmit={handleConnectSubmit} className="mt-3 space-y-2">
-            <Input
-              data-testid="input-connect-subscribe-email"
-              type="email"
-              placeholder="your@email.com"
-              value={connectEmail}
-              onChange={(e) => setConnectEmail(e.target.value)}
-              required
-              className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
-              disabled={connectStatus === "loading"}
-            />
-            {connectStatus === "error" && (
-              <p className="text-sm text-destructive">{connectMsg}</p>
-            )}
-            <Button
-              data-testid="button-connect-subscribe"
-              type="submit"
-              variant="secondary"
-              disabled={!connectEmail.trim() || connectStatus === "loading"}
-              className="w-full min-h-[44px] rounded-xl font-semibold text-[14px]"
-            >
-              {connectStatus === "loading" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Connect my subscription"
-              )}
-            </Button>
-          </form>
-        </div>
-
         <div className="mb-5">
-          <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide">
-            New here?
-          </p>
-          <p className="text-[16px] sm:text-[17px] font-bold text-foreground leading-snug mt-1">
-            Receive the daily verse
+          <p className="text-[16px] sm:text-[17px] font-bold text-foreground leading-snug">
+            Daily Scripture by email
           </p>
           <p className="text-[14px] sm:text-[15px] text-muted-foreground mt-1.5 leading-relaxed">
-            One email, no account — we&apos;ll know it&apos;s you across devices.
+            Enter your email below. New signups and existing subscribers use the same step — we&apos;ll
+            connect this device without a duplicate list entry.
           </p>
         </div>
 
         <form onSubmit={handleEmailSubmit} className="space-y-3.5">
-          <Input
-            data-testid="input-toggle-name"
-            type="text"
-            placeholder="Your first name (optional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
-            disabled={emailStatus === "loading"}
-          />
           <Input
             data-testid="input-toggle-email"
             type="email"
@@ -463,15 +394,17 @@ export function InlineSubscribeToggle() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
             className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
             disabled={emailStatus === "loading"}
           />
           <Input
-            data-testid="input-toggle-social"
+            data-testid="input-toggle-name"
             type="text"
-            placeholder="Instagram or TikTok @ (optional)"
-            value={socialHandle}
-            onChange={(e) => setSocialHandle(e.target.value)}
+            placeholder="Your first name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="given-name"
             className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
             disabled={emailStatus === "loading"}
           />
@@ -487,7 +420,7 @@ export function InlineSubscribeToggle() {
             ) : (
               <>
                 <Mail className="w-4 h-4 mr-1.5" />
-                Subscribe free
+                Continue
               </>
             )}
           </Button>
