@@ -27,11 +27,32 @@ export function dismissProNudge(): void {
 }
 
 export function getProEmail(): string | null {
-  return localStorage.getItem(PRO_KEY);
+  try {
+    const local = localStorage.getItem(PRO_KEY);
+    if (local) return local;
+    const match = document.cookie.match(/(?:^|; )sp_pro_email=([^;]*)/);
+    if (match) {
+      const fromCookie = decodeURIComponent(match[1]);
+      if (fromCookie.includes("@")) {
+        localStorage.setItem(PRO_KEY, fromCookie);
+        return fromCookie;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 export function setProEmail(email: string): void {
-  localStorage.setItem(PRO_KEY, email.toLowerCase());
+  const normalized = email.toLowerCase();
+  try {
+    localStorage.setItem(PRO_KEY, normalized);
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `sp_pro_email=${encodeURIComponent(normalized)}; path=/; max-age=63072000; SameSite=Lax${secure}`;
+  } catch {
+    /* ignore */
+  }
 }
 
 export function hasRealProEmail(): boolean {

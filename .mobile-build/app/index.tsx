@@ -212,7 +212,7 @@ export default function MainScreen() {
   const [diagSummary, setDiagSummary] = useState("");
   const [mainJsPath, setMainJsPath] = useState<string | null>(null);
   const mainJsPathRef = useRef<string | null>(null);
-  const [beforeContentJs, setBeforeContentJs] = useState(BEFORE_CONTENT_JS);
+  const [beforeContentJs, setBeforeContentJs] = useState<string | null>(null);
   const [pullRefreshing, setPullRefreshing] = useState(false);
 
   useEffect(() => {
@@ -226,6 +226,13 @@ export default function MainScreen() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const injectProfileSeed = useCallback(() => {
+    void loadNativeUserProfile().then(({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
+      const seed = buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed);
+      webviewRef.current?.injectJavaScript(`${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}true;`);
+    });
   }, []);
 
   const pushNativeDiag = useCallback((event: string, detail = "") => {
@@ -447,6 +454,17 @@ export default function MainScreen() {
     );
   }
 
+  if (!beforeContentJs) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.webviewLoading}>
+          <ActivityIndicator size="large" color="#d4a574" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
@@ -472,6 +490,7 @@ export default function MainScreen() {
         setSupportMultipleWindows={false}
         cacheEnabled={false}
         injectedJavaScriptBeforeContentLoaded={beforeContentJs}
+        onLoadEnd={injectProfileSeed}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onMessage={(e) => {
           try {

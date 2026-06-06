@@ -12,6 +12,7 @@ import {
   isEmailSubscribedLocally,
   persistSubscriberState,
 } from "@/lib/subscriberState";
+import { setProEmail } from "@/lib/proStatus";
 
 export function isEmailSubscribed(): boolean {
   return isEmailSubscribedLocally();
@@ -469,6 +470,7 @@ export function HomeDailyEmailStatus({
     });
     if (result.ok) {
       markEmailSubscribed(linkEmail.trim());
+      setProEmail(linkEmail.trim());
       setLinked(true);
       setLinkStatus("success");
       setLinkMsg(result.message);

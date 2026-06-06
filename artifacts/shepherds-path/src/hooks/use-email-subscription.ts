@@ -35,10 +35,12 @@ export function getKnownDeviceEmail(): string | null {
 
 function buildLocalStatus(): SubscriptionStatus {
   hydrateSubscriberStateFromStorage();
+  const subscribed = isEmailSubscribedLocally();
+  const email = getStoredSubscriberEmail() ?? getSubscribedEmail();
   return {
-    subscribed: isEmailSubscribedLocally(),
-    email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
-    hydrated: true,
+    subscribed,
+    email,
+    hydrated: subscribed,
   };
 }
 
@@ -46,16 +48,7 @@ let syncPromise: Promise<SubscriptionStatus> | null = null;
 
 export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus> {
   hydrateSubscriberStateFromStorage();
-
   const local = buildLocalStatus();
-  if (local.subscribed && local.email) {
-    void linkStoredEmailToSession(local.email);
-    return local;
-  }
-
-  if (local.subscribed) {
-    return local;
-  }
 
   if (syncPromise) return syncPromise;
 
@@ -84,11 +77,9 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
       /* non-blocking */
     }
 
-    // Never discard a local/cookie hint because the network hiccuped.
-    const fallback = buildLocalStatus();
-    if (fallback.subscribed) {
-      if (fallback.email) void linkStoredEmailToSession(fallback.email);
-      return fallback;
+    if (local.subscribed) {
+      if (local.email) void linkStoredEmailToSession(local.email);
+      return { ...local, hydrated: true };
     }
 
     return {
@@ -122,26 +113,14 @@ async function linkStoredEmailToSession(email: string): Promise<void> {
 }
 
 export function useEmailSubscriptionStatus(): SubscriptionStatus {
-  const [status, setStatus] = useState<SubscriptionStatus>(() => {
-    hydrateSubscriberStateFromStorage();
-    return {
-      subscribed: isEmailSubscribedLocally(),
-      email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
-      hydrated: false,
-    };
-  });
+  const [status, setStatus] = useState<SubscriptionStatus>(() => buildLocalStatus());
 
   useEffect(() => {
     let cancelled = false;
 
     const refresh = () => {
       if (cancelled) return;
-      const local = buildLocalStatus();
-      setStatus((prev) => ({
-        subscribed: prev.subscribed || local.subscribed,
-        email: prev.email ?? local.email,
-        hydrated: true,
-      }));
+      setStatus(buildLocalStatus());
     };
 
     void syncEmailSubscriptionStatus().then((next) => {

@@ -10,6 +10,71 @@
     })();
     </script>
     <meta charset="UTF-8" />
+    <script>
+    (function () {
+      function readCookie(name) {
+        try {
+          var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+          return m ? decodeURIComponent(m[1]) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+      function writeCookie(name, value) {
+        try {
+          var secure = location.protocol === "https:" ? "; Secure" : "";
+          document.cookie =
+            name +
+            "=" +
+            encodeURIComponent(value) +
+            "; path=/; max-age=63072000; SameSite=Lax" +
+            secure;
+        } catch (e) {}
+      }
+      try {
+        var sid = localStorage.getItem("sp_session_id") || readCookie("sp_session_id");
+        if (sid) {
+          localStorage.setItem("sp_session_id", sid);
+          writeCookie("sp_session_id", sid);
+          try {
+            sessionStorage.setItem("sp_session_id", sid);
+          } catch (e) {}
+        }
+        var em = (
+          localStorage.getItem("sp-subscribed-email") ||
+          readCookie("sp_subscriber_email") ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+        var sub =
+          localStorage.getItem("sp-email-subscribed") === "true" ||
+          readCookie("sp_email_subscribed") === "true";
+        if (!em || em.indexOf("@") < 1) {
+          var pro = (
+            localStorage.getItem("sp_pro_email") ||
+            readCookie("sp_pro_email") ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
+          if (pro.indexOf("@") > 0) em = pro;
+        }
+        if (em && em.indexOf("@") > 0) {
+          localStorage.setItem("sp-subscribed-email", em);
+          localStorage.setItem("sp-email-subscribed", "true");
+          writeCookie("sp_subscriber_email", em);
+          writeCookie("sp_email_subscribed", "true");
+          try {
+            sessionStorage.setItem("sp-subscribed-email", em);
+            sessionStorage.setItem("sp-email-subscribed", "true");
+          } catch (e) {}
+        } else if (sub) {
+          localStorage.setItem("sp-email-subscribed", "true");
+        }
+      } catch (e) {}
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Shepherd's Path — You Don't Have to Walk This Alone</title>
     <meta name="description" content="Tell us what you're going through — get scripture and pastoral guidance that speaks directly to your situation. Personal. Instant. Biblical." />
