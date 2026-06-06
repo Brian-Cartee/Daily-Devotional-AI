@@ -13,6 +13,29 @@ type SubscriptionStatus = {
   hydrated: boolean;
 };
 
+/** Any email this device has stored from subscribe, Pro connect, or notification prefs. */
+export function getKnownDeviceEmail(): string | null {
+  const subscribed = getSubscribedEmail();
+  if (subscribed?.includes("@")) return subscribed;
+
+  if (hasRealProEmail()) {
+    const pro = getProEmail();
+    if (pro?.includes("@")) return pro.toLowerCase();
+  }
+
+  try {
+    const prefs = JSON.parse(localStorage.getItem("sp_notif_prefs") || "{}") as {
+      email?: string;
+    };
+    const notifEmail = prefs.email?.trim().toLowerCase();
+    if (notifEmail?.includes("@")) return notifEmail;
+  } catch {
+    /* ignore */
+  }
+
+  return null;
+}
+
 let syncPromise: Promise<SubscriptionStatus> | null = null;
 
 export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus> {
@@ -29,8 +52,8 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
   syncPromise = (async () => {
     const sessionId = getSessionId();
     const params = new URLSearchParams({ sessionId });
-    const knownEmail = getSubscribedEmail() || (hasRealProEmail() ? getProEmail() : null);
-    if (knownEmail?.includes("@")) {
+    const knownEmail = getKnownDeviceEmail();
+    if (knownEmail) {
       params.set("email", knownEmail);
     }
 

@@ -102,7 +102,11 @@ export async function subscribeWithIdentity(input: ConnectIdentityInput): Promis
       markEmailSubscribed(email);
       setProEmail(email);
       void linkProSessionForContinuity(email, getSessionId());
-      return { ok: true, message: data.message || "You're subscribed!" };
+      const message =
+        res.status === 409
+          ? "You're connected — daily Scripture continues in your inbox."
+          : data.message || "You're subscribed!";
+      return { ok: true, message };
     }
     return { ok: false, message: data.message || "We can try that again." };
   } catch {
