@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
 import { subscribeWithIdentity } from "@/lib/identity";
+import { getRelationshipAge } from "@/lib/relationship";
 import { motion } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
