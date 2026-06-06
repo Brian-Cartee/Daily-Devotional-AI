@@ -7,7 +7,19 @@ import { Input } from "@/components/ui/input";
 const ADMIN_SESSION_KEY = "sp-admin-token";
 
 type Counts = { emailSubscribers: number; smsSubscribers: number; pushSubscriptions: number };
-type EmailEntry = { id: number; name: string | null; email: string; active: boolean; createdAt: string | null; includeDailyArt: boolean };
+type EmailEntry = {
+  id: number;
+  name: string | null;
+  email: string;
+  active: boolean;
+  createdAt: string | null;
+  includeDailyArt: boolean;
+  socialHandle: string | null;
+  source: string | null;
+  sessionLinked: boolean;
+  isPro: boolean;
+  proPlan: string | null;
+};
 type SmsEntry = { phone: string; lastMessageAt: string | null; exchangeCount: number; joinedPrayerNetwork: boolean; createdAt: string | null };
 type Overview = { counts: Counts; emailList: EmailEntry[]; smsList: SmsEntry[] };
 
@@ -568,8 +580,11 @@ export default function AdminPage() {
                       <tr className="border-b border-border bg-muted/30">
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Social</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Source</th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Joined</th>
-                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Art</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Pro</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Linked</th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
                       </tr>
                     </thead>
@@ -578,9 +593,20 @@ export default function AdminPage() {
                         <tr key={s.id} data-testid={`row-email-${s.id}`} className={`border-b border-border/50 last:border-0 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
                           <td className="px-4 py-3 text-foreground">{s.name || <span className="text-muted-foreground italic">—</span>}</td>
                           <td className="px-4 py-3 text-foreground font-mono text-xs">{s.email}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">{s.socialHandle ? `@${s.socialHandle.replace(/^@/, "")}` : "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">{s.source || "—"}</td>
                           <td className="px-4 py-3 text-muted-foreground">{formatDate(s.createdAt)}</td>
                           <td className="px-4 py-3">
-                            {s.includeDailyArt
+                            {s.isPro ? (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                                {s.proPlan || "pro"}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {s.sessionLinked
                               ? <CheckCircle className="w-4 h-4 text-green-500" />
                               : <XCircle className="w-4 h-4 text-muted-foreground/40" />}
                           </td>

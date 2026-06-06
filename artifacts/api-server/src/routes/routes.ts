@@ -28,6 +28,13 @@ import { scheduleDailyVerseSync } from "../verseSyncScheduler";
 import { scheduleOnboardingEmails } from "../onboardingEmailScheduler";
 import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
+import { ensureIdentitySchema } from "../identityMigrations";
+import {
+  identityConnectSchema,
+  mobileSyncProSchema,
+  normalizeEmail,
+  normalizeSocialHandle,
+} from "../identityConnect";
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
 import {
@@ -232,6 +239,10 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  await ensureIdentitySchema().catch((err) => {
+    console.error("[identity] schema ensure failed:", err);
+  });
+
   // Sync today's verse from Google Sheets at startup
   syncTodayVerseFromSheet().catch(console.error);
 
@@ -1877,25 +1888,41 @@ What you never do:
   app.post("/api/subscribe", async (req, res) => {
     try {
       const input = insertSubscriberSchema.parse(req.body);
+      const socialHandle = normalizeSocialHandle(input.socialHandle);
+      const source = input.source?.trim().slice(0, 64) || undefined;
 
       const existing = await storage.getSubscriberByEmail(input.email);
       if (existing) {
         if (existing.active) {
-          // Silently link sessionId if provided and not already set
-          if (input.sessionId && !existing.sessionId) {
-            await storage.updateSubscriberSession(input.email, input.sessionId);
+          if (input.sessionId) {
+            await storage.upsertSubscriberIdentity({
+              email: input.email,
+              sessionId: input.sessionId,
+              name: input.name,
+              socialHandle,
+              source,
+            });
           }
           return res.status(409).json({ message: "This email is already subscribed." });
         }
-        // Re-activate if previously unsubscribed
         await db_reactivate(input.email);
         if (input.sessionId) {
-          await storage.updateSubscriberSession(input.email, input.sessionId);
+          await storage.upsertSubscriberIdentity({
+            email: input.email,
+            sessionId: input.sessionId,
+            name: input.name,
+            socialHandle,
+            source,
+          });
         }
         return res.status(200).json({ message: "Welcome back! Your subscription has been reactivated." });
       }
 
-      await storage.createSubscriber(input);
+      await storage.createSubscriber({
+        ...input,
+        socialHandle,
+        source,
+      });
 
       // Send a welcome email
       try {
@@ -1922,6 +1949,90 @@ What you never do:
       }
       console.error(err);
       res.status(500).json({ message: "Could not subscribe. Please try again." });
+    }
+  });
+
+  app.post("/api/mobile/sync-pro", async (req, res) => {
+    try {
+      const input = mobileSyncProSchema.parse(req.body);
+      const expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+      await storage.upsertMobileSubscription({
+        sessionId: input.sessionId,
+        isPro: input.isPro,
+        expiresAt,
+      });
+      res.json({ synced: true, isPro: input.isPro });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0]?.message ?? "Invalid request" });
+      }
+      console.error("[mobile/sync-pro]", err);
+      res.status(500).json({ message: "Could not sync subscription." });
+    }
+  });
+
+  app.post("/api/identity/connect", async (req, res) => {
+    try {
+      const input = identityConnectSchema.parse(req.body);
+      const email = normalizeEmail(input.email);
+      const socialHandle = normalizeSocialHandle(input.socialHandle);
+      const source = input.source?.trim().slice(0, 64) || "identity-connect";
+
+      const existingBefore = await storage.getSubscriberByEmail(email);
+      const emailPro = await storage.getProSubscriberByEmail(email);
+      const sessionPro = await storage.isSessionPro(input.sessionId);
+      const isPro = sessionPro || emailPro?.status === "active";
+
+      const subscriber = await storage.upsertSubscriberIdentity({
+        email,
+        sessionId: input.sessionId,
+        name: input.name,
+        socialHandle,
+        source,
+      });
+
+      if (isPro) {
+        const mobile = await storage.getMobileSubscription(input.sessionId);
+        const plan: "ios" | "android" =
+          input.source?.includes("android") || emailPro?.plan === "android"
+            ? "android"
+            : mobile?.isPro
+              ? "ios"
+              : "ios";
+        if (!emailPro || emailPro.status !== "active") {
+          await storage.upsertMobileProEmail(email, plan);
+        }
+      }
+
+      if (input.subscribeDaily && !existingBefore) {
+        try {
+          const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+          const videoUrl = process.env.WELCOME_VIDEO_URL || null;
+          const { client, fromEmail } = await getUncachableResendClient();
+          const welcomeData = { name: input.name ?? null, email, appUrl, videoUrl };
+          await client.emails.send({
+            from: fromEmail,
+            to: email,
+            subject: "You're connected — daily Scripture from Shepherd's Path",
+            html: buildWelcomeEmailHtml(welcomeData),
+            text: buildWelcomeEmailText(welcomeData),
+          });
+        } catch (emailErr) {
+          console.error("[identity/connect] welcome email failed (non-fatal):", emailErr);
+        }
+      }
+
+      res.json({
+        connected: true,
+        isPro,
+        dailySubscribed: subscriber.active,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0]?.message ?? "Invalid request" });
+      }
+      console.error("[identity/connect]", err);
+      res.status(500).json({ message: "Could not save your email. Please try again." });
     }
   });
 
@@ -4751,6 +4862,8 @@ ${historyNote}`;
       const emailSubscribers = await storage.getAllActiveSubscribers();
       const smsSubscribers = await storage.getSmsOptedInNumbers();
       const pushSubscriptions = await storage.getAllPushSubscriptions();
+      const activePros = await storage.getAllActiveProSubscribers();
+      const proByEmail = new Map(activePros.map((p) => [p.email.toLowerCase(), p]));
 
       const emailList = emailSubscribers.map((s: any) => ({
         id: s.id,
@@ -4759,6 +4872,11 @@ ${historyNote}`;
         active: s.active,
         createdAt: s.createdAt,
         includeDailyArt: s.includeDailyArt,
+        socialHandle: s.socialHandle || null,
+        source: s.source || null,
+        sessionLinked: !!s.sessionId,
+        isPro: proByEmail.has(s.email.toLowerCase()),
+        proPlan: proByEmail.get(s.email.toLowerCase())?.plan ?? null,
       }));
 
       const smsList = smsSubscribers.map((s: any) => ({

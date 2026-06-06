@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, Zap } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { getSessionId } from "@/lib/session";
-import { checkProWithServer, linkProSessionForContinuity } from "@/lib/proStatus";
+import { checkProWithServer, linkProSessionForContinuity, markIdentityConnected } from "@/lib/proStatus";
 import { BRAND_ICON } from "@/lib/brand";
 
 type Stage = "idle" | "loading" | "success" | "error" | "not-found";
@@ -25,6 +25,7 @@ export default function RestorePage() {
       const isPro = await checkProWithServer(trimmed);
       if (isPro) {
         void linkProSessionForContinuity(trimmed, getSessionId());
+        markIdentityConnected(trimmed);
         setStage("success");
         setTimeout(() => navigate("/"), 2200);
       } else {
@@ -79,7 +80,7 @@ export default function RestorePage() {
             Restore Pro Access
           </h1>
           <p className="text-[13px] text-white/50 max-w-xs mx-auto leading-relaxed">
-            Already a subscriber? Enter the email you used to subscribe and we'll restore your access on this device.
+            Enter the same email you used to subscribe — on web, App Store, or from social — and we&apos;ll restore Pro on this device.
           </p>
         </motion.div>
       </div>

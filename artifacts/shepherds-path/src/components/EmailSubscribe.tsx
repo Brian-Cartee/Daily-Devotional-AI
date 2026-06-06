@@ -4,6 +4,7 @@ import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getSessionId } from "@/lib/session";
+import { subscribeWithIdentity } from "@/lib/identity";
 
 const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
 
@@ -15,7 +16,7 @@ export function isEmailSubscribed(): boolean {
   }
 }
 
-function markEmailSubscribed() {
+export function markEmailSubscribed() {
   try {
     localStorage.setItem(EMAIL_SUBSCRIBED_KEY, "true");
   } catch {}
@@ -137,6 +138,7 @@ export function InlineEmailSignup() {
   const [alreadySubscribed] = useState(() => isEmailSubscribed());
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [socialHandle, setSocialHandle] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -144,25 +146,18 @@ export function InlineEmailSignup() {
     e.preventDefault();
     if (!email.trim()) return;
     setStatus("loading");
-    try {
-      const res = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, sessionId: getSessionId() }),
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (res.ok || res.status === 200) {
-        setStatus("success");
-        setMessage(data.message || "You're subscribed!");
-        markEmailSubscribed();
-      } else {
-        setStatus("error");
-        setMessage(data.message || "We can try that again.");
-      }
-    } catch {
+    const result = await subscribeWithIdentity({
+      email,
+      name,
+      socialHandle,
+      source: "inline-email-signup",
+    });
+    if (result.ok) {
+      setStatus("success");
+      setMessage(result.message);
+    } else {
       setStatus("error");
-      setMessage("Could not subscribe. Please check your connection.");
+      setMessage(result.message);
     }
   };
 
@@ -200,7 +195,7 @@ export function InlineEmailSignup() {
           </div>
           <div>
             <p className="text-[13px] font-bold text-foreground leading-tight">Get today's verse by email</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">A scripture delivered to your inbox each morning — free.</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">One email, no account — daily Scripture, free.</p>
           </div>
         </div>
 
@@ -221,6 +216,15 @@ export function InlineEmailSignup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="text-sm rounded-xl bg-background"
+            disabled={status === "loading"}
+          />
+          <Input
+            data-testid="input-inline-subscribe-social"
+            type="text"
+            placeholder="Instagram or TikTok @ (optional)"
+            value={socialHandle}
+            onChange={(e) => setSocialHandle(e.target.value)}
             className="text-sm rounded-xl bg-background"
             disabled={status === "loading"}
           />
@@ -257,6 +261,7 @@ export function InlineSubscribeToggle() {
   const [emailSubscribed, setEmailSubscribed] = useState(() => isEmailSubscribed());
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [socialHandle, setSocialHandle] = useState("");
   const [emailStatus, setEmailStatus] = useState<Status>("idle");
   const [emailMsg, setEmailMsg] = useState("");
 
@@ -264,25 +269,19 @@ export function InlineSubscribeToggle() {
     e.preventDefault();
     if (!email.trim()) return;
     setEmailStatus("loading");
-    try {
-      const res = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, sessionId: getSessionId() }),
-      });
-      const data = await res.json();
-      if (res.ok || res.status === 409) {
-        setEmailStatus("success");
-        setEmailMsg(data.message || "You're subscribed!");
-        markEmailSubscribed();
-        setEmailSubscribed(true);
-      } else {
-        setEmailStatus("error");
-        setEmailMsg(data.message || "We can try that again.");
-      }
-    } catch {
+    const result = await subscribeWithIdentity({
+      email,
+      name,
+      socialHandle,
+      source: "home-footer",
+    });
+    if (result.ok) {
+      setEmailStatus("success");
+      setEmailMsg(result.message);
+      setEmailSubscribed(true);
+    } else {
       setEmailStatus("error");
-      setEmailMsg("Could not subscribe. Please check your connection.");
+      setEmailMsg(result.message);
     }
   };
 
@@ -321,7 +320,7 @@ export function InlineSubscribeToggle() {
         <div className="mb-5">
           <p className="text-[16px] sm:text-[17px] font-bold text-foreground leading-snug">Receive the daily verse</p>
           <p className="text-[14px] sm:text-[15px] text-muted-foreground mt-1.5 leading-relaxed">
-            A quiet reminder each morning — free, one email.
+            One email, no account — we&apos;ll know it&apos;s you across devices.
           </p>
         </div>
 
@@ -345,6 +344,15 @@ export function InlineSubscribeToggle() {
             className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
             disabled={emailStatus === "loading"}
           />
+          <Input
+            data-testid="input-toggle-social"
+            type="text"
+            placeholder="Instagram or TikTok @ (optional)"
+            value={socialHandle}
+            onChange={(e) => setSocialHandle(e.target.value)}
+            className="text-base sm:text-[15px] h-12 rounded-xl bg-background"
+            disabled={emailStatus === "loading"}
+          />
           {emailStatus === "error" && <p className="text-sm text-destructive">{emailMsg}</p>}
           <Button
             data-testid="button-toggle-email-submit"
@@ -357,10 +365,13 @@ export function InlineSubscribeToggle() {
             ) : (
               <>
                 <Mail className="w-4 h-4 mr-1.5" />
-                Send it to me
+                Subscribe free
               </>
             )}
           </Button>
+          <p className="text-[11px] text-muted-foreground/80 text-center leading-snug">
+            We never sell your email. Unsubscribe in one click.
+          </p>
         </form>
       </div>
     </motion.div>

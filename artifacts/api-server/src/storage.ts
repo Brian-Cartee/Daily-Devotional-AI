@@ -6,7 +6,7 @@ import {
   computeStreakAfterGap,
   currentMonthKey,
 } from "./streakLogic";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback } from "@workspace/db";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, mobileSubscriptions, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback, type MobileSubscription } from "@workspace/db";
 import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr, count, gte } from "drizzle-orm";
 
 export interface IStorage {
@@ -50,6 +50,21 @@ export interface IStorage {
   getProSubscriberByEmail(email: string): Promise<ProSubscriber | undefined>;
   getAllActiveProSubscribers(): Promise<ProSubscriber[]>;
   linkProEmailToSession(email: string, sessionId: string): Promise<void>;
+  upsertSubscriberIdentity(data: {
+    email: string;
+    sessionId: string;
+    name?: string;
+    socialHandle?: string;
+    source?: string;
+  }): Promise<Subscriber>;
+  isSessionPro(sessionId: string): Promise<boolean>;
+  getMobileSubscription(sessionId: string): Promise<MobileSubscription | undefined>;
+  upsertMobileSubscription(data: {
+    sessionId: string;
+    isPro: boolean;
+    expiresAt?: Date | null;
+  }): Promise<MobileSubscription>;
+  upsertMobileProEmail(email: string, plan: "ios" | "android"): Promise<ProSubscriber>;
   getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined>;
   upsertProSubscriber(data: { email: string; stripeCustomerId: string; stripeSubscriptionId: string; plan: string; status: string }): Promise<ProSubscriber>;
   updateProSubscriberStatus(stripeSubscriptionId: string, status: string): Promise<void>;
@@ -342,6 +357,127 @@ export class DatabaseStorage implements IStorage {
       return;
     }
     await this.createSubscriber({ email: normalized, sessionId });
+  }
+
+  async upsertSubscriberIdentity(data: {
+    email: string;
+    sessionId: string;
+    name?: string;
+    socialHandle?: string;
+    source?: string;
+  }): Promise<Subscriber> {
+    const normalized = data.email.toLowerCase().trim();
+    const existing = await this.getSubscriberByEmail(normalized);
+    const patch: Partial<Subscriber> = {
+      sessionId: data.sessionId,
+      active: true,
+    };
+    if (data.name?.trim()) patch.name = data.name.trim();
+    if (data.socialHandle) patch.socialHandle = data.socialHandle;
+    if (data.source) patch.source = data.source;
+
+    if (existing) {
+      const [row] = await db
+        .update(subscribers)
+        .set(patch)
+        .where(eq(subscribers.email, normalized))
+        .returning();
+      return row;
+    }
+
+    const [row] = await db
+      .insert(subscribers)
+      .values({
+        email: normalized,
+        sessionId: data.sessionId,
+        name: data.name?.trim() || null,
+        socialHandle: data.socialHandle ?? null,
+        source: data.source ?? null,
+        active: true,
+      })
+      .returning();
+    return row;
+  }
+
+  async getMobileSubscription(sessionId: string): Promise<MobileSubscription | undefined> {
+    const [row] = await db
+      .select()
+      .from(mobileSubscriptions)
+      .where(eq(mobileSubscriptions.sessionId, sessionId));
+    return row;
+  }
+
+  async upsertMobileSubscription(data: {
+    sessionId: string;
+    isPro: boolean;
+    expiresAt?: Date | null;
+  }): Promise<MobileSubscription> {
+    const [row] = await db
+      .insert(mobileSubscriptions)
+      .values({
+        sessionId: data.sessionId,
+        isPro: data.isPro,
+        expiresAt: data.expiresAt ?? null,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: mobileSubscriptions.sessionId,
+        set: {
+          isPro: data.isPro,
+          expiresAt: data.expiresAt ?? null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async isSessionPro(sessionId: string): Promise<boolean> {
+    const mobile = await this.getMobileSubscription(sessionId);
+    if (mobile?.isPro) {
+      if (!mobile.expiresAt || mobile.expiresAt > new Date()) return true;
+    }
+    if (await this.hasReferralPro(sessionId)) return true;
+
+    const [linked] = await db
+      .select({ email: subscribers.email })
+      .from(subscribers)
+      .where(eq(subscribers.sessionId, sessionId));
+    if (linked?.email) {
+      const pro = await this.getProSubscriberByEmail(linked.email);
+      if (pro?.status === "active") return true;
+    }
+    return false;
+  }
+
+  async upsertMobileProEmail(email: string, plan: "ios" | "android"): Promise<ProSubscriber> {
+    const normalized = email.toLowerCase().trim();
+    const existing = await this.getProSubscriberByEmail(normalized);
+    if (existing) {
+      if (existing.status !== "active") {
+        await db
+          .update(proSubscribers)
+          .set({ status: "active", plan })
+          .where(eq(proSubscribers.email, normalized));
+      }
+      const [row] = await db
+        .select()
+        .from(proSubscribers)
+        .where(eq(proSubscribers.email, normalized));
+      return row!;
+    }
+
+    const [row] = await db
+      .insert(proSubscribers)
+      .values({
+        email: normalized,
+        plan,
+        status: "active",
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+      })
+      .returning();
+    return row;
   }
 
   async getProSubscriberByCustomerId(customerId: string): Promise<ProSubscriber | undefined> {

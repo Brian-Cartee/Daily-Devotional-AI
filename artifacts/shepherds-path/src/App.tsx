@@ -73,6 +73,7 @@ import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ListenLimitListener } from "@/components/ListenLimitListener";
+import { IdentityConnectHost } from "@/components/IdentityConnectHost";
 import { scrollPageToTop } from "@/lib/scrollPageToTop";
 import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 
@@ -293,6 +294,7 @@ function App() {
               <DemoProvider>
                 <Toaster />
                 <ListenLimitListener />
+                <IdentityConnectHost />
                 <BrandedDomainRedirect />
                 <ScrollToTop />
                 <ReferralCapture />

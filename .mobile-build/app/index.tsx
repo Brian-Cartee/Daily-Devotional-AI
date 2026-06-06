@@ -16,6 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
 import { injectApplePro, reloadEmbeddedWeb } from "@/lib/inject-pro";
+import { syncMobileProToServer } from "@/lib/sync-mobile-pro";
 import {
   buildNativeProfileSeedJs,
   loadNativeUserProfile,
@@ -296,8 +297,14 @@ export default function MainScreen() {
   }, []);
 
   const syncAppleProToWeb = useCallback(
-    (reloadAfterInject = false) => {
+    async (reloadAfterInject = false) => {
       injectApplePro(webviewRef);
+      try {
+        const { sessionId } = await loadNativeUserProfile();
+        await syncMobileProToServer(sessionId, true);
+      } catch {
+        /* non-blocking */
+      }
       if (reloadAfterInject) {
         reloadEmbeddedWeb(webviewRef);
       }

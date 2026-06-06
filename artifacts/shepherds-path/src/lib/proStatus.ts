@@ -1,5 +1,8 @@
 const PRO_KEY = "sp_pro_email";
 const PRO_VERIFIED_KEY = "sp_pro_verified";
+const IDENTITY_CONNECTED_KEY = "sp_identity_connected";
+const IDENTITY_DISMISSED_KEY = "sp_identity_dismissed_at";
+const PLACEHOLDER_PRO_EMAILS = new Set(["apple-iap", "play-verified"]);
 const REFERRAL_PRO_KEY = "sp_referral_pro_until";
 const PRO_NUDGE_DISMISSED_KEY = "sp_pro_nudge_dismissed";
 const PRO_LAST_REVALIDATED_KEY = "sp_pro_last_revalidated";
@@ -29,6 +32,28 @@ export function getProEmail(): string | null {
 
 export function setProEmail(email: string): void {
   localStorage.setItem(PRO_KEY, email.toLowerCase());
+}
+
+export function hasRealProEmail(): boolean {
+  const email = getProEmail()?.toLowerCase().trim();
+  if (!email || !email.includes("@")) return false;
+  if (PLACEHOLDER_PRO_EMAILS.has(email)) return false;
+  return true;
+}
+
+export function markIdentityConnected(email: string): void {
+  const normalized = email.toLowerCase().trim();
+  setProEmail(normalized);
+  localStorage.setItem(IDENTITY_CONNECTED_KEY, "true");
+  localStorage.removeItem(IDENTITY_DISMISSED_KEY);
+}
+
+export function isIdentityConnected(): boolean {
+  return localStorage.getItem(IDENTITY_CONNECTED_KEY) === "true" && hasRealProEmail();
+}
+
+export function dismissIdentityConnect(): void {
+  localStorage.setItem(IDENTITY_DISMISSED_KEY, String(Date.now()));
 }
 
 export function clearProStatus(): void {
@@ -109,9 +134,9 @@ export async function silentlyRevalidatePro(): Promise<void> {
     localStorage.setItem(PRO_LAST_REVALIDATED_KEY, String(Date.now()));
 
     const email = getProEmail();
-    if (email) {
+    if (email && hasRealProEmail()) {
       await checkProWithServer(email);
-    } else if (localStorage.getItem(PRO_VERIFIED_KEY) === "true") {
+    } else if (localStorage.getItem(PRO_VERIFIED_KEY) === "true" && !email) {
       // Verified flag without email — clear it (likely manual bypass)
       clearProStatus();
     }

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { CheckCircle2, Sparkles, ArrowRight, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
-import { linkProSessionForContinuity, markProVerified } from "@/lib/proStatus";
+import { linkProSessionForContinuity, markProVerified, markIdentityConnected } from "@/lib/proStatus";
 
 export default function ProSuccess() {
   const [, navigate] = useLocation();
@@ -25,6 +25,7 @@ export default function ProSuccess() {
       .then(data => {
         if (data.email) {
           markProVerified(data.email);
+          markIdentityConnected(data.email);
           setEmail(data.email);
           void linkProSessionForContinuity(data.email, getSessionId());
         }

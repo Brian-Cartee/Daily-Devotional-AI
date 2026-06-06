@@ -38,6 +38,10 @@ export const subscribers = pgTable("subscribers", {
   includeDailyArt: boolean("include_daily_art").default(false).notNull(),
   sessionId: text("session_id"),
   lastEmailSentDate: text("last_email_sent_date"),
+  /** Optional Instagram/TikTok handle for community recognition (voluntary). */
+  socialHandle: text("social_handle"),
+  /** Acquisition source: pro-connect-sheet, home-footer, tiktok-campaign, etc. */
+  source: text("source"),
   /** Sent onboarding drip keys: day2, day4, day7_winback, day7_journeys */
   onboardingEmailsSent: jsonb("onboarding_emails_sent").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
 });
@@ -51,6 +55,8 @@ export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
   name: z.string().optional(),
   includeDailyArt: z.boolean().optional().default(false),
   sessionId: z.string().optional(),
+  socialHandle: z.string().max(64).optional(),
+  source: z.string().max(64).optional(),
 });
 
 export type Subscriber = typeof subscribers.$inferSelect;
