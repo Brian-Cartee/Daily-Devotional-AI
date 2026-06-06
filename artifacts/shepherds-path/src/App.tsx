@@ -74,6 +74,7 @@ import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ListenLimitListener } from "@/components/ListenLimitListener";
 import { IdentityConnectHost } from "@/components/IdentityConnectHost";
+import { syncEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 import { scrollPageToTop } from "@/lib/scrollPageToTop";
 import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 
@@ -93,6 +94,7 @@ function ReferralCapture() {
     checkReferralProStatus(sessionId).catch(() => {});
     silentlyRevalidatePro().catch(() => {});
     refreshAiUsage().catch(() => {});
+    syncEmailSubscriptionStatus().catch(() => {});
 
     const onProUpdated = () => {
       refreshAiUsage().catch(() => {});

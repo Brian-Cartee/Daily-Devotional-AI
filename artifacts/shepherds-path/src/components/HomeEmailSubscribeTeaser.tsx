@@ -1,9 +1,10 @@
 import { Mail, ArrowDown } from "lucide-react";
-import { isEmailSubscribed } from "@/components/EmailSubscribe";
 import { scrollToHomeEmailSubscribe } from "@/lib/homeEmailSubscribe";
+import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 
 export function HomeEmailSubscribeTeaser() {
-  if (isEmailSubscribed()) return null;
+  const { subscribed, hydrated } = useEmailSubscriptionStatus();
+  if (subscribed || !hydrated) return null;
 
   return (
     <button

@@ -1884,6 +1884,35 @@ What you never do:
     }
   });
 
+  app.get("/api/subscribe/status", async (req, res) => {
+    try {
+      const sessionId =
+        typeof req.query.sessionId === "string" ? req.query.sessionId.trim() : undefined;
+      const emailRaw =
+        typeof req.query.email === "string" ? req.query.email.trim() : undefined;
+      const email = emailRaw?.includes("@") ? normalizeEmail(emailRaw) : undefined;
+
+      let subscriber = sessionId
+        ? await storage.getActiveSubscriberBySession(sessionId)
+        : undefined;
+
+      if (!subscriber && email) {
+        subscriber = await storage.getActiveSubscriberByEmail(email);
+        if (subscriber && sessionId) {
+          await storage.updateSubscriberSession(subscriber.email, sessionId);
+        }
+      }
+
+      res.json({
+        subscribed: !!subscriber,
+        email: subscriber?.email ?? null,
+      });
+    } catch (err) {
+      console.error("[subscribe/status]", err);
+      res.status(500).json({ subscribed: false, email: null });
+    }
+  });
+
   // Subscribe to daily email
   app.post("/api/subscribe", async (req, res) => {
     try {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 import { motion } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -315,7 +316,9 @@ export function InlineSubscribeToggle() {
   // SMS tab hidden until Twilio A2P 10DLC registration is approved.
   // To re-enable: restore the tab toggle state and SMS form below.
 
+  const { subscribed: serverSubscribed, hydrated } = useEmailSubscriptionStatus();
   const [emailSubscribed, setEmailSubscribed] = useState(() => isEmailSubscribed());
+  const isSubscribed = emailSubscribed || serverSubscribed;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [socialHandle, setSocialHandle] = useState("");
@@ -343,12 +346,22 @@ export function InlineSubscribeToggle() {
     }
   };
 
-  if (emailSubscribed) {
+  if (isSubscribed) {
     return (
       <SubscribedEmailSuccess
         variant="footer"
         title="You're receiving daily Scripture by email"
         detail="A quiet word each morning — straight to your inbox."
+      />
+    );
+  }
+
+  if (!hydrated) {
+    return (
+      <div
+        className="rounded-2xl border border-border/40 bg-card/30 h-[280px] animate-pulse"
+        aria-hidden="true"
+        data-testid="home-footer-email-subscribe-loading"
       />
     );
   }

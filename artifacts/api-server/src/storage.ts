@@ -16,6 +16,8 @@ export interface IStorage {
   deleteVerseByDate(date: string): Promise<void>;
   getAllActiveSubscribers(): Promise<Subscriber[]>;
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
+  getActiveSubscriberBySession(sessionId: string): Promise<Subscriber | undefined>;
+  getActiveSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
   deactivateSubscriber(email: string): Promise<void>;
   updateSubscriberSession(email: string, sessionId: string): Promise<void>;
@@ -156,6 +158,19 @@ export class DatabaseStorage implements IStorage {
   async getSubscriberByEmail(email: string): Promise<Subscriber | undefined> {
     const [subscriber] = await db.select().from(subscribers).where(eq(subscribers.email, email));
     return subscriber;
+  }
+
+  async getActiveSubscriberBySession(sessionId: string): Promise<Subscriber | undefined> {
+    const [subscriber] = await db
+      .select()
+      .from(subscribers)
+      .where(and(eq(subscribers.sessionId, sessionId), eq(subscribers.active, true)));
+    return subscriber;
+  }
+
+  async getActiveSubscriberByEmail(email: string): Promise<Subscriber | undefined> {
+    const subscriber = await this.getSubscriberByEmail(email.toLowerCase().trim());
+    return subscriber?.active ? subscriber : undefined;
   }
 
   async createSubscriber(insertSubscriber: InsertSubscriber): Promise<Subscriber> {
