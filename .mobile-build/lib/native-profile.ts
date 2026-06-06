@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 
+const APP_ORIGIN = "https://www.shepherdspathai.com";
 const SESSION_ID_KEY = "sp_session_id";
 const USER_NAME_KEY = "sp_user_name";
 const NAME_PROMPTED_KEY = "sp_name_prompted";
@@ -73,6 +74,71 @@ export async function saveNativeSubscriberProfile(email: string): Promise<void> 
   }
 }
 
+type StatusResponse = { subscribed?: boolean; email?: string | null };
+
+/** Ask the server if this device session (or saved email) is subscribed — runs outside the WebView. */
+export async function fetchSubscriberEmailFromServer(
+  sessionId: string,
+  emailHint = "",
+): Promise<string> {
+  const hint = emailHint.trim().toLowerCase();
+  const urls: string[] = [];
+  if (sessionId && hint.includes("@")) {
+    urls.push(
+      `${APP_ORIGIN}/api/subscribe/status?sessionId=${encodeURIComponent(sessionId)}&email=${encodeURIComponent(hint)}`,
+    );
+  }
+  if (sessionId) {
+    urls.push(`${APP_ORIGIN}/api/subscribe/status?sessionId=${encodeURIComponent(sessionId)}`);
+  }
+  if (hint.includes("@")) {
+    urls.push(`${APP_ORIGIN}/api/subscribe/status?email=${encodeURIComponent(hint)}`);
+  }
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { method: "GET" });
+      if (!res.ok) continue;
+      const data = (await res.json()) as StatusResponse;
+      const email = data.email?.trim().toLowerCase() ?? "";
+      if (data.subscribed && email.includes("@")) {
+        return email;
+      }
+    } catch {
+      /* try next URL */
+    }
+  }
+  return "";
+}
+
+/** Load native profile and restore subscriber email from server when local storage is empty. */
+export async function prepareNativeUserProfileForWebView(): Promise<{
+  sessionId: string;
+  name: string;
+  prompted: boolean;
+  subscriberEmail: string;
+  emailSubscribed: boolean;
+}> {
+  const profile = await loadNativeUserProfile();
+  let email = profile.subscriberEmail.trim().toLowerCase();
+
+  if (!email.includes("@")) {
+    const fromServer = await fetchSubscriberEmailFromServer(profile.sessionId, email);
+    if (fromServer) {
+      await saveNativeSubscriberProfile(fromServer);
+      email = fromServer;
+    }
+  }
+
+  return {
+    sessionId: profile.sessionId,
+    name: profile.name,
+    prompted: profile.prompted,
+    subscriberEmail: email,
+    emailSubscribed: profile.emailSubscribed || email.includes("@"),
+  };
+}
+
 function jsString(value: string): string {
   return JSON.stringify(value);
 }
@@ -106,11 +172,13 @@ export function buildNativeProfileSeedJs(
       localStorage.setItem('sp-subscribed-email',em);
       document.cookie='sp_email_subscribed=true'+dom;
       document.cookie='sp_subscriber_email='+encodeURIComponent(em)+dom;
+      window.__SP_SUBSCRIBER_BOOT__={subscribed:true,email:em,sessionId:sid||''};
       try{
         sessionStorage.setItem('sp-email-subscribed','true');
         sessionStorage.setItem('sp-subscribed-email',em);
       }catch(e){}
     }
+    if(sid){window.__SP_SESSION_BOOT__=sid;}
   }catch(e){}
   true;
 })();`;

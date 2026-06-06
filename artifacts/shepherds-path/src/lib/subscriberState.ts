@@ -2,6 +2,7 @@ import { getUserName, hasBeenPrompted } from "@/lib/userName";
 import { isNativeWebViewShell } from "@/lib/platform";
 import { getSessionId } from "@/lib/session";
 import { writeSubscriberCookie } from "@/lib/subscriberCookie";
+import { setConfirmedSubscriberEmail } from "@/lib/dailyEmailState";
 
 const EMAIL_SUBSCRIBED_KEY = "sp-email-subscribed";
 const SUBSCRIBED_EMAIL_KEY = "sp-subscribed-email";
@@ -165,6 +166,7 @@ export function requestNativeSubscriberBootstrap(): Promise<void> {
   win.__spNativeProfilePromise = new Promise((resolve) => {
     win.__spResolveNativeProfile = (profile) => {
       if (profile?.subscriberEmail?.includes("@")) {
+        setConfirmedSubscriberEmail(profile.subscriberEmail);
         persistSubscriberState(profile.subscriberEmail);
       } else if (profile?.sessionId) {
         try {
@@ -366,6 +368,7 @@ export function persistSubscriberState(email: string): void {
 
   memorySubscribed = true;
   memoryEmail = normalized;
+  setConfirmedSubscriberEmail(normalized);
 
   try {
     localStorage.setItem(EMAIL_SUBSCRIBED_KEY, "true");

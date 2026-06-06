@@ -5,12 +5,17 @@ import {
 } from "@/components/EmailSubscribe";
 import {
   getStoredSubscriberEmail,
+  hydrateSubscriberFromUrlParam,
   hydrateSubscriberStateFromStorage,
   isEmailSubscribedLocally,
   persistSubscriberState,
 } from "@/lib/subscriberState";
 import { getProEmail, hasRealProEmail } from "@/lib/proStatus";
 import { getSessionId } from "@/lib/session";
+import {
+  getConfirmedSubscriberEmail,
+  setConfirmedSubscriberEmail,
+} from "@/lib/dailyEmailState";
 
 type SubscriptionStatus = {
   subscribed: boolean;
@@ -38,12 +43,22 @@ export function getKnownDeviceEmail(): string | null {
 /** Single source of truth for both Home footer and My rhythm email UI. */
 export function isDailyEmailLinked(): boolean {
   hydrateSubscriberStateFromStorage();
-  return isEmailSubscribedLocally() || !!getKnownDeviceEmail();
+  hydrateSubscriberFromUrlParam();
+  if (isEmailSubscribedLocally() || !!getConfirmedSubscriberEmail() || !!getKnownDeviceEmail()) {
+    return true;
+  }
+  try {
+    const se = new URLSearchParams(window.location.search).get("se")?.trim().toLowerCase();
+    if (se?.includes("@")) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
 
 function buildLocalStatus(): SubscriptionStatus {
   hydrateSubscriberStateFromStorage();
-  const email = getStoredSubscriberEmail() ?? getSubscribedEmail();
+  const email = getStoredSubscriberEmail() ?? getSubscribedEmail() ?? getConfirmedSubscriberEmail();
   const subscribed = isDailyEmailLinked();
   return {
     subscribed,
@@ -66,6 +81,7 @@ async function fetchSubscriptionStatus(query: string): Promise<StatusResponse | 
 
 export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus> {
   hydrateSubscriberStateFromStorage();
+  hydrateSubscriberFromUrlParam();
   const local = buildLocalStatus();
 
   if (syncPromise) return syncPromise;
@@ -92,6 +108,7 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
     for (const query of attempts) {
       const data = await fetchSubscriptionStatus(query);
       if (data?.subscribed && data.email) {
+        setConfirmedSubscriberEmail(data.email);
         persistSubscriberState(data.email);
         return {
           subscribed: true,
@@ -104,6 +121,7 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
     if (local.subscribed || knownEmail) {
       const email = local.email ?? knownEmail;
       if (email) {
+        setConfirmedSubscriberEmail(email);
         persistSubscriberState(email);
         void linkStoredEmailToSession(email);
       }
@@ -134,6 +152,7 @@ async function linkStoredEmailToSession(email: string): Promise<void> {
     });
     const data = await fetchSubscriptionStatus(`?${params.toString()}`);
     if (data?.subscribed && data.email) {
+      setConfirmedSubscriberEmail(data.email);
       persistSubscriberState(data.email);
     }
   } catch {

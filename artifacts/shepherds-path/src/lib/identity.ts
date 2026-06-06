@@ -8,6 +8,7 @@ import {
   linkProSessionForContinuity,
 } from "@/lib/proStatus";
 import { markEmailSubscribed } from "@/components/EmailSubscribe";
+import { setConfirmedSubscriberEmail } from "@/lib/dailyEmailState";
 
 export const IDENTITY_DISMISS_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -104,6 +105,7 @@ export async function subscribeWithIdentity(input: ConnectIdentityInput): Promis
     };
     if (res.ok || res.status === 409) {
       const linkedEmail = (data.email || email).trim().toLowerCase();
+      setConfirmedSubscriberEmail(linkedEmail);
       markEmailSubscribed(linkedEmail);
       setProEmail(linkedEmail);
       void linkProSessionForContinuity(linkedEmail, getSessionId());

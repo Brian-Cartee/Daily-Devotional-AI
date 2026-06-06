@@ -19,6 +19,16 @@ function readBootstrapSessionId(): string | null {
   return null;
 }
 
+function readUrlSessionId(): string | null {
+  try {
+    const ssid = new URLSearchParams(window.location.search).get("ssid")?.trim();
+    if (ssid) return ssid;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 function readCookie(name: string): string | null {
   try {
     const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
@@ -90,9 +100,16 @@ export function getSessionId(): string {
 
   try {
     let id = readBootstrapSessionId();
+    if (!id) id = readUrlSessionId();
     if (!id) id = localStorage.getItem(SESSION_KEY);
     if (!id) id = readSessionMirror();
     if (!id) id = readCookie(SESSION_COOKIE);
+    if (!id && isNativeWebViewShell()) {
+      const bootSid = (
+        window as Window & { __SP_SUBSCRIBER_BOOT__?: { sessionId?: string } }
+      ).__SP_SUBSCRIBER_BOOT__?.sessionId?.trim();
+      if (bootSid) id = bootSid;
+    }
     if (!id) id = crypto.randomUUID();
     persistSessionId(id);
     return id;

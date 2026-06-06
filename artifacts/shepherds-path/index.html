@@ -83,15 +83,25 @@
         } catch (e) {}
       }
       try {
-        var sid = localStorage.getItem("sp_session_id") || readCookie("sp_session_id");
+        var params = new URLSearchParams(location.search);
+        var sid =
+          (window.__SP_SESSION_BOOT__ || "") ||
+          params.get("ssid") ||
+          localStorage.getItem("sp_session_id") ||
+          readCookie("sp_session_id") ||
+          "";
+        sid = String(sid || "").trim();
         if (sid) {
           localStorage.setItem("sp_session_id", sid);
           writeCookie("sp_session_id", sid);
+          window.__SP_SESSION_BOOT__ = sid;
           try {
             sessionStorage.setItem("sp_session_id", sid);
           } catch (e) {}
         }
+        var bootSub = window.__SP_SUBSCRIBER_BOOT__;
         var em = (
+          (bootSub && bootSub.email) ||
           localStorage.getItem("sp-subscribed-email") ||
           readCookie("sp_subscriber_email") ||
           ""
@@ -99,6 +109,7 @@
           .trim()
           .toLowerCase();
         var sub =
+          (bootSub && bootSub.subscribed) ||
           localStorage.getItem("sp-email-subscribed") === "true" ||
           readCookie("sp_email_subscribed") === "true";
         if (!em || em.indexOf("@") < 1) {
@@ -111,7 +122,6 @@
             .toLowerCase();
           if (pro.indexOf("@") > 0) em = pro;
         }
-        var params = new URLSearchParams(location.search);
         var se = params.get("se");
         if (se && se.indexOf("@") > 0) {
           em = se.trim().toLowerCase();

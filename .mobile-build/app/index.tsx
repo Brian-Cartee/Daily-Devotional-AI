@@ -20,6 +20,7 @@ import { syncMobileProToServer } from "@/lib/sync-mobile-pro";
 import {
   buildNativeProfileSeedJs,
   loadNativeUserProfile,
+  prepareNativeUserProfileForWebView,
   saveNativeSubscriberProfile,
   saveNativeUserProfile,
   SCRAPE_WEB_SUBSCRIBER_JS,
@@ -32,9 +33,13 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 
-/** Open the live app directly — pass saved email so WebView can restore subscription state. */
-function shellEntryUrl(subscriberEmail?: string): string {
+/** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
+function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
   let url = `${APP_ORIGIN}/?native=1&enter=1`;
+  const sid = sessionId?.trim();
+  if (sid) {
+    url += `&ssid=${encodeURIComponent(sid)}`;
+  }
   const email = subscriberEmail?.trim().toLowerCase();
   if (email?.includes("@")) {
     url += `&se=${encodeURIComponent(email)}`;
@@ -224,25 +229,35 @@ export default function MainScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    void loadNativeUserProfile().then(({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
-      if (cancelled) return;
-      setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
-      );
-      setEntryUrl(shellEntryUrl(subscriberEmail));
-    });
+    void prepareNativeUserProfileForWebView().then(
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
+        if (cancelled) return;
+        setBeforeContentJs(
+          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
+        );
+        setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
+      },
+    );
     return () => {
       cancelled = true;
     };
   }, []);
 
   const injectProfileSeed = useCallback(() => {
-    void loadNativeUserProfile().then(({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
-      const seed = buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed);
-      webviewRef.current?.injectJavaScript(
-        `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
-      );
-    });
+    void prepareNativeUserProfileForWebView().then(
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
+        const seed = buildNativeProfileSeedJs(
+          sessionId,
+          name,
+          prompted,
+          subscriberEmail,
+          emailSubscribed,
+        );
+        webviewRef.current?.injectJavaScript(
+          `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
+        );
+      },
+    );
   }, []);
 
   const pushNativeDiag = useCallback((event: string, detail = "") => {
@@ -402,8 +417,11 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void loadNativeUserProfile().then(({ subscriberEmail }) => {
-      setEntryUrl(shellEntryUrl(subscriberEmail));
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed }) => {
+      setBeforeContentJs(
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
+      );
+      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
   }, [pushNativeDiag]);
 
@@ -522,11 +540,13 @@ export default function MainScreen() {
             if (data.type === "sp_subscriber_profile") {
               const email = typeof data.email === "string" ? data.email : "";
               if (email.includes("@")) {
-                void saveNativeSubscriberProfile(email);
+                void saveNativeSubscriberProfile(email).then(() => {
+                  injectProfileSeed();
+                });
               }
             }
             if (data.type === "sp_request_native_profile") {
-              void loadNativeUserProfile().then((profile) => {
+              void prepareNativeUserProfileForWebView().then((profile) => {
                 const payload = JSON.stringify({
                   sessionId: profile.sessionId,
                   subscriberEmail: profile.subscriberEmail,
