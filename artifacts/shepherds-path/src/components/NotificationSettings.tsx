@@ -12,6 +12,7 @@ import { getUserTimezone } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 import { markEmailSubscribed } from "@/components/EmailSubscribe";
 import { subscribeWithIdentity } from "@/lib/identity";
+import { getDailyEmailDeliveryDescription } from "@/lib/dailyEmailSchedule";
 import { getStoredSubscriberEmail } from "@/lib/subscriberState";
 import { useEmailSubscriptionStatus, getKnownDeviceEmail, isDailyEmailLinked } from "@/hooks/use-email-subscription";
 
@@ -146,7 +147,7 @@ function EmailSection() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold text-foreground">Daily email verse</p>
-          <p className="text-[11px] text-muted-foreground">Delivered every morning at 7 AM ET</p>
+          <p className="text-[11px] text-muted-foreground">{getDailyEmailDeliveryDescription()}</p>
         </div>
         {isActive && (
           <div className="flex items-center gap-1 text-emerald-600 shrink-0">
