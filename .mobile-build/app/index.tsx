@@ -20,6 +20,7 @@ import { syncMobileProToServer } from "@/lib/sync-mobile-pro";
 import {
   buildNativeProfileSeedJs,
   loadNativeUserProfile,
+  saveNativeSubscriberProfile,
   saveNativeUserProfile,
 } from "@/lib/native-profile";
 import { useSubscription } from "@/lib/revenuecat";
@@ -216,10 +217,10 @@ export default function MainScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    void loadNativeUserProfile().then(({ sessionId, name, prompted }) => {
+    void loadNativeUserProfile().then(({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
       if (cancelled) return;
       setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted)}`,
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
       );
     });
     return () => {
@@ -481,6 +482,12 @@ export default function MainScreen() {
               const name = typeof data.name === "string" ? data.name : "";
               const prompted = data.prompted === true || !!name.trim();
               void saveNativeUserProfile(sessionId, name, prompted);
+            }
+            if (data.type === "sp_subscriber_profile") {
+              const email = typeof data.email === "string" ? data.email : "";
+              if (email.includes("@")) {
+                void saveNativeSubscriberProfile(email);
+              }
             }
             if (data.type === "scroll_home_top") {
               webviewRef.current?.injectJavaScript(

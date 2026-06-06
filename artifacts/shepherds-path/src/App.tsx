@@ -75,6 +75,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ListenLimitListener } from "@/components/ListenLimitListener";
 import { IdentityConnectHost } from "@/components/IdentityConnectHost";
 import { syncEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import { hydrateSubscriberStateFromStorage } from "@/lib/subscriberState";
 import { scrollPageToTop } from "@/lib/scrollPageToTop";
 import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 
@@ -90,6 +91,7 @@ function ScrollToTop() {
 
 function ReferralCapture() {
   useEffect(() => {
+    hydrateSubscriberStateFromStorage();
     const sessionId = getSessionId();
     checkReferralProStatus(sessionId).catch(() => {});
     silentlyRevalidatePro().catch(() => {});

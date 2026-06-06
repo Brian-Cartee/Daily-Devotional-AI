@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import {
   getSubscribedEmail,
-  isEmailSubscribed,
   markEmailSubscribed,
 } from "@/components/EmailSubscribe";
-import { getStoredSubscriberEmail, isEmailSubscribedLocally } from "@/lib/subscriberState";
+import {
+  getStoredSubscriberEmail,
+  hydrateSubscriberStateFromStorage,
+  isEmailSubscribedLocally,
+  persistSubscriberState,
+} from "@/lib/subscriberState";
 import { getProEmail, hasRealProEmail } from "@/lib/proStatus";
 import { getSessionId } from "@/lib/session";
 
@@ -16,6 +20,8 @@ type SubscriptionStatus = {
 
 /** Any email this device has stored from subscribe, Pro connect, or notification prefs. */
 export function getKnownDeviceEmail(): string | null {
+  hydrateSubscriberStateFromStorage();
+
   const stored = getStoredSubscriberEmail();
   if (stored) return stored;
 
@@ -27,19 +33,28 @@ export function getKnownDeviceEmail(): string | null {
   return null;
 }
 
+function buildLocalStatus(): SubscriptionStatus {
+  hydrateSubscriberStateFromStorage();
+  return {
+    subscribed: isEmailSubscribedLocally(),
+    email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
+    hydrated: true,
+  };
+}
+
 let syncPromise: Promise<SubscriptionStatus> | null = null;
 
 export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus> {
-  if (isEmailSubscribedLocally()) {
-    const knownEmail = getStoredSubscriberEmail();
-    if (knownEmail) {
-      void linkStoredEmailToSession(knownEmail);
-    }
-    return {
-      subscribed: true,
-      email: knownEmail ?? getSubscribedEmail(),
-      hydrated: true,
-    };
+  hydrateSubscriberStateFromStorage();
+
+  const local = buildLocalStatus();
+  if (local.subscribed && local.email) {
+    void linkStoredEmailToSession(local.email);
+    return local;
+  }
+
+  if (local.subscribed) {
+    return local;
   }
 
   if (syncPromise) return syncPromise;
@@ -57,11 +72,11 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
         credentials: "include",
       });
       const data = (await res.json()) as { subscribed?: boolean; email?: string | null };
-      if (data.subscribed) {
-        markEmailSubscribed(data.email ?? undefined);
+      if (data.subscribed && data.email) {
+        persistSubscriberState(data.email);
         return {
           subscribed: true,
-          email: data.email ?? getSubscribedEmail(),
+          email: data.email,
           hydrated: true,
         };
       }
@@ -69,9 +84,16 @@ export async function syncEmailSubscriptionStatus(): Promise<SubscriptionStatus>
       /* non-blocking */
     }
 
+    // Never discard a local/cookie hint because the network hiccuped.
+    const fallback = buildLocalStatus();
+    if (fallback.subscribed) {
+      if (fallback.email) void linkStoredEmailToSession(fallback.email);
+      return fallback;
+    }
+
     return {
       subscribed: false,
-      email: null,
+      email: knownEmail,
       hydrated: true,
     };
   })().finally(() => {
@@ -92,7 +114,7 @@ async function linkStoredEmailToSession(email: string): Promise<void> {
     });
     const data = (await res.json()) as { subscribed?: boolean; email?: string | null };
     if (data.subscribed && data.email) {
-      markEmailSubscribed(data.email);
+      persistSubscriberState(data.email);
     }
   } catch {
     /* non-blocking */
@@ -100,19 +122,41 @@ async function linkStoredEmailToSession(email: string): Promise<void> {
 }
 
 export function useEmailSubscriptionStatus(): SubscriptionStatus {
-  const [status, setStatus] = useState<SubscriptionStatus>(() => ({
-    subscribed: isEmailSubscribedLocally(),
-    email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
-    hydrated: false,
-  }));
+  const [status, setStatus] = useState<SubscriptionStatus>(() => {
+    hydrateSubscriberStateFromStorage();
+    return {
+      subscribed: isEmailSubscribedLocally(),
+      email: getStoredSubscriberEmail() ?? getSubscribedEmail(),
+      hydrated: false,
+    };
+  });
 
   useEffect(() => {
     let cancelled = false;
+
+    const refresh = () => {
+      if (cancelled) return;
+      const local = buildLocalStatus();
+      setStatus((prev) => ({
+        subscribed: prev.subscribed || local.subscribed,
+        email: prev.email ?? local.email,
+        hydrated: true,
+      }));
+    };
+
     void syncEmailSubscriptionStatus().then((next) => {
-      if (!cancelled) setStatus(next);
+      if (cancelled) return;
+      setStatus((prev) => ({
+        subscribed: prev.subscribed || next.subscribed || isEmailSubscribedLocally(),
+        email: next.email ?? prev.email ?? getStoredSubscriberEmail(),
+        hydrated: true,
+      }));
     });
+
+    window.addEventListener("sp-email-subscription-updated", refresh);
     return () => {
       cancelled = true;
+      window.removeEventListener("sp-email-subscription-updated", refresh);
     };
   }, []);
 

@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { markEmailSubscribed } from "@/components/EmailSubscribe";
 import { subscribeWithIdentity } from "@/lib/identity";
 import { getStoredSubscriberEmail, isEmailSubscribedLocally } from "@/lib/subscriberState";
-import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
 
 interface PushSettings {
   morningEnabled: boolean;
@@ -113,7 +113,8 @@ function EmailSection() {
   }, [syncedEmail]);
 
   const isActive = localActive || subscribed;
-  const displayEmail = getStoredSubscriberEmail() || syncedEmail || email;
+  const displayEmail =
+    getStoredSubscriberEmail() || syncedEmail || email || getKnownDeviceEmail();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();

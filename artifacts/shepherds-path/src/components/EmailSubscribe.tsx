@@ -147,12 +147,14 @@ function SubscribedEmailSuccess({
   title,
   detail,
   variant = "compact",
+  email,
 }: {
   title: string;
   detail: string;
   variant?: "compact" | "footer";
+  email?: string | null;
 }) {
-  const subscribedEmail = getSubscribedEmail();
+  const subscribedEmail = email ?? getStoredSubscriberEmail() ?? getSubscribedEmail();
   const isFooter = variant === "footer";
   return (
     <motion.div
@@ -455,7 +457,7 @@ export function HomeDailyEmailStatus({
     }
   }, [email, linkEmail]);
 
-  const showSubscribed = subscribed || linked;
+  const showSubscribed = subscribed || linked || isEmailSubscribedLocally();
 
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -492,6 +494,7 @@ export function HomeDailyEmailStatus({
           variant="footer"
           title="You're receiving daily Scripture by email"
           detail="A quiet word each morning — straight to your inbox."
+          email={email ?? getKnownDeviceEmail()}
         />
       ) : (
         <div className="rounded-2xl border border-border/50 bg-card/40 px-5 sm:px-6 py-5">
