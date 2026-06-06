@@ -75,7 +75,6 @@ import {
   scrollHomeEmailSubscribeIntoView,
 } from "@/lib/homeEmailSubscribe";
 import { HomeFooterEmailSubscribeSection } from "@/components/EmailSubscribe";
-import { HomeEmailSubscribeTeaser } from "@/components/HomeEmailSubscribeTeaser";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import { ThresholdHero } from "@/components/ThresholdHero";
@@ -830,8 +829,6 @@ function LandingHomeInner() {
           )}
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
-
-          <HomeEmailSubscribeTeaser />
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />

@@ -1,8 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useEmailSubscriptionStatus, getKnownDeviceEmail } from "@/hooks/use-email-subscription";
 import { subscribeWithIdentity } from "@/lib/identity";
-import { getRelationshipAge } from "@/lib/relationship";
-import { getStoredSubscriberEmail } from "@/lib/subscriberState";
 import { motion } from "framer-motion";
 import { Mail, CheckCircle, Loader2, X, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -432,7 +430,7 @@ export function InlineSubscribeToggle() {
   );
 }
 
-/** Home footer block — hides entirely for long-term users not linked on this device. */
+/** Home footer — success only. Signup lives in Settings / nav menu, not Home. */
 export function HomeFooterEmailSubscribeSection({
   anchorId,
   className,
@@ -443,17 +441,19 @@ export function HomeFooterEmailSubscribeSection({
   children?: ReactNode;
 }) {
   const { subscribed, hydrated } = useEmailSubscriptionStatus();
-  const storedEmail = getStoredSubscriberEmail();
-  const established = getRelationshipAge() >= 7;
 
-  if (hydrated && !subscribed && established && !storedEmail) {
+  if (!hydrated || !subscribed) {
     return null;
   }
 
   return (
     <div id={anchorId} className={className} data-testid="home-footer-email-subscribe">
       {children}
-      <InlineSubscribeToggle />
+      <SubscribedEmailSuccess
+        variant="footer"
+        title="You're receiving daily Scripture by email"
+        detail="A quiet word each morning — straight to your inbox."
+      />
     </div>
   );
 }
