@@ -8,10 +8,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { fetchVapidPublicKey } from "@/lib/push";
+import { getUserTimezone } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 import { markEmailSubscribed } from "@/components/EmailSubscribe";
 import { subscribeWithIdentity } from "@/lib/identity";
-import { getStoredSubscriberEmail } from "@/lib/subscriberState";
+import { getStoredSubscriberEmail, isEmailSubscribedLocally } from "@/lib/subscriberState";
 import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 
 interface PushSettings {
@@ -91,16 +92,28 @@ function TimeSelect({ value, options, onChange }: { value: string; options: stri
 
 function EmailSection() {
   const { toast } = useToast();
-  const { subscribed, email: syncedEmail, hydrated } = useEmailSubscriptionStatus();
+  const { subscribed, email: syncedEmail } = useEmailSubscriptionStatus();
   const [email, setEmail] = useState(() => getStoredSubscriberEmail() ?? "");
   const [loading, setLoading] = useState(false);
-  const [justLinked, setJustLinked] = useState(false);
+  const [localActive, setLocalActive] = useState(() => isEmailSubscribedLocally());
 
   useEffect(() => {
-    if (syncedEmail && !email) setEmail(syncedEmail);
-  }, [syncedEmail, email]);
+    const refresh = () => {
+      setLocalActive(isEmailSubscribedLocally());
+      const stored = getStoredSubscriberEmail();
+      if (stored) setEmail(stored);
+    };
+    refresh();
+    window.addEventListener("sp-email-subscription-updated", refresh);
+    return () => window.removeEventListener("sp-email-subscription-updated", refresh);
+  }, []);
 
-  const isActive = subscribed || justLinked;
+  useEffect(() => {
+    if (syncedEmail) setEmail(syncedEmail);
+  }, [syncedEmail]);
+
+  const isActive = localActive || subscribed;
+  const displayEmail = getStoredSubscriberEmail() || syncedEmail || email;
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +125,7 @@ function EmailSection() {
     });
     if (result.ok) {
       markEmailSubscribed(email.trim());
-      setJustLinked(true);
+      setLocalActive(true);
       toast({ description: result.message || "Daily verse email linked on this device." });
     } else {
       toast({ description: result.message, variant: "destructive" });
@@ -130,7 +143,7 @@ function EmailSection() {
           <p className="text-[13px] font-semibold text-foreground">Daily email verse</p>
           <p className="text-[11px] text-muted-foreground">Delivered every morning at 7 AM ET</p>
         </div>
-        {hydrated && isActive && (
+        {isActive && (
           <div className="flex items-center gap-1 text-emerald-600 shrink-0">
             <Check className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wide">Active</span>
@@ -138,12 +151,12 @@ function EmailSection() {
         )}
       </div>
       <div className="px-4 py-3">
-        {hydrated && isActive ? (
+        {isActive ? (
           <div>
             <p className="text-[13px] font-semibold text-foreground">You&apos;re receiving daily Scripture by email</p>
             <p className="text-[12px] text-muted-foreground mt-1 flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              Sending to <span className="text-foreground font-medium">{syncedEmail || email}</span>
+              Sending to <span className="text-foreground font-medium">{displayEmail}</span>
             </p>
           </div>
         ) : (
@@ -230,7 +243,12 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
       await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, subscription: subJson }),
+        body: JSON.stringify({
+          sessionId,
+          subscription: subJson,
+          timezone: getUserTimezone(),
+          ...settings,
+        }),
       });
       setSubscribed(true);
       toast({ description: "Notifications enabled! You'll hear from us. 🙏" });
@@ -260,7 +278,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
       await fetch("/api/push/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, [key]: value }),
+        body: JSON.stringify({ sessionId, timezone: getUserTimezone(), [key]: value }),
       });
     } catch {}
     setSaving(false);
@@ -292,7 +310,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
           <div>
             <h2 className="text-[16px] font-bold text-foreground">My rhythm</h2>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              Gentle phone reminders · optional morning email
+              Gentle phone reminders in your local time · optional morning email
             </p>
           </div>
           <div className="flex items-center gap-2">

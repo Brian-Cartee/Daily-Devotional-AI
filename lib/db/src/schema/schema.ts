@@ -131,6 +131,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   middayEnabled: boolean("midday_enabled").default(false).notNull(),
   streakReminder: boolean("streak_reminder").default(true).notNull(),
   weeklySummary: boolean("weekly_summary").default(true).notNull(),
+  timezone: text("timezone").default("America/New_York").notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 

@@ -76,4 +76,10 @@ export function persistSubscriberState(email: string): void {
   } catch {
     /* ignore */
   }
+
+  try {
+    window.dispatchEvent(new Event("sp-email-subscription-updated"));
+  } catch {
+    /* ignore */
+  }
 }

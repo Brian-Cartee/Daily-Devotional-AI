@@ -1,11 +1,17 @@
 import webpush from "web-push";
 import { Expo } from "expo-server-sdk";
-import { config } from "./config";
 import { storage } from "./storage";
 import { buildWeeklyWeather } from "./homeExperience";
 import { db } from "./db";
 import { streaks } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import {
+  DEFAULT_PUSH_TIMEZONE,
+  getLocalTimeInZone,
+  matchesLocalTime,
+  parseHourFromTime,
+  resolveTimezone,
+} from "./pushTime";
 
 const expo = new Expo();
 
@@ -52,9 +58,9 @@ async function sendToSubscription(sub: { endpoint: string; p256dh: string; auth:
   }
 }
 
-async function getTodayReference(): Promise<string> {
+async function getTodayReference(timezone: string): Promise<string> {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date());
     const verse = await storage.getVerseByDate(today);
     return verse ? verse.reference : "Today's verse";
   } catch {
@@ -62,16 +68,16 @@ async function getTodayReference(): Promise<string> {
   }
 }
 
-async function sendMorningNotifications() {
-  const ref = await getTodayReference();
+async function sendMorningNotifications(now: Date) {
   const subs = await storage.getAllPushSubscriptions();
-  const hour = new Date().getUTCHours();
 
   for (const sub of subs) {
     if (!sub.morningEnabled) continue;
-    const [h] = sub.morningTime.split(":").map(Number);
-    if (h !== hour) continue;
+    const tz = resolveTimezone(sub.timezone);
+    const hour = parseHourFromTime(sub.morningTime);
+    if (!matchesLocalTime(now, tz, hour, 0)) continue;
 
+    const ref = await getTodayReference(tz);
     const ok = await sendToSubscription(sub, {
       title: "Good morning 🌅",
       body: `${ref} is waiting. You don't have to carry today alone.`,
@@ -92,13 +98,16 @@ const MIDDAY_MESSAGES: { title: string; body: string }[] = [
   { title: "Halfway through 🌿", body: "The second half of the day is ahead. Carry something good into it." },
 ];
 
-async function sendMiddayNotifications() {
+async function sendMiddayNotifications(now: Date) {
   const subs = await storage.getAllPushSubscriptions();
-  const dayOfWeek = new Date().getDay(); // 0 = Sunday
-  const { title, body } = MIDDAY_MESSAGES[dayOfWeek % MIDDAY_MESSAGES.length];
 
   for (const sub of subs) {
     if (!sub.middayEnabled) continue;
+    const tz = resolveTimezone(sub.timezone);
+    if (!matchesLocalTime(now, tz, 12, 0)) continue;
+
+    const local = getLocalTimeInZone(now, tz);
+    const { title, body } = MIDDAY_MESSAGES[local.dayOfWeek % MIDDAY_MESSAGES.length];
     const ok = await sendToSubscription(sub, {
       title,
       body,
@@ -119,17 +128,17 @@ const EVENING_MESSAGES: { title: string; body: string; url: string }[] = [
   { title: "Rest begins here ✨", body: "A quiet place to end the day. Reflect on where faith showed up — and where you needed grace.", url: "/alignment" },
 ];
 
-async function sendEveningNotifications() {
+async function sendEveningNotifications(now: Date) {
   const subs = await storage.getAllPushSubscriptions();
-  const hour = new Date().getUTCHours();
-  const dayOfWeek = new Date().getDay();
-  const { title, body, url } = EVENING_MESSAGES[dayOfWeek % EVENING_MESSAGES.length];
 
   for (const sub of subs) {
     if (!sub.eveningEnabled) continue;
-    const [h] = sub.eveningTime.split(":").map(Number);
-    if (h !== hour) continue;
+    const tz = resolveTimezone(sub.timezone);
+    const hour = parseHourFromTime(sub.eveningTime);
+    if (!matchesLocalTime(now, tz, hour, 0)) continue;
 
+    const local = getLocalTimeInZone(now, tz);
+    const { title, body, url } = EVENING_MESSAGES[local.dayOfWeek % EVENING_MESSAGES.length];
     const ok = await sendToSubscription(sub, {
       title,
       body,
@@ -140,12 +149,15 @@ async function sendEveningNotifications() {
   }
 }
 
-async function sendStreakReminders() {
-  const today = new Date().toISOString().split("T")[0];
+async function sendStreakReminders(now: Date) {
   const subs = await storage.getAllPushSubscriptions();
 
   for (const sub of subs) {
     if (!sub.streakReminder) continue;
+    const tz = resolveTimezone(sub.timezone);
+    if (!matchesLocalTime(now, tz, 21, 0)) continue;
+
+    const today = getLocalTimeInZone(now, tz).dateKey;
     try {
       const [streak] = await db.select().from(streaks).where(eq(streaks.sessionId, sub.sessionId));
       if (streak && streak.lastVisitDate === today) continue;
@@ -166,10 +178,15 @@ async function sendStreakReminders() {
   }
 }
 
-async function sendWeeklySummary() {
+async function sendWeeklySummary(now: Date) {
   const subs = await storage.getAllPushSubscriptions();
+
   for (const sub of subs) {
     if (!sub.weeklySummary) continue;
+    const tz = resolveTimezone(sub.timezone);
+    const local = getLocalTimeInZone(now, tz);
+    if (local.dayOfWeek !== 0 || local.hour !== 19 || local.minute !== 0) continue;
+
     let title = "Your weekly walk summary";
     let body = "A new week begins tomorrow. See how far you've come.";
     let url = "/";
@@ -198,14 +215,6 @@ async function sendWeeklySummary() {
     });
     if (!ok) await storage.deletePushSubscription(sub.sessionId);
   }
-}
-
-function msUntilNextMinute(targetHour: number, targetMinute: number = 0): number {
-  const now = new Date();
-  const next = new Date(now);
-  next.setUTCHours(targetHour, targetMinute, 0, 0);
-  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
-  return next.getTime() - now.getTime();
 }
 
 export async function sendPrayerReminderNotifications() {
@@ -242,7 +251,7 @@ async function sendExpoDailyVerseNotifications() {
     const tokens = await storage.getExpoPushTokensForHourMinute(hour, minute);
     if (tokens.length === 0) return;
 
-    const today = now.toISOString().split("T")[0];
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: DEFAULT_PUSH_TIMEZONE }).format(now);
     const verse = await storage.getVerseByDate(today);
     const title = "Your Daily Scripture";
     const body = verse
@@ -275,35 +284,39 @@ async function sendExpoDailyVerseNotifications() {
   }
 }
 
+async function tickScheduledNotifications() {
+  const now = new Date();
+  await sendMorningNotifications(now);
+  await sendMiddayNotifications(now);
+  await sendEveningNotifications(now);
+  await sendStreakReminders(now);
+  await sendWeeklySummary(now);
+}
+
 export function schedulePushNotifications() {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     console.log("[push] VAPID keys not configured, skipping push scheduler");
     return;
   }
 
-  console.log("[push] Push notification scheduler starting...");
+  console.log("[push] Push notification scheduler starting (per-minute, timezone-aware)...");
 
-  const scheduleHourly = (hour: number, fn: () => Promise<void>, label: string) => {
-    const run = () => {
-      const delay = msUntilNextMinute(hour, 0);
-      const nextRun = new Date(Date.now() + delay);
-      console.log(`[push] Next ${label} scheduled for: ${nextRun.toISOString()}`);
-      setTimeout(async () => {
-        await fn();
-        run();
-      }, delay);
-    };
-    run();
+  const scheduleNextMinute = () => {
+    const now = new Date();
+    const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 100;
+    setTimeout(async () => {
+      try {
+        await tickScheduledNotifications();
+      } catch (err) {
+        console.error("[push] tick error:", err);
+      }
+      scheduleNextMinute();
+    }, msUntilNextMinute);
   };
 
-  // All times are Eastern Daylight Time (EDT = UTC-4). Active March–November.
-  // ⚠️ When DST ends in November (EST = UTC-5), add 1 to each UTC hour below.
-  scheduleHourly(11, sendMorningNotifications, "morning push");   // 7 AM EDT
-  scheduleHourly(16, sendMiddayNotifications, "midday push");     // 12 PM EDT
-  scheduleHourly(0,  sendEveningNotifications, "evening push");   // 8 PM EDT
-  scheduleHourly(1,  sendStreakReminders, "streak reminder");     // 9 PM EDT
+  tickScheduledNotifications().catch(() => {});
+  scheduleNextMinute();
 
-  // Prayer wall reminders — check every hour for due reminders
   const schedulePrayerReminders = () => {
     setTimeout(async () => {
       await sendPrayerReminderNotifications();
@@ -312,24 +325,6 @@ export function schedulePushNotifications() {
   };
   sendPrayerReminderNotifications().catch(() => {});
   schedulePrayerReminders();
-
-  const scheduleSundaySummary = () => {
-    const now = new Date();
-    const next = new Date(now);
-    // Sunday 7 PM EDT (UTC-4) = Sunday 23:00 UTC
-    // ⚠️ When DST ends in November (EST = UTC-5), change to Monday 00:00 UTC
-    const daysUntilSunday = (7 - now.getUTCDay()) % 7;
-    next.setUTCDate(now.getUTCDate() + daysUntilSunday);
-    next.setUTCHours(23, 0, 0, 0);
-    if (next <= now) next.setUTCDate(next.getUTCDate() + 7);
-    const delay = next.getTime() - now.getTime();
-    console.log(`[push] Next weekly summary: ${next.toISOString()}`);
-    setTimeout(async () => {
-      await sendWeeklySummary();
-      scheduleSundaySummary();
-    }, delay);
-  };
-  scheduleSundaySummary();
 }
 
 export function scheduleExpoPushNotifications() {

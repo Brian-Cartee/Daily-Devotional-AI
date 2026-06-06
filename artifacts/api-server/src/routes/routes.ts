@@ -1045,17 +1045,35 @@ ${transcript.slice(0, 3000)}`,
 
   // Subscribe or update push subscription
   app.post("/api/push/subscribe", async (req, res) => {
-    const { sessionId, subscription } = req.body as {
+    const body = req.body as {
       sessionId: string;
       subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
+      timezone?: string;
+      morningEnabled?: boolean;
+      morningTime?: string;
+      eveningEnabled?: boolean;
+      eveningTime?: string;
+      middayEnabled?: boolean;
+      streakReminder?: boolean;
+      weeklySummary?: boolean;
     };
+    const { sessionId, subscription } = body;
     if (!sessionId || !subscription?.endpoint) return res.status(400).json({ message: "invalid" });
     try {
+      const timezone = body.timezone?.trim() || "America/New_York";
       const row = await storage.upsertPushSubscription({
         sessionId,
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
         auth: subscription.keys.auth,
+        timezone,
+        ...(body.morningEnabled !== undefined ? { morningEnabled: body.morningEnabled } : {}),
+        ...(body.morningTime !== undefined ? { morningTime: body.morningTime } : {}),
+        ...(body.eveningEnabled !== undefined ? { eveningEnabled: body.eveningEnabled } : {}),
+        ...(body.eveningTime !== undefined ? { eveningTime: body.eveningTime } : {}),
+        ...(body.middayEnabled !== undefined ? { middayEnabled: body.middayEnabled } : {}),
+        ...(body.streakReminder !== undefined ? { streakReminder: body.streakReminder } : {}),
+        ...(body.weeklySummary !== undefined ? { weeklySummary: body.weeklySummary } : {}),
       });
 
       if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -1096,6 +1114,7 @@ ${transcript.slice(0, 3000)}`,
       morningEnabled?: boolean; morningTime?: string;
       eveningEnabled?: boolean; eveningTime?: string;
       middayEnabled?: boolean; streakReminder?: boolean; weeklySummary?: boolean;
+      timezone?: string;
     };
     if (!sessionId) return res.status(400).json({ message: "sessionId required" });
     try {

@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Bell, Check, Loader2, ChevronDown } from "lucide-react";
 import {
   type Season, type TimeSlot, type Focus,
   saveRhythm,
 } from "@/lib/faithRhythm";
+import {
+  MORNING_TIME_OPTIONS,
+  describeRhythmReminders,
+  formatReminderTime,
+  getRhythmReminderPreset,
+} from "@/lib/rhythmReminders";
+import { subscribePush, isPushSupported } from "@/lib/push";
+import { getUserTimezone } from "@/lib/timezone";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   onDone: () => void;
@@ -34,16 +44,69 @@ const FOCUS_OPTIONS: Array<{ value: Focus; label: string; icon: string }> = [
   { value: "family",    label: "Family",    icon: "❤️" },
 ];
 
+const NOTIF_STRIP_KEY = "sp_notif_strip_shown";
+const NOTIF_DEEP_KEY = "sp_notif_nudge_dismissed";
+
+function markNotifNudgesComplete() {
+  localStorage.setItem(NOTIF_STRIP_KEY, "1");
+  localStorage.setItem(NOTIF_DEEP_KEY, "1");
+}
+
 export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
   const [step, setStep] = useState(0);
   const [season, setSeason] = useState<Season | null>(null);
   const [time, setTime] = useState<TimeSlot | null>(null);
+  const [morningTime, setMorningTime] = useState("07:00");
+  const [settingRhythm, setSettingRhythm] = useState(false);
+  const [rhythmSet, setRhythmSet] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
 
-  const handleFocusSelect = (focus: Focus) => {
+  const handleFocusSelect = (value: Focus) => {
     if (!season || !time) return;
-    saveRhythm({ season, time, focus, setAt: new Date().toISOString() });
+    saveRhythm({ season, time, focus: value, setAt: new Date().toISOString() });
+    setStep(3);
+  };
+
+  const finishWithoutReminders = () => {
+    markNotifNudgesComplete();
     onDone();
   };
+
+  const handleSetRhythm = async () => {
+    if (!time) return;
+    setSettingRhythm(true);
+    const preset = getRhythmReminderPreset(time, morningTime);
+
+    if (isPushSupported()) {
+      const ok = await subscribePush({
+        ...preset,
+        timezone: getUserTimezone(),
+      });
+      if (ok) {
+        markNotifNudgesComplete();
+        setRhythmSet(true);
+        setTimeout(() => onDone(), 1800);
+        setSettingRhythm(false);
+        return;
+      }
+    }
+
+    markNotifNudgesComplete();
+    onDone();
+    setSettingRhythm(false);
+  };
+
+  if (showCustomize) {
+    return (
+      <NotificationSettings
+        onClose={() => {
+          markNotifNudgesComplete();
+          setShowCustomize(false);
+          onDone();
+        }}
+      />
+    );
+  }
 
   return (
     <motion.div
@@ -53,10 +116,9 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-50 bg-background/97 backdrop-blur-sm flex flex-col"
     >
-      {/* Progress + close */}
       <div className="flex items-center justify-between px-5 pt-12 pb-2 max-w-md mx-auto w-full">
         <div className="flex items-center gap-1.5">
-          {[0, 1, 2].map((i) => (
+          {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all duration-400 ${
@@ -78,11 +140,9 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
         </button>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 pt-4 pb-10 max-w-md mx-auto w-full">
         <AnimatePresence mode="wait">
 
-          {/* Step 0 — Season */}
           {step === 0 && (
             <motion.div
               key="season"
@@ -91,7 +151,7 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.22 }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 1 of 3</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 1 of 4</p>
               <h2 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-1.5">
                 Where are you right now?
               </h2>
@@ -117,7 +177,6 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
             </motion.div>
           )}
 
-          {/* Step 1 — Time */}
           {step === 1 && (
             <motion.div
               key="time"
@@ -126,7 +185,7 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.22 }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 2 of 3</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 2 of 4</p>
               <h2 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-1.5">
                 How much time with God most days?
               </h2>
@@ -155,7 +214,6 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
             </motion.div>
           )}
 
-          {/* Step 2 — Focus */}
           {step === 2 && (
             <motion.div
               key="focus"
@@ -164,7 +222,7 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.22 }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 3 of 3</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 3 of 4</p>
               <h2 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-1.5">
                 What does your soul most need this season?
               </h2>
@@ -190,6 +248,106 @@ export function FaithRhythmSetup({ onDone, onDismiss }: Props) {
               >
                 ← Back
               </button>
+            </motion.div>
+          )}
+
+          {step === 3 && time && (
+            <motion.div
+              key="reminders"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.22 }}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary/55 mb-2">Step 4 of 4</p>
+              <h2 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-1.5">
+                When works best for a gentle reminder?
+              </h2>
+              <p className="text-[14px] text-muted-foreground mb-5 leading-relaxed">
+                Quiet nudges in your local time — turn off anytime under My rhythm.
+              </p>
+
+              {rhythmSet ? (
+                <div className="rounded-2xl bg-emerald-500/8 border border-emerald-400/25 px-4 py-5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/12 flex items-center justify-center shrink-0">
+                    <Check className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-emerald-600 dark:text-emerald-400">Your rhythm is set</p>
+                    <p className="text-[13px] text-muted-foreground mt-0.5">
+                      You'll hear from us tomorrow at {formatReminderTime(morningTime)}.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <p className="text-[12px] font-semibold text-foreground mb-2">Morning time</p>
+                    <div className="relative">
+                      <select
+                        value={morningTime}
+                        onChange={(e) => setMorningTime(e.target.value)}
+                        data-testid="rhythm-morning-time"
+                        className="w-full appearance-none bg-card border border-border rounded-xl text-[14px] font-semibold text-foreground px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/25"
+                      >
+                        {MORNING_TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>{formatReminderTime(t)}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-primary/15 bg-primary/4 divide-y divide-primary/10 overflow-hidden mb-5">
+                    {describeRhythmReminders(time, morningTime).map((line) => (
+                      <div key={line} className="flex items-start gap-3 px-4 py-3">
+                        <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <p className="text-[13px] text-foreground leading-snug">{line}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    onClick={handleSetRhythm}
+                    disabled={settingRhythm}
+                    data-testid="btn-rhythm-set"
+                    className="w-full rounded-2xl h-12 text-[15px] font-semibold mb-3"
+                  >
+                    {settingRhythm ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Setting up…</>
+                    ) : (
+                      <><Bell className="w-4 h-4 mr-2" /> Set my rhythm</>
+                    )}
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomize(true)}
+                    data-testid="btn-rhythm-customize"
+                    className="w-full text-center text-[13px] font-semibold text-primary hover:text-primary/80 py-2 transition-colors"
+                  >
+                    Customize reminders
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={finishWithoutReminders}
+                    data-testid="btn-rhythm-skip"
+                    className="w-full text-center text-[12px] text-muted-foreground hover:text-foreground py-2 transition-colors"
+                  >
+                    Skip for now
+                  </button>
+                </>
+              )}
+
+              {step === 3 && !rhythmSet && (
+                <button
+                  onClick={() => setStep(2)}
+                  className="mt-4 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Back
+                </button>
+              )}
             </motion.div>
           )}
 

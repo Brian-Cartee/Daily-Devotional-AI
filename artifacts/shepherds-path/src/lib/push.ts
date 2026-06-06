@@ -1,4 +1,5 @@
 import { getSessionId } from "@/lib/session";
+import { getUserTimezone } from "@/lib/timezone";
 
 export async function urlBase64ToUint8Array(base64String: string): Promise<Uint8Array> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -30,7 +31,18 @@ export async function fetchVapidPublicKey(): Promise<string | null> {
   }
 }
 
-export async function subscribePush(overrideSettings?: Record<string, unknown>): Promise<boolean> {
+export interface PushSubscribeSettings {
+  morningEnabled?: boolean;
+  morningTime?: string;
+  eveningEnabled?: boolean;
+  eveningTime?: string;
+  middayEnabled?: boolean;
+  streakReminder?: boolean;
+  weeklySummary?: boolean;
+  timezone?: string;
+}
+
+export async function subscribePush(settings?: PushSubscribeSettings): Promise<boolean> {
   if (!isPushSupported()) return false;
   try {
     const perm = await Notification.requestPermission();
@@ -45,9 +57,32 @@ export async function subscribePush(overrideSettings?: Record<string, unknown>):
     await fetch("/api/push/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, subscription: subJson, ...overrideSettings }),
+      body: JSON.stringify({
+        sessionId,
+        subscription: subJson,
+        timezone: settings?.timezone ?? getUserTimezone(),
+        ...settings,
+      }),
     });
     return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function updatePushSettings(settings: PushSubscribeSettings): Promise<boolean> {
+  try {
+    const sessionId = getSessionId();
+    const res = await fetch("/api/push/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        timezone: settings.timezone ?? getUserTimezone(),
+        ...settings,
+      }),
+    });
+    return res.ok;
   } catch {
     return false;
   }

@@ -72,7 +72,7 @@ export interface IStorage {
   updateProSubscriberStatus(stripeSubscriptionId: string, status: string): Promise<void>;
   upsertPushSubscription(data: InsertPushSubscription): Promise<PushSubscription>;
   getPushSubscription(sessionId: string): Promise<PushSubscription | undefined>;
-  updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'>>): Promise<void>;
+  updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'|'timezone'>>): Promise<void>;
   deletePushSubscription(sessionId: string): Promise<void>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
   getSmsConversation(phone: string): Promise<SmsConversation | undefined>;
@@ -525,16 +525,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertPushSubscription(data: InsertPushSubscription): Promise<PushSubscription> {
+    const setOnConflict: Partial<InsertPushSubscription> = {
+      endpoint: data.endpoint,
+      p256dh: data.p256dh,
+      auth: data.auth,
+    };
+    if (data.timezone !== undefined) setOnConflict.timezone = data.timezone;
+    if (data.morningEnabled !== undefined) setOnConflict.morningEnabled = data.morningEnabled;
+    if (data.morningTime !== undefined) setOnConflict.morningTime = data.morningTime;
+    if (data.eveningEnabled !== undefined) setOnConflict.eveningEnabled = data.eveningEnabled;
+    if (data.eveningTime !== undefined) setOnConflict.eveningTime = data.eveningTime;
+    if (data.middayEnabled !== undefined) setOnConflict.middayEnabled = data.middayEnabled;
+    if (data.streakReminder !== undefined) setOnConflict.streakReminder = data.streakReminder;
+    if (data.weeklySummary !== undefined) setOnConflict.weeklySummary = data.weeklySummary;
+
     const [row] = await db
       .insert(pushSubscriptions)
       .values(data)
       .onConflictDoUpdate({
         target: pushSubscriptions.sessionId,
-        set: {
-          endpoint: data.endpoint,
-          p256dh: data.p256dh,
-          auth: data.auth,
-        },
+        set: setOnConflict,
       })
       .returning();
     return row;
@@ -545,7 +555,7 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
-  async updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'>>): Promise<void> {
+  async updatePushSettings(sessionId: string, settings: Partial<Pick<PushSubscription, 'morningEnabled'|'morningTime'|'eveningEnabled'|'eveningTime'|'middayEnabled'|'streakReminder'|'weeklySummary'|'timezone'>>): Promise<void> {
     await db.update(pushSubscriptions).set(settings).where(eq(pushSubscriptions.sessionId, sessionId));
   }
 
