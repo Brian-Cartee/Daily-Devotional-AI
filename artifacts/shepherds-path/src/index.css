@@ -533,10 +533,21 @@ html[data-sp-shell="native"] {
   overflow: hidden !important;
   overscroll-behavior: auto !important;
   touch-action: auto !important;
+  color-scheme: dark;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: "New York", "Georgia", "Times New Roman", ui-serif, serif;
   --font-reading: "New York", Georgia, "Times New Roman", serif;
   --font-decorative: Georgia, "Times New Roman", serif;
+  /* Dark tokens — comma-free values for hsl(var()) in bundled CSS */
+  --background: 292 30% 5%;
+  --foreground: 38 22% 93%;
+  --card: 255 16% 11%;
+  --card-foreground: 38 22% 93%;
+  --primary: 292 90% 54%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 255 12% 17%;
+  --muted-foreground: 240 8% 72%;
+  --border: 252 10% 24%;
 }
 
 html[data-sp-shell="native"] body {
@@ -547,6 +558,8 @@ html[data-sp-shell="native"] body {
   overscroll-behavior-y: auto !important;
   touch-action: auto !important;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  color: #ede8e0 !important;
+  background-color: #0d0612 !important;
 }
 
 html[data-sp-shell="native"] #root {
@@ -655,4 +668,90 @@ html[data-sp-shell="native"] [data-testid="card-devotional"] {
   position: relative !important;
   width: 100% !important;
   box-sizing: border-box !important;
+}
+
+/*
+ * WKWebView: hsl(var(--token)) often fails inside <a> — reset links + semantic colors.
+ */
+html[data-sp-shell="native"] #root a {
+  text-decoration: none !important;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-sp-shell="native"] #root a.sp-native-card-link,
+html[data-sp-shell="native"] #root a:has([data-testid]),
+html[data-sp-shell="native"] #root a[data-testid] {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+html[data-sp-shell="native"] #root a + a {
+  margin-top: 10px;
+}
+
+html[data-sp-shell="native"] .text-foreground {
+  color: #ede8e0 !important;
+}
+
+html[data-sp-shell="native"] .text-foreground\/80,
+html[data-sp-shell="native"] .text-foreground\/88 {
+  color: rgba(237, 232, 224, 0.82) !important;
+}
+
+html[data-sp-shell="native"] .text-foreground\/75,
+html[data-sp-shell="native"] .text-foreground\/70 {
+  color: rgba(237, 232, 224, 0.72) !important;
+}
+
+html[data-sp-shell="native"] .text-foreground\/65,
+html[data-sp-shell="native"] .text-foreground\/60 {
+  color: rgba(237, 232, 224, 0.62) !important;
+}
+
+html[data-sp-shell="native"] .text-muted-foreground {
+  color: rgba(180, 175, 195, 0.78) !important;
+}
+
+html[data-sp-shell="native"] .bg-card {
+  background-color: #1a1520 !important;
+}
+
+html[data-sp-shell="native"] .bg-background {
+  background-color: #0d0612 !important;
+}
+
+html[data-sp-shell="native"] .border-border,
+html[data-sp-shell="native"] .border-border\/60 {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-sp-shell="native"] nav[aria-label="Site links"] {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 4px 16px !important;
+  text-align: center;
+}
+
+html[data-sp-shell="native"] nav[aria-label="Site links"] a {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 44px !important;
+  padding: 8px 4px !important;
+  color: rgba(237, 232, 224, 0.75) !important;
+  margin-top: 0 !important;
+}
+
+html[data-sp-shell="native"] [data-testid="home-hero-devotional-focus"] a + a {
+  margin-top: 10px !important;
+}
+
+html[data-sp-shell="native"] [data-testid="home-hero-devotional-focus"] a {
+  margin-top: 0;
+}
+
+html[data-sp-shell="native"] [data-testid="home-hero-devotional-focus"] a:first-of-type {
+  margin-bottom: 10px !important;
 }

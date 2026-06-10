@@ -373,19 +373,46 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                     Your verse, reflection, and prayer are ready below.
                   </p>
                 )}
-                <Link href="/devotional?listen=1">
+                <Link href="/devotional?listen=1" className="sp-native-card-link" style={{ display: "block", marginBottom: "10px" }}>
                   <span
                     data-testid="btn-hero-play-devotional"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-primary shadow-md shadow-black/25 active:scale-[0.99] mb-2.5"
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      borderRadius: "12px",
+                      padding: "14px 0",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      color: "#ffffff",
+                      backgroundColor: "#c44ee0",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.25)",
+                      boxSizing: "border-box",
+                    }}
                   >
                     <Headphones className="w-4 h-4" />
                     Play today&apos;s Word
                   </span>
                 </Link>
-                <Link href="/devotional">
+                <Link href="/devotional" className="sp-native-card-link" style={{ display: "block" }}>
                   <span
                     data-testid="btn-hero-open-devotional-focus"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white/90 border border-white/25 active:scale-[0.99]"
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      borderRadius: "12px",
+                      padding: "12px 0",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "rgba(255,255,255,0.90)",
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      boxSizing: "border-box",
+                    }}
                   >
                     Read instead
                     <ArrowRight className="w-4 h-4" />

@@ -293,7 +293,8 @@
         document.documentElement.setAttribute('data-sp-shell','native');
         window.__spSkipWebFonts = true;
       }
-      try{var t=localStorage.getItem('sp-theme');if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}}
+      if(window.ReactNativeWebView){document.documentElement.classList.add('dark');}
+      else{try{var t=localStorage.getItem('sp-theme');if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}}
     })();
     </script>
     <!-- Web only — App Store shell uses system fonts (no Google Fonts network). -->

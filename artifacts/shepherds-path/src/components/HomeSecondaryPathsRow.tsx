@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { getBookmark } from "@/lib/bookmarks";
+import { NATIVE_TEXT, NATIVE_TEXT_FAINT, NATIVE_TEXT_MUTED } from "@/lib/nativeColors";
 
 const rowStyle = (border: string, background: string) => ({
   display: "flex" as const,
@@ -28,7 +29,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }} data-testid="home-secondary-paths">
-      <Link href="/guidance">
+      <Link href="/guidance" className="sp-native-card-link">
         <div
           data-testid="home-secondary-guidance"
           style={rowStyle(
@@ -38,13 +39,13 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         >
           <ShortcutPathIcon variant="guidance" size="sm" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
               Talk it through
             </p>
             <p
               style={{
                 fontSize: "12px",
-                color: "hsl(var(--muted-foreground) / 0.75)",
+                color: NATIVE_TEXT_MUTED,
                 lineHeight: 1.375,
                 marginTop: "2px",
               }}
@@ -52,12 +53,12 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
               When you need more than reading
             </p>
           </div>
-          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }} />
+          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />
         </div>
       </Link>
 
       {!hideCloset && (
-        <Link href="/prayer-closet">
+        <Link href="/prayer-closet" className="sp-native-card-link">
           <div
             data-testid="home-secondary-closet"
             style={rowStyle(
@@ -67,13 +68,13 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
           >
             <ShortcutPathIcon variant="closet" size="sm" />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
                 Prayer closet
               </p>
               <p
                 style={{
                   fontSize: "12px",
-                  color: "hsl(var(--muted-foreground) / 0.75)",
+                  color: NATIVE_TEXT_MUTED,
                   lineHeight: 1.375,
                   marginTop: "2px",
                 }}
@@ -81,12 +82,12 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
                 Quiet room · worship · stillness
               </p>
             </div>
-            <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }} />
+            <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />
           </div>
         </Link>
       )}
 
-      <Link href="/read">
+      <Link href="/read" className="sp-native-card-link">
         <div
           data-testid="home-secondary-read"
           style={rowStyle(
@@ -96,13 +97,13 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         >
           <ShortcutPathIcon variant="media" size="sm" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
               {readLabel ? `Continue ${readLabel}` : "Read or listen"}
             </p>
             <p
               style={{
                 fontSize: "12px",
-                color: "hsl(var(--muted-foreground) / 0.75)",
+                color: NATIVE_TEXT_MUTED,
                 lineHeight: 1.375,
                 marginTop: "2px",
               }}
@@ -110,7 +111,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
               {readLabel ? "Pick up where you left off" : "Play any chapter — KJV, WEB, ASV"}
             </p>
           </div>
-          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }} />
+          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />
         </div>
       </Link>
     </div>

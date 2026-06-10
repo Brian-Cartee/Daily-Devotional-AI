@@ -49,6 +49,7 @@ import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { readCarryToday } from "@/lib/devotionalContinuity";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
+import { NATIVE_CARD, NATIVE_PAGE, NATIVE_TEXT, NATIVE_TEXT_SOFT } from "@/lib/nativeColors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, markEntryShown } from "@/components/HomeEntryScreen";
 import {
@@ -173,7 +174,7 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
   const visitedToday = visitSet.has(weekDates[todayIdx]);
 
   return (
-    <Link href="/devotional">
+    <Link href="/devotional" className="sp-native-card-link">
       <div
         data-testid="card-devotional"
         className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
@@ -181,7 +182,7 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
           position: "relative",
           borderRadius: "16px",
           border: "1px solid rgba(19,78,74,0.10)",
-          backgroundColor: "hsl(var(--card))",
+          backgroundColor: NATIVE_CARD,
           padding: "20px",
           overflow: "hidden",
         }}
@@ -219,7 +220,7 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
               style={{
                 fontSize: "17px",
                 fontWeight: 700,
-                color: "hsl(var(--foreground))",
+                color: NATIVE_TEXT,
                 marginBottom: "4px",
                 lineHeight: 1.25,
                 letterSpacing: "-0.01em",
@@ -227,7 +228,7 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
             >
               {homeFocus ? "Today's Word" : "Daily Devotional"}
             </h2>
-            <p style={{ fontSize: "15px", color: "hsl(var(--foreground) / 0.80)", lineHeight: 1.625 }}>
+            <p style={{ fontSize: "15px", color: NATIVE_TEXT_SOFT, lineHeight: 1.625 }}>
               {homeFocus
                 ? "Today's verse, a short reflection, and a prayer you can make your own. Read slowly — no rush."
                 : "Each day brings a new scripture, a personal reflection, and a guided moment to hear from God — grounded in the passage, shaped for your real life. Open it, sit with it, let it speak."}
@@ -730,7 +731,7 @@ function LandingHomeInner() {
   return (
     <div
       className="relative"
-      style={{ minHeight: "100vh", background: "hsl(var(--background))" }}
+      style={{ minHeight: "100vh", background: NATIVE_PAGE }}
     >
       <AnimatePresence>
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
@@ -1318,7 +1319,16 @@ function LandingHomeInner() {
           transition={{ delay: inNativeApp ? 0 : 0.7 }}
           className="mt-10 sm:mt-12 pb-2 max-w-xl mx-auto w-full"
         >
-          <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-2.5 mb-6 sm:mb-8">
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              marginBottom: "24px",
+            }}
+          >
             {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
               <span
                 key={tag}
