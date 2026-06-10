@@ -933,15 +933,18 @@ export async function createPurpleShareImage(
 }
 
 // ── Centered logo header for Story (9:16) format ──────────────────────────
+// Positioned lower (ICON_Y=130) so TikTok/Reels top UI doesn't overlap.
+// Tagline removed — too small to read at video size, clutters the header.
+// Brand name bumped to 38px for legibility on small phone screens.
 async function drawCenteredLogoHeader(
   ctx: CanvasRenderingContext2D,
   W: number,
   accentColor: string
 ): Promise<void> {
-  const ICON_SIZE = 68;
+  const ICON_SIZE = 72;
   const ICON_X = (W - ICON_SIZE) / 2;
-  const ICON_Y = 86;
-  const RADIUS = 17;
+  const ICON_Y = 130;  // was 86 — moved down to clear platform top UI
+  const RADIUS = 18;
 
   let logoDrawn = false;
   for (const src of [BRAND_ICON, "/app-icon-192.png"]) {
@@ -963,23 +966,20 @@ async function drawCenteredLogoHeader(
     ctx.fill();
     ctx.restore();
     ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.font = "bold 28px Georgia, serif";
+    ctx.font = "bold 30px Georgia, serif";
     ctx.textAlign = "center";
-    ctx.fillText("✝", W / 2, ICON_Y + 44);
+    ctx.fillText("✝", W / 2, ICON_Y + 46);
   }
 
+  // Brand name only — no tagline (tagline was 20px, invisible at video size)
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.font = "bold 30px 'Georgia', serif";
+  ctx.font = "bold 38px 'Georgia', serif";  // was 30px
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 10;
-  ctx.fillText("Shepherd's Path", W / 2, ICON_Y + ICON_SIZE + 34);
-  ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.font = "20px 'Georgia', serif";
-  ctx.shadowBlur = 8;
-  ctx.fillText("Open your Bible. We'll open the conversation.", W / 2, ICON_Y + ICON_SIZE + 60);
+  ctx.fillText("Shepherd's Path", W / 2, ICON_Y + ICON_SIZE + 40);
   ctx.shadowBlur = 0;
-  horizontalGlowLine(ctx, ICON_Y + ICON_SIZE + 76, accentColor, W);
+  horizontalGlowLine(ctx, ICON_Y + ICON_SIZE + 58, accentColor, W);
 }
 
 // ── Story (9:16) landscape share card ─────────────────────────────────────
@@ -1090,19 +1090,22 @@ export async function createStoryShareImage(
   ctx.fillText(`\u2014 ${reference}`, W / 2, finalVerseY + 114);
   ctx.shadowBlur = 0;
 
-  const footerY = H - 148;
-  const footerGrad = ctx.createLinearGradient(0, footerY - 20, 0, H);
-  footerGrad.addColorStop(0, "rgba(0,0,0,0)"); footerGrad.addColorStop(1, "rgba(0,0,0,0.65)");
-  ctx.fillStyle = footerGrad; ctx.fillRect(0, footerY - 20, W, H - footerY + 20);
+  // Footer moved up from H-148 to H-300 to stay above TikTok/Reels/Shorts
+  // platform UI (buttons, captions cover the bottom ~300px of a 1920px story).
+  // URL removed — too small to read and always clipped. Brand name only.
+  const footerY = H - 300;
+  const footerGrad = ctx.createLinearGradient(0, footerY - 30, 0, H);
+  footerGrad.addColorStop(0, "rgba(0,0,0,0)"); footerGrad.addColorStop(1, "rgba(0,0,0,0.70)");
+  ctx.fillStyle = footerGrad; ctx.fillRect(0, footerY - 30, W, H - footerY + 30);
   horizontalGlowLine(ctx, footerY, "rgba(255,255,255,0.14)", W);
   ctx.textAlign = "center";
   ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 8;
   ctx.fillStyle = "rgba(255,255,255,0.94)";
-  ctx.font = "bold 30px 'Georgia', serif";
-  ctx.fillText("Start your own daily devotional \u2192", W / 2, footerY + 46);
-  ctx.fillStyle = "rgba(255,255,255,0.68)";
-  ctx.font = "22px 'Georgia', serif";
-  ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", W / 2, footerY + 86);
+  ctx.font = "bold 34px 'Georgia', serif";
+  ctx.fillText("Start your own daily devotional \u2192", W / 2, footerY + 52);
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = "bold 26px 'Georgia', serif";
+  ctx.fillText("Shepherd\u2019s Path", W / 2, footerY + 94);
   ctx.shadowBlur = 0;
 
   return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob!), "image/png"); });
@@ -1206,19 +1209,21 @@ export async function createPurpleStoryImage(
   ctx.fillText(`\u2014 ${reference}`, W / 2, finalVerseY + 114);
   ctx.shadowBlur = 0;
 
-  const stripY = H - 148;
-  const stripGrad = ctx.createLinearGradient(0, stripY, 0, H);
-  stripGrad.addColorStop(0, "rgba(0,0,0,0)"); stripGrad.addColorStop(1, "rgba(0,0,0,0.60)");
-  ctx.fillStyle = stripGrad; ctx.fillRect(0, stripY, W, H - stripY);
+  // Footer moved up from H-148 to H-300 — clears TikTok/Reels/Shorts UI zone.
+  // URL removed; brand name at larger size replaces it.
+  const stripY = H - 300;
+  const stripGrad = ctx.createLinearGradient(0, stripY - 20, 0, H);
+  stripGrad.addColorStop(0, "rgba(0,0,0,0)"); stripGrad.addColorStop(1, "rgba(0,0,0,0.65)");
+  ctx.fillStyle = stripGrad; ctx.fillRect(0, stripY - 20, W, H - stripY + 20);
   horizontalGlowLine(ctx, stripY + 4, "rgba(190,130,255,0.32)", W);
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.94)";
-  ctx.font = "bold 30px 'Georgia', serif";
+  ctx.font = "bold 34px 'Georgia', serif";
   ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 8;
-  ctx.fillText("Start your own daily devotional \u2192", W / 2, stripY + 46);
-  ctx.fillStyle = "rgba(255,255,255,0.68)";
-  ctx.font = "22px 'Georgia', serif";
-  ctx.fillText("Shepherd\u2019s Path  \u00B7  shepherdspathai.com", W / 2, stripY + 84);
+  ctx.fillText("Start your own daily devotional \u2192", W / 2, stripY + 52);
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = "bold 26px 'Georgia', serif";
+  ctx.fillText("Shepherd\u2019s Path", W / 2, stripY + 94);
   ctx.shadowBlur = 0;
 
   return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob!), "image/png"); });
