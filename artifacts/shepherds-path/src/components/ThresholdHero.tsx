@@ -72,7 +72,17 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
     verse && typeof verse === "object" && "reference" in verse
       ? String((verse as { reference?: unknown }).reference ?? "")
       : "";
-  /** Brand tagline on hero photo — week one and returning users through day 7 */
+  // INTENTIONAL: Show brand tagline ("Find your way back to God") only during
+  // the first week. This is onboarding copy, not permanent homepage chrome.
+  // After day 7 (or day 14 if intro incomplete), returning users see photo-only
+  // atmosphere — they already know why they're here.
+  // DO NOT remove or simplify this without product discussion.
+  //
+  // Truth table (daysWithApp = getRelationshipAge()):
+  //   days 1–7                         → show (daysWithApp < 8)
+  //   days 8–13, intro incomplete      → show (!isIntroFlowComplete() && daysWithApp < 14)
+  //   day 8+, intro complete           → hide
+  //   day 14+                          → hide always
   const showPhotoTaglines = daysWithApp < 8 || (!isIntroFlowComplete() && daysWithApp < 14);
   const chapelWeekFocus = daysWithApp <= 7;
 
