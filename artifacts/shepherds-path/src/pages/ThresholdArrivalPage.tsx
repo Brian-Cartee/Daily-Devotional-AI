@@ -208,6 +208,19 @@ export default function ThresholdArrivalPage() {
         className={`relative z-10 flex-1 flex flex-col min-h-0 w-full px-6 pb-[max(2.75rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] ${
           step === "need" ? "" : "items-center justify-center"
         }`}
+        style={
+          step === "need"
+            ? { display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%" }
+            : {
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                minHeight: 0,
+                width: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+              }
+        }
       >
         <p className="sr-only" aria-live="polite" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", borderWidth: 0 }}>
           {step === "arrive"
@@ -225,24 +238,36 @@ export default function ThresholdArrivalPage() {
             <motion.div
               key="arrive"
               {...fade}
-              className="flex flex-col items-center text-center max-w-md"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                width: "100%",
+                maxWidth: "28rem",
+              }}
             >
               <p
-                className="text-[1.35rem] sm:text-[1.5rem] leading-snug text-white/90 font-medium"
-                style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+                style={{
+                  fontSize: "clamp(1.35rem, 4.5vw, 1.5rem)",
+                  lineHeight: 1.375,
+                  color: "rgba(255,255,255,0.90)",
+                  fontWeight: 500,
+                  fontFamily: "var(--font-serif, Georgia, serif)",
+                }}
               >
                 You don&apos;t have to be okay to come in.
               </p>
-              <p className="mt-4 text-[14px] text-white/52 leading-relaxed">
+              <p style={{ marginTop: "16px", fontSize: "14px", color: "rgba(255,255,255,0.52)", lineHeight: 1.625 }}>
                 This is a quiet place. Nothing to prove.
               </p>
-              <p className="mt-3 text-[13px] text-white/45 leading-relaxed">
+              <p style={{ marginTop: "12px", fontSize: "13px", color: "rgba(255,255,255,0.45)", lineHeight: 1.625 }}>
                 Whether you&apos;re carrying something heavy or walking steady — same path, your pace.
               </p>
-              <p className="mt-4 text-[14px] text-white/52 leading-relaxed">
+              <p style={{ marginTop: "16px", fontSize: "14px", color: "rgba(255,255,255,0.52)", lineHeight: 1.625 }}>
                 One step at a time. Scripture, prayer, stillness — without noise.
               </p>
-              <p className="mt-2 text-[13px] text-white/42 leading-relaxed">
+              <p style={{ marginTop: "8px", fontSize: "13px", color: "rgba(255,255,255,0.42)", lineHeight: 1.625 }}>
                 No noise. No shame. No pressure.
               </p>
               {arriveReady && (
@@ -255,7 +280,18 @@ export default function ThresholdArrivalPage() {
                     fireHaptic("soft");
                     setStep("need");
                   }}
-                  className="mt-10 min-h-[44px] text-[14px] font-semibold text-white/65 hover:text-white px-6 py-2.5 rounded-full border border-white/15 hover:border-white/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                  className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                  style={{
+                    marginTop: "40px",
+                    minHeight: "44px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.65)",
+                    padding: "10px 24px",
+                    borderRadius: "9999px",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    background: "transparent",
+                  }}
                 >
                   Continue
                 </motion.button>
@@ -367,10 +403,25 @@ export default function ThresholdArrivalPage() {
           )}
 
           {step === "enter" && (
-            <motion.div key="enter" {...fade} className="flex flex-col items-center text-center max-w-md">
+            <motion.div
+              key="enter"
+              {...fade}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                width: "100%",
+                maxWidth: "28rem",
+              }}
+            >
               <p
-                className="text-[1.2rem] text-white/88 leading-relaxed"
-                style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+                style={{
+                  fontSize: "1.2rem",
+                  color: "rgba(255,255,255,0.88)",
+                  lineHeight: 1.625,
+                  fontFamily: "var(--font-serif, Georgia, serif)",
+                }}
               >
                 {modeLine}
               </p>
@@ -378,7 +429,21 @@ export default function ThresholdArrivalPage() {
                 type="button"
                 data-testid="btn-threshold-enter"
                 onClick={finish}
-                className="mt-12 w-full max-w-xs min-h-[50px] rounded-xl bg-white text-[#130636] font-bold text-[16px] py-4 hover:bg-white/95 transition-colors shadow-lg shadow-violet-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-100"
+                className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-100"
+                style={{
+                  marginTop: "48px",
+                  width: "100%",
+                  maxWidth: "20rem",
+                  minHeight: "50px",
+                  borderRadius: "12px",
+                  backgroundColor: "#ffffff",
+                  color: "#130636",
+                  fontWeight: 700,
+                  fontSize: "16px",
+                  padding: "16px",
+                  border: "none",
+                  boxShadow: "0 10px 15px -3px rgba(76,29,149,0.30)",
+                }}
               >
                 Step inside
               </button>

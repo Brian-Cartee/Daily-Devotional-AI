@@ -30,12 +30,28 @@ export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center text-center px-6">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
+        paddingLeft: "24px",
+        paddingRight: "24px",
+      }}
+    >
       <motion.p
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/45 mb-6"
+        style={{
+          fontSize: "11px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.22em",
+          color: "rgba(255,255,255,0.45)",
+          marginBottom: "24px",
+        }}
       >
         Stillness
       </motion.p>
@@ -43,33 +59,73 @@ export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.65 }}
-        className="max-w-sm text-[1.15rem] sm:text-[1.25rem] leading-relaxed text-white/88"
-        style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+        style={{
+          maxWidth: "24rem",
+          fontSize: "clamp(1.15rem, 4vw, 1.25rem)",
+          lineHeight: 1.625,
+          color: "rgba(255,255,255,0.88)",
+          fontFamily: "var(--font-serif, Georgia, serif)",
+        }}
       >
         Take one slow breath.
         <br />
-        <span className="text-white/65">God already sees you.</span>
+        <span style={{ display: "block", color: "rgba(255,255,255,0.65)" }}>God already sees you.</span>
       </motion.p>
 
       <div
-        className="mt-10 w-24 h-24 rounded-full border border-white/15 flex items-center justify-center"
+        style={{
+          marginTop: "40px",
+          width: "96px",
+          height: "96px",
+          borderRadius: "9999px",
+          border: "1px solid rgba(255,255,255,0.15)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
         aria-hidden
       >
         <motion.div
-          className="w-14 h-14 rounded-full bg-violet-500/25"
+          style={{
+            width: "56px",
+            height: "56px",
+            borderRadius: "9999px",
+            backgroundColor: "rgba(139,92,246,0.25)",
+          }}
           animate={{ scale: [1, 1.12, 1], opacity: [0.35, 0.55, 0.35] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
-      <p className="mt-8 text-[13px] font-medium text-white/40 tabular-nums">
+      <p
+        style={{
+          marginTop: "32px",
+          fontSize: "13px",
+          fontWeight: 500,
+          color: "rgba(255,255,255,0.40)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
         {Math.max(0, Math.ceil((1 - progress) * (BREATH_MS / 1000)))}s
       </p>
 
-      <div className="mt-6 w-32 h-0.5 rounded-full bg-white/10 overflow-hidden">
+      <div
+        style={{
+          marginTop: "24px",
+          width: "128px",
+          height: "2px",
+          borderRadius: "9999px",
+          backgroundColor: "rgba(255,255,255,0.10)",
+          overflow: "hidden",
+        }}
+      >
         <div
-          className="h-full bg-violet-400/70 transition-all duration-100"
-          style={{ width: `${progress * 100}%` }}
+          className="transition-all duration-100"
+          style={{
+            height: "100%",
+            backgroundColor: "rgba(167,139,250,0.70)",
+            width: `${progress * 100}%`,
+          }}
         />
       </div>
 
@@ -80,7 +136,17 @@ export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
           type="button"
           onClick={onDone}
           data-testid="btn-threshold-breath-continue"
-          className="mt-10 text-[15px] font-semibold text-white/80 hover:text-white px-8 py-3 rounded-full border border-white/20 hover:border-white/35 transition-colors"
+          className="transition-colors"
+          style={{
+            marginTop: "40px",
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.80)",
+            padding: "12px 32px",
+            borderRadius: "9999px",
+            border: "1px solid rgba(255,255,255,0.20)",
+            background: "transparent",
+          }}
         >
           Continue
         </motion.button>
