@@ -16,6 +16,7 @@ import { ReferralWelcomeToast, setReferralWelcomePending } from "@/components/Re
 import { refreshAiUsage } from "@/hooks/use-ai-usage";
 import { ThemeContext, getStoredTheme, applyTheme, type AppTheme } from "@/lib/theme";
 import NotFound from "@/pages/not-found";
+import StartPage from "@/pages/StartPage";
 import LandingHome from "@/pages/LandingHome";
 import Devotional from "@/pages/Devotional";
 import SharedVersePage from "@/pages/SharedVersePage";
@@ -155,6 +156,7 @@ function Router() {
       <Route path="/lament" component={LamentPathwayPage} />
       <Route path="/surrender" component={SurrenderStonePage} />
       <Route path="/" component={LandingHome} />
+      <Route path="/start" component={StartPage} />
       <Route path="/guidance" component={GuidancePage} />
       <Route path="/devotional" component={Devotional} />
       <Route path="/v/:date" component={SharedVersePage} />
