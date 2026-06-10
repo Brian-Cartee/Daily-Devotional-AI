@@ -288,10 +288,18 @@ export default function ThresholdArrivalPage() {
                       data-testid={`btn-threshold-need-${opt.id}`}
                       aria-label={`${opt.label}: ${opt.sub}`}
                       onClick={() => handleNeed(opt.id)}
-                      className="w-full min-h-[56px] text-left rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 px-5 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 flex flex-col"
+                      className="w-full rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        minHeight: "56px",
+                        padding: "16px 20px",
+                        textAlign: "left",
+                      }}
                     >
-                      <span className="text-[16px] font-semibold text-white/90">{opt.label}</span>
-                      <span className="text-[13px] text-white/50 mt-0.5">{opt.sub}</span>
+                      <span style={{ display: "block", color: "rgba(255,255,255,0.92)", fontSize: "16px", fontWeight: 600, lineHeight: 1.3 }}>{opt.label}</span>
+                      <span style={{ display: "block", color: "rgba(255,255,255,0.50)", fontSize: "13px", marginTop: "3px", lineHeight: 1.3 }}>{opt.sub}</span>
                     </button>
                   ))}
                 </div>
