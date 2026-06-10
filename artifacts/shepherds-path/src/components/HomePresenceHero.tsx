@@ -17,6 +17,16 @@ type Props = {
   onSelectTalk?: () => void;
 };
 
+const cardShell = {
+  width: "100%",
+  borderRadius: "16px",
+  border: "1px solid rgba(245,158,11,0.25)",
+  backgroundColor: "rgba(18,16,26,0.95)",
+  padding: "16px",
+  boxSizing: "border-box",
+  boxShadow: "0 10px 15px -3px rgba(0,0,0,0.25)",
+};
+
 export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTalk }: Props) {
   if (door === "talk") {
     return (
@@ -26,31 +36,57 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
 
   if (door === "scripture") {
     return (
-      <div
-        className="w-full rounded-2xl border border-amber-500/25 bg-[#12101a]/95 backdrop-blur-sm p-4 sm:p-5 shadow-lg shadow-black/25"
-        data-testid="card-sit-scripture-hero"
-      >
-        <div className="flex items-start gap-2 mb-3">
-          <BookOpen className="w-5 h-5 text-amber-200/80 shrink-0 mt-0.5" aria-hidden />
+      <div style={cardShell} data-testid="card-sit-scripture-hero">
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "12px" }}>
+          <BookOpen
+            style={{ width: "20px", height: "20px", color: "rgba(253,230,138,0.80)", flexShrink: 0, marginTop: "2px" }}
+            aria-hidden
+          />
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/55 mb-1">
+            <p
+              style={{
+                fontSize: "12px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.2em",
+                color: "rgba(255,255,255,0.55)",
+                marginBottom: "4px",
+              }}
+            >
               Sit in Scripture
             </p>
-            <p className="text-[15px] text-white/82 leading-snug">
+            <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.82)", lineHeight: 1.375 }}>
               Today&apos;s verse and a short devotional — read or listen at your pace.
             </p>
           </div>
         </div>
         {verse ? (
-          <div className="rounded-xl border border-amber-500/15 bg-black/30 px-3 py-2.5 mb-3">
+          <div
+            style={{
+              borderRadius: "12px",
+              border: "1px solid rgba(245,158,11,0.15)",
+              backgroundColor: "rgba(0,0,0,0.30)",
+              padding: "10px 12px",
+              marginBottom: "12px",
+            }}
+          >
             <p
-              className="text-[15px] text-white/88 line-clamp-3 leading-snug italic"
-              style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
+              style={{
+                fontSize: "15px",
+                color: "rgba(255,255,255,0.88)",
+                lineHeight: 1.375,
+                fontStyle: "italic",
+                fontFamily: "var(--font-serif, Georgia, serif)",
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: "vertical",
+              }}
             >
               &ldquo;{verse.text}&rdquo;
             </p>
-            <div className="flex items-center justify-between gap-2 mt-1">
-              <p className="text-[13px] font-semibold text-amber-200/75">— {verse.reference}</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "4px" }}>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "rgba(253,230,138,0.75)" }}>— {verse.reference}</p>
               <ShareVerseTrigger
                 text={verse.text}
                 reference={verse.reference}
@@ -62,18 +98,42 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
             </div>
           </div>
         ) : (
-          <p className="text-[14px] text-white/50 mb-3">Your verse for today is ready.</p>
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.50)", marginBottom: "12px" }}>
+            Your verse for today is ready.
+          </p>
         )}
-        <p className="text-[11px] text-center text-white/45 mb-2 leading-snug">
+        <p
+          style={{
+            fontSize: "11px",
+            textAlign: "center",
+            color: "rgba(255,255,255,0.45)",
+            marginBottom: "8px",
+            lineHeight: 1.375,
+          }}
+        >
           Your full devotional continues just below ↓
         </p>
         <Link href="/devotional">
           <span
             data-testid="btn-hero-open-devotional"
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 shadow-md shadow-black/20 active:scale-[0.99]"
+            style={{
+              display: "flex",
+              width: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              borderRadius: "12px",
+              padding: "14px",
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "#1a1208",
+              background: "linear-gradient(to right, rgba(254,243,199,0.95), rgba(253,230,138,0.90), rgba(254,243,199,0.95))",
+              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.20)",
+              boxSizing: "border-box",
+            }}
           >
             Open today&apos;s devotional
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight style={{ width: "16px", height: "16px" }} />
           </span>
         </Link>
       </div>
@@ -85,16 +145,31 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
 
   return (
     <div
-      className="w-full rounded-2xl border border-violet-400/20 bg-[#12101a]/95 backdrop-blur-sm p-4 sm:p-5 shadow-lg shadow-black/25"
+      style={{
+        ...cardShell,
+        border: "1px solid rgba(167,139,250,0.20)",
+      }}
       data-testid="card-just-breathe-hero"
     >
-      <div className="flex items-start gap-2 mb-3">
-        <Wind className="w-5 h-5 text-violet-200/75 shrink-0 mt-0.5" aria-hidden />
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "12px" }}>
+        <Wind
+          style={{ width: "20px", height: "20px", color: "rgba(221,214,254,0.75)", flexShrink: 0, marginTop: "2px" }}
+          aria-hidden
+        />
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/55 mb-1">
+          <p
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+              color: "rgba(255,255,255,0.55)",
+              marginBottom: "4px",
+            }}
+          >
             {quietTitle}
           </p>
-          <p className="text-[15px] text-white/82 leading-snug">
+          <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.82)", lineHeight: 1.375 }}>
             A quieter room — breath, stillness, and gentle Scripture. No performance, no streak
             pressure.
           </p>
@@ -103,17 +178,48 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
       <Link href={quietHref}>
         <span
           data-testid="btn-hero-quiet-room"
-          className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-violet-600/90 hover:bg-violet-600 shadow-md shadow-black/20 active:scale-[0.99]"
+          style={{
+            display: "flex",
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            borderRadius: "12px",
+            padding: "14px",
+            fontSize: "16px",
+            fontWeight: 600,
+            color: "#ffffff",
+            backgroundColor: "rgba(124,58,237,0.90)",
+            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.20)",
+            boxSizing: "border-box",
+          }}
         >
           {isLateNight() ? "Open Night Shepherd" : "Enter the quiet room"}
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight style={{ width: "16px", height: "16px" }} />
         </span>
       </Link>
-      <p className="mt-2.5 text-center text-[11px] text-white/38 leading-relaxed">
+      <p
+        style={{
+          marginTop: "10px",
+          textAlign: "center",
+          fontSize: "11px",
+          color: "rgba(255,255,255,0.38)",
+          lineHeight: 1.625,
+        }}
+      >
         Or return to{" "}
         <button
           type="button"
-          className="underline underline-offset-2 text-white/50 hover:text-white/70"
+          style={{
+            textDecoration: "underline",
+            textUnderlineOffset: "2px",
+            color: "rgba(255,255,255,0.50)",
+            background: "none",
+            border: "none",
+            padding: 0,
+            font: "inherit",
+            cursor: "pointer",
+          }}
           onClick={onSelectTalk}
         >
           Talk it through

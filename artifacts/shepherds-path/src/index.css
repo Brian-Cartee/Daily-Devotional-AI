@@ -634,3 +634,25 @@ html[data-sp-shell="native"] [data-testid="home-threshold-content-inner"] {
   visibility: visible !important;
   transform: none !important;
 }
+
+/* Homepage cards — flex/grid/layout fallbacks when Tailwind utilities fail in WKWebView */
+html[data-sp-shell="native"] [data-testid="home-presence-doors"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+html[data-sp-shell="native"] [data-testid="card-sit-scripture-hero"],
+html[data-sp-shell="native"] [data-testid="card-just-breathe-hero"],
+html[data-sp-shell="native"] [data-testid="card-talk-it-through-hero"] {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html[data-sp-shell="native"] [data-testid="card-devotional"] {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
