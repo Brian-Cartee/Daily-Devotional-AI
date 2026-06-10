@@ -71,7 +71,7 @@ function notifyNativeSessionId(id: string): void {
     (
       window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
     ).ReactNativeWebView?.postMessage(
-      JSON.stringify({ type: "sp_user_profile", sessionId: id }),
+      JSON.stringify({ type: "sp_user_profile", sessionId: id, subscriberEmail: "" }),
     );
   } catch {
     /* ignore */
