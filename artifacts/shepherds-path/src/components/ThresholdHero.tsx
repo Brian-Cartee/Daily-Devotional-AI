@@ -307,13 +307,14 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 modePlan.firstSessionLine}
           </p>
           {showArrival && (
-            <div className="mb-3">
+            <div style={{ marginBottom: "16px" }}>
               <ArrivalRitual defaultOpen onComplete={() => setShowArrival(false)} />
             </div>
           )}
           {needAck && (
             <p
               className="text-[14px] text-amber-100/70 leading-relaxed mb-3"
+              style={showArrival ? { marginTop: "4px" } : undefined}
               data-testid="text-threshold-need-line"
             >
               {needAck}

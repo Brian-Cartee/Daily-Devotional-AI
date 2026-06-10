@@ -963,7 +963,7 @@ function LandingHomeInner() {
           paddingBottom: "24px",
           position: "relative",
           zIndex: 10,
-          marginTop: thresholdWelcome ? "4px" : "-16px",
+          marginTop: thresholdWelcome ? "4px" : homeDevotionalFocus ? "8px" : "-16px",
           width: "100%",
           boxSizing: "border-box",
         }}
@@ -1014,20 +1014,34 @@ function LandingHomeInner() {
           {/* ══ Today's step first — week one / until first devotional visit ══ */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {homeDevotionalFocus && !hideDevotionalCard && (
-            <p
+            <div
               data-testid="label-todays-step"
               style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.2em",
-                color: "rgba(196, 78, 224, 0.80)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginTop: "12px",
+                marginBottom: "4px",
                 paddingLeft: "2px",
-                margin: "0 0 4px",
+                paddingRight: "2px",
               }}
             >
-              Today&apos;s step
-            </p>
+              <div style={{ flex: 1, height: "1px", background: "linear-gradient(to right, transparent, rgba(196,78,224,0.35))" }} />
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.2em",
+                  color: "rgba(196, 78, 224, 0.80)",
+                  flexShrink: 0,
+                  margin: 0,
+                }}
+              >
+                Today&apos;s step
+              </p>
+              <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, rgba(196,78,224,0.35))" }} />
+            </div>
           )}
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}

@@ -180,7 +180,15 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    width: "100%",
+                    boxSizing: "border-box",
+                  }}
+                >
                   <input
                     ref={inputRef}
                     value={value}
@@ -192,14 +200,16 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
                       }
                     }}
                     placeholder="In one sentence…"
-                    className="flex-1 rounded-xl bg-black/20 border border-white/10 px-3 py-2.5 text-[13px] text-white/85 placeholder:text-white/35 outline-none focus:border-amber-400/35 focus:ring-2 focus:ring-amber-400/10"
+                    className="rounded-xl bg-black/20 border border-white/10 px-3 py-2.5 text-[13px] text-white/85 placeholder:text-white/35 outline-none focus:border-amber-400/35 focus:ring-2 focus:ring-amber-400/10"
+                    style={{ width: "100%", boxSizing: "border-box", minWidth: 0 }}
                     data-testid="input-arrival-sentence"
                   />
                   <button
                     type="button"
                     onClick={submit}
                     disabled={!canSubmit}
-                    className="shrink-0 rounded-xl px-3.5 py-2.5 text-[12px] font-semibold transition-all border border-amber-400/20 bg-amber-400/10 text-amber-100/90 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-amber-400/14"
+                    className="rounded-xl px-3.5 py-2.5 text-[12px] font-semibold transition-all border border-amber-400/20 bg-amber-400/10 text-amber-100/90 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-amber-400/14"
+                    style={{ width: "100%", boxSizing: "border-box", minHeight: "44px" }}
                     data-testid="btn-arrival-continue"
                   >
                     Continue

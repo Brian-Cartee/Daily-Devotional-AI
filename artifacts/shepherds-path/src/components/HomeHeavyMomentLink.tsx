@@ -20,7 +20,7 @@ export function HomeHeavyMomentLink({ footerHint }: Props) {
         position: "relative",
         zIndex: 10,
         marginTop: "-4px",
-        marginBottom: "8px",
+        marginBottom: footerHint ? "20px" : "12px",
         width: "100%",
         boxSizing: "border-box",
       }}
