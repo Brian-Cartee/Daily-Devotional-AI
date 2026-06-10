@@ -67,9 +67,25 @@
         } catch (e) {}
         return null;
       }
+      function readStoredName() {
+        return (
+          localStorage.getItem("sp_user_name") ||
+          readCookie("sp_user_name") ||
+          ""
+        ).trim();
+      }
+      function readNamePrompted(nm) {
+        return (
+          localStorage.getItem("sp_name_prompted") === "true" ||
+          readCookie("sp_name_prompted") === "true" ||
+          !!nm
+        );
+      }
       function notifyNativeEmail(email) {
         try {
           if (!window.ReactNativeWebView || !email || email.indexOf("@") < 1) return;
+          var nm = readStoredName();
+          var prompted = readNamePrompted(nm);
           window.ReactNativeWebView.postMessage(
             JSON.stringify({ type: "sp_subscriber_profile", email: email }),
           );
@@ -78,6 +94,8 @@
               type: "sp_user_profile",
               subscriberEmail: email,
               sessionId: localStorage.getItem("sp_session_id") || readCookie("sp_session_id") || "",
+              name: nm,
+              prompted: prompted,
             }),
           );
         } catch (e) {}
@@ -152,6 +170,16 @@
             persistLocalSubscriber(em, sid || "");
           }
         }
+        var nm = readStoredName();
+        var prompted = readNamePrompted(nm);
+        if (nm) {
+          localStorage.setItem("sp_user_name", nm);
+          writeCookie("sp_user_name", nm);
+        }
+        if (prompted) {
+          localStorage.setItem("sp_name_prompted", "true");
+          writeCookie("sp_name_prompted", "true");
+        }
         if (sid) {
           window.__SP_SESSION_BOOT__ = sid;
           try {
@@ -161,6 +189,8 @@
                   type: "sp_user_profile",
                   sessionId: sid,
                   subscriberEmail: em || "",
+                  name: nm,
+                  prompted: prompted,
                 }),
               );
           } catch (e) {}
