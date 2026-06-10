@@ -65,7 +65,14 @@ export function GreetingHeader() {
   return (
     <p
       data-testid="text-greeting-header"
-      className="text-[15px] font-semibold text-foreground/60 px-0.5 -mb-1"
+      style={{
+        fontSize: "15px",
+        fontWeight: 600,
+        color: "hsl(var(--foreground) / 0.60)",
+        paddingLeft: "2px",
+        paddingRight: "2px",
+        marginBottom: "-4px",
+      }}
     >
       {greeting}, {name}.
     </p>

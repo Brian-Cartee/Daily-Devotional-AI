@@ -324,8 +324,14 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
 
           {showReturningVerseSnippet && verse && (
             <div
-              className="rounded-xl border border-amber-500/22 bg-black/38 px-3.5 py-3 mb-3 backdrop-blur-sm"
               data-testid="hero-returning-verse-snippet"
+              style={{
+                borderRadius: "12px",
+                border: "1px solid rgba(245,158,11,0.22)",
+                backgroundColor: "rgba(0,0,0,0.38)",
+                padding: "12px 14px",
+                marginBottom: "12px",
+              }}
             >
               <p
                 className="text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5"
@@ -352,7 +358,15 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             homeDevotionalFocus ? (
               <div className="mb-3" data-testid="home-hero-devotional-focus">
                 {verse ? (
-                  <div className="rounded-xl border border-amber-500/20 bg-black/35 px-3.5 py-3 mb-3">
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid rgba(245,158,11,0.20)",
+                      backgroundColor: "rgba(0,0,0,0.35)",
+                      padding: "12px 14px",
+                      marginBottom: "12px",
+                    }}
+                  >
                     <p
                       className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5"
                       style={{ color: "rgba(253,230,138,0.70)" }}

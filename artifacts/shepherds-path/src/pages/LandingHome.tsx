@@ -177,7 +177,15 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
     <Link href="/devotional">
       <div
         data-testid="card-devotional"
-        className="group relative rounded-2xl border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
+        className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+        style={{
+          position: "relative",
+          borderRadius: "16px",
+          border: "1px solid rgba(19,78,74,0.10)",
+          backgroundColor: "hsl(var(--card))",
+          padding: "20px",
+          overflow: "hidden",
+        }}
       >
         <img
           src={cardBgSrc}
@@ -195,10 +203,10 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
         <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-transparent to-transparent pointer-events-none" />
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
-        <div className="relative z-10 flex items-start gap-4">
+        <div style={{ position: "relative", zIndex: 10, display: "flex", alignItems: "flex-start", gap: "16px" }}>
           <ShortcutPathIcon variant="devotional" />
-          <div className="flex-1 min-w-0 py-0.5">
-            <div className="flex items-center gap-2 mb-1">
+          <div style={{ flex: 1, minWidth: 0, paddingTop: "2px", paddingBottom: "2px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-500 border border-teal-400/40 shadow-sm">
                 Daily
               </span>
@@ -208,15 +216,35 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
                 </span>
               )}
             </div>
-            <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
+            <h2
+              style={{
+                fontSize: "17px",
+                fontWeight: 700,
+                color: "hsl(var(--foreground))",
+                marginBottom: "4px",
+                lineHeight: 1.25,
+                letterSpacing: "-0.01em",
+              }}
+            >
               {homeFocus ? "Today's Word" : "Daily Devotional"}
             </h2>
-            <p className="text-[15px] text-foreground/80 leading-relaxed">
+            <p style={{ fontSize: "15px", color: "hsl(var(--foreground) / 0.80)", lineHeight: 1.625 }}>
               {homeFocus
                 ? "Today's verse, a short reflection, and a prayer you can make your own. Read slowly — no rush."
                 : "Each day brings a new scripture, a personal reflection, and a guided moment to hear from God — grounded in the passage, shaped for your real life. Open it, sit with it, let it speak."}
             </p>
-            <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
+            <div
+              className="group-hover:gap-2.5 transition-all"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "14px",
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#14b8a6",
+              }}
+            >
               {visitedToday ? "Return to today's devotional" : homeFocus ? "Begin today's Word" : "Sit with today's message"}
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
@@ -224,9 +252,17 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
         </div>
 
         {/* Horizontal week tracker */}
-        <div className="relative z-10 mt-4 pt-3 border-t border-teal-900/8">
-          <div className="flex items-end justify-center gap-3">
-            <div className="flex items-end gap-2.5">
+        <div
+          style={{
+            position: "relative",
+            zIndex: 10,
+            marginTop: "16px",
+            paddingTop: "12px",
+            borderTop: "1px solid rgba(19,78,74,0.08)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
               {WEEK_LABELS.map((label, i) => {
                 const date = weekDates[i];
                 const visited = visitSet.has(date);
@@ -693,7 +729,10 @@ function LandingHomeInner() {
   };
 
   return (
-    <div className="min-h-screen relative" style={{ background: "hsl(var(--background))" }}>
+    <div
+      className="relative"
+      style={{ minHeight: "100vh", background: "hsl(var(--background))" }}
+    >
       <AnimatePresence>
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>
@@ -752,9 +791,19 @@ function LandingHomeInner() {
 
       {/* Section cards */}
       <div
-        className={`max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 pb-32 sm:pb-28 relative z-10 ${
-          thresholdWelcome ? "mt-1" : "-mt-4"
-        }`}
+        style={{
+          maxWidth: "36rem",
+          marginLeft: "auto",
+          marginRight: "auto",
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          paddingBottom: "128px",
+          position: "relative",
+          zIndex: 10,
+          marginTop: thresholdWelcome ? "4px" : "-16px",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
       >
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
@@ -768,7 +817,7 @@ function LandingHomeInner() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col gap-3"
+          style={{ display: "flex", flexDirection: "column", gap: "12px" }}
         >
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showGreeting && <GreetingHeader />}
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && carryToday && (
@@ -800,7 +849,7 @@ function LandingHomeInner() {
           )}
 
           {/* ══ Today's step first — week one / until first devotional visit ══ */}
-          <div className="flex flex-col gap-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {homeDevotionalFocus && !hideDevotionalCard && (
             <p
               className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/80 px-0.5"

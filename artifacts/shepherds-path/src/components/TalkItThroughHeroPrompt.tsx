@@ -29,6 +29,12 @@ interface TalkItThroughHeroPromptProps {
   thresholdNeed?: ThresholdNeed | null;
 }
 
+const linkStyle = {
+  textDecoration: "underline" as const,
+  textUnderlineOffset: "2px",
+  color: "rgba(255,255,255,0.45)",
+};
+
 export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughHeroPromptProps) {
   const [, navigate] = useLocation();
   const [value, setValue] = useState("");
@@ -73,21 +79,33 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
     goToGuidance(text);
   };
 
-  const focusInput = () => {
-    inputRef.current?.focus();
-    inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
   return (
     <div
-      className="w-full rounded-2xl border border-white/12 bg-[#12101a]/95 backdrop-blur-sm p-4 sm:p-5 shadow-lg shadow-black/25 max-sm:rounded-[1.125rem]"
       data-testid="card-talk-it-through-hero"
+      style={{
+        width: "100%",
+        borderRadius: "16px",
+        border: "1px solid rgba(255,255,255,0.12)",
+        backgroundColor: "rgba(18,16,26,0.95)",
+        padding: "16px",
+        boxSizing: "border-box",
+        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.25)",
+      }}
     >
-      <div className="mb-4">
-        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/55 mb-1">
+      <div style={{ marginBottom: "16px" }}>
+        <p
+          style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.2em",
+            color: "rgba(255,255,255,0.55)",
+            marginBottom: "4px",
+          }}
+        >
           Talk it through
         </p>
-        <p className="text-[15px] text-white/82 leading-snug">
+        <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.82)", lineHeight: 1.375 }}>
           Scripture and prayer shaped for{" "}
           {phase === "evening" || phase === "late-evening" ? "tonight" : "right now"} — not generic
           advice.
@@ -110,10 +128,23 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
         }}
       />
 
-      <label className="sr-only" htmlFor="hero-talk-input">
+      <label
+        htmlFor="hero-talk-input"
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: 0,
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
         What&apos;s on your heart
       </label>
-      <div className="relative">
+      <div style={{ position: "relative" }}>
         <textarea
           id="hero-talk-input"
           ref={inputRef}
@@ -127,11 +158,31 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
             }
           }}
           rows={2}
-          className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.05] px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed text-white placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-amber-500/35 focus:border-amber-500/25 transition-shadow"
+          style={{
+            width: "100%",
+            resize: "none",
+            borderRadius: "12px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            backgroundColor: "rgba(255,255,255,0.05)",
+            padding: "14px 16px",
+            fontSize: "17px",
+            lineHeight: 1.625,
+            color: "#ffffff",
+            boxSizing: "border-box",
+            outline: "none",
+          }}
         />
         {!value.trim() && (
           <div
-            className="pointer-events-none absolute inset-0 px-3.5 sm:px-4 py-3.5 text-[17px] leading-relaxed overflow-hidden"
+            style={{
+              pointerEvents: "none",
+              position: "absolute",
+              inset: 0,
+              padding: "14px 16px",
+              fontSize: "17px",
+              lineHeight: 1.625,
+              overflow: "hidden",
+            }}
             aria-hidden
           >
             <AnimatePresence mode="wait">
@@ -141,7 +192,7 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.22 }}
-                className="block text-white/38"
+                style={{ display: "block", color: "rgba(255,255,255,0.38)" }}
               >
                 {placeholders[placeholderIdx]}
               </motion.span>
@@ -155,32 +206,80 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
         data-testid="btn-hero-talk-through"
         onClick={() => void begin()}
         disabled={beginning}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 shadow-md shadow-black/20 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-70"
+        style={{
+          marginTop: "12px",
+          display: "flex",
+          width: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          borderRadius: "12px",
+          padding: "14px",
+          fontSize: "16px",
+          fontWeight: 600,
+          color: "#1a1208",
+          border: "none",
+          cursor: beginning ? "wait" : "pointer",
+          opacity: beginning ? 0.7 : 1,
+          background: "linear-gradient(to right, rgba(254,243,199,0.95), rgba(253,230,138,0.90), rgba(254,243,199,0.95))",
+          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.20)",
+          boxSizing: "border-box",
+        }}
       >
         {beginning ? "One breath…" : "Talk it through"}
-        {!beginning && <ArrowRight className="w-4 h-4" />}
+        {!beginning && <ArrowRight style={{ width: "16px", height: "16px" }} />}
       </button>
 
-      <p className="mt-2.5 text-center text-[11px] text-white/40 leading-relaxed">
+      <p
+        style={{
+          marginTop: "10px",
+          textAlign: "center",
+          fontSize: "11px",
+          color: "rgba(255,255,255,0.40)",
+          lineHeight: 1.625,
+        }}
+      >
         Private · grounded in the Bible · conversational guidance when you&apos;re ready
       </p>
 
-      <p className="mt-2 text-center text-[10px] text-white/32 leading-relaxed px-1">
+      <p
+        style={{
+          marginTop: "8px",
+          textAlign: "center",
+          fontSize: "10px",
+          color: "rgba(255,255,255,0.32)",
+          lineHeight: 1.625,
+          paddingLeft: "4px",
+          paddingRight: "4px",
+        }}
+      >
         Not a substitute for church, counseling, or emergency care.{" "}
-        <a href={CRISIS_LIFELINE_TEL} className="underline underline-offset-2 text-white/45 hover:text-white/65">
+        <a href={CRISIS_LIFELINE_TEL} style={linkStyle}>
           {CRISIS_LIFELINE_DISPLAY}
         </a>
         {" · "}
-        <Link href="/support" className="underline underline-offset-2 text-white/45 hover:text-white/65">
+        <Link href="/support" style={linkStyle}>
           Support
         </Link>
       </p>
 
-      <p className="mt-2 text-center text-[12px] text-white/38 leading-relaxed">
+      <p
+        style={{
+          marginTop: "8px",
+          textAlign: "center",
+          fontSize: "12px",
+          color: "rgba(255,255,255,0.38)",
+          lineHeight: 1.625,
+        }}
+      >
         <Link
           href="/sigh"
-          className="text-white/50 underline underline-offset-2 hover:text-white/70"
           data-testid="link-hero-sigh-room"
+          style={{
+            color: "rgba(255,255,255,0.50)",
+            textDecoration: "underline",
+            textUnderlineOffset: "2px",
+          }}
         >
           Need a quieter room?
         </Link>

@@ -39,7 +39,7 @@ export function HomePathsBlock({
     if (!showCatalog) return <HomeSecondaryPathsRow hideCloset={hideSecondaryCloset} />;
     return (
       <div
-        className="flex flex-col gap-2.5"
+        style={{ display: "flex", flexDirection: "column", gap: "10px" }}
         data-testid="home-paths-block"
         data-paths-layout={HOME_PATHS_LAYOUT_ID}
       >
@@ -56,7 +56,7 @@ export function HomePathsBlock({
 
   return (
     <div
-      className="flex flex-col gap-2.5"
+      style={{ display: "flex", flexDirection: "column", gap: "10px" }}
       data-testid="home-paths-block"
       data-paths-layout="standard-v3"
     >
