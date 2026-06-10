@@ -238,7 +238,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           paddingLeft: "16px",
           paddingRight: "16px",
           paddingTop: "16px",
-          paddingBottom: "40px",
+          paddingBottom: "48px",
           boxSizing: "border-box",
           backgroundColor: "#09031e",
         }}

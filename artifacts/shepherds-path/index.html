@@ -392,9 +392,10 @@
       left: 0 !important;
       right: 0 !important;
       z-index: 9998 !important;
-      background-color: rgba(9,9,11,0.92) !important;
+      background-color: #09090b !important;
       border-top: 1px solid rgba(255,255,255,0.10) !important;
       padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.45) !important;
     }
     html[data-sp-shell="native"] nav[aria-label="Main"] > div {
       display: flex !important;
@@ -448,7 +449,16 @@
     html[data-sp-shell="native"] .overflow-hidden { overflow: hidden !important; }
     html[data-sp-shell="native"] .text-center { text-align: center !important; }
     html[data-sp-shell="native"] [data-testid="landing-home"] {
-      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    html[data-sp-shell="native"] [data-testid="home-threshold-content"] {
+      padding-bottom: 48px !important;
+    }
+    html[data-sp-shell="native"] [data-testid="card-home-prayer-closet"] > div:last-child,
+    html[data-sp-shell="native"] [data-testid="card-home-prayer-closet"] [style*="flexDirection"] {
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: flex-end !important;
     }
     html[data-sp-shell="native"] nav[aria-label="Site links"] {
       display: grid !important;

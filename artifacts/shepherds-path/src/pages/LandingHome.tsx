@@ -532,39 +532,83 @@ function FaqSection() {
 
 function ClosingManifesto() {
   return (
-    <div className="relative w-full mt-10 sm:mt-12 mb-2 max-w-xl mx-auto">
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        marginTop: "40px",
+        marginBottom: "8px",
+        maxWidth: "36rem",
+        marginLeft: "auto",
+        marginRight: "auto",
+      }}
+    >
       <div
-        className="absolute inset-0 pointer-events-none"
+        aria-hidden
         style={{
-          background: "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(122,1,141,0.16) 0%, rgba(122,1,141,0.05) 60%, transparent 85%)",
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 120% 100% at 50% 50%, rgba(122,1,141,0.16) 0%, rgba(122,1,141,0.05) 60%, transparent 85%)",
         }}
       />
 
-      <div className="relative z-10 flex flex-col items-center text-center px-5 sm:px-8 py-8 sm:py-10">
-        <div className="flex items-center gap-3 mb-7 sm:mb-8 w-full max-w-xs sm:max-w-sm">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-500/40" />
-          <BrandIcon
-            size={80}
-            className="w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 flex-shrink-0 drop-shadow-[0_0_24px_rgba(122,1,141,0.5)]"
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          padding: "32px 20px 40px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "28px",
+            width: "100%",
+            maxWidth: "20rem",
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              height: "1px",
+              background: "linear-gradient(to right, transparent, rgba(139,92,246,0.40))",
+            }}
           />
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-500/40" />
+          <div style={{ flexShrink: 0, filter: "drop-shadow(0 0 24px rgba(122,1,141,0.5))" }}>
+            <BrandIcon size={80} />
+          </div>
+          <div
+            style={{
+              flex: 1,
+              height: "1px",
+              background: "linear-gradient(to left, transparent, rgba(139,92,246,0.40))",
+            }}
+          />
         </div>
 
         <p
-          className="manifesto-line text-white/95 mb-3"
-          style={{ fontSize: "clamp(1.5rem, 4.8vw, 1.625rem)" }}
+          className="manifesto-line"
+          style={{ fontSize: "clamp(1.5rem, 4.8vw, 1.625rem)", color: "rgba(255,255,255,0.95)", marginBottom: "12px", marginTop: 0 }}
         >
           The path is here.
         </p>
         <p
-          className="manifesto-line text-white mb-4"
-          style={{ fontSize: "clamp(1.7rem, 5.4vw, 1.875rem)" }}
+          className="manifesto-line"
+          style={{ fontSize: "clamp(1.7rem, 5.4vw, 1.875rem)", color: "#ffffff", marginBottom: "16px", marginTop: 0 }}
         >
           Start where you are.
         </p>
         <p
-          className="manifesto-line manifesto-line--emphasis text-white max-w-[16ch] sm:max-w-none"
-          style={{ fontSize: "clamp(1.95rem, 6.2vw, 2.5rem)" }}
+          className="manifesto-line manifesto-line--emphasis"
+          style={{ fontSize: "clamp(1.95rem, 6.2vw, 2.5rem)", color: "#ffffff", margin: 0, maxWidth: "16ch" }}
         >
           Walking it is up to you.
         </p>
@@ -854,7 +898,7 @@ function LandingHomeInner() {
           marginRight: "auto",
           paddingLeft: "16px",
           paddingRight: "16px",
-          paddingBottom: "160px",
+          paddingBottom: "24px",
           position: "relative",
           zIndex: 10,
           marginTop: thresholdWelcome ? "4px" : "-16px",
@@ -909,8 +953,16 @@ function LandingHomeInner() {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {homeDevotionalFocus && !hideDevotionalCard && (
             <p
-              className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/80 px-0.5"
               data-testid="label-todays-step"
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.2em",
+                color: "rgba(196, 78, 224, 0.80)",
+                paddingLeft: "2px",
+                margin: "0 0 4px",
+              }}
             >
               Today&apos;s step
             </p>
@@ -1118,10 +1170,32 @@ function LandingHomeInner() {
           {showDailyArt && (
             <>
               {/* Closing grace note — after paths, before depth extras */}
-              <div className="flex items-center gap-3 mt-4 px-0.5" data-testid="section-take-a-moment">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/25 to-primary/40" />
-                <p className="text-[12px] font-bold uppercase tracking-widest text-foreground/60 shrink-0">Take a moment</p>
-                <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/25 to-primary/40" />
+              <div
+                data-testid="section-take-a-moment"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginTop: "16px",
+                  paddingLeft: "2px",
+                  paddingRight: "2px",
+                }}
+              >
+                <div style={{ flex: 1, height: "1px", background: "linear-gradient(to right, transparent, rgba(196,78,224,0.35))" }} />
+                <p
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    color: "rgba(237,232,224,0.60)",
+                    flexShrink: 0,
+                    margin: 0,
+                  }}
+                >
+                  Take a moment
+                </p>
+                <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, rgba(196,78,224,0.35))" }} />
               </div>
               <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
                 <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
@@ -1526,76 +1600,200 @@ function LandingHomeInner() {
               type="button"
               onClick={handleShareApp}
               data-testid="btn-share-app-footer"
-              className="min-h-[44px] flex items-center justify-center gap-1.5 hover:text-foreground transition-colors touch-manipulation"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                minHeight: "44px",
+                border: "none",
+                background: "transparent",
+                color: "rgba(237, 232, 224, 0.65)",
+                fontSize: "14px",
+                cursor: "pointer",
+                padding: 0,
+              }}
             >
-              {shared
-                ? <><Check className="w-4 h-4 text-green-500" aria-hidden /> Shared!</>
-                : <><Share2 className="w-4 h-4" aria-hidden /> Share App</>
-              }
+              {shared ? (
+                <>
+                  <Check style={{ width: 16, height: 16, color: "#22c55e" }} aria-hidden />
+                  Shared!
+                </>
+              ) : (
+                <>
+                  <Share2 style={{ width: 16, height: 16 }} aria-hidden />
+                  Share App
+                </>
+              )}
             </button>
           </div>
 
           {/* ── Closing sequence: Manifesto → Scripture → Download ── */}
           <ClosingManifesto />
 
-          <div className="flex flex-col items-center gap-3 px-5 sm:px-6 -mt-2 mb-8 sm:mb-10 max-w-md mx-auto w-full text-center">
-            <p className="text-xs sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground/70 w-full">
-              A reminder for the path
-            </p>
-            <p className="path-reminder-quote text-[17px] sm:text-[18px] text-foreground/88 text-center w-full max-w-[22rem] mx-auto leading-relaxed">
-              &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo;
-            </p>
-            <p className="text-[13px] sm:text-sm text-foreground/60 font-medium w-full">— Psalm 119:105</p>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-4 px-5 sm:px-6 mb-2 max-w-md mx-auto w-full text-center">
-            <p className="text-sm sm:text-[15px] text-foreground/65 tracking-wide w-full">
-              If you want it with you —
-            </p>
-            <div className="flex flex-col items-center justify-center gap-3 w-full max-w-sm mx-auto">
-              {!isAndroid() && (
-                <a
-                  href="https://apps.apple.com/app/shepherds-path/id6760953522"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="btn-appstore-cta"
-                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3.5 min-h-[48px] rounded-xl bg-foreground text-background font-semibold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
-                >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                  View on the App Store
-                </a>
-              )}
-              {!isIOS() && (
-                <a
-                  href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="btn-googleplay-cta"
-                  className="flex items-center gap-3 w-full sm:w-auto justify-center px-5 py-3.5 min-h-[48px] rounded-xl border border-primary/30 bg-primary/10 text-foreground font-semibold text-[15px] hover:bg-primary/15 active:scale-[0.98] transition-all"
-                >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" aria-hidden="true">
-                    <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
-                  </svg>
-                  View on Google Play
-                </a>
-              )}
-            </div>
-          </div>
-
           <div
-            className="flex flex-col items-center justify-center gap-2 mt-10 pt-6 border-t border-border/40 w-full max-w-md mx-auto text-center"
             style={{
-              paddingBottom: "max(2.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+              padding: "0 20px",
+              marginTop: "-8px",
+              marginBottom: "32px",
+              maxWidth: "28rem",
+              marginLeft: "auto",
+              marginRight: "auto",
+              width: "100%",
+              textAlign: "center",
             }}
           >
-            <p className="text-[13px] sm:text-sm text-foreground/55 leading-relaxed px-4 w-full">
+            <p
+              style={{
+                fontSize: "12px",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                color: "rgba(237,232,224,0.70)",
+                width: "100%",
+                margin: 0,
+              }}
+            >
+              A reminder for the path
+            </p>
+            <p
+              className="path-reminder-quote"
+              style={{
+                fontSize: "17px",
+                color: "rgba(237,232,224,0.88)",
+                textAlign: "center",
+                width: "100%",
+                maxWidth: "22rem",
+                margin: "0 auto",
+                lineHeight: 1.6,
+              }}
+            >
+              &ldquo;Your word is a lamp to my feet and a light to my path.&rdquo;
+            </p>
+            <p style={{ fontSize: "13px", color: "rgba(237,232,224,0.60)", fontWeight: 500, width: "100%", margin: 0 }}>
+              — Psalm 119:105
+            </p>
+          </div>
+
+          {!inNativeApp && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "16px",
+                padding: "0 20px",
+                marginBottom: "8px",
+                maxWidth: "28rem",
+                marginLeft: "auto",
+                marginRight: "auto",
+                width: "100%",
+                textAlign: "center",
+              }}
+            >
+              <p style={{ fontSize: "15px", color: "rgba(237,232,224,0.65)", letterSpacing: "0.02em", width: "100%", margin: 0 }}>
+                If you want it with you —
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%", maxWidth: "20rem" }}>
+                {!isAndroid() && (
+                  <a
+                    href="https://apps.apple.com/app/shepherds-path/id6760953522"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="btn-appstore-cta"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "12px",
+                      width: "100%",
+                      padding: "14px 20px",
+                      minHeight: "48px",
+                      borderRadius: "12px",
+                      backgroundColor: "#ede8e0",
+                      color: "#0d0612",
+                      fontWeight: 600,
+                      fontSize: "15px",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: "currentColor", flexShrink: 0 }} aria-hidden="true">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                    </svg>
+                    View on the App Store
+                  </a>
+                )}
+                {!isIOS() && (
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.shepherdspath.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="btn-googleplay-cta"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "12px",
+                      width: "100%",
+                      padding: "14px 20px",
+                      minHeight: "48px",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(196,78,224,0.30)",
+                      backgroundColor: "rgba(196,78,224,0.10)",
+                      color: "#ede8e0",
+                      fontWeight: 600,
+                      fontSize: "15px",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: "currentColor", flexShrink: 0 }} aria-hidden="true">
+                      <path d="M3.18 23.76c.3.17.65.19.97.08l12.49-7.21-2.65-2.65-10.81 9.78zM.35 1.33C.13 1.67 0 2.12 0 2.67v18.66c0 .55.13 1 .35 1.34l.07.07 10.46-10.46v-.25L.42 1.26l-.07.07zM20.69 10.23l-2.83-1.63-2.97 2.97 2.97 2.97 2.84-1.63c.81-.47.81-1.22-.01-1.68zM3.18.24L15.67 7.45l-2.65 2.65L2.21.32c.32-.1.67-.08.97.08v-.16z"/>
+                    </svg>
+                    View on Google Play
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              marginTop: inNativeApp ? "24px" : "40px",
+              paddingTop: "24px",
+              borderTop: "1px solid rgba(255,255,255,0.10)",
+              width: "100%",
+              maxWidth: "28rem",
+              marginLeft: "auto",
+              marginRight: "auto",
+              textAlign: "center",
+              paddingBottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
+            }}
+          >
+            <p style={{ fontSize: "13px", color: "rgba(237,232,224,0.55)", lineHeight: 1.5, padding: "0 16px", width: "100%", margin: 0 }}>
               © {new Date().getFullYear()} Shepherd&apos;s Path. All rights reserved.
             </p>
             <a
               href="https://www.shepherdspathai.com"
-              className="text-[13px] sm:text-sm text-foreground/50 hover:text-foreground/75 transition-colors tracking-wide py-1 px-4"
+              style={{
+                fontSize: "13px",
+                color: "rgba(237,232,224,0.50)",
+                textDecoration: "none",
+                letterSpacing: "0.02em",
+                padding: "4px 16px",
+              }}
             >
               shepherdspathai.com
             </a>
