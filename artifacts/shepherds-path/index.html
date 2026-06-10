@@ -541,6 +541,13 @@
       <button type="button" id="sp-enter-btn" style="margin-top:8px;width:100%;max-width:300px;padding:16px 20px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#e8c99b,#d4a574);color:#1a1208;-webkit-tap-highlight-color:transparent;">Continue</button>
       <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="font-size:15px;font-weight:600;color:#d4a574;text-decoration:underline;">Open in Safari instead</a>
     </div>
+    <script>
+    (function () {
+      if (window.ReactNativeWebView) return;
+      var splash = document.getElementById("sp-boot-splash");
+      if (splash) splash.remove();
+    })();
+    </script>
     <div id="root">
       <div id="sp-app-mount"></div>
     </div>
@@ -937,6 +944,17 @@
           var s = document.createElement("script");
           s.type = "module";
           s.src = srcUrl;
+          s.addEventListener("error", function () {
+            if (window.ReactNativeWebView) return;
+            var root = document.getElementById("root");
+            if (root && !root.firstElementChild) {
+              root.innerHTML =
+                '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;color:#ede8e0;font-family:-apple-system,sans-serif;background:#0d0612;">' +
+                '<p style="font-size:18px;font-weight:700;margin:0 0 12px;">Could not load Shepherd&rsquo;s Path</p>' +
+                '<p style="opacity:0.75;margin:0 0 20px;max-width:280px;line-height:1.5;">Try a hard refresh (Safari: hold Refresh, choose Reload Without Content Blockers).</p>' +
+                '<a href="' + location.href + '" style="color:#d4a574;font-weight:600;">Reload page</a></div>';
+            }
+          });
           document.head.appendChild(s);
           if (window.__spDiag) window.__spDiag("module_injected_page", srcUrl);
         }

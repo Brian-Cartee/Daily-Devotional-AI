@@ -89,7 +89,11 @@ if (!mountEl) {
 async function mountApp() {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
-  if (isNativeWebViewShell()) {
+  const native = isNativeWebViewShell();
+  if (!native) {
+    removeNativeBootPlaceholder();
+  }
+  if (native) {
     const bootStatus = document.getElementById("sp-boot-splash-status");
     if (bootStatus) bootStatus.textContent = "Loading…";
     hydrateSubscriberFromUrlParam();
@@ -99,7 +103,6 @@ async function mountApp() {
     await hydrateSubscriberStateFromIndexedDB();
     nativeDiag("react_render_called");
   }
-  await syncEmailSubscriptionStatus();
 
   createRoot(mountEl!).render(
     <ErrorBoundary>
@@ -107,7 +110,7 @@ async function mountApp() {
     </ErrorBoundary>
   );
 
-  if (typeof window !== "undefined" && isNativeWebViewShell()) {
+  if (typeof window !== "undefined" && native) {
     requestAnimationFrame(() => {
       nativeDiag("react_booted");
       notifyNativeReactBooted();
@@ -120,8 +123,10 @@ async function mountApp() {
     };
     requestAnimationFrame(() => pollReady());
   } else {
-    requestAnimationFrame(() => removeNativeBootPlaceholder());
+    removeNativeBootPlaceholder();
   }
+
+  void syncEmailSubscriptionStatus().catch(() => {});
 }
 
 void mountApp();
