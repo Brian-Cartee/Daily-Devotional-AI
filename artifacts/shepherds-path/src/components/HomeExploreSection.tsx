@@ -6,7 +6,6 @@ import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 import { buildHomeExplorePreviewHrefs } from "@/lib/homeExplorePreview";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
-import { HOME_DARK } from "@/lib/homeTheme";
 
 const EXPLORE_ITEMS = [
   { href: "/salvation", label: "Beginning with Jesus", desc: "Meet Jesus without pressure", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-salvation" },
@@ -29,57 +28,20 @@ const EXPLORE_ITEMS = [
 
 export const HOME_EXPLORE_PATH_COUNT = EXPLORE_ITEMS.length;
 
-const EXPLORE_CARD_STYLES: Record<string, { border: string; background: string }> = {
-  "border-amber-500/20 bg-amber-500/6": { border: "rgba(245,158,11,0.20)", background: "rgba(245,158,11,0.06)" },
-  "border-indigo-500/20 bg-indigo-500/6": { border: "rgba(99,102,241,0.20)", background: "rgba(99,102,241,0.06)" },
-  "border-orange-500/20 bg-orange-500/6": { border: "rgba(249,115,22,0.20)", background: "rgba(249,115,22,0.06)" },
-  "border-teal-500/20 bg-teal-500/6": { border: "rgba(20,184,166,0.20)", background: "rgba(20,184,166,0.06)" },
-  "border-slate-500/25 bg-slate-500/8": { border: "rgba(100,116,139,0.25)", background: "rgba(100,116,139,0.08)" },
-  "border-slate-400/20 bg-slate-400/6": { border: "rgba(148,163,184,0.20)", background: "rgba(148,163,184,0.06)" },
-  "border-violet-500/20 bg-violet-500/6": { border: "rgba(139,92,246,0.20)", background: "rgba(139,92,246,0.06)" },
-  "border-rose-500/20 bg-rose-500/6": { border: "rgba(244,63,94,0.20)", background: "rgba(244,63,94,0.06)" },
-  "border-sky-500/20 bg-sky-500/6": { border: "rgba(14,165,233,0.20)", background: "rgba(14,165,233,0.06)" },
-  "border-emerald-500/20 bg-emerald-500/6": { border: "rgba(16,185,129,0.20)", background: "rgba(16,185,129,0.06)" },
-};
-
 function PathCard({
   href,
   label,
   bg,
   testid,
 }: (typeof EXPLORE_ITEMS)[number]) {
-  const colors = EXPLORE_CARD_STYLES[bg] ?? { border: "rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" };
   return (
     <Link href={href}>
       <div
         data-testid={`card-${testid}`}
-        style={{
-          borderRadius: "12px",
-          border: `1px solid ${colors.border}`,
-          backgroundColor: colors.background,
-          cursor: "pointer",
-          height: "100%",
-          minHeight: "76px",
-          padding: "10px",
-          display: "flex",
-          flexDirection: "column",
-          boxSizing: "border-box",
-        }}
+        className={`rounded-xl border ${bg} cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all h-full p-2.5 min-h-[76px] flex flex-col`}
       >
         <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
-        <p
-          style={{
-            fontWeight: 700,
-            color: HOME_DARK.text,
-            lineHeight: 1.25,
-            fontSize: "12px",
-            marginTop: "6px",
-            overflow: "hidden",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
+        <p className="font-bold text-foreground leading-tight text-[12px] mt-1.5 line-clamp-2">
           {label}
         </p>
       </div>
@@ -123,49 +85,16 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
   return (
     <section
       id="explore-section"
+      className="scroll-mt-28 rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/[0.07] to-card/40 p-3 shadow-sm"
       aria-label="All paths through the app"
       data-testid="home-explore-section"
-      style={{
-        scrollMarginTop: "7rem",
-        borderRadius: "16px",
-        border: "1px solid rgba(217,70,239,0.20)",
-        background: "linear-gradient(to bottom, rgba(217,70,239,0.07), rgba(26,24,32,0.92))",
-        padding: "12px",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-      }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "8px",
-          marginBottom: "10px",
-          paddingLeft: "2px",
-          paddingRight: "2px",
-        }}
-      >
+      <div className="flex items-center justify-between gap-2 mb-2.5 px-0.5">
         <div>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              color: HOME_DARK.textSoft,
-            }}
-          >
+          <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/75">
             All paths
           </p>
-          <p
-            style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              color: HOME_DARK.textMuted,
-              marginTop: "2px",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
+          <p className="text-[10px] font-semibold text-muted-foreground/80 mt-0.5 tabular-nums">
             {expanded
               ? `${HOME_EXPLORE_PATH_COUNT} ways to walk`
               : `${previewCount} shown · ${HOME_EXPLORE_PATH_COUNT} total`}
@@ -191,7 +120,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
+            <div className="grid grid-cols-2 gap-2">
               {EXPLORE_ITEMS.map((item) => (
                 <PathCard key={item.href} {...item} />
               ))}
@@ -199,7 +128,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
           </motion.div>
         ) : (
           <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
+            <div className="grid grid-cols-2 gap-2">
               {previewItems.map((item) => (
                 <PathCard key={item.href} {...item} />
               ))}
@@ -208,24 +137,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
               type="button"
               onClick={() => setExpandedPersisted(true)}
               data-testid="btn-expand-explore"
-              style={{
-                marginTop: "10px",
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                minHeight: "48px",
-                borderRadius: "12px",
-                border: "1px solid rgba(217,70,239,0.30)",
-                backgroundColor: "rgba(217,70,239,0.12)",
-                padding: "12px 16px",
-                fontSize: "14px",
-                fontWeight: 700,
-                color: HOME_DARK.primary,
-                cursor: "pointer",
-                boxSizing: "border-box",
-              }}
+              className="mt-2.5 w-full flex items-center justify-center gap-2 min-h-[48px] rounded-xl border border-primary/30 bg-primary/12 px-4 py-3 text-[14px] font-bold text-primary hover:bg-primary/18 active:scale-[0.99] transition-all"
             >
               See all {HOME_EXPLORE_PATH_COUNT} paths
               <ChevronDown className="w-4 h-4 shrink-0" aria-hidden />

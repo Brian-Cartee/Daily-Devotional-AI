@@ -39,7 +39,6 @@ import { getActivePlanId, getPlanProgress, READING_PLANS } from "@/lib/readingPl
 import { getUserName } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { Link, useLocation } from "wouter";
-import { HOME_DARK } from "@/lib/homeTheme";
 
 // ── Shared slide-in animation ─────────────────────────────────────────────────
 const fadeIn = {
@@ -66,14 +65,7 @@ export function GreetingHeader() {
   return (
     <p
       data-testid="text-greeting-header"
-      style={{
-        fontSize: "15px",
-        fontWeight: 600,
-        color: HOME_DARK.textMuted,
-        paddingLeft: "2px",
-        paddingRight: "2px",
-        marginBottom: "-4px",
-      }}
+      className="text-[15px] font-semibold text-foreground/60 px-0.5 -mb-1"
     >
       {greeting}, {name}.
     </p>

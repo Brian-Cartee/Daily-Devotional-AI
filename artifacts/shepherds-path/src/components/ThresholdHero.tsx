@@ -135,74 +135,36 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
     setListenFirstPreference(next);
   };
 
-  const photoHeight = showPhotoTaglines ? "min(52vh, 460px)" : "min(46vh, 420px)";
-
   return (
-    <div
-      id="sp-home-top"
-      data-testid="home-threshold-hero"
-      style={{ position: "relative", backgroundColor: "#09031e" }}
-    >
+    <div className="relative bg-[#09031e]" id="sp-home-top" data-testid="home-threshold-hero">
       <div
+        className={`relative w-full overflow-hidden max-h-[460px] sm:max-h-[500px] ${
+          showPhotoTaglines
+            ? "h-[52vh] min-h-[300px] sm:h-[50vh]"
+            : "h-[46vh] min-h-[280px] sm:h-[44vh]"
+        }`}
         aria-hidden={false}
-        style={{
-          position: "relative",
-          width: "100%",
-          height: photoHeight,
-          minHeight: showPhotoTaglines ? "300px" : "280px",
-          maxHeight: "500px",
-          overflow: "hidden",
-        }}
       >
         <img
           src="/hero-landing.webp"
           alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[center_30%] sm:object-[center_32%]"
           decoding="async"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "center 30%",
-          }}
         />
         <div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
             background: atmosphere.heroOverlay,
           }}
         />
         {showPhotoTaglines && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              zIndex: 10,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              textAlign: "center",
-              paddingLeft: "24px",
-              paddingRight: "24px",
-              paddingTop: "max(3.75rem, env(safe-area-inset-top))",
-            }}
-          >
+          <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center text-center px-6 pt-[3.75rem] sm:pt-16">
             <motion.h2
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="manifesto-line"
-              style={{
-                fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)",
-                color: "#ffffff",
-                maxWidth: "18ch",
-                textShadow: "0 2px 12px rgba(0,0,0,0.65)",
-              }}
+              className="manifesto-line text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] max-w-[18ch]"
+              style={{ fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)" }}
             >
               {BRAND_TAGLINE}
             </motion.h2>
@@ -210,8 +172,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-2 text-[15px] sm:text-base font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]"
-              style={{ color: "rgba(255,255,255,0.90)" }}
+              className="mt-2 text-[15px] sm:text-base text-white/90 font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]"
             >
               {BRAND_TAGLINE_SUB}
             </motion.p>
@@ -219,22 +180,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
         )}
       </div>
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 10,
-          width: "100%",
-          maxWidth: "36rem",
-          marginLeft: "auto",
-          marginRight: "auto",
-          paddingLeft: "16px",
-          paddingRight: "16px",
-          paddingTop: "16px",
-          paddingBottom: "40px",
-          boxSizing: "border-box",
-          backgroundColor: "#09031e",
-        }}
-      >
+      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-4 sm:pt-5 pb-8 sm:pb-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,33 +191,20 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             data-testid="link-why-collapsed"
             onClick={openWhyPanel}
             aria-label="Open why we built this"
-            className="mb-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] hover:text-white/75 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
-            style={{ display: "block", color: "rgba(255,255,255,0.50)" }}
+            className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
           >
             Why we built this
           </button>
 
           <h1
-            style={{
-              fontSize: "clamp(1.5rem, 5vw, 2.1rem)",
-              color: "#ffffff",
-              fontWeight: 700,
-              lineHeight: 1.18,
-              marginBottom: "8px",
-              letterSpacing: "-0.02em",
-            }}
+            className="text-white font-bold leading-[1.18] mb-2 tracking-tight"
+            style={{ fontSize: "clamp(1.5rem, 5vw, 2.1rem)" }}
             data-testid="text-threshold-headline"
           >
             {thresholdLoading ? "…" : threshold?.headline ?? "What are you carrying into today?"}
           </h1>
           <p
-            style={{
-              fontSize: "16px",
-              lineHeight: 1.625,
-              marginBottom: "12px",
-              fontWeight: 500,
-              color: "rgba(255,255,255,0.78)",
-            }}
+            className="text-[16px] sm:text-[17px] text-white/78 leading-relaxed mb-3 font-medium"
             data-testid="text-threshold-subtext"
           >
             {thresholdLoading
@@ -286,8 +219,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           )}
           {needAck && (
             <p
-              className="text-[14px] leading-relaxed mb-3"
-              style={{ color: "rgba(254,243,199,0.70)" }}
+              className="text-[14px] text-amber-100/70 leading-relaxed mb-3"
               data-testid="text-threshold-need-line"
             >
               {needAck}
@@ -295,8 +227,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           )}
           {companionLine && (
             <p
-              className={`text-[13px] leading-relaxed mb-3 pl-3 border-l-2 ${atmosphere.accentBorderClass}`}
-              style={{ color: "rgba(255,255,255,0.72)" }}
+              className={`text-[13px] text-white/72 leading-relaxed mb-3 pl-3 border-l-2 ${atmosphere.accentBorderClass}`}
               data-testid="text-threshold-mode-companion"
             >
               {companionLine}
@@ -304,18 +235,16 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           )}
           {thresholdNeed && verseReference && (
             <p
-              className="text-[13px] leading-relaxed mb-3"
-              style={{ color: "rgba(255,255,255,0.68)" }}
+              className="text-[13px] text-white/68 leading-relaxed mb-3"
               data-testid="text-threshold-need-verse-bridge"
             >
               You asked for {NEED_LABEL[thresholdNeed]}. Today&apos;s Word meets you in{" "}
-              <span style={{ color: "rgba(253,230,138,0.85)", fontWeight: 600 }}>{verseReference}</span>.
+              <span className="text-amber-200/85 font-semibold">{verseReference}</span>.
             </p>
           )}
           {threshold?.continuityLine && (
             <p
-              className="hidden sm:block text-[15px] leading-relaxed mb-4 pl-3.5 border-l-2 border-amber-500/30"
-              style={{ color: "rgba(255,255,255,0.70)" }}
+              className="hidden sm:block text-[15px] text-white/70 leading-relaxed mb-4 pl-3.5 border-l-2 border-amber-500/30"
               data-testid="text-threshold-continuity"
             >
               {threshold.continuityLine}
@@ -324,33 +253,19 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
 
           {showReturningVerseSnippet && verse && (
             <div
+              className="rounded-xl border border-amber-500/22 bg-black/38 px-3.5 py-3 mb-3 backdrop-blur-sm"
               data-testid="hero-returning-verse-snippet"
-              style={{
-                borderRadius: "12px",
-                border: "1px solid rgba(245,158,11,0.22)",
-                backgroundColor: "rgba(0,0,0,0.38)",
-                padding: "12px 14px",
-                marginBottom: "12px",
-              }}
             >
-              <p
-                className="text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5"
-                style={{ color: "rgba(253,230,138,0.65)" }}
-              >
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/65 mb-1.5">
                 Today&apos;s Word
               </p>
               <p
-                className="text-[15px] line-clamp-2 leading-snug italic"
-                style={{ fontFamily: "var(--font-serif, Georgia, serif)", color: "rgba(255,255,255,0.90)" }}
+                className="text-[15px] text-white/90 line-clamp-2 leading-snug italic"
+                style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
               >
                 &ldquo;{verse.text}&rdquo;
               </p>
-              <p
-                className="text-[12px] font-semibold mt-1.5"
-                style={{ color: "rgba(253,230,138,0.75)" }}
-              >
-                — {verse.reference}
-              </p>
+              <p className="text-[12px] font-semibold text-amber-200/75 mt-1.5">— {verse.reference}</p>
             </div>
           )}
 
@@ -358,60 +273,27 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             homeDevotionalFocus ? (
               <div className="mb-3" data-testid="home-hero-devotional-focus">
                 {verse ? (
-                  <div
-                    style={{
-                      borderRadius: "12px",
-                      border: "1px solid rgba(245,158,11,0.20)",
-                      backgroundColor: "rgba(0,0,0,0.35)",
-                      padding: "12px 14px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <p
-                      className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5"
-                      style={{ color: "rgba(253,230,138,0.70)" }}
-                    >
+                  <div className="rounded-xl border border-amber-500/20 bg-black/35 px-3.5 py-3 mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200/70 mb-1.5">
                       Today&apos;s Word
                     </p>
                     <p
-                      className="text-[15px] line-clamp-3 leading-snug italic"
-                      style={{ fontFamily: "var(--font-serif, Georgia, serif)", color: "rgba(255,255,255,0.88)" }}
+                      className="text-[15px] text-white/88 line-clamp-3 leading-snug italic"
+                      style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
                     >
                       &ldquo;{verse.text}&rdquo;
                     </p>
-                    <p
-                      className="text-[13px] font-semibold mt-1.5"
-                      style={{ color: "rgba(253,230,138,0.75)" }}
-                    >
-                      — {verse.reference}
-                    </p>
+                    <p className="text-[13px] font-semibold text-amber-200/75 mt-1.5">— {verse.reference}</p>
                   </div>
                 ) : (
-                  <p
-                    className="text-[14px] mb-3 leading-relaxed"
-                    style={{ color: "rgba(255,255,255,0.55)" }}
-                  >
+                  <p className="text-[14px] text-white/55 mb-3 leading-relaxed">
                     Your verse, reflection, and prayer are ready below.
                   </p>
                 )}
                 <Link href="/devotional?listen=1">
                   <span
                     data-testid="btn-hero-play-devotional"
-                    style={{
-                      display: "flex",
-                      width: "100%",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      borderRadius: "12px",
-                      padding: "14px",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      color: "#ffffff",
-                      backgroundColor: "#7c3aed",
-                      marginBottom: "10px",
-                      boxSizing: "border-box",
-                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-primary shadow-md shadow-black/25 active:scale-[0.99] mb-2.5"
                   >
                     <Headphones className="w-4 h-4" />
                     Play today&apos;s Word
@@ -420,29 +302,13 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 <Link href="/devotional">
                   <span
                     data-testid="btn-hero-open-devotional-focus"
-                    style={{
-                      display: "flex",
-                      width: "100%",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      borderRadius: "12px",
-                      padding: "12px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "rgba(255,255,255,0.90)",
-                      border: "1px solid rgba(255,255,255,0.25)",
-                      boxSizing: "border-box",
-                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white/90 border border-white/25 active:scale-[0.99]"
                   >
                     Read instead
                     <ArrowRight className="w-4 h-4" />
                   </span>
                 </Link>
-                <p
-                  className="text-[12px] text-center mt-2.5 leading-snug"
-                  style={{ color: "rgba(255,255,255,0.48)" }}
-                >
+                <p className="text-[12px] text-center text-white/48 mt-2.5 leading-snug">
                   One step: verse, reflection, prayer. Talk it through is below when you need it.
                 </p>
               </div>
@@ -451,7 +317,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 {!chapelWeekFocus && (
                   <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} panelId="home-presence-panel" />
                 )}
-                <div style={{ marginBottom: "16px" }} role="tabpanel" id="home-presence-panel" aria-label="Your chosen step">
+                <div className="mb-4" role="tabpanel" id="home-presence-panel" aria-label="Your chosen step">
                   <HomePresenceHero
                     door={effectiveDoor}
                     phase={threshold?.phase}
@@ -469,8 +335,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
               <Link href={threshold.secondaryCta.href}>
                 <a
                   data-testid="btn-threshold-secondary"
-                  className="inline-flex min-h-[44px] items-center text-[14px] font-semibold hover:text-white/80 underline-offset-4 hover:underline transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
-                  style={{ color: "rgba(255,255,255,0.55)" }}
+                  className="inline-flex min-h-[44px] items-center text-[14px] font-semibold text-white/55 hover:text-white/80 underline-offset-4 hover:underline transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
                   aria-label={threshold.secondaryCta.label}
                 >
                   {threshold.secondaryCta.label} →

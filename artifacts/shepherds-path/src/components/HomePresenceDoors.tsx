@@ -7,7 +7,6 @@ interface HomePresenceDoorsProps {
   /** Which door matches the hero panel above */
   selected: PresenceDoorId;
   onSelect: (id: PresenceDoorId) => void;
-  panelId?: string;
 }
 
 /** Left → right: signature guidance, daily Word, quiet room */
@@ -49,27 +48,12 @@ export function defaultPresenceDoor(): PresenceDoorId {
 
 export function HomePresenceDoors({ selected, onSelect }: HomePresenceDoorsProps) {
   return (
-    <div style={{ marginBottom: "12px" }}>
-      <p
-        style={{
-          fontSize: "10px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.18em",
-          color: "rgba(255,255,255,0.40)",
-          marginBottom: "8px",
-          paddingLeft: "2px",
-          paddingRight: "2px",
-        }}
-      >
+    <div className="mb-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-2 px-0.5">
         How do you want to begin?
       </p>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: "8px",
-        }}
+        className="grid grid-cols-3 gap-2 sm:gap-2.5"
         data-testid="home-presence-doors"
         role="tablist"
         aria-label="Ways to begin"
@@ -87,67 +71,29 @@ export function HomePresenceDoors({ selected, onSelect }: HomePresenceDoorsProps
               aria-selected={isActive}
               data-testid={door.testid}
               onClick={() => onSelect(door.id)}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                border: "none",
-                background: "transparent",
-                padding: 0,
-                cursor: "pointer",
-                borderRadius: "12px",
-                outline: isActive ? "2px solid rgba(251,191,36,0.50)" : "none",
-                outlineOffset: "2px",
-              }}
+              className={`w-full text-left transition-all active:scale-[0.98] ${
+                isActive ? "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-[#09031e] rounded-xl" : ""
+              }`}
             >
               <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  textAlign: "center",
-                  borderRadius: "12px",
-                  border: isActive
-                    ? "1px solid rgba(245,158,11,0.40)"
-                    : "1px solid rgba(255,255,255,0.10)",
-                  backgroundColor: isActive
-                    ? "rgba(245,158,11,0.12)"
-                    : "rgba(255,255,255,0.04)",
-                  padding: "12px 8px",
-                  minHeight: "84px",
-                  boxSizing: "border-box",
-                }}
+                className={`flex flex-col items-center text-center rounded-xl border px-2 py-3 min-h-[84px] ${
+                  isActive
+                    ? "border-amber-500/40 bg-amber-500/[0.12] shadow-sm shadow-amber-900/15"
+                    : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/15"
+                }`}
               >
                 <door.Icon
-                  style={{
-                    width: "16px",
-                    height: "16px",
-                    marginBottom: "6px",
-                    color: isActive ? "rgba(253,230,138,0.90)" : "rgba(255,255,255,0.50)",
-                  }}
+                  className={`w-4 h-4 mb-1.5 ${isActive ? "text-amber-200/90" : "text-white/50"}`}
                   aria-hidden
                 />
                 <p
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    lineHeight: 1.25,
-                    color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.75)",
-                  }}
+                  className={`text-[11px] font-bold leading-tight ${
+                    isActive ? "text-white/95" : "text-white/75"
+                  }`}
                 >
                   {door.label}
                 </p>
-                <p
-                  style={{
-                    fontSize: "10px",
-                    color: "rgba(255,255,255,0.42)",
-                    lineHeight: 1.375,
-                    marginTop: "2px",
-                    overflow: "hidden",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                  }}
-                >
+                <p className="text-[10px] text-white/42 leading-snug mt-0.5 line-clamp-2">
                   {desc}
                 </p>
               </div>

@@ -19,7 +19,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
-import { topMoreMenuButtonClass } from "@/lib/topMoreMenuButton";
+import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 function MenuLabel({ children }: { children: string }) {
   return (
@@ -127,9 +128,10 @@ export function NavBarMoreMenu({
         aria-label="Settings and more"
         aria-expanded={open}
         title="Settings"
-        className={topMoreMenuButtonClass(open)}
+        className={isNativeWebViewShell() ? undefined : topMoreMenuButtonClass(open)}
+        style={isNativeWebViewShell() ? topMoreMenuButtonStyle(open) : undefined}
       >
-        <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} />
+        <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} style={{ color: "rgba(255,255,255,0.92)" }} />
         {hasNotificationBadge && (
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
         )}

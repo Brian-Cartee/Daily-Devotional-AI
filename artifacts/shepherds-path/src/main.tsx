@@ -4,7 +4,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { installApiFetch } from "./lib/api";
 import { swState, SW_UPDATE_EVENT } from "./lib/sw-state";
 import "./index.css";
-import "./styles/home-native.css";
 import {
   isNativeShellUiReady,
   isNativeWebViewShell,

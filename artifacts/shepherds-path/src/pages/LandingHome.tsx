@@ -73,7 +73,6 @@ import { HomeDailyEmailStatus } from "@/components/EmailSubscribe";
 import { SimpleNotifNudge, DeepNotifNudge } from "@/components/NotifNudge";
 import { defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import { ThresholdHero } from "@/components/ThresholdHero";
-import { HOME_DARK, homeStackStyle } from "@/lib/homeTheme";
 import type { HomePresenceContext } from "@/lib/homePresenceContext";
 import { shouldShowArrivalRitual } from "@/components/ArrivalRitual";
 import { WitnessLetterCard } from "@/components/witness/WitnessLetterCard";
@@ -178,15 +177,7 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
     <Link href="/devotional">
       <div
         data-testid="card-devotional"
-        className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
-        style={{
-          position: "relative",
-          borderRadius: "16px",
-          border: "1px solid rgba(45,212,191,0.14)",
-          backgroundColor: HOME_DARK.card,
-          padding: "20px",
-          overflow: "hidden",
-        }}
+        className="group relative rounded-2xl border border-teal-900/10 bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
       >
         <img
           src={cardBgSrc}
@@ -204,10 +195,10 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
         <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-transparent to-transparent pointer-events-none" />
         {/* Left accent strip */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
-        <div style={{ position: "relative", zIndex: 10, display: "flex", alignItems: "flex-start", gap: "16px" }}>
+        <div className="relative z-10 flex items-start gap-4">
           <ShortcutPathIcon variant="devotional" />
-          <div style={{ flex: 1, minWidth: 0, paddingTop: "2px", paddingBottom: "2px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+          <div className="flex-1 min-w-0 py-0.5">
+            <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-500 border border-teal-400/40 shadow-sm">
                 Daily
               </span>
@@ -217,35 +208,15 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
                 </span>
               )}
             </div>
-            <h2
-              style={{
-                fontSize: "17px",
-                fontWeight: 700,
-                color: HOME_DARK.text,
-                marginBottom: "4px",
-                lineHeight: 1.25,
-                letterSpacing: "-0.01em",
-              }}
-            >
+            <h2 className="text-[17px] font-bold text-foreground mb-1 leading-tight tracking-tight">
               {homeFocus ? "Today's Word" : "Daily Devotional"}
             </h2>
-            <p style={{ fontSize: "15px", color: HOME_DARK.textSoft, lineHeight: 1.625 }}>
+            <p className="text-[15px] text-foreground/80 leading-relaxed">
               {homeFocus
                 ? "Today's verse, a short reflection, and a prayer you can make your own. Read slowly — no rush."
                 : "Each day brings a new scripture, a personal reflection, and a guided moment to hear from God — grounded in the passage, shaped for your real life. Open it, sit with it, let it speak."}
             </p>
-            <div
-              className="group-hover:gap-2.5 transition-all"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                marginTop: "14px",
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "#14b8a6",
-              }}
-            >
+            <div className="flex items-center gap-1.5 mt-3.5 text-sm font-semibold text-teal-500 group-hover:gap-2.5 transition-all">
               {visitedToday ? "Return to today's devotional" : homeFocus ? "Begin today's Word" : "Sit with today's message"}
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
@@ -253,17 +224,9 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
         </div>
 
         {/* Horizontal week tracker */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 10,
-            marginTop: "16px",
-            paddingTop: "12px",
-            borderTop: "1px solid rgba(19,78,74,0.08)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "12px" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+        <div className="relative z-10 mt-4 pt-3 border-t border-teal-900/8">
+          <div className="flex items-end justify-center gap-3">
+            <div className="flex items-end gap-2.5">
               {WEEK_LABELS.map((label, i) => {
                 const date = weekDates[i];
                 const visited = visitSet.has(date);
@@ -730,11 +693,7 @@ function LandingHomeInner() {
   };
 
   return (
-    <div
-      data-testid="sp-home-page"
-      className="relative"
-      style={{ minHeight: "100vh", backgroundColor: HOME_DARK.pageBg, color: HOME_DARK.text }}
-    >
+    <div className="min-h-screen relative" style={{ background: "hsl(var(--background))" }}>
       <AnimatePresence>
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>
@@ -762,17 +721,40 @@ function LandingHomeInner() {
       />
 
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
+      {!hideHeavyLink && (
+        <HomeHeavyMomentLink
+          footerHint={
+            homeDevotionalFocus || sacredFirstHome
+              ? homeDevotionalFocus
+                ? "Tap Today's Word — verse, reflection, and prayer are ready."
+                : "Start with today's Word below — one honest step is enough."
+              : undefined
+          }
+        />
+      )}
 
-      {/* Section cards — single centered column under hero */}
+      {thresholdWelcome && (
+        <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
+          <p
+            className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2"
+            data-testid="text-threshold-welcome"
+          >
+            You stepped inside. Welcome back.
+          </p>
+        </div>
+      )}
+
+      {(thresholdWelcome || sacredFirstHome) && (
+        <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 mb-1 relative z-10">
+          <ThresholdModeRhythmCard />
+        </div>
+      )}
+
+      {/* Section cards */}
       <div
-        data-testid="sp-home-cards"
-        style={{
-          ...homeStackStyle,
-          paddingBottom: "calc(128px + env(safe-area-inset-bottom, 0px))",
-          paddingTop: "8px",
-          position: "relative",
-          zIndex: 10,
-        }}
+        className={`max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 pb-32 sm:pb-28 relative z-10 ${
+          thresholdWelcome ? "mt-1" : "-mt-4"
+        }`}
       >
 
         {/* Side logo watermarks — near inner edge of each margin, aligned with lower card row */}
@@ -783,62 +765,17 @@ function LandingHomeInner() {
           <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
         <motion.div
-          data-testid="sp-home-stack"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}
+          className="flex flex-col gap-3"
         >
-          {thresholdWelcome && (
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: "13px",
-                color: HOME_DARK.textMuted,
-                lineHeight: 1.625,
-                padding: "0 8px",
-                margin: 0,
-              }}
-              data-testid="text-threshold-welcome"
-            >
-              You stepped inside. Welcome back.
-            </p>
-          )}
-
-          {(thresholdWelcome || sacredFirstHome) && <ThresholdModeRhythmCard />}
-
-          {!hideHeavyLink && (
-            <HomeHeavyMomentLink
-              footerHint={
-                homeDevotionalFocus || sacredFirstHome
-                  ? homeDevotionalFocus
-                    ? "Tap Today's Word — verse, reflection, and prayer are ready."
-                    : "Start with today's Word below — one honest step is enough."
-                  : undefined
-              }
-            />
-          )}
-
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showGreeting && <GreetingHeader />}
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && carryToday && (
-            <div
-              data-testid="card-carry-today"
-              style={{
-                borderRadius: "16px",
-                border: `1px solid ${HOME_DARK.cardBorder}`,
-                backgroundColor: "rgba(24,22,32,0.92)",
-                padding: "12px 16px",
-              }}
-            >
-              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: HOME_DARK.textMuted, marginBottom: "4px" }}>
-                Carry this today
-              </p>
-              <p style={{ fontSize: "15px", lineHeight: 1.625, fontStyle: "italic", color: HOME_DARK.textSoft }}>
-                &ldquo;{carryToday.text}&rdquo;
-              </p>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: HOME_DARK.textMuted, marginTop: "4px" }}>
-                — {carryToday.reference}
-              </p>
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
+              <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
+              <p className="text-[12px] font-semibold text-zinc-300/75 mt-1">— {carryToday.reference}</p>
             </div>
           )}
 
@@ -853,7 +790,7 @@ function LandingHomeInner() {
 
           {(sacredFirstHome || homeDevotionalFocus) && hideHeavyLink && (
             <p
-              style={{ textAlign: "center", fontSize: "13px", color: HOME_DARK.textMuted, lineHeight: 1.625, padding: "0 8px", margin: 0 }}
+              className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2 -mt-1"
               data-testid="text-sacred-first-hint"
             >
               {homeDevotionalFocus
@@ -863,10 +800,10 @@ function LandingHomeInner() {
           )}
 
           {/* ══ Today's step first — week one / until first devotional visit ══ */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="flex flex-col gap-3">
           {homeDevotionalFocus && !hideDevotionalCard && (
             <p
-              style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: HOME_DARK.primary, padding: "0 2px", margin: 0 }}
+              className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/80 px-0.5"
               data-testid="label-todays-step"
             >
               Today&apos;s step
@@ -896,24 +833,10 @@ function LandingHomeInner() {
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (
-            <div
-              data-testid="card-carry-today"
-              style={{
-                borderRadius: "16px",
-                border: `1px solid ${HOME_DARK.cardBorder}`,
-                backgroundColor: "rgba(24,22,32,0.92)",
-                padding: "12px 16px",
-              }}
-            >
-              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: HOME_DARK.textMuted, marginBottom: "4px" }}>
-                Carry this today
-              </p>
-              <p style={{ fontSize: "15px", lineHeight: 1.625, fontStyle: "italic", color: HOME_DARK.textSoft }}>
-                &ldquo;{carryToday.text}&rdquo;
-              </p>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: HOME_DARK.textMuted, marginTop: "4px" }}>
-                — {carryToday.reference}
-              </p>
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>
+              <p className="text-[15px] leading-relaxed italic text-foreground/90">"{carryToday.text}"</p>
+              <p className="text-[12px] font-semibold text-zinc-300/75 mt-1">— {carryToday.reference}</p>
             </div>
           )}
 

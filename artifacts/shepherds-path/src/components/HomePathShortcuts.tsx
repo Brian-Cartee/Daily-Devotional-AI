@@ -1,15 +1,13 @@
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { ShortcutPathIcon, type ShortcutIconVariant } from "@/components/ShortcutPathIcon";
-import { HOME_DARK } from "@/lib/homeTheme";
 
 const SHORTCUTS: {
   href: string;
   label: string;
   desc: string;
   testid: string;
-  border: string;
-  background: string;
+  accent: string;
   iconVariant: ShortcutIconVariant;
 }[] = [
   {
@@ -18,8 +16,7 @@ const SHORTCUTS: {
     label: "Talk it through",
     desc: "Scripture and prayer shaped for what's on your heart",
     testid: "shortcut-guidance",
-    border: "rgba(124,58,237,0.20)",
-    background: "linear-gradient(to bottom right, rgba(139,92,246,0.12), rgba(124,58,237,0.08))",
+    accent: "from-violet-500/12 to-primary/8 border-primary/20",
   },
   {
     href: "/journal",
@@ -27,8 +24,7 @@ const SHORTCUTS: {
     label: "Journal",
     desc: "Hold prayers and reflections you don't want to lose",
     testid: "shortcut-journal",
-    border: "rgba(20,184,166,0.20)",
-    background: "linear-gradient(to bottom right, rgba(20,184,166,0.10), rgba(16,185,129,0.06))",
+    accent: "from-teal-500/10 to-emerald-500/6 border-teal-500/20",
   },
   {
     href: "/understand#pathways",
@@ -36,49 +32,26 @@ const SHORTCUTS: {
     label: "Guided Pathways",
     desc: "7-day walks for grief, anxiety, and hard seasons",
     testid: "shortcut-journeys",
-    border: "rgba(99,102,241,0.20)",
-    background: "linear-gradient(to bottom right, rgba(99,102,241,0.10), rgba(139,92,246,0.06))",
+    accent: "from-indigo-500/10 to-violet-500/6 border-indigo-500/20",
   },
 ] as const;
 
 /** Chapel week — three list rows before the 16-path catalog */
 export function HomePathShortcuts() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }} data-testid="home-path-shortcuts">
-      {SHORTCUTS.map(({ href, iconVariant, label, desc, testid, border, background }) => (
+    <div className="flex flex-col gap-2" data-testid="home-path-shortcuts">
+      {SHORTCUTS.map(({ href, iconVariant, label, desc, testid, accent }) => (
         <Link key={href} href={href}>
           <div
             data-testid={testid}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              borderRadius: "12px",
-              border: `1px solid ${border}`,
-              background,
-              padding: "12px 16px",
-              boxSizing: "border-box",
-            }}
+            className={`group flex items-center gap-3 rounded-xl border bg-gradient-to-br ${accent} px-4 py-3 active:scale-[0.99] transition-transform`}
           >
             <ShortcutPathIcon variant={iconVariant} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: HOME_DARK.text, lineHeight: 1.25 }}>
-                {label}
-              </p>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: HOME_DARK.textMuted,
-                  lineHeight: 1.375,
-                  marginTop: "2px",
-                }}
-              >
-                {desc}
-              </p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-bold text-foreground leading-tight">{label}</p>
+              <p className="text-[12px] text-muted-foreground/75 leading-snug mt-0.5">{desc}</p>
             </div>
-            <ArrowRight
-              style={{ width: "16px", height: "16px", flexShrink: 0, color: HOME_DARK.textSubtle }}
-            />
+            <ArrowRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/70 shrink-0 transition-colors" />
           </div>
         </Link>
       ))}
