@@ -49,7 +49,19 @@
         window.__SP_SUBSCRIBER_BOOT__ = { subscribed: true, email: email, sessionId: sessionId || "" };
         notifyNativeEmail(email);
       }
+      function isNativeAppShell() {
+        try {
+          return (
+            !!window.ReactNativeWebView ||
+            location.search.indexOf("native=1") >= 0
+          );
+        } catch (e) {
+          return false;
+        }
+      }
       function syncStatusFromServer(sessionId, emailHint) {
+        // Native shell restores email via injected seed + native fetch — never block page load on sync XHR.
+        if (isNativeAppShell()) return null;
         try {
           var parts = [];
           if (sessionId) parts.push("sessionId=" + encodeURIComponent(sessionId));
