@@ -288,10 +288,10 @@ export default function ThresholdArrivalPage() {
                       data-testid={`btn-threshold-need-${opt.id}`}
                       aria-label={`${opt.label}: ${opt.sub}`}
                       onClick={() => handleNeed(opt.id)}
-                      className="w-full min-h-[56px] text-left rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 px-5 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                      className="w-full min-h-[56px] text-left rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 px-5 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70 flex flex-col"
                     >
-                      <span className="block text-[16px] font-semibold text-white/92">{opt.label}</span>
-                      <span className="block text-[13px] text-white/50 mt-0.5">{opt.sub}</span>
+                      <span className="text-[16px] font-semibold text-white/90">{opt.label}</span>
+                      <span className="text-[13px] text-white/50 mt-0.5">{opt.sub}</span>
                     </button>
                   ))}
                 </div>
