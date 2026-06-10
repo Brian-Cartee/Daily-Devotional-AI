@@ -530,7 +530,7 @@ button, a, input, textarea, select, [role="button"] {
  */
 html[data-sp-shell="native"] {
   height: 100% !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   overscroll-behavior: auto !important;
   touch-action: auto !important;
   color-scheme: dark;
@@ -680,7 +680,6 @@ html[data-sp-shell="native"] #root a {
 }
 
 html[data-sp-shell="native"] #root a.sp-native-card-link,
-html[data-sp-shell="native"] #root a:has([data-testid]),
 html[data-sp-shell="native"] #root a[data-testid] {
   display: block;
   width: 100%;

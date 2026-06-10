@@ -82,10 +82,10 @@ function hostAllowedInWebView(url: string): boolean {
 
 const BEFORE_CONTENT_JS = `(function(){
   document.documentElement.style.backgroundColor='#0d0612';
-  if(document.body){document.body.style.backgroundColor='#0d0612';}
+  if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
   document.documentElement.setAttribute('data-sp-shell','native');
   document.documentElement.setAttribute('data-sp-native-share','1');
-  document.documentElement.classList.add('sp-native-shell');
+  document.documentElement.classList.add('sp-native-shell','dark');
   true;
 })();`;
 

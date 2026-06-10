@@ -4,12 +4,15 @@ import { CONVICTION_PANEL_EYEBROW } from "@/content/convictionManifesto";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 import { shouldShowConvictionTab } from "@/lib/convictionTabVisibility";
 import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
-import { usesCompactTopNav } from "@/lib/platform";
+import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
 
 /** Top-left icon — opens conviction panel; out of the way of threshold copy. */
 export function ConvictionTopWhisper() {
   const [location] = useLocation();
   if (!shouldShowConvictionTab(location)) return null;
+
+  const nativeShell = isNativeWebViewShell();
+  const compact = usesCompactTopNav();
 
   return (
     <button
@@ -18,8 +21,8 @@ export function ConvictionTopWhisper() {
       onClick={openConvictionPanel}
       aria-label={`${CONVICTION_PANEL_EYEBROW} — Scripture, faith, and mission`}
       title={CONVICTION_PANEL_EYEBROW}
-      className={usesCompactTopNav() ? undefined : `${topMoreMenuButtonClass(false)} shrink-0`}
-      style={usesCompactTopNav() ? topMoreMenuButtonStyle(false) : undefined}
+      className={nativeShell || compact ? undefined : `${topMoreMenuButtonClass(false)} shrink-0`}
+      style={nativeShell || compact ? topMoreMenuButtonStyle(false) : undefined}
     >
       <HandHeart className="w-[18px] h-[18px]" strokeWidth={2.1} style={{ color: "rgba(255,255,255,0.92)" }} />
     </button>

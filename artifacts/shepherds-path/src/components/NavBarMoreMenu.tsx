@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
 import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
-import { usesCompactTopNav } from "@/lib/platform";
+import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
 
 function MenuLabel({ children }: { children: string }) {
   return (
@@ -115,6 +115,8 @@ export function NavBarMoreMenu({
 }: Props) {
   const toneLabel = guidanceTone === "coach" ? "Direct & accountable" : "Gentle & encouraging";
   const voiceLabel = voicePref === "onyx" ? "Male voice" : "Female voice";
+  const nativeShell = isNativeWebViewShell();
+  const compact = usesCompactTopNav();
 
   return (
     <div className="relative" ref={menuRef}>
@@ -128,8 +130,8 @@ export function NavBarMoreMenu({
         aria-label="Settings and more"
         aria-expanded={open}
         title="Settings"
-        className={usesCompactTopNav() ? undefined : topMoreMenuButtonClass(open)}
-        style={usesCompactTopNav() ? topMoreMenuButtonStyle(open) : undefined}
+        className={nativeShell || compact ? undefined : topMoreMenuButtonClass(open)}
+        style={nativeShell || compact ? topMoreMenuButtonStyle(open) : undefined}
       >
         <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} style={{ color: "rgba(255,255,255,0.92)" }} />
         {hasNotificationBadge && (

@@ -10,7 +10,7 @@ export const topMoreMenuButtonStyle = (open: boolean): CSSProperties => ({
   justifyContent: "center",
   borderRadius: "8px",
   color: "rgba(255,255,255,0.92)",
-  backgroundColor: open ? "rgba(0,0,0,0.40)" : "rgba(0,0,0,0.30)",
+  backgroundColor: open ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.50)",
   boxShadow: "0 4px 6px -1px rgba(0,0,0,0.25)",
   backdropFilter: "blur(12px)",
   WebkitBackdropFilter: "blur(12px)",

@@ -252,15 +252,50 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       />
       {showTop && compactTopNav && (
         <nav
-          className="fixed top-0 left-0 right-0 z-[250] pointer-events-none"
-          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+          data-testid="native-top-nav"
           aria-label="App menu"
+          style={
+            inNativeApp
+              ? {
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 9999,
+                  paddingTop: "env(safe-area-inset-top, 0px)",
+                  pointerEvents: "none",
+                }
+              : { paddingTop: "env(safe-area-inset-top, 0px)" }
+          }
+          className={inNativeApp ? undefined : "fixed top-0 left-0 right-0 z-[250] pointer-events-none"}
         >
-          <div className="relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center pointer-events-none">
-            <div className="pointer-events-auto shrink-0">
+          <div
+            style={
+              inNativeApp
+                ? {
+                    position: "relative",
+                    maxWidth: "56rem",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                    paddingLeft: "12px",
+                    paddingRight: "12px",
+                    height: "56px",
+                    display: "flex",
+                    alignItems: "center",
+                    pointerEvents: "none",
+                    boxSizing: "border-box",
+                  }
+                : undefined
+            }
+            className={inNativeApp ? undefined : "relative max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center pointer-events-none"}
+          >
+            <div style={inNativeApp ? { pointerEvents: "auto", flexShrink: 0 } : undefined} className={inNativeApp ? undefined : "pointer-events-auto shrink-0"}>
               <ConvictionTopWhisper />
             </div>
-            <div className="ml-auto shrink-0 relative pointer-events-auto">
+            <div
+              style={inNativeApp ? { pointerEvents: "auto", marginLeft: "auto", flexShrink: 0, position: "relative" } : undefined}
+              className={inNativeApp ? undefined : "ml-auto shrink-0 relative pointer-events-auto"}
+            >
               {moreMenu}
               {langPicker}
               {emailPanel}
@@ -344,11 +379,31 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       )}
 
       <nav
-        className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/82 backdrop-blur-xl border-t border-white/10"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         aria-label="Main"
+        style={
+          inNativeApp
+            ? {
+                position: "fixed",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 9998,
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                backgroundColor: "rgba(9, 9, 11, 0.92)",
+                borderTop: "1px solid rgba(255,255,255,0.10)",
+              }
+            : { paddingBottom: "env(safe-area-inset-bottom, 0px)" }
+        }
+        className={inNativeApp ? "sm:hidden" : "sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/82 backdrop-blur-xl border-t border-white/10"}
       >
-        <div className="flex items-center justify-around h-[56px] px-0.5">
+        <div
+          style={
+            inNativeApp
+              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "56px", paddingLeft: "2px", paddingRight: "2px" }
+              : undefined
+          }
+          className={inNativeApp ? undefined : "flex items-center justify-around h-[56px] px-0.5"}
+        >
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";
             const active = isHome
