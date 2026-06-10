@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
-import { isIOS, isAndroid } from "@/lib/platform";
+import { isIOS, isAndroid, isNativeWebViewShell } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, BookMarked, HandHeart } from "lucide-react";
@@ -48,7 +48,6 @@ import { shouldShowYourPathCard } from "@/lib/homePathProgress";
 import { setLastOpenDate } from "@/lib/engagementCards";
 import { isLateNight } from "@/lib/nightMode";
 import { readCarryToday } from "@/lib/devotionalContinuity";
-import { isNativeWebViewShell } from "@/lib/platform";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, markEntryShown } from "@/components/HomeEntryScreen";
@@ -765,9 +764,9 @@ function LandingHomeInner() {
           <img src={logoLarge} alt="" className="w-36 h-36 object-contain rounded-3xl" style={{ opacity: 0.06 }} />
         </div>
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={inNativeApp ? false : { opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, delay: inNativeApp ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3"
         >
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showGreeting && <GreetingHeader />}
@@ -1265,9 +1264,9 @@ function LandingHomeInner() {
 
         {/* Footer — readable column width on wide screens */}
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={inNativeApp ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: inNativeApp ? 0 : 0.7 }}
           className="mt-10 sm:mt-12 pb-2 max-w-xl mx-auto w-full"
         >
           <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-2.5 mb-6 sm:mb-8">

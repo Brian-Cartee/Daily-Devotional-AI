@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
 import { ArrowRight, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
@@ -135,76 +134,160 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
     setListenFirstPreference(next);
   };
 
+  const photoHeight = showPhotoTaglines ? "52vh" : "46vh";
+  const photoMaxHeight = showPhotoTaglines ? "460px" : "420px";
+
   return (
-    <div className="relative bg-[#09031e]" id="sp-home-top" data-testid="home-threshold-hero">
+    <div
+      id="sp-home-top"
+      data-testid="home-threshold-hero"
+      style={{ position: "relative", backgroundColor: "#09031e" }}
+    >
       <div
-        className={`relative w-full overflow-hidden max-h-[460px] sm:max-h-[500px] ${
-          showPhotoTaglines
-            ? "h-[52vh] min-h-[300px] sm:h-[50vh]"
-            : "h-[46vh] min-h-[280px] sm:h-[44vh]"
-        }`}
+        data-testid="home-threshold-photo"
         aria-hidden={false}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: photoHeight,
+          minHeight: showPhotoTaglines ? "300px" : "280px",
+          maxHeight: photoMaxHeight,
+          overflow: "hidden",
+        }}
       >
         <img
           src="/hero-landing.webp"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-[center_30%] sm:object-[center_32%]"
           decoding="async"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center 30%",
+          }}
         />
         <div
-          className="absolute inset-0 pointer-events-none"
           style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pointerEvents: "none",
             background: atmosphere.heroOverlay,
           }}
         />
         {showPhotoTaglines && (
-          <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center text-center px-6 pt-[3.75rem] sm:pt-16">
-            <motion.h2
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="manifesto-line text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] max-w-[18ch]"
-              style={{ fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)" }}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              paddingLeft: "24px",
+              paddingRight: "24px",
+              paddingTop: "max(3.75rem, env(safe-area-inset-top))",
+            }}
+          >
+            <h2
+              className="manifesto-line"
+              style={{
+                fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)",
+                color: "#ffffff",
+                maxWidth: "18ch",
+                textShadow: "0 2px 12px rgba(0,0,0,0.65)",
+                margin: 0,
+              }}
             >
               {BRAND_TAGLINE}
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-2 text-[15px] sm:text-base text-white/90 font-medium drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)]"
+            </h2>
+            <p
+              style={{
+                marginTop: "8px",
+                fontSize: "15px",
+                color: "rgba(255,255,255,0.90)",
+                fontWeight: 500,
+                textShadow: "0 1px 8px rgba(0,0,0,0.55)",
+              }}
             >
               {BRAND_TAGLINE_SUB}
-            </motion.p>
+            </p>
           </div>
         )}
       </div>
 
-      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-4 sm:pt-5 pb-8 sm:pb-10">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        >
+      <div
+        data-testid="home-threshold-content"
+        style={{
+          position: "relative",
+          zIndex: 10,
+          width: "100%",
+          maxWidth: "36rem",
+          marginLeft: "auto",
+          marginRight: "auto",
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          paddingTop: "16px",
+          paddingBottom: "40px",
+          boxSizing: "border-box",
+          backgroundColor: "#09031e",
+        }}
+      >
+        <div data-testid="home-threshold-content-inner">
           <button
             type="button"
             data-testid="link-why-collapsed"
             onClick={openWhyPanel}
             aria-label="Open why we built this"
-            className="mb-3 block text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 hover:text-white/75 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+            style={{
+              display: "block",
+              marginBottom: "12px",
+              textAlign: "left",
+              fontSize: "11px",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+              color: "rgba(255,255,255,0.50)",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+            }}
           >
             Why we built this
           </button>
 
           <h1
-            className="text-white font-bold leading-[1.18] mb-2 tracking-tight"
-            style={{ fontSize: "clamp(1.5rem, 5vw, 2.1rem)" }}
+            style={{
+              fontSize: "clamp(1.5rem, 5vw, 2.1rem)",
+              color: "#ffffff",
+              fontWeight: 700,
+              lineHeight: 1.18,
+              marginBottom: "8px",
+              letterSpacing: "-0.02em",
+            }}
             data-testid="text-threshold-headline"
           >
             {thresholdLoading ? "…" : threshold?.headline ?? "What are you carrying into today?"}
           </h1>
           <p
-            className="text-[16px] sm:text-[17px] text-white/78 leading-relaxed mb-3 font-medium"
+            style={{
+              fontSize: "16px",
+              lineHeight: 1.625,
+              marginBottom: "12px",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.78)",
+            }}
             data-testid="text-threshold-subtext"
           >
             {thresholdLoading
@@ -369,7 +452,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 </a>
               </Link>
             ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

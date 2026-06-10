@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
 import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
-import { isNativeWebViewShell } from "@/lib/platform";
+import { usesCompactTopNav } from "@/lib/platform";
 
 function MenuLabel({ children }: { children: string }) {
   return (
@@ -128,8 +128,8 @@ export function NavBarMoreMenu({
         aria-label="Settings and more"
         aria-expanded={open}
         title="Settings"
-        className={isNativeWebViewShell() ? undefined : topMoreMenuButtonClass(open)}
-        style={isNativeWebViewShell() ? topMoreMenuButtonStyle(open) : undefined}
+        className={usesCompactTopNav() ? undefined : topMoreMenuButtonClass(open)}
+        style={usesCompactTopNav() ? topMoreMenuButtonStyle(open) : undefined}
       >
         <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} style={{ color: "rgba(255,255,255,0.92)" }} />
         {hasNotificationBadge && (
