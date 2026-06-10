@@ -12,7 +12,7 @@ SERVER="ubuntu@52.42.155.185"
 APP_DIR="/home/ubuntu/Daily-Devotional-AI"
 FRONTEND_DIR="$APP_DIR/artifacts/shepherds-path"
 SITE_URL="https://www.shepherdspathai.com"
-API_URL="https://www.shepherdspathai.com/api/health"
+API_URL="https://www.shepherdspathai.com/api/healthz"
 
 # ── Colors ───────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
