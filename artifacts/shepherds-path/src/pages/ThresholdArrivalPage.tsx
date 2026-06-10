@@ -209,7 +209,7 @@ export default function ThresholdArrivalPage() {
           step === "need" ? "" : "items-center justify-center"
         }`}
       >
-        <p className="sr-only" aria-live="polite">
+        <p className="sr-only" aria-live="polite" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", borderWidth: 0 }}>
           {step === "arrive"
             ? "Arrival screen. You don't have to be okay to come in."
             : step === "need"
@@ -264,23 +264,23 @@ export default function ThresholdArrivalPage() {
           )}
 
           {step === "need" && (
-            <motion.div key="need" {...fade} className="w-full max-w-sm mx-auto flex flex-col flex-1 min-h-0">
+            <motion.div key="need" {...fade} style={{ width: "100%", maxWidth: "384px", margin: "0 auto", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
               {nativeFastPath && (
-                <p className="text-center text-[14px] text-white/55 mb-4 leading-relaxed shrink-0">
+                <p style={{ textAlign: "center", fontSize: "14px", color: "rgba(255,255,255,0.55)", marginBottom: "16px", lineHeight: 1.6, flexShrink: 0 }}>
                   Welcome to Shepherd&apos;s Path — steady or struggling, a quiet companion, not a performance.
                 </p>
               )}
-              <p className="text-center text-[1.1rem] text-white/88 font-medium mb-2 shrink-0">
+              <p style={{ textAlign: "center", fontSize: "1.1rem", color: "rgba(255,255,255,0.88)", fontWeight: 500, marginBottom: "8px", flexShrink: 0 }}>
                 What do you need right now?
               </p>
-              <p className="text-center text-[13px] text-white/48 mb-5 shrink-0">
+              <p style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.48)", marginBottom: "20px", flexShrink: 0 }}>
                 We&apos;ll shape today&apos;s tone — you can change it anytime.
               </p>
               <div
-                className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain -mx-1 px-1"
+                className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain"
                 data-testid="threshold-need-scroll"
               >
-                <div className="flex flex-col gap-3 pb-3">
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "12px" }}>
                   {visibleModes.map((opt) => (
                     <button
                       key={opt.id}
@@ -288,14 +288,17 @@ export default function ThresholdArrivalPage() {
                       data-testid={`btn-threshold-need-${opt.id}`}
                       aria-label={`${opt.label}: ${opt.sub}`}
                       onClick={() => handleNeed(opt.id)}
-                      className="w-full rounded-2xl border border-white/12 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/22 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                      className="rounded-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "flex-start",
+                        width: "100%",
                         minHeight: "56px",
-                        padding: "16px 20px",
+                        padding: "14px 20px",
                         textAlign: "left",
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.12)",
                       }}
                     >
                       <span style={{ display: "block", color: "rgba(255,255,255,0.92)", fontSize: "16px", fontWeight: 600, lineHeight: 1.3 }}>{opt.label}</span>
