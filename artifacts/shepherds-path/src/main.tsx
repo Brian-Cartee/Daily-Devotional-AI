@@ -33,6 +33,31 @@ if ("serviceWorker" in navigator) {
       registrations.forEach((r) => r.unregister());
     }).catch(() => {});
   } else {
+    const SW_MIGRATION = "2026-06-10-safari-cache-fix";
+    const migrated = (() => {
+      try {
+        return localStorage.getItem("sp-sw-migration") === SW_MIGRATION;
+      } catch {
+        return false;
+      }
+    })();
+    if (!migrated) {
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
+        .then(() => {
+          try {
+            localStorage.setItem("sp-sw-migration", SW_MIGRATION);
+          } catch {
+            /* noop */
+          }
+        })
+        .catch(() => {});
+    }
+  }
+}
+
+if ("serviceWorker" in navigator && !isNativeWebViewShell()) {
   window.addEventListener("load", () => {
     if (import.meta.env.PROD) {
       navigator.serviceWorker.register("/sw.js").then((registration) => {
@@ -71,7 +96,6 @@ if ("serviceWorker" in navigator) {
       });
     }
   });
-  }
 }
 
 const rootEl = document.getElementById("root");

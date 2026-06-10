@@ -48,6 +48,22 @@ self.addEventListener("fetch", (e) => {
   // Skip API requests — always go to network
   if (url.pathname.startsWith("/api/")) return;
 
+  // Hashed Vite bundles — network first so Safari never runs stale broken JS/CSS
+  if (url.pathname.startsWith("/assets/")) {
+    e.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
   // Navigation requests — network first, fall back to cached index
   if (request.mode === "navigate") {
     e.respondWith(

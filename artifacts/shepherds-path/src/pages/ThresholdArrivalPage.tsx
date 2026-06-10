@@ -15,7 +15,6 @@ import {
   hasBeenPrompted,
   syncUserNameFromServer,
 } from "@/lib/userName";
-import { useReducedMotionPreference } from "@/hooks/use-reduced-motion";
 import { fireHaptic } from "@/lib/haptics";
 import { getThresholdInteractionProfile } from "@/lib/thresholdModePlan";
 import { isNativeWebViewShell } from "@/lib/platform";
@@ -41,7 +40,6 @@ const NEED_OPTIONS: { id: ThresholdNeed; label: string; sub: string }[] = [
 
 export default function ThresholdArrivalPage() {
   const [, navigate] = useLocation();
-  const reduceMotion = useReducedMotionPreference();
   const nativeFastPath = isNativeWebViewShell() && !isThresholdReplay();
   const [step, setStep] = useState<Step>(initialThresholdStep);
   const [need, setNeed] = useState<ThresholdNeed | null>(null);
@@ -175,7 +173,7 @@ export default function ThresholdArrivalPage() {
     setStep(nativeFastPath ? "enter" : "breath");
   };
 
-  const skipMotion = reduceMotion || isNativeWebViewShell();
+  const skipMotion = true;
   const fade = {
     initial: skipMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
