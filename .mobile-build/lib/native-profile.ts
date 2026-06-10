@@ -50,16 +50,37 @@ export async function loadNativeUserProfile(): Promise<{
   return { sessionId, name, prompted, subscriberEmail, emailSubscribed };
 }
 
+export type NativeUserProfilePatch = {
+  sessionId?: string;
+  name?: string;
+  prompted?: boolean;
+};
+
+/** Merge partial profile updates — omitted fields are left unchanged. */
+export async function mergeNativeUserProfile(
+  patch: NativeUserProfilePatch,
+): Promise<void> {
+  const existing = await loadNativeUserProfile();
+  const sessionId = patch.sessionId?.trim() || existing.sessionId;
+  const name = patch.name !== undefined ? patch.name : existing.name;
+  const prompted =
+    patch.prompted !== undefined
+      ? patch.prompted
+      : existing.prompted || !!name.trim();
+
+  if (sessionId) await AsyncStorage.setItem(SESSION_ID_KEY, sessionId);
+  if (name.trim()) await AsyncStorage.setItem(USER_NAME_KEY, name.trim());
+  else if (patch.name !== undefined) await AsyncStorage.removeItem(USER_NAME_KEY);
+  if (prompted) await AsyncStorage.setItem(NAME_PROMPTED_KEY, "true");
+  else if (patch.prompted === false) await AsyncStorage.removeItem(NAME_PROMPTED_KEY);
+}
+
 export async function saveNativeUserProfile(
   sessionId: string,
   name: string,
   prompted: boolean,
 ): Promise<void> {
-  if (sessionId) await AsyncStorage.setItem(SESSION_ID_KEY, sessionId);
-  if (name.trim()) await AsyncStorage.setItem(USER_NAME_KEY, name.trim());
-  else await AsyncStorage.removeItem(USER_NAME_KEY);
-  if (prompted) await AsyncStorage.setItem(NAME_PROMPTED_KEY, "true");
-  else await AsyncStorage.removeItem(NAME_PROMPTED_KEY);
+  await mergeNativeUserProfile({ sessionId, name, prompted });
 }
 
 export async function saveNativeSubscriberProfile(email: string): Promise<void> {

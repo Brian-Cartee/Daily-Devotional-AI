@@ -91,6 +91,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsReady) {
       rescheduleNotifications();
+      // Hide the Expo native splash as soon as fonts are ready — don't wait
+      // for the WebView to signal react_booted. This prevents a permanent
+      // black screen when the web page is slow or fails to load on first open.
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsReady]);
 

@@ -21,8 +21,8 @@ import {
   buildNativeProfileSeedJs,
   loadNativeUserProfile,
   prepareNativeUserProfileForWebView,
+  mergeNativeUserProfile,
   saveNativeSubscriberProfile,
-  saveNativeUserProfile,
   SCRAPE_WEB_SUBSCRIBER_JS,
 } from "@/lib/native-profile";
 import { useSubscription } from "@/lib/revenuecat";
@@ -526,13 +526,19 @@ export default function MainScreen() {
           try {
             const data = JSON.parse(e.nativeEvent.data);
             if (data.type === "sp_user_profile") {
-              const sessionId =
-                typeof data.sessionId === "string" ? data.sessionId : "";
-              const name = typeof data.name === "string" ? data.name : "";
-              const prompted = data.prompted === true || !!name.trim();
+              const patch: {
+                sessionId?: string;
+                name?: string;
+                prompted?: boolean;
+              } = {};
+              if (typeof data.sessionId === "string" && data.sessionId.trim()) {
+                patch.sessionId = data.sessionId.trim();
+              }
+              if (typeof data.name === "string") patch.name = data.name;
+              if (typeof data.prompted === "boolean") patch.prompted = data.prompted;
               const subscriberEmail =
                 typeof data.subscriberEmail === "string" ? data.subscriberEmail : "";
-              void saveNativeUserProfile(sessionId, name, prompted);
+              void mergeNativeUserProfile(patch);
               if (subscriberEmail.includes("@")) {
                 void saveNativeSubscriberProfile(subscriberEmail);
               }
