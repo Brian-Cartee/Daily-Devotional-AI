@@ -135,36 +135,74 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
     setListenFirstPreference(next);
   };
 
+  const photoHeight = showPhotoTaglines ? "min(52vh, 460px)" : "min(46vh, 420px)";
+
   return (
-    <div className="relative bg-[#09031e]" id="sp-home-top" data-testid="home-threshold-hero">
+    <div
+      id="sp-home-top"
+      data-testid="home-threshold-hero"
+      style={{ position: "relative", backgroundColor: "#09031e" }}
+    >
       <div
-        className={`relative w-full overflow-hidden max-h-[460px] sm:max-h-[500px] ${
-          showPhotoTaglines
-            ? "h-[52vh] min-h-[300px] sm:h-[50vh]"
-            : "h-[46vh] min-h-[280px] sm:h-[44vh]"
-        }`}
         aria-hidden={false}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: photoHeight,
+          minHeight: showPhotoTaglines ? "300px" : "280px",
+          maxHeight: "500px",
+          overflow: "hidden",
+        }}
       >
         <img
           src="/hero-landing.webp"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-[center_30%] sm:object-[center_32%]"
           decoding="async"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center 30%",
+          }}
         />
         <div
-          className="absolute inset-0 pointer-events-none"
           style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
             background: atmosphere.heroOverlay,
           }}
         />
         {showPhotoTaglines && (
-          <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center text-center px-6 pt-[3.75rem] sm:pt-16">
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              paddingLeft: "24px",
+              paddingRight: "24px",
+              paddingTop: "max(3.75rem, env(safe-area-inset-top))",
+            }}
+          >
             <motion.h2
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="manifesto-line text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] max-w-[18ch]"
-              style={{ fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)" }}
+              className="manifesto-line"
+              style={{
+                fontSize: "clamp(1.35rem, 5.2vw, 1.85rem)",
+                color: "#ffffff",
+                maxWidth: "18ch",
+                textShadow: "0 2px 12px rgba(0,0,0,0.65)",
+              }}
             >
               {BRAND_TAGLINE}
             </motion.h2>
@@ -181,7 +219,22 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
         )}
       </div>
 
-      <div className="relative z-10 max-w-xl mx-auto w-full px-3 sm:px-5 pt-4 sm:pt-5 pb-8 sm:pb-10">
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          width: "100%",
+          maxWidth: "36rem",
+          marginLeft: "auto",
+          marginRight: "auto",
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          paddingTop: "16px",
+          paddingBottom: "40px",
+          boxSizing: "border-box",
+          backgroundColor: "#09031e",
+        }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -199,15 +252,26 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           </button>
 
           <h1
-            className="font-bold leading-[1.18] mb-2 tracking-tight"
-            style={{ fontSize: "clamp(1.5rem, 5vw, 2.1rem)", color: "#ffffff" }}
+            style={{
+              fontSize: "clamp(1.5rem, 5vw, 2.1rem)",
+              color: "#ffffff",
+              fontWeight: 700,
+              lineHeight: 1.18,
+              marginBottom: "8px",
+              letterSpacing: "-0.02em",
+            }}
             data-testid="text-threshold-headline"
           >
             {thresholdLoading ? "…" : threshold?.headline ?? "What are you carrying into today?"}
           </h1>
           <p
-            className="text-[16px] sm:text-[17px] leading-relaxed mb-3 font-medium"
-            style={{ color: "rgba(255,255,255,0.78)" }}
+            style={{
+              fontSize: "16px",
+              lineHeight: 1.625,
+              marginBottom: "12px",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.78)",
+            }}
             data-testid="text-threshold-subtext"
           >
             {thresholdLoading
@@ -319,7 +383,21 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 <Link href="/devotional?listen=1">
                   <span
                     data-testid="btn-hero-play-devotional"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-primary shadow-md shadow-black/25 active:scale-[0.99] mb-2.5"
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      borderRadius: "12px",
+                      padding: "14px",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      color: "#ffffff",
+                      backgroundColor: "#7c3aed",
+                      marginBottom: "10px",
+                      boxSizing: "border-box",
+                    }}
                   >
                     <Headphones className="w-4 h-4" />
                     Play today&apos;s Word
@@ -328,7 +406,20 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 <Link href="/devotional">
                   <span
                     data-testid="btn-hero-open-devotional-focus"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white/90 border border-white/25 active:scale-[0.99]"
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      borderRadius: "12px",
+                      padding: "12px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "rgba(255,255,255,0.90)",
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      boxSizing: "border-box",
+                    }}
                   >
                     Read instead
                     <ArrowRight className="w-4 h-4" />

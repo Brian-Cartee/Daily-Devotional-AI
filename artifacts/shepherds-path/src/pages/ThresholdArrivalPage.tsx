@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ThresholdBreath } from "@/components/threshold/ThresholdBreath";
@@ -185,44 +185,81 @@ export default function ThresholdArrivalPage() {
     },
   };
 
+  const innerWrapperStyle: CSSProperties =
+    step === "need"
+      ? {
+          position: "relative",
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          height: "100%",
+          paddingLeft: "24px",
+          paddingRight: "24px",
+          paddingTop: "max(2rem, env(safe-area-inset-top))",
+          paddingBottom: "max(2.75rem, env(safe-area-inset-bottom))",
+          boxSizing: "border-box",
+        }
+      : {
+          position: "relative",
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          height: "100%",
+          paddingLeft: "24px",
+          paddingRight: "24px",
+          paddingTop: "max(2rem, env(safe-area-inset-top))",
+          paddingBottom: "max(2.75rem, env(safe-area-inset-bottom))",
+          boxSizing: "border-box",
+          alignItems: "center",
+          justifyContent: "center",
+        };
+
   return (
     <div
-      className="fixed inset-0 z-[300] flex flex-col"
       data-testid="threshold-arrival"
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to Shepherd's Path"
       style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 300,
+        display: "flex",
+        flexDirection: "column",
         background: "linear-gradient(175deg, #1e0d50 0%, #130636 45%, #09031e 100%)",
       }}
     >
       <div
-        className="absolute inset-0 pointer-events-none"
         style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
           background:
             "radial-gradient(ellipse 70% 55% at 50% 38%, rgba(110,50,220,0.32) 0%, transparent 70%)",
         }}
       />
 
-      <div
-        className={`relative z-10 flex-1 flex flex-col min-h-0 w-full px-6 pb-[max(2.75rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] ${
-          step === "need" ? "" : "items-center justify-center"
-        }`}
-        style={
-          step === "need"
-            ? { display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%" }
-            : {
-                display: "flex",
-                flexDirection: "column",
-                flex: 1,
-                minHeight: 0,
-                width: "100%",
-                alignItems: "center",
-                justifyContent: "center",
-              }
-        }
-      >
-        <p className="sr-only" aria-live="polite" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", borderWidth: 0 }}>
+      <div style={innerWrapperStyle}>
+        <p
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            padding: 0,
+            margin: "-1px",
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+            borderWidth: 0,
+          }}
+        >
           {step === "arrive"
             ? "Arrival screen. You don't have to be okay to come in."
             : step === "need"
@@ -313,8 +350,9 @@ export default function ThresholdArrivalPage() {
                 We&apos;ll shape today&apos;s tone — you can change it anytime.
               </p>
               <div
-                className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain"
+                className="overflow-y-auto overscroll-y-contain"
                 data-testid="threshold-need-scroll"
+                style={{ flex: 1, minHeight: 0, overflowY: "auto" }}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "12px" }}>
                   {visibleModes.map((opt) => (
@@ -348,9 +386,17 @@ export default function ThresholdArrivalPage() {
           )}
 
           {step === "name" && (
-            <motion.div key="name" {...fade} className="w-full max-w-sm text-center">
-              <p className="text-[1.1rem] text-white/88 font-medium mb-2">First name?</p>
-              <p className="text-[13px] text-white/45 mb-6">Optional — for prayer and reflection.</p>
+            <motion.div
+              key="name"
+              {...fade}
+              style={{ width: "100%", maxWidth: "24rem", textAlign: "center" }}
+            >
+              <p style={{ fontSize: "1.1rem", color: "rgba(255,255,255,0.88)", fontWeight: 500, marginBottom: "8px" }}>
+                First name?
+              </p>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", marginBottom: "24px" }}>
+                Optional — for prayer and reflection.
+              </p>
               <input
                 data-testid="input-threshold-name"
                 type="text"
@@ -360,13 +406,35 @@ export default function ThresholdArrivalPage() {
                 placeholder="Your first name"
                 autoComplete="given-name"
                 aria-label="Your first name"
-                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-[16px] text-white placeholder:text-white/35 outline-none focus:border-violet-400/50"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  padding: "14px 16px",
+                  fontSize: "16px",
+                  color: "#ffffff",
+                  outline: "none",
+                }}
               />
               <button
                 type="button"
                 data-testid="btn-threshold-name-continue"
                 onClick={() => void handleNameContinue()}
-                className="mt-6 w-full min-h-[48px] rounded-xl bg-violet-600/90 hover:bg-violet-600 text-white font-semibold py-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/80"
+                className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/80"
+                style={{
+                  marginTop: "24px",
+                  width: "100%",
+                  minHeight: "48px",
+                  borderRadius: "12px",
+                  backgroundColor: "rgba(124,58,237,0.90)",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  padding: "14px",
+                  border: "none",
+                  fontSize: "16px",
+                }}
               >
                 Continue
               </button>
@@ -378,7 +446,17 @@ export default function ThresholdArrivalPage() {
                   markNamePrompted();
                   setStep(nativeFastPath ? "enter" : "breath");
                 }}
-                className="mt-4 min-h-[44px] px-3 text-[13px] text-white/45 hover:text-white/65 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                style={{
+                  marginTop: "16px",
+                  minHeight: "44px",
+                  padding: "0 12px",
+                  fontSize: "13px",
+                  color: "rgba(255,255,255,0.45)",
+                  borderRadius: "8px",
+                  background: "transparent",
+                  border: "none",
+                }}
               >
                 Skip
               </button>
@@ -386,19 +464,23 @@ export default function ThresholdArrivalPage() {
           )}
 
           {step === "sync-name" && (
-            <motion.div key="sync-name" {...fade} className="w-full max-w-sm text-center">
-              <p className="text-[1.05rem] text-white/82 font-medium mb-2">
+            <motion.div
+              key="sync-name"
+              {...fade}
+              style={{ width: "100%", maxWidth: "24rem", textAlign: "center" }}
+            >
+              <p style={{ fontSize: "1.05rem", color: "rgba(255,255,255,0.82)", fontWeight: 500, marginBottom: "8px" }}>
                 Setting this up for you...
               </p>
-              <p className="text-[13px] text-white/50 leading-relaxed">
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.50)", lineHeight: 1.625 }}>
                 We&apos;re checking your saved profile so we don&apos;t ask twice.
               </p>
             </motion.div>
           )}
 
           {step === "breath" && (
-            <motion.div key="breath" {...fade} className="w-full">
-              <ThresholdBreath mode={need} onDone={() => setStep("enter")} />
+            <motion.div key="breath" {...fade} style={{ width: "100%" }}>
+              <ThresholdBreath onDone={() => setStep("enter")} />
             </motion.div>
           )}
 
