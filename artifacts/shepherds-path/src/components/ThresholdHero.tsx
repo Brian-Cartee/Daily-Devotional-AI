@@ -25,6 +25,8 @@ import { getModeCompanionLine, getThresholdAtmosphere, getThresholdModePlan } fr
 import { fireHaptic } from "@/lib/haptics";
 import { isHomeDevotionalFocusPeriod, shouldShowHeroVerseSnippet } from "@/lib/firstSession";
 import { fetchStreak } from "@/lib/streakApi";
+import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 export type ThresholdData = {
   headline: string;
@@ -491,6 +493,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 </a>
               </Link>
             ))}
+          {!isNativeWebViewShell() && <ExternalPromoLinks variant="hero" />}
         </div>
       </div>
     </div>

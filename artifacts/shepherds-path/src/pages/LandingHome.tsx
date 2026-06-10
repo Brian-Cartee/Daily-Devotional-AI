@@ -83,6 +83,7 @@ import { HomeHeavyMomentLink } from "@/components/HomeHeavyMomentLink";
 import { HomePathsBlock } from "@/components/HomePathsBlock";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
+import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
 import { BrandIcon } from "@/components/BrandIcon";
 import { ThresholdModeRhythmCard } from "@/components/ThresholdModeRhythmCard";
@@ -1877,6 +1878,7 @@ function LandingHomeInner() {
               paddingBottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
             }}
           >
+            {!inNativeApp && <ExternalPromoLinks variant="footer" />}
             <p style={{ fontSize: "13px", color: "rgba(237,232,224,0.55)", lineHeight: 1.5, padding: "0 16px", width: "100%", margin: 0 }}>
               © {new Date().getFullYear()} Shepherd&apos;s Path. All rights reserved.
             </p>
