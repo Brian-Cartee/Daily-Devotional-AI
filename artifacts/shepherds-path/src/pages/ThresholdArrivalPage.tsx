@@ -288,7 +288,7 @@ export default function ThresholdArrivalPage() {
                       data-testid={`btn-threshold-need-${opt.id}`}
                       aria-label={`${opt.label}: ${opt.sub}`}
                       onClick={() => handleNeed(opt.id)}
-                      className="rounded-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                      className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
                       style={{
                         display: "flex",
                         flexDirection: "column",
@@ -299,6 +299,7 @@ export default function ThresholdArrivalPage() {
                         textAlign: "left",
                         backgroundColor: "rgba(255,255,255,0.05)",
                         border: "1px solid rgba(255,255,255,0.12)",
+                        borderRadius: "16px",
                       }}
                     >
                       <span style={{ display: "block", color: "rgba(255,255,255,0.92)", fontSize: "16px", fontWeight: 600, lineHeight: 1.3 }}>{opt.label}</span>
