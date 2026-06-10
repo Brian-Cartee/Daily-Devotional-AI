@@ -3,6 +3,13 @@
   <head>
     <script>
     (function () {
+      // Fire react_booted at the absolute earliest moment — first script tag.
+      // Hides the Expo native splash (pure black) before any other JS runs.
+      try {
+        var _b = window.ReactNativeWebView;
+        if (_b) _b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+      } catch (_e) {}
+
       if (!window.ReactNativeWebView) return;
       if (location.pathname.indexOf("native-shell") >= 0) return;
       if (location.search.indexOf("enter=1") >= 0) return;
@@ -631,13 +638,24 @@
 
       // Stage 1 — hide the Expo native splash ASAP (it shows as pure black).
       // react_booted triggers SplashScreen.hideAsync() in the native shell.
+      // Fire immediately (0 ms) — the App Store binary waits 3.5 s for fonts
+      // before the WebView even renders, so every ms of extra delay matters.
+      (function () {
+        try {
+          var b = window.ReactNativeWebView;
+          if (!b) return;
+          b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+        } catch (e) {}
+      })();
+      // Belt-and-suspenders: also send at 500 ms in case the bridge initialises
+      // slightly after first parse (some WKWebView builds inject it async).
       setTimeout(function () {
         try {
           var b = window.ReactNativeWebView;
           if (!b) return;
           b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
         } catch (e) {}
-      }, 1500);
+      }, 500);
 
       // Stage 2 — force dismiss the native loading overlay if React is visible.
       setTimeout(function () {
