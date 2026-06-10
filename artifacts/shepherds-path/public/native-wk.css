@@ -1,0 +1,168 @@
+/*
+ * WKWebView layout safety net — static path (no hash) so iOS shell always gets flex/grid/fonts
+ * even if the Vite-bundled Tailwind chunk is delayed or fails to apply.
+ */
+html[data-sp-shell="native"] {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "New York", Georgia, "Times New Roman", ui-serif, serif;
+  --foreground: 38 22% 93%;
+  --muted-foreground: 240 8% 72%;
+  --border: 252 10% 24%;
+  --card: 255 16% 11%;
+  --primary: 292 90% 54%;
+}
+
+html[data-sp-shell="native"] body,
+html[data-sp-shell="native"] #root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+html[data-sp-shell="native"] .font-serif,
+html[data-sp-shell="native"] .manifesto-line,
+html[data-sp-shell="native"] .path-reminder-quote {
+  font-family: "New York", Georgia, "Times New Roman", ui-serif, serif !important;
+}
+
+/* Display */
+html[data-sp-shell="native"] .flex { display: flex !important; }
+html[data-sp-shell="native"] .inline-flex { display: inline-flex !important; }
+html[data-sp-shell="native"] .grid { display: grid !important; }
+html[data-sp-shell="native"] .block { display: block !important; }
+html[data-sp-shell="native"] .hidden { display: none !important; }
+html[data-sp-shell="native"] .contents { display: contents !important; }
+
+/* Flex */
+html[data-sp-shell="native"] .flex-col { flex-direction: column !important; }
+html[data-sp-shell="native"] .flex-row { flex-direction: row !important; }
+html[data-sp-shell="native"] .flex-wrap { flex-wrap: wrap !important; }
+html[data-sp-shell="native"] .flex-1 { flex: 1 1 0% !important; }
+html[data-sp-shell="native"] .shrink-0 { flex-shrink: 0 !important; }
+html[data-sp-shell="native"] .grow { flex-grow: 1 !important; }
+
+/* Align / justify */
+html[data-sp-shell="native"] .items-start { align-items: flex-start !important; }
+html[data-sp-shell="native"] .items-center { align-items: center !important; }
+html[data-sp-shell="native"] .items-end { align-items: flex-end !important; }
+html[data-sp-shell="native"] .items-stretch { align-items: stretch !important; }
+html[data-sp-shell="native"] .justify-start { justify-content: flex-start !important; }
+html[data-sp-shell="native"] .justify-center { justify-content: center !important; }
+html[data-sp-shell="native"] .justify-between { justify-content: space-between !important; }
+html[data-sp-shell="native"] .justify-around { justify-content: space-around !important; }
+
+/* Grid */
+html[data-sp-shell="native"] .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+html[data-sp-shell="native"] .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+html[data-sp-shell="native"] .col-span-2 { grid-column: span 2 / span 2 !important; }
+
+/* Gap */
+html[data-sp-shell="native"] .gap-0\.5 { gap: 0.125rem !important; }
+html[data-sp-shell="native"] .gap-1 { gap: 0.25rem !important; }
+html[data-sp-shell="native"] .gap-1\.5 { gap: 0.375rem !important; }
+html[data-sp-shell="native"] .gap-2 { gap: 0.5rem !important; }
+html[data-sp-shell="native"] .gap-2\.5 { gap: 0.625rem !important; }
+html[data-sp-shell="native"] .gap-3 { gap: 0.75rem !important; }
+html[data-sp-shell="native"] .gap-4 { gap: 1rem !important; }
+html[data-sp-shell="native"] .gap-5 { gap: 1.25rem !important; }
+
+/* Space-y (vertical stack spacing) */
+html[data-sp-shell="native"] .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; }
+html[data-sp-shell="native"] .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem !important; }
+html[data-sp-shell="native"] .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem !important; }
+
+/* Sizing */
+html[data-sp-shell="native"] .w-full { width: 100% !important; }
+html[data-sp-shell="native"] .h-full { height: 100% !important; }
+html[data-sp-shell="native"] .min-w-0 { min-width: 0 !important; }
+html[data-sp-shell="native"] .max-w-xl { max-width: 36rem !important; }
+html[data-sp-shell="native"] .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+
+/* Touch targets */
+html[data-sp-shell="native"] .min-h-\[44px\] { min-height: 44px !important; }
+html[data-sp-shell="native"] .min-h-\[48px\] { min-height: 48px !important; }
+
+/* Position */
+html[data-sp-shell="native"] .relative { position: relative !important; }
+html[data-sp-shell="native"] .absolute { position: absolute !important; }
+html[data-sp-shell="native"] .fixed { position: fixed !important; }
+html[data-sp-shell="native"] .inset-0 { inset: 0 !important; }
+html[data-sp-shell="native"] .top-0 { top: 0 !important; }
+html[data-sp-shell="native"] .bottom-0 { bottom: 0 !important; }
+html[data-sp-shell="native"] .left-0 { left: 0 !important; }
+html[data-sp-shell="native"] .right-0 { right: 0 !important; }
+
+/* Overflow */
+html[data-sp-shell="native"] .overflow-hidden { overflow: hidden !important; }
+html[data-sp-shell="native"] .overflow-x-auto { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+
+/* Text */
+html[data-sp-shell="native"] .text-center { text-align: center !important; }
+html[data-sp-shell="native"] .text-left { text-align: left !important; }
+
+/* Bottom nav clearance on scrollable home content */
+html[data-sp-shell="native"] [data-testid="landing-home"] {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Footer site links — explicit grid so links never collapse into one line */
+html[data-sp-shell="native"] nav[aria-label="Site links"] {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px 16px !important;
+  text-align: center !important;
+  margin-bottom: 20px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+html[data-sp-shell="native"] nav[aria-label="Site links"] a {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 44px !important;
+  padding: 8px 4px !important;
+  color: rgba(237, 232, 224, 0.75) !important;
+  text-decoration: none !important;
+}
+
+html[data-sp-shell="native"] nav[aria-label="Site links"] a[data-testid="link-display-footer"] {
+  grid-column: span 2 / span 2 !important;
+}
+
+/* Rhythm card buttons */
+html[data-sp-shell="native"] [data-testid="card-threshold-mode-rhythm"] > div:last-of-type {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+html[data-sp-shell="native"] [data-testid="card-threshold-mode-rhythm"] a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 44px !important;
+  padding: 8px 14px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* Devotional week tracker */
+html[data-sp-shell="native"] [data-testid="card-devotional"] [class*="flex-col"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Daily art action row */
+html[data-sp-shell="native"] [data-testid="link-daily-art-calling"] {
+  display: inline-flex !important;
+}
+
+html[data-sp-shell="native"] [data-testid="button-daily-art"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}

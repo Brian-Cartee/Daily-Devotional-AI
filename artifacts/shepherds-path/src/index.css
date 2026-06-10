@@ -679,15 +679,10 @@ html[data-sp-shell="native"] #root a {
   -webkit-tap-highlight-color: transparent;
 }
 
-html[data-sp-shell="native"] #root a.sp-native-card-link,
-html[data-sp-shell="native"] #root a[data-testid] {
-  display: block;
-  width: 100%;
+html[data-sp-shell="native"] #root a.sp-native-card-link {
+  display: block !important;
+  width: 100% !important;
   box-sizing: border-box;
-}
-
-html[data-sp-shell="native"] #root a + a {
-  margin-top: 10px;
 }
 
 html[data-sp-shell="native"] .text-foreground {

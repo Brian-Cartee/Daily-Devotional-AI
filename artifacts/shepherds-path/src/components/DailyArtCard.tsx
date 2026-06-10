@@ -400,8 +400,14 @@ export function DailyArtCard() {
 
       {resolvedSrc && art && (
         <div
-          className="flex items-center justify-between px-4 py-3 gap-3"
-          style={{ borderTop: "1px solid hsl(var(--border) / 0.4)" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            gap: "12px",
+            borderTop: "1px solid rgba(255, 255, 255, 0.10)",
+          }}
         >
           <ShareVerseTrigger
             text={art.scripture}

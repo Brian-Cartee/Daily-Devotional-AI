@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
 import { isIOS, isAndroid, isNativeWebViewShell } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -268,37 +268,93 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
                 const visited = visitSet.has(date);
                 const isToday = i === todayIdx;
                 const isFuture = i > todayIdx;
+                const labelColor = isToday
+                  ? "#2dd4bf"
+                  : visited
+                    ? "rgba(20, 184, 166, 0.60)"
+                    : "rgba(180, 175, 195, 0.25)";
+                let circleStyle: CSSProperties = {
+                  width: "22px",
+                  height: "22px",
+                  borderRadius: "9999px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxSizing: "border-box",
+                };
+                if (visited && isToday) {
+                  circleStyle = { ...circleStyle, backgroundColor: "#14b8a6", boxShadow: "0 1px 2px rgba(45, 212, 191, 0.50)" };
+                } else if (visited) {
+                  circleStyle = {
+                    ...circleStyle,
+                    backgroundColor: "rgba(19, 78, 74, 0.30)",
+                    border: "1px solid rgba(45, 212, 191, 0.50)",
+                  };
+                } else if (isToday) {
+                  circleStyle = {
+                    ...circleStyle,
+                    border: "2px solid rgba(45, 212, 191, 0.60)",
+                    backgroundColor: "rgba(19, 78, 74, 0.20)",
+                  };
+                } else if (isFuture) {
+                  circleStyle = { ...circleStyle, border: "1px solid rgba(180, 175, 195, 0.10)" };
+                } else {
+                  circleStyle = {
+                    ...circleStyle,
+                    border: "1px solid rgba(180, 175, 195, 0.12)",
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                  };
+                }
                 return (
-                  <div key={i} className="flex flex-col items-center gap-1">
-                    <span className={`text-[9px] font-bold uppercase leading-none ${isToday ? "text-teal-600 dark:text-teal-400" : visited ? "text-teal-500/60" : "text-muted-foreground/25"}`}>
+                  <div
+                    key={i}
+                    style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        lineHeight: 1,
+                        color: labelColor,
+                      }}
+                    >
                       {label}
                     </span>
-                    <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all ${
-                      visited && isToday
-                        ? "bg-teal-500 shadow-sm shadow-teal-400/50"
-                        : visited
-                        ? "bg-teal-50 dark:bg-teal-900/30 border border-teal-300/70 dark:border-teal-700/50"
-                        : isToday
-                        ? "border-2 border-teal-400/60 bg-teal-50/50"
-                        : isFuture
-                        ? "border border-muted-foreground/10"
-                        : "border border-muted-foreground/12 bg-muted/10"
-                    }`}>
-                      {visited && isToday && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                      {visited && !isToday && <Check className="w-2.5 h-2.5 text-teal-400" strokeWidth={3} />}
-                      {isToday && !visited && <div className="w-1.5 h-1.5 rounded-full bg-teal-400/50" />}
+                    <div style={circleStyle}>
+                      {visited && isToday && <Check style={{ width: "12px", height: "12px", color: "#fff" }} strokeWidth={3} />}
+                      {visited && !isToday && <Check style={{ width: "10px", height: "10px", color: "#2dd4bf" }} strokeWidth={3} />}
+                      {isToday && !visited && (
+                        <div
+                          style={{
+                            width: "6px",
+                            height: "6px",
+                            borderRadius: "9999px",
+                            backgroundColor: "rgba(45, 212, 191, 0.50)",
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
             {streak > 0 && (
-              <div className="flex items-center gap-1 pb-0.5">
-                {streak >= 7
-                  ? <Flame className="w-3.5 h-3.5 text-amber-500" />
-                  : <span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />
-                }
-                <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400">{streak}d</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", paddingBottom: "2px" }}>
+                {streak >= 7 ? (
+                  <Flame style={{ width: "14px", height: "14px", color: "#f59e0b" }} />
+                ) : (
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "9999px",
+                      backgroundColor: "#2dd4bf",
+                      display: "inline-block",
+                    }}
+                  />
+                )}
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "#2dd4bf" }}>{streak}d</span>
               </div>
             )}
           </div>
@@ -730,6 +786,7 @@ function LandingHomeInner() {
 
   return (
     <div
+      data-testid="landing-home"
       className="relative"
       style={{ minHeight: "100vh", background: NATIVE_PAGE }}
     >
@@ -797,7 +854,7 @@ function LandingHomeInner() {
           marginRight: "auto",
           paddingLeft: "16px",
           paddingRight: "16px",
-          paddingBottom: "128px",
+          paddingBottom: "160px",
           position: "relative",
           zIndex: 10,
           marginTop: thresholdWelcome ? "4px" : "-16px",
@@ -1332,7 +1389,17 @@ function LandingHomeInner() {
             {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
               <span
                 key={tag}
-                className="text-xs sm:text-[13px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full border border-border/60 bg-card/60 text-foreground/80"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  padding: "6px 12px",
+                  borderRadius: "9999px",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  backgroundColor: "rgba(26, 21, 32, 0.60)",
+                  color: "rgba(237, 232, 224, 0.80)",
+                }}
               >
                 {tag}
               </span>
@@ -1352,25 +1419,44 @@ function LandingHomeInner() {
 
           <nav
             aria-label="Site links"
-            className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-[15px] text-foreground/75 text-center mb-5 px-2"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              columnGap: "16px",
+              rowGap: "4px",
+              fontSize: "14px",
+              textAlign: "center",
+              marginBottom: "20px",
+              paddingLeft: "8px",
+              paddingRight: "8px",
+            }}
           >
             {(
               [
-                ["/pricing", "Plans & Pricing", "link-pricing-footer", ""],
-                ["/about", "About", "link-about-footer", ""],
-                ["/salvation", "Beginning with Jesus", "link-salvation-footer", "font-semibold text-rose-500/90 dark:text-rose-400/90"],
-                ["/greatest-gift", "The Greatest Gift", "link-greatest-gift-footer", "font-semibold text-amber-600/90 dark:text-amber-400/90"],
-                ["/prayer-wall", "Prayer Wall", "link-prayer-wall-footer", ""],
-                ["/how-to-use", "How to Use", "link-how-to-use-footer", ""],
-                ["/privacy", "Privacy Policy", "link-privacy-footer", ""],
-                ["/terms", "Terms", "link-terms-footer", ""],
-              ] as const
-            ).map(([href, label, testId, accent]) => (
+                ["/pricing", "Plans & Pricing", "link-pricing-footer", undefined] as const,
+                ["/about", "About", "link-about-footer", undefined] as const,
+                ["/salvation", "Beginning with Jesus", "link-salvation-footer", "rgba(251, 113, 133, 0.90)"] as const,
+                ["/greatest-gift", "The Greatest Gift", "link-greatest-gift-footer", "rgba(251, 191, 36, 0.90)"] as const,
+                ["/prayer-wall", "Prayer Wall", "link-prayer-wall-footer", undefined] as const,
+                ["/how-to-use", "How to Use", "link-how-to-use-footer", undefined] as const,
+                ["/privacy", "Privacy Policy", "link-privacy-footer", undefined] as const,
+                ["/terms", "Terms", "link-terms-footer", undefined] as const,
+              ]
+            ).map(([href, label, testId, accentColor]) => (
               <Link
                 key={href}
                 href={href}
                 data-testid={testId}
-                className={`min-h-[44px] flex items-center justify-center py-2 hover:text-foreground transition-colors touch-manipulation ${accent}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "44px",
+                  padding: "8px 4px",
+                  color: accentColor ?? "rgba(237, 232, 224, 0.75)",
+                  textDecoration: "none",
+                  fontWeight: accentColor ? 600 : 400,
+                }}
               >
                 {label}
               </Link>
@@ -1378,24 +1464,61 @@ function LandingHomeInner() {
             <Link
               href="/display"
               data-testid="link-display-footer"
-              className="col-span-2 min-h-[44px] flex items-center justify-center py-2 hover:text-foreground transition-colors touch-manipulation"
+              style={{
+                gridColumn: "span 2 / span 2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "44px",
+                padding: "8px 4px",
+                color: "rgba(237, 232, 224, 0.75)",
+                textDecoration: "none",
+              }}
             >
               Scripture Display Mode
             </Link>
           </nav>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-5 text-sm sm:text-[15px] text-foreground/65 mb-2 px-2">
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              justifyContent: "center",
+              gap: "8px",
+              fontSize: "14px",
+              color: "rgba(237, 232, 224, 0.65)",
+              marginBottom: "8px",
+              paddingLeft: "8px",
+              paddingRight: "8px",
+            }}
+          >
             <Link
               href="/support"
               data-testid="link-support-footer"
-              className="min-h-[44px] flex items-center justify-center hover:text-foreground transition-colors touch-manipulation"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "44px",
+                color: "rgba(237, 232, 224, 0.65)",
+                textDecoration: "none",
+              }}
             >
               Contact Support
             </Link>
             <Link
               href="/feedback"
               data-testid="link-feedback-footer"
-              className="min-h-[44px] flex items-center justify-center font-medium hover:text-foreground transition-colors touch-manipulation"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "44px",
+                fontWeight: 500,
+                color: "rgba(237, 232, 224, 0.65)",
+                textDecoration: "none",
+              }}
             >
               Share Feedback
             </Link>
