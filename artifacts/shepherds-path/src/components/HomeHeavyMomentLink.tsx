@@ -9,22 +9,7 @@ type Props = {
 /** Single calm entry when life feels heavy — avoids hunting the explore grid. */
 export function HomeHeavyMomentLink({ footerHint }: Props) {
   return (
-    <div
-      data-testid="section-something-heavy"
-      style={{
-        maxWidth: "36rem",
-        marginLeft: "auto",
-        marginRight: "auto",
-        paddingLeft: "16px",
-        paddingRight: "16px",
-        position: "relative",
-        zIndex: 10,
-        marginTop: "-4px",
-        marginBottom: "8px",
-        width: "100%",
-        boxSizing: "border-box",
-      }}
-    >
+    <div data-testid="section-something-heavy" style={{ width: "100%" }}>
       <div
         style={{
           borderRadius: "16px",
@@ -61,7 +46,7 @@ export function HomeHeavyMomentLink({ footerHint }: Props) {
             <Heart style={{ width: "16px", height: "16px", color: "rgba(196,181,253,0.90)" }} />
           </div>
           <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-            <p style={{ fontSize: "14px", fontWeight: 600, lineHeight: 1.25 }}>
+            <p style={{ fontSize: "14px", fontWeight: 600, lineHeight: 1.25, color: "#f0ebe3" }}>
               Something feels heavy
             </p>
             <p

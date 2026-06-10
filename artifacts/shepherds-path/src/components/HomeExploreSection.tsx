@@ -6,6 +6,7 @@ import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 import { buildHomeExplorePreviewHrefs } from "@/lib/homeExplorePreview";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
+import { HOME_DARK } from "@/lib/homeTheme";
 
 const EXPLORE_ITEMS = [
   { href: "/salvation", label: "Beginning with Jesus", desc: "Meet Jesus without pressure", bg: "border-amber-500/20 bg-amber-500/6", testid: "explore-salvation" },
@@ -69,7 +70,7 @@ function PathCard({
         <p
           style={{
             fontWeight: 700,
-            color: "hsl(var(--foreground))",
+            color: HOME_DARK.text,
             lineHeight: 1.25,
             fontSize: "12px",
             marginTop: "6px",
@@ -127,8 +128,8 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
       style={{
         scrollMarginTop: "7rem",
         borderRadius: "16px",
-        border: "1px solid hsl(var(--primary) / 0.20)",
-        background: "linear-gradient(to bottom, hsl(var(--primary) / 0.07), hsl(var(--card) / 0.40))",
+        border: "1px solid rgba(217,70,239,0.20)",
+        background: "linear-gradient(to bottom, rgba(217,70,239,0.07), rgba(26,24,32,0.92))",
         padding: "12px",
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
       }}
@@ -151,7 +152,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
               fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.1em",
-              color: "hsl(var(--foreground) / 0.75)",
+              color: HOME_DARK.textSoft,
             }}
           >
             All paths
@@ -160,7 +161,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
             style={{
               fontSize: "10px",
               fontWeight: 600,
-              color: "hsl(var(--muted-foreground) / 0.80)",
+              color: HOME_DARK.textMuted,
               marginTop: "2px",
               fontVariantNumeric: "tabular-nums",
             }}
@@ -216,12 +217,12 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
                 gap: "8px",
                 minHeight: "48px",
                 borderRadius: "12px",
-                border: "1px solid hsl(var(--primary) / 0.30)",
-                backgroundColor: "hsl(var(--primary) / 0.12)",
+                border: "1px solid rgba(217,70,239,0.30)",
+                backgroundColor: "rgba(217,70,239,0.12)",
                 padding: "12px 16px",
                 fontSize: "14px",
                 fontWeight: 700,
-                color: "hsl(var(--primary))",
+                color: HOME_DARK.primary,
                 cursor: "pointer",
                 boxSizing: "border-box",
               }}

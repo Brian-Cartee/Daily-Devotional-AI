@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { getBookmark } from "@/lib/bookmarks";
+import { HOME_DARK } from "@/lib/homeTheme";
 
 const rowStyle = (border: string, background: string) => ({
   display: "flex" as const,
@@ -38,13 +39,13 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         >
           <ShortcutPathIcon variant="guidance" size="sm" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: HOME_DARK.text, lineHeight: 1.25 }}>
               Talk it through
             </p>
             <p
               style={{
                 fontSize: "12px",
-                color: "hsl(var(--muted-foreground) / 0.75)",
+                color: HOME_DARK.textMuted,
                 lineHeight: 1.375,
                 marginTop: "2px",
               }}
@@ -52,7 +53,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
               When you need more than reading
             </p>
           </div>
-          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }} />
+          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: HOME_DARK.textSubtle }} />
         </div>
       </Link>
 
@@ -67,13 +68,13 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
           >
             <ShortcutPathIcon variant="closet" size="sm" />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: HOME_DARK.text, lineHeight: 1.25 }}>
                 Prayer closet
               </p>
               <p
                 style={{
                   fontSize: "12px",
-                  color: "hsl(var(--muted-foreground) / 0.75)",
+                  color: HOME_DARK.textMuted,
                   lineHeight: 1.375,
                   marginTop: "2px",
                 }}
@@ -81,7 +82,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
                 Quiet room · worship · stillness
               </p>
             </div>
-            <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }} />
+            <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: HOME_DARK.textSubtle }} />
           </div>
         </Link>
       )}
@@ -96,13 +97,13 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         >
           <ShortcutPathIcon variant="media" size="sm" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: HOME_DARK.text, lineHeight: 1.25 }}>
               {readLabel ? `Continue ${readLabel}` : "Read or listen"}
             </p>
             <p
               style={{
                 fontSize: "12px",
-                color: "hsl(var(--muted-foreground) / 0.75)",
+                color: HOME_DARK.textMuted,
                 lineHeight: 1.375,
                 marginTop: "2px",
               }}
@@ -110,7 +111,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
               {readLabel ? "Pick up where you left off" : "Play any chapter — KJV, WEB, ASV"}
             </p>
           </div>
-          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }} />
+          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: HOME_DARK.textSubtle }} />
         </div>
       </Link>
     </div>

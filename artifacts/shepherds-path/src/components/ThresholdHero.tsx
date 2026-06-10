@@ -451,7 +451,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                 {!chapelWeekFocus && (
                   <HomePresenceDoors selected={activeDoor} onSelect={selectDoor} panelId="home-presence-panel" />
                 )}
-                <div className="mb-4" role="tabpanel" id="home-presence-panel" aria-label="Your chosen step">
+                <div style={{ marginBottom: "16px" }} role="tabpanel" id="home-presence-panel" aria-label="Your chosen step">
                   <HomePresenceHero
                     door={effectiveDoor}
                     phase={threshold?.phase}

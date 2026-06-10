@@ -1,0 +1,60 @@
+/* Homepage layout — plain CSS so WKWebView never depends on missing Tailwind utilities */
+
+html[data-sp-shell="native"] [data-testid="sp-home-page"] {
+  background-color: #0a0610 !important;
+  color: #f0ebe3 !important;
+  min-height: 100vh !important;
+}
+
+html[data-sp-shell="native"] [data-testid="sp-home-stack"],
+html[data-sp-shell="native"] [data-testid="sp-home-cards"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 36rem !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html[data-sp-shell="native"] [data-testid="sp-home-cards"] {
+  padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+html[data-sp-shell="native"] [data-testid="home-threshold-hero"] {
+  background-color: #09031e !important;
+}
+
+html[data-sp-shell="native"] [data-testid="card-devotional"] {
+  display: block !important;
+  position: relative !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(45, 212, 191, 0.14) !important;
+  background-color: #1a1820 !important;
+  padding: 20px !important;
+  overflow: hidden !important;
+}
+
+html[data-sp-shell="native"] [data-testid="home-presence-doors"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+html[data-sp-shell="native"] [data-testid="home-path-shortcuts"],
+html[data-sp-shell="native"] [data-testid="home-secondary-paths"],
+html[data-sp-shell="native"] [data-testid="home-paths-block"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+html[data-sp-shell="native"] [data-testid="home-explore-section"] [data-testid="btn-expand-explore"] {
+  display: flex !important;
+  width: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+}

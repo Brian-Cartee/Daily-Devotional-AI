@@ -23,20 +23,36 @@ export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
   const [visited] = useState(hasVisitedCloset);
   const [imgSrc, setImgSrc] = useState(CLOSET_DOORWAY_SRC);
   const statusLine = closetHomeStatus(settings);
+  const minHeight = compactTeaser ? "120px" : "148px";
 
   return (
     <Link href="/prayer-closet">
       <div
         data-testid="card-home-prayer-closet"
         onClick={() => markClosetVisit()}
-        className={`group relative rounded-2xl overflow-hidden border border-violet-500/30 active:scale-[0.99] transition-transform shadow-lg shadow-violet-950/30 ${
-          compactTeaser ? "min-h-[120px] md:min-h-[160px]" : "min-h-[148px] md:min-h-[212px]"
-        }`}
-        style={{ background: "linear-gradient(145deg, #1a0f2e 0%, #0d0618 100%)" }}
+        style={{
+          position: "relative",
+          borderRadius: "16px",
+          overflow: "hidden",
+          border: "1px solid rgba(139,92,246,0.30)",
+          minHeight,
+          background: "linear-gradient(145deg, #1a0f2e 0%, #0d0618 100%)",
+          boxShadow: "0 10px 15px -3px rgba(46,16,101,0.30)",
+          display: "block",
+        }}
       >
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400/90 via-violet-500 to-primary z-20" />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: "3px",
+            background: "linear-gradient(to right, rgba(251,191,36,0.90), #8b5cf6, #d946ef)",
+            zIndex: 20,
+          }}
+        />
 
-        {/* Doorway — full-bleed on mobile; right panel on desktop */}
         <img
           src={imgSrc}
           alt=""
@@ -45,58 +61,103 @@ export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
           onError={() => {
             if (imgSrc !== CLOSET_FALLBACK_SRC) setImgSrc(CLOSET_FALLBACK_SRC);
           }}
-          className="absolute inset-0 z-0 w-full h-[118%] object-cover object-[center_22%] scale-[1.04] group-hover:scale-[1.06] transition-transform duration-500 md:inset-y-0 md:left-[38%] md:right-0 md:w-auto md:h-full md:object-[center_38%] md:scale-100 group-hover:md:scale-[1.03]"
-        />
-
-        {/* Mobile overlays — lighter so doorway stays visible */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/45 to-black/15 z-[1] md:hidden" />
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-950/55 via-transparent to-transparent z-[1] md:hidden" />
-
-        {/* Desktop overlays — readable copy left, doorway visible right */}
-        <div className="absolute inset-0 z-[1] hidden md:block bg-gradient-to-r from-[#0a0514]/92 via-[#0d0618]/75 to-transparent" />
-        <div className="absolute inset-y-0 right-0 w-[52%] z-[1] hidden md:block bg-gradient-to-l from-black/45 via-black/15 to-transparent" />
-
-        <div
-          className="absolute inset-x-0 top-0 h-16 z-[2] pointer-events-none opacity-70 md:h-24 md:w-[55%]"
           style={{
-            background:
-              "radial-gradient(ellipse 80% 100% at 50% 0%, rgba(251,191,36,0.22) 0%, transparent 70%)",
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "118%",
+            objectFit: "cover",
+            objectPosition: "center 22%",
+            transform: "scale(1.04)",
+            zIndex: 0,
           }}
         />
 
         <div
-          className={`relative z-10 px-4 flex flex-col justify-end md:max-w-[56%] md:px-8 md:justify-center ${
-            compactTeaser
-              ? "py-3 min-h-[120px] md:min-h-[160px] md:py-5"
-              : "py-4 min-h-[148px] md:min-h-[212px] md:py-7"
-          }`}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0.15) 100%)",
+            zIndex: 1,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to right, rgba(46,16,101,0.55) 0%, transparent 55%)",
+            zIndex: 1,
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            zIndex: 10,
+            padding: compactTeaser ? "12px 16px" : "16px",
+            minHeight,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            boxSizing: "border-box",
+          }}
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200/90 mb-1 md:text-[11px] md:mb-2">
+          <p
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+              color: "rgba(253,230,138,0.90)",
+              marginBottom: "4px",
+            }}
+          >
             {visited ? "Your space" : compactTeaser ? "When you're ready" : "New · your space"}
           </p>
           <p
-            className={`font-bold text-white leading-tight drop-shadow-sm ${
-              compactTeaser ? "text-[16px] md:text-[18px]" : "text-[18px] md:text-[22px] md:leading-snug"
-            }`}
+            style={{
+              fontWeight: 700,
+              color: "#ffffff",
+              lineHeight: 1.25,
+              fontSize: compactTeaser ? "16px" : "18px",
+              textShadow: "0 1px 4px rgba(0,0,0,0.45)",
+            }}
           >
             {title}
           </p>
           <p
-            className={`text-white/70 leading-snug max-w-[90%] md:max-w-[95%] ${
-              compactTeaser
-                ? "text-[11px] mt-0.5 line-clamp-2 md:text-[13px]"
-                : "text-[12px] mt-1 md:text-[14px] md:leading-relaxed md:mt-2"
-            }`}
+            style={{
+              color: "rgba(255,255,255,0.70)",
+              lineHeight: 1.375,
+              maxWidth: "90%",
+              fontSize: compactTeaser ? "11px" : "12px",
+              marginTop: compactTeaser ? "2px" : "4px",
+            }}
           >
             {compactTeaser
               ? "Your prayer closet — worship, vision board, honest prayer"
               : (statusLine ?? "Worship, vision board, and honest prayer inside")}
           </p>
-          <div className={`flex items-center justify-between md:max-w-[280px] ${compactTeaser ? "mt-2 md:mt-3" : "mt-3 md:mt-5"}`}>
-            <span className="text-[11px] font-semibold text-violet-200/90 uppercase tracking-wider md:text-[12px]">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: compactTeaser ? "8px" : "12px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "rgba(221,214,254,0.90)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
               Enter closet
             </span>
-            <ArrowRight className="w-5 h-5 text-amber-200/80 group-hover:translate-x-0.5 transition-transform md:w-6 md:h-6" />
+            <ArrowRight style={{ width: "20px", height: "20px", color: "rgba(253,230,138,0.80)" }} />
           </div>
         </div>
       </div>

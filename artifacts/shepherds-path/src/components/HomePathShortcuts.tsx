@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { ShortcutPathIcon, type ShortcutIconVariant } from "@/components/ShortcutPathIcon";
+import { HOME_DARK } from "@/lib/homeTheme";
 
 const SHORTCUTS: {
   href: string;
@@ -61,13 +62,13 @@ export function HomePathShortcuts() {
           >
             <ShortcutPathIcon variant={iconVariant} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.25 }}>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: HOME_DARK.text, lineHeight: 1.25 }}>
                 {label}
               </p>
               <p
                 style={{
                   fontSize: "12px",
-                  color: "hsl(var(--muted-foreground) / 0.75)",
+                  color: HOME_DARK.textMuted,
                   lineHeight: 1.375,
                   marginTop: "2px",
                 }}
@@ -76,7 +77,7 @@ export function HomePathShortcuts() {
               </p>
             </div>
             <ArrowRight
-              style={{ width: "16px", height: "16px", flexShrink: 0, color: "hsl(var(--muted-foreground) / 0.40)" }}
+              style={{ width: "16px", height: "16px", flexShrink: 0, color: HOME_DARK.textSubtle }}
             />
           </div>
         </Link>
