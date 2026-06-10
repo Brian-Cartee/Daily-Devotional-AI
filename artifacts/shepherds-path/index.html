@@ -24,6 +24,58 @@
   <head>
     <script>
     (function () {
+      // ── MINIMUM NATIVE VERSION GATE ──────────────────────────────────────
+      // Native binary sends ?nv=X.X.X in the URL (added in v2.1.6+).
+      // If the version is below MIN_NATIVE_VERSION, replace the page with a
+      // friendly "Please update" screen instead of silently breaking.
+      //
+      // To block an old broken version:
+      //   1. Bump MIN_NATIVE_VERSION below to the first GOOD version
+      //   2. Deploy — old binary users immediately see the update prompt
+      //
+      // Leave MIN_NATIVE_VERSION as "" to allow all versions (safe default).
+      var MIN_NATIVE_VERSION = "";
+
+      function parseVer(v) {
+        return (v || "0.0.0").split(".").map(function(n) { return parseInt(n, 10) || 0; });
+      }
+      function versionLessThan(a, b) {
+        var av = parseVer(a), bv = parseVer(b);
+        for (var i = 0; i < 3; i++) {
+          if (av[i] < bv[i]) return true;
+          if (av[i] > bv[i]) return false;
+        }
+        return false;
+      }
+
+      try {
+        if (MIN_NATIVE_VERSION && window.ReactNativeWebView) {
+          var params = new URLSearchParams(location.search);
+          var nv = params.get("nv") || "";
+          if (nv && versionLessThan(nv, MIN_NATIVE_VERSION)) {
+            document.documentElement.innerHTML = [
+              '<html><head><meta name="viewport" content="width=device-width,initial-scale=1">',
+              '<style>',
+              'body{margin:0;background:#0d0612;color:#e8d9f0;font-family:-apple-system,sans-serif;',
+              'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+              'min-height:100vh;text-align:center;padding:32px;box-sizing:border-box;}',
+              'img{width:72px;height:72px;border-radius:16px;margin-bottom:24px;}',
+              'h1{font-size:22px;font-weight:700;margin:0 0 12px;}',
+              'p{font-size:16px;color:#c0a8cc;margin:0 0 32px;line-height:1.5;}',
+              'a{display:block;background:#7A018D;color:#fff;text-decoration:none;',
+              'padding:16px 32px;border-radius:14px;font-size:17px;font-weight:600;}',
+              '</style></head><body>',
+              '<img src="/app-icon.png" alt="Shepherd\'s Path">',
+              '<h1>Update Required</h1>',
+              '<p>A new version of Shepherd\'s Path is available.<br>Please update to continue.</p>',
+              '<a href="https://apps.apple.com/app/id6760953522">Update in App Store</a>',
+              '</body></html>'
+            ].join("");
+            return;
+          }
+        }
+      } catch (_e) {}
+
       // Fire react_booted at the absolute earliest moment — first script tag.
       // Hides the Expo native splash (pure black) before any other JS runs.
       try {
