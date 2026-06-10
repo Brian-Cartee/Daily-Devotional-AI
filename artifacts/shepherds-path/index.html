@@ -1,4 +1,25 @@
 <!DOCTYPE html>
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  ⚠️  BOOTSTRAP SAFETY RULES — READ BEFORE EDITING              ║
+     ║                                                                  ║
+     ║  Any JavaScript in this file that runs BEFORE React mounts      ║
+     ║  executes on the WKWebView main thread. Blocking it = black      ║
+     ║  screen for ALL iOS users instantly.                             ║
+     ║                                                                  ║
+     ║  NEVER add inside the bootstrap scripts:                         ║
+     ║    ✗  xhr.open("GET", url, false)   — synchronous XHR           ║
+     ║    ✗  while / for loops that wait on I/O                        ║
+     ║    ✗  localStorage reads in a blocking loop                     ║
+     ║    ✗  Any call that takes >1ms on a slow device                 ║
+     ║                                                                  ║
+     ║  ALWAYS use async alternatives:                                  ║
+     ║    ✓  fetch(url).then(...)          — async fetch               ║
+     ║    ✓  setTimeout(fn, 0)             — defer to next tick        ║
+     ║    ✓  isNativeAppShell() guard      — skip net calls in native  ║
+     ║                                                                  ║
+     ║  This rule exists because a single synchronous XHR in June 2026 ║
+     ║  caused a black screen for every iOS user. Don't repeat it.     ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
 <html lang="en">
   <head>
     <script>
