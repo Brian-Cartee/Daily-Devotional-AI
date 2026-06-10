@@ -624,6 +624,22 @@
         document.addEventListener("DOMContentLoaded", tryStartNativeBridge);
         window.addEventListener("load", tryStartNativeBridge);
       }
+
+      // ── GLOBAL EMERGENCY FALLBACK ──────────────────────────────────────────
+      // Fires regardless of whether startNativeBridge was ever called.
+      // After 6 s, if we are inside a WebView, broadcast all "ready" signals
+      // so the native shell dismisses its Expo splash AND its loading overlay.
+      // This covers: bridge detection race, React hang, and unknown errors.
+      setTimeout(function () {
+        try {
+          var b = window.ReactNativeWebView;
+          if (!b) return;
+          b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+          b.postMessage(JSON.stringify({ type: "web_ui_visible", ts: Date.now() }));
+          b.postMessage(JSON.stringify({ type: "app_ready", ts: Date.now() }));
+          document.getElementById("sp-boot-splash") && document.getElementById("sp-boot-splash").remove();
+        } catch (e) {}
+      }, 6000);
     })();
     </script>
     <!-- SP_NATIVE_BRIDGE_END -->
