@@ -626,20 +626,30 @@
       }
 
       // ── GLOBAL EMERGENCY FALLBACK ──────────────────────────────────────────
-      // Fires regardless of whether startNativeBridge was ever called.
-      // After 6 s, if we are inside a WebView, broadcast all "ready" signals
-      // so the native shell dismisses its Expo splash AND its loading overlay.
-      // This covers: bridge detection race, React hang, and unknown errors.
+      // Two-stage: hide Expo splash fast (1.5 s), then force overlay off (8 s).
+      // Fires regardless of startNativeBridge so even a broken bridge unblocks.
+
+      // Stage 1 — hide the Expo native splash ASAP (it shows as pure black).
+      // react_booted triggers SplashScreen.hideAsync() in the native shell.
       setTimeout(function () {
         try {
           var b = window.ReactNativeWebView;
           if (!b) return;
           b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+        } catch (e) {}
+      }, 1500);
+
+      // Stage 2 — force dismiss the native loading overlay if React is visible.
+      setTimeout(function () {
+        try {
+          var b = window.ReactNativeWebView;
+          if (!b) return;
           b.postMessage(JSON.stringify({ type: "web_ui_visible", ts: Date.now() }));
           b.postMessage(JSON.stringify({ type: "app_ready", ts: Date.now() }));
-          document.getElementById("sp-boot-splash") && document.getElementById("sp-boot-splash").remove();
+          var splash = document.getElementById("sp-boot-splash");
+          if (splash) splash.remove();
         } catch (e) {}
-      }, 6000);
+      }, 8000);
     })();
     </script>
     <!-- SP_NATIVE_BRIDGE_END -->
