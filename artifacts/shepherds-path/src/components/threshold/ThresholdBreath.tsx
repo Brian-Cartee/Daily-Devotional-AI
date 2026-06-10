@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { isNativeWebViewShell } from "@/lib/platform";
 
 const BREATH_MS = 10_000;
 
@@ -11,6 +12,7 @@ export interface ThresholdBreathProps {
 export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
   const [progress, setProgress] = useState(0);
   const [canContinue, setCanContinue] = useState(false);
+  const skipMotion = isNativeWebViewShell();
 
   useEffect(() => {
     const start = Date.now();
@@ -41,9 +43,9 @@ export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
       }}
     >
       <motion.p
-        initial={{ opacity: 0, y: 8 }}
+        initial={skipMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: skipMotion ? 0.12 : 0.6 }}
         style={{
           fontSize: "11px",
           fontWeight: 700,
@@ -56,9 +58,9 @@ export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
         Stillness
       </motion.p>
       <motion.p
-        initial={{ opacity: 0, y: 10 }}
+        initial={skipMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.65 }}
+        transition={{ delay: skipMotion ? 0 : 0.15, duration: skipMotion ? 0.12 : 0.65 }}
         style={{
           maxWidth: "24rem",
           fontSize: "clamp(1.15rem, 4vw, 1.25rem)",
@@ -131,7 +133,7 @@ export function ThresholdBreath({ onDone }: ThresholdBreathProps) {
 
       {canContinue && (
         <motion.button
-          initial={{ opacity: 0 }}
+          initial={skipMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
           type="button"
           onClick={onDone}

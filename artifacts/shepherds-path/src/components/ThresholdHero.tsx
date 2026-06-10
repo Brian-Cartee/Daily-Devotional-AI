@@ -72,7 +72,8 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
     verse && typeof verse === "object" && "reference" in verse
       ? String((verse as { reference?: unknown }).reference ?? "")
       : "";
-  const showPhotoTaglines = !isIntroFlowComplete() && daysWithApp < 3;
+  /** Brand tagline on hero photo — week one and returning users through day 7 */
+  const showPhotoTaglines = daysWithApp < 8 || (!isIntroFlowComplete() && daysWithApp < 14);
   const chapelWeekFocus = daysWithApp <= 7;
 
   const { data: streakData } = useQuery({

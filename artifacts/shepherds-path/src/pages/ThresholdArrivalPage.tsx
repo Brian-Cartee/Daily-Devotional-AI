@@ -175,12 +175,13 @@ export default function ThresholdArrivalPage() {
     setStep(nativeFastPath ? "enter" : "breath");
   };
 
+  const skipMotion = reduceMotion || isNativeWebViewShell();
   const fade = {
-    initial: reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
+    initial: skipMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
-    exit: reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 },
+    exit: skipMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 },
     transition: {
-      duration: reduceMotion ? 0.12 : interaction.settleFadeSeconds,
+      duration: skipMotion ? 0.12 : interaction.settleFadeSeconds,
       ease: [0.22, 1, 0.36, 1],
     },
   };

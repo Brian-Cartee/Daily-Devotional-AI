@@ -191,28 +191,90 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
           src={cardBgSrc}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-[0.38] pointer-events-none select-none"
-          style={{ filter: "saturate(0.85) brightness(0.92)" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.38,
+            pointerEvents: "none",
+            userSelect: "none",
+            filter: "saturate(0.85) brightness(0.92)",
+          }}
           onError={(e) => {
             const el = e.currentTarget;
             const fallback = getDevotionalHeroImage(verseDate);
             if (el.src !== fallback) el.src = fallback;
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/8 to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-transparent to-transparent pointer-events-none" />
-        {/* Left accent strip */}
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 opacity-70 rounded-l-2xl" />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "linear-gradient(to bottom right, rgba(20,184,166,0.20), rgba(16,185,129,0.08), transparent)",
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "linear-gradient(to top, rgba(26,21,32,0.70), transparent 55%)",
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: "3px",
+            borderRadius: "16px 0 0 16px",
+            background: "linear-gradient(to bottom, #2dd4bf, #10b981)",
+            opacity: 0.7,
+          }}
+        />
         <div style={{ position: "relative", zIndex: 10, display: "flex", alignItems: "flex-start", gap: "16px" }}>
           <ShortcutPathIcon variant="devotional" />
           <div style={{ flex: 1, minWidth: 0, paddingTop: "2px", paddingBottom: "2px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-500 border border-teal-400/40 shadow-sm">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  padding: "2px 8px",
+                  borderRadius: "9999px",
+                  backgroundColor: "rgba(20,184,166,0.20)",
+                  color: "#14b8a6",
+                  border: "1px solid rgba(45,212,191,0.40)",
+                }}
+              >
                 Daily
               </span>
               {visitedToday && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
-                  <Check className="w-3 h-3" strokeWidth={3} /> You returned today
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    padding: "2px 8px",
+                    borderRadius: "9999px",
+                    backgroundColor: "rgba(16,185,129,0.10)",
+                    color: "#10b981",
+                  }}
+                >
+                  <Check style={{ width: 12, height: 12 }} strokeWidth={3} /> You returned today
                 </span>
               )}
             </div>
@@ -1197,8 +1259,27 @@ function LandingHomeInner() {
                 </p>
                 <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, rgba(196,78,224,0.35))" }} />
               </div>
-              <div className="rounded-2xl overflow-hidden shadow-sm border border-border relative">
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-violet-500 to-amber-400 z-10" />
+              <div
+                style={{
+                  position: "relative",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.20)",
+                }}
+              >
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "3px",
+                    zIndex: 10,
+                    background: "linear-gradient(to right, #c44ee0, #8b5cf6, #fbbf24)",
+                  }}
+                />
                 <DailyArtCard />
               </div>
             </>
