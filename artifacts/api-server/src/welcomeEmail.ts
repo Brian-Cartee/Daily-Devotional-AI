@@ -1,4 +1,5 @@
 import { EMAIL_THEME, emailPreheader } from "./emailTheme";
+import { buildEmailBrandHeaderRow } from "./emailLogo";
 
 export interface WelcomeEmailData {
   name?: string | null;
@@ -50,16 +51,7 @@ ${emailPreheader(preheader)}
     <td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;">
 
-        <tr>
-          <td align="center" style="padding:0 0 20px;">
-            <p style="margin:0 0 6px;font-family:${T.serif};font-size:22px;font-weight:400;color:${T.text};letter-spacing:0.02em;">
-              Shepherd&rsquo;s Path
-            </p>
-            <p style="margin:0;font-family:${T.sans};font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:${T.textMuted};">
-              Daily Scripture
-            </p>
-          </td>
-        </tr>
+        ${buildEmailBrandHeaderRow(data.appUrl, "Daily Scripture")}
 
         <tr>
           <td style="background-color:${T.cardBg};border:1px solid ${T.cardBorder};border-radius:20px;padding:32px 24px 28px;">
