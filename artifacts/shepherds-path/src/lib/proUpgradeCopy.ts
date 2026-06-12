@@ -6,17 +6,17 @@
 import { getAiDailyLimits } from "@/lib/aiLimits";
 import { getRelationshipAge } from "@/lib/relationship";
 
-export const UPGRADE_MODAL_BADGE_DEFAULT = "When you want more depth";
+export const UPGRADE_MODAL_BADGE_DEFAULT = "Go deeper — from $3.75/mo";
 
-export const UPGRADE_MODAL_TITLE_DEFAULT = "Continue with depth — if it helps";
+export const UPGRADE_MODAL_TITLE_DEFAULT = "You've found your rhythm here.";
 
 export const UPGRADE_MODAL_SUBTITLE_DEFAULT =
-  "Today's Scripture, prayer, and your quiet rooms stay free. Pro adds more guided conversation, listening, and your full journal — optional, never required.";
+  "Scripture and prayer stay free — always. Pro removes limits so you can go as deep as you need, whenever you need it.";
 
-export const UPGRADE_MODAL_CTA_DEFAULT = "See Pro options";
+export const UPGRADE_MODAL_CTA_DEFAULT = "Continue deeper →";
 
 export const UPGRADE_MODAL_FOOTER_LINE =
-  "Pro supports the work behind the app. Thank you for considering it.";
+  "Shepherd's Path is built by one person with a mission. Pro keeps the lights on. Thank you.";
 
 export const UPGRADE_TOAST_ACTIVATED_TITLE = "Pro is active";
 export const UPGRADE_TOAST_ACTIVATED_BODY = "Thank you — go gently with what's unlocked.";

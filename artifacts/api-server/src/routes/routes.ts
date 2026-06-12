@@ -3409,7 +3409,7 @@ Return JSON: { "action": "...", "scripture": "..." }`
       const context = parts.length ? parts.join("\n\n") : "This person has come seeking a prayer over their life.";
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         max_tokens: 600,
         messages: [
           {
@@ -3812,14 +3812,17 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
 
       try {
         const response = await openaiTTS.images.generate({
-          model: "gpt-image-1",
+          model: "dall-e-3",
           prompt,
           n: 1,
-          size: "1536x1024",
-          quality: "high",
+          size: "1792x1024",
+          quality: "standard",
         } as any);
-        const b64Art = response.data?.[0]?.b64_json;
-        if (b64Art) imgBuffer = Buffer.from(b64Art, "base64");
+        const imageUrl = response.data?.[0]?.url;
+        if (imageUrl) {
+          const imgFetch = await fetch(imageUrl);
+          if (imgFetch.ok) imgBuffer = Buffer.from(await imgFetch.arrayBuffer());
+        }
       } catch (aiErr) {
         console.warn("[verse-art] AI generation failed, trying stock photo:", aiErr);
       }

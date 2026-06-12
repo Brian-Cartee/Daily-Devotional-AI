@@ -332,18 +332,29 @@ export default function StartPage() {
           </form>
         )}
 
-        {/* Trust line */}
-        <p
-          style={{
-            fontSize: "0.75rem",
-            color: "rgba(255,255,255,0.28)",
-            margin: 0,
-            lineHeight: 1.5,
-          }}
-        >
-          Scripture &amp; prayer stay free.{" "}
-          <span style={{ whiteSpace: "nowrap" }}>No paywall to pray.</span>
-        </p>
+        {/* Trust signals */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {["⭐","⭐","⭐","⭐","⭐"].map((s, i) => (
+              <span key={i} style={{ fontSize: "12px" }}>{s}</span>
+            ))}
+            <span style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.45)", marginLeft: "2px" }}>
+              App Store
+            </span>
+          </div>
+          <p
+            style={{
+              fontSize: "0.75rem",
+              color: "rgba(255,255,255,0.28)",
+              margin: 0,
+              lineHeight: 1.5,
+              textAlign: "center",
+            }}
+          >
+            Scripture &amp; prayer stay free.{" "}
+            <span style={{ whiteSpace: "nowrap" }}>No paywall to pray.</span>
+          </p>
+        </div>
       </div>
     </div>
   );

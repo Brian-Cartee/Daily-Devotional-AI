@@ -217,7 +217,8 @@ export function buildOnboardingDay7JourneysHtml(data: OnboardingEmailData): stri
       ${bodyParagraph(
         "You&rsquo;ve been showing up &mdash; that matters. When you&rsquo;re ready to go deeper than a single verse, <strong style=\"color:#f4efe6;font-weight:600;\">Journeys</strong> walk you through hard seasons step by step.",
       )}
-      ${bodyParagraph("Grief, anxiety, healing, growth &mdash; one day at a time, with Scripture leading the way.")}`,
+      ${bodyParagraph("Grief, anxiety, healing, growth &mdash; one day at a time, with Scripture leading the way.")}
+      ${bodyParagraph("Want to go even deeper? <strong style=\"color:#f4efe6;font-weight:600;\">Pro</strong> removes limits on guided conversation &mdash; so when you need to sit with something longer, you can. Less than a cup of coffee a month.")}`,
     ctaHref: `${data.appUrl}/understand`,
     ctaLabel: "Explore journeys &rarr;",
   });
@@ -263,7 +264,7 @@ export function getOnboardingEmailContent(
       };
     case "day7_journeys":
       return {
-        subject: "Walk through it one day at a time",
+        subject: "One week in — here's what's waiting for you",
         html: buildOnboardingDay7JourneysHtml(data),
         text: buildOnboardingDay7JourneysText(data),
       };

@@ -2,6 +2,7 @@
 import { Resend } from 'resend';
 import { config } from './config';
 import { EMAIL_THEME, emailPreheader } from './emailTheme';
+import { buildEmailBrandHeaderRow } from './emailLogo';
 
 let connectionSettings: any;
 
@@ -95,17 +96,8 @@ ${emailPreheader(preheader)}
     <td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;">
 
-        <!-- Brand row — type only (logo PNG has no transparency; avoids black square in clients) -->
-        <tr>
-          <td align="center" style="padding:0 0 20px;">
-            <p style="margin:0 0 6px;font-family:${T.serif};font-size:22px;font-weight:400;color:${T.text};letter-spacing:0.02em;">
-              Shepherd&rsquo;s Path
-            </p>
-            <p style="margin:0;font-family:${T.sans};font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:${T.textMuted};">
-              Daily word
-            </p>
-          </td>
-        </tr>
+        <!-- Brand row — icon + type -->
+        ${buildEmailBrandHeaderRow(data.appUrl, "Daily word")}
 
         <!-- Main card -->
         <tr>
@@ -188,6 +180,11 @@ ${emailPreheader(preheader)}
             <p style="margin:0 0 12px;font-family:${T.sans};font-size:12px;line-height:1.6;color:${T.textMuted};">
               You subscribed to daily Scripture from Shepherd&rsquo;s Path.<br />
               Not a substitute for church, counseling, or emergency care.
+            </p>
+            <p style="margin:0 0 16px;font-family:${T.sans};font-size:12px;color:${T.textMuted};">
+              Want to go deeper?
+              <a href="${data.appUrl}/pricing" style="color:${T.accent};text-decoration:none;font-weight:600;">Pro removes all limits</a>
+              &mdash; less than $4/mo.
             </p>
             <p style="margin:0 0 20px;font-family:${T.sans};font-size:12px;color:${T.textMuted};">
               <a href="${data.appUrl}/api/unsubscribe?email={{email}}" style="color:${T.accent};text-decoration:underline;">Unsubscribe</a>
