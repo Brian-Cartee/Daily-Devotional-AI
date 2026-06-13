@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Compass, ChevronDown, Sparkles, HeartHandshake, Loader2,
   BookMarked, MapPin, Presentation, Heart, ImageDown, Check, MessageCircle,
-  Bookmark, BookmarkCheck, BookOpen, ArrowLeft, Lightbulb,
+  Bookmark, BookmarkCheck, BookOpen, ArrowLeft, Lightbulb, Share2,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ShepherdCrookMark } from "@/components/ShepherdCrookMark";
@@ -28,7 +28,7 @@ import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { buildJourneyStepListenText, journeyDayStorageKey } from "@/lib/journeyListenText";
 import { getHeroImage } from "@/lib/heroImage";
 import { createShareImage } from "@/lib/shareImage";
-import { shareImageBlob, shareImageFilename } from "@/lib/shareVerse";
+import { shareImageBlob, shareImageFilename, shareNative } from "@/lib/shareVerse";
 import { ALL_JOURNEYS, type Journey, type GuidedChapter } from "@/data/journeys";
 import { GuidedPathwaysSection } from "@/components/GuidedPathwaysSection";
 import { JourneyMoodTiles } from "@/components/JourneyMoodTiles";
@@ -53,11 +53,13 @@ function ChapterCard({
   open,
   onToggle,
   isActive = false,
+  journeyName,
 }: {
   chapter: GuidedChapter;
   open: boolean;
   onToggle: () => void;
   isActive?: boolean;
+  journeyName?: string;
 }) {
   const [aiMode, setAiMode] = useState<"reflect" | "pray" | "explain" | "chat" | null>(null);
   const [aiContent, setAiContent] = useState("");
@@ -196,6 +198,15 @@ function ChapterCard({
     setSharingCard(false);
   };
 
+  const handleShareWhyItMatters = async () => {
+    if (!journeyName) return;
+    const text = `${chapter.whyItMatters}\n— from ${journeyName}, Day ${chapter.order}\nShepherd's Path`;
+    await shareNative({
+      title: `${journeyName} — Day ${chapter.order}`,
+      text,
+    });
+  };
+
   return (
     <div
       id={`chapter-card-${chapter.id}`}
@@ -228,9 +239,22 @@ function ChapterCard({
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
             <div className="px-5 pb-5 space-y-4 border-t border-white/20 dark:border-slate-700/30 pt-4">
               <div className="bg-primary/5 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <BookMarked className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">Why it matters</span>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <BookMarked className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Why it matters</span>
+                  </div>
+                  {journeyName ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleShareWhyItMatters()}
+                      aria-label="Share why it matters"
+                      data-testid={`btn-share-why-${chapter.id}`}
+                      className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors p-1 flex-shrink-0"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{chapter.whyItMatters}</p>
               </div>
@@ -772,6 +796,20 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
   const themeFilterMounted = useRef(false);
 
   const activeChapter = filtered[activeIndex];
+  const expandedChapter = expandedId
+    ? journey.entries.find((e) => e.id === expandedId) ?? filtered.find((e) => e.id === expandedId)
+    : null;
+  const savedChapter = (() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return journey.entries.find((e) => e.id === saved);
+    } catch {
+      /* ignore */
+    }
+    return undefined;
+  })();
+  const stickyLabelChapter = expandedChapter ?? savedChapter ?? activeChapter;
+  const progressDay = (expandedChapter ?? savedChapter ?? activeChapter ?? journey.entries[0])?.order ?? 1;
   const passageQuery = usePassageText(activeChapter?.apiRef ?? "", !!activeChapter);
   const listenText =
     passageQuery.data && activeChapter
@@ -865,6 +903,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">{journey.title}</h1>
                 <p className="text-white/85 text-[13px] mt-1 drop-shadow">{journey.subtitle} · {journey.length} passages</p>
+                <p className="text-white/55 text-[12px] mt-0.5 drop-shadow">Day {progressDay} of {journey.length}</p>
               </div>
               {!journey.id.startsWith("life-season") && (
                 <a
@@ -890,8 +929,12 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="flex flex-wrap gap-2 justify-center mb-5"
+            className="mb-5"
           >
+            <p className="text-[12px] text-muted-foreground text-center mb-2">
+              Filter by what you need today
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
             <button
               onClick={() => { setActiveTheme(null); scrollPageToTopReliable("smooth"); }}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${activeTheme === null ? "bg-primary text-primary-foreground" : "bg-white/50 dark:bg-slate-700/50 text-muted-foreground hover:text-foreground border border-white/30"}`}
@@ -907,6 +950,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
                 {theme}
               </button>
             ))}
+            </div>
           </motion.div>
         )}
 
@@ -945,6 +989,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
             <ChapterCard
               key={entry.id}
               chapter={entry}
+              journeyName={journey.title}
               open={expandedId === entry.id}
               isActive={activeIndex === index}
               onToggle={() => {
@@ -965,9 +1010,9 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
         </motion.div>
       </div>
 
-      {activeChapter && listenText && (
+      {activeChapter && listenText && stickyLabelChapter && (
         <FloatingListenPlayer
-          titleLine={`Day ${activeChapter.order} · ${activeChapter.reference}`}
+          titleLine={`Day ${stickyLabelChapter.order} · ${stickyLabelChapter.reference}`}
           listenText={listenText}
           canPrev={activeIndex > 0}
           canNext={activeIndex < filtered.length - 1}
