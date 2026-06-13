@@ -1661,11 +1661,12 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
         }).catch(() => {});
       }
 
-      const maxTokens = quickPersonalize
-        ? input.type === "reflection"
-          ? 380
-          : 200
-        : undefined;
+      const maxTokens =
+        input.type === "prayer"
+          ? 180
+          : quickPersonalize
+            ? 380
+            : undefined;
 
       const {
         buildDevotionalFallbackPrayer,

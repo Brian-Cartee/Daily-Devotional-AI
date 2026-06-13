@@ -1813,17 +1813,14 @@ export default function Devotional() {
             <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(217,119,6,0.6), rgba(234,88,12,0.6), transparent)" }} />
             {/* Subtle warm ambient glow top-right */}
             <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.10) 0%, transparent 70%)", filter: "blur(20px)" }} />
-            <StepLabel number={4} label="Thank Him" />
-            <p className="text-[17px] italic mb-4 -mt-1" style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--primary) / 0.9)" }}>
-              This completes your devotional for today.
-            </p>
+            <StepLabel number={4} label="Complete your devotional" />
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
               What feels like a gift today?
             </p>
             <textarea
               value={gratitudeInput}
               onChange={(e) => setGratitudeInput(e.target.value)}
-              placeholder="Even something small…"
+              placeholder={"One thing. Even something small.\nThis is the last step."}
               spellCheck
               rows={3}
               data-testid="input-gratitude"
@@ -1865,6 +1862,9 @@ export default function Devotional() {
                   className="mt-7 pt-6"
                   style={{ borderTop: "1px solid rgba(217,119,6,0.2)" }}
                 >
+                  <p className="text-[17px] italic mb-4 -mt-1" style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--primary) / 0.9)" }}>
+                    This completes your devotional for today.
+                  </p>
                   {/* Small amen cross above the closing prayer */}
                   <div className="flex items-center gap-3 mb-5">
                     <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, rgba(217,119,6,0.3))" }} />
