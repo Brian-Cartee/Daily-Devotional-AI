@@ -45,6 +45,7 @@ import { SituationPills } from "@/components/SituationPills";
 import { ScriptureSceneCard } from "@/components/ScriptureSceneCard";
 import {
   fetchGuidanceVerseAndPrayer,
+  formatGuidanceVerseDisplay,
   GUIDANCE_FALLBACK_PRAYER,
   isLikelyPrayerText,
   extractVerseFromGuidanceText,
@@ -277,7 +278,7 @@ export default function GuidancePage() {
   const carryVerseToday = () => {
     if (!verse) return;
     saveCarryToday({
-      text: verse.text,
+      text: verseDisplay?.text ?? verse.text,
       reference: verse.reference,
       source: "guidance",
     });
@@ -312,6 +313,7 @@ export default function GuidancePage() {
   const [journeyError, setJourneyError] = useState(false);
 
   const [verse, setVerse] = useState<VerseResult | null>(null);
+  const verseDisplay = verse ? formatGuidanceVerseDisplay(verse.text) : null;
   const [prayer, setPrayer] = useState<string | null>(null);
   const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
   const [vpError, setVpError] = useState(false);
@@ -641,7 +643,7 @@ export default function GuidancePage() {
     if (!firstResponse) return;
 
     const sections: Array<{ key: string; text: string; voice?: string }> = [
-      { key: "scripture", text: `${verse!.text}. ${verse!.reference}.` },
+      { key: "scripture", text: `${verseDisplay?.text ?? verse!.text}. ${verse!.reference}.` },
       { key: "guidance", text: firstResponse },
       { key: "prayer", text: prayer!.trim(), voice: "nova" },
     ];
@@ -1062,67 +1064,21 @@ export default function GuidancePage() {
                   );
                   if (responseComplete && rawText.trim()) {
                     const movements = splitGuidanceMovements(rawText, verse, prayer);
-                    const sections = [
-                      { key: "reflection", title: "What I’m hearing", text: movements.reflection },
-                      { key: "scripture", title: "A verse for this moment", text: movements.scripture },
-                      { key: "prayer", title: "A simple prayer", text: movements.prayer },
-                    ] as const;
                     return (
                       <div className="space-y-5" data-testid="text-guidance-response">
-                        {sections.map((section) => (
-                          <div key={section.key} className="rounded-2xl border border-border/70 bg-card/40 px-5 py-4">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-2">
-                              {section.title}
-                            </p>
-                            {section.key === "scripture" && !verse && !section.text ? (
-                              vpLoading ? (
-                                <GuidanceVpLoading message="Finding Scripture for this moment…" />
-                              ) : (
-                                <GuidanceVpRetry
-                                  label="Scripture for your situation is still on its way — a slow connection sometimes needs a second try."
-                                  onRetry={() => void loadVerseAndPrayer()}
-                                  loading={vpLoading}
-                                />
-                              )
-                            ) : section.key === "prayer" && !movements.prayer.trim() ? (
-                              vpLoading ? (
-                                <GuidanceVpLoading message="Writing a prayer in your words…" />
-                              ) : (
-                                <div className="space-y-3">
-                                  <div
-                                    className="text-[17px] leading-[1.78] text-foreground italic"
-                                    style={{ fontFamily: "var(--font-reading)" }}
-                                  >
-                                    {GUIDANCE_FALLBACK_PRAYER}
-                                  </div>
-                                  {vpError && (
-                                    <GuidanceVpRetry
-                                      label="A personalized prayer couldn't load yet — you can pray this now, or try again."
-                                      onRetry={() => void loadVerseAndPrayer()}
-                                      loading={vpLoading}
-                                    />
-                                  )}
-                                </div>
-                              )
-                            ) : (
-                              <div
-                                className={section.key === "scripture"
-                                  ? "text-[20px] leading-[1.78] text-foreground italic"
-                                  : "text-[17px] leading-[1.78] text-foreground"}
-                                style={{ fontFamily: "var(--font-reading)" }}
-                              >
-                                {(section.key === "prayer" && section.text.trim()
-                                  ? section.text
-                                  : section.text || ""
-                                )
-                                  .split("\n\n")
-                                  .map((para, i) => (
-                                    <p key={i} className="mb-3 last:mb-0">{para}</p>
-                                  ))}
-                              </div>
-                            )}
+                        <div className="rounded-2xl border border-border/70 bg-card/40 px-5 py-4">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-2">
+                            What I’m hearing
+                          </p>
+                          <div
+                            className="text-[17px] leading-[1.78] text-foreground"
+                            style={{ fontFamily: "var(--font-reading)" }}
+                          >
+                            {movements.reflection.split("\n\n").map((para, i) => (
+                              <p key={i} className="mb-3 last:mb-0">{para}</p>
+                            ))}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     );
                   }
@@ -1152,6 +1108,203 @@ export default function GuidancePage() {
                     </div>
                   );
                 })()}
+                {responseComplete && revealStage >= 2 && (vpLoading || verse || vpError) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="mt-6"
+                  >
+                    {verse && verseDisplay && (
+                      <div className="flex justify-end mb-3">
+                        <ListenButton text={`${verseDisplay.text} — ${verse.reference}`} label="Listen" size="sm" scope="verse" />
+                      </div>
+                    )}
+                    {vpLoading && !verse ? (
+                      <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 pt-6 pb-5">
+                        <p className="text-[19px] leading-relaxed font-medium text-foreground/65 italic mb-4">
+                          "Be still, and know that I am God."
+                        </p>
+                        <p className="text-[13px] font-bold text-primary/65 tracking-wide">— Psalm 46:10</p>
+                      </div>
+                    ) : verse && verseDisplay ? (
+                      <>
+                        <p
+                          className="text-[15px] leading-relaxed text-foreground/80 italic mb-3"
+                          style={{ fontFamily: "var(--font-reading)" }}
+                        >
+                          {verseDisplay.intro}
+                        </p>
+                        <ScriptureSceneCard
+                          testId="card-guidance-verse"
+                          text={verseDisplay.text}
+                          reference={verse.reference}
+                          label="Scripture for you"
+                          imageSrc={heroImageSrc || "/hero-guidance.jpg"}
+                          onBookmark={carryVerseToday}
+                          footer={
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setShowSlowVerse(true)}
+                                data-testid="button-guidance-read-slowly"
+                                className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-white/25 bg-black/25 text-white hover:bg-black/40 transition-colors"
+                              >
+                                Read slowly
+                              </button>
+                              <ListenButton
+                                text={`${verseDisplay.text} — ${verse.reference}`}
+                                label="Listen"
+                                size="sm"
+                                scope="verse"
+                              />
+                            </div>
+                          }
+                        />
+                      </>
+                    ) : (
+                      <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 py-5">
+                        <GuidanceVpRetry
+                          label="Scripture for your moment is still preparing — tap Try again."
+                          onRetry={() => void loadVerseAndPrayer()}
+                          loading={vpLoading}
+                        />
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+                {responseComplete && (walkLoading || walkToday) && (
+                  <div className="mt-6 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-50/60 to-amber-100/30 dark:from-amber-900/15 dark:to-amber-800/8 px-5 py-4" data-testid="card-walk-today">
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <p className="text-[10px] font-bold tracking-[0.18em] text-amber-600/80 dark:text-amber-400/70 uppercase">Walk This Today</p>
+                      {walkToday && <ListenButton text={walkToday.action} label="Listen" size="sm" />}
+                    </div>
+                    {walkLoading ? (
+                      <div className="space-y-2 animate-pulse">
+                        <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-full" />
+                        <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-4/5" />
+                        <div className="h-3 bg-amber-100/50 dark:bg-amber-800/15 rounded w-28 mt-1" />
+                      </div>
+                    ) : walkToday && (
+                      <>
+                        <p
+                          className="text-[16px] leading-[1.6] text-foreground"
+                          style={{ fontFamily: "var(--font-reading)" }}
+                          data-testid="text-walk-today-action"
+                        >
+                          {walkToday.action}
+                        </p>
+                        {walkToday.scripture && (
+                          <p className="text-[11px] text-amber-600/65 dark:text-amber-400/55 mt-2 font-medium" data-testid="text-walk-today-scripture">
+                            — {walkToday.scripture}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+                {responseComplete && revealStage >= 3 && (prayer || vpLoading || vpError) && (
+                  <motion.div
+                    key="prayer-card"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    data-testid="card-guidance-prayer"
+                    className="relative rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 via-orange-50/50 to-background dark:from-amber-950/20 dark:via-orange-950/10 dark:to-background mt-6"
+                  >
+                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
+                    <div className="px-6 pt-5 pb-5">
+                      <div className="flex items-center gap-2 mb-4">
+                        <BookMarked className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                          A prayer for your moment
+                        </p>
+                      </div>
+
+                      {!prayer ? (
+                        vpLoading ? (
+                          <div className="space-y-2 animate-pulse">
+                            <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
+                            <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-5/6" />
+                            <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
+                            <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-4/5" />
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic leading-relaxed">
+                              This can be your prayer — or a place to start.
+                            </p>
+                            <p className="text-[15px] leading-[1.8] text-foreground/90 italic">
+                              {GUIDANCE_FALLBACK_PRAYER}
+                            </p>
+                            <GuidanceVpRetry
+                              label="Personalized prayer couldn't load — pray this now, or try again."
+                              onRetry={() => void loadVerseAndPrayer()}
+                              loading={vpLoading}
+                            />
+                          </div>
+                        )
+                      ) : (
+                        <>
+                          <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic mb-4 leading-relaxed">
+                            This can be your prayer — or a place to start.
+                          </p>
+                          <p className="text-[15px] leading-[1.8] text-foreground/90 italic mb-6">
+                            {prayer}
+                          </p>
+
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <button
+                              onClick={() => tts.toggle(prayer!, "nova")}
+                              disabled={tts.loading}
+                              data-testid="button-pray-aloud"
+                              className="flex items-center gap-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold px-4 py-2 transition-colors disabled:opacity-60 shadow-sm"
+                            >
+                              {tts.loading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : tts.playing ? (
+                                <VolumeX className="w-3.5 h-3.5" />
+                              ) : (
+                                <Volume2 className="w-3.5 h-3.5" />
+                              )}
+                              {tts.playing ? "Stop" : "Pray this"}
+                            </button>
+
+                            <button
+                              onClick={savePrayerToJournal}
+                              disabled={prayerSaved}
+                              data-testid="button-save-prayer"
+                              className="flex items-center gap-1.5 text-[13px] font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors disabled:opacity-70"
+                            >
+                              {prayerSaved ? (
+                                <>
+                                  <CheckCheck className="w-3.5 h-3.5" />
+                                  Saved to Journal
+                                </>
+                              ) : (
+                                <>
+                                  <BookMarked className="w-3.5 h-3.5" />
+                                  Save to Journal
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          <PrayerThatStays />
+
+                          {tts.playing && (
+                            <div className="mt-3 h-1 rounded-full bg-amber-200/60 dark:bg-amber-800/30 overflow-hidden">
+                              <div
+                                className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                                style={{ width: `${tts.progress}%` }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
                 {responseComplete && (
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <ListenButton
@@ -1160,9 +1313,9 @@ export default function GuidancePage() {
                       size="sm"
                       data-testid="button-guidance-listen-text"
                     />
-                    {verse && assistantMessages[0]?.content && (
+                    {verse && verseDisplay && assistantMessages[0]?.content && (
                       <ShareVerseTrigger
-                        text={verse.text}
+                        text={verseDisplay.text}
                         reference={verse.reference}
                         date={easternVerseDateKey()}
                         extraLine={`A word that met me today:\n"${cleanResponse(assistantMessages[0].content).replace(/\n+/g, " ").slice(0, 280)}"`}
@@ -1199,36 +1352,6 @@ export default function GuidancePage() {
                   <p className="text-[12px] text-muted-foreground/70 mt-1 tracking-wide">
                     Walking it is up to you.
                   </p>
-                )}
-                {responseComplete && (walkLoading || walkToday) && (
-                  <div className="mt-6 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-50/60 to-amber-100/30 dark:from-amber-900/15 dark:to-amber-800/8 px-5 py-4" data-testid="card-walk-today">
-                    <div className="flex items-center justify-between gap-3 mb-2.5">
-                      <p className="text-[10px] font-bold tracking-[0.18em] text-amber-600/80 dark:text-amber-400/70 uppercase">Walk This Today</p>
-                      {walkToday && <ListenButton text={walkToday.action} label="Listen" size="sm" />}
-                    </div>
-                    {walkLoading ? (
-                      <div className="space-y-2 animate-pulse">
-                        <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-full" />
-                        <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-4/5" />
-                        <div className="h-3 bg-amber-100/50 dark:bg-amber-800/15 rounded w-28 mt-1" />
-                      </div>
-                    ) : walkToday && (
-                      <>
-                        <p
-                          className="text-[16px] leading-[1.6] text-foreground"
-                          style={{ fontFamily: "var(--font-reading)" }}
-                          data-testid="text-walk-today-action"
-                        >
-                          {walkToday.action}
-                        </p>
-                        {walkToday.scripture && (
-                          <p className="text-[11px] text-amber-600/65 dark:text-amber-400/55 mt-2 font-medium" data-testid="text-walk-today-scripture">
-                            — {walkToday.scripture}
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </div>
                 )}
                 {responseComplete && verse && (
                   <div className="mt-4 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/6 to-violet-500/4 px-4 py-3 flex items-center justify-between gap-3">
@@ -1329,68 +1452,6 @@ export default function GuidancePage() {
                     Unsplash
                   </a>
                 </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── A Word For This Moment ── */}
-          <AnimatePresence>
-            {revealStage >= 2 && (vpLoading || verse || vpError) && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="mb-10"
-              >
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <p className="text-[12px] font-bold uppercase tracking-widest text-primary/90">
-                    A word for this moment
-                  </p>
-                  {verse && <ListenButton text={`${verse.text} — ${verse.reference}`} label="Listen" size="sm" scope="verse" />}
-                </div>
-                {vpLoading && !verse ? (
-                  <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 pt-6 pb-5">
-                    <p className="text-[19px] leading-relaxed font-medium text-foreground/65 italic mb-4">
-                      "Be still, and know that I am God."
-                    </p>
-                    <p className="text-[13px] font-bold text-primary/65 tracking-wide">— Psalm 46:10</p>
-                  </div>
-                ) : verse ? (
-                  <ScriptureSceneCard
-                    testId="card-guidance-verse"
-                    text={verse.text}
-                    reference={verse.reference}
-                    label="Scripture for you"
-                    imageSrc={heroImageSrc || "/hero-guidance.jpg"}
-                    onBookmark={carryVerseToday}
-                    footer={
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowSlowVerse(true)}
-                          data-testid="button-guidance-read-slowly"
-                          className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-white/25 bg-black/25 text-white hover:bg-black/40 transition-colors"
-                        >
-                          Read slowly
-                        </button>
-                        <ListenButton
-                          text={`${verse.text} — ${verse.reference}`}
-                          label="Listen"
-                          size="sm"
-                          scope="verse"
-                        />
-                      </div>
-                    }
-                  />
-                ) : (
-                  <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 py-5">
-                    <GuidanceVpRetry
-                      label="Scripture for your moment is still preparing — tap Try again."
-                      onRetry={() => void loadVerseAndPrayer()}
-                      loading={vpLoading}
-                    />
-                  </div>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1539,112 +1600,6 @@ export default function GuidancePage() {
                     </button>
                   </motion.div>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── A Prayer Written For You ── */}
-          <AnimatePresence>
-            {responseComplete && revealStage >= 3 && (prayer || vpLoading || vpError) && (
-              <motion.div
-                key="prayer-card"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                data-testid="card-guidance-prayer"
-                className="relative rounded-2xl overflow-hidden border border-amber-200/60 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/80 via-orange-50/50 to-background dark:from-amber-950/20 dark:via-orange-950/10 dark:to-background mb-8"
-              >
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
-                <div className="px-6 pt-5 pb-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <BookMarked className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
-                      A prayer for your moment
-                    </p>
-                  </div>
-
-                  {!prayer ? (
-                    vpLoading ? (
-                      <div className="space-y-2 animate-pulse">
-                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
-                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-5/6" />
-                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-full" />
-                        <div className="h-3.5 bg-amber-200/60 dark:bg-amber-800/30 rounded-full w-4/5" />
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic leading-relaxed">
-                          This can be your prayer — or a place to start.
-                        </p>
-                        <p className="text-[15px] leading-[1.8] text-foreground/90 italic">
-                          {GUIDANCE_FALLBACK_PRAYER}
-                        </p>
-                        <GuidanceVpRetry
-                          label="Personalized prayer couldn't load — pray this now, or try again."
-                          onRetry={() => void loadVerseAndPrayer()}
-                          loading={vpLoading}
-                        />
-                      </div>
-                    )
-                  ) : (
-                    <>
-                      <p className="text-[12px] text-amber-700/70 dark:text-amber-400/60 italic mb-4 leading-relaxed">
-                        This can be your prayer — or a place to start.
-                      </p>
-                      <p className="text-[15px] leading-[1.8] text-foreground/90 italic mb-6">
-                        {prayer}
-                      </p>
-
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <button
-                          onClick={() => tts.toggle(prayer!, "nova")}
-                          disabled={tts.loading}
-                          data-testid="button-pray-aloud"
-                          className="flex items-center gap-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold px-4 py-2 transition-colors disabled:opacity-60 shadow-sm"
-                        >
-                          {tts.loading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : tts.playing ? (
-                            <VolumeX className="w-3.5 h-3.5" />
-                          ) : (
-                            <Volume2 className="w-3.5 h-3.5" />
-                          )}
-                          {tts.playing ? "Stop" : "Pray this"}
-                        </button>
-
-                        <button
-                          onClick={savePrayerToJournal}
-                          disabled={prayerSaved}
-                          data-testid="button-save-prayer"
-                          className="flex items-center gap-1.5 text-[13px] font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors disabled:opacity-70"
-                        >
-                          {prayerSaved ? (
-                            <>
-                              <CheckCheck className="w-3.5 h-3.5" />
-                              Saved to Journal
-                            </>
-                          ) : (
-                            <>
-                              <BookMarked className="w-3.5 h-3.5" />
-                              Save to Journal
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      <PrayerThatStays />
-
-                      {tts.playing && (
-                        <div className="mt-3 h-1 rounded-full bg-amber-200/60 dark:bg-amber-800/30 overflow-hidden">
-                          <div
-                            className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                            style={{ width: `${tts.progress}%` }}
-                          />
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1839,7 +1794,7 @@ export default function GuidancePage() {
       </main>
 
       <AnimatePresence>
-        {showSlowVerse && verse && (
+        {showSlowVerse && verse && verseDisplay && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1855,8 +1810,11 @@ export default function GuidancePage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-3">
                 Read slowly
               </p>
+              <p className="text-[15px] leading-relaxed text-foreground/80 italic mb-4" style={{ fontFamily: "var(--font-reading)" }}>
+                {verseDisplay.intro}
+              </p>
               <p className="text-[24px] leading-[1.9] italic text-foreground" style={{ fontFamily: "var(--font-reading)" }}>
-                "{verse.text}"
+                "{verseDisplay.text}"
               </p>
               <p className="text-[14px] font-semibold text-primary/80 mt-4">— {verse.reference}</p>
               <div className="mt-6 flex justify-end">

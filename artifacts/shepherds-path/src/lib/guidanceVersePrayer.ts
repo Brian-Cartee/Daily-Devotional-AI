@@ -109,6 +109,26 @@ export async function fetchGuidanceVerseAndPrayer(
   return { ok: false, error: lastError };
 }
 
+export const GUIDANCE_VERSE_INTRO =
+  "David asked the same question once — and here's what he found:";
+
+const API_VERSE_INTRO_PATTERNS = [
+  /^There is a place in Scripture that has walked this same road:\s*/i,
+  /^There is a place in Scripture that sounds exactly like this:\s*/i,
+  /^The psalms have walked this same road:\s*/i,
+  /^There is a moment in Scripture written for exactly this kind of courage:\s*/i,
+  /^Scripture has a line that opens this exact door:\s*/i,
+];
+
+/** Strip API-prepended intro lines; show a consistent UI intro before the verse body. */
+export function formatGuidanceVerseDisplay(raw: string): { intro: string; text: string } {
+  let text = raw.trim();
+  for (const pattern of API_VERSE_INTRO_PATTERNS) {
+    text = text.replace(pattern, "");
+  }
+  return { intro: GUIDANCE_VERSE_INTRO, text: text.trim() || raw.trim() };
+}
+
 export function extractVerseFromGuidanceText(raw: string): string | null {
   const paras = raw
     .split("\n\n")
