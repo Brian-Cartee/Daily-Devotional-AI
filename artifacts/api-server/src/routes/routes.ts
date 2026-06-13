@@ -1667,14 +1667,50 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
           : 200
         : undefined;
 
-      await streamCompletion(
-        [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        res,
-        { maxTokens },
-      );
+      const {
+        buildDevotionalFallbackPrayer,
+        buildDevotionalFallbackReflection,
+        isOpenAIFailure,
+        writePlainTextResponse,
+      } = await import("../devotionalFallback");
+
+      const serveDevotionalFallback = () => {
+        const reflCtx: string = (req.body as { reflectionContext?: string }).reflectionContext || "";
+        const content =
+          input.type === "reflection"
+            ? buildDevotionalFallbackReflection(safeVerse, firstName2)
+            : buildDevotionalFallbackPrayer(safeVerse, reflCtx, firstName2);
+        writePlainTextResponse(res, content);
+      };
+
+      if (
+        process.env.NODE_ENV === "development" &&
+        process.env.DEVOTIONAL_FORCE_FALLBACK === "1"
+      ) {
+        serveDevotionalFallback();
+        return;
+      }
+
+      try {
+        await streamCompletion(
+          [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          res,
+          { maxTokens },
+        );
+      } catch (streamErr) {
+        if (!res.headersSent && isOpenAIFailure(streamErr)) {
+          console.warn("[devotional] OpenAI unavailable — serving pre-written fallback", {
+            type: input.type,
+            code: (streamErr as { code?: string })?.code,
+          });
+          serveDevotionalFallback();
+          return;
+        }
+        throw streamErr;
+      }
     } catch (err) {
       console.error(err);
       if (!res.headersSent) {
