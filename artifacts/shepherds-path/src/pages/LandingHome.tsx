@@ -493,7 +493,7 @@ const FAQ_ITEMS = [
   },
 ];
 
-const FAQ_INITIAL_COUNT = 5;
+const FAQ_INITIAL_COUNT = 3;
 
 /** Shared section label for home footer blocks — readable on phone and desktop */
 function HomeSectionLabel({ children }: { children: ReactNode }) {
@@ -1546,36 +1546,6 @@ function LandingHomeInner() {
           transition={{ delay: inNativeApp ? 0 : 0.7 }}
           className="mt-10 sm:mt-12 pb-2 max-w-xl mx-auto w-full"
         >
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px",
-              marginBottom: "24px",
-            }}
-          >
-            {["Faith-rooted", "Scripture-grounded", "Built for daily life"].map((tag) => (
-              <span
-                key={tag}
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  padding: "6px 12px",
-                  borderRadius: "9999px",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  backgroundColor: "rgba(26, 21, 32, 0.60)",
-                  color: "rgba(237, 232, 224, 0.80)",
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
           <HomeDailyEmailStatus
             anchorId={HOME_EMAIL_SUBSCRIBE_ANCHOR_ID}
             className="mb-8 sm:mb-10 scroll-mt-24 scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"

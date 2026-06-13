@@ -62,7 +62,7 @@ export function HomeHeavyMomentLink({ footerHint }: Props) {
           </div>
           <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
             <p style={{ fontSize: "14px", fontWeight: 600, lineHeight: 1.25 }}>
-              Something feels heavy
+              Something is on your heart
             </p>
             <p
               style={{

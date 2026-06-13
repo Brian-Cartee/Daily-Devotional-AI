@@ -261,7 +261,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             type="button"
             data-testid="link-why-collapsed"
             onClick={openWhyPanel}
-            aria-label="Open why we built this"
+            aria-label="Open what this place is for"
             style={{
               display: "block",
               marginBottom: "12px",
@@ -277,7 +277,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
               cursor: "pointer",
             }}
           >
-            Why we built this
+            What this place is for
           </button>
 
           <h1

@@ -145,7 +145,7 @@ export function PrayerClosetHomeCard({ compactTeaser = false }: Props) {
             }}
           >
             {compactTeaser
-              ? "Your prayer closet — worship, vision board, honest prayer"
+              ? "Your prayer closet — a private space for worship and honest prayer"
               : (statusLine ?? "Worship, vision board, and honest prayer inside")}
           </p>
           <div
