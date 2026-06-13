@@ -1328,8 +1328,8 @@ export const ALL_JOURNEYS: Journey[] = [
   {
     id: "lent",
     title: "Lent Journey",
-    subtitle: "Ash Wednesday to Easter",
-    description: "15 passages through repentance, the wilderness, Holy Week, and the resurrection — walking with Jesus through the season of sacrifice.",
+    subtitle: "15 passages · whenever you need it",
+    description: "A journey through wilderness and waiting — available any time you need it.",
     length: 15,
     category: "This season",
     colorFrom: "from-rose-500/10",

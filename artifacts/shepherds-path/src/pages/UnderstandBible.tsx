@@ -605,10 +605,10 @@ function JourneyHub({
               className="w-full text-left rounded-2xl border border-violet-200/50 dark:border-violet-800/40 bg-card/80 p-4 hover:bg-card transition-colors"
             >
               <p className="text-[14px] font-semibold text-foreground leading-snug">
-                After Talk It Through, Pro can shape a journey from your exact situation.
+                Your own path — coming soon.
               </p>
               <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
-                Pro can shape a personal journey from your exact words after Talk It Through. Guided Pathways above are free for everyone.
+                For now, every journey above is free and waiting.
               </p>
             </button>
           ) : lifePhase === "idle" ? (
