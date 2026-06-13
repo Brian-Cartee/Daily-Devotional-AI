@@ -1338,8 +1338,6 @@ export const ALL_JOURNEYS: Journey[] = [
     iconColor: "text-rose-500",
     pillBg: "bg-rose-500/10",
     pillText: "text-rose-600",
-    badgeText: "Lent 2026",
-    badgeBg: "bg-rose-500",
     image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=70&auto=format&fit=crop",
     entries: LENT_PATH,
   },

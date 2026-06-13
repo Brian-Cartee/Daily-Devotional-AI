@@ -16,7 +16,6 @@ import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import { Button } from "@/components/ui/button";
-import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { useQuery } from "@tanstack/react-query";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
@@ -762,10 +761,6 @@ function JourneyHub({
         })()}
       </div>
 
-      {/* Subscribe — shown at bottom */}
-      <div className="max-w-2xl mx-auto pb-8 mt-2">
-        <InlineSubscribeToggle />
-      </div>
     </main>
   );
 }
