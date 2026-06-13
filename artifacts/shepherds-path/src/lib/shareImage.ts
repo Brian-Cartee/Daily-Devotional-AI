@@ -369,7 +369,7 @@ export async function createAchievementShareImage(achievement: {
 
   // ── "Achievement Unlocked" pill ──────────────────────────────
   ctx.font = "bold 22px Arial, sans-serif";
-  const badgeText = "ACHIEVEMENT UNLOCKED";
+  const badgeText = "A full step taken.";
   const badgeW = ctx.measureText(badgeText).width + 52;
   const badgeH = 50;
   const badgeX = (S - badgeW) / 2;

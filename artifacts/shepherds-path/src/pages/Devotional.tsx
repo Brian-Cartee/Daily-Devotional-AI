@@ -1203,22 +1203,6 @@ export default function Devotional() {
                 <ScriptureContext reference={verse.reference} text={verse.text} verseId={verse.id} />
               </div>
 
-              {/* Remember this verse — always visible */}
-              <div className="px-4 pb-3 pt-2 flex items-center justify-center border-t border-border/20">
-                <button
-                  data-testid="button-remember-verse"
-                  onClick={handleToggleMemory}
-                  className={`inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-full border transition-all ${
-                    verseInMemory
-                      ? "text-amber-500 bg-amber-400/10 border-amber-400/40 dark:bg-amber-950/40"
-                      : "text-amber-400/80 border-amber-400/25 hover:text-amber-400 hover:bg-amber-400/8 hover:border-amber-400/45"
-                  }`}
-                >
-                  <Star className={`w-4 h-4 transition-all ${verseInMemory ? "fill-amber-400 text-amber-400 scale-110" : "text-amber-400/70"}`} />
-                  {verseInMemory ? "Remembered" : "Remember this verse"}
-                </button>
-              </div>
-
               {/* Social sharing row — revealed when Share is tapped */}
               <AnimatePresence>
                 {showShareRow && (
@@ -1262,29 +1246,6 @@ export default function Devotional() {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* ── One-time listen discovery hint ── */}
-              {!listenHintSeen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ delay: 1.2, duration: 0.7, ease: "easeOut" }}
-                  className="mx-4 mb-2 mt-1 flex items-start justify-between gap-3"
-                >
-                  <p className="text-[12px] text-foreground/70 italic leading-relaxed">
-                    Prefer to receive this rather than read? A full listen experience — verse, reflection, and prayer — will be ready below.
-                  </p>
-                  <button
-                    onClick={() => { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }}
-                    className="shrink-0 text-primary/30 hover:text-primary/60 transition-colors text-base leading-none mt-0.5"
-                    aria-label="Dismiss"
-                    data-testid="button-dismiss-listen-hint"
-                  >
-                    ×
-                  </button>
-                </motion.div>
-              )}
 
               {/* ── Full Devotional Listen Mode ──────────────────── */}
               {showFullListenBar && (
@@ -1814,10 +1775,26 @@ export default function Devotional() {
                       Stay here for a moment if you need to.
                     </p>
                     {!prayerLoading && (
-                      <div className="mt-4 flex items-center gap-4">
-                        <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
-                        <ListenButton text={prayerContent} label="Listen quietly" />
-                      </div>
+                      <>
+                        <div className="mt-6 flex items-center justify-center">
+                          <button
+                            data-testid="button-remember-verse"
+                            onClick={handleToggleMemory}
+                            className={`inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-full border transition-all ${
+                              verseInMemory
+                                ? "text-amber-500 bg-amber-400/10 border-amber-400/40 dark:bg-amber-950/40"
+                                : "text-amber-400/80 border-amber-400/25 hover:text-amber-400 hover:bg-amber-400/8 hover:border-amber-400/45"
+                            }`}
+                          >
+                            <Star className={`w-4 h-4 transition-all ${verseInMemory ? "fill-amber-400 text-amber-400 scale-110" : "text-amber-400/70"}`} />
+                            {verseInMemory ? "Remembered" : "Remember this verse"}
+                          </button>
+                        </div>
+                        <div className="mt-4 flex items-center gap-4">
+                          <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
+                          <ListenButton text={prayerContent} label="Listen quietly" />
+                        </div>
+                      </>
                     )}
                   </motion.div>
                 )}
@@ -1872,7 +1849,7 @@ export default function Devotional() {
                 >
                   {gratitudePrayerLoading
                     ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
-                    : <><Heart className="w-3.5 h-3.5" /> Close with a prayer</>
+                    : <><Heart className="w-3.5 h-3.5" /> Receive a closing prayer</>
                   }
                 </button>
               </div>

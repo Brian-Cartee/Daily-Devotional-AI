@@ -32,11 +32,25 @@ const NEED_OPTIONS: { id: ThresholdNeed; label: string; sub: string }[] = [
   { id: "battle", label: "Battle", sub: "Help me stand." },
   { id: "stillness", label: "Stillness", sub: "Help me be quiet." },
   { id: "worship", label: "Worship", sub: "Help me adore." },
-  { id: "deep-dive", label: "Scripture Deep Dive", sub: "Help me go deeper." },
+  { id: "deep-dive", label: "Go Deeper", sub: "Help me go deeper." },
   { id: "morning-surrender", label: "Morning Surrender", sub: "Help me begin." },
   { id: "night-prayer", label: "Night Prayer", sub: "Help me release today." },
   { id: "gratitude", label: "Gratitude", sub: "Help me remember." },
 ];
+
+const TONE_CONFIRMATION_VERSES: Partial<
+  Record<ThresholdNeed, { text: string; reference: string }>
+> = {
+  peace: { text: "He himself is our peace.", reference: "Ephesians 2:14" },
+  grief: { text: "He heals the brokenhearted.", reference: "Psalm 147:3" },
+  battle: { text: "The Lord will fight for you.", reference: "Exodus 14:14" },
+  stillness: { text: "Be still, and know that I am God.", reference: "Psalm 46:10" },
+  worship: { text: "Great is the Lord and worthy of praise.", reference: "Psalm 145:3" },
+  "deep-dive": { text: "Your word is a lamp to my feet.", reference: "Psalm 119:105" },
+  "morning-surrender": { text: "His mercies are new every morning.", reference: "Lamentations 3:23" },
+  "night-prayer": { text: "He grants sleep to those he loves.", reference: "Psalm 127:2" },
+  gratitude: { text: "In everything give thanks.", reference: "1 Thessalonians 5:18" },
+};
 
 export default function ThresholdArrivalPage() {
   const [, navigate] = useLocation();
@@ -159,6 +173,7 @@ export default function ThresholdArrivalPage() {
     "gratitude",
   ];
   const visibleModes = NEED_OPTIONS.filter((opt) => defaultVisibleNeedIds.includes(opt.id));
+  const confirmationVerse = need ? TONE_CONFIRMATION_VERSES[need] : undefined;
 
   const handleNameContinue = async () => {
     const trimmed = nameInput.trim();
@@ -349,37 +364,60 @@ export default function ThresholdArrivalPage() {
                 We&apos;ll shape today&apos;s tone — you can change it anytime.
               </p>
               <div
-                className="overflow-y-auto overscroll-y-contain"
-                data-testid="threshold-need-scroll"
-                style={{ flex: 1, minHeight: 0, overflowY: "auto" }}
+                style={{
+                  position: "relative",
+                  flex: 1,
+                  minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "12px" }}>
-                  {visibleModes.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      data-testid={`btn-threshold-need-${opt.id}`}
-                      aria-label={`${opt.label}: ${opt.sub}`}
-                      onClick={() => handleNeed(opt.id)}
-                      className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        width: "100%",
-                        minHeight: "56px",
-                        padding: "14px 20px",
-                        textAlign: "left",
-                        backgroundColor: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: "16px",
-                      }}
-                    >
-                      <span style={{ display: "block", color: "rgba(255,255,255,0.92)", fontSize: "16px", fontWeight: 600, lineHeight: 1.3 }}>{opt.label}</span>
-                      <span style={{ display: "block", color: "rgba(255,255,255,0.50)", fontSize: "13px", marginTop: "3px", lineHeight: 1.3 }}>{opt.sub}</span>
-                    </button>
-                  ))}
+                <div
+                  className="overflow-y-auto overscroll-y-contain"
+                  data-testid="threshold-need-scroll"
+                  style={{ flex: 1, minHeight: 0, overflowY: "auto" }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "12px" }}>
+                    {visibleModes.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        data-testid={`btn-threshold-need-${opt.id}`}
+                        aria-label={`${opt.label}: ${opt.sub}`}
+                        onClick={() => handleNeed(opt.id)}
+                        className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          width: "100%",
+                          minHeight: "56px",
+                          padding: "14px 20px",
+                          textAlign: "left",
+                          backgroundColor: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          borderRadius: "16px",
+                        }}
+                      >
+                        <span style={{ display: "block", color: "rgba(255,255,255,0.92)", fontSize: "16px", fontWeight: 600, lineHeight: 1.3 }}>{opt.label}</span>
+                        <span style={{ display: "block", color: "rgba(255,255,255,0.50)", fontSize: "13px", marginTop: "3px", lineHeight: 1.3 }}>{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: "52px",
+                    pointerEvents: "none",
+                    background:
+                      "linear-gradient(to top, #09031e 0%, rgba(19,6,54,0.88) 40%, transparent 100%)",
+                  }}
+                />
               </div>
             </motion.div>
           )}
@@ -506,6 +544,34 @@ export default function ThresholdArrivalPage() {
               >
                 {modeLine}
               </p>
+              {confirmationVerse && (
+                <div
+                  data-testid="threshold-confirmation-verse"
+                  style={{ marginTop: "28px", maxWidth: "22rem", width: "100%" }}
+                >
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontStyle: "italic",
+                      color: "rgba(255,255,255,0.72)",
+                      lineHeight: 1.625,
+                      fontFamily: "var(--font-serif, Georgia, serif)",
+                    }}
+                  >
+                    &ldquo;{confirmationVerse.text}&rdquo;
+                  </p>
+                  <p
+                    style={{
+                      marginTop: "8px",
+                      fontSize: "12px",
+                      color: "rgba(255,255,255,0.42)",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    — {confirmationVerse.reference}
+                  </p>
+                </div>
+              )}
               <button
                 type="button"
                 data-testid="btn-threshold-enter"

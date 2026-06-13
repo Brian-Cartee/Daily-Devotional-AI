@@ -92,7 +92,7 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
             </motion.div>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
-              Achievement Unlocked
+              A full step taken.
             </div>
 
             <h2 className="text-xl font-extrabold text-white tracking-tight leading-tight drop-shadow-md">

@@ -81,6 +81,7 @@ export function FloatingAskAI() {
 
   const hide = shouldHidePathAiFloater(location);
   const isHome = location === "/" || location === "";
+  const isDevotional = location.startsWith("/devotional");
   const showingResponse = !!(response || isStreaming);
 
   const openSheet = useCallback(() => {
@@ -99,13 +100,13 @@ export function FloatingAskAI() {
       setShowPeek(true);
       sessionStorage.setItem(FLOATER_PEEK_SESSION_KEY, "1");
       hidePeek = setTimeout(() => setShowPeek(false), 4000);
-    }, 5000);
+    }, isDevotional ? 3000 : 5000);
 
     return () => {
       clearTimeout(showTimer);
       if (hidePeek) clearTimeout(hidePeek);
     };
-  }, [hide, isOpen]);
+  }, [hide, isOpen, isDevotional]);
 
   useEffect(() => {
     if (isOpen) {
@@ -282,6 +283,32 @@ export function FloatingAskAI() {
 
   return (
     <>
+      <AnimatePresence>
+        {showPeek && !isOpen && isDevotional && (
+          <motion.button
+            type="button"
+            key="peek-devotional"
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.96 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={openSheet}
+            className="fixed z-[45] max-w-[min(200px,55vw)] sm:max-w-[200px] text-left rounded-full pl-3.5 pr-4 py-2 shadow-lg border border-primary/25 bg-background/95 backdrop-blur-md"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 3.75rem)",
+              right: "max(0.75rem, env(safe-area-inset-right, 0px))",
+            }}
+          >
+            <p className="text-[12px] font-bold text-foreground leading-tight">
+              {pageContext.greeting}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+              Tap for a faithful answer
+            </p>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* FAB */}
       <div
         className={`fixed z-[45] flex items-center gap-2 right-2 sm:right-4 sm:bottom-[var(--fab-bottom-desktop)] ${
@@ -296,7 +323,7 @@ export function FloatingAskAI() {
         }}
       >
         <AnimatePresence>
-          {showPeek && !isOpen && (
+          {showPeek && !isOpen && !isDevotional && (
             <motion.button
               type="button"
               key="peek"
