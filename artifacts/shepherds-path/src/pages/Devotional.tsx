@@ -29,6 +29,7 @@ import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import { ShareVerseImageButton } from "@/components/ShareableVerseImage";
+import { StreakMilestone } from "@/components/StreakMilestone";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
@@ -2052,6 +2053,12 @@ export default function Devotional() {
           )}
 
           {/* Streak indicator + weekly tracker (after they choose a path) */}
+          {streak && (
+            <StreakMilestone
+              streakCount={streak.currentStreak}
+              userName={resolvedProfileName?.split(/\s+/)[0]}
+            />
+          )}
           <AnimatePresence>
             {gratitudePrayer && completionPath !== null && streak && streak.currentStreak >= 3 && (
               <motion.div
