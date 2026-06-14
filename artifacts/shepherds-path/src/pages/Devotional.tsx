@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import { useLocation, useSearch } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
@@ -130,6 +130,14 @@ export default function Devotional() {
   const [reflectionContent, setReflectionContent] = useState("");
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [reflectionError, setReflectionError] = useState(false);
+  const [reflectionInput, setReflectionInput] = useState("");
+  const [reflectionInputSubmitted, setReflectionInputSubmitted] = useState<string | null>(null);
+  const [reflectListenResponse, setReflectListenResponse] = useState("");
+  const [reflectListenComplete, setReflectListenComplete] = useState(false);
+  const [reflectListenReply, setReflectListenReply] = useState("");
+  const [reflectListenReplySubmitted, setReflectListenReplySubmitted] = useState<string | null>(null);
+  const [reflectListenLoading, setReflectListenLoading] = useState(false);
+  const [reflectListenStreamingText, setReflectListenStreamingText] = useState("");
   const [prayerContent, setPrayerContent] = useState("");
   const [prayerLoading, setPrayerLoading] = useState(false);
   const [prayerError, setPrayerError] = useState(false);
@@ -229,6 +237,16 @@ export default function Devotional() {
     return new RegExp(`\\b${first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text);
   };
 
+  const resetReflectListenState = () => {
+    setReflectListenResponse("");
+    setReflectListenStreamingText("");
+    setReflectListenComplete(false);
+    setReflectListenReply("");
+    setReflectListenReplySubmitted(null);
+    setReflectListenLoading(false);
+    setReflectionInputSubmitted(null);
+  };
+
   const beginDevotionalGeneration = (verseId: number, userName?: string) => {
     const lang = getStoredLang();
     const name = userName ?? resolvedProfileName ?? undefined;
@@ -243,10 +261,15 @@ export default function Devotional() {
     setReflectionContent("");
     setPrayerContent("");
     if (cachedRefl && !cachedPryr) {
+      setReflectionContent(cachedRefl);
       generatePrayer(verseId, lang, name, cachedRefl);
-    } else {
-      generateReflection(verseId, lang, name);
+      return;
     }
+    if (quickPersonalizeRef.current) {
+      generateReflection(verseId, lang, name);
+      return;
+    }
+    resetReflectListenState();
   };
 
   const regenerateWithMyName = (verseId: number, explicitName?: string) => {
@@ -263,6 +286,7 @@ export default function Devotional() {
     setPrayerContent("");
     setReflectionError(false);
     setPrayerError(false);
+    resetReflectListenState();
     setEntryTriggered(true);
     beginDevotionalGeneration(verseId, explicitName ?? resolvedProfileName ?? getUserName() ?? undefined);
   };
@@ -609,7 +633,12 @@ export default function Devotional() {
     };
   }, []);
 
-  const generateReflection = async (verseId: number, lang: string, userName?: string) => {
+  const generateReflection = async (
+    verseId: number,
+    lang: string,
+    userName?: string,
+    opts?: { reflectionInput?: string; reflectListenReply?: string },
+  ) => {
     reflectionAbortRef.current?.abort();
     const controller = new AbortController();
     reflectionAbortRef.current = controller;
@@ -625,6 +654,8 @@ export default function Devotional() {
         isLateNight: isLateNight(),
         continuityIntent: quick ? "fresh" : continuityIntentRef.current,
         quickPersonalize: quick,
+        ...(opts?.reflectionInput ? { reflectionInput: opts.reflectionInput } : {}),
+        ...(opts?.reflectListenReply ? { reflectListenReply: opts.reflectListenReply } : {}),
       }, (text) => setReflectionContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
         const finalText = capitalizeDivinePronouns(result);
@@ -653,6 +684,95 @@ export default function Devotional() {
       window.clearTimeout(timeoutId);
     }
     if (!controller.signal.aborted) setReflectionLoading(false);
+  };
+
+  const streamReflectListen = async (input: string): Promise<boolean> => {
+    if (!verse) return false;
+    setReflectListenStreamingText("");
+    setReflectListenResponse("");
+    setReflectListenComplete(false);
+    setReflectListenReply("");
+    setReflectListenReplySubmitted(null);
+    try {
+      const res = await fetch("/api/devotional/reflect-listen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verseText: verse.text,
+          verseReference: verse.reference,
+          reflectionInput: input,
+          userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          ...apiSessionExtras(),
+        }),
+      });
+      if (res.status === 429) {
+        setShowUpgrade(true);
+        return false;
+      }
+      if (!res.ok || !res.body) return false;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        accumulated += chunk;
+        setReflectListenStreamingText(accumulated);
+      }
+      if (!accumulated.trim()) return false;
+      setReflectListenResponse(accumulated);
+      setReflectListenStreamingText("");
+      setReflectListenComplete(true);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleReflect = async () => {
+    const input = reflectionInput.trim();
+    if (!input || !verse || reflectListenLoading || reflectionLoading) return;
+    if (!canUseAi()) {
+      setShowUpgrade(true);
+      return;
+    }
+    setReflectListenLoading(true);
+    setReflectionInputSubmitted(input);
+    setReflectListenStreamingText("");
+    setReflectListenResponse("");
+    setReflectListenComplete(false);
+    setReflectListenReply("");
+    setReflectListenReplySubmitted(null);
+    const listenOk = await streamReflectListen(input);
+    setReflectListenLoading(false);
+    if (!listenOk) {
+      setReflectListenStreamingText("");
+      setReflectListenResponse("");
+      setReflectListenComplete(false);
+      void generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined, {
+        reflectionInput: input,
+      });
+    }
+  };
+
+  const handleReflectListenContinue = async () => {
+    const reply = reflectListenReply.trim();
+    if (!reply || !verse || !reflectionInputSubmitted || reflectionLoading) return;
+    setReflectListenReplySubmitted(reply);
+    await generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined, {
+      reflectionInput: reflectionInputSubmitted,
+      reflectListenReply: reply,
+    });
+  };
+
+  const handleReflectListenKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleReflectListenContinue();
+    }
   };
 
   const generatePrayer = async (verseId: number, lang: string, userName?: string, reflectionContext?: string) => {
@@ -1574,7 +1694,7 @@ export default function Devotional() {
           </AnimatePresence>
 
           {/* STEP 2: REFLECTION */}
-          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError) && (
+          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError || reflectionInputSubmitted || reflectListenStreamingText || reflectListenResponse) && (
           <div className="bg-card border border-border/60 rounded-2xl px-5 py-8 shadow-sm">
             <StepLabel number={2} label="Reflection" />
             {resolvedProfileName && verse?.id && reflectionContent && !reflectionLoading && !reflectionIncludesName(reflectionContent, resolvedProfileName) && (
@@ -1610,9 +1730,110 @@ export default function Devotional() {
                     ? "Reflection ready — writing your prayer…"
                     : reflectionContent
                       ? "Almost there…"
-                      : "Writing your reflection — words will appear as they arrive"}
+                      : reflectionInputSubmitted
+                        ? "Listening…"
+                        : "Writing your reflection — words will appear as they arrive"}
               </p>
             )}
+
+            {reflectionInputSubmitted && (
+              <p
+                className="text-[14px] text-foreground/80 leading-relaxed mb-4"
+                data-testid="text-devotional-reflection-input-submitted"
+              >
+                {reflectionInputSubmitted}
+              </p>
+            )}
+
+            {!reflectionContent && !reflectionLoading && !reflectionInputSubmitted && (
+              <div className="mb-6">
+                <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
+                  What struck you about this verse?
+                </p>
+                <textarea
+                  value={reflectionInput}
+                  onChange={(e) => setReflectionInput(e.target.value)}
+                  placeholder="Even a word or a feeling is enough."
+                  rows={3}
+                  data-testid="input-devotional-reflection"
+                  className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed"
+                />
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => void handleReflect()}
+                    disabled={!reflectionInput.trim() || reflectListenLoading || reflectionLoading}
+                    data-testid="button-reflect-with-me"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[14px] font-semibold text-primary-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {reflectListenLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reflect with me"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(reflectListenStreamingText || reflectListenResponse) && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mb-6"
+                data-testid="text-devotional-reflect-listen"
+              >
+                <div className="border-l-2 border-violet-500/45 pl-4">
+                  <p
+                    className="text-[16px] leading-[1.75] text-foreground/75 italic"
+                    style={{ fontFamily: "var(--font-reading)" }}
+                  >
+                    {reflectListenStreamingText || reflectListenResponse}
+                    {!reflectListenComplete && reflectListenStreamingText && (
+                      <span className="inline-block w-1.5 h-5 bg-violet-400/50 rounded-sm animate-pulse ml-0.5 align-middle not-italic" />
+                    )}
+                  </p>
+                </div>
+
+                {reflectListenComplete && !reflectListenReplySubmitted && !reflectionContent && (
+                  <div className="mt-5 space-y-3">
+                    <textarea
+                      value={reflectListenReply}
+                      onChange={(e) => setReflectListenReply(e.target.value)}
+                      onKeyDown={handleReflectListenKeyDown}
+                      placeholder="Keep going... there's no right answer."
+                      rows={3}
+                      disabled={reflectionLoading}
+                      data-testid="input-devotional-reflect-listen-reply"
+                      className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
+                    />
+                    <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
+                      One more thought and we&apos;ll reflect together.
+                    </p>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void handleReflectListenContinue()}
+                        disabled={!reflectListenReply.trim() || reflectionLoading}
+                        data-testid="button-devotional-reflect-listen-continue"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {reflectionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {reflectListenReplySubmitted && (
+              <motion.p
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-[14px] text-muted-foreground/70 italic text-right mb-6 max-w-[88%] ml-auto leading-relaxed"
+                data-testid="text-devotional-reflect-listen-user-reply"
+              >
+                {reflectListenReplySubmitted}
+              </motion.p>
+            )}
+
             <AnimatePresence mode="wait">
               {reflectionLoading && !reflectionContent && (
                 <motion.div key="ref-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2.5">
@@ -1723,7 +1944,7 @@ export default function Devotional() {
               )}
               {reflectionError && (
                 <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
-                  Could not load reflection. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
+                  Could not load reflection. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionInputSubmitted ? { reflectionInput: reflectionInputSubmitted, ...(reflectListenReplySubmitted ? { reflectListenReply: reflectListenReplySubmitted } : {}) } : undefined)} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>

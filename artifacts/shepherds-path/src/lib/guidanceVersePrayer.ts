@@ -33,12 +33,14 @@ export function isLikelyPrayerText(text: string): boolean {
 async function fetchOnce(
   situation: string,
   signal: AbortSignal,
+  phase1UserReply?: string,
 ): Promise<FetchGuidanceVersePrayerResult> {
   const res = await fetch("/api/guidance/verse-and-prayer", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       situation: situation.trim(),
+      ...(phase1UserReply?.trim() ? { phase1UserReply: phase1UserReply.trim() } : {}),
       sessionId: getSessionId(),
       userName: getUserName() ?? undefined,
       ...apiSessionExtras(),
@@ -82,6 +84,7 @@ async function fetchOnce(
 /** Fetch personalized Scripture + prayer with retries for slow or flaky connections. */
 export async function fetchGuidanceVerseAndPrayer(
   situation: string,
+  phase1UserReply?: string,
 ): Promise<FetchGuidanceVersePrayerResult> {
   const trimmed = situation.trim();
   if (!trimmed) return { ok: false, error: "empty situation" };
@@ -95,7 +98,7 @@ export async function fetchGuidanceVerseAndPrayer(
     const timeoutId = window.setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
 
     try {
-      const result = await fetchOnce(trimmed, controller.signal);
+      const result = await fetchOnce(trimmed, controller.signal, phase1UserReply);
       window.clearTimeout(timeoutId);
       if (result.ok) return result;
       lastError = result.error;

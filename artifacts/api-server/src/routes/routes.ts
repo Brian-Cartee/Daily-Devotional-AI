@@ -1565,6 +1565,72 @@ Voice authenticity (internal constraint — never cite these rules in output):
     }
   }
 
+  // ── Devotional reflect-listen — empathy + one question before full reflection ─
+  app.post("/api/devotional/reflect-listen", async (req, res) => {
+    const { verseText, verseReference, reflectionInput, userName, sessionId } = req.body as {
+      verseText?: string;
+      verseReference?: string;
+      reflectionInput?: string;
+      userName?: string;
+      sessionId?: string;
+    };
+    if (!verseText?.trim() || !verseReference?.trim() || !reflectionInput?.trim()) {
+      return res.status(400).json({ message: "verseText, verseReference, and reflectionInput required" });
+    }
+    if (reflectionInput.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
+
+    const daysWithApp: number = Number((req.body as { daysWithApp?: number }).daysWithApp) || 1;
+    const isProReflectListen = parseProFlag((req.body as { isPro?: boolean }).isPro);
+    const aiGuardReflectListen = checkAiDailyLimit(sessionId, daysWithApp, isProReflectListen);
+    if (!aiGuardReflectListen.ok) {
+      return res.status(aiGuardReflectListen.status).json({
+        message: aiGuardReflectListen.message,
+        limitReached: true,
+      });
+    }
+    if (sessionId) {
+      storage.logAiUsage({ sessionId, feature: "reflection", daysWithApp, platform: "web" }).catch(() => {});
+    }
+
+    const nameNote = userName?.trim()
+      ? `\n\nTheir name is ${userName.trim().split(/\s+/)[0]}. You may use it once, gently, only if it feels natural.`
+      : "";
+
+    const reflectListenSystem = `You are a quiet, wise presence sitting with someone who just shared what a 
+Bible verse stirred in them. Your only job right now is to:
+1. Reflect back what you heard in 1-2 sentences so they feel truly seen
+2. Ask ONE question — the single most important thing you'd want to know 
+   before responding more fully
+
+Rules:
+- Under 80 words total
+- No verse quote, no prayer, no advice, no theology lesson
+- Do NOT name their emotion as the first word or phrase
+- Do NOT start with 'I', 'It sounds like', or 'That must be'
+- Do NOT reframe toward the positive
+- Ask something that goes DEEPER into what they shared, not away from it
+- Good example: 'What part of that has stayed with you the longest?'
+- Good example: 'Is this something you've brought to God before, or does it 
+  feel new today?'
+- Tone: like a trusted friend leaning in, genuinely curious`;
+
+    const userContent = `The verse today is ${verseReference.trim()}: '${verseText.trim().slice(0, 500)}'. Here is what this person shared: '${reflectionInput.trim().slice(0, 1500)}'`;
+
+    try {
+      await streamCompletion(
+        [
+          { role: "system", content: `${reflectListenSystem}${nameNote}` },
+          { role: "user", content: userContent },
+        ],
+        res,
+        { temperature: 0.78, maxTokens: 120, req },
+      );
+    } catch (err) {
+      console.error("devotional reflect-listen error:", err);
+      if (!res.headersSent) res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Generate AI reflection or prayer based on today's verse ───────────────
   app.post(api.ai.generate.path, async (req, res) => {
     try {
@@ -1665,6 +1731,14 @@ Purpose of this reflection: You are not the destination. The Word is. This refle
         if (safeVerse.reflectionPrompt) {
           userPrompt += `\n\nReflection prompt to guide you: ${safeVerse.reflectionPrompt}`;
         }
+        const reflectionInput = (req.body as { reflectionInput?: string }).reflectionInput?.trim() || "";
+        const reflectListenReply = (req.body as { reflectListenReply?: string }).reflectListenReply?.trim() || "";
+        if (reflectionInput) {
+          userPrompt += `\n\nWhat this person shared about the verse:\n"${reflectionInput.slice(0, 1500)}"`;
+        }
+        if (reflectListenReply) {
+          userPrompt += `\n\nWhen I asked them to share more, they added: '${reflectListenReply.slice(0, 800)}'`;
+        }
       } else if (input.type === "prayer") {
         const reflCtx: string = (req.body as { reflectionContext?: string }).reflectionContext?.trim() || "";
         const reflectionContextPrayerNote = reflCtx
@@ -1705,20 +1779,40 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
       }
 
       const isProGen = parseProFlag((req.body as { isPro?: boolean }).isPro);
-      const aiGuardGen = checkAiDailyLimit(sessionId2, daysWithApp2, isProGen);
-      if (!aiGuardGen.ok) {
-        return res.status(aiGuardGen.status).json({
-          message: aiGuardGen.message,
-          limitReached: true,
-        });
-      }
-      if (sessionId2) {
-        storage.logAiUsage({
-          sessionId: sessionId2,
-          feature: input.type === "reflection" ? "reflection" : "prayer",
-          daysWithApp: daysWithApp2,
-          platform: "web",
-        }).catch(() => {});
+      const reflectionInputForGuard = (req.body as { reflectionInput?: string }).reflectionInput?.trim() || "";
+      const reflectListenReplyForGuard = (req.body as { reflectListenReply?: string }).reflectListenReply?.trim() || "";
+      const isReflectListenCompletion =
+        input.type === "reflection" && !!(reflectionInputForGuard && reflectListenReplyForGuard);
+
+      if (isReflectListenCompletion) {
+        if (!sessionId2) {
+          return res.status(400).json({ message: "session required", limitReached: true });
+        }
+        const cap = aiDailyCap(daysWithApp2, isProGen);
+        if (getDailyUsageCount(sessionId2) > cap) {
+          return res.status(429).json({
+            message: isProGen
+              ? "You've had a very full day of reflection. Pick up tomorrow — we're still here."
+              : "You've had a full day of reflection. Rest with what you've received — or continue with Pro.",
+            limitReached: true,
+          });
+        }
+      } else {
+        const aiGuardGen = checkAiDailyLimit(sessionId2, daysWithApp2, isProGen);
+        if (!aiGuardGen.ok) {
+          return res.status(aiGuardGen.status).json({
+            message: aiGuardGen.message,
+            limitReached: true,
+          });
+        }
+        if (sessionId2) {
+          storage.logAiUsage({
+            sessionId: sessionId2,
+            feature: input.type === "reflection" ? "reflection" : "prayer",
+            daysWithApp: daysWithApp2,
+            platform: "web",
+          }).catch(() => {});
+        }
       }
 
       const maxTokens =
