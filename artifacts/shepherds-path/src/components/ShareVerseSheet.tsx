@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Check, X, ImageIcon, Heart, Link2, Loader2 } from "lucide-react";
+import { Share2, Check, X, ImageIcon, Heart, Link2, Loader2, Download } from "lucide-react";
 import { createShareImage, createStoryShareImage } from "@/lib/shareImage";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 import {
@@ -8,6 +8,7 @@ import {
   buildImageShareCaption,
   buildVerseShareText,
   copyToClipboard,
+  downloadBlob,
   easternVerseDateKey,
   shareImageBlob,
   shareImageFilename,
@@ -57,7 +58,7 @@ export function ShareVerseSheet({
   const [busy, setBusy] = useState<"image" | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
-  const [format, setFormat] = useState<"square" | "story">("square");
+  const [format, setFormat] = useState<"square" | "story">("story");
   const [done, setDone] = useState<string | null>(null);
   const autoGenAttempted = useRef(false);
 
@@ -73,7 +74,7 @@ export function ShareVerseSheet({
     if (!open) {
       clearPreview();
       setDone(null);
-      setFormat("square");
+      setFormat("story");
       autoGenAttempted.current = false;
     }
   }, [open, clearPreview]);
@@ -118,7 +119,7 @@ export function ShareVerseSheet({
     if (!open || !generateOnOpen || autoGenAttempted.current) return;
     if (!imageBgUrl && !isMoment) return;
     autoGenAttempted.current = true;
-    void generateImage("square");
+    void generateImage("story");
   }, [open, generateOnOpen, imageBgUrl, isMoment, generateImage]);
 
   const runShareText = async (body: string, shareTitle: string) => {
@@ -178,12 +179,8 @@ export function ShareVerseSheet({
       {busy === "image"
         ? "Preparing your card…"
         : previewBlob
-          ? isMoment
-            ? "Share image with verse"
-            : "Share image card"
-          : isMoment
-            ? "Create image with verse"
-            : "Create image card"}
+          ? "Share image"
+          : "Create image"}
     </button>
   );
 
@@ -192,16 +189,24 @@ export function ShareVerseSheet({
       type="button"
       data-testid="button-share-verse-text"
       onClick={() => void runShareText(shareText, reference)}
-      className={`flex items-center justify-center gap-2 w-full rounded-xl py-3 text-[14px] font-semibold ${
-        isMoment
-          ? "border border-primary/30 text-foreground"
-          : "text-[#1a1208] bg-gradient-to-r from-amber-100/95 via-amber-200/90 to-amber-100/95 py-3.5 text-[15px]"
-      }`}
+      className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-[14px] font-semibold border border-border/50 text-foreground/85"
     >
       {done === "text" ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-      Share verse &amp; link
+      Send verse as text
     </button>
   );
+
+  const saveToPhotosBtn = previewBlob ? (
+    <button
+      type="button"
+      data-testid="button-save-verse-image"
+      onClick={() => downloadBlob(previewBlob, shareImageFilename(reference))}
+      className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-[13px] font-medium text-muted-foreground"
+    >
+      <Download className="w-3.5 h-3.5" />
+      Save to Photos
+    </button>
+  ) : null;
 
   return (
     <AnimatePresence>
@@ -275,21 +280,21 @@ export function ShareVerseSheet({
                 <div className="flex gap-2 p-2 border-t border-border/30">
                   <button
                     type="button"
-                    onClick={() => void generateImage("square")}
-                    className={`flex-1 py-2 text-[12px] font-semibold rounded-lg ${
-                      format === "square" ? "bg-primary/15 text-primary" : "text-muted-foreground"
-                    }`}
-                  >
-                    Square
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => void generateImage("story")}
                     className={`flex-1 py-2 text-[12px] font-semibold rounded-lg ${
                       format === "story" ? "bg-primary/15 text-primary" : "text-muted-foreground"
                     }`}
                   >
                     Story
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void generateImage("square")}
+                    className={`flex-1 py-2 text-[12px] font-semibold rounded-lg ${
+                      format === "square" ? "bg-primary/15 text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    Square
                   </button>
                 </div>
               </div>
@@ -299,12 +304,14 @@ export function ShareVerseSheet({
               {isMoment ? (
                 <>
                   {primaryImageBtn}
+                  {saveToPhotosBtn}
                   {textShareBtn}
                 </>
               ) : (
                 <>
                   {textShareBtn}
                   {primaryImageBtn}
+                  {saveToPhotosBtn}
                 </>
               )}
 
