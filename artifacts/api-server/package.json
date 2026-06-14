@@ -9,7 +9,8 @@
     "start": "node --enable-source-maps --env-file=.env ./dist/index.mjs",
     "start:prod": "NODE_ENV=production node --enable-source-maps --env-file=.env ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "generate-vapid": "node ../../scripts/generate-vapid-keys.mjs"
+    "generate-vapid": "node ../../scripts/generate-vapid-keys.mjs",
+    "seed:pastor-videos": "node --enable-source-maps --env-file=.env.development --import tsx/esm ./src/seedPastorVideos.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "file:../../lib/api-zod",
@@ -49,6 +50,7 @@
     "esbuild": "^0.25.4",
     "esbuild-plugin-pino": "^2.3.3",
     "pino-pretty": "^13",
-    "thread-stream": "3.1.0"
+    "thread-stream": "3.1.0",
+    "tsx": "^4.19.4"
   }
 }

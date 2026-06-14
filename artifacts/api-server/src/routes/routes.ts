@@ -419,6 +419,46 @@ export async function registerRoutes(
     });
   });
 
+  const PASTOR_VIDEO_TONES = new Set([
+    "hope",
+    "strength",
+    "presence",
+    "grief",
+    "identity",
+    "faith",
+    "encouragement",
+    "perseverance",
+    "not alone",
+    "waiting",
+    "anxiety",
+    "shame",
+    "prayer",
+    "doubt",
+    "loneliness",
+    "overwhelm",
+  ]);
+
+  app.get("/api/pastor-video", async (req, res) => {
+    const tone = String(req.query.tone ?? "").trim().toLowerCase();
+    if (!tone || !PASTOR_VIDEO_TONES.has(tone)) {
+      return res.json(null);
+    }
+    try {
+      const video = await storage.getPastorVideoByTone(tone);
+      if (!video) return res.json(null);
+      res.json({
+        pastor_name: video.pastorName,
+        church_name: video.churchName,
+        tier: video.tier,
+        title: video.title,
+        youtube_url: video.youtubeUrl,
+      });
+    } catch (err) {
+      console.error("[pastor-video] lookup failed:", err);
+      res.json(null);
+    }
+  });
+
   // ── User profile name (persists across Safari/iOS localStorage clears) ────────
   app.get("/api/user-name", async (req, res) => {
     const sessionId = req.query.sessionId as string;

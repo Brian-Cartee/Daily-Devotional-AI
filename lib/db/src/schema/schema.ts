@@ -513,6 +513,21 @@ export const insertBetaFeedbackSchema = createInsertSchema(betaFeedback).omit({
 export type BetaFeedback = typeof betaFeedback.$inferSelect;
 export type InsertBetaFeedback = z.infer<typeof insertBetaFeedbackSchema>;
 
+// ── Pastor video recommendations (curated YouTube teaching clips) ───────────
+export const pastorVideos = pgTable("pastor_videos", {
+  id: serial("id").primaryKey(),
+  pastorName: text("pastor_name").notNull(),
+  churchName: text("church_name").notNull(),
+  tier: integer("tier").notNull(),
+  title: text("title").notNull(),
+  youtubeUrl: text("youtube_url").notNull(),
+  toneTags: text("tone_tags").array().notNull(),
+  displayOrder: integer("display_order").notNull(),
+});
+
+export type PastorVideo = typeof pastorVideos.$inferSelect;
+export type InsertPastorVideo = typeof pastorVideos.$inferInsert;
+
 // Replit AI chat integration (conversations + messages)
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),

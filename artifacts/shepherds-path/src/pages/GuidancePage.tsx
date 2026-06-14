@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearch, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw } from "lucide-react";
@@ -42,6 +42,10 @@ import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from 
 import { markReturningHome } from "@/lib/introState";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import { SituationPills } from "@/components/SituationPills";
+import { SITUATION_TOPICS } from "@/lib/situationTopics";
+import { PastorVideoCard } from "@/components/PastorVideoCard";
+import { resolveGuidancePastorVideoTone } from "@/lib/pastorVideoTone";
+import { usePastorVideo } from "@/hooks/use-pastor-video";
 import { ScriptureSceneCard } from "@/components/ScriptureSceneCard";
 import {
   fetchGuidanceVerseAndPrayer,
@@ -338,6 +342,15 @@ export default function GuidancePage() {
   const floatRef = useRef<HTMLTextAreaElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
   const [revealStage, setRevealStage] = useState(0);
+
+  const guidancePastorTone = useMemo(() => {
+    const topic = SITUATION_TOPICS.find((t) => t.id === situationTopicId);
+    return resolveGuidancePastorVideoTone(situationTopicId, topic?.label ?? null, situation);
+  }, [situationTopicId, situation]);
+  const guidancePastorVideo = usePastorVideo(
+    guidancePastorTone,
+    responseComplete && revealStage >= 3,
+  );
   /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
   const latestResponseRef = useRef<HTMLDivElement>(null);
@@ -1289,6 +1302,16 @@ export default function GuidancePage() {
                               )}
                             </button>
                           </div>
+
+                          {guidancePastorVideo ? (
+                            <PastorVideoCard
+                              pastorName={guidancePastorVideo.pastor_name}
+                              churchName={guidancePastorVideo.church_name}
+                              title={guidancePastorVideo.title}
+                              youtubeUrl={guidancePastorVideo.youtube_url}
+                              sectionLabel="A PASTOR FOR THIS MOMENT"
+                            />
+                          ) : null}
 
                           <PrayerThatStays />
 

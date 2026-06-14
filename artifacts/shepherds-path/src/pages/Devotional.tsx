@@ -54,8 +54,15 @@ import {
   shouldUseCachedDevotional,
 } from "@/lib/devotionalSession";
 import { AdditionalSermonsSection } from "@/components/AdditionalSermonsSection";
-import { DailySermonCard } from "@/components/DailySermonCard";
 import { DevotionalCompletionThreshold } from "@/components/DevotionalCompletionThreshold";
+import { PastorVideoCard } from "@/components/PastorVideoCard";
+import { getThresholdNeed } from "@/lib/thresholdState";
+import { getRhythm } from "@/lib/faithRhythm";
+import {
+  mapFaithFocusToPastorVideoTone,
+  mapThresholdNeedToPastorVideoTone,
+} from "@/lib/pastorVideoTone";
+import { usePastorVideo } from "@/hooks/use-pastor-video";
 import { ScriptureContext } from "@/components/ScriptureContext";
 import { SessionStillness } from "@/components/SessionStillness";
 import { getListenFirstPreference } from "@/lib/listenFirst";
@@ -170,6 +177,14 @@ export default function Devotional() {
   const [showPostCompletionCtas, setShowPostCompletionCtas] = useState(false);
   /** After closing gratitude: null = gentle fork; carry = send-off; stay = daily message + optional depth */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
+
+  const devotionalPastorTone =
+    mapThresholdNeedToPastorVideoTone(getThresholdNeed()) ??
+    mapFaithFocusToPastorVideoTone(getRhythm()?.focus);
+  const devotionalPastorVideo = usePastorVideo(
+    devotionalPastorTone,
+    !!gratitudePrayer && completionPath === "stay",
+  );
   const [primarySermonChannel, setPrimarySermonChannel] = useState<string | undefined>();
   const [listenHintSeen, setListenHintSeen] = useState(() => !!localStorage.getItem("sp_listen_intro_seen"));
   const [showShareRow, setShowShareRow] = useState(false);
@@ -2021,18 +2036,19 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {gratitudePrayer && completionPath === "stay" && verse && reflectionContent && (
+          {gratitudePrayer && completionPath === "stay" && devotionalPastorVideo && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
               className="px-1"
             >
-              <DailySermonCard
-                verseId={verse.id}
-                verseReference={verse.reference}
-                reflectionContent={reflectionContent}
-                onSermonLoaded={setPrimarySermonChannel}
+              <PastorVideoCard
+                pastorName={devotionalPastorVideo.pastor_name}
+                churchName={devotionalPastorVideo.church_name}
+                title={devotionalPastorVideo.title}
+                youtubeUrl={devotionalPastorVideo.youtube_url}
+                sectionLabel="GO DEEPER TODAY"
               />
             </motion.div>
           )}

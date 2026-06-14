@@ -6,8 +6,8 @@ import {
   computeStreakAfterGap,
   currentMonthKey,
 } from "./streakLogic";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, mobileSubscriptions, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback, type MobileSubscription } from "@workspace/db";
-import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr, count, gte } from "drizzle-orm";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, mobileSubscriptions, pastorVideos, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback, type MobileSubscription, type PastorVideo } from "@workspace/db";
+import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr, count, gte, asc } from "drizzle-orm";
 
 export interface IStorage {
   getVerseByDate(date: string): Promise<Verse | undefined>;
@@ -129,6 +129,7 @@ export interface IStorage {
   getAiUsageSummary(): Promise<{ feature: string; count: number }[]>;
   submitBetaFeedback(data: InsertBetaFeedback): Promise<BetaFeedback>;
   getAllBetaFeedback(): Promise<BetaFeedback[]>;
+  getPastorVideoByTone(tone: string): Promise<Pick<PastorVideo, "pastorName" | "churchName" | "tier" | "title" | "youtubeUrl"> | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -953,6 +954,24 @@ export class DatabaseStorage implements IStorage {
 
   async getAllBetaFeedback(): Promise<BetaFeedback[]> {
     return db.select().from(betaFeedback).orderBy(desc(betaFeedback.submittedAt));
+  }
+
+  async getPastorVideoByTone(
+    tone: string,
+  ): Promise<Pick<PastorVideo, "pastorName" | "churchName" | "tier" | "title" | "youtubeUrl"> | null> {
+    const [row] = await db
+      .select({
+        pastorName: pastorVideos.pastorName,
+        churchName: pastorVideos.churchName,
+        tier: pastorVideos.tier,
+        title: pastorVideos.title,
+        youtubeUrl: pastorVideos.youtubeUrl,
+      })
+      .from(pastorVideos)
+      .where(sqlExpr`${pastorVideos.toneTags} @> ARRAY[${tone}]::text[]`)
+      .orderBy(asc(pastorVideos.tier), sqlExpr`RANDOM()`)
+      .limit(1);
+    return row ?? null;
   }
 }
 
