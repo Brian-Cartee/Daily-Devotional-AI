@@ -71,12 +71,21 @@ git log --oneline -3
 echo "────────────────────────────────────────────────────────"
 echo ""
 
+echo "Rebuilding API server..."
+cd $APP_DIR/artifacts/api-server
+pnpm run build 2>&1 | tail -5
+
+echo ""
+echo "Restarting API server..."
+pm2 restart api-server --update-env
+
+echo ""
 echo "Rebuilding frontend..."
 cd $FRONTEND_DIR
 pnpm build 2>&1 | tail -5
 
 echo ""
-echo "Restarting servers..."
+echo "Restarting frontend..."
 pm2 restart frontend
 
 echo ""
