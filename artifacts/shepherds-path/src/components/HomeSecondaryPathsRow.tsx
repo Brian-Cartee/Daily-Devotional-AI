@@ -32,13 +32,24 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
       <Link href="/guidance" className="sp-native-card-link">
         <div
           data-testid="home-secondary-guidance"
-          style={rowStyle(
-            "rgba(124,58,237,0.20)",
-            "linear-gradient(to bottom right, rgba(139,92,246,0.10), rgba(124,58,237,0.06))",
-          )}
+          className="border border-violet-500/35"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            borderRadius: "12px",
+            background:
+              "linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.08) 60%, transparent 100%)",
+            padding: "12px 16px",
+            boxSizing: "border-box",
+            boxShadow: "0 0 18px rgba(139,92,246,0.18), inset 0 0 18px rgba(139,92,246,0.06)",
+          }}
         >
           <ShortcutPathIcon variant="guidance" size="sm" />
           <div style={{ flex: 1, minWidth: 0 }}>
+            <span className="text-[10px] font-semibold tracking-widest uppercase text-violet-400/70 mb-0.5 block">
+              ✦ signature
+            </span>
             <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
               Talk it through
             </p>
@@ -108,7 +119,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
                 marginTop: "2px",
               }}
             >
-              {readLabel ? "Pick up where you left off" : "Play any chapter — KJV, WEB, ASV"}
+              {readLabel ? "Pick up where you left off" : "Play any Bible chapter — KJV, WEB, ASV"}
             </p>
           </div>
           <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />
