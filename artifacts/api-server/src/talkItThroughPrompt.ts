@@ -199,6 +199,47 @@ export const TALK_IT_THROUGH_FIRST_RESPONSE = `Write 2–3 short paragraphs. Par
 
 export const TALK_IT_THROUGH_FOLLOW_UP = `This is a follow-up in an ongoing conversation. Reflect what you heard in their latest message, then ask one genuine question that goes deeper — or stay in warm discovery if their emotional register is still unclear. Under 120 words. One question only.`;
 
+/** Prayer rules for /api/guidance/verse-and-prayer (Talk it Through only). */
+export const TALK_IT_THROUGH_PRAYER_RULES = `When writing the prayer:
+
+1. Pick ONE specific detail from what the person shared — a word they used, a situation they named, a feeling they described — and open the prayer with it.
+
+   NOT: 'Lord, I am feeling anxious...'
+   YES: 'Lord, the weight of this launch and everything riding on it...'
+
+2. Write it as the person talking TO God — not about God, not describing their feelings to a third party. First person, present tense, direct address.
+
+3. Under 80 words. Every word earns its place.
+
+4. No filler phrases:
+   - Never start with 'Lord, I come to You'
+   - Never use 'I just want to'
+   - Never use 'I ask that You would'
+   - Never use 'be with me'
+   - Never use 'help me to feel'
+
+5. End with something that lands — not a gentle fade, a real closing line that the person will remember.
+
+6. Tone: someone praying out loud with a trusted friend present — honest, direct, not performative.
+
+If the user message includes a follow-up section, the most personal detail is often there — not in the original submission. Draw from BOTH; let the follow-up inform how you open the prayer.`;
+
+/** User content for verse-and-prayer when two-phase Talk it Through context is available. */
+export function buildTalkItThroughVersePrayerUserContent(
+  situation: string,
+  phase1UserReply?: string,
+): string {
+  const base = situation.trim().slice(0, 1500);
+  const reply = phase1UserReply?.trim();
+  if (!reply) return base;
+  return `${base}
+
+--- Follow-up (what they added when asked — often the most personal detail) ---
+${reply.slice(0, 800)}
+
+Write the prayer using BOTH what they first shared and this follow-up. The follow-up often holds the detail worth opening the prayer with.`;
+}
+
 /** Verse + prayer JSON for /api/guidance/verse-and-prayer (normal Talk it Through mode). */
 export function buildTalkItThroughVersePrayerPrompt(nameNote: string): string {
   return `You are Shepherd's Path — Talk it Through.${nameNote} Given what someone shared, return JSON only with "verse" and "prayer".
@@ -208,6 +249,8 @@ Read their emotional register first — pain, grief, fear, excitement, seeking, 
 "verse": object with "reference" (e.g. "Psalm 23:1") and "text" — the verse text ONLY from ESV or NIV (1–3 sentences max). ONE verse. No cliché. Do NOT prepend any introductory sentence inside "text" — the app shows the intro separately.
 
 "prayer": first-person prayer as if they are speaking to God (Step 5). Short, honest, under 80 words. Use their words where possible. End with Amen. Start with God, Lord, or Father — not "Dear Heavenly Father." Match emotional register: raw when in pain, open when seeking, warm when grateful.
+
+${TALK_IT_THROUGH_PRAYER_RULES}
 
 Return only valid JSON. No markdown. No extra keys.`;
 }

@@ -45,6 +45,7 @@ import {
   TALK_IT_THROUGH_FIRST_RESPONSE,
   TALK_IT_THROUGH_FOLLOW_UP,
   buildTalkItThroughVersePrayerPrompt,
+  buildTalkItThroughVersePrayerUserContent,
 } from "../talkItThroughPrompt";
 import {
   resolveDailyArtDir,
@@ -3268,6 +3269,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
   app.post("/api/guidance/verse-and-prayer", async (req, res) => {
     const { situation, userName, sessionId: sid } = req.body as {
       situation?: string; userName?: string; sessionId?: string;
+      phase1UserReply?: string;
     };
     const presenceMode: string = (req.body as any).presenceMode || "normal";
     const fields: string = (req.body as any).fields || "both";
@@ -3324,6 +3326,11 @@ Return only keys needed for requested fields plus rationale.`;
           ? sighVpSystem
           : buildTalkItThroughVersePrayerPrompt(nameNote);
 
+      const phase1UserReply = (req.body as { phase1UserReply?: string }).phase1UserReply;
+      const userContent = isSacredVp
+        ? situation.trim().slice(0, 1500)
+        : buildTalkItThroughVersePrayerUserContent(situation, phase1UserReply);
+
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         max_tokens: isSacredVp ? 420 : 520,
@@ -3333,7 +3340,7 @@ Return only keys needed for requested fields plus rationale.`;
             role: "system",
             content: vpSystem,
           },
-          { role: "user", content: situation.trim().slice(0, 1500) },
+          { role: "user", content: userContent },
         ],
       });
       const raw = completion.choices[0]?.message?.content ?? "{}";

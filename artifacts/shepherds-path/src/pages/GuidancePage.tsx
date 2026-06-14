@@ -496,10 +496,10 @@ export default function GuidancePage() {
     }
   };
 
-  const startPhase2 = () => {
+  const startPhase2 = (phase1Reply?: string | null) => {
     setVpLoading(true);
     fetchJourney();
-    void loadVerseAndPrayer();
+    void loadVerseAndPrayer(phase1Reply);
   };
 
   const fallbackToSinglePhase = (initialUserMsg: Message, mode?: GuidanceMode) => {
@@ -555,14 +555,14 @@ export default function GuidancePage() {
       });
   };
 
-  const loadVerseAndPrayer = useCallback(async () => {
+  const loadVerseAndPrayer = useCallback(async (phase1Reply?: string | null) => {
     const trimmed = situation.trim();
     if (!trimmed) return;
 
     setVpLoading(true);
     setVpError(false);
 
-    const result = await fetchGuidanceVerseAndPrayer(trimmed);
+    const result = await fetchGuidanceVerseAndPrayer(trimmed, phase1Reply ?? undefined);
     setVpLoading(false);
 
     if (!result.ok) {
@@ -856,7 +856,7 @@ export default function GuidancePage() {
     setConversationPhase(2);
     setIsReflecting(true);
     setTimeout(() => setIsReflecting(false), 700);
-    startPhase2();
+    startPhase2(reply);
     const initialUserMsg: Message = { role: "user", content: situation };
     await streamResponse([initialUserMsg], undefined, {
       phase1Response,
@@ -1382,7 +1382,7 @@ export default function GuidancePage() {
                       <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 py-5">
                         <GuidanceVpRetry
                           label="Scripture for your moment is still preparing — tap Try again."
-                          onRetry={() => void loadVerseAndPrayer()}
+                          onRetry={() => void loadVerseAndPrayer(phase1UserReplySubmitted)}
                           loading={vpLoading}
                         />
                       </div>
@@ -1455,7 +1455,7 @@ export default function GuidancePage() {
                             </p>
                             <GuidanceVpRetry
                               label="Personalized prayer couldn't load — pray this now, or try again."
-                              onRetry={() => void loadVerseAndPrayer()}
+                              onRetry={() => void loadVerseAndPrayer(phase1UserReplySubmitted)}
                               loading={vpLoading}
                             />
                           </div>
