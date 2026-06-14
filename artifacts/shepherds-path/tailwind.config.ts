@@ -1,7 +1,8 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class", ".sanctuary"],
+  darkMode: ["class", ".dark, .sanctuary"],
+  safelist: ["dark", "sanctuary", "light"],
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {

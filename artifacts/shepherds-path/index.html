@@ -294,7 +294,17 @@
         window.__spSkipWebFonts = true;
       }
       if(window.ReactNativeWebView){document.documentElement.classList.add('dark');}
-      else{try{var t=localStorage.getItem('sp-theme');if(t==='sanctuary')document.documentElement.classList.add('sanctuary');else if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}}
+      else{
+        try{
+          var theme=localStorage.getItem('sp-theme')||'dark';
+          document.documentElement.classList.remove('dark','light','sanctuary');
+          if(theme==='dark')document.documentElement.classList.add('dark');
+          if(theme==='sanctuary')document.documentElement.classList.add('sanctuary');
+        }catch(e){
+          document.documentElement.classList.remove('dark','light','sanctuary');
+          document.documentElement.classList.add('dark');
+        }
+      }
     })();
     </script>
     <!-- Web only — App Store shell uses system fonts (no Google Fonts network). -->

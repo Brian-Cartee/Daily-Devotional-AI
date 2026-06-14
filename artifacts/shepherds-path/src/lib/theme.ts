@@ -5,8 +5,6 @@ export type AppTheme = "light" | "dark" | "sanctuary";
 
 const STORAGE_KEY = "sp-theme";
 
-const THEME_CLASSES = ["dark", "light", "sanctuary"] as const;
-
 export function getStoredTheme(): AppTheme {
   if (isNativeWebViewShell()) return "dark";
   try {
@@ -18,9 +16,11 @@ export function getStoredTheme(): AppTheme {
 
 export function applyTheme(theme: AppTheme) {
   const root = document.documentElement;
-  const effective = isNativeWebViewShell() ? "dark" : theme;
+  // Native shell has no light mode; map it to dark but allow sanctuary.
+  const effective: AppTheme =
+    isNativeWebViewShell() && theme === "light" ? "dark" : theme;
 
-  root.classList.remove(...THEME_CLASSES);
+  root.classList.remove("dark", "light", "sanctuary");
 
   if (effective === "dark") {
     root.classList.add("dark");
@@ -33,6 +33,8 @@ export function applyTheme(theme: AppTheme) {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {}
   }
+
+  console.log("Applied theme:", effective, "Classes:", root.className);
 }
 
 export interface ThemeContextValue {

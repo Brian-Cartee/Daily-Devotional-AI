@@ -14,6 +14,7 @@ import {
 } from "./lib/platform";
 import { nativeDiag } from "./lib/nativeDiag";
 import { syncEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
 import {
   hydrateSubscriberFromUrlParam,
   hydrateSubscriberStateFromIndexedDB,
@@ -26,6 +27,8 @@ if (isNativeWebViewShell()) {
 }
 
 installApiFetch();
+
+applyTheme(getStoredTheme());
 
 if ("serviceWorker" in navigator) {
   if (isNativeWebViewShell()) {

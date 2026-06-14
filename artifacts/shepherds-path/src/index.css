@@ -95,52 +95,53 @@ button, a, input, textarea, select, [role="button"] {
     --input: 252 10% 24%;
     --ring: 292 90% 54%;
   }
+}
 
-  .sanctuary {
-    /* Deep royal purple base, ivory cream text, gold primary */
-    --background: 265 73% 7%;
-    --foreground: 43 77% 93%;
+/* Sanctuary — unlayered + html.sanctuary beats .dark if both classes are present */
+html.sanctuary {
+  color-scheme: dark;
+  --background: 265 73% 7%;
+  --foreground: 43 87% 94%;
 
-    --card: 258 72% 14%;
-    --card-foreground: 43 77% 93%;
+  --card: 258 72% 14%;
+  --card-foreground: 43 87% 94%;
 
-    --popover: 258 68% 12%;
-    --popover-foreground: 43 77% 93%;
+  --popover: 258 68% 12%;
+  --popover-foreground: 43 87% 94%;
 
-    --primary: 32 93% 44%;
-    --primary-foreground: 265 73% 5%;
+  --primary: 32 95% 44%;
+  --primary-foreground: 30 100% 2%;
 
-    --secondary: 270 40% 20%;
-    --secondary-foreground: 43 40% 85%;
+  --secondary: 263 71% 22%;
+  --secondary-foreground: 270 100% 92%;
 
-    --muted: 265 35% 18%;
-    --muted-foreground: 270 20% 65%;
+  --muted: 265 58% 20%;
+  --muted-foreground: 270 45% 77%;
 
-    --accent: 270 80% 60%;
-    --accent-foreground: 0 0% 100%;
+  --accent: 258 90% 66%;
+  --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 43 77% 93%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 43 87% 94%;
 
-    --border: 265 45% 25%;
-    --input: 265 45% 22%;
-    --ring: 32 93% 44%;
+  --border: 265 56% 28%;
+  --input: 265 60% 21%;
+  --ring: 32 95% 44%;
 
-    --chart-1: 32 93% 44%;
-    --chart-2: 45 93% 47%;
-    --chart-3: 270 80% 60%;
-    --chart-4: 258 60% 35%;
-    --chart-5: 32 95% 44%;
-  }
+  --chart-1: 32 95% 44%;
+  --chart-2: 45 93% 47%;
+  --chart-3: 258 90% 66%;
+  --chart-4: 258 60% 35%;
+  --chart-5: 32 95% 44%;
 }
 
 /* Sanctuary — targeted accent polish */
-.sanctuary .bg-primary {
+html.sanctuary .bg-primary {
   background: linear-gradient(135deg, #d97706, #b45309);
   box-shadow: 0 4px 20px rgba(217, 119, 6, 0.35);
 }
 
-.sanctuary [data-card="talk-it-through"] {
+html.sanctuary [data-card="talk-it-through"] {
   background: linear-gradient(135deg, rgba(217, 119, 6, 0.15), transparent);
   border-color: rgba(217, 119, 6, 0.3);
   box-shadow: 0 0 18px rgba(217, 119, 6, 0.15);
