@@ -1666,6 +1666,15 @@ Purpose of this reflection: You are not the destination. The Word is. This refle
           userPrompt += `\n\nReflection prompt to guide you: ${safeVerse.reflectionPrompt}`;
         }
       } else if (input.type === "prayer") {
+        const reflCtx: string = (req.body as { reflectionContext?: string }).reflectionContext?.trim() || "";
+        const reflectionContextPrayerNote = reflCtx
+          ? `\n\nThe person just told you what feels like a gift today: that detail is in the reflection context. Open the prayer with that specific thing — not a category ('gratitude', 'love') but the actual thing they named.
+
+NOT: 'Lord, thank You for the gifts in my life'
+YES: 'Lord, [the specific thing they wrote]...'
+
+If they wrote something small or simple, that is perfect. Small specifics make the most honest prayers. Do not upgrade or spiritualize what they said. Use their words.`
+          : "";
         systemPrompt =
           `You are a deeply thoughtful spiritual companion writing a prayer on behalf of the person who will pray these words today.
 
@@ -1677,6 +1686,9 @@ If the person's journal reveals specific burdens or themes, weave them in natura
 
 What you never do:
 — Use filler phrases: "We just ask," "Lord we just," "Father God," "Thank You for this beautiful day."
+— Never open with 'Lord, thank You for this beautiful day'
+— Never open with 'Heavenly Father, we come before You'
+— Open with the specific gift they named (when reflection context is provided) or the specific weight of today's verse
 — Write something generic enough to work for any verse. This prayer belongs to this text, this moment, this person.
 — Preach inside the prayer.
 
@@ -1686,8 +1698,7 @@ When the verse or the person's situation touches on loneliness, rejection, feeli
 
 Begin with "Lord," or "Heavenly Father," and close with "Amen."
 
-One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${culturalMomentNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}${langNote2}`;
-        const reflCtx: string = (req.body as any).reflectionContext || "";
+One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${reflectionContextPrayerNote}${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${culturalMomentNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}${langNote2}`;
         userPrompt = reflCtx
           ? `Please write a prayer based on this verse: ${safeVerse.reference} - "${safeVerse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
           : `Please write a prayer based on this verse: ${safeVerse.reference} - "${safeVerse.text}"`;
