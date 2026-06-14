@@ -47,6 +47,7 @@ import { PastorVideoCard } from "@/components/PastorVideoCard";
 import { resolveGuidancePastorVideoTone } from "@/lib/pastorVideoTone";
 import { usePastorVideo } from "@/hooks/use-pastor-video";
 import { ScriptureSceneCard } from "@/components/ScriptureSceneCard";
+import { ShareVerseImageButton } from "@/components/ShareableVerseImage";
 import {
   fetchGuidanceVerseAndPrayer,
   formatGuidanceVerseDisplay,
@@ -363,13 +364,15 @@ export default function GuidancePage() {
   const responseRef = useRef<HTMLDivElement>(null);
   const [revealStage, setRevealStage] = useState(0);
 
+  const showPhase2Content = phase2Started && conversationPhase === 2;
+
   const guidancePastorTone = useMemo(() => {
     const topic = SITUATION_TOPICS.find((t) => t.id === situationTopicId);
     return resolveGuidancePastorVideoTone(situationTopicId, topic?.label ?? null, situation);
   }, [situationTopicId, situation]);
   const guidancePastorVideo = usePastorVideo(
     guidancePastorTone,
-    responseComplete && revealStage >= 3,
+    showPhase2Content && responseComplete && revealStage >= 3,
   );
   /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
@@ -380,8 +383,6 @@ export default function GuidancePage() {
   const guidanceStartedForRef = useRef<string | null>(null);
   /** Invalidates in-flight guidance flows when a newer one starts (Strict Mode / remounts). */
   const guidanceFlowGenRef = useRef(0);
-
-  const showPhase2Content = phase2Started && conversationPhase === 2;
 
   const streamResponse = async (
     conversationMessages: Message[],
@@ -727,15 +728,15 @@ export default function GuidancePage() {
       .catch(() => {});
   }, [responseComplete]);
 
-  // Progressive reveal — stage the content in after guidance lands
+  // Progressive reveal — stage the content in after Phase 2 guidance lands
   useEffect(() => {
-    if (!responseComplete) return;
+    if (!showPhase2Content || !responseComplete) return;
     setRevealStage(1);
     const t1 = setTimeout(() => setRevealStage(s => Math.max(s, 2)), 3000);
     const t2 = setTimeout(() => setRevealStage(s => Math.max(s, 3)), 6000);
     const t3 = setTimeout(() => setRevealStage(s => Math.max(s, 4)), 10000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [responseComplete]);
+  }, [showPhase2Content, responseComplete]);
 
   const guidanceListenReady =
     !!verse &&
@@ -1317,7 +1318,7 @@ export default function GuidancePage() {
                     </div>
                   );
                 })()}
-                {responseComplete && revealStage >= 2 && (vpLoading || verse || vpError) && (
+                {showPhase2Content && responseComplete && revealStage >= 2 && (vpLoading || verse || vpError) && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1367,6 +1368,12 @@ export default function GuidancePage() {
                                 size="sm"
                                 scope="verse"
                               />
+                              <ShareVerseImageButton
+                                verseText={verseDisplay.text}
+                                verseReference={verse.reference}
+                                testId="button-guidance-share-verse-image"
+                                className="text-[12px] font-semibold px-3 py-1.5 rounded-full border border-white/25 bg-black/25 text-white hover:bg-white/40 transition-colors"
+                              />
                             </div>
                           }
                         />
@@ -1382,7 +1389,7 @@ export default function GuidancePage() {
                     )}
                   </motion.div>
                 )}
-                {responseComplete && (walkLoading || walkToday) && (
+                {showPhase2Content && responseComplete && (walkLoading || walkToday) && (
                   <div className="mt-6 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-50/60 to-amber-100/30 dark:from-amber-900/15 dark:to-amber-800/8 px-5 py-4" data-testid="card-walk-today">
                     <div className="flex items-center justify-between gap-3 mb-2.5">
                       <p className="text-[10px] font-bold tracking-[0.18em] text-amber-600/80 dark:text-amber-400/70 uppercase">Walk This Today</p>
@@ -1412,7 +1419,7 @@ export default function GuidancePage() {
                     )}
                   </div>
                 )}
-                {responseComplete && revealStage >= 3 && (prayer || vpLoading || vpError) && (
+                {showPhase2Content && responseComplete && revealStage >= 3 && (prayer || vpLoading || vpError) && (
                   <motion.div
                     key="prayer-card"
                     initial={{ opacity: 0, y: 12 }}
@@ -1524,7 +1531,7 @@ export default function GuidancePage() {
                     </div>
                   </motion.div>
                 )}
-                {responseComplete && (
+                {showPhase2Content && responseComplete && (
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <ListenButton
                       text={cleanResponse(assistantMessages[0]?.content ?? "")}
@@ -1546,13 +1553,13 @@ export default function GuidancePage() {
                     )}
                   </div>
                 )}
-                {responseComplete && (
+                {showPhase2Content && responseComplete && (
                   <p className="text-[11px] text-muted-foreground mt-4 flex items-center gap-1.5">
                     <span>✝</span>
                     <span>Grounded in Scripture. Guided by the Holy Spirit.</span>
                   </p>
                 )}
-                {responseComplete && (
+                {showPhase2Content && responseComplete && (
                   <Link href="/safety">
                     <p
                       className="text-[11px] text-muted-foreground/70 mt-1 underline underline-offset-4 cursor-pointer hover:text-muted-foreground transition-colors"
@@ -1562,17 +1569,17 @@ export default function GuidancePage() {
                     </p>
                   </Link>
                 )}
-                {responseComplete && (
+                {showPhase2Content && responseComplete && (
                   <p className="text-[12px] text-muted-foreground/80 mt-2 tracking-wide">
                     This meets you—but it won't move you.
                   </p>
                 )}
-                {responseComplete && (
+                {showPhase2Content && responseComplete && (
                   <p className="text-[12px] text-muted-foreground/70 mt-1 tracking-wide">
                     Walking it is up to you.
                   </p>
                 )}
-                {responseComplete && verse && (
+                {showPhase2Content && responseComplete && verse && (
                   <div className="mt-4 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/6 to-violet-500/4 px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${chainSection || ttsChain.loading ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
@@ -1719,7 +1726,7 @@ export default function GuidancePage() {
 
           {/* Follow-up input — stay path only, after prayer lands */}
           <AnimatePresence>
-            {responseComplete && completionPath === "stay" && revealStage >= 3 && (
+            {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 3 && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1824,14 +1831,14 @@ export default function GuidancePage() {
           </AnimatePresence>
 
           {/* Completion fork — after prayer, before optional depth */}
-          {responseComplete && revealStage >= 3 && completionPath === null && (
+          {showPhase2Content && responseComplete && revealStage >= 3 && completionPath === null && (
             <GuidanceCompletionThreshold
               onCarry={() => setCompletionPath("carry")}
               onStay={() => setCompletionPath("stay")}
             />
           )}
 
-          {responseComplete && completionPath === "carry" && (
+          {showPhase2Content && responseComplete && completionPath === "carry" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1861,7 +1868,7 @@ export default function GuidancePage() {
           )}
 
           {/* Bridge text — connects the response to the journey below */}
-          {responseComplete && completionPath === "stay" && revealStage >= 4 && (
+          {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && (
             <p className="text-[13px] text-muted-foreground/75 leading-relaxed mb-6 -mt-2">
               Here&apos;s where I&apos;d walk with you next.
             </p>
@@ -1869,7 +1876,7 @@ export default function GuidancePage() {
 
           {/* Journey card */}
           <AnimatePresence>
-            {responseComplete && completionPath === "stay" && revealStage >= 4 && (journeyLoading || journey || journeyError || !isProVerifiedLocally()) && (
+            {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && (journeyLoading || journey || journeyError || !isProVerifiedLocally()) && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2002,7 +2009,7 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {responseComplete && completionPath === "stay" && revealStage >= 4 && (
+          {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && (
             <div className="mt-8 mb-4">
               <ShareInviteCard variant="compact" />
             </div>

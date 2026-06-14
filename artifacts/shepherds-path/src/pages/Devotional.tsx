@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
+import { ShareVerseImageButton } from "@/components/ShareableVerseImage";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 import { getStoredLang } from "@/lib/language";
@@ -1192,17 +1193,14 @@ export default function Devotional() {
                     vertical
                   />
                 </div>
-                <button
-                  data-testid="button-share-image"
-                  onClick={handleShareImage}
-                  disabled={sharingImage}
-                  className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors disabled:opacity-50"
-                >
-                  {sharingImage
-                    ? <Loader2 className="w-5 h-5 animate-spin" />
-                    : <ImageDown className="w-5 h-5" />}
-                  <span className="text-[12px] font-semibold leading-none">Save Image</span>
-                </button>
+                <div className="flex justify-center py-3.5">
+                  <ShareVerseImageButton
+                    verseText={verse.text}
+                    verseReference={verse.reference}
+                    vertical
+                    testId="button-share-image"
+                  />
+                </div>
                 <button
                   data-testid="button-share"
                   onClick={() => { handleShare(); setShowShareRow(v => !v); }}
