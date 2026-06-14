@@ -1431,6 +1431,7 @@ export default function Devotional() {
                     verseReference={verse.reference}
                     vertical
                     testId="button-share-image"
+                    label="Save card"
                   />
                 </div>
                 <button
@@ -1439,7 +1440,7 @@ export default function Devotional() {
                   className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors"
                 >
                   {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className={`w-5 h-5 ${showShareRow ? "text-primary" : ""}`} />}
-                  <span className="text-[12px] font-semibold leading-none">{copied ? "Copied!" : "Share"}</span>
+                  <span className="text-[12px] font-semibold leading-none">{copied ? "Copied!" : "Send link"}</span>
                 </button>
               </div>
 

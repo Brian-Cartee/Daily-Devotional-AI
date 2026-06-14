@@ -181,6 +181,7 @@ interface ShareVerseImageButtonProps {
   className?: string;
   vertical?: boolean;
   testId?: string;
+  label?: string;
 }
 
 export function ShareVerseImageButton({
@@ -189,6 +190,7 @@ export function ShareVerseImageButton({
   className = "",
   vertical = false,
   testId = "button-share-verse-image",
+  label = "Share Image",
 }: ShareVerseImageButtonProps) {
   const [loading, setLoading] = useState(false);
 
@@ -222,7 +224,7 @@ export function ShareVerseImageButton({
         <Image className={vertical ? "w-5 h-5" : "w-4 h-4"} />
       )}
       <span className={vertical ? "text-[12px] font-semibold leading-none" : undefined}>
-        Share Image
+        {label}
       </span>
     </button>
   );
