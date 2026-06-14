@@ -1631,6 +1631,70 @@ Rules:
     }
   });
 
+  // ── Devotional gratitude-listen — acknowledgment + one question before closing prayer ─
+  app.post("/api/devotional/gratitude-listen", async (req, res) => {
+    const { gratitudeInput, verseReference, userName, sessionId } = req.body as {
+      gratitudeInput?: string;
+      verseReference?: string;
+      userName?: string;
+      sessionId?: string;
+    };
+    if (!gratitudeInput?.trim()) {
+      return res.status(400).json({ message: "gratitudeInput required" });
+    }
+    if (gratitudeInput.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
+
+    const daysWithApp: number = Number((req.body as { daysWithApp?: number }).daysWithApp) || 1;
+    const isProGratitudeListen = parseProFlag((req.body as { isPro?: boolean }).isPro);
+    const aiGuardGratitudeListen = checkAiDailyLimit(sessionId, daysWithApp, isProGratitudeListen);
+    if (!aiGuardGratitudeListen.ok) {
+      return res.status(aiGuardGratitudeListen.status).json({
+        message: aiGuardGratitudeListen.message,
+        limitReached: true,
+      });
+    }
+    if (sessionId) {
+      storage.logAiUsage({ sessionId, feature: "prayer", daysWithApp, platform: "web" }).catch(() => {});
+    }
+
+    const nameNote = userName?.trim()
+      ? `\n\nTheir name is ${userName.trim().split(/\s+/)[0]}. You may use it once, gently, only if it feels natural.`
+      : "";
+
+    const gratitudeListenSystem = `You are a quiet, warm presence sitting with someone who just named 
+something they're grateful for. Your only job is:
+1. Reflect back what they named in one sentence so they feel it was 
+   truly received
+2. Ask ONE gentle question that goes deeper into the gift — not broader
+
+Rules:
+- Under 70 words total
+- Do NOT restate the gift as a category ('gratitude', 'blessing')
+- Use their specific words
+- The question should help them feel the gift more fully, not explain it
+- Do NOT ask them to list more things they're grateful for
+- Tone: warm, unhurried, like a friend leaning in over coffee
+- Good example: 'What made today the day that landed?'
+- Good example: 'Is this something you've had before, or does it feel new?'`;
+
+    const ref = verseReference?.trim() || "today's verse";
+    const userContent = `The verse today is ${ref}. This person named this as their gift today: '${gratitudeInput.trim().slice(0, 1500)}'`;
+
+    try {
+      await streamCompletion(
+        [
+          { role: "system", content: `${gratitudeListenSystem}${nameNote}` },
+          { role: "user", content: userContent },
+        ],
+        res,
+        { temperature: 0.78, maxTokens: 100, req },
+      );
+    } catch (err) {
+      console.error("devotional gratitude-listen error:", err);
+      if (!res.headersSent) res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Generate AI reflection or prayer based on today's verse ───────────────
   app.post(api.ai.generate.path, async (req, res) => {
     try {
@@ -1741,6 +1805,20 @@ Purpose of this reflection: You are not the destination. The Word is. This refle
         }
       } else if (input.type === "prayer") {
         const reflCtx: string = (req.body as { reflectionContext?: string }).reflectionContext?.trim() || "";
+        const userReflectionReply = (req.body as { userReflectionReply?: string }).userReflectionReply?.trim() || "";
+        const userReplyPrayerNote = userReflectionReply
+          ? `
+
+CRITICAL — OPENING RULE:
+This person, in their own words, said: "${userReflectionReply.slice(0, 800)}"
+The prayer MUST open with that exact thing — not a category, not a 
+paraphrase, not a reference to the time of day.
+First sentence example: "Lord, Brian carries a real desire to love 
+others better — that longing is the first thing he brings to You."
+Do NOT open with "I come before You", "in this quiet hour", 
+"Heavenly Father we gather", or any time-of-day reference.
+The opening must use what they said in their own words.`
+          : "";
         const reflectionContextPrayerNote = reflCtx
           ? `\n\nThe person just told you what feels like a gift today: that detail is in the reflection context. Open the prayer with that specific thing — not a category ('gratitude', 'love') but the actual thing they named.
 
@@ -1772,7 +1850,7 @@ When the verse or the person's situation touches on loneliness, rejection, feeli
 
 Begin with "Lord," or "Heavenly Father," and close with "Amen."
 
-One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${reflectionContextPrayerNote}${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${culturalMomentNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}${langNote2}`;
+One more thing: write this prayer so it feels like a beginning — not a finished, polished product. Real prayers are rarely tidy. Leave a slight sense of something still being said. Do not wrap it up too completely. A good prayer opens a door; it does not close one.${userReplyPrayerNote}${reflectionContextPrayerNote}${nameNote2}${relationshipNote2}${memoryNote2}${generateModeNote}${lateNightPrayerNote}${holidayNote2}${culturalMomentNote2}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}${langNote2}`;
         userPrompt = reflCtx
           ? `Please write a prayer based on this verse: ${safeVerse.reference} - "${safeVerse.text}"\n\nThe person has just read this reflection on the verse:\n"${reflCtx}"\n\nLet the prayer emerge from the same emotional space as that reflection — the same honest place it landed on. Don't reference the reflection directly; let its spirit inform the prayer.`
           : `Please write a prayer based on this verse: ${safeVerse.reference} - "${safeVerse.text}"`;
@@ -2035,6 +2113,21 @@ What you never do:
       return res.status(400).json({ message: "passageRef, passageText, and messages are required" });
     }
 
+    const userReflectionReply = String((req.body as { userReflectionReply?: string }).userReflectionReply || "").trim();
+    const userReplyPassageNote = userReflectionReply
+      ? `
+
+CRITICAL — OPENING RULE:
+This person, in their own words, said: "${userReflectionReply.slice(0, 800)}"
+The prayer MUST open with that exact thing — not a category, not a 
+paraphrase, not a reference to the time of day.
+First sentence example: "Lord, Brian carries a real desire to love 
+others better — that longing is the first thing he brings to You."
+Do NOT open with "I come before You", "in this quiet hour", 
+"Heavenly Father we gather", or any time-of-day reference.
+The opening must use what they said in their own words.`
+      : "";
+
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
     if (detectCrisis(lastUserMsg)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -2084,7 +2177,7 @@ What you never do:
 — Give bulleted lists as your primary response.
 — Tell people what they "should" believe or do.
 — Pad the response with things that don't serve the question.
-— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In any prayers you write, capitalize You, Your when addressing God directly.${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`;
+— Capitalize "you" or "your" when addressing the reader. Capitalize He, Him, His only when unmistakably referring to God, Jesus, or the Holy Spirit. In any prayers you write, capitalize You, Your when addressing God directly.${userReplyPassageNote}${passageNameNote}${passageRelationshipNote}${passageMemoryNote}${langNote}`;
 
     try {
       await streamCompletion(

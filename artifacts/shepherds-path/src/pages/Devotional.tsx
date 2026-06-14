@@ -167,6 +167,11 @@ export default function Devotional() {
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [gratitudePrayer, setGratitudePrayer] = useState("");
   const [gratitudePrayerLoading, setGratitudePrayerLoading] = useState(false);
+  const [gratitudeListenResponse, setGratitudeListenResponse] = useState("");
+  const [gratitudeListenComplete, setGratitudeListenComplete] = useState(false);
+  const [gratitudeListenReply, setGratitudeListenReply] = useState("");
+  const [gratitudeListenReplySubmitted, setGratitudeListenReplySubmitted] = useState<string | null>(null);
+  const [gratitudeListenLoading, setGratitudeListenLoading] = useState(false);
   const [savedGratitude, setSavedGratitude] = useState(false);
   const [listenSection, setListenSection] = useState<"verse" | "reflection" | "prayer" | null>(null);
   const [showListenReply, setShowListenReply] = useState(false);
@@ -237,6 +242,14 @@ export default function Devotional() {
     return new RegExp(`\\b${first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text);
   };
 
+  const resetGratitudeListenState = () => {
+    setGratitudeListenResponse("");
+    setGratitudeListenComplete(false);
+    setGratitudeListenReply("");
+    setGratitudeListenReplySubmitted(null);
+    setGratitudeListenLoading(false);
+  };
+
   const resetReflectListenState = () => {
     setReflectListenResponse("");
     setReflectListenStreamingText("");
@@ -287,6 +300,7 @@ export default function Devotional() {
     setReflectionError(false);
     setPrayerError(false);
     resetReflectListenState();
+    resetGratitudeListenState();
     setEntryTriggered(true);
     beginDevotionalGeneration(verseId, explicitName ?? resolvedProfileName ?? getUserName() ?? undefined);
   };
@@ -663,7 +677,13 @@ export default function Devotional() {
         const nameForCache = userName ?? getUserName() ?? null;
         cacheReflection(finalText, verseId, nameForCache);
         if (!quick) prewarmTTS(finalText, getUserVoice());
-        generatePrayer(verseId, lang, userName ?? nameForCache ?? undefined, finalText);
+        generatePrayer(
+          verseId,
+          lang,
+          userName ?? nameForCache ?? undefined,
+          finalText,
+          opts?.reflectListenReply,
+        );
       }
     } catch (e: unknown) {
       if (e instanceof AiLimitReachedError) {
@@ -775,7 +795,13 @@ export default function Devotional() {
     }
   };
 
-  const generatePrayer = async (verseId: number, lang: string, userName?: string, reflectionContext?: string) => {
+  const generatePrayer = async (
+    verseId: number,
+    lang: string,
+    userName?: string,
+    reflectionContext?: string,
+    userReflectionReply?: string,
+  ) => {
     prayerAbortRef.current?.abort();
     const controller = new AbortController();
     prayerAbortRef.current = controller;
@@ -792,6 +818,7 @@ export default function Devotional() {
         continuityIntent: quick ? "fresh" : continuityIntentRef.current,
         quickPersonalize: quick,
         ...(reflectionContext ? { reflectionContext } : {}),
+        ...(userReflectionReply ? { userReflectionReply } : {}),
       }, (text) => setPrayerContent(capitalizeDivinePronouns(text)), controller.signal);
       if (!controller.signal.aborted) {
         const finalPrayer = capitalizeDivinePronouns(result);
@@ -823,12 +850,39 @@ export default function Devotional() {
     if (!controller.signal.aborted) setPrayerLoading(false);
   };
 
-  const handleGratitudePrayer = async () => {
+  const fireGratitudeCompletionAchievements = (prayer: string) => {
+    if (!prayer || isSacredSessionQuiet()) return;
+    const devotionalAchievement = checkDevotionalFirstComplete();
+    if (devotionalAchievement) {
+      setTimeout(() => {
+        markAchievementSeen(devotionalAchievement.id);
+        setCurrentAchievement(devotionalAchievement);
+      }, 1200);
+    } else if (pendingStreakAchievementRef.current) {
+      const streakAchievement = pendingStreakAchievementRef.current;
+      pendingStreakAchievementRef.current = null;
+      setTimeout(() => {
+        markAchievementSeen(streakAchievement.id);
+        setCurrentAchievement(streakAchievement);
+      }, 1200);
+    }
+  };
+
+  const generateGratitudePrayerDirect = async (options?: {
+    listenReply?: string;
+    userReflectionReply?: string;
+  }) => {
     if (!gratitudeInput.trim() || !verse) return;
-    if (!canUseAi()) { setShowUpgrade(true); return; }
+    if (!canUseAi()) {
+      setShowUpgrade(true);
+      return;
+    }
     recordAiUsage();
     setGratitudePrayerLoading(true);
     setGratitudePrayer("");
+    const listenReplyExtra = options?.listenReply?.trim()
+      ? `\n\nWhen I asked them more about this gift, they shared: '${options.listenReply.trim()}'`
+      : "";
     try {
       const res = await fetch("/api/chat/passage", {
         method: "POST",
@@ -840,14 +894,14 @@ export default function Devotional() {
           userName: getUserName() ?? undefined,
           sessionId: getSessionId(),
           daysWithApp: getRelationshipAge(),
+          ...(options?.userReflectionReply ? { userReflectionReply: options.userReflectionReply } : {}),
           messages: [{
             role: "user",
-            content: `This person has just spent time with ${verse.reference}: "${verse.text}".${reflectionContent ? ` Their reflection landed on this: "${reflectionContent.split("\n").filter(p => p.trim())[0]}"` : ""} They want to close by speaking their heart to God. Here is what they are grateful for today: "${gratitudeInput.trim()}". Write an intimate, personal closing prayer — 3 to 5 sentences — as if they are quietly talking to God, not performing for an audience. Let their gratitude, the spirit of today's verse${reflectionContent ? ", and the emotional thread of the reflection" : ""} meet each other naturally inside the prayer. Open with "Lord," or "Father," — then immediately name the specific thing they just shared (use their exact words or very close paraphrase, not a category like "gratitude" or "blessings"). Do not open with a generic phrase like "thank You for this day" or "we come before You." Close with "Amen." Make it feel like it could only have been written for this person, in this moment. Warm. Unhurried. Real. When addressing God, capitalize You, Your, Yours. Never capitalize "you" or "your" when referring to the person praying.`,
+            content: `This person has just spent time with ${verse.reference}: "${verse.text}".${reflectionContent ? ` Their reflection landed on this: "${reflectionContent.split("\n").filter(p => p.trim())[0]}"` : ""} They want to close by speaking their heart to God. Here is what they are grateful for today: "${gratitudeInput.trim()}".${listenReplyExtra} Write an intimate, personal closing prayer — 3 to 5 sentences — as if they are quietly talking to God, not performing for an audience. Let their gratitude, the spirit of today's verse${reflectionContent ? ", and the emotional thread of the reflection" : ""} meet each other naturally inside the prayer. Open with "Lord," or "Father," — then immediately name the specific thing they just shared (use their exact words or very close paraphrase, not a category like "gratitude" or "blessings"). Do not open with a generic phrase like "thank You for this day" or "we come before You." Close with "Amen." Make it feel like it could only have been written for this person, in this moment. Warm. Unhurried. Real. When addressing God, capitalize You, Your, Yours. Never capitalize "you" or "your" when referring to the person praying.`,
           }],
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Server streams plain text — read chunks as they arrive
       let rawPrayer = "";
       if (res.body) {
         const reader = res.body.getReader();
@@ -861,28 +915,85 @@ export default function Devotional() {
       }
       const prayer = capitalizeDivinePronouns(rawPrayer);
       setGratitudePrayer(prayer);
-
-      // Fire achievement after full devotional — not right after sacred stillness rooms
-      if (prayer && !isSacredSessionQuiet()) {
-        const devotionalAchievement = checkDevotionalFirstComplete();
-        if (devotionalAchievement) {
-          setTimeout(() => {
-            markAchievementSeen(devotionalAchievement.id);
-            setCurrentAchievement(devotionalAchievement);
-          }, 1200);
-        } else if (pendingStreakAchievementRef.current) {
-          const streakAchievement = pendingStreakAchievementRef.current;
-          pendingStreakAchievementRef.current = null;
-          setTimeout(() => {
-            markAchievementSeen(streakAchievement.id);
-            setCurrentAchievement(streakAchievement);
-          }, 1200);
-        }
-      }
+      fireGratitudeCompletionAchievements(prayer);
     } catch {
       setGratitudePrayer("Sorry, we couldn't generate your prayer right now. Please try again.");
     }
     setGratitudePrayerLoading(false);
+  };
+
+  const streamGratitudeListen = async (): Promise<boolean> => {
+    if (!verse || !gratitudeInput.trim()) return false;
+    setGratitudeListenResponse("");
+    setGratitudeListenComplete(false);
+    setGratitudeListenReply("");
+    setGratitudeListenReplySubmitted(null);
+    try {
+      const res = await fetch("/api/devotional/gratitude-listen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gratitudeInput: gratitudeInput.trim(),
+          verseReference: verse.reference,
+          userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          ...apiSessionExtras(),
+        }),
+      });
+      if (res.status === 429) {
+        setShowUpgrade(true);
+        return false;
+      }
+      if (!res.ok || !res.body) return false;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setGratitudeListenResponse(accumulated);
+      }
+      if (!accumulated.trim()) return false;
+      setGratitudeListenComplete(true);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleGratitudePrayer = async () => {
+    if (!gratitudeInput.trim() || !verse || gratitudeListenLoading || gratitudePrayerLoading) return;
+    if (!canUseAi()) {
+      setShowUpgrade(true);
+      return;
+    }
+    resetGratitudeListenState();
+    setGratitudeListenLoading(true);
+    const listenOk = await streamGratitudeListen();
+    setGratitudeListenLoading(false);
+    if (!listenOk) {
+      resetGratitudeListenState();
+      await generateGratitudePrayerDirect();
+    }
+  };
+
+  const handleGratitudeListenContinue = async () => {
+    const reply = gratitudeListenReply.trim();
+    if (!reply || gratitudePrayerLoading) return;
+    setGratitudeListenReplySubmitted(reply);
+    await generateGratitudePrayerDirect({
+      listenReply: reply,
+      userReflectionReply: reply,
+    });
+  };
+
+  const handleGratitudeListenKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleGratitudeListenContinue();
+    }
   };
 
   const stopFullListen = () => {
@@ -2035,7 +2146,7 @@ export default function Devotional() {
                 )}
                 {prayerError && (
                   <motion.p key="pray-error" className="text-sm text-muted-foreground italic">
-                    Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionContent || undefined)} className="underline text-primary">Try again</button>
+                    Could not load prayer. <button onClick={() => generatePrayer(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionContent || undefined, reflectListenReplySubmitted ?? undefined)} className="underline text-primary">Try again</button>
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -2064,7 +2175,7 @@ export default function Devotional() {
             <div className="mt-3">
               <div className="relative">
                 {/* Warm pulse ring on the gratitude prayer button */}
-                {!gratitudePrayerLoading && gratitudeInput.trim() && !gratitudePrayer && (
+                {!gratitudePrayerLoading && !gratitudeListenLoading && !gratitudeListenComplete && gratitudeInput.trim() && !gratitudePrayer && (
                   <motion.div
                     className="absolute inset-0 rounded-xl pointer-events-none"
                     style={{ background: "linear-gradient(135deg, #d97706, #ea580c)" }}
@@ -2072,20 +2183,79 @@ export default function Devotional() {
                     transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                   />
                 )}
-                <button
-                  onClick={handleGratitudePrayer}
-                  disabled={gratitudePrayerLoading}
-                  data-testid="button-generate-gratitude-prayer"
-                  className="relative w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
-                  style={{ background: "linear-gradient(135deg, #d97706, #ea580c)", boxShadow: gratitudeInput.trim() ? "0 6px 22px rgba(217,119,6,0.28)" : undefined }}
-                >
-                  {gratitudePrayerLoading
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
-                    : <><Heart className="w-3.5 h-3.5" /> Receive a closing prayer</>
-                  }
-                </button>
+                {!gratitudeListenComplete && !gratitudeListenLoading && (
+                  <button
+                    onClick={() => void handleGratitudePrayer()}
+                    disabled={!gratitudeInput.trim() || gratitudePrayerLoading}
+                    data-testid="button-generate-gratitude-prayer"
+                    className="relative w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #d97706, #ea580c)", boxShadow: gratitudeInput.trim() ? "0 6px 22px rgba(217,119,6,0.28)" : undefined }}
+                  >
+                    {gratitudePrayerLoading
+                      ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>
+                      : <><Heart className="w-3.5 h-3.5" /> Receive a closing prayer</>
+                    }
+                  </button>
+                )}
               </div>
             </div>
+
+            {gratitudeListenLoading && (
+              <div className="flex items-center justify-center gap-1.5 py-5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-pulse" />
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-pulse"
+                  style={{ animationDelay: "0.15s" }}
+                />
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-pulse"
+                  style={{ animationDelay: "0.3s" }}
+                />
+              </div>
+            )}
+
+            {gratitudeListenComplete && !gratitudeListenReplySubmitted && !gratitudeListenLoading && (
+              <div className="mt-5 space-y-3">
+                <div className="border-l-2 border-violet-500/60 pl-4">
+                  <p className="text-[15px] leading-relaxed text-foreground/80 italic">
+                    {gratitudeListenResponse}
+                  </p>
+                </div>
+                <textarea
+                  value={gratitudeListenReply}
+                  onChange={(e) => setGratitudeListenReply(e.target.value)}
+                  onKeyDown={handleGratitudeListenKeyDown}
+                  placeholder="Keep going... there's no right answer."
+                  rows={2}
+                  disabled={gratitudePrayerLoading}
+                  data-testid="input-gratitude-listen-reply"
+                  className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
+                />
+                <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
+                  One more thought and we&apos;ll close together.
+                </p>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => void handleGratitudeListenContinue()}
+                    disabled={!gratitudeListenReply.trim() || gratitudePrayerLoading}
+                    data-testid="button-gratitude-listen-continue"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {gratitudePrayerLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {gratitudeListenReplySubmitted && (
+              <p
+                className="text-[13px] text-muted-foreground/70 italic text-right max-w-[88%] ml-auto leading-relaxed mt-5"
+                data-testid="text-gratitude-listen-user-reply"
+              >
+                {gratitudeListenReplySubmitted}
+              </p>
+            )}
 
             <AnimatePresence>
               {gratitudePrayer && (
