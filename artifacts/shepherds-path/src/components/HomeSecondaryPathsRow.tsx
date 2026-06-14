@@ -33,22 +33,25 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         <div
           data-testid="home-secondary-guidance"
           data-card="talk-it-through"
-          className="border border-violet-500/35"
+          className="border border-violet-500/60"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "12px",
             borderRadius: "12px",
             background:
-              "linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.08) 60%, transparent 100%)",
+              "linear-gradient(135deg, rgba(139,92,246,0.30) 0%, rgba(109,40,217,0.18) 50%, rgba(88,28,220,0.10) 100%)",
             padding: "12px 16px",
             boxSizing: "border-box",
-            boxShadow: "0 0 18px rgba(139,92,246,0.18), inset 0 0 18px rgba(139,92,246,0.06)",
+            boxShadow:
+              "0 0 24px rgba(139,92,246,0.30), 0 0 8px rgba(139,92,246,0.20), inset 0 0 20px rgba(139,92,246,0.08)",
           }}
         >
-          <ShortcutPathIcon variant="guidance" size="sm" />
+          <span style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.5))" }}>
+            <ShortcutPathIcon variant="guidance" size="sm" />
+          </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-violet-400/70 mb-0.5 block">
+            <span className="text-[10px] font-semibold tracking-widest uppercase text-violet-300 mb-0.5 block">
               ✦ signature
             </span>
             <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
