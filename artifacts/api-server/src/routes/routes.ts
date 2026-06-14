@@ -39,6 +39,7 @@ import {
 import { scheduleDailySms } from "../smsScheduler";
 import { buildCrisisJourney, generateLifeSeasonJourney } from "../lifeSeasonJourney";
 import {
+  TALK_IT_THROUGH_PHASE1_SYSTEM_PROMPT,
   TALK_IT_THROUGH_SYSTEM_PROMPT,
   TALK_IT_THROUGH_RESPONSE_SCOPE,
   TALK_IT_THROUGH_FIRST_RESPONSE,
@@ -2903,6 +2904,53 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     }
   });
 
+  // ── Guidance Phase 1 — empathy + one question (streaming) ───────────────────
+
+  app.post("/api/guidance/phase1", async (req, res) => {
+    const { situation, sessionId } = req.body as {
+      situation?: string;
+      situationTopicId?: string;
+      sessionId?: string;
+    };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
+    const daysWithApp: number = Number((req.body as any).daysWithApp) || 1;
+    const isProGuidance = parseProFlag((req.body as any).isPro);
+    const aiGuardPhase1 = checkAiDailyLimit(sessionId, daysWithApp, isProGuidance);
+    if (!aiGuardPhase1.ok) {
+      return res.status(aiGuardPhase1.status).json({
+        message: aiGuardPhase1.message,
+        limitReached: true,
+      });
+    }
+    if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
+
+    if (detectCrisis(situation)) {
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.write(CRISIS_RESPONSE);
+      return res.end();
+    }
+
+    const userName = (req.body as any).userName as string | undefined;
+    const nameNote = userName
+      ? `\n\nTheir name is ${userName}. You may use it once, gently, only if it feels natural.`
+      : "";
+
+    try {
+      await streamCompletion(
+        [
+          { role: "system", content: `${TALK_IT_THROUGH_PHASE1_SYSTEM_PROMPT}${nameNote}` },
+          { role: "user", content: situation.trim() },
+        ],
+        res,
+        { temperature: 0.78, maxTokens: 120, req },
+      );
+    } catch (err) {
+      console.error("guidance phase1 error:", err);
+      if (!res.headersSent) res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Guidance: first pastoral response to a shared situation (streaming) ────
 
   app.post("/api/guidance/response", async (req, res) => {
@@ -2910,6 +2958,8 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
       situation?: string;
       messages?: Array<{ role: "user" | "assistant"; content: string }>;
       userName?: string;
+      phase1Response?: string;
+      phase1UserReply?: string;
     };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
@@ -2918,14 +2968,33 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     const daysWithApp: number = Number((req.body as any).daysWithApp) || 1;
     const isProGuidance = parseProFlag((req.body as any).isPro);
     const modeNote = buildModeNote(guidanceMode);
-    const aiGuardGuidance = checkAiDailyLimit(sessionId, daysWithApp, isProGuidance);
-    if (!aiGuardGuidance.ok) {
-      return res.status(aiGuardGuidance.status).json({
-        message: aiGuardGuidance.message,
-        limitReached: true,
-      });
+    const phase1Response = (req.body as any).phase1Response as string | undefined;
+    const phase1UserReply = (req.body as any).phase1UserReply as string | undefined;
+    const isTwoPhaseCompletion = !!(phase1Response?.trim() && phase1UserReply?.trim());
+
+    if (isTwoPhaseCompletion) {
+      if (!sessionId) {
+        return res.status(400).json({ message: "session required", limitReached: true });
+      }
+      const cap = aiDailyCap(daysWithApp, isProGuidance);
+      if (getDailyUsageCount(sessionId) > cap) {
+        return res.status(429).json({
+          message: isProGuidance
+            ? "You've had a very full day of conversation. Pick up tomorrow — we're still here."
+            : "You've had a full day of reflection. Rest with what you've received — or continue with Pro.",
+          limitReached: true,
+        });
+      }
+    } else {
+      const aiGuardGuidance = checkAiDailyLimit(sessionId, daysWithApp, isProGuidance);
+      if (!aiGuardGuidance.ok) {
+        return res.status(aiGuardGuidance.status).json({
+          message: aiGuardGuidance.message,
+          limitReached: true,
+        });
+      }
+      if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
     }
-    if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
 
     if (detectCrisis(situation)) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -2972,8 +3041,17 @@ Sacred restraint: fewer words are better.`;
       return;
     }
 
-    const isFollowUp = messages && messages.length > 1;
+    const isFollowUp = !isTwoPhaseCompletion && messages && messages.length > 1;
     const lateNight: boolean = !!(req.body as any).isLateNight;
+
+    const twoPhaseContextNote = isTwoPhaseCompletion
+      ? `\n\nBefore responding, note this exchange:
+[User originally shared]: ${situation.trim()}
+[You asked]: ${phase1Response!.trim()}
+[They added]: ${phase1UserReply!.trim()}
+
+Now respond to the full picture — both what they first shared AND what they added. Let the follow-up inform the depth and direction of your response.`
+      : "";
 
     const nameNote = userName
       ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
@@ -3054,7 +3132,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Never escalate emotionally beyond where they actually are${twoPhaseContextNote}${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
       ? messages.map(m => ({ role: m.role, content: m.content }))

@@ -182,6 +182,13 @@ export default function GuidancePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
+  const [conversationPhase, setConversationPhase] = useState<1 | 2>(1);
+  const [phase1Response, setPhase1Response] = useState<string | null>(null);
+  const [phase1StreamingText, setPhase1StreamingText] = useState("");
+  const [phase1Complete, setPhase1Complete] = useState(false);
+  const [phase1UserReply, setPhase1UserReply] = useState("");
+  const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
+  const [phase2Loading, setPhase2Loading] = useState(false);
   const [heartInput, setHeartInput] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -293,10 +300,19 @@ export default function GuidancePage() {
     setGuidanceModeState(mode);
     saveGuidanceMode(mode);
     const userMessages = messages.filter((m) => m.role === "user");
-    if (regenerate && responseComplete && situation.trim() && userMessages.length <= 1) {
+    if (regenerate && situation.trim() && userMessages.length <= 1 && !responseComplete) {
       const initialUserMsg: Message = { role: "user", content: situation };
       setMessages([initialUserMsg]);
-      streamResponse([initialUserMsg], mode);
+      setConversationPhase(1);
+      setPhase1Complete(false);
+      setPhase1Response(null);
+      void streamPhase1().then((ok) => {
+        if (!ok) fallbackToSinglePhase(initialUserMsg, mode);
+      });
+    } else if (regenerate && responseComplete && situation.trim() && userMessages.length <= 1) {
+      const initialUserMsg: Message = { role: "user", content: situation };
+      setMessages([initialUserMsg]);
+      fallbackToSinglePhase(initialUserMsg, mode);
     }
   };
 
@@ -313,13 +329,13 @@ export default function GuidancePage() {
   };
 
   const [journey, setJourney] = useState<Journey | null>(null);
-  const [journeyLoading, setJourneyLoading] = useState(() => !!situation.trim());
+  const [journeyLoading, setJourneyLoading] = useState(false);
   const [journeyError, setJourneyError] = useState(false);
 
   const [verse, setVerse] = useState<VerseResult | null>(null);
   const verseDisplay = verse ? formatGuidanceVerseDisplay(verse.text) : null;
   const [prayer, setPrayer] = useState<string | null>(null);
-  const [vpLoading, setVpLoading] = useState(() => !!situation.trim());
+  const [vpLoading, setVpLoading] = useState(false);
   const [vpError, setVpError] = useState(false);
 
   interface ContextPhoto { url: string; thumb: string; photographerName: string; photographerLink: string; }
@@ -359,7 +375,11 @@ export default function GuidancePage() {
   /** Prevents double-start; cleared when situation query is empty */
   const guidanceStartedForRef = useRef<string | null>(null);
 
-  const streamResponse = async (conversationMessages: Message[], explicitMode?: GuidanceMode) => {
+  const streamResponse = async (
+    conversationMessages: Message[],
+    explicitMode?: GuidanceMode,
+    phase1Context?: { phase1Response: string; phase1UserReply: string },
+  ) => {
     setStreamingText("");
     setResponseComplete(false);
     setCompletionPath(null);
@@ -378,6 +398,7 @@ export default function GuidancePage() {
           userName: getUserName() ?? undefined,
           guidanceMode: explicitMode ?? guidanceMode,
           isLateNight: isLateNight(),
+          ...(phase1Context ?? {}),
           ...apiSessionExtras(),
         }),
       });
@@ -411,11 +432,69 @@ export default function GuidancePage() {
       setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
       setStreamingText("");
       setResponseComplete(true);
-      void refreshAiUsage();
     } catch {
       setStreamingText("Trouble connecting — check your signal and we can try again.");
       setResponseComplete(true);
     }
+  };
+
+  const streamPhase1 = async (): Promise<boolean> => {
+    setPhase1StreamingText("");
+    setPhase1Response(null);
+    setPhase1Complete(false);
+    setPhase1UserReply("");
+    setPhase1UserReplySubmitted(null);
+    try {
+      const res = await fetch("/api/guidance/phase1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          situation,
+          situationTopicId: situationTopicId ?? undefined,
+          userName: getUserName() ?? undefined,
+          ...apiSessionExtras(),
+        }),
+      });
+      if (res.status === 429) {
+        setShowAiPause(true);
+        void refreshAiUsage();
+        return false;
+      }
+      if (!res.ok || !res.body) return false;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        accumulated += chunk;
+        setPhase1StreamingText(accumulated);
+      }
+      if (!accumulated.trim()) return false;
+      setPhase1Response(accumulated);
+      setPhase1StreamingText("");
+      setPhase1Complete(true);
+      void refreshAiUsage();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const startPhase2 = () => {
+    setVpLoading(true);
+    fetchJourney();
+    void loadVerseAndPrayer();
+  };
+
+  const fallbackToSinglePhase = (initialUserMsg: Message, mode?: GuidanceMode) => {
+    setConversationPhase(2);
+    setPhase1Complete(false);
+    setPhase1Response(null);
+    setPhase1StreamingText("");
+    startPhase2();
+    void streamResponse([initialUserMsg], mode);
   };
 
   // Always scroll to top on mount — covers iOS Safari scroll restoration and
@@ -490,21 +569,31 @@ export default function GuidancePage() {
     if (!result.verse) setVpError(true);
   }, [situation, toast]);
 
-  const startGuidanceFlow = () => {
+  const startGuidanceFlow = async () => {
     setCompletionPath(null);
     setRevealStage(0);
     listenFirstTriggeredRef.current = false;
     setVerse(null);
     setPrayer(null);
-    setVpLoading(true);
+    setVpLoading(false);
     setVpError(false);
+    setConversationPhase(1);
+    setPhase1Response(null);
+    setPhase1StreamingText("");
+    setPhase1Complete(false);
+    setPhase1UserReply("");
+    setPhase1UserReplySubmitted(null);
+    setResponseComplete(false);
+    setStreamingText("");
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
-    streamResponse([initialUserMsg]);
     setTimeout(() => setIsReflecting(false), 2500);
 
-    fetchJourney();
-    void loadVerseAndPrayer();
+    const phase1Ok = await streamPhase1();
+    if (!phase1Ok) {
+      setVpLoading(true);
+      fallbackToSinglePhase(initialUserMsg);
+    }
   };
 
   const tryStartGuidanceFromUrl = () => {
@@ -736,6 +825,30 @@ export default function GuidancePage() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleHeartSubmit();
+    }
+  };
+
+  const handlePhase1Continue = async () => {
+    const reply = phase1UserReply.trim();
+    if (!reply || phase2Loading || !phase1Response) return;
+    setPhase2Loading(true);
+    setPhase1UserReplySubmitted(reply);
+    setConversationPhase(2);
+    setIsReflecting(true);
+    setTimeout(() => setIsReflecting(false), 700);
+    startPhase2();
+    const initialUserMsg: Message = { role: "user", content: situation };
+    await streamResponse([initialUserMsg], undefined, {
+      phase1Response,
+      phase1UserReply: reply,
+    });
+    setPhase2Loading(false);
+  };
+
+  const handlePhase1KeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handlePhase1Continue();
     }
   };
 
@@ -1032,7 +1145,7 @@ export default function GuidancePage() {
           <div ref={responseRef} className="-mt-2" />
 
           {/* Empathetic echo — shown once response is underway, never repeats user's words */}
-          {situation && (streamingText || responseComplete) && (
+          {situation && (phase1StreamingText || phase1Complete || phase1Response || streamingText || responseComplete) && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1061,14 +1174,78 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {/* First pastoral response — stays here permanently once it arrives */}
+          {/* Phase 1 — empathy + one question */}
+          {(phase1StreamingText || phase1Response) && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-6"
+              data-testid="text-guidance-phase1"
+            >
+              <div className="border-l-2 border-violet-500/45 pl-4">
+                <p
+                  className="text-[16px] leading-[1.75] text-foreground/75 italic"
+                  style={{ fontFamily: "var(--font-reading)" }}
+                >
+                  {cleanResponse(phase1StreamingText || phase1Response || "")}
+                  {!phase1Complete && phase1StreamingText && (
+                    <span className="inline-block w-1.5 h-5 bg-violet-400/50 rounded-sm animate-pulse ml-0.5 align-middle not-italic" />
+                  )}
+                </p>
+              </div>
+
+              {phase1Complete && conversationPhase === 1 && (
+                <div className="mt-5 space-y-3">
+                  <textarea
+                    value={phase1UserReply}
+                    onChange={(e) => setPhase1UserReply(e.target.value)}
+                    onKeyDown={handlePhase1KeyDown}
+                    placeholder="Keep going... there's no right answer."
+                    rows={3}
+                    disabled={isSending || phase2Loading}
+                    data-testid="input-guidance-phase1-reply"
+                    className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
+                  />
+                  <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
+                    One more thought and we&apos;ll walk through this together.
+                  </p>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void handlePhase1Continue()}
+                      disabled={!phase1UserReply.trim() || phase2Loading}
+                      data-testid="button-guidance-phase1-continue"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {phase2Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* User's Phase 1 reply — stays visible above Phase 2 */}
+          {phase1UserReplySubmitted && (
+            <motion.p
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-[14px] text-muted-foreground/70 italic text-right mb-6 max-w-[88%] ml-auto leading-relaxed"
+              data-testid="text-guidance-phase1-user-reply"
+            >
+              {phase1UserReplySubmitted}
+            </motion.p>
+          )}
+
+          {/* First pastoral response — Phase 2 full guidance */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            {((streamingText && !isSending && !isReflecting) || assistantMessages.length > 0) && (
+            {conversationPhase === 2 && ((streamingText && !isReflecting) || assistantMessages.length > 0) && (
               <>
                 {(() => {
                   const rawText = cleanResponse(isSending
