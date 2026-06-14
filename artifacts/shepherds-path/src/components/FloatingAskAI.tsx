@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type KeyboardEvent } from "react";
 import {
   X,
   Send,
@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -41,6 +42,37 @@ function cleanResponse(text: string): string {
     .replace(/_(.+?)_/g, "$1");
 }
 
+function isPersonalMessage(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  if (
+    lower.startsWith("how does") ||
+    lower.startsWith("how do i") ||
+    lower.startsWith("what is") ||
+    lower.startsWith("what are") ||
+    lower.startsWith("explain") ||
+    lower.startsWith("help me understand") ||
+    lower.startsWith("tell me about")
+  ) {
+    return false;
+  }
+  if (
+    lower.startsWith("i feel") ||
+    lower.startsWith("i'm ") ||
+    lower.startsWith("i am ") ||
+    lower.startsWith("i've ") ||
+    lower.startsWith("i have ") ||
+    lower.startsWith("i don't") ||
+    lower.startsWith("i just ") ||
+    lower.startsWith("i keep ") ||
+    lower.startsWith("just ") ||
+    lower.startsWith("my ")
+  ) {
+    return true;
+  }
+  if (text.length > 15 && !lower.endsWith("?")) return true;
+  return false;
+}
+
 /** Desktop / sm+ — bottom tab bar hidden above sm */
 const FAB_BOTTOM_DESKTOP =
   "calc(1.5rem + env(safe-area-inset-bottom, 0px))";
@@ -63,6 +95,12 @@ export function FloatingAskAI() {
   const [response, setResponse] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [phase1Response, setPhase1Response] = useState("");
+  const [phase1Complete, setPhase1Complete] = useState(false);
+  const [phase1UserReply, setPhase1UserReply] = useState("");
+  const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
+  const [phase1Loading, setPhase1Loading] = useState(false);
+  const [usingTwoPhase, setUsingTwoPhase] = useState(false);
   const [showAiPause, setShowAiPause] = useState(false);
   const [savingJournal, setSavingJournal] = useState(false);
   const { usage } = useAiUsage();
@@ -82,7 +120,15 @@ export function FloatingAskAI() {
   const hide = shouldHidePathAiFloater(location);
   const isHome = location === "/" || location === "";
   const isDevotional = location.startsWith("/devotional");
-  const showingResponse = !!(response || isStreaming);
+  const showingResponse = !!(
+    response ||
+    isStreaming ||
+    phase1Loading ||
+    phase1Response ||
+    phase1UserReplySubmitted ||
+    usingTwoPhase
+  );
+  const inPhase1ReplyStep = usingTwoPhase && phase1Complete && !phase1UserReplySubmitted;
 
   const openSheet = useCallback(() => {
     localStorage.setItem(FLOATER_USED_KEY, "1");
@@ -149,18 +195,27 @@ export function FloatingAskAI() {
     }
   }, [response]);
 
-  const handleSend = async (q?: string) => {
-    const text = (q ?? question).trim();
-    if (!text || isStreaming) return;
-    if (!canUseAi()) {
-      setShowAiPause(true);
-      return;
-    }
-    if (!q) setQuestion(text);
-    setSubmittedQuestion(text);
+  const resetPhase1State = () => {
+    setPhase1Response("");
+    setPhase1Complete(false);
+    setPhase1UserReply("");
+    setPhase1UserReplySubmitted(null);
+    setPhase1Loading(false);
+    setUsingTwoPhase(false);
+  };
+
+  const streamGuidanceResponse = async (
+    text: string,
+    options?: {
+      messages?: Array<{ role: "user" | "assistant"; content: string }>;
+      phase1Context?: { phase1Response: string; phase1UserReply: string };
+    },
+  ) => {
+    setIsStreaming(true);
     setResponse("");
     setIsDone(false);
-    setIsStreaming(true);
+
+    const messages = options?.messages ?? [{ role: "user" as const, content: text }];
 
     try {
       const res = await fetch("/api/guidance/response", {
@@ -168,13 +223,14 @@ export function FloatingAskAI() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           situation: text,
-          messages: [{ role: "user", content: text }],
+          messages,
           userName: getUserName() ?? undefined,
           sessionId: getSessionId(),
           guidanceMode: "pastoral",
           isLateNight: isLateNight(),
           daysWithApp: getRelationshipAge(),
           isPro: isProVerifiedLocally(),
+          ...(options?.phase1Context ?? {}),
         }),
       });
 
@@ -210,17 +266,118 @@ export function FloatingAskAI() {
     }
   };
 
+  const streamPhase1 = async (text: string): Promise<boolean> => {
+    setPhase1Response("");
+    setPhase1Complete(false);
+    setPhase1UserReply("");
+    setPhase1UserReplySubmitted(null);
+    try {
+      const res = await fetch("/api/guidance/phase1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          situation: text,
+          userName: getUserName() ?? undefined,
+          sessionId: getSessionId(),
+          daysWithApp: getRelationshipAge(),
+          guidanceMode: "pastoral",
+          isPro: isProVerifiedLocally(),
+        }),
+      });
+
+      if (res.status === 429) {
+        setShowAiPause(true);
+        void refreshAiUsage();
+        return false;
+      }
+      if (!res.ok || !res.body) return false;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setPhase1Response(accumulated);
+      }
+      if (!accumulated.trim()) return false;
+      setPhase1Complete(true);
+      void refreshAiUsage();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handlePhase2 = async (reply: string, listenResponse: string) => {
+    await streamGuidanceResponse(submittedQuestion, {
+      messages: [
+        { role: "user", content: submittedQuestion },
+        { role: "assistant", content: listenResponse },
+        { role: "user", content: reply },
+      ],
+      phase1Context: {
+        phase1Response: listenResponse,
+        phase1UserReply: reply,
+      },
+    });
+  };
+
+  const handlePhase1Continue = async () => {
+    const reply = phase1UserReply.trim();
+    if (!reply || !phase1Response || phase1UserReplySubmitted) return;
+    setPhase1UserReplySubmitted(reply);
+    await handlePhase2(reply, phase1Response);
+  };
+
+  const handlePhase1KeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handlePhase1Continue();
+    }
+  };
+
+  const handleSend = async (q?: string, forceSinglePhase = false) => {
+    const text = (q ?? question).trim();
+    if (!text || isStreaming || phase1Loading || inPhase1ReplyStep) return;
+    if (!canUseAi()) {
+      setShowAiPause(true);
+      return;
+    }
+    if (!q) setQuestion(text);
+    setSubmittedQuestion(text);
+    setResponse("");
+    setIsDone(false);
+    resetPhase1State();
+
+    if (forceSinglePhase || !isPersonalMessage(text)) {
+      await streamGuidanceResponse(text);
+      return;
+    }
+
+    setUsingTwoPhase(true);
+    setPhase1Loading(true);
+    const phase1Ok = await streamPhase1(text);
+    setPhase1Loading(false);
+    if (!phase1Ok) {
+      resetPhase1State();
+      await streamGuidanceResponse(text);
+    }
+  };
+
   const handleClose = () => {
     setIsOpen(false);
     setQuestion("");
     setSubmittedQuestion("");
     setResponse("");
     setIsDone(false);
+    resetPhase1State();
   };
 
   const handlePreset = (prompt: string) => {
     setQuestion(prompt);
-    handleSend(prompt);
+    void handleSend(prompt, true);
   };
 
   const handlePrompt = (p: PathAiPrompt) => {
@@ -237,6 +394,7 @@ export function FloatingAskAI() {
     setSubmittedQuestion("");
     setResponse("");
     setIsDone(false);
+    resetPhase1State();
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
@@ -465,33 +623,96 @@ export function FloatingAskAI() {
                       </p>
                       <p className="text-[14px] text-foreground leading-snug">{submittedQuestion}</p>
                     </div>
-                    <div
-                      ref={responseRef}
-                      className="rounded-xl bg-card border border-border/60 px-4 py-3.5 overflow-y-auto text-[16px] leading-[1.7] text-foreground/95"
-                      style={{ maxHeight: "min(38vh, 280px)" }}
-                    >
-                      {response}
-                      {isStreaming && !response && (
-                        <span className="inline-block w-1.5 h-4 bg-primary/60 rounded-sm animate-pulse align-middle" />
-                      )}
-                      {isStreaming && response && (
-                        <span className="inline-block w-1 h-4 bg-primary/60 rounded-sm animate-pulse align-middle ml-0.5" />
-                      )}
-                      {isDone && (
-                        <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-border/40">
-                          <ListenButton
-                            text={response}
-                            label="Listen"
-                            size="sm"
-                            scope="snippet"
-                          />
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <span>✝</span>
-                            <span>Grounded in Scripture</span>
+
+                    {phase1Loading && (
+                      <div className="flex items-center justify-center gap-1.5 py-4">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-pulse" />
+                        <span
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-pulse"
+                          style={{ animationDelay: "0.15s" }}
+                        />
+                        <span
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-pulse"
+                          style={{ animationDelay: "0.3s" }}
+                        />
+                      </div>
+                    )}
+
+                    {usingTwoPhase && phase1Complete && !phase1UserReplySubmitted && !phase1Loading && (
+                      <div className="space-y-3">
+                        <div className="border-l-2 border-violet-500/60 pl-4">
+                          <p
+                            className="text-[15px] leading-relaxed text-foreground/75 italic"
+                            style={{ fontFamily: "var(--font-reading)" }}
+                          >
+                            {cleanResponse(phase1Response)}
                           </p>
                         </div>
-                      )}
-                    </div>
+                        <textarea
+                          value={phase1UserReply}
+                          onChange={(e) => setPhase1UserReply(e.target.value)}
+                          onKeyDown={handlePhase1KeyDown}
+                          placeholder="Keep going... there's no right answer."
+                          rows={2}
+                          disabled={isStreaming}
+                          data-testid="input-path-ai-phase1-reply"
+                          className="w-full resize-none rounded-xl border border-border bg-muted/40 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/35 leading-relaxed disabled:opacity-50"
+                        />
+                        <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
+                          One more thought and we&apos;ll go deeper.
+                        </p>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => void handlePhase1Continue()}
+                            disabled={!phase1UserReply.trim() || isStreaming}
+                            data-testid="button-path-ai-phase1-continue"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {phase1UserReplySubmitted && (
+                      <p
+                        className="text-[13px] text-muted-foreground/70 italic text-right max-w-[88%] ml-auto leading-relaxed"
+                        data-testid="text-path-ai-phase1-user-reply"
+                      >
+                        {phase1UserReplySubmitted}
+                      </p>
+                    )}
+
+                    {(!usingTwoPhase || phase1UserReplySubmitted) && (response || isStreaming) && (
+                      <div
+                        ref={responseRef}
+                        className="rounded-xl bg-card border border-border/60 px-4 py-3.5 overflow-y-auto text-[16px] leading-[1.7] text-foreground/95"
+                        style={{ maxHeight: "min(38vh, 280px)" }}
+                      >
+                        {response}
+                        {isStreaming && !response && (
+                          <span className="inline-block w-1.5 h-4 bg-primary/60 rounded-sm animate-pulse align-middle" />
+                        )}
+                        {isStreaming && response && (
+                          <span className="inline-block w-1 h-4 bg-primary/60 rounded-sm animate-pulse align-middle ml-0.5" />
+                        )}
+                        {isDone && (
+                          <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-border/40">
+                            <ListenButton
+                              text={response}
+                              label="Listen"
+                              size="sm"
+                              scope="snippet"
+                            />
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <span>✝</span>
+                              <span>Grounded in Scripture</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -607,7 +828,7 @@ export function FloatingAskAI() {
               </div>
 
               {/* Sticky input */}
-              {!isDone && (
+              {!isDone && !phase1Loading && !inPhase1ReplyStep && (
                 <div className="shrink-0 px-4 pt-2 pb-4 border-t border-border/50 bg-background/95 backdrop-blur-md">
                   <div className="flex items-center gap-2">
                     <input
@@ -618,7 +839,7 @@ export function FloatingAskAI() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
-                          handleSend();
+                          void handleSend();
                         }
                       }}
                       placeholder={
@@ -629,7 +850,7 @@ export function FloatingAskAI() {
                     />
                     <button
                       data-testid="button-ask-ai-send"
-                      onClick={() => handleSend()}
+                      onClick={() => void handleSend()}
                       disabled={!question.trim() || isStreaming}
                       className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground disabled:opacity-40 active:scale-95 transition-transform"
                     >
