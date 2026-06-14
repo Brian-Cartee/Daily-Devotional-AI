@@ -1440,7 +1440,7 @@ export default function Devotional() {
                   className="flex flex-col items-center gap-1.5 py-3.5 text-foreground/55 hover:text-primary transition-colors"
                 >
                   {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className={`w-5 h-5 ${showShareRow ? "text-primary" : ""}`} />}
-                  <span className="text-[12px] font-semibold leading-none">{copied ? "Copied!" : "Send link"}</span>
+                  <span className="text-[12px] font-semibold leading-none">{copied ? "Copied!" : "Share verse"}</span>
                 </button>
               </div>
 
@@ -2841,7 +2841,7 @@ export default function Devotional() {
                     <SiPinterest className="w-[16px] h-[16px]" />
                   </button>
                 </div>
-                <p className="text-[10px] text-foreground/30 text-center mt-2.5">These share the verse link. Use "Share image" above to share the card.</p>
+                <p className="text-[10px] text-foreground/30 text-center mt-2.5">Sends a link — recipients see a verse card preview automatically in Messages &amp; social apps.</p>
               </div>
               </div>{/* end scroll wrapper */}
             </motion.div>
