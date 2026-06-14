@@ -54,4 +54,5 @@ AuthKey_*.p8
 # Replit
 .cache/
 .local/
-.pnpm-store/
+.pnpm-store/artifacts/shepherds-path/public/daily-art/*.jpg
+artifacts/shepherds-path/public/daily-art/*.json
