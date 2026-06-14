@@ -8,17 +8,17 @@ import {
   HelpCircle,
   Mail,
   MessageCircle,
-  Moon,
   MoreHorizontal,
   NotebookPen,
   Shield,
   Star,
   ShoppingBag,
-  Sun,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
+import type { AppTheme } from "@/lib/theme";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
 import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
 
@@ -82,8 +82,8 @@ type Props = {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
+  theme: AppTheme;
+  onSetTheme: (theme: AppTheme) => void;
   guidanceTone: GuidanceMode;
   onToggleTone: () => void;
   voicePref: string;
@@ -100,7 +100,7 @@ export function NavBarMoreMenu({
   open,
   onToggle,
   theme,
-  onToggleTheme,
+  onSetTheme,
   guidanceTone,
   onToggleTone,
   voicePref,
@@ -182,16 +182,27 @@ export function NavBarMoreMenu({
             testId="nav-journal-more"
             onClick={onClose}
           />
-          <MenuRow
-            icon={theme === "dark" ? Sun : Moon}
-            label="Appearance"
-            hint={theme === "dark" ? "Night · tap for morning" : "Morning · tap for night"}
-            testId="button-appearance-toggle"
-            onClick={() => {
-              onClose();
-              onToggleTheme();
-            }}
-          />
+          <div className="px-3 py-2">
+            <p className="px-0.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/65">
+              Appearance
+            </p>
+            <SegmentedControl
+              testId="segmented-control-appearance"
+              segments={[
+                { id: "light", label: "☀️ Light" },
+                { id: "dark", label: "🌙 Dark" },
+                { id: "sanctuary", label: "✦ Sanctuary" },
+              ]}
+              value={theme}
+              onChange={onSetTheme}
+              className="rounded-lg"
+            />
+            {theme === "sanctuary" && (
+              <p className="text-[11px] text-muted-foreground leading-snug mt-1.5 px-0.5">
+                Deep purple & gold — a different kind of sacred
+              </p>
+            )}
+          </div>
           <MenuRow
             icon={Shield}
             label="Guidance tone"

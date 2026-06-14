@@ -114,7 +114,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [guidanceTone, setGuidanceTone] = useState<GuidanceMode>(() => getGuidanceMode());
   const [coachConsentOpen, setCoachConsentOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const inNativeApp = isNativeWebViewShell();
   const compactTopNav = usesCompactTopNav();
 
@@ -194,7 +194,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       }}
       onClose={() => setMoreOpen(false)}
       theme={theme}
-      onToggleTheme={toggleTheme}
+      onSetTheme={setTheme}
       guidanceTone={guidanceTone}
       onToggleTone={toggleTone}
       voicePref={voicePref}

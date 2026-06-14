@@ -32,6 +32,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
       <Link href="/guidance" className="sp-native-card-link">
         <div
           data-testid="home-secondary-guidance"
+          data-card="talk-it-through"
           className="border border-violet-500/35"
           style={{
             display: "flex",

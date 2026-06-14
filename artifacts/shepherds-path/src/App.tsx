@@ -289,10 +289,10 @@ function App() {
   }, []);
 
   const toggleTheme = () =>
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
+    setTheme((t) => (t === "light" ? "dark" : t === "dark" ? "sanctuary" : "light"));
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
