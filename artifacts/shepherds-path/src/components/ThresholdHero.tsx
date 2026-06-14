@@ -4,6 +4,7 @@ import { ArrowRight, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { getUserName } from "@/lib/userName";
 import { isIntroFlowComplete } from "@/lib/introState";
 import {
   getThresholdNeed,
@@ -64,6 +65,8 @@ type ThresholdHeroProps = {
 export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = {}) {
   const sessionId = getSessionId();
   const daysWithApp = getRelationshipAge();
+  const isReturningUser = daysWithApp >= 3;
+  const profileFirstName = getUserName()?.trim().split(/\s+/)[0] ?? null;
   const { data: verse } = useDailyVerse();
   const [listenFirst, setListenFirst] = useState(() => getListenFirstPreference());
   const [activeDoor, setActiveDoor] = useState<PresenceDoorId>(defaultPresenceDoor);
@@ -117,6 +120,15 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
 
   const threshold = thresholdRes?.threshold;
   const showTalkPrompt = !thresholdLoading;
+  const thresholdHeadline = thresholdLoading
+    ? "…"
+    : (() => {
+        const raw = threshold?.headline ?? "What are you carrying into today?";
+        if (isReturningUser && raw === "Still awake?") {
+          return profileFirstName ? `Good evening, ${profileFirstName}.` : "Good evening.";
+        }
+        return raw;
+      })();
   const [showArrival, setShowArrival] = useState(() => shouldShowArrivalRitual());
   const companionLine = getModeCompanionLine(thresholdNeed);
   const atmosphere = getThresholdAtmosphere(thresholdNeed);
@@ -257,6 +269,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
         }}
       >
         <div data-testid="home-threshold-content-inner">
+          {!isReturningUser && (
           <button
             type="button"
             data-testid="link-why-collapsed"
@@ -279,6 +292,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           >
             What this place is for
           </button>
+          )}
 
           <h1
             style={{
@@ -291,7 +305,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             }}
             data-testid="text-threshold-headline"
           >
-            {thresholdLoading ? "…" : threshold?.headline ?? "What are you carrying into today?"}
+            {thresholdHeadline}
           </h1>
           <p
             style={{

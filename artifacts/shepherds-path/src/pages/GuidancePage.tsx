@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from "react";
 import { useSearch, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw } from "lucide-react";
@@ -132,24 +132,6 @@ function GuidanceVpLoading({ message }: { message: string }) {
   );
 }
 
-function getEmpathyReflection(situation: string): string {
-  const s = situation.toLowerCase();
-  // Positive states — must come first so they aren't swallowed by faith/other patterns
-  if (/grateful|gratitude|thankful|thankfulness|blessed|blessing/.test(s)) return "Gratitude is one of the most powerful places to start from…";
-  if (/happy|joy|joyful|peaceful|peace|content|uplifted|hopeful|celebrat|excit|thriving/.test(s)) return "There's something beautiful about coming to God from a place like this…";
-  if (/marriage|spouse|husband|wife|partner|relationship/.test(s)) return "You're carrying something tender right now…";
-  if (/anxiet|fear|worry|worri|scared|panic|overwhelm/.test(s)) return "That weight you're feeling is real…";
-  if (/grief|loss|died|death|passed|mourn|missing/.test(s)) return "Grief has a way of silencing everything else…";
-  if (/alone|lonely|isolat|no one|nobody/.test(s)) return "That loneliness is one of the hardest things to carry…";
-  if (/depress|hopeless|meaningless|purpose|lost/.test(s)) return "You don't have to find the words for all of this…";
-  if (/job|work|career|money|financial|debt|provision/.test(s)) return "That kind of pressure touches everything…";
-  if (/child|kid|parent|family|son|daughter/.test(s)) return "Family carries a weight unlike anything else…";
-  if (/faith|doubt|believe|god|church|spiritual/.test(s)) return "Questions like these take real courage to bring…";
-  if (/angry|anger|rage|resentment|bitterness/.test(s)) return "Something in you is crying out to be heard…";
-  if (/sick|health|diagnos|illness|pain|medical/.test(s)) return "This is a hard season to be walking through…";
-  return "You're carrying a lot right now…";
-}
-
 function getHeroHeading(situation: string, isFirstVisit: boolean): string {
   if (isFirstVisit || !situation) return "What's on\nyour heart?";
   const s = situation.toLowerCase();
@@ -173,6 +155,20 @@ const GUIDANCE_PLACEHOLDERS = [
   "Help me pray honestly about this…",
 ];
 
+const NIGHT_INTAKE_PRESETS = [
+  "I feel alone",
+  "I'm anxious",
+  "I'm grieving",
+  "I'm exhausted",
+] as const;
+
+const BRIDGE_QUESTIONS: Record<string, string> = {
+  "I feel alone": "What's making tonight feel that way?",
+  "I'm anxious": "What's sitting on you right now — is it one thing or everything at once?",
+  "I'm grieving": "Who or what are you carrying tonight?",
+  "I'm exhausted": "What's worn you down — is it today specifically or has it been building?",
+};
+
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -191,6 +187,9 @@ export default function GuidancePage() {
   const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
   const [phase2Loading, setPhase2Loading] = useState(false);
   const [phase2Started, setPhase2Started] = useState(false);
+  const [bridgeQuestion, setBridgeQuestion] = useState<string | null>(null);
+  const [bridgeAnswer, setBridgeAnswer] = useState("");
+  const [bridgeSubmitted, setBridgeSubmitted] = useState(false);
   const [heartInput, setHeartInput] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -646,8 +645,37 @@ export default function GuidancePage() {
   };
 
   useEffect(() => {
+    const trimmed = situation.trim();
+    if (!trimmed) {
+      guidanceStartedForRef.current = null;
+      setBridgeQuestion(null);
+      return;
+    }
+    if (NIGHT_INTAKE_PRESETS.includes(trimmed as (typeof NIGHT_INTAKE_PRESETS)[number]) && !bridgeSubmitted) {
+      setBridgeQuestion(BRIDGE_QUESTIONS[trimmed] ?? null);
+      return;
+    }
+    setBridgeQuestion(null);
     tryStartGuidanceFromUrl();
-  }, [situation]);
+  }, [situation, bridgeSubmitted]);
+
+  const handleBridgeSubmit = () => {
+    const answer = bridgeAnswer.trim();
+    const preset = situation.trim();
+    if (!answer || !bridgeQuestion || !NIGHT_INTAKE_PRESETS.includes(preset as (typeof NIGHT_INTAKE_PRESETS)[number])) {
+      return;
+    }
+    setBridgeSubmitted(true);
+    guidanceStartedForRef.current = null;
+    navigate(`/guidance?situation=${encodeURIComponent(`${preset} — ${answer}`)}`, { replace: true });
+  };
+
+  const handleBridgeKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleBridgeSubmit();
+    }
+  };
 
   // Save guidance memory silently when first response completes
   useEffect(() => {
@@ -1164,21 +1192,50 @@ export default function GuidancePage() {
           {/* Scroll anchor — initial response lands here */}
           <div ref={responseRef} className="-mt-2" />
 
-          {/* Empathetic echo — shown once response is underway, never repeats user's words */}
-          {situation && (phase1StreamingText || phase1Complete || phase1Response || streamingText || responseComplete) && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15 }}
-              className="text-[15px] text-foreground/85 italic mb-7 border-l-2 border-primary/60 pl-4 leading-relaxed"
+          {bridgeQuestion && !bridgeSubmitted && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+              data-testid="card-guidance-bridge"
             >
-              {getEmpathyReflection(situation)}
-            </motion.p>
+              <div className="border-l-2 border-violet-500/60 pl-4 mb-5">
+                <p
+                  className="text-[15px] leading-relaxed text-foreground/80 italic"
+                  style={{ fontFamily: "var(--font-reading)" }}
+                >
+                  {bridgeQuestion}
+                </p>
+              </div>
+              <textarea
+                value={bridgeAnswer}
+                onChange={(e) => setBridgeAnswer(e.target.value)}
+                onKeyDown={handleBridgeKeyDown}
+                placeholder="Take your time..."
+                rows={3}
+                data-testid="input-guidance-bridge-answer"
+                className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed"
+              />
+              <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed mt-3">
+                There&apos;s no wrong answer.
+              </p>
+              <div className="flex justify-end mt-3">
+                <button
+                  type="button"
+                  onClick={handleBridgeSubmit}
+                  disabled={!bridgeAnswer.trim()}
+                  data-testid="button-guidance-bridge-continue"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Continue →
+                </button>
+              </div>
+            </motion.div>
           )}
 
           {/* Sacred Restraint — a breath of quiet before the response begins */}
           <AnimatePresence>
-            {isReflecting && situation && (
+          {isReflecting && situation && (!bridgeQuestion || bridgeSubmitted) && (
               <motion.div
                 key="presence"
                 initial={{ opacity: 0, y: 4 }}
@@ -1195,7 +1252,7 @@ export default function GuidancePage() {
           </AnimatePresence>
 
           {/* Phase 1 — empathy + one question */}
-          {(phase1StreamingText || phase1Response) && (
+          {(phase1StreamingText || phase1Response) && (!bridgeQuestion || bridgeSubmitted) && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

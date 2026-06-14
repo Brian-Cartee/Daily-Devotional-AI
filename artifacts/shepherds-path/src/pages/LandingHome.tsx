@@ -79,7 +79,6 @@ import { WitnessLetterCard } from "@/components/witness/WitnessLetterCard";
 import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
-import { HomeHeavyMomentLink } from "@/components/HomeHeavyMomentLink";
 import { HomePathsBlock } from "@/components/HomePathsBlock";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
@@ -173,6 +172,11 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
     }
   }
   const visitedToday = visitSet.has(weekDates[todayIdx]);
+  const rawVisitSet = new Set(visitDates);
+  const showMissedDayAck =
+    rawVisitSet.has(weekDates[todayIdx]) &&
+    streak >= 2 &&
+    weekDates.some((date, i) => i < todayIdx && !rawVisitSet.has(date));
 
   return (
     <Link href="/devotional" className="sp-native-card-link">
@@ -421,6 +425,15 @@ function DevotionalCard({ homeFocus = false }: { homeFocus?: boolean }) {
               </div>
             )}
           </div>
+          {showMissedDayAck && (
+            <p
+              className="text-[13px] text-muted-foreground/70 italic text-center mt-2"
+              data-testid="text-missed-day-ack"
+              style={{ position: "relative", zIndex: 10 }}
+            >
+              You missed a day and came back anyway. That&apos;s what this is.
+            </p>
+          )}
         </div>
       </div>
     </Link>
@@ -854,8 +867,6 @@ function LandingHomeInner() {
   const onPresenceContextChange = useCallback((ctx: HomePresenceContext) => {
     setPresenceCtx(ctx);
   }, []);
-  const hideHeavyLink =
-    !homeDevotionalFocus && (presenceCtx.door === "talk" || presenceCtx.arrivalOpen);
   const hideDevotionalCard = !homeDevotionalFocus && presenceCtx.door === "scripture";
   const showPrayerClosetCard = shouldShowPrayerClosetOnHome(presenceCtx.door === "quiet");
   const prayerClosetCompactTeaser = isPrayerClosetCompactTeaser(homeDevotionalFocus, daysWithApp);
@@ -924,17 +935,6 @@ function LandingHomeInner() {
       />
 
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
-      {!hideHeavyLink && (
-        <HomeHeavyMomentLink
-          footerHint={
-            homeDevotionalFocus || sacredFirstHome
-              ? homeDevotionalFocus
-                ? "Tap Today's Word — verse, reflection, and prayer are ready."
-                : "Start with today's Word below — one honest step is enough."
-              : undefined
-          }
-        />
-      )}
 
       {thresholdWelcome && (
         <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
@@ -1001,7 +1001,7 @@ function LandingHomeInner() {
             </>
           )}
 
-          {(sacredFirstHome || homeDevotionalFocus) && hideHeavyLink && (
+          {(sacredFirstHome || homeDevotionalFocus) && (
             <p
               className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2 -mt-1"
               data-testid="text-sacred-first-hint"
@@ -1053,10 +1053,6 @@ function LandingHomeInner() {
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && <LamentSeasonHomeCard />}
 
-          {showPrayerClosetCard && (
-            <PrayerClosetHomeCard compactTeaser={prayerClosetCompactTeaser} />
-          )}
-
           <HomePathsBlock
             homeDevotionalFocus={homeDevotionalFocus}
             chapelWeekFocus={chapelWeekFocus}
@@ -1065,6 +1061,10 @@ function LandingHomeInner() {
             chapelExploreCollapsed={chapelExploreCollapsed}
             showPrayerClosetBanner={showPrayerClosetCard}
           />
+
+          {showPrayerClosetCard && (
+            <PrayerClosetHomeCard compactTeaser={prayerClosetCompactTeaser} />
+          )}
 
           {homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {homeDevotionalFocus && carryToday && (
