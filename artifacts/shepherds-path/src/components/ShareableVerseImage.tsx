@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Image, Loader2 } from "lucide-react";
+import { createStoryShareImage } from "@/lib/shareImage";
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
@@ -165,11 +166,20 @@ function safeFilename(reference: string) {
   return `${reference.replace(/[^\w\s-]/g, "").replace(/\s+/g, "-") || "verse"}.png`;
 }
 
-export async function shareVerseAsImage(verseText: string, verseReference: string): Promise<void> {
+export async function shareVerseAsImage(verseText: string, verseReference: string, imageBgUrl?: string | null): Promise<void> {
   if (!verseText?.trim() || !verseReference?.trim()) return;
 
   try {
-    const blob = await renderVerseImageBlob(verseText, verseReference);
+    let blob: Blob;
+    if (imageBgUrl) {
+      try {
+        blob = await createStoryShareImage(verseText, verseReference, imageBgUrl);
+      } catch {
+        blob = await renderVerseImageBlob(verseText, verseReference);
+      }
+    } else {
+      blob = await renderVerseImageBlob(verseText, verseReference);
+    }
     const file = new File([blob], safeFilename(verseReference), { type: "image/png" });
 
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
@@ -200,6 +210,7 @@ export { shareVerseAsImage as saveVerseCardToPhotos };
 interface ShareVerseImageButtonProps {
   verseText: string;
   verseReference: string;
+  imageBgUrl?: string | null;
   className?: string;
   vertical?: boolean;
   testId?: string;
@@ -209,6 +220,7 @@ interface ShareVerseImageButtonProps {
 export function ShareVerseImageButton({
   verseText,
   verseReference,
+  imageBgUrl,
   className = "",
   vertical = false,
   testId = "button-share-verse-image",
@@ -220,7 +232,7 @@ export function ShareVerseImageButton({
     if (loading) return;
     setLoading(true);
     try {
-      await shareVerseAsImage(verseText, verseReference);
+      await shareVerseAsImage(verseText, verseReference, imageBgUrl);
     } catch {
       // fail silently
     } finally {

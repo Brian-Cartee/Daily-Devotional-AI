@@ -1429,6 +1429,7 @@ export default function Devotional() {
                   <ShareVerseImageButton
                     verseText={verse.text}
                     verseReference={verse.reference}
+                    imageBgUrl={heroBgForDisplay}
                     vertical
                     testId="button-share-image"
                     label="Save card"
