@@ -1,24 +1,19 @@
 import { useState } from "react";
 import { Image, Loader2 } from "lucide-react";
-import { createStoryShareImage } from "@/lib/shareImage";
+import { createStoryShareImage, createPurpleStoryImage } from "@/lib/shareImage";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
-import { downloadBlob, shareImageFilename, shareImageBlob } from "@/lib/shareVerse";
-
-export async function shareVerseAsImage(verseText: string, verseReference: string): Promise<void> {
-  if (!verseText?.trim() || !verseReference?.trim()) return;
-  const bg = getDevotionalHeroImage();
-  const blob = await createStoryShareImage(verseText, verseReference, bg);
-  await shareImageBlob(blob, {
-    filename: shareImageFilename(verseReference),
-    title: `${verseReference} — Shepherd's Path`,
-    text: verseText,
-  });
-}
+import { downloadBlob, shareImageFilename } from "@/lib/shareVerse";
 
 export async function saveVerseCardToPhotos(verseText: string, verseReference: string): Promise<void> {
   if (!verseText?.trim() || !verseReference?.trim()) return;
-  const bg = getDevotionalHeroImage();
-  const blob = await createStoryShareImage(verseText, verseReference, bg);
+  let blob: Blob;
+  try {
+    const bg = getDevotionalHeroImage();
+    blob = await createStoryShareImage(verseText, verseReference, bg);
+  } catch {
+    // Photo background failed — fall back to branded purple card which has no external deps
+    blob = await createPurpleStoryImage(verseText, verseReference);
+  }
   downloadBlob(blob, shareImageFilename(verseReference));
 }
 
