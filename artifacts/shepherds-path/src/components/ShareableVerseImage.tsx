@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, Loader2 } from "lucide-react";
 import { createStoryShareImage, createPurpleStoryImage } from "@/lib/shareImage";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
-import { downloadBlob, shareImageFilename } from "@/lib/shareVerse";
+import { shareImageBlob, shareImageFilename } from "@/lib/shareVerse";
 
 export async function saveVerseCardToPhotos(verseText: string, verseReference: string): Promise<void> {
   if (!verseText?.trim() || !verseReference?.trim()) return;
@@ -11,10 +11,15 @@ export async function saveVerseCardToPhotos(verseText: string, verseReference: s
     const bg = getDevotionalHeroImage();
     blob = await createStoryShareImage(verseText, verseReference, bg);
   } catch {
-    // Photo background failed — fall back to branded purple card which has no external deps
     blob = await createPurpleStoryImage(verseText, verseReference);
   }
-  downloadBlob(blob, shareImageFilename(verseReference));
+  // On iOS, navigator.share with a file is the only way to reach Photos from a web app.
+  // shareImageBlob handles this: tries share sheet first, falls back to download on desktop.
+  await shareImageBlob(blob, {
+    filename: shareImageFilename(verseReference),
+    title: `${verseReference} — Shepherd's Path`,
+    text: verseReference,
+  });
 }
 
 interface ShareVerseImageButtonProps {
