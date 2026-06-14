@@ -1990,7 +1990,7 @@ export default function GuidancePage() {
 
           {/* Release Moment — a quiet word of release after everything has arrived */}
           <AnimatePresence>
-            {responseComplete && completionPath === "stay" && revealStage >= 4 && journey && (
+            {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && journey && (
               <motion.div
                 key="release"
                 initial={{ opacity: 0 }}
@@ -2059,7 +2059,7 @@ export default function GuidancePage() {
 
       {/* ── Floating input bar — mobile only, docks above NavBar ── */}
       <AnimatePresence>
-        {responseComplete && completionPath === "stay" && revealStage >= 3 && canUseAi() && (
+        {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 3 && canUseAi() && (
           <motion.div
             key="float-bar"
             initial={{ opacity: 0, y: 20 }}
