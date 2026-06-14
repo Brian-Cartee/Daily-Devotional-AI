@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Image, Loader2 } from "lucide-react";
 
-const CANVAS_SIZE = 1080;
+const CANVAS_W = 1080;
+const CANVAS_H = 1920;
+const CANVAS_SIZE = CANVAS_W; // keep compat
 const HORIZONTAL_PADDING = 80;
-const MAX_TEXT_WIDTH = CANVAS_SIZE - HORIZONTAL_PADDING * 2;
-const MAX_VERSE_LINES = 4;
+const MAX_TEXT_WIDTH = CANVAS_W - HORIZONTAL_PADDING * 2;
+const MAX_VERSE_LINES = 5;
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.trim().replace(/\s+/g, " ").split(" ");
@@ -54,81 +56,99 @@ function fitVerseLines(
 function renderVerseImageBlob(verseText: string, verseReference: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement("canvas");
-    canvas.width = CANVAS_SIZE;
-    canvas.height = CANVAS_SIZE;
+    canvas.width = CANVAS_W;
+    canvas.height = CANVAS_H;
     const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      reject(new Error("canvas unavailable"));
-      return;
-    }
+    if (!ctx) { reject(new Error("canvas unavailable")); return; }
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_SIZE);
-    gradient.addColorStop(0, "#0f0a1e");
-    gradient.addColorStop(1, "#1a0f35");
+    // Background — deep purple gradient (9:16 story format)
+    const gradient = ctx.createLinearGradient(0, CANVAS_H * 0.1, CANVAS_W * 0.8, CANVAS_H);
+    gradient.addColorStop(0, "#08051a");
+    gradient.addColorStop(0.25, "#160a38");
+    gradient.addColorStop(0.55, "#2e1160");
+    gradient.addColorStop(0.80, "#1c0942");
+    gradient.addColorStop(1, "#07040f");
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Violet glow
+    const glow = ctx.createRadialGradient(CANVAS_W * 0.65, CANVAS_H * 0.55, 0, CANVAS_W * 0.65, CANVAS_H * 0.55, CANVAS_H * 0.55);
+    glow.addColorStop(0, "rgba(130,10,170,0.40)");
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Top gold accent line
+    const goldLine = ctx.createLinearGradient(0, 0, CANVAS_W, 0);
+    goldLine.addColorStop(0, "rgba(0,0,0,0)"); goldLine.addColorStop(0.25, "rgba(210,160,60,0.75)");
+    goldLine.addColorStop(0.75, "rgba(210,160,60,0.75)"); goldLine.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = goldLine; ctx.fillRect(0, 0, CANVAS_W, 2);
 
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
 
+    // Brand header — icon + name (safe zone: y=130+ clears platform UI)
     ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.font = '400 40px Georgia, "Times New Roman", serif';
-    ctx.fillText("✝", CANVAS_SIZE / 2, 110);
+    ctx.font = '400 56px Georgia, "Times New Roman", serif';
+    ctx.fillText("✝", CANVAS_W / 2, 200);
 
-    ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.font = '600 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    if ("letterSpacing" in ctx) {
-      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0.22em";
-    }
-    ctx.fillText("SHEPHERD'S PATH", CANVAS_SIZE / 2, 155);
-    if ("letterSpacing" in ctx) {
-      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0px";
-    }
+    ctx.fillStyle = "rgba(255,255,255,0.90)";
+    ctx.font = 'bold 38px Georgia, "Times New Roman", serif';
+    ctx.fillText("Shepherd's Path", CANVAS_W / 2, 270);
 
+    // Divider below header
+    const div1 = ctx.createLinearGradient(0, 0, CANVAS_W, 0);
+    div1.addColorStop(0, "rgba(0,0,0,0)"); div1.addColorStop(0.25, "rgba(190,130,255,0.50)");
+    div1.addColorStop(0.75, "rgba(190,130,255,0.50)"); div1.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = div1; ctx.fillRect(0, 294, CANVAS_W, 1.5);
+
+    // Verse text — centred vertically in remaining space
     const { lines, fontSize } = fitVerseLines(ctx, verseText);
     ctx.font = `italic ${fontSize}px Georgia, "Times New Roman", serif`;
     ctx.fillStyle = "rgba(255,255,255,0.94)";
-    ctx.shadowColor = "rgba(0,0,0,0.45)";
-    ctx.shadowBlur = 14;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowColor = "rgba(100,0,140,0.65)";
+    ctx.shadowBlur = 24;
 
-    const lineHeight = fontSize * 1.38;
-    const blockHeight = lines.length * lineHeight;
-    let y = CANVAS_SIZE / 2 - blockHeight / 2 + fontSize * 0.35;
-
-    for (const line of lines) {
-      ctx.fillText(`"${line}"`, CANVAS_SIZE / 2, y);
+    const lineHeight = fontSize * 1.52;
+    const blockH = lines.length * lineHeight;
+    let y = CANVAS_H / 2 - blockH / 2 + fontSize * 0.35;
+    // Open quote before first line, close after last
+    for (let i = 0; i < lines.length; i++) {
+      const prefix = i === 0 ? "“" : "";
+      const suffix = i === lines.length - 1 ? "”" : "";
+      ctx.fillText(`${prefix}${lines[i]}${suffix}`, CANVAS_W / 2, y);
       y += lineHeight;
     }
-
-    ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
 
-    const refY = CANVAS_SIZE - 130;
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(HORIZONTAL_PADDING + 40, refY - 28);
-    ctx.lineTo(CANVAS_SIZE - HORIZONTAL_PADDING - 40, refY - 28);
-    ctx.stroke();
+    // Accent divider
+    const div2 = ctx.createLinearGradient(0, 0, CANVAS_W, 0);
+    div2.addColorStop(0, "rgba(0,0,0,0)"); div2.addColorStop(0.25, "rgba(210,160,80,0.65)");
+    div2.addColorStop(0.75, "rgba(210,160,80,0.65)"); div2.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = div2; ctx.fillRect(0, y + 30, CANVAS_W, 1.5);
 
+    // Reference
+    ctx.fillStyle = "#e8c87a";
+    ctx.font = 'bold 44px Georgia, "Times New Roman", serif';
+    ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 18;
+    ctx.fillText(`— ${verseReference.trim()}`, CANVAS_W / 2, y + 94);
+    ctx.shadowBlur = 0;
+
+    // Footer — safe zone H-300 clears TikTok/Reels UI
+    const footerY = CANVAS_H - 300;
+    const footerGrad = ctx.createLinearGradient(0, footerY - 20, 0, CANVAS_H);
+    footerGrad.addColorStop(0, "rgba(0,0,0,0)"); footerGrad.addColorStop(1, "rgba(0,0,0,0.65)");
+    ctx.fillStyle = footerGrad; ctx.fillRect(0, footerY - 20, CANVAS_W, CANVAS_H - footerY + 20);
+    ctx.fillStyle = "rgba(255,255,255,0.94)";
+    ctx.font = 'bold 34px Georgia, "Times New Roman", serif';
+    ctx.fillText("Start your own daily devotional →", CANVAS_W / 2, footerY + 52);
     ctx.fillStyle = "rgba(255,255,255,0.72)";
-    ctx.font = '700 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillText(`— ${verseReference.trim()}`, CANVAS_SIZE / 2, refY);
+    ctx.font = 'bold 26px Georgia, "Times New Roman", serif';
+    ctx.fillText("Shepherd’s Path", CANVAS_W / 2, footerY + 94);
 
-    ctx.fillStyle = "rgba(255,255,255,0.25)";
-    ctx.font = '500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillText("shepherdspathai.com", CANVAS_SIZE / 2, CANVAS_SIZE - 48);
-
-    canvas.toBlob(
-      (blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("blob failed"));
-      },
-      "image/png",
-      1,
-    );
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("blob failed"));
+    }, "image/png", 1);
   });
 }
 

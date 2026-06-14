@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
-import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
+import { ShareVerseImageButton } from "@/components/ShareableVerseImage";
 import { StreakMilestone } from "@/components/StreakMilestone";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
@@ -1426,17 +1426,12 @@ export default function Devotional() {
                   />
                 </div>
                 <div className="flex justify-center py-3.5">
-                  <ShareVerseTrigger
-                    text={verse.text}
-                    reference={verse.reference}
-                    imageBgUrl={verseArtUrl}
-                    generateOnOpen
-                    variant="moment"
-                    sheetTitle="Save or share"
-                    showFriend={false}
-                    label="Save card"
+                  <ShareVerseImageButton
+                    verseText={verse.text}
+                    verseReference={verse.reference}
+                    vertical
                     testId="button-share-image"
-                    className="flex-col gap-1.5 text-foreground/55 hover:text-primary [&_svg]:w-5 [&_svg]:h-5 text-[12px] font-semibold"
+                    label="Save card"
                   />
                 </div>
                 <button
