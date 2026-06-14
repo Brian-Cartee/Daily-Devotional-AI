@@ -189,6 +189,7 @@ export default function GuidancePage() {
   const [phase1UserReply, setPhase1UserReply] = useState("");
   const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
   const [phase2Loading, setPhase2Loading] = useState(false);
+  const [phase2Started, setPhase2Started] = useState(false);
   const [heartInput, setHeartInput] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -306,7 +307,10 @@ export default function GuidancePage() {
       setConversationPhase(1);
       setPhase1Complete(false);
       setPhase1Response(null);
-      void streamPhase1().then((ok) => {
+      setPhase2Started(false);
+      const flowGen = ++guidanceFlowGenRef.current;
+      void streamPhase1(flowGen).then((ok) => {
+        if (flowGen !== guidanceFlowGenRef.current) return;
         if (!ok) fallbackToSinglePhase(initialUserMsg, mode);
       });
     } else if (regenerate && responseComplete && situation.trim() && userMessages.length <= 1) {
@@ -374,6 +378,10 @@ export default function GuidancePage() {
   const hasScrolledFollowUp = useRef(0);
   /** Prevents double-start; cleared when situation query is empty */
   const guidanceStartedForRef = useRef<string | null>(null);
+  /** Invalidates in-flight guidance flows when a newer one starts (Strict Mode / remounts). */
+  const guidanceFlowGenRef = useRef(0);
+
+  const showPhase2Content = phase2Started && conversationPhase === 2;
 
   const streamResponse = async (
     conversationMessages: Message[],
@@ -438,12 +446,13 @@ export default function GuidancePage() {
     }
   };
 
-  const streamPhase1 = async (): Promise<boolean> => {
+  const streamPhase1 = async (flowGen: number): Promise<boolean> => {
     setPhase1StreamingText("");
     setPhase1Response(null);
     setPhase1Complete(false);
     setPhase1UserReply("");
     setPhase1UserReplySubmitted(null);
+    setPhase2Started(false);
     try {
       const res = await fetch("/api/guidance/phase1", {
         method: "POST",
@@ -455,6 +464,7 @@ export default function GuidancePage() {
           ...apiSessionExtras(),
         }),
       });
+      if (flowGen !== guidanceFlowGenRef.current) return true;
       if (res.status === 429) {
         setShowAiPause(true);
         void refreshAiUsage();
@@ -467,10 +477,12 @@ export default function GuidancePage() {
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
+        if (flowGen !== guidanceFlowGenRef.current) return true;
         const chunk = decoder.decode(value, { stream: true });
         accumulated += chunk;
         setPhase1StreamingText(accumulated);
       }
+      if (flowGen !== guidanceFlowGenRef.current) return true;
       if (!accumulated.trim()) return false;
       setPhase1Response(accumulated);
       setPhase1StreamingText("");
@@ -478,6 +490,7 @@ export default function GuidancePage() {
       void refreshAiUsage();
       return true;
     } catch {
+      if (flowGen !== guidanceFlowGenRef.current) return true;
       return false;
     }
   };
@@ -489,6 +502,7 @@ export default function GuidancePage() {
   };
 
   const fallbackToSinglePhase = (initialUserMsg: Message, mode?: GuidanceMode) => {
+    setPhase2Started(true);
     setConversationPhase(2);
     setPhase1Complete(false);
     setPhase1Response(null);
@@ -570,6 +584,7 @@ export default function GuidancePage() {
   }, [situation, toast]);
 
   const startGuidanceFlow = async () => {
+    const flowGen = ++guidanceFlowGenRef.current;
     setCompletionPath(null);
     setRevealStage(0);
     listenFirstTriggeredRef.current = false;
@@ -583,13 +598,16 @@ export default function GuidancePage() {
     setPhase1Complete(false);
     setPhase1UserReply("");
     setPhase1UserReplySubmitted(null);
+    setPhase2Started(false);
+    setPhase2Loading(false);
     setResponseComplete(false);
     setStreamingText("");
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     setTimeout(() => setIsReflecting(false), 2500);
 
-    const phase1Ok = await streamPhase1();
+    const phase1Ok = await streamPhase1(flowGen);
+    if (flowGen !== guidanceFlowGenRef.current) return;
     if (!phase1Ok) {
       setVpLoading(true);
       fallbackToSinglePhase(initialUserMsg);
@@ -830,8 +848,9 @@ export default function GuidancePage() {
 
   const handlePhase1Continue = async () => {
     const reply = phase1UserReply.trim();
-    if (!reply || phase2Loading || !phase1Response) return;
+    if (!reply || phase2Loading || !phase1Response || phase2Started) return;
     setPhase2Loading(true);
+    setPhase2Started(true);
     setPhase1UserReplySubmitted(reply);
     setConversationPhase(2);
     setIsReflecting(true);
@@ -1195,7 +1214,7 @@ export default function GuidancePage() {
                 </p>
               </div>
 
-              {phase1Complete && conversationPhase === 1 && (
+              {phase1Complete && !phase2Started && (
                 <div className="mt-5 space-y-3">
                   <textarea
                     value={phase1UserReply}
@@ -1245,7 +1264,7 @@ export default function GuidancePage() {
             transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            {conversationPhase === 2 && ((streamingText && !isReflecting) || assistantMessages.length > 0) && (
+            {showPhase2Content && ((streamingText && !isReflecting) || assistantMessages.length > 0) && (
               <>
                 {(() => {
                   const rawText = cleanResponse(isSending
