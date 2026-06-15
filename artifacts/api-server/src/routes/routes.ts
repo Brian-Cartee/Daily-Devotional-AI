@@ -3794,6 +3794,114 @@ Rules:
     }
   });
 
+  // ── The Thread — Weekly Spiritual Synthesis ───────────────────────────────────
+  // Weaves the last 7 days of journal entries, prayers, verses, and guidance
+  // into a short personal narrative. Cached per sessionId per calendar day.
+  const threadCache = new Map<string, { date: string; narrative: string; anchorVerse: string | null; anchorRef: string | null }>();
+
+  app.post("/api/guidance/the-thread", async (req, res) => {
+    const { sessionId } = req.body as { sessionId?: string };
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+
+    const today = new Date().toISOString().split("T")[0];
+    const cached = threadCache.get(sessionId);
+    if (cached && cached.date === today) return res.json(cached);
+
+    try {
+      const allEntries = await storage.getJournalEntries(sessionId);
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const weekEntries = allEntries.filter(
+        (e) => new Date(e.createdAt).getTime() > cutoff,
+      );
+
+      if (weekEntries.length === 0) {
+        return res.json({
+          narrative: null,
+          anchorVerse: null,
+          anchorRef: null,
+          entryCount: 0,
+        });
+      }
+
+      const memCtx = await getMemoryContext(sessionId);
+      const memNote = buildMemoryPromptNote(memCtx);
+
+      // Format entries for the prompt
+      const entryLines = weekEntries
+        .slice(0, 20)
+        .map((e) => {
+          const label =
+            e.type === "guidance_memory"
+              ? "Conversation with God"
+              : e.type === "prayer"
+              ? "Prayer"
+              : e.type === "reflection"
+              ? "Reflection"
+              : e.type === "verse"
+              ? `Scripture${e.reference ? ` (${e.reference})` : ""}`
+              : "Note";
+          const snippet = e.content.replace(/\n+/g, " ").slice(0, 300);
+          const date = new Date(e.createdAt).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+          return `[${date} — ${label}${e.title ? `: ${e.title}` : ""}]\n${snippet}`;
+        })
+        .join("\n\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 450,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are writing a weekly spiritual reflection letter for someone — a quiet, honest weaving of what their last 7 days looked like with God.
+
+Your voice: like a wise friend who has been watching over their shoulder all week and now sits down with them quietly. Warm, honest, not preachy. No "you did great" cheerleading.
+
+Write 3 short paragraphs:
+1. What they were carrying this week — the weight, the questions, the places God kept showing up
+2. The thread running through it — one recurring theme, tension, or grace you notice across multiple entries
+3. Where they seem to be standing now — not a resolution, just a true observation about this moment
+
+Rules:
+- Under 200 words total. Short paragraphs.
+- Write in second person ("you", not "they")
+- Do NOT list or summarize entries. Weave them. The reader shouldn't feel like they're getting a recap.
+- No "This week you journaled about..." or "Your entries show..."
+- One anchor verse: the single Scripture that most quietly holds the whole week together
+- If entries are sparse (1-2 only), write something shorter and gentler — acknowledge you're only seeing a slice
+
+${memNote ? memNote + "\n" : ""}Return JSON: { "narrative": "...", "anchorVerse": "quote", "anchorRef": "Book Chapter:Verse" }`,
+          },
+          {
+            role: "user",
+            content: `Here is what their week held:\n\n${entryLines}`,
+          },
+        ],
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(raw);
+
+      const result = {
+        date: today,
+        narrative: parsed.narrative ?? null,
+        anchorVerse: parsed.anchorVerse ?? null,
+        anchorRef: parsed.anchorRef ?? null,
+        entryCount: weekEntries.length,
+      };
+
+      if (result.narrative) threadCache.set(sessionId, result);
+      res.json(result);
+    } catch (err) {
+      console.error("the-thread error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Pray for Them ─────────────────────────────────────────────────────────────
   // User provides a person's name + what they're going through.
   // Returns a short, personal, sendable prayer.

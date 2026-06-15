@@ -21,6 +21,7 @@ import LandingHome from "@/pages/LandingHome";
 import Devotional from "@/pages/Devotional";
 import SharedVersePage from "@/pages/SharedVersePage";
 import SharedMomentPage from "@/pages/SharedMomentPage";
+import TheThreadPage from "@/pages/TheThreadPage";
 import UnderstandBible from "@/pages/UnderstandBible";
 import ReadBible from "@/pages/ReadBible";
 import Journal from "@/pages/Journal";
@@ -162,6 +163,7 @@ function Router() {
       <Route path="/devotional" component={Devotional} />
       <Route path="/v/:date" component={SharedVersePage} />
       <Route path="/s/:id" component={SharedMomentPage} />
+      <Route path="/thread" component={TheThreadPage} />
       <Route path="/understand" component={UnderstandBible} />
       <Route path="/read" component={ReadBible} />
       <Route path="/study" component={QuickStudyPage} />

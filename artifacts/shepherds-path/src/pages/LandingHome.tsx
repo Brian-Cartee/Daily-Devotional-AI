@@ -43,6 +43,7 @@ import {
 } from "@/components/EngagementCards";
 import { ScriptureForYou } from "@/components/ScriptureForYou";
 import { PrayForThemCard } from "@/components/PrayForThem";
+import { TheThreadCard } from "@/components/TheThreadCard";
 import { HomeEngagementStack } from "@/components/HomeEngagementStack";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
@@ -1068,6 +1069,9 @@ function LandingHomeInner() {
 
           {/* Pray for Someone */}
           <PrayForThemCard />
+
+          {/* The Thread — weekly synthesis, shown after 3+ days */}
+          <TheThreadCard daysWithApp={daysWithApp} />
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
