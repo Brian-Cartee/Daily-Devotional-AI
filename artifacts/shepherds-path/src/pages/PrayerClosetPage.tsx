@@ -49,6 +49,7 @@ import {
 import type { WorshipTrackId } from "@/lib/worshipTracks";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
 import type { JournalEntry } from "@shared/schema";
+import { PrayForThemModal } from "@/components/PrayForThem";
 
 export default function PrayerClosetPage() {
   const { toast } = useToast();
@@ -60,6 +61,7 @@ export default function PrayerClosetPage() {
   const [settings, setSettings] = useState<ClosetSettings>(() => loadClosetSettings());
   const [note, setNote] = useState(() => loadClosetNote());
   const [showSetup, setShowSetup] = useState(false);
+  const [showPrayModal, setShowPrayModal] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [showIntro, setShowIntro] = useState(() => shouldShowClosetIntro());
   const [showFirstPrayer, setShowFirstPrayer] = useState(() => {
@@ -549,6 +551,17 @@ export default function PrayerClosetPage() {
               </span>
             </Link>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowPrayModal(true)}
+            data-testid="button-closet-pray-for-someone"
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-border/40 py-3 text-[14px] font-semibold text-foreground/70 hover:text-foreground/90 transition-colors"
+          >
+            🕊️ Pray for someone — write it and send it
+          </button>
+
+          <PrayForThemModal open={showPrayModal} onClose={() => setShowPrayModal(false)} />
 
           <p className="text-center text-[12px] text-muted-foreground/55 leading-relaxed px-2 pb-4">
             &ldquo;When you pray, go into your room, close the door…&rdquo; — Matthew 6:6. This space is yours; nothing here is posted publicly.

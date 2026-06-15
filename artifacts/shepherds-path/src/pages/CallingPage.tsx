@@ -15,6 +15,7 @@ import {
 } from "@/lib/shareVerse";
 import { SiX, SiFacebook, SiWhatsapp, SiTelegram, SiInstagram, SiPinterest } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { PrayForThemModal } from "@/components/PrayForThem";
 
 /** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
 const openLink = (url: string) => {
@@ -34,59 +35,43 @@ const FALLBACK_IMG = "https://images.unsplash.com/photo-1470252649378-9c29740c9f
 const CALLING_CARDS = [
   {
     id: 1,
-    message: "Sharing is caring… but more than that — it's our calling.",
-    verseText: "Go and make disciples of all nations.",
-    scripture: "Matthew 28:19",
-    meaning: "We are called to go, to share truth and hope with the world.",
-    shareText: `Sharing is caring… but more than that — it's our calling.\n\n"Go and make disciples of all nations."\n— Matthew 28:19\n\nShepherd's Path · ${APP_URL}`,
+    message: "Someone in your life is waiting for a word they haven't heard yet.",
+    verseText: "How can they believe in the one of whom they have not heard?",
+    scripture: "Romans 10:14",
+    meaning: "Paul wasn't talking about strangers. He was talking about the people already in your life.",
+    shareText: `"How can they believe in the one of whom they have not heard?"\n— Romans 10:14\n\nThis verse stopped me today. Shepherd's Path · ${APP_URL}`,
   },
   {
     id: 2,
-    message: "Care enough to share. Called enough to act.",
-    verseText: "Faith by itself, if it is not accompanied by action, is dead.",
-    scripture: "James 2:17",
-    meaning: "Faith without action is empty. Our care for others shows in what we do.",
-    shareText: `Care enough to share. Called enough to act.\n\n"Faith by itself, if it is not accompanied by action, is dead."\n— James 2:17\n\nShepherd's Path · ${APP_URL}`,
+    message: "You don't have to have it all together to point someone toward God.",
+    verseText: "Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.",
+    scripture: "1 Peter 3:15",
+    meaning: "Not a polished answer. Just an honest one. The hope in you is the reason.",
+    shareText: `"Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have."\n— 1 Peter 3:15\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 3,
-    message: "Sharing hope isn't optional — it's part of the calling.",
-    verseText: "Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.",
-    scripture: "1 Peter 3:15",
-    meaning: "Hope is meant to be shared. Always be ready to give a reason for the hope you carry.",
-    shareText: `Sharing hope isn't optional — it's part of the calling.\n\n"Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have."\n— 1 Peter 3:15\n\nShepherd's Path · ${APP_URL}`,
+    message: "Carrying someone else's burden doesn't add to yours — it lightens both.",
+    verseText: "Carry each other's burdens, and in this way you will fulfill the law of Christ.",
+    scripture: "Galatians 6:2",
+    meaning: "This is what love looks like in practice — not from a distance, but present and real.",
+    shareText: `"Carry each other's burdens, and in this way you will fulfill the law of Christ."\n— Galatians 6:2\n\nThinking of you today. Shepherd's Path · ${APP_URL}`,
   },
   {
     id: 4,
-    message: "We don't just share… we serve, we care, we answer the call.",
-    verseText: "Serve one another humbly in love.",
-    scripture: "Galatians 5:13",
-    meaning: "Sharing is an act of service. Use your freedom to serve one another in love.",
-    shareText: `We don't just share… we serve, we care, we answer the call.\n\n"Serve one another humbly in love."\n— Galatians 5:13\n\nShepherd's Path · ${APP_URL}`,
+    message: "What refreshes someone else has a way of refreshing you too.",
+    verseText: "A generous person will prosper; whoever refreshes others will be refreshed.",
+    scripture: "Proverbs 11:25",
+    meaning: "Generosity isn't sacrifice. It returns to you in ways you didn't plan.",
+    shareText: `"A generous person will prosper; whoever refreshes others will be refreshed."\n— Proverbs 11:25\n\nShepherd's Path · ${APP_URL}`,
   },
   {
     id: 5,
-    message: "Share the Word. Answer the Call.",
-    verseText: "How can they believe in the one of whom they have not heard?",
-    scripture: "Romans 10:14",
-    meaning: "People need to hear. How can they believe if no one tells them?",
-    shareText: `Share the Word. Answer the Call.\n\n"How can they believe in the one of whom they have not heard?"\n— Romans 10:14\n\nShepherd's Path · ${APP_URL}`,
-  },
-  {
-    id: 6,
-    message: "What you share could change a life.",
-    verseText: "A generous person will prosper; whoever refreshes others will be refreshed.",
-    scripture: "Proverbs 11:25",
-    meaning: "A generous person prospers. Whoever refreshes others will themselves be refreshed.",
-    shareText: `What you share could change a life.\n\n"A generous person will prosper; whoever refreshes others will be refreshed."\n— Proverbs 11:25\n\nShepherd's Path · ${APP_URL}`,
-  },
-  {
-    id: 7,
-    message: "Carry one another. Share what matters.",
-    verseText: "Carry each other's burdens, and in this way you will fulfill the law of Christ.",
-    scripture: "Galatians 6:2",
-    meaning: "We were never meant to walk this alone. Carry each other's burdens.",
-    shareText: `Carry one another. Share what matters.\n\n"Carry each other's burdens, and in this way you will fulfill the law of Christ."\n— Galatians 6:2\n\nShepherd's Path · ${APP_URL}`,
+    message: "The go in 'go and make disciples' was never meant to be comfortable.",
+    verseText: "Go and make disciples of all nations.",
+    scripture: "Matthew 28:19",
+    meaning: "It wasn't a suggestion. It was a commission — to the people exactly where you already are.",
+    shareText: `"Go and make disciples of all nations."\n— Matthew 28:19\n\nThis is the whole thing. Shepherd's Path · ${APP_URL}`,
   },
 ];
 
@@ -122,6 +107,7 @@ export default function CallingPage() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [previewFormat, setPreviewFormat] = useState<"square" | "story">("square");
   const [regenerating, setRegenerating] = useState(false);
+  const [showPrayModal, setShowPrayModal] = useState(false);
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GeneratedCard | null>(null);
@@ -379,9 +365,8 @@ export default function CallingPage() {
     setLoading(null);
   };
 
-  const handleSendPrayer = async () => {
-    const text = `I prayed for you today. 🙏\n\nWhatever you're carrying right now — you're not carrying it alone. I thought of you and brought you before God.\n\nShepherd's Path · ${APP_URL}`;
-    await shareNative({ title: "Prayed for you", text, url: APP_URL });
+  const handleSendPrayer = () => {
+    setShowPrayModal(true);
   };
 
   const handleShareScripture = async () => {
@@ -882,6 +867,9 @@ export default function CallingPage() {
           </button>
         </div>
       </div>
+
+      {/* ── PRAY FOR SOMEONE MODAL ──────────────────────────────── */}
+      <PrayForThemModal open={showPrayModal} onClose={() => setShowPrayModal(false)} />
 
       {/* ── SHARE PREVIEW SHEET ─────────────────────────────────── */}
       <AnimatePresence>
