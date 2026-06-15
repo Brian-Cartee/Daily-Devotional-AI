@@ -52,6 +52,7 @@ import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { NATIVE_CARD, NATIVE_PAGE, NATIVE_TEXT, NATIVE_TEXT_SOFT } from "@/lib/nativeColors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, markEntryShown } from "@/components/HomeEntryScreen";
+import { BeginTodaysWalk, hasShownBeginWalk, markBeginWalkShown } from "@/components/BeginTodaysWalk";
 import {
   bumpHomeVisitAfterThreshold,
   isHomeDevotionalFocusPeriod,
@@ -758,6 +759,9 @@ function LandingHomeInner() {
     clearReturningHome();
   }, []);
 
+  const [showBeginWalk, setShowBeginWalk] = useState(() => {
+    try { return !!localStorage.getItem("sp_start_burden") && !hasShownBeginWalk(); } catch { return false; }
+  });
   const [showEntryScreen, setShowEntryScreen] = useState(() => homeReturnOverlay === "entry");
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
@@ -912,9 +916,19 @@ function LandingHomeInner() {
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       </AnimatePresence>
       <AnimatePresence>
-        {showWelcomeOverlay && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+        {showBeginWalk && (
+          <BeginTodaysWalk onEnter={() => {
+            markBeginWalkShown();
+            setShowBeginWalk(false);
+            const el = document.getElementById("card-devotional") ?? document.querySelector('[data-testid="card-devotional"]');
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }} />
+        )}
       </AnimatePresence>
-      {showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      <AnimatePresence>
+        {!showBeginWalk && showWelcomeOverlay && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
+      </AnimatePresence>
+      {!showBeginWalk && showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />

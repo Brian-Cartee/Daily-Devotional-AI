@@ -163,13 +163,37 @@ async function sendStreakReminders(now: Date) {
       if (streak && streak.lastVisitDate === today) continue;
 
       const badgeName = streak ? getStreakBadgeName(streak.currentStreak) : null;
+      const currentStreak = streak?.currentStreak ?? 0;
+
+      // Determine the right message based on where this user is in their walk
+      let nudgeTitle: string;
+      let nudgeBody: string;
+
+      if (currentStreak === 0) {
+        // Never visited or lost streak — gentle re-invitation
+        nudgeTitle = "The door is still open 🕊️";
+        nudgeBody = "No streak to maintain. Just an open invitation. Come as you are.";
+      } else if (currentStreak === 1) {
+        // Day 2 nudge — they started yesterday, haven't come back today
+        nudgeTitle = "You started something yesterday ✨";
+        nudgeBody = "Today's verse is ready. One more day and you're on your way.";
+      } else if (currentStreak <= 6) {
+        // Early habit — encourage the streak forming
+        nudgeTitle = `Day ${currentStreak} is waiting 🌿`;
+        nudgeBody = badgeName
+          ? `${badgeName} · Keep the streak alive — today's word is just a tap away.`
+          : `You've walked ${currentStreak} days. Don't let today be the one you miss.`;
+      } else {
+        // Established walker — honor the streak
+        nudgeTitle = badgeName ? `${badgeName} 🌿` : `Day ${currentStreak} 🌿`;
+        nudgeBody = badgeName
+          ? `${currentStreak} days walking with God. Today's devotional is open.`
+          : `You've been walking ${currentStreak} days. Today's a good day to keep going.`;
+      }
+
       const ok = await sendToSubscription(sub, {
-        title: streak && streak.currentStreak > 1 ? `Day ${streak.currentStreak} 🌿` : "Take a quiet moment 🌿",
-        body: streak && streak.currentStreak > 1
-          ? badgeName
-            ? `${badgeName} · The path is still open today. Come back when you can.`
-            : `You've been walking ${streak.currentStreak} days. Today's a good day to keep going.`
-          : "No pressure — just an open door. Come as you are.",
+        title: nudgeTitle,
+        body: nudgeBody,
         tag: "streak-reminder",
         url: "/devotional",
       });

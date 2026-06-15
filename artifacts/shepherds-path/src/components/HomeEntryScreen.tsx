@@ -6,6 +6,21 @@ import { isLateNight } from "@/lib/nightMode";
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
 
+function getOnboardingBurdenLine(): string | null {
+  try {
+    const burden = localStorage.getItem("sp_start_burden");
+    switch (burden) {
+      case "lost":           return "You said you're finding your way.";
+      case "hard-season":    return "You said life feels heavy.";
+      case "grow-deeper":    return "You said you want to go deeper.";
+      case "peace":          return "You said you need peace.";
+      case "coming-back":    return "You said you're coming back.";
+      case "grateful":       return "You said you're grateful and open.";
+      default:               return null;
+    }
+  } catch { return null; }
+}
+
 type EntryType = "whisper" | "heart" | "letter";
 
 const DAILY_VERSES = [
@@ -129,6 +144,11 @@ function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
         <p className="w-full text-white/45 text-sm text-center mt-1" style={{ fontFamily: "'Georgia', serif" }}>
           &mdash; {verse.ref}
         </p>
+        {getOnboardingBurdenLine() && (
+          <p className="w-full text-white/35 text-xs text-center mt-3 italic">
+            {getOnboardingBurdenLine()} God still does.
+          </p>
+        )}
       </div>
 
       {/* CTAs */}
@@ -303,9 +323,10 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const verse = getDayVerse();
 
+  const burdenLine = getOnboardingBurdenLine();
   const pastoralLines = isSunday
-    ? "A new week begins. Whatever last week carried, today is a fresh page. God's mercies are new every morning — and especially on this one."
-    : "There's no catching up here. God hasn't stopped thinking about you. You can start right where you are.";
+    ? `A new week begins. Whatever last week carried, today is a fresh page. God's mercies are new every morning — and especially on this one.${burdenLine ? ` ${burdenLine} That hasn't changed.` : ""}`
+    : `There's no catching up here. God hasn't stopped thinking about you. You can start right where you are.${burdenLine ? ` ${burdenLine} He still does.` : ""}`;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#faf8f5" }}>

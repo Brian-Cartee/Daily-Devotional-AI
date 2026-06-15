@@ -495,10 +495,28 @@ export default function GuidancePage() {
     }
   };
 
+  // Fires walk-today in parallel with verse-and-prayer — uses situation alone so it
+  // doesn't need to wait for the response stream to finish first.
+  const fetchWalkToday = () => {
+    if (walkFetchedRef.current || !situation.trim()) return;
+    walkFetchedRef.current = true;
+    setWalkLoading(true);
+    fetch("/api/guidance/walk-today", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ situation: situation.trim() }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.action) setWalkToday(data); })
+      .catch(() => {})
+      .finally(() => setWalkLoading(false));
+  };
+
   const startPhase2 = (phase1Reply?: string | null) => {
     setVpLoading(true);
     fetchJourney();
     void loadVerseAndPrayer(phase1Reply);
+    fetchWalkToday(); // parallel — fires alongside verse-and-prayer and response stream
   };
 
   const fallbackToSinglePhase = (initialUserMsg: Message, mode?: GuidanceMode) => {
@@ -695,24 +713,7 @@ export default function GuidancePage() {
   }, [responseComplete]);
 
 
-  // Fetch "Walk This Today" once the first pastoral response completes
-  useEffect(() => {
-    if (!responseComplete || !situation.trim() || walkFetchedRef.current) return;
-    const assistantMessages = messages.filter(m => m.role === "assistant");
-    const firstResponse = assistantMessages[0]?.content;
-    if (!firstResponse) return;
-    walkFetchedRef.current = true;
-    setWalkLoading(true);
-    fetch("/api/guidance/walk-today", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ situation: situation.trim(), responseText: firstResponse }),
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.action) setWalkToday(data); })
-      .catch(() => {})
-      .finally(() => setWalkLoading(false));
-  }, [responseComplete]);
+  // walk-today is now fired in parallel from startPhase2 — see fetchWalkToday below
 
   // Mark initial scroll as done — keep user at top so scripture is visible first
   useEffect(() => {

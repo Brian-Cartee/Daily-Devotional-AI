@@ -22,14 +22,17 @@ export function pickHomeReturnOverlay(options: {
 
   if (shouldShowSplash()) return "splash";
 
-  const eligibleForReturnLayers =
-    !inNativeApp && !chapelWeekFocus && homeVisitAfterThreshold > 2;
+  // Allow daily entry screen from visit 2 onwards — week-one users need the warm
+  // daily welcome just as much as established users. sacredFirstHome (visit 1) is
+  // handled by BeginTodaysWalk; from visit 2 the HomeEntryScreen takes over daily.
+  const eligibleForEntry = !inNativeApp && homeVisitAfterThreshold > 1;
+  const eligibleForOtherLayers = !inNativeApp && !chapelWeekFocus && homeVisitAfterThreshold > 2;
 
-  if (!eligibleForReturnLayers) return null;
+  if (!eligibleForEntry && !eligibleForOtherLayers) return null;
 
-  if (shouldShowWelcomeOverlay(!!forceIntro)) return "welcome";
-  if (shouldShowHomeEntry()) return "entry";
-  if (shouldShowWalkthrough()) return "walkthrough";
+  if (eligibleForOtherLayers && shouldShowWelcomeOverlay(!!forceIntro)) return "welcome";
+  if (eligibleForEntry && shouldShowHomeEntry()) return "entry";
+  if (eligibleForOtherLayers && shouldShowWalkthrough()) return "walkthrough";
 
   return null;
 }

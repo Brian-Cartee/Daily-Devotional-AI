@@ -41,7 +41,7 @@ export type ThresholdData = {
   continuityLine?: string;
 };
 
-const BRAND_TAGLINE = "Find your way back to God";
+const BRAND_TAGLINE = "Walk with God,";
 const BRAND_TAGLINE_SUB = "one moment at a time.";
 const NEED_LABEL: Record<ThresholdNeed, string> = {
   peace: "peace",

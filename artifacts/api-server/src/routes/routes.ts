@@ -1331,6 +1331,31 @@ Voice authenticity (internal constraint — never cite these rules in output):
     return CRISIS_PHRASES.some(p => lower.includes(p));
   }
 
+  // ── Session context cache — 10-minute TTL, avoids re-fetching unchanged data on every turn ──
+  interface SessionCtxEntry {
+    journalContext: { context: string; count: number };
+    recentEcho: string;
+    savedVerses: string;
+    userMemCtx: Awaited<ReturnType<typeof getMemoryContext>>;
+    cachedAt: number;
+  }
+  const SESSION_CTX_CACHE = new Map<string, SessionCtxEntry>();
+  const SESSION_CTX_TTL = 10 * 60 * 1000; // 10 minutes
+
+  async function getOrFetchSessionContext(sessionId: string): Promise<SessionCtxEntry> {
+    const cached = SESSION_CTX_CACHE.get(sessionId);
+    if (cached && Date.now() - cached.cachedAt < SESSION_CTX_TTL) return cached;
+    const [journalContext, recentEcho, savedVerses, userMemCtx] = await Promise.all([
+      getJournalContext(sessionId),
+      getRecentJournalEcho(sessionId),
+      getMemoryVerseNote(sessionId),
+      getMemoryContext(sessionId),
+    ]);
+    const entry: SessionCtxEntry = { journalContext, recentEcho, savedVerses, userMemCtx, cachedAt: Date.now() };
+    SESSION_CTX_CACHE.set(sessionId, entry);
+    return entry;
+  }
+
   async function getJournalContext(sessionId: string): Promise<{ context: string; count: number }> {
     if (!sessionId) return { context: "", count: 0 };
     try {
@@ -1598,22 +1623,19 @@ Voice authenticity (internal constraint — never cite these rules in output):
       ? `\n\nTheir name is ${userName.trim().split(/\s+/)[0]}. You may use it once, gently, only if it feels natural.`
       : "";
 
-    const reflectListenSystem = `You are a quiet, wise presence sitting with someone who just shared what a 
-Bible verse stirred in them. Your only job right now is to:
+    const reflectListenSystem = `You are a quiet, wise presence sitting with someone who just shared what a Bible verse stirred in them. Your only job right now is to:
 1. Reflect back what you heard in 1-2 sentences so they feel truly seen
-2. Ask ONE question — the single most important thing you'd want to know 
-   before responding more fully
+2. Ask ONE question — the single most important thing you'd want to know before responding more fully
 
 Rules:
-- Under 80 words total
+- Under 80 words total. Hard limit — cut before exceeding it.
 - No verse quote, no prayer, no advice, no theology lesson
 - Do NOT name their emotion as the first word or phrase
 - Do NOT start with 'I', 'It sounds like', or 'That must be'
 - Do NOT reframe toward the positive
 - Ask something that goes DEEPER into what they shared, not away from it
 - Good example: 'What part of that has stayed with you the longest?'
-- Good example: 'Is this something you've brought to God before, or does it 
-  feel new today?'
+- Good example: 'Is this something you've brought to God before, or does it feel new today?'
 - Tone: like a trusted friend leaning in, genuinely curious`;
 
     const userContent = `The verse today is ${verseReference.trim()}: '${verseText.trim().slice(0, 500)}'. Here is what this person shared: '${reflectionInput.trim().slice(0, 1500)}'`;
@@ -1670,14 +1692,12 @@ Rules:
       ? `\n\nTheir name is ${userName.trim().split(/\s+/)[0]}. You may use it once, gently, only if it feels natural.`
       : "";
 
-    const gratitudeListenSystem = `You are a quiet, warm presence sitting with someone who just named 
-something they're grateful for. Your only job is:
-1. Reflect back what they named in one sentence so they feel it was 
-   truly received
+    const gratitudeListenSystem = `You are a quiet, warm presence sitting with someone who just named something they're grateful for. Your only job is:
+1. Reflect back what they named in one sentence so they feel it was truly received
 2. Ask ONE gentle question that goes deeper into the gift — not broader
 
 Rules:
-- Under 70 words total
+- Under 70 words total. Hard limit — cut before exceeding it.
 - Do NOT restate the gift as a category ('gratitude', 'blessing')
 - Use their specific words
 - The question should help them feel the gift more fully, not explain it
@@ -3265,31 +3285,21 @@ Sacred restraint: fewer words are better.`;
     const isFollowUp = !isTwoPhaseCompletion && messages && messages.length > 1;
     const lateNight: boolean = !!(req.body as any).isLateNight;
 
-    const twoPhaseContextNote = isTwoPhaseCompletion
-      ? `\n\nBefore responding, note this exchange:
-[User originally shared]: ${situation.trim()}
-[You asked]: ${phase1Response!.trim()}
-[They added]: ${phase1UserReply!.trim()}
-
-Now respond to the full picture — both what they first shared AND what they added. Let the follow-up inform the depth and direction of your response.`
-      : "";
+    // twoPhaseContext is now passed as conversation history (see conversationHistory below)
+    // rather than re-injected into the system prompt — same context, ~200 fewer tokens/call.
 
     const nameNote = userName
       ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
       : "";
 
-    // Fetch journal context, recent journal echo, memory verses, and user memory in parallel
-    const [
-      { context: journalCtx, count: journalEntryCount },
+    // Fetch journal context, recent journal echo, memory verses, and user memory —
+    // cached per session for 10 minutes so multi-turn conversations don't re-query on every turn
+    const {
+      journalContext: { context: journalCtx, count: journalEntryCount },
       recentEcho,
       savedVerses,
       userMemCtx,
-    ] = await Promise.all([
-      getJournalContext(sessionId || ""),
-      getRecentJournalEcho(sessionId || ""),
-      getMemoryVerseNote(sessionId || ""),
-      getMemoryContext(sessionId || ""),
-    ]);
+    } = await getOrFetchSessionContext(sessionId || "");
 
     const memoryNote = journalCtx
       ? `\n\nWhat you already know about this person — from past conversations, prayers they've written, or journal entries. Use this to make your response feel like a continuation of a real relationship, not a first meeting. Reference past things only when it flows naturally and adds genuine warmth or depth. Never quote their entries back to them verbatim. Memory rules: only surface something from the past if it is directly relevant to what they just shared, recent enough to feel natural, and adds care rather than precision. When you do reference something, keep it soft and permissive — "This feels similar to something you mentioned before… if that still fits, we can stay with it" — never specific dates, never exact phrasing, never pattern claims like "you always" or "you tend to." Memory should feel like being known, not being recorded:\n${journalCtx}`
@@ -3355,17 +3365,29 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${twoPhaseContextNote}${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Never escalate emotionally beyond where they actually are${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
-    const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = messages?.length
-      ? messages.map(m => ({ role: m.role, content: m.content }))
-      : [{ role: "user", content: situation.trim() }];
+    // Build conversation history — for two-phase flow, include phase1 exchange as proper
+    // message turns rather than re-injecting them into the system prompt
+    let conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[];
+    if (isTwoPhaseCompletion) {
+      conversationHistory = [
+        { role: "user", content: situation.trim() },
+        { role: "assistant", content: phase1Response!.trim() },
+        { role: "user", content: phase1UserReply!.trim() },
+      ];
+    } else if (messages?.length) {
+      conversationHistory = messages.map(m => ({ role: m.role, content: m.content }));
+    } else {
+      conversationHistory = [{ role: "user", content: situation.trim() }];
+    }
 
     try {
       await streamCompletion(
         [{ role: "system", content: systemMsg }, ...conversationHistory],
         res,
-        { temperature: 0.82, maxTokens: isFollowUp ? 220 : 380, req }
+        // 280 tokens ≈ 200-word ceiling; follow-ups are shorter at 160 tokens
+        { temperature: 0.82, maxTokens: isFollowUp ? 160 : 280, req }
       );
       if (sessionId) {
         const responseMsgCount = incrementMessageCount(sessionId);

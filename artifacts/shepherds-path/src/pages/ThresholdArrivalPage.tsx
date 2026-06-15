@@ -27,15 +27,11 @@ function initialThresholdStep(): Step {
 }
 
 const NEED_OPTIONS: { id: ThresholdNeed; label: string; sub: string }[] = [
-  { id: "peace", label: "Peace", sub: "Help me settle." },
-  { id: "grief", label: "Grief", sub: "Help me carry this." },
-  { id: "battle", label: "Battle", sub: "Help me stand." },
-  { id: "stillness", label: "Stillness", sub: "Help me be quiet." },
-  { id: "worship", label: "Worship", sub: "Help me adore." },
-  { id: "deep-dive", label: "Go Deeper", sub: "Help me go deeper." },
-  { id: "morning-surrender", label: "Morning Surrender", sub: "Help me begin." },
-  { id: "night-prayer", label: "Night Prayer", sub: "Help me release today." },
-  { id: "gratitude", label: "Gratitude", sub: "Help me remember." },
+  { id: "peace",     label: "Peace",      sub: "Help me settle and be still."   },
+  { id: "grief",     label: "Grief",      sub: "Help me carry this."             },
+  { id: "battle",    label: "Battle",     sub: "Help me stand."                  },
+  { id: "deep-dive", label: "Go Deeper",  sub: "Help me go deeper in Scripture." },
+  { id: "gratitude", label: "Gratitude",  sub: "Help me remember goodness."      },
 ];
 
 const TONE_CONFIRMATION_VERSES: Partial<
@@ -161,18 +157,7 @@ export default function ThresholdArrivalPage() {
     }
   })();
 
-  const defaultVisibleNeedIds: ThresholdNeed[] = [
-    "peace",
-    "grief",
-    "battle",
-    "stillness",
-    "worship",
-    "deep-dive",
-    "morning-surrender",
-    "night-prayer",
-    "gratitude",
-  ];
-  const visibleModes = NEED_OPTIONS.filter((opt) => defaultVisibleNeedIds.includes(opt.id));
+  const visibleModes = NEED_OPTIONS;
   const confirmationVerse = need ? TONE_CONFIRMATION_VERSES[need] : undefined;
 
   const handleNameContinue = async () => {
