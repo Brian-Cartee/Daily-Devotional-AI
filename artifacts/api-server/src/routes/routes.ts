@@ -3737,6 +3737,55 @@ Rules:
     }
   });
 
+  // ── Pray for Them ─────────────────────────────────────────────────────────────
+  // User provides a person's name + what they're going through.
+  // Returns a short, personal, sendable prayer.
+  app.post("/api/guidance/pray-for-them", async (req, res) => {
+    const { name, situation } = req.body as { name?: string; situation?: string };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+
+    const nameNote = name?.trim() ? ` for ${name.trim()}` : "";
+    const displayName = name?.trim() || "them";
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 200,
+        messages: [
+          {
+            role: "system",
+            content: `You write prayers that people send to someone they love — not prayers FOR the person to read aloud, but prayers someone types out and texts to a friend who is hurting.
+
+The prayer should feel like it was written by the person sending it, not by a pastor or app. Personal, warm, specific to what was shared.
+
+Rules:
+- Address God directly. Start with "Lord," "Father," or "God," — not "Dear Heavenly Father"
+- Use the person's name${nameNote ? ` (${name?.trim()})` : " if provided"} naturally inside the prayer — not just at the start
+- Under 90 words. Every word earns its place.
+- Specific to what's shared — not generic comfort
+- End with something that lands, not a fade
+- No filler: never "I just ask," "I just pray," "be with them," "wrap your arms around"
+- Tone: honest and close, like a friend praying out loud with you
+
+Return only the prayer text. No intro, no label, no "Here is a prayer:" — just the prayer itself.`,
+          },
+          {
+            role: "user",
+            content: `Pray${nameNote}: ${situation.trim().slice(0, 600)}`,
+          },
+        ],
+      });
+
+      const prayer = completion.choices[0]?.message?.content?.trim() ?? "";
+      if (!prayer) return res.status(500).json({ message: "No prayer returned" });
+
+      res.json({ prayer, displayName });
+    } catch (err) {
+      console.error("pray-for-them error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Unsplash Contextual Photo ─────────────────────────────────────────────────
   const unsplashPhotoCache = new Map<string, { url: string; thumb: string; photographerName: string; photographerLink: string }>();
 

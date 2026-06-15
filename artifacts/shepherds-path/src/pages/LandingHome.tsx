@@ -42,6 +42,7 @@ import {
   LateNightBannerCard,
 } from "@/components/EngagementCards";
 import { ScriptureForYou } from "@/components/ScriptureForYou";
+import { PrayForThemCard } from "@/components/PrayForThem";
 import { HomeEngagementStack } from "@/components/HomeEngagementStack";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
@@ -1064,6 +1065,9 @@ function LandingHomeInner() {
 
           {/* Scripture That Finds You — only when user hasn't engaged today */}
           <ScriptureForYou />
+
+          {/* Pray for Someone */}
+          <PrayForThemCard />
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
