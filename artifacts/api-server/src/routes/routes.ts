@@ -3649,6 +3649,94 @@ Return JSON: { "action": "...", "scripture": "..." }`
     }
   });
 
+  // ── Scripture That Finds You ──────────────────────────────────────────────────
+  // Proactive verse surfacing — fires only when user has no engagement today.
+  // Reads burden (from onboarding), recent journal context, and time of day.
+  // Cached per sessionId per calendar day.
+  const scriptureForYouCache = new Map<string, { date: string; verse: string; reference: string; why: string }>();
+
+  app.post("/api/guidance/scripture-for-you", async (req, res) => {
+    const { sessionId, burden, timeOfDay } = req.body as {
+      sessionId?: string;
+      burden?: string;
+      timeOfDay?: "morning" | "midday" | "evening";
+    };
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+
+    const today = new Date().toISOString().split("T")[0];
+    const cached = scriptureForYouCache.get(sessionId);
+    if (cached && cached.date === today) return res.json(cached);
+
+    try {
+      const { context: journalContext } = await getJournalContext(sessionId);
+      const memCtx = await getMemoryContext(sessionId);
+      const memNote = buildMemoryPromptNote(memCtx);
+
+      const burdenMap: Record<string, string> = {
+        lost: "finding their way back to faith",
+        "hard-season": "going through a difficult season",
+        "grow-deeper": "wanting to grow deeper in faith",
+        peace: "seeking peace and stillness",
+        "coming-back": "returning to faith after time away",
+        grateful: "in a season of gratitude",
+      };
+      const burdenNote = burden && burdenMap[burden]
+        ? `When they started the app, they said they were ${burdenMap[burden]}.`
+        : "";
+
+      const timeNote = timeOfDay === "morning"
+        ? "It is morning — the day is just beginning."
+        : timeOfDay === "evening"
+        ? "It is evening — the day is winding down."
+        : "It is midday.";
+
+      const journalNote = journalContext
+        ? `Recent journal/prayer context:\n${journalContext}`
+        : "No journal entries yet — this may be a new user.";
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 160,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You surface one Scripture verse that meets a person exactly where they are today — not where you think they should be.
+
+Rules:
+- ONE verse only. ESV or NIV. Quote it exactly.
+- "why" is one sentence, 12 words max, written as if you're handing them a note — not explaining, just naming what it carries. No "This verse..." or "God is saying..." Just the quiet reason it landed.
+- Match the emotional register precisely. If they're in pain, go there. If they're grateful, celebrate it. If it's morning, meet the open day.
+- No cliché verses. No John 3:16. No Jeremiah 29:11. No Philippians 4:13. Find the one that fits THIS person TODAY.
+- Return JSON: { "verse": "...", "reference": "Book Chapter:Verse", "why": "..." }`,
+          },
+          {
+            role: "user",
+            content: `${timeNote}\n${burdenNote}\n${memNote ? memNote + "\n" : ""}${journalNote}`,
+          },
+        ],
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(raw);
+      if (!parsed.verse || !parsed.reference) {
+        return res.status(500).json({ message: "No verse returned" });
+      }
+
+      const entry = {
+        date: today,
+        verse: parsed.verse,
+        reference: parsed.reference,
+        why: parsed.why ?? "",
+      };
+      scriptureForYouCache.set(sessionId, entry);
+      res.json(entry);
+    } catch (err) {
+      console.error("scripture-for-you error:", err);
+      res.status(500).json({ message: "Failed" });
+    }
+  });
+
   // ── Unsplash Contextual Photo ─────────────────────────────────────────────────
   const unsplashPhotoCache = new Map<string, { url: string; thumb: string; photographerName: string; photographerLink: string }>();
 

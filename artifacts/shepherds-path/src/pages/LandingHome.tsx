@@ -41,6 +41,7 @@ import {
   GreetingHeader, ShareVerseButton, SundaySummaryCard,
   LateNightBannerCard,
 } from "@/components/EngagementCards";
+import { ScriptureForYou } from "@/components/ScriptureForYou";
 import { HomeEngagementStack } from "@/components/HomeEngagementStack";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
@@ -1060,6 +1061,9 @@ function LandingHomeInner() {
           )}
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
+
+          {/* Scripture That Finds You — only when user hasn't engaged today */}
+          <ScriptureForYou />
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
