@@ -1618,10 +1618,17 @@ Rules:
 
     const userContent = `The verse today is ${verseReference.trim()}: '${verseText.trim().slice(0, 500)}'. Here is what this person shared: '${reflectionInput.trim().slice(0, 1500)}'`;
 
+    if (detectCrisis(reflectionInput.trim())) {
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.write(CRISIS_RESPONSE);
+      res.end();
+      return;
+    }
+
     try {
       await streamCompletion(
         [
-          { role: "system", content: `${reflectListenSystem}${nameNote}` },
+          { role: "system", content: `${reflectListenSystem}${nameNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}` },
           { role: "user", content: userContent },
         ],
         res,
@@ -1682,10 +1689,17 @@ Rules:
     const ref = verseReference?.trim() || "today's verse";
     const userContent = `The verse today is ${ref}. This person named this as their gift today: '${gratitudeInput.trim().slice(0, 1500)}'`;
 
+    if (detectCrisis(gratitudeInput.trim())) {
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.write(CRISIS_RESPONSE);
+      res.end();
+      return;
+    }
+
     try {
       await streamCompletion(
         [
-          { role: "system", content: `${gratitudeListenSystem}${nameNote}` },
+          { role: "system", content: `${gratitudeListenSystem}${nameNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}` },
           { role: "user", content: userContent },
         ],
         res,
