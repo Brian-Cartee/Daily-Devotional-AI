@@ -47,6 +47,8 @@ import {
   buildTalkItThroughVersePrayerPrompt,
   buildTalkItThroughVersePrayerUserContent,
 } from "../talkItThroughPrompt";
+import { buildVariantSystemPrompt, isAbTestEnabled } from "../talkItThroughVariants";
+import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   resolveDailyArtDir,
   writeDailyArtImageFile,
@@ -3138,12 +3140,18 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     try {
       await streamCompletion(
         [
-          { role: "system", content: `${TALK_IT_THROUGH_PHASE1_SYSTEM_PROMPT}${nameNote}` },
+          { role: "system", content: `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}` },
           { role: "user", content: situation.trim() },
         ],
         res,
         { temperature: 0.78, maxTokens: 120, req },
       );
+      if (sessionId) {
+        const { variant: p1Variant } = buildVariantSystemPrompt(sessionId, "phase1");
+        const p1MsgCount = incrementMessageCount(sessionId);
+        const crisisTriggered = detectCrisisSignal(situation ?? "");
+        void logAbInteraction({ sessionId, variant: p1Variant, phase: "phase1", messageCount: p1MsgCount, crisisTriggered });
+      }
     } catch (err) {
       console.error("guidance phase1 error:", err);
       if (!res.headersSent) res.status(500).json({ message: "Failed" });
@@ -3319,7 +3327,9 @@ Now respond to the full picture — both what they first shared AND what they ad
     const voiceProfile = getVoiceProfile(userMemCtx.spiritualState);
     const voiceNote = buildVoicePromptNote(voiceProfile);
 
-    const systemMsg = `${TALK_IT_THROUGH_SYSTEM_PROMPT}
+    const { prompt: variantPrompt, variant: responseVariant } = buildVariantSystemPrompt(sessionId ?? "", "response");
+
+    const systemMsg = `${variantPrompt}
 
 ${TALK_IT_THROUGH_RESPONSE_SCOPE}
 
@@ -3343,6 +3353,10 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
         res,
         { temperature: 0.82, maxTokens: isFollowUp ? 220 : 380, req }
       );
+      if (sessionId) {
+        const responseMsgCount = incrementMessageCount(sessionId);
+        void logAbInteraction({ sessionId, variant: responseVariant, phase: "response", messageCount: responseMsgCount });
+      }
     } catch (err) {
       console.error("guidance response error:", err);
       if (!res.headersSent) res.status(500).json({ message: "Failed" });
