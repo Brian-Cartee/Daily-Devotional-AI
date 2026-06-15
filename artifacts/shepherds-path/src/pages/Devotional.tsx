@@ -1105,15 +1105,40 @@ export default function Devotional() {
 
   const handleSendToFriend = async () => {
     if (!verse) return;
-    const text = buildFriendVerseShareText(
-      verse.text,
-      verse.reference,
-      getUserName(),
-      verse.date ?? easternVerseDateKey(),
-    );
+    const senderName = getUserName();
+    const date = verse.date ?? easternVerseDateKey();
+
+    // Try to create a personalized /s/:id share link
+    let shareUrl: string | null = null;
+    try {
+      const r = await fetch("/api/share/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verse: verse.text,
+          reference: verse.reference,
+          senderName: senderName || null,
+          heroDate: date,
+        }),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        shareUrl = data.url ?? null;
+      }
+    } catch {
+      /* fall through to plain text */
+    }
+
+    const fromLine = senderName?.trim()
+      ? `${senderName.trim()} was thinking of you.`
+      : "Someone was thinking of you.";
+    const text = shareUrl
+      ? `${fromLine}\n\n"${verse.text}"\n— ${verse.reference}\n\n${shareUrl}`
+      : buildFriendVerseShareText(verse.text, verse.reference, senderName, date);
+
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Someone was thinking of you today", text });
+        await navigator.share({ title: fromLine, text });
         setFriendShareDone(true);
       } catch {
         /* cancelled */

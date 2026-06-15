@@ -536,6 +536,63 @@ export async function registerRoutes(
   });
 
   /** Shareable verse page — OG HTML for link previews; redirects humans to /v/:date */
+  // ── Personalized Share Links ──────────────────────────────────────────────────
+  // POST /api/share/create  → stores share payload, returns { id, url }
+  // GET  /api/share/moment/:id → returns share payload for landing page
+  // TTL: 7 days; cleaned up lazily on create.
+  interface ShareMoment {
+    verse: string;
+    reference: string;
+    senderName: string | null;
+    note: string | null;
+    heroDate: string | null;
+    createdAt: number;
+  }
+  const SHARE_STORE = new Map<string, ShareMoment>();
+  const SHARE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function pruneShares() {
+    const now = Date.now();
+    for (const [id, s] of SHARE_STORE) {
+      if (now - s.createdAt > SHARE_TTL_MS) SHARE_STORE.delete(id);
+    }
+  }
+
+  function generateShareId(): string {
+    const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+    return Array.from({ length: 7 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  }
+
+  app.post("/api/share/create", (req, res) => {
+    pruneShares();
+    const { verse, reference, senderName, note, heroDate } = req.body as Partial<ShareMoment>;
+    if (!verse?.trim() || !reference?.trim()) {
+      return res.status(400).json({ message: "verse and reference required" });
+    }
+    const id = generateShareId();
+    SHARE_STORE.set(id, {
+      verse: verse.trim().slice(0, 600),
+      reference: reference.trim().slice(0, 80),
+      senderName: senderName?.trim().slice(0, 60) || null,
+      note: note?.trim().slice(0, 300) || null,
+      heroDate: heroDate?.trim() || null,
+      createdAt: Date.now(),
+    });
+    const appUrl = (process.env.APP_URL || "https://www.shepherdspathai.com").replace(/\/$/, "");
+    res.json({ id, url: `${appUrl}/s/${id}` });
+  });
+
+  app.get("/api/share/moment/:id", (req, res) => {
+    const { id } = req.params;
+    const share = SHARE_STORE.get(id);
+    if (!share) return res.status(404).json({ message: "Share not found or expired" });
+    if (Date.now() - share.createdAt > SHARE_TTL_MS) {
+      SHARE_STORE.delete(id);
+      return res.status(404).json({ message: "Share link has expired" });
+    }
+    res.json(share);
+  });
+
   app.get("/api/share/verse/:date", async (req, res) => {
     try {
       const { date } = req.params;
