@@ -136,23 +136,8 @@ export function FloatingAskAI() {
     setIsOpen(true);
   }, []);
 
-  useEffect(() => {
-    if (hide || isOpen) return;
-    if (sessionStorage.getItem(FLOATER_PEEK_SESSION_KEY)) return;
-    if (localStorage.getItem(FLOATER_USED_KEY)) return;
-
-    let hidePeek: ReturnType<typeof setTimeout> | undefined;
-    const showTimer = setTimeout(() => {
-      setShowPeek(true);
-      sessionStorage.setItem(FLOATER_PEEK_SESSION_KEY, "1");
-      hidePeek = setTimeout(() => setShowPeek(false), 4000);
-    }, isDevotional ? 3000 : 5000);
-
-    return () => {
-      clearTimeout(showTimer);
-      if (hidePeek) clearTimeout(hidePeek);
-    };
-  }, [hide, isOpen, isDevotional]);
+  // Peek tooltip removed — it cluttered sacred reading moments.
+  // The AI button is visible enough; users discover it naturally.
 
   useEffect(() => {
     if (isOpen) {
@@ -441,31 +426,6 @@ export function FloatingAskAI() {
 
   return (
     <>
-      <AnimatePresence>
-        {showPeek && !isOpen && isDevotional && (
-          <motion.button
-            type="button"
-            key="peek-devotional"
-            initial={{ opacity: 0, y: -6, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.96 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            onClick={openSheet}
-            className="fixed z-[45] max-w-[min(200px,55vw)] sm:max-w-[200px] text-left rounded-full pl-3.5 pr-4 py-2 shadow-lg border border-primary/25 bg-background/95 backdrop-blur-md"
-            style={{
-              top: "calc(env(safe-area-inset-top, 0px) + 3.75rem)",
-              right: "max(0.75rem, env(safe-area-inset-right, 0px))",
-            }}
-          >
-            <p className="text-[12px] font-bold text-foreground leading-tight">
-              {pageContext.greeting}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-              Tap for a faithful answer
-            </p>
-          </motion.button>
-        )}
-      </AnimatePresence>
 
       {/* FAB */}
       <div
@@ -480,27 +440,6 @@ export function FloatingAskAI() {
           ["--fab-bottom-mobile-inner" as string]: FAB_BOTTOM_MOBILE_INNER,
         }}
       >
-        <AnimatePresence>
-          {showPeek && !isOpen && !isDevotional && (
-            <motion.button
-              type="button"
-              key="peek"
-              initial={{ opacity: 0, x: 12, scale: 0.96 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 8, scale: 0.96 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              onClick={openSheet}
-              className="mr-1 max-w-[min(200px,55vw)] sm:max-w-[200px] text-left rounded-full pl-3.5 pr-4 py-2 shadow-lg border border-primary/25 bg-background/95 backdrop-blur-md"
-            >
-              <p className="text-[12px] font-bold text-foreground leading-tight">
-                {pageContext.greeting}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-                Tap for a faithful answer
-              </p>
-            </motion.button>
-          )}
-        </AnimatePresence>
 
         <motion.button
           type="button"
