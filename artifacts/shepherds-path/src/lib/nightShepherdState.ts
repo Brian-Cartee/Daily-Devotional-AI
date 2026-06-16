@@ -2,6 +2,7 @@
 
 import { isLateNight } from "@/lib/nightMode";
 import { isReturningHome } from "@/lib/introState";
+import { getRelationshipAge } from "@/lib/relationship";
 
 const OPT_OUT_KEY = "sp_night_opt_out";
 const DATE_KEY = "sp_night_shepherd_day";
@@ -72,6 +73,8 @@ export function shouldRedirectToNightShepherd(): boolean {
   if (!isLateNight()) return false;
   if (isNightOptOut()) return false;
   if (isReturningHome()) return false;
+  // Don't interrupt new users in their first 3 days — let them explore freely
+  if (getRelationshipAge() < 3) return false;
   if (isNightRedirectSkippedThisSession()) return false;
   try {
     if (new URLSearchParams(window.location.search).get("home") === "1") return false;
