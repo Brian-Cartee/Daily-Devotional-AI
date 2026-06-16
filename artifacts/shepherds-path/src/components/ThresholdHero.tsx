@@ -127,6 +127,13 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
         if (isReturningUser && raw === "Still awake?") {
           return profileFirstName ? `Good evening, ${profileFirstName}.` : "Good evening.";
         }
+        // If a personal "Good morning, Brian." greeting is already showing above,
+        // strip the redundant time-of-day prefix from the server headline.
+        if (profileFirstName) {
+          const stripped = raw.replace(/^Good (morning|afternoon|evening)[,\s—–-]+/i, "");
+          // Capitalise the first letter after stripping
+          return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+        }
         return raw;
       })();
   const [showArrival, setShowArrival] = useState(() => shouldShowArrivalRitual());
