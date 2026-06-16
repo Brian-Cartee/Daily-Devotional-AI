@@ -769,6 +769,7 @@ function LandingHomeInner() {
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
+  const [rhythmExpanded, setRhythmExpanded] = useState(false);
   const [rhythmDismissCount, setRhythmDismissCount] = useState(() => getRhythmDismissed());
   const [proNudgeHidden, setProNudgeHidden] = useState(() => isProNudgeDismissed());
   const welcomeOverlayEnabled = homeReturnOverlay === "welcome";
@@ -1067,11 +1068,11 @@ function LandingHomeInner() {
           {/* Scripture That Finds You — only when user hasn't engaged today */}
           <ScriptureForYou />
 
-          {/* Pray for Someone */}
-          <PrayForThemCard />
-
           {/* The Thread — weekly synthesis, shown after 3+ days */}
           <TheThreadCard daysWithApp={daysWithApp} />
+
+          {/* Pray for Someone — outward action, after inward ones */}
+          <PrayForThemCard />
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
@@ -1129,61 +1130,76 @@ function LandingHomeInner() {
                 <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-zinc-400/70 to-zinc-500/45 opacity-80 rounded-l-2xl" />
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-400/5 via-zinc-300/5 to-transparent pointer-events-none" />
                 <div className="relative z-10 px-5 pt-4 pb-4">
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-3">
+                  {/* Header — always visible, tap to expand */}
+                  <button
+                    type="button"
+                    onClick={() => setRhythmExpanded(e => !e)}
+                    className="w-full flex items-center justify-between"
+                    aria-expanded={rhythmExpanded}
+                  >
                     <div className="flex items-center gap-2.5">
                       <ShortcutPathIcon variant="pathways" size="sm" />
                       <span className="text-[12px] font-bold uppercase tracking-widest text-zinc-300/80">Your Rhythm Today</span>
                     </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-zinc-900/55 text-zinc-200 border border-white/10">
-                      Focused on {focusLabel}
-                    </span>
-                  </div>
-
-                  {/* Today's verse */}
-                  <div className="mb-3 px-3.5 py-3 rounded-xl bg-zinc-900/35 border border-white/10">
-                    <p className="text-[13px] font-bold uppercase tracking-widest text-zinc-300/70 mb-1.5">Today's Word</p>
-                    <p className="path-reminder-quote text-[14px] text-foreground mb-1.5">
-                      &ldquo;{verse.text}&rdquo;
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-[12px] font-bold text-zinc-300/75">— {verse.ref}</p>
-                      <ShareVerseButton verseText={verse.text} verseRef={verse.ref} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-zinc-900/55 text-zinc-200 border border-white/10">
+                        {focusLabel}
+                      </span>
+                      <span className="text-zinc-400/60 text-[12px]" aria-hidden>
+                        {rhythmExpanded ? "▲" : "▼"}
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Prayer + Journey — two columns */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
-                    <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <HandHeart className="w-3.5 h-3.5 text-zinc-300/75" />
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bring to Prayer</p>
-                      </div>
-                      <p className="text-[12px] text-foreground/75 leading-snug italic">
-                        {prayer}
-                      </p>
-                    </div>
-                    <Link href={`/understand?j=${journeyId}`}>
-                      <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60 hover:border-white/15 hover:bg-zinc-800/25 transition-all cursor-pointer h-full group">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <BookMarked className="w-3.5 h-3.5 text-zinc-300/75" />
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Your Journey</p>
-                        </div>
-                        <p className="text-[12px] text-foreground/75 leading-snug font-semibold group-hover:text-zinc-200 transition-colors">
-                          {journeyName} →
-                        </p>
-                      </div>
-                    </Link>
-                  </div>
-
-                  {/* Footer — adjust */}
-                  <button
-                    data-testid="btn-adjust-rhythm"
-                    onClick={() => setShowRhythmSetup(true)}
-                    className="text-[11px] text-muted-foreground hover:text-primary transition-colors font-medium"
-                  >
-                    Adjust my rhythm
                   </button>
+
+                  {/* Expanded content */}
+                  {rhythmExpanded && (
+                    <div className="mt-3">
+                      {/* Today's verse */}
+                      <div className="mb-3 px-3.5 py-3 rounded-xl bg-zinc-900/35 border border-white/10">
+                        <p className="text-[13px] font-bold uppercase tracking-widest text-zinc-300/70 mb-1.5">Today's Word</p>
+                        <p className="path-reminder-quote text-[14px] text-foreground mb-1.5">
+                          &ldquo;{verse.text}&rdquo;
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-[12px] font-bold text-zinc-300/75">— {verse.ref}</p>
+                          <ShareVerseButton verseText={verse.text} verseRef={verse.ref} />
+                        </div>
+                      </div>
+
+                      {/* Prayer + Journey — two columns */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+                        <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <HandHeart className="w-3.5 h-3.5 text-zinc-300/75" />
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bring to Prayer</p>
+                          </div>
+                          <p className="text-[12px] text-foreground/75 leading-snug italic">
+                            {prayer}
+                          </p>
+                        </div>
+                        <Link href={`/understand?j=${journeyId}`}>
+                          <div className="px-3.5 py-3 rounded-xl bg-muted/50 border border-border/60 hover:border-white/15 hover:bg-zinc-800/25 transition-all cursor-pointer h-full group">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <BookMarked className="w-3.5 h-3.5 text-zinc-300/75" />
+                              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Your Journey</p>
+                            </div>
+                            <p className="text-[12px] text-foreground/75 leading-snug font-semibold group-hover:text-zinc-200 transition-colors">
+                              {journeyName} →
+                            </p>
+                          </div>
+                        </Link>
+                      </div>
+
+                      {/* Footer — adjust */}
+                      <button
+                        data-testid="btn-adjust-rhythm"
+                        onClick={() => setShowRhythmSetup(true)}
+                        className="text-[11px] text-muted-foreground hover:text-primary transition-colors font-medium"
+                      >
+                        Adjust my rhythm
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

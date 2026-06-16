@@ -71,10 +71,12 @@ import {
   isNativeWebViewShell,
   markNativeShellUiPainted,
 } from "@/lib/platform";
-import { syncUserNameFromServer } from "@/lib/userName";
+import { syncUserNameFromServer, hasBeenPrompted } from "@/lib/userName";
+import { isThresholdComplete, markThresholdComplete } from "@/lib/thresholdState";
 import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { HeavenEasterEgg } from "@/components/HeavenEasterEgg";
 import { ListenLimitListener } from "@/components/ListenLimitListener";
 import { IdentityConnectHost } from "@/components/IdentityConnectHost";
 import { syncEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
@@ -259,7 +261,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    void syncUserNameFromServer();
+    // Sync name from server, then restore threshold-complete if the server
+    // knows this user has been here before but localStorage was wiped
+    // (e.g. PWA reinstall / Safari data cleared). Prevents re-asking for name.
+    void syncUserNameFromServer().then(() => {
+      if (hasBeenPrompted() && !isThresholdComplete()) {
+        markThresholdComplete();
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -312,6 +321,7 @@ function App() {
                 <WhyPanelBootstrap />
                 <Router />
                 <DemoFloatingBar />
+                <HeavenEasterEgg />
                 {!isNativeWebViewShell() && <InstallPrompt />}
                 {!isNativeWebViewShell() && <UpdatePrompt />}
               </DemoProvider>
