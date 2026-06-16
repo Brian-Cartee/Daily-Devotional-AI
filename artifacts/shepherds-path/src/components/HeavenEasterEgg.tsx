@@ -115,6 +115,7 @@ export function HeavenEasterEgg() {
         zIndex: 9999,
         opacity,
         transition: "opacity 0.55s ease",
+        pointerEvents: "none", // always pass touches through so pull detection keeps working
         // Golden gradient = instant background while image loads
         background:
           "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255,220,120,0.98) 0%, rgba(255,180,60,0.90) 30%, rgba(180,110,20,0.92) 60%, rgba(40,18,5,1) 100%)",

@@ -178,7 +178,7 @@ export default function StartPage() {
                   lineHeight: 1.5,
                 }}
               >
-                Scripture &amp; prayer stay free. No paywall to pray.
+                Always free. No account. Just you and God.
               </p>
             </div>
           </div>

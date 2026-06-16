@@ -879,7 +879,7 @@ function LandingHomeInner() {
   const showPrayerClosetCard = shouldShowPrayerClosetOnHome(presenceCtx.door === "quiet");
   const prayerClosetCompactTeaser = isPrayerClosetCompactTeaser(homeDevotionalFocus, daysWithApp);
   const showDailyArt = shouldShowHomeDailyArt();
-  const showGreeting = Boolean(getUserName()) && daysWithApp > 1;
+  const showGreeting = Boolean(getUserName()); // show from day 1
 
   useEffect(() => { setLastOpenDate(); }, []);
 
@@ -1071,8 +1071,8 @@ function LandingHomeInner() {
           {/* The Thread — weekly synthesis, shown after 3+ days */}
           <TheThreadCard daysWithApp={daysWithApp} />
 
-          {/* Pray for Someone — outward action, after inward ones */}
-          <PrayForThemCard />
+          {/* Pray for Someone — outward action, after inward ones. Show day 2+ */}
+          {daysWithApp >= 1 && <PrayForThemCard />}
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />
