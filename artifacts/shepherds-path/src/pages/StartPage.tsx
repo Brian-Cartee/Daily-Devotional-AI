@@ -52,7 +52,7 @@ export default function StartPage() {
     });
 
     markThresholdComplete();
-    navigate("/devotional");
+    navigate("/");
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────
