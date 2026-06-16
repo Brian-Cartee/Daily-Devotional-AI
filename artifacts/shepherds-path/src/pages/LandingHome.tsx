@@ -954,22 +954,8 @@ function LandingHomeInner() {
 
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
 
-      {thresholdWelcome && (
-        <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 -mt-2 mb-2 relative z-10">
-          <p
-            className="text-center text-[13px] text-muted-foreground/80 leading-relaxed px-2"
-            data-testid="text-threshold-welcome"
-          >
-            You stepped inside. Welcome back.
-          </p>
-        </div>
-      )}
-
-      {(thresholdWelcome || sacredFirstHome) && (
-        <div className="max-w-xl md:max-w-4xl mx-auto px-4 sm:px-5 mb-1 relative z-10">
-          <ThresholdModeRhythmCard />
-        </div>
-      )}
+      {/* "You stepped inside" message and Gentle Start card removed —
+          they interrupted the flow between the hero and Good morning/Today's Word */}
 
       {/* Section cards */}
       <div
@@ -982,7 +968,7 @@ function LandingHomeInner() {
           paddingBottom: "24px",
           position: "relative",
           zIndex: 10,
-          marginTop: thresholdWelcome ? "4px" : homeDevotionalFocus ? "8px" : "-16px",
+          marginTop: homeDevotionalFocus ? "8px" : "-16px",
           width: "100%",
           boxSizing: "border-box",
         }}
