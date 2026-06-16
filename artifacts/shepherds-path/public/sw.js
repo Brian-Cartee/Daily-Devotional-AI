@@ -13,8 +13,9 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (e) => {
-  // Do NOT call skipWaiting here — the app will send SKIP_WAITING when the
-  // user confirms the update, giving us the chance to show the prompt first.
+  // Skip waiting immediately so new deploys activate on next navigation
+  // without requiring the user to manually confirm an update prompt.
+  self.skipWaiting();
   e.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL).catch(() => {}))
   );
