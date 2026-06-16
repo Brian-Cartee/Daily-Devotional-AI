@@ -73,8 +73,8 @@ export function shouldRedirectToNightShepherd(): boolean {
   if (!isLateNight()) return false;
   if (isNightOptOut()) return false;
   if (isReturningHome()) return false;
-  // Don't interrupt new users in their first 3 days — let them explore freely
-  if (getRelationshipAge() < 3) return false;
+  // Don't interrupt new users in their first 5 days — let them explore freely
+  if (getRelationshipAge() < 5) return false;
   if (isNightRedirectSkippedThisSession()) return false;
   try {
     if (new URLSearchParams(window.location.search).get("home") === "1") return false;
