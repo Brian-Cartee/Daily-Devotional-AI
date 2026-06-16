@@ -161,7 +161,7 @@ export default function StartPage() {
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 40%, rgba(0,0,0,0.72) 75%, rgba(9,3,30,0.97) 100%)",
+                "linear-gradient(to bottom, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.20) 40%, rgba(20,10,4,0.78) 75%, rgba(30,15,5,0.97) 100%)",
             }}
           />
 
