@@ -122,24 +122,136 @@ export default function StartPage() {
     <div
       style={{
         minHeight: "100dvh",
-        background: "linear-gradient(175deg, #1e0d50 0%, #130636 50%, #09031e 100%)",
+        background: "#09031e",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      {/* Radial glow */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 35%, rgba(110,50,220,0.20) 0%, transparent 70%)",
-        }}
-      />
+      {/* ── SCREEN 1: Hero — full-bleed photo ─────────────────────────────── */}
+      {step === "hero" && (
+        <motion.div
+          key="hero-photo"
+          initial={FADE_INITIAL} animate={FADE_ANIMATE} exit={FADE_EXIT} transition={FADE_TRANSITION}
+          style={{
+            position: "fixed",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Road photo */}
+          <img
+            src="/hero-landing.webp"
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center 30%",
+            }}
+          />
 
-      {/* Content */}
+          {/* Dark gradient — heavier at bottom so CTA reads clean */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 40%, rgba(0,0,0,0.72) 75%, rgba(9,3,30,0.97) 100%)",
+            }}
+          />
+
+          {/* Content layer */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              padding:
+                "max(52px, env(safe-area-inset-top, 52px)) 28px max(48px, calc(36px + env(safe-area-inset-bottom, 0px)))",
+              maxWidth: 420,
+              width: "100%",
+              margin: "0 auto",
+              boxSizing: "border-box",
+            }}
+          >
+            {/* Top spacer — photo breathes here */}
+            <div />
+
+            {/* Bottom — headline + CTA */}
+            <div>
+              <h1
+                style={{
+                  fontSize: "clamp(2rem, 8vw, 2.6rem)",
+                  fontWeight: 500,
+                  fontFamily: "var(--font-serif, Georgia, serif)",
+                  color: "rgba(255,255,255,0.96)",
+                  lineHeight: 1.22,
+                  margin: "0 0 24px",
+                  letterSpacing: "-0.01em",
+                  textShadow: "0 2px 16px rgba(0,0,0,0.55)",
+                }}
+              >
+                Walk with God,<br />one moment<br />at a time.
+              </h1>
+
+              <button
+                type="button"
+                onClick={() => {
+                  fireHaptic("soft");
+                  setStep("mood");
+                }}
+                style={{
+                  width: "100%",
+                  padding: "18px 24px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  background: "rgba(255,255,255,0.10)",
+                  color: "rgba(255,255,255,0.92)",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  letterSpacing: "0.02em",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  transition: "border-color 0.2s, background 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.18)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.38)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.10)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.22)";
+                }}
+              >
+                Step inside
+              </button>
+
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "0.68rem",
+                  color: "rgba(255,255,255,0.22)",
+                  marginTop: 16,
+                  lineHeight: 1.5,
+                }}
+              >
+                Scripture &amp; prayer stay free. No paywall to pray.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Subsequent screens — deep dark bg */}
       <div
         style={{
           position: "relative",
@@ -153,111 +265,26 @@ export default function StartPage() {
           width: "100%",
           margin: "0 auto",
           boxSizing: "border-box",
+          // Hidden during hero screen — photo overlay handles that
+          visibility: step === "hero" ? "hidden" : "visible",
         }}
       >
+        {/* Dark gradient bg for post-hero screens */}
+        {step !== "hero" && (
+          <div
+            aria-hidden
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: -1,
+              background: "linear-gradient(175deg, #1e0d50 0%, #130636 50%, #09031e 100%)",
+            }}
+          />
+        )}
+
         <AnimatePresence mode="wait">
-
-          {/* ── SCREEN 1: Hero ─────────────────────────────────────────── */}
-          {step === "hero" && (
-            <motion.div
-              key="hero"
-              initial={FADE_INITIAL} animate={FADE_ANIMATE} exit={FADE_EXIT} transition={FADE_TRANSITION}
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              {/* Top — wordmark area */}
-              <div>
-                <p
-                  style={{
-                    fontSize: "0.65rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.22em",
-                    textTransform: "uppercase",
-                    color: "rgba(255,255,255,0.28)",
-                    margin: "0 0 32px",
-                  }}
-                >
-                  Shepherd's Path
-                </p>
-
-                <h1
-                  style={{
-                    fontSize: "clamp(2rem, 8vw, 2.5rem)",
-                    fontWeight: 500,
-                    fontFamily: "var(--font-serif, Georgia, serif)",
-                    color: "rgba(255,255,255,0.94)",
-                    lineHeight: 1.25,
-                    margin: "0 0 20px",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Walk with God,<br />one moment<br />at a time.
-                </h1>
-
-                <p
-                  style={{
-                    fontSize: "0.9rem",
-                    color: "rgba(255,255,255,0.40)",
-                    lineHeight: 1.65,
-                    margin: 0,
-                    maxWidth: "22rem",
-                  }}
-                >
-                  Scripture, prayer, and stillness — shaped to where you are, not where you think you should be.
-                </p>
-              </div>
-
-              {/* Bottom — CTA */}
-              <div style={{ paddingTop: 48 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    fireHaptic("soft");
-                    setStep("mood");
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "18px 24px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(255,255,255,0.07)",
-                    color: "rgba(255,255,255,0.88)",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    letterSpacing: "0.02em",
-                    transition: "border-color 0.2s, background 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.12)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.30)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.07)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.18)";
-                  }}
-                >
-                  Step inside
-                </button>
-
-                <p
-                  style={{
-                    textAlign: "center",
-                    fontSize: "0.7rem",
-                    color: "rgba(255,255,255,0.20)",
-                    marginTop: 18,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Scripture &amp; prayer stay free. No paywall to pray.
-                </p>
-              </div>
-            </motion.div>
-          )}
+          {/* hero AnimatePresence slot — empty, handled above */}
+          {step === "hero" && <motion.div key="hero-placeholder" />}
 
           {/* ── SCREEN 2: Mood question ───────────────────────────────── */}
           {step === "mood" && (
