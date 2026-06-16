@@ -1001,7 +1001,7 @@ function LandingHomeInner() {
           transition={{ duration: 0.6, delay: inNativeApp ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
           style={{ display: "flex", flexDirection: "column", gap: "12px" }}
         >
-          {!homeDevotionalFocus && !homeMarketplaceCollapsed && showGreeting && <GreetingHeader />}
+          {!homeDevotionalFocus && showGreeting && <GreetingHeader />}
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && carryToday && (
             <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>

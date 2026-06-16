@@ -73,7 +73,7 @@ export function HeavenEasterEgg() {
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => {
       if (blocked.current) return;
-      if (getScrollY() > 4) return;
+      if (getScrollY() > 20) return;
       touchStartY.current = e.touches[0].clientY;
       triggered.current = false;
       setHtmlBg(true); // go gold instantly — covers native iOS black rubber-band
@@ -82,7 +82,8 @@ export function HeavenEasterEgg() {
     const onTouchMove = (e: TouchEvent) => {
       if (blocked.current) return;
       if (touchStartY.current === null) return;
-      if (getScrollY() > 4) return;
+      // Don't re-check scrollY here — it fluctuates during iOS rubber-band pull
+      // and would kill the trigger mid-gesture. scrollY was already validated at touchstart.
       const delta = e.touches[0].clientY - touchStartY.current;
 
       if (delta >= TRIGGER_PX && !triggered.current) {

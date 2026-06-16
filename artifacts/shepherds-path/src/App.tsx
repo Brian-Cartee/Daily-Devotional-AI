@@ -250,6 +250,9 @@ function BrandedDomainRedirect() {
 
 function App() {
   const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
+  // If local storage is already clear (reinstall), wait for server sync before
+  // routing — prevents the name screen re-appearing for returning users.
+  const [syncReady, setSyncReady] = useState(() => isThresholdComplete());
 
   useEffect(() => {
     applyTheme(theme);
@@ -261,15 +264,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Sync name from server, then restore threshold-complete if the server
-    // knows this user has been here before but localStorage was wiped
-    // (e.g. PWA reinstall / Safari data cleared). Prevents re-asking for name.
-    void syncUserNameFromServer().then(() => {
+    if (syncReady) return; // already have local answer — no need to wait
+    // localStorage was wiped (reinstall). Ask server before routing.
+    syncUserNameFromServer().then(() => {
       if (hasBeenPrompted() && !isThresholdComplete()) {
         markThresholdComplete();
       }
-    });
-  }, []);
+      setSyncReady(true);
+    }).catch(() => setSyncReady(true)); // on error, proceed anyway
+  }, [syncReady]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -319,7 +322,7 @@ function App() {
                 <ReferralCapture />
                 <ReferralWelcomeToast />
                 <WhyPanelBootstrap />
-                <Router />
+                {syncReady ? <Router /> : <div style={{ minHeight: "100dvh", background: "hsl(var(--background))" }} />}
                 <DemoFloatingBar />
                 <HeavenEasterEgg />
                 {!isNativeWebViewShell() && <InstallPrompt />}
