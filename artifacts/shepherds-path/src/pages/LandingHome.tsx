@@ -1065,14 +1065,12 @@ function LandingHomeInner() {
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
 
-          {/* Scripture That Finds You — only when user hasn't engaged today */}
-          <ScriptureForYou />
+          {/* ScriptureForYou removed — clutters home, duplicates Today's Word */}
 
           {/* The Thread — weekly synthesis, shown after 3+ days */}
           <TheThreadCard daysWithApp={daysWithApp} />
 
-          {/* Pray for Someone — outward action, after inward ones. Show day 2+ */}
-          {daysWithApp >= 1 && <PrayForThemCard />}
+          {/* PrayForThemCard removed from home feed — accessible via Prayer Closet */}
 
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && showSecondaryHomeCards && (
             <WitnessLetterCard />

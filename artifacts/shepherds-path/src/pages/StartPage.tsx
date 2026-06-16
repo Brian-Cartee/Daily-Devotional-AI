@@ -169,17 +169,6 @@ export default function StartPage() {
                 Step inside
               </button>
 
-              <p
-                style={{
-                  textAlign: "center",
-                  fontSize: "0.68rem",
-                  color: "rgba(255,255,255,0.22)",
-                  marginTop: 16,
-                  lineHeight: 1.5,
-                }}
-              >
-                Always free. No account. Just you and God.
-              </p>
             </div>
           </div>
         </motion.div>

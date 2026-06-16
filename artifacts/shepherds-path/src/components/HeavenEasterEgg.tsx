@@ -46,10 +46,17 @@ export function HeavenEasterEgg() {
 
   const dismiss = () => {
     setOpacity(0);
+    setHtmlBg(false);
     holdTimer.current = setTimeout(() => {
       visibleRef.current = false;
       setVisible(false);
     }, 600);
+  };
+
+  // Set <html> background gold the moment a pull starts so iOS's native
+  // rubber-band overscroll shows gold instead of black
+  const setHtmlBg = (gold: boolean) => {
+    document.documentElement.style.backgroundColor = gold ? "#7a5c1e" : "";
   };
 
   useEffect(() => {
@@ -58,6 +65,7 @@ export function HeavenEasterEgg() {
       if (getScrollY() > 4) return;
       touchStartY.current = e.touches[0].clientY;
       triggered.current = false;
+      setHtmlBg(true); // go gold immediately so native overscroll isn't black
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -88,6 +96,7 @@ export function HeavenEasterEgg() {
         visibleRef.current = false;
         setVisible(false);
         setOpacity(0);
+        setHtmlBg(false);
       }
     };
 

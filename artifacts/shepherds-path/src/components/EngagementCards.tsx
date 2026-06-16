@@ -65,7 +65,7 @@ export function GreetingHeader() {
   return (
     <p
       data-testid="text-greeting-header"
-      className="text-[15px] font-semibold text-foreground/60 px-0.5 -mb-1"
+      className="text-[22px] font-bold text-foreground/85 px-0.5 -mb-1"
     >
       {greeting}, {name}.
     </p>
