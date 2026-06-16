@@ -65,7 +65,7 @@ import {
   shouldShowHomeDailyArt,
   shouldShowPrayerClosetOnHome,
 } from "@/lib/firstSession";
-import { isThresholdComplete } from "@/lib/thresholdState";
+import { isThresholdComplete, isThresholdReplay } from "@/lib/thresholdState";
 import { WhyThisExistsPanel } from "@/components/WhyThisExistsPanel";
 import {
   SCRIPTURE_COMMITMENT_LEAD,
@@ -1899,8 +1899,11 @@ function LandingHomeInner() {
 }
 
 export default function LandingHome() {
-  if (!isReturningHome() && shouldShowThresholdArrival()) {
-    return <Redirect to="/threshold" />;
+  if (!isReturningHome()) {
+    // Returning user triggering a daily check-in replay → existing threshold flow
+    if (isThresholdReplay()) return <Redirect to="/threshold" />;
+    // Brand-new user who has never completed onboarding → new elegant onboarding
+    if (!isThresholdComplete()) return <Redirect to="/start" />;
   }
   if (shouldRedirectToNightShepherd()) {
     return <Redirect to="/night" />;
