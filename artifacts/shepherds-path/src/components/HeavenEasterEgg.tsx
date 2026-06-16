@@ -3,70 +3,91 @@
  *
  * How it works:
  * - Listens for touch events globally
- * - When the user is scrolled to the top and pulls down 90px+, the overlay appears
- * - Full-screen: heaven image (or golden gradient fallback) + John 14:2
- * - Releases naturally when finger lifts — no button needed
+ * - Overlay appears at 15px pull (transparent) so it immediately covers iOS's native black rubber-band
+ * - Fully fades in at 90px pull
+ * - Holds 2800ms after finger lifts, then fades out
  *
- * To use the heaven image: place your image at /public/heaven.webp
+ * Image: /public/heaven.webp  (always rendered directly — no existence check needed)
+ * Golden gradient on container = fallback while image loads
  */
 
 import { useEffect, useRef, useState } from "react";
 
-const TRIGGER_PX = 90; // how far down to pull before revealing
-const HOLD_MS    = 2800; // how long to hold after finger lifts
+const SHOW_PX    = 15;  // show overlay this early to block native iOS black
+const TRIGGER_PX = 90;  // fully reveal at this distance
+const HOLD_MS    = 2800;
+
+function getScrollY(): number {
+  // window.scrollY can return 0 on iOS PWA even when slightly scrolled.
+  // Check all three sources.
+  return (
+    window.scrollY ||
+    document.documentElement.scrollTop ||
+    document.body.scrollTop ||
+    0
+  );
+}
 
 export function HeavenEasterEgg() {
-  const [visible, setVisible]     = useState(false);
-  const [opacity, setOpacity]     = useState(0);
-  const touchStartY               = useRef<number | null>(null);
-  const pulling                   = useRef(false);
-  const holdTimer                 = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const imgExists                 = useRef<boolean | null>(null);
-
-  // Check once whether /heaven.webp exists
-  useEffect(() => {
-    const img = new Image();
-    img.onload  = () => { imgExists.current = true; };
-    img.onerror = () => { imgExists.current = false; };
-    img.src = "/heaven.webp";
-  }, []);
+  const [visible, setVisible] = useState(false);
+  const [opacity, setOpacity] = useState(0);
+  const touchStartY  = useRef<number | null>(null);
+  const triggered    = useRef(false);
+  const holdTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visibleRef   = useRef(false); // shadow visible in a ref so closures stay current
 
   const reveal = () => {
     if (holdTimer.current) clearTimeout(holdTimer.current);
+    visibleRef.current = true;
     setVisible(true);
-    // Slight delay so DOM paints before fade-in
+    // Double rAF so the DOM paints with opacity:0 before we animate to 1
     requestAnimationFrame(() => requestAnimationFrame(() => setOpacity(1)));
   };
 
   const dismiss = () => {
     setOpacity(0);
-    holdTimer.current = setTimeout(() => setVisible(false), 600);
+    holdTimer.current = setTimeout(() => {
+      visibleRef.current = false;
+      setVisible(false);
+    }, 600);
   };
 
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => {
-      // Only trigger when scrolled to very top
-      if (window.scrollY > 4) return;
+      // Only trigger when at the very top of the page
+      if (getScrollY() > 4) return;
       touchStartY.current = e.touches[0].clientY;
-      pulling.current = false;
+      triggered.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (touchStartY.current === null) return;
-      if (window.scrollY > 4) return;
+      if (getScrollY() > 4) return;
       const delta = e.touches[0].clientY - touchStartY.current;
-      if (delta >= TRIGGER_PX && !pulling.current) {
-        pulling.current = true;
+
+      // Show overlay early (transparent) to immediately cover native iOS black
+      if (delta >= SHOW_PX && !visibleRef.current) {
+        visibleRef.current = true;
+        setVisible(true);
+      }
+
+      // Fully reveal at TRIGGER_PX
+      if (delta >= TRIGGER_PX && !triggered.current) {
+        triggered.current = true;
         reveal();
       }
     };
 
     const onTouchEnd = () => {
       touchStartY.current = null;
-      if (pulling.current) {
-        pulling.current = false;
-        // Hold briefly so it doesn't feel like a flash, then fade
+      if (triggered.current) {
+        triggered.current = false;
         holdTimer.current = setTimeout(dismiss, HOLD_MS);
+      } else {
+        // Pulled a little but not enough — hide immediately
+        visibleRef.current = false;
+        setVisible(false);
+        setOpacity(0);
       }
     };
 
@@ -80,6 +101,7 @@ export function HeavenEasterEgg() {
       document.removeEventListener("touchend",   onTouchEnd);
       if (holdTimer.current) clearTimeout(holdTimer.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;
@@ -93,6 +115,9 @@ export function HeavenEasterEgg() {
         zIndex: 9999,
         opacity,
         transition: "opacity 0.55s ease",
+        // Golden gradient = instant background while image loads
+        background:
+          "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255,220,120,0.98) 0%, rgba(255,180,60,0.90) 30%, rgba(180,110,20,0.92) 60%, rgba(40,18,5,1) 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -100,32 +125,21 @@ export function HeavenEasterEgg() {
         overflow: "hidden",
       }}
     >
-      {/* Background — image if available, else golden light gradient */}
-      {imgExists.current ? (
-        <img
-          src="/heaven.webp"
-          alt=""
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "center top",
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255,220,120,0.95) 0%, rgba(255,180,60,0.85) 25%, rgba(200,130,30,0.75) 50%, rgba(60,30,10,0.95) 100%)",
-          }}
-        />
-      )}
+      {/* Heaven image — always rendered; CSS background is the fallback */}
+      <img
+        src="/heaven.webp"
+        alt=""
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: "center top",
+        }}
+      />
 
-      {/* Light bloom at top */}
+      {/* Soft light bloom at top */}
       <div
         style={{
           position: "absolute",
@@ -135,12 +149,12 @@ export function HeavenEasterEgg() {
           width: "100%",
           height: "55%",
           background:
-            "radial-gradient(ellipse 60% 80% at 50% 0%, rgba(255,245,200,0.70) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 80% at 50% 0%, rgba(255,245,200,0.65) 0%, transparent 70%)",
           pointerEvents: "none",
         }}
       />
 
-      {/* Dark scrim at bottom so text reads */}
+      {/* Dark scrim at bottom so text is legible */}
       <div
         style={{
           position: "absolute",
@@ -149,12 +163,12 @@ export function HeavenEasterEgg() {
           right: 0,
           height: "45%",
           background:
-            "linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 100%)",
+            "linear-gradient(to top, rgba(0,0,0,0.80) 0%, transparent 100%)",
           pointerEvents: "none",
         }}
       />
 
-      {/* Text */}
+      {/* Scripture */}
       <div
         style={{
           position: "relative",
@@ -173,7 +187,7 @@ export function HeavenEasterEgg() {
             color: "rgba(255,255,255,0.95)",
             lineHeight: 1.55,
             margin: "0 0 14px",
-            textShadow: "0 2px 20px rgba(0,0,0,0.60)",
+            textShadow: "0 2px 20px rgba(0,0,0,0.65)",
           }}
         >
           "He has gone to prepare a place for you."
@@ -182,9 +196,9 @@ export function HeavenEasterEgg() {
           style={{
             fontSize: "0.78rem",
             fontFamily: "var(--font-serif, Georgia, serif)",
-            color: "rgba(255,220,120,0.85)",
+            color: "rgba(255,220,120,0.90)",
             letterSpacing: "0.06em",
-            textShadow: "0 1px 8px rgba(0,0,0,0.55)",
+            textShadow: "0 1px 8px rgba(0,0,0,0.60)",
           }}
         >
           John 14:2

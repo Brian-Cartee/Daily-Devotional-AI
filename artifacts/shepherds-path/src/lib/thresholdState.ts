@@ -24,11 +24,35 @@ export type ThresholdNeed =
   | "honesty"
   | "hope";
 
-function storageGet(key: string): string | null {
+function cookieGet(name: string): string | null {
+  if (typeof document === "undefined") return null;
   try {
-    return localStorage.getItem(key);
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
   } catch {
     return null;
+  }
+}
+
+function cookieSet(name: string, value: string): void {
+  if (typeof document === "undefined") return;
+  try {
+    const secure = location.protocol === "https:" ? ";Secure" : "";
+    // 2-year expiry — survives Safari "clear history" and PWA reinstalls
+    document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=63072000;SameSite=Lax${secure}`;
+  } catch {
+    /* noop */
+  }
+}
+
+function storageGet(key: string): string | null {
+  try {
+    const local = localStorage.getItem(key);
+    if (local) return local;
+    // Fallback to cookie if localStorage was cleared
+    return cookieGet(key);
+  } catch {
+    return cookieGet(key);
   }
 }
 
@@ -38,6 +62,8 @@ function storageSet(key: string, value: string): void {
   } catch {
     /* private mode */
   }
+  // Also write cookie so it survives Safari data clears / PWA reinstalls
+  cookieSet(key, value);
 }
 
 export function isThresholdComplete(): boolean {
