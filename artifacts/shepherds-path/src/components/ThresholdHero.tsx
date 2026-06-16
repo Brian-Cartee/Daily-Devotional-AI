@@ -386,7 +386,10 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
 
           {showTalkPrompt && !thresholdLoading && (
             homeDevotionalFocus ? (
-              <div className="mb-3" data-testid="home-hero-devotional-focus">
+              /* Verse preview + Play/Read buttons removed from hero —
+                 Today's Word card below handles this. Keeps hero clean:
+                 headline → Good morning Brian → Today's Step */
+              <div className="mb-3 hidden" data-testid="home-hero-devotional-focus">
                 {verse ? (
                   <div className="rounded-xl border border-amber-500/20 bg-black/35 px-3.5 py-3 mb-3">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200/70 mb-1.5">
