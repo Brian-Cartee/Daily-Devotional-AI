@@ -466,7 +466,8 @@ export default function PricingPage() {
               disabled={loading}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Heart className="w-4 h-4" />}
-              <span className="truncate">{loading ? "Redirecting…" : plan === "annual" ? "Join the mission · $149.99/yr" : "Join the mission · $14.99/mo"}</span>
+              <span className="truncate">{loading ? "Redirecting…" : "Join the mission"}</span>
+              {!loading && <span className="ml-1 opacity-80 text-[12px] font-normal">{plan === "annual" ? "· $149.99/yr" : "· $14.99/mo"}</span>}
             </Button>
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
