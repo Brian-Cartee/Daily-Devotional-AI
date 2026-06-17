@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { GuidanceMode } from "@/lib/guidanceMode";
 import type { AppTheme } from "@/lib/theme";
+import type { DevotionalEntryMode } from "@/lib/devotionalEntry";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { topMoreMenuButtonClass, topMoreMenuButtonStyle } from "@/lib/topMoreMenuButton";
 import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
@@ -84,6 +85,8 @@ type Props = {
   onClose: () => void;
   theme: AppTheme;
   onSetTheme: (theme: AppTheme) => void;
+  devotionalEntry: DevotionalEntryMode;
+  onSetDevotionalEntry: (mode: DevotionalEntryMode) => void;
   guidanceTone: GuidanceMode;
   onToggleTone: () => void;
   voicePref: string;
@@ -101,6 +104,8 @@ export function NavBarMoreMenu({
   onToggle,
   theme,
   onSetTheme,
+  devotionalEntry,
+  onSetDevotionalEntry,
   guidanceTone,
   onToggleTone,
   voicePref,
@@ -202,6 +207,36 @@ export function NavBarMoreMenu({
                 Deep purple & gold — a different kind of sacred
               </p>
             )}
+          </div>
+          <div className="px-3 py-2">
+            <p className="px-0.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/65">
+              Daily Devotional Entry
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {(
+                [
+                  { id: "auto" as const, label: "Begin automatically" },
+                  { id: "tap" as const, label: "Begin with a tap" },
+                ] as const
+              ).map((opt) => {
+                const active = devotionalEntry === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    data-testid={`devotional-entry-${opt.id}`}
+                    onClick={() => onSetDevotionalEntry(opt.id)}
+                    className={`w-full rounded-xl px-3.5 py-2.5 text-left text-[13px] font-semibold transition-all ${
+                      active
+                        ? "bg-primary/12 text-foreground border border-primary/30 shadow-sm"
+                        : "bg-muted/40 text-muted-foreground border border-transparent hover:bg-muted/60 hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <MenuRow
             icon={Shield}

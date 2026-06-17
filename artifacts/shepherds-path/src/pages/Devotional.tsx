@@ -68,6 +68,11 @@ import { usePastorVideo } from "@/hooks/use-pastor-video";
 import { ScriptureContext } from "@/components/ScriptureContext";
 import { SessionStillness } from "@/components/SessionStillness";
 import { getListenFirstPreference } from "@/lib/listenFirst";
+import {
+  DEVOTIONAL_ENTRY_UPDATED_EVENT,
+  getDevotionalEntryMode,
+  type DevotionalEntryMode,
+} from "@/lib/devotionalEntry";
 import { journalSavedToast } from "@/lib/journalToast";
 import {
   canStartDevotionalChain,
@@ -149,11 +154,16 @@ export default function Devotional() {
   const listenFirstTriggeredRef = useRef(false);
   const homeListenTriggeredRef = useRef(false);
   const [entryTriggered, setEntryTriggered] = useState(false);
+  const [devotionalEntryMode, setDevotionalEntryMode] = useState<DevotionalEntryMode>(
+    () => getDevotionalEntryMode(),
+  );
   const [savedReflection, setSavedReflection] = useState(false);
   const [savedPrayer, setSavedPrayer] = useState(false);
   const [savedVerse, setSavedVerse] = useState(false);
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number; visitDates?: string[] } | null>(null);
   const pendingStreakAchievementRef = useRef<Achievement | null>(null);
+  const completionThresholdRef = useRef<HTMLDivElement>(null);
+  const completionAchievementsFiredRef = useRef(false);
   const reflectionAbortRef = useRef<AbortController | null>(null);
   const prayerAbortRef = useRef<AbortController | null>(null);
   const generationStartedRef = useRef(false);
@@ -198,7 +208,7 @@ export default function Devotional() {
     mapFaithFocusToPastorVideoTone(getRhythm()?.focus);
   const devotionalPastorVideo = usePastorVideo(
     devotionalPastorTone,
-    !!gratitudePrayer && completionPath === "stay",
+    !!prayerContent && !prayerLoading && completionPath === "stay",
   );
   const [primarySermonChannel, setPrimarySermonChannel] = useState<string | undefined>();
   const [listenHintSeen, setListenHintSeen] = useState(() => !!localStorage.getItem("sp_listen_intro_seen"));
@@ -282,7 +292,7 @@ export default function Devotional() {
       generateReflection(verseId, lang, name);
       return;
     }
-    resetReflectListenState();
+    generateReflection(verseId, lang, name);
   };
 
   const regenerateWithMyName = (verseId: number, explicitName?: string) => {
@@ -353,13 +363,13 @@ export default function Devotional() {
   ]);
 
   useEffect(() => {
-    if (!gratitudePrayer || completionPath !== "stay") {
+    if (!prayerContent || prayerLoading || completionPath !== "stay") {
       setShowPostCompletionCtas(false);
       return;
     }
     const t = window.setTimeout(() => setShowPostCompletionCtas(true), 5000);
     return () => window.clearTimeout(t);
-  }, [gratitudePrayer, completionPath]);
+  }, [prayerContent, prayerLoading, completionPath]);
 
   useEffect(() => {
     setCompletionPath(null);
@@ -633,12 +643,18 @@ export default function Devotional() {
     beginDevotionalGeneration(verse.id, resolvedProfileName ?? undefined);
   }, [verse, entryTriggered, continuityResolved, nameHydrated, resolvedProfileName]);
 
-  // Effect 3: Passive auto-trigger when no return visit choice is needed
+  useEffect(() => {
+    const syncEntryMode = () => setDevotionalEntryMode(getDevotionalEntryMode());
+    window.addEventListener(DEVOTIONAL_ENTRY_UPDATED_EVENT, syncEntryMode);
+    return () => window.removeEventListener(DEVOTIONAL_ENTRY_UPDATED_EVENT, syncEntryMode);
+  }, []);
+
+  // Auto-begin immediately when preference is "auto" (no delayed flash)
   useEffect(() => {
     if (!verse || entryTriggered || !continuityResolved || !nameHydrated) return;
-    const timer = setTimeout(() => setEntryTriggered(true), 1200);
-    return () => clearTimeout(timer);
-  }, [verse, entryTriggered, continuityResolved, nameHydrated]);
+    if (devotionalEntryMode !== "auto") return;
+    setEntryTriggered(true);
+  }, [verse, entryTriggered, continuityResolved, nameHydrated, devotionalEntryMode]);
 
   useEffect(() => {
     return () => {
@@ -754,7 +770,7 @@ export default function Devotional() {
 
   const handleReflect = async () => {
     const input = reflectionInput.trim();
-    if (!input || !verse || reflectListenLoading || reflectionLoading) return;
+    if (!input || !verse || reflectListenLoading) return;
     if (!canUseAi()) {
       setShowUpgrade(true);
       return;
@@ -772,20 +788,20 @@ export default function Devotional() {
       setReflectListenStreamingText("");
       setReflectListenResponse("");
       setReflectListenComplete(false);
-      void generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined, {
-        reflectionInput: input,
+      setReflectionInputSubmitted(null);
+      toast({
+        title: "Couldn't connect just now",
+        description: "Today's encouragement and prayer are still here — try again when you're ready.",
+        variant: "destructive",
       });
     }
   };
 
   const handleReflectListenContinue = async () => {
     const reply = reflectListenReply.trim();
-    if (!reply || !verse || !reflectionInputSubmitted || reflectionLoading) return;
+    if (!reply || !verse || !reflectionInputSubmitted) return;
     setReflectListenReplySubmitted(reply);
-    await generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined, {
-      reflectionInput: reflectionInputSubmitted,
-      reflectListenReply: reply,
-    });
+    await saveOptionalReflectionToJournal(reflectionInputSubmitted, reply);
   };
 
   const handleReflectListenKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -850,21 +866,44 @@ export default function Devotional() {
     if (!controller.signal.aborted) setPrayerLoading(false);
   };
 
-  const fireGratitudeCompletionAchievements = (prayer: string) => {
-    if (!prayer || isSacredSessionQuiet()) return;
+  const saveOptionalReflectionToJournal = async (input: string, reply?: string) => {
+    if (!verse) return;
+    const content = [input.trim(), reply?.trim()].filter(Boolean).join("\n\n");
+    if (!content) return;
+    try {
+      await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: getSessionId(),
+          verseRef: verse.reference,
+          verseText: verse.text,
+          content,
+          type: "reflection",
+        }),
+      });
+      setReflectionReplySaved(true);
+      notifyJournalSaved();
+    } catch {
+      setReflectionReplySaved(true);
+    }
+  };
+
+  const fireDevotionalCompletionAchievements = () => {
+    if (isSacredSessionQuiet()) return;
     const devotionalAchievement = checkDevotionalFirstComplete();
     if (devotionalAchievement) {
       setTimeout(() => {
         markAchievementSeen(devotionalAchievement.id);
         setCurrentAchievement(devotionalAchievement);
-      }, 1200);
+      }, 800);
     } else if (pendingStreakAchievementRef.current) {
       const streakAchievement = pendingStreakAchievementRef.current;
       pendingStreakAchievementRef.current = null;
       setTimeout(() => {
         markAchievementSeen(streakAchievement.id);
         setCurrentAchievement(streakAchievement);
-      }, 1200);
+      }, 800);
     }
   };
 
@@ -915,7 +954,6 @@ export default function Devotional() {
       }
       const prayer = capitalizeDivinePronouns(rawPrayer);
       setGratitudePrayer(prayer);
-      fireGratitudeCompletionAchievements(prayer);
     } catch {
       setGratitudePrayer("Sorry, we couldn't generate your prayer right now. Please try again.");
     }
@@ -1001,12 +1039,40 @@ export default function Devotional() {
     setListenSection(null);
   };
 
+  const devotionalCoreComplete =
+    !!verse && !!prayerContent.trim() && !prayerLoading;
+
+  // Story moments appear when the user reaches the completion fork — not when prayer finishes
+  useEffect(() => {
+    completionAchievementsFiredRef.current = false;
+  }, [verse?.id]);
+
+  useEffect(() => {
+    if (!devotionalCoreComplete || completionPath !== null) return;
+    const el = completionThresholdRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some(e => e.isIntersecting && e.intersectionRatio >= 0.35);
+        if (!visible || completionAchievementsFiredRef.current) return;
+        completionAchievementsFiredRef.current = true;
+        fireDevotionalCompletionAchievements();
+      },
+      { threshold: [0.35, 0.5] },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [devotionalCoreComplete, completionPath]);
+
   const fullListenReady =
     !!verse &&
     !!reflectionContent.trim() &&
     !reflectionLoading &&
     !!prayerContent.trim() &&
     !prayerLoading;
+
+  const listenFirstReady = devotionalCoreComplete;
 
   const showFullListenBar =
     !!verse && (!!reflectionContent.trim() || reflectionLoading || !!prayerContent.trim() || prayerLoading);
@@ -1061,6 +1127,47 @@ export default function Devotional() {
     setListenSection(null);
   };
 
+  const startListenFirst = async () => {
+    if (ttsListen.playing || ttsListen.loading) { stopFullListen(); return; }
+    if (!listenHintSeen) { localStorage.setItem("sp_listen_intro_seen", "1"); setListenHintSeen(true); }
+
+    if (!canStartDevotionalChain()) {
+      setShowListenUpgrade(true);
+      return;
+    }
+
+    if (!listenFirstReady) {
+      toast({
+        title: "Prayer is still preparing",
+        description: "Listen-first plays today's verse and prayer — one moment.",
+      });
+      return;
+    }
+
+    const cleanPrayer = prayerContent
+      .replace(/^(here'?s? (is )?a? ?(short |brief )?prayer[^:]*:?\s*)/i, "")
+      .trim();
+
+    const sections: Array<{ key: string; text: string }> = [
+      { key: "verse", text: `${verse!.text}. ${verse!.reference}.` },
+      { key: "prayer", text: cleanPrayer },
+    ];
+
+    recordDevotionalChainStarted();
+
+    await ttsListen.playChain(
+      sections,
+      (_, key) => setListenSection(key as "verse" | "reflection" | "prayer"),
+      () => setListenSection(null),
+      {
+        chainScope: "devotional",
+        onLimit: () => setShowListenUpgrade(true),
+      },
+    );
+
+    setListenSection(null);
+  };
+
   useEffect(() => {
     if (!fullListenReady || listenFirstTriggeredRef.current) return;
     if (!canUseListenFirstAuto() || !getListenFirstPreference()) return;
@@ -1073,10 +1180,10 @@ export default function Devotional() {
 
   useEffect(() => {
     if (!listenFromHome || homeListenTriggeredRef.current) return;
-    if (!fullListenReady) return;
+    if (!listenFirstReady) return;
     homeListenTriggeredRef.current = true;
-    void startFullListen();
-  }, [listenFromHome, fullListenReady]);
+    void startListenFirst();
+  }, [listenFromHome, listenFirstReady]);
 
   const handleShare = async () => {
     if (!verse) return;
@@ -1720,9 +1827,13 @@ export default function Devotional() {
             )}
           </AnimatePresence>
 
-          {/* Progressive entry — shown when no return choice is needed */}
+          {/* Deliberate entry — tap-to-begin when user prefers it in settings */}
           <AnimatePresence>
-            {continuityResolved && !entryTriggered && !reflectionContent && !reflectionLoading && (
+            {devotionalEntryMode === "tap" &&
+              continuityResolved &&
+              !entryTriggered &&
+              !reflectionContent &&
+              !reflectionLoading && (
               <motion.div
                 key="begin-entry"
                 initial={{ opacity: 0, y: 8 }}
@@ -1831,10 +1942,10 @@ export default function Devotional() {
             )}
           </AnimatePresence>
 
-          {/* STEP 2: REFLECTION */}
-          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError || reflectionInputSubmitted || reflectListenStreamingText || reflectListenResponse) && (
+          {/* STEP 2: ENCOURAGEMENT (auto-generated) */}
+          {(entryTriggered || !!reflectionContent || reflectionLoading || reflectionError) && (
           <div className="bg-card border border-border/60 rounded-2xl px-5 py-8 shadow-sm">
-            <StepLabel number={2} label="Reflection" />
+            <StepLabel number={2} label="Encouragement" />
             {resolvedProfileName && verse?.id && reflectionContent && !reflectionLoading && !reflectionIncludesName(reflectionContent, resolvedProfileName) && (
               <div
                 className="mb-5 rounded-xl border border-primary/30 px-4 py-3.5"
@@ -1865,111 +1976,11 @@ export default function Devotional() {
                 {savingNameDraft
                   ? "Saving your name…"
                   : personalizePhase === "prayer"
-                    ? "Reflection ready — writing your prayer…"
+                    ? "Encouragement ready — writing your prayer…"
                     : reflectionContent
                       ? "Almost there…"
-                      : reflectionInputSubmitted
-                        ? "Listening…"
-                        : "Writing your reflection — words will appear as they arrive"}
+                      : "Writing today's encouragement — words will appear as they arrive"}
               </p>
-            )}
-
-            {reflectionInputSubmitted && (
-              <p
-                className="text-[14px] text-foreground/80 leading-relaxed mb-4"
-                data-testid="text-devotional-reflection-input-submitted"
-              >
-                {reflectionInputSubmitted}
-              </p>
-            )}
-
-            {!reflectionContent && !reflectionLoading && !reflectionInputSubmitted && (
-              <div className="mb-6">
-                <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
-                  What struck you about this verse?
-                </p>
-                <textarea
-                  value={reflectionInput}
-                  onChange={(e) => setReflectionInput(e.target.value)}
-                  placeholder="Even a word or a feeling is enough."
-                  rows={3}
-                  data-testid="input-devotional-reflection"
-                  className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed"
-                />
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => void handleReflect()}
-                    disabled={!reflectionInput.trim() || reflectListenLoading || reflectionLoading}
-                    data-testid="button-reflect-with-me"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[14px] font-semibold text-primary-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {reflectListenLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reflect with me"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {(reflectListenStreamingText || reflectListenResponse) && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mb-6"
-                data-testid="text-devotional-reflect-listen"
-              >
-                <div className="border-l-2 border-violet-500/45 pl-4">
-                  <p
-                    className="text-[16px] leading-[1.75] text-foreground/75 italic"
-                    style={{ fontFamily: "var(--font-reading)" }}
-                  >
-                    {reflectListenStreamingText || reflectListenResponse}
-                    {!reflectListenComplete && reflectListenStreamingText && (
-                      <span className="inline-block w-1.5 h-5 bg-violet-400/50 rounded-sm animate-pulse ml-0.5 align-middle not-italic" />
-                    )}
-                  </p>
-                </div>
-
-                {reflectListenComplete && !reflectListenReplySubmitted && !reflectionContent && (
-                  <div className="mt-5 space-y-3">
-                    <textarea
-                      value={reflectListenReply}
-                      onChange={(e) => setReflectListenReply(e.target.value)}
-                      onKeyDown={handleReflectListenKeyDown}
-                      placeholder="Keep going... there's no right answer."
-                      rows={3}
-                      disabled={reflectionLoading}
-                      data-testid="input-devotional-reflect-listen-reply"
-                      className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
-                    />
-                    <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
-                      One more thought and we&apos;ll reflect together.
-                    </p>
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => void handleReflectListenContinue()}
-                        disabled={!reflectListenReply.trim() || reflectionLoading}
-                        data-testid="button-devotional-reflect-listen-continue"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {reflectionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {reflectListenReplySubmitted && (
-              <motion.p
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-[14px] text-muted-foreground/70 italic text-right mb-6 max-w-[88%] ml-auto leading-relaxed"
-                data-testid="text-devotional-reflect-listen-user-reply"
-              >
-                {reflectListenReplySubmitted}
-              </motion.p>
             )}
 
             <AnimatePresence mode="wait">
@@ -2001,88 +2012,11 @@ export default function Devotional() {
                     </p>
                   )}
 
-                  {/* ── Reflection reply box ─────────────────────── */}
-                  {!reflectionLoading && reflectionContent && (
-                    <div className="mt-5 pt-4 border-t border-border/20">
-                      <p className="text-[15px] font-medium text-foreground/85 mb-3 leading-snug">What's this bringing up for you?</p>
-                      {reflectionReplySaved ? (
-                        <div className="flex items-center gap-2 py-2 text-primary">
-                          <Check className="w-4 h-4" />
-                          <span className="text-[13px] font-semibold">Saved to your journal</span>
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <textarea
-                            data-testid="textarea-reflection-reply"
-                            value={reflectionReply}
-                            onChange={e => { setReflectionReply(e.target.value); setReflectionReplySaved(false); }}
-                            onKeyDown={async e => {
-                              if (e.key === "Enter" && !e.shiftKey && reflectionReply.trim() && verse) {
-                                e.preventDefault();
-                                try {
-                                  await fetch("/api/journal", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({
-                                      sessionId: getSessionId(),
-                                      verseRef: verse.reference,
-                                      verseText: verse.text,
-                                      content: reflectionReply.trim(),
-                                      type: "reflection",
-                                    }),
-                                  });
-                                  setReflectionReplySaved(true);
-                                  notifyJournalSaved();
-                                } catch { setReflectionReplySaved(true); }
-                              }
-                            }}
-                            placeholder="Start typing… even a word is enough."
-                            spellCheck
-                            rows={3}
-                            className="w-full resize-none rounded-xl border border-border bg-muted/40 pl-3.5 pr-12 pt-3.5 pb-9 text-[16px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
-                          />
-                          <button
-                            data-testid="btn-save-reflection-reply"
-                            disabled={!reflectionReply.trim()}
-                            onClick={async () => {
-                              if (!reflectionReply.trim() || !verse) return;
-                              try {
-                                await fetch("/api/journal", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({
-                                    sessionId: getSessionId(),
-                                    verseRef: verse.reference,
-                                    verseText: verse.text,
-                                    content: reflectionReply.trim(),
-                                    type: "reflection",
-                                  }),
-                                });
-                                setReflectionReplySaved(true);
-                                notifyJournalSaved();
-                              } catch { setReflectionReplySaved(true); }
-                            }}
-                            className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                            style={{ background: "linear-gradient(135deg, #d97706, #ea580c)", opacity: reflectionReply.trim() ? 1 : 0.5 }}
-                            aria-label="Save to journal"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" />
-                            </svg>
-                          </button>
-                          <span className="absolute bottom-3 left-3.5 right-12 text-[13px] text-muted-foreground/75 pointer-events-none italic">
-                            You don't have to have the right words.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                 </motion.div>
               )}
               {reflectionError && (
                 <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
-                  Could not load reflection. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined, reflectionInputSubmitted ? { reflectionInput: reflectionInputSubmitted, ...(reflectListenReplySubmitted ? { reflectListenReply: reflectListenReplySubmitted } : {}) } : undefined)} className="underline text-primary">Try again</button>
+                  Could not load reflection. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>
@@ -2180,20 +2114,145 @@ export default function Devotional() {
             </div>
           </div>
 
-          {/* STEP 4: THANK HIM */}
+          {/* OPTIONAL: Personal reflection (after prayer — journal & listen only) */}
+          {devotionalCoreComplete && (
+            <div
+              className="bg-card border border-border/50 rounded-2xl px-5 py-6 shadow-sm"
+              data-testid="optional-devotional-reflection"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/45 mb-3">
+                Optional
+              </p>
+              <p className="text-[15px] font-medium text-foreground/90 mb-1 leading-snug">
+                What struck you about this verse?
+              </p>
+              <p className="text-[13px] text-muted-foreground/75 mb-4 leading-relaxed">
+                Share a thought if you&apos;d like — saved to your journal, not required to finish.
+              </p>
+
+              {reflectionReplySaved && reflectListenReplySubmitted ? (
+                <div className="flex items-center gap-2 py-2 text-primary">
+                  <Check className="w-4 h-4" />
+                  <span className="text-[13px] font-semibold">Saved to your journal</span>
+                </div>
+              ) : (
+                <>
+                  {reflectionInputSubmitted && (
+                    <p
+                      className="text-[14px] text-foreground/80 leading-relaxed mb-4"
+                      data-testid="text-devotional-reflection-input-submitted"
+                    >
+                      {reflectionInputSubmitted}
+                    </p>
+                  )}
+
+                  {!reflectionInputSubmitted && (
+                    <div className="mb-4">
+                      <textarea
+                        value={reflectionInput}
+                        onChange={(e) => setReflectionInput(e.target.value)}
+                        placeholder="Even a word or a feeling is enough."
+                        rows={3}
+                        data-testid="input-devotional-reflection"
+                        className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed"
+                      />
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void handleReflect()}
+                          disabled={!reflectionInput.trim() || reflectListenLoading}
+                          data-testid="button-reflect-with-me"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[14px] font-semibold text-primary-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reflectListenLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reflect with me"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(reflectListenStreamingText || reflectListenResponse) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="mb-4"
+                      data-testid="text-devotional-reflect-listen"
+                    >
+                      <div className="border-l-2 border-violet-500/45 pl-4">
+                        <p
+                          className="text-[16px] leading-[1.75] text-foreground/75 italic"
+                          style={{ fontFamily: "var(--font-reading)" }}
+                        >
+                          {reflectListenStreamingText || reflectListenResponse}
+                          {!reflectListenComplete && reflectListenStreamingText && (
+                            <span className="inline-block w-1.5 h-5 bg-violet-400/50 rounded-sm animate-pulse ml-0.5 align-middle not-italic" />
+                          )}
+                        </p>
+                      </div>
+
+                      {reflectListenComplete && !reflectListenReplySubmitted && (
+                        <div className="mt-5 space-y-3">
+                          <textarea
+                            value={reflectListenReply}
+                            onChange={(e) => setReflectListenReply(e.target.value)}
+                            onKeyDown={handleReflectListenKeyDown}
+                            placeholder="Keep going... there's no right answer."
+                            rows={3}
+                            data-testid="input-devotional-reflect-listen-reply"
+                            className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed"
+                          />
+                          <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
+                            One more thought — we&apos;ll save this to your journal.
+                          </p>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => void handleReflectListenContinue()}
+                              disabled={!reflectListenReply.trim()}
+                              data-testid="button-devotional-reflect-listen-continue"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Save to journal →
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {reflectListenReplySubmitted && !reflectionReplySaved && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-[14px] text-muted-foreground/70 italic text-right max-w-[88%] ml-auto leading-relaxed"
+                      data-testid="text-devotional-reflect-listen-user-reply"
+                    >
+                      {reflectListenReplySubmitted}
+                    </motion.p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* OPTIONAL: Gratitude */}
+          {devotionalCoreComplete && (
           <div className="relative overflow-hidden rounded-2xl px-7 py-7 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(38 80% 6% / 0.5) 0%, hsl(var(--card)) 100%)", border: "1px solid hsl(38 70% 55% / 0.22)" }}>
             {/* Top warm glow line */}
             <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(217,119,6,0.6), rgba(234,88,12,0.6), transparent)" }} />
             {/* Subtle warm ambient glow top-right */}
             <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.10) 0%, transparent 70%)", filter: "blur(20px)" }} />
-            <StepLabel number={4} label="Complete your devotional" />
+            <StepLabel number={4} label="Give thanks" />
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45 mb-2">
+              Optional
+            </p>
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
               What feels like a gift today?
             </p>
             <textarea
               value={gratitudeInput}
               onChange={(e) => setGratitudeInput(e.target.value)}
-              placeholder={"One thing. Even something small.\nThis is the last step."}
+              placeholder={"One thing. Even something small.\nOptional — you can finish without this."}
               spellCheck
               rows={3}
               data-testid="input-gratitude"
@@ -2322,9 +2381,10 @@ export default function Devotional() {
               )}
             </AnimatePresence>
           </div>
+          )}
 
-          {/* Devotional benediction — after today's closing prayer */}
-          {gratitudePrayer && (
+          {/* Devotional benediction — after today's prayer */}
+          {devotionalCoreComplete && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2360,7 +2420,7 @@ export default function Devotional() {
           )}
 
           {/* Save Today's Devotional — completion ritual before carry/stay fork */}
-          {gratitudePrayer && (reflectionContent || prayerContent) && (
+          {devotionalCoreComplete && (reflectionContent || prayerContent) && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2413,9 +2473,10 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {/* Gentle fork — ease in after benediction; reduces end-of-page decision fatigue */}
-          {gratitudePrayer && completionPath === null && (
+          {/* Gentle fork — ease in after benediction; Carry is the default */}
+          {devotionalCoreComplete && completionPath === null && (
             <DevotionalCompletionThreshold
+              ref={completionThresholdRef}
               onCarry={() => {
                 setCompletionPath("carry");
                 window.setTimeout(() => setShowStillness(true), 450);
@@ -2424,7 +2485,7 @@ export default function Devotional() {
             />
           )}
 
-          {gratitudePrayer && completionPath === "carry" && (
+          {devotionalCoreComplete && completionPath === "carry" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2453,7 +2514,7 @@ export default function Devotional() {
             </motion.div>
           )}
 
-          {gratitudePrayer && completionPath === "stay" && devotionalPastorVideo && (
+          {completionPath === "stay" && devotionalPastorVideo && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2478,7 +2539,7 @@ export default function Devotional() {
             />
           )}
           <AnimatePresence>
-            {gratitudePrayer && completionPath !== null && streak && streak.currentStreak >= 3 && (
+            {devotionalCoreComplete && completionPath !== null && streak && streak.currentStreak >= 3 && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2564,7 +2625,7 @@ export default function Devotional() {
           </AnimatePresence>
 
           {/* Streak Pro nudge — only on "stay" path, after quiet pause */}
-          {showPostCompletionCtas && completionPath === "stay" && gratitudePrayer && streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
+          {showPostCompletionCtas && completionPath === "stay" && devotionalCoreComplete && streak && streak.currentStreak >= 5 && !isProVerifiedLocally() && (
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2584,7 +2645,7 @@ export default function Devotional() {
           {/* Daily email/SMS sign-up moved to home page footer — see LandingHome */}
 
           {/* Intercession nudge — once devotional is complete, after journal save offer */}
-          {completionPath === "stay" && gratitudePrayer && !friendIntercessionDismissed && (
+          {completionPath === "stay" && devotionalCoreComplete && !friendIntercessionDismissed && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

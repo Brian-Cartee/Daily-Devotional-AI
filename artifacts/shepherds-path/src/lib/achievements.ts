@@ -1,3 +1,9 @@
+import {
+  ACHIEVEMENT_MOMENT_OBJECT_POSITION,
+  ACHIEVEMENT_MOMENT_OVERLAYS,
+  ACHIEVEMENT_MOMENT_PHOTOS,
+} from "@/lib/achievementMoments";
+
 const ACHIEVEMENTS_KEY = "sp_achievements_shown";
 
 export interface Achievement {
@@ -11,6 +17,8 @@ export interface Achievement {
   colorTo: string;
   photo?: string;
   photoOverlay?: string;
+  /** CSS object-position for full-bleed hero photography */
+  photoObjectPosition?: string;
 }
 
 export interface Badge {
@@ -42,17 +50,18 @@ export function getBadge(streak: number): Badge | null {
 export const ACHIEVEMENTS: Record<string, Achievement> = {
   devotional_first: {
     id: "devotional_first",
-    emoji: "✝️",
-    title: "First Devotional Complete",
-    subtitle: "You've taken your first full step",
+    emoji: "",
+    title: "Your first step.",
+    subtitle: "Every journey with God begins somewhere. This is yours.",
     message:
-      "Read it. Reflected on it. Prayed it. Thanked God. That is the whole thing — and you nailed it. Not bad for a first timer.",
+      "You opened the Word, received today's encouragement, and prayed. However this morning felt — God met you in it.",
     voiceScript:
-      "Well, look at that. You just completed your first full devotional. You read God's Word, reflected on it, prayed through it, and thanked Him. That is the whole thing — and you nailed it. Not bad for a first timer. Not bad at all. God saw every moment of it. We will be right here tomorrow.",
-    colorFrom: "from-amber-500",
-    colorTo: "to-orange-500",
-    photo: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=800&q=80",
-    photoOverlay: "rgba(160,70,10,0.52)",
+      "Your first step. Every journey with God begins somewhere — and this is yours. You showed up today. You opened the Word. You let it speak, and you prayed. That is not small. That is how a walk begins. We will be here tomorrow.",
+    colorFrom: "from-zinc-900",
+    colorTo: "to-zinc-950",
+    photo: ACHIEVEMENT_MOMENT_PHOTOS.devotional_first,
+    photoOverlay: ACHIEVEMENT_MOMENT_OVERLAYS.devotional_first,
+    photoObjectPosition: ACHIEVEMENT_MOMENT_OBJECT_POSITION.devotional_first,
   },
   streak_1: {
     id: "streak_1",
@@ -70,31 +79,33 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
   },
   streak_3: {
     id: "streak_3",
-    emoji: "🌿",
-    title: "Green Pastures",
-    subtitle: "3-day streak · Psalm 23:2",
+    emoji: "",
+    title: "Three days walking.",
+    subtitle: "Consistency is a form of faith. You're building something real.",
     message:
-      "\"He makes me lie down in green pastures.\" Three days of choosing rest in God before the rush of the day. You are learning what it means to be led.",
+      "You came back — again. Not because it was easy, but because something in you knows this matters.",
     voiceScript:
-      "Green Pastures. Three days. Psalm 23 says He makes you lie down in green pastures — and that word 'makes' is important. It means He provides the kind of rest you cannot give yourself. Three days of showing up is you learning to receive that. The path gets quieter the further you walk it.",
-    colorFrom: "from-green-400",
-    colorTo: "to-emerald-500",
-    photo: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&q=80",
-    photoOverlay: "rgba(20,100,60,0.50)",
+      "Three days walking. Consistency is a form of faith — and you are building something real. You came back when the morning was full and when it was quiet. That is not nothing. Keep walking.",
+    colorFrom: "from-zinc-900",
+    colorTo: "to-emerald-950",
+    photo: ACHIEVEMENT_MOMENT_PHOTOS.streak_3,
+    photoOverlay: ACHIEVEMENT_MOMENT_OVERLAYS.streak_3,
+    photoObjectPosition: ACHIEVEMENT_MOMENT_OBJECT_POSITION.streak_3,
   },
   streak_7: {
     id: "streak_7",
-    emoji: "💧",
-    title: "Still Waters",
-    subtitle: "7-day streak · Psalm 23:2",
+    emoji: "",
+    title: "Seven days.",
+    subtitle: "A week of choosing God first. That's not nothing — that's everything.",
     message:
-      "\"He leads me beside still waters.\" Seven days of being led. You are not forcing this — you are being guided. That is the whole difference.",
+      "Seven mornings. Seven times you turned toward Him before the day could take you. That is a genuine milestone.",
     voiceScript:
-      "Still Waters. Seven days. He leads you beside still waters — not turbulent ones, not impressive ones. Still ones. Quiet ones. The kind that restore something in you that noise keeps stealing. Seven days of showing up. That kind of honesty builds something — even if it doesn't feel like it yet.",
-    colorFrom: "from-sky-400",
-    colorTo: "to-blue-500",
-    photo: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-    photoOverlay: "rgba(10,60,130,0.48)",
+      "Seven days. A full week of choosing God first — before the noise, before the rush. That is not nothing. That is everything. Something is being formed in you that only faithfulness can build.",
+    colorFrom: "from-zinc-900",
+    colorTo: "to-sky-950",
+    photo: ACHIEVEMENT_MOMENT_PHOTOS.streak_7,
+    photoOverlay: ACHIEVEMENT_MOMENT_OVERLAYS.streak_7,
+    photoObjectPosition: ACHIEVEMENT_MOMENT_OBJECT_POSITION.streak_7,
   },
   streak_14: {
     id: "streak_14",
@@ -126,17 +137,18 @@ export const ACHIEVEMENTS: Record<string, Achievement> = {
   },
   streak_30: {
     id: "streak_30",
-    emoji: "🏔️",
-    title: "No Fear",
-    subtitle: "30-day streak · Psalm 23:4",
+    emoji: "",
+    title: "Thirty days.",
+    subtitle: "What began as a step is now a walk. Keep going.",
     message:
-      "\"Even though I walk through the valley of the shadow of death, I will fear no evil.\" Thirty days. You have walked through some valleys to get here. You are still here.",
+      "A month of faithfulness. What started as a single morning has become a rhythm — quiet, real, and yours.",
     voiceScript:
-      "No Fear. Thirty days. The valley of the shadow of death is not just a poetic phrase — it is a real place, and some of your thirty days were probably spent in it. There's a quiet rhythm forming here. Not something you have to keep — just something that's been present. And the promise is not that the valley disappears. It is that you do not have to walk it alone.",
-    colorFrom: "from-slate-500",
-    colorTo: "to-zinc-700",
-    photo: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
-    photoOverlay: "rgba(30,30,50,0.55)",
+      "Thirty days. What began as a step is now a walk. A month of showing up — not perfectly, but faithfully. Keep going. The path ahead is wide, and you are not walking it alone.",
+    colorFrom: "from-zinc-900",
+    colorTo: "to-slate-950",
+    photo: ACHIEVEMENT_MOMENT_PHOTOS.streak_30,
+    photoOverlay: ACHIEVEMENT_MOMENT_OVERLAYS.streak_30,
+    photoObjectPosition: ACHIEVEMENT_MOMENT_OBJECT_POSITION.streak_30,
   },
   streak_60: {
     id: "streak_60",

@@ -1,5 +1,6 @@
 import { getRelationshipAge } from "./relationship";
 import { BRAND_ICON } from "./brand";
+import { isStoryMomentAchievement, type StoryMomentAchievementId } from "./achievementMoments";
 
 // Curated pool of spiritual landscape fallback photos — used when AI art is unavailable.
 // All photos must be nature / light / sky — no people, babies, or pets.
@@ -317,7 +318,39 @@ function drawAchievementGradient(
   ctx.fillRect(0, 0, S, S);
 }
 
+function applyStoryMomentShareVeil(
+  ctx: CanvasRenderingContext2D,
+  S: number,
+  achievementId?: StoryMomentAchievementId,
+) {
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.fillRect(0, 0, S, S);
+
+  const veilStart =
+    achievementId === "devotional_first" ? S * 0.3
+    : achievementId === "streak_30" ? S * 0.28
+    : S * 0.38;
+
+  const btmVeil = ctx.createLinearGradient(0, veilStart, 0, S);
+  if (achievementId === "devotional_first") {
+    btmVeil.addColorStop(0, "rgba(0,0,0,0)");
+    btmVeil.addColorStop(0.42, "rgba(20,10,4,0.62)");
+    btmVeil.addColorStop(1, "rgba(10,5,2,0.98)");
+  } else if (achievementId === "streak_30") {
+    btmVeil.addColorStop(0, "rgba(0,0,0,0)");
+    btmVeil.addColorStop(0.48, "rgba(9,3,30,0.72)");
+    btmVeil.addColorStop(1, "rgba(5,2,18,0.97)");
+  } else {
+    btmVeil.addColorStop(0, "rgba(0,0,0,0)");
+    btmVeil.addColorStop(0.55, "rgba(9,3,30,0.55)");
+    btmVeil.addColorStop(1, "rgba(9,3,30,0.92)");
+  }
+  ctx.fillStyle = btmVeil;
+  ctx.fillRect(0, 0, S, S);
+}
+
 export async function createAchievementShareImage(achievement: {
+  id?: string;
   emoji: string;
   title: string;
   subtitle: string;
@@ -330,6 +363,7 @@ export async function createAchievementShareImage(achievement: {
   canvas.width = S;
   canvas.height = S;
   const ctx = canvas.getContext("2d")!;
+  const storyMoment = achievement.id ? isStoryMomentAchievement(achievement.id) : false;
 
   // ── Background ──────────────────────────────────────────────
   if (achievement.photo) {
@@ -341,6 +375,40 @@ export async function createAchievementShareImage(achievement: {
     }
   } else {
     drawAchievementGradient(ctx, S, achievement.colorFrom, achievement.colorTo);
+  }
+
+  if (storyMoment) {
+    const storyId = achievement.id as StoryMomentAchievementId | undefined;
+    applyStoryMomentShareVeil(ctx, S, storyId);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(255,255,255,0.42)";
+    ctx.font = "600 24px Georgia, serif";
+    ctx.fillText("SHEPHERD'S PATH", 72, S - 248);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.75)";
+    ctx.shadowBlur = 22;
+    const titleFontSize = achievement.title.length > 18 ? 64 : 78;
+    ctx.font = `400 ${titleFontSize}px Georgia, serif`;
+    wrapText(ctx, achievement.title, 72, S - 196, S - 144, titleFontSize * 1.15);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "rgba(255,255,255,0.80)";
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 14;
+    ctx.font = "italic 34px Georgia, serif";
+    wrapText(ctx, achievement.subtitle, 72, S - 72, S - 144, 46);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.font = "22px Georgia, serif";
+    ctx.textAlign = "right";
+    ctx.fillText("shepherdspathai.com", S - 72, S - 36);
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob!), "image/png");
+    });
   }
 
   // ── Veils ───────────────────────────────────────────────────

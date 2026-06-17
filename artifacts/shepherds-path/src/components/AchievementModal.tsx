@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Square, Volume2, VolumeX, ArrowRight, Loader2, Zap, Share2, Gift } from "lucide-react";
+import { Play, Square, Volume2, VolumeX, Loader2, Zap, Share2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import type { Achievement } from "@/lib/achievements";
+import { isStoryMomentAchievement } from "@/lib/achievementMoments";
 import { useTTS } from "@/hooks/use-tts";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { createAchievementShareImage } from "@/lib/shareImage";
@@ -14,9 +15,12 @@ interface AchievementModalProps {
   onClose: () => void;
 }
 
+const serif = "var(--font-serif, Georgia, serif)";
+
 export function AchievementModal({ achievement, onClose }: AchievementModalProps) {
   const { toggle, stop, playing, loading } = useTTS();
   const [sharing, setSharing] = useState(false);
+  const storyMoment = isStoryMomentAchievement(achievement.id);
   const showProNudge =
     !isProVerifiedLocally() &&
     ["streak_7", "streak_14", "streak_21", "streak_30", "streak_60", "streak_100", "streak_365"].includes(achievement.id);
@@ -29,7 +33,9 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
       await shareImageBlob(blob, {
         filename: `shepherds-path-${achievement.id}.png`,
         title: achievement.title,
-        text: `${achievement.emoji} ${achievement.title} — ${achievement.subtitle} | Shepherd's Path`,
+        text: storyMoment
+          ? `${achievement.title} — ${achievement.subtitle} | Shepherd's Path`
+          : `${achievement.emoji} ${achievement.title} — ${achievement.subtitle} | Shepherd's Path`,
       });
     } catch {
       // User cancelled share or error — silently ignore
@@ -42,6 +48,135 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
     stop();
     onClose();
   };
+
+  if (storyMoment) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.45 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-5 sm:p-8"
+        style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}
+        onClick={handleClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.98 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          onClick={e => e.stopPropagation()}
+          className="relative max-w-sm w-full rounded-[1.75rem] overflow-hidden shadow-2xl min-h-[min(78vh,560px)] flex flex-col"
+          data-testid="achievement-modal"
+        >
+          {achievement.photo && (
+            <img
+              src={achievement.photo}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              style={{
+                objectPosition: achievement.photoObjectPosition ?? "center center",
+                filter: "brightness(0.72) saturate(0.92)",
+              }}
+            />
+          )}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                achievement.photoOverlay ??
+                "linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.12) 40%, rgba(9,3,30,0.92) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-[58%] pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.16) 42%, transparent 100%)",
+            }}
+          />
+
+          <div className="relative z-10 flex flex-col flex-1 justify-end px-8 pt-16 pb-7">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <h2
+                className="text-[2rem] sm:text-[2.15rem] font-normal text-white leading-[1.15] tracking-tight"
+                style={{
+                  fontFamily: serif,
+                  textShadow: "0 2px 24px rgba(0,0,0,0.75), 0 1px 2px rgba(0,0,0,0.9)",
+                }}
+              >
+                {achievement.title}
+              </h2>
+              <p
+                className="mt-3 text-[15px] leading-relaxed text-white/80 max-w-[28ch]"
+                style={{
+                  fontFamily: serif,
+                  fontStyle: "italic",
+                  textShadow: "0 1px 18px rgba(0,0,0,0.65)",
+                }}
+              >
+                {achievement.subtitle}
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.28, duration: 0.5 }}
+              className="mt-8 space-y-3"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  data-testid="btn-achievement-audio"
+                  onClick={() => toggle(achievement.voiceScript)}
+                  disabled={loading}
+                  className="flex items-center gap-2.5 text-[12px] text-white/55 hover:text-white/80 transition-colors disabled:opacity-50 min-w-0"
+                >
+                  {loading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                  ) : playing ? (
+                    <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <VolumeX className="w-3.5 h-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">{loading ? "Preparing…" : playing ? "Playing…" : "Hear this moment"}</span>
+                  {!loading && (
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-white/20 bg-white/5 shrink-0">
+                      {playing ? <Square className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 translate-x-[0.5px]" />}
+                    </span>
+                  )}
+                </button>
+                <button
+                  data-testid="btn-achievement-share"
+                  onClick={handleShare}
+                  disabled={sharing}
+                  title="Share this moment"
+                  className="shrink-0 h-8 w-8 rounded-lg border border-white/8 bg-transparent hover:bg-white/5 flex items-center justify-center text-white/35 hover:text-white/60 transition-all disabled:opacity-50"
+                >
+                  {sharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              <button
+                data-testid="btn-achievement-close"
+                onClick={handleClose}
+                className="w-full h-11 rounded-xl border border-white/20 bg-white/8 hover:bg-white/12 text-white/90 text-[14px] font-medium transition-colors"
+                style={{ fontFamily: serif }}
+              >
+                Continue
+              </button>
+            </motion.div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -62,7 +197,6 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
         className="bg-background border border-border rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden"
         data-testid="achievement-modal"
       >
-        {/* Header — photo or gradient */}
         <div
           className={`relative overflow-hidden px-7 pt-8 pb-12 text-center ${achievement.photo ? "" : `bg-gradient-to-br ${achievement.colorFrom} ${achievement.colorTo}`}`}
         >
@@ -73,7 +207,10 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-                style={{ filter: "brightness(0.85) saturate(1.1)" }}
+                style={{
+                  objectPosition: achievement.photoObjectPosition ?? "center center",
+                  filter: "brightness(0.85) saturate(1.1)",
+                }}
               />
               <div
                 className="absolute inset-0"
@@ -104,13 +241,11 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
           </div>
         </div>
 
-        {/* Pull-up card */}
         <div className="-mt-5 bg-background rounded-t-3xl px-7 pt-6 pb-7 space-y-4">
           <p className="text-[14px] text-foreground/80 leading-relaxed text-center">
             {achievement.message}
           </p>
 
-          {/* Audio toggle */}
           <div className="flex items-center justify-center gap-2.5 py-2 px-4 rounded-2xl bg-muted/40 border border-border/40">
             {playing
               ? <Volume2 className="w-4 h-4 text-primary animate-pulse shrink-0" />
@@ -157,7 +292,6 @@ export function AchievementModal({ achievement, onClose }: AchievementModalProps
               onClick={handleClose}
             >
               Keep Going
-              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
 

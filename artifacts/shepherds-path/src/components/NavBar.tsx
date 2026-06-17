@@ -10,6 +10,11 @@ import { EmailSubscribePanel } from "@/components/EmailSubscribe";
 import { useLanguage, LANGUAGES, type LangCode } from "@/lib/language";
 import { hasBookmark, type BookmarkSection } from "@/lib/bookmarks";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import {
+  getDevotionalEntryMode,
+  setDevotionalEntryMode,
+  type DevotionalEntryMode,
+} from "@/lib/devotionalEntry";
 import { TALK_IT_THROUGH_LABEL } from "@/lib/navigationLabels";
 import {
   grantCoachConsentThisSession,
@@ -113,6 +118,9 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   const [langOpen, setLangOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [guidanceTone, setGuidanceTone] = useState<GuidanceMode>(() => getGuidanceMode());
+  const [devotionalEntry, setDevotionalEntry] = useState<DevotionalEntryMode>(
+    () => getDevotionalEntryMode(),
+  );
   const [coachConsentOpen, setCoachConsentOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const inNativeApp = isNativeWebViewShell();
@@ -195,6 +203,11 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       onClose={() => setMoreOpen(false)}
       theme={theme}
       onSetTheme={setTheme}
+      devotionalEntry={devotionalEntry}
+      onSetDevotionalEntry={(mode) => {
+        setDevotionalEntryMode(mode);
+        setDevotionalEntry(mode);
+      }}
       guidanceTone={guidanceTone}
       onToggleTone={toggleTone}
       voicePref={voicePref}

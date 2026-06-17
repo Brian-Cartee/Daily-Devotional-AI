@@ -62,6 +62,7 @@ import CallingPage from "@/pages/CallingPage";
 import ScripturalAlignment from "@/pages/ScripturalAlignment";
 import Moments from "@/pages/Moments";
 const ScreenshotGenerator = lazy(() => import("@/pages/ScreenshotGenerator"));
+const AchievementMomentsPreview = lazy(() => import("@/pages/AchievementMomentsPreview"));
 const IronCirclePage = lazy(() => import("@/pages/IronCirclePage"));
 import { DemoProvider } from "@/components/DemoProvider";
 import { DemoFloatingBar } from "@/components/DemoFloatingBar";
@@ -217,6 +218,13 @@ function Router() {
           <ScreenshotGenerator />
         </Suspense>
       </Route>
+      {import.meta.env.DEV && (
+        <Route path="/dev/achievement-moments">
+          <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+            <AchievementMomentsPreview />
+          </Suspense>
+        </Route>
+      )}
       <Route path="/iron-circle">
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <IronCirclePage />
