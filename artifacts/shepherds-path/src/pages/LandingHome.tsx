@@ -1903,7 +1903,7 @@ export default function LandingHome() {
     // Returning user triggering a daily check-in replay → existing threshold flow
     if (isThresholdReplay()) return <Redirect to="/threshold" />;
     // Brand-new user who has never completed onboarding → new elegant onboarding
-    if (!isThresholdComplete()) return <Redirect to="/start" />;
+    if (!isThresholdComplete()) return <Redirect to="/welcome" />;
   }
   if (shouldRedirectToNightShepherd()) {
     return <Redirect to="/night" />;
