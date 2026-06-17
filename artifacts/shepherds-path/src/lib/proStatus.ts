@@ -120,6 +120,26 @@ export function isProVerifiedLocally(): boolean {
   return localStorage.getItem(PRO_VERIFIED_KEY) === "true" && !!localStorage.getItem(PRO_KEY);
 }
 
+const MISSION_PARTNER_KEY = "sp_mission_partner_verified";
+
+export function isMissionPartnerVerifiedLocally(): boolean {
+  return localStorage.getItem(MISSION_PARTNER_KEY) === "true";
+}
+
+export function markMissionPartnerVerified(): void {
+  localStorage.setItem(MISSION_PARTNER_KEY, "true");
+}
+
+export function clearMissionPartnerStatus(): void {
+  localStorage.removeItem(MISSION_PARTNER_KEY);
+}
+
+export function getSubscriptionTier(): "free" | "pro" | "mission_partner" {
+  if (isMissionPartnerVerifiedLocally()) return "mission_partner";
+  if (isProVerifiedLocally()) return "pro";
+  return "free";
+}
+
 export async function checkProWithServer(email: string): Promise<boolean> {
   try {
     const res = await fetch("/api/stripe/check-pro", {

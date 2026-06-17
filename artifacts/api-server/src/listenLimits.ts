@@ -8,11 +8,11 @@ interface ListenDayState {
 
 const listenStore = new Map<string, ListenDayState>();
 
-const MAX_FREE_REQUESTS_PER_DAY = 50;
+const MAX_FREE_REQUESTS_PER_DAY = 3;
 const FREE_VERSE_MAX_CHARS = 600;
 
-/** Pro: generous listen — still bounded against TTS abuse */
-const MAX_PRO_REQUESTS_PER_DAY = 200;
+/** Pro: 20/day soft cap — monitored, not hard blocked */
+const MAX_PRO_REQUESTS_PER_DAY = 20;
 const MAX_PRO_CHARS_PER_REQUEST = 4500;
 const MAX_FREE_CHARS_SNIPPET = 1200;
 const MAX_FREE_CHARS_DEVOTIONAL = 8000;
@@ -45,13 +45,20 @@ function maxCharsForScope(isPro: boolean, scope: ListenScope): number {
 export function checkListenPolicy(opts: {
   sessionId?: string;
   isPro?: boolean;
+  isMissionPartner?: boolean;
   scope?: ListenScope;
   chainStart?: boolean;
   textLen: number;
 }): ListenPolicyResult {
   const scope = opts.scope ?? "snippet";
   const textLen = opts.textLen;
-  const isPro = opts.isPro === true;
+  const isMissionPartner = opts.isMissionPartner === true;
+  const isPro = opts.isPro === true || isMissionPartner;
+
+  // Mission Partner: unlimited, no caps
+  if (isMissionPartner) {
+    return { ok: true };
+  }
 
   const charCap = maxCharsForScope(isPro, scope);
   if (textLen > charCap) {
@@ -106,7 +113,7 @@ export function checkListenPolicy(opts: {
       ok: false,
       status: 403,
       code: "listen_daily_cap",
-      message: "Daily listen limit reached. Pro includes unlimited audio.",
+      message: "You've used your free listens for today. Upgrade to Pro for unlimited listening.",
     };
   }
 

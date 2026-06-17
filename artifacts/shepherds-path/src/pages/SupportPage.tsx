@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 const FAQ = [
   {
     q: "How do I upgrade to PRO?",
-    a: "Tap the crown icon or visit the Pricing page inside the app. Choose monthly ($5.99) or annual ($44.99). You'll get instant access after checkout.",
+    a: "Tap the crown icon or visit the Pricing page inside the app. Choose monthly ($7.99) or annual ($79.99). You'll get instant access after checkout.",
   },
   {
     q: "I have a discount code — where do I enter it?",

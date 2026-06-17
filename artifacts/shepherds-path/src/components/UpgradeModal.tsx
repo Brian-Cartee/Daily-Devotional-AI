@@ -149,12 +149,12 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
 
   const priceDisplay = platform === "play"
     ? {
-        annual: playPrices.annual ?? "$44.99/year",
-        monthly: playPrices.monthly ?? "$5.99/month",
+        annual: playPrices.annual ?? "$79.99/year",
+        monthly: playPrices.monthly ?? "$7.99/month",
       }
     : {
-        annual: "$44.99/year",
-        monthly: "$5.99/month",
+        annual: "$79.99/year",
+        monthly: "$7.99/month",
       };
 
   return (
@@ -289,15 +289,15 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                   {plan === "annual" ? (
                     <>
                       <span className="text-2xl font-extrabold text-foreground">
-                        {playPrices.annual ?? "$44.99"}
+                        {playPrices.annual ?? "$79.99"}
                       </span>
                       <span className="text-sm text-muted-foreground">{playPrices.annual ? "" : "/year"}</span>
-                      {!playPrices.annual && <span className="ml-2 text-xs text-muted-foreground">($3.75/mo)</span>}
+                      {!playPrices.annual && <span className="ml-2 text-xs text-muted-foreground">($6.67/mo)</span>}
                     </>
                   ) : (
                     <>
                       <span className="text-2xl font-extrabold text-foreground">
-                        {playPrices.monthly ?? "$5.99"}
+                        {playPrices.monthly ?? "$7.99"}
                       </span>
                       <span className="text-sm text-muted-foreground">{playPrices.monthly ? "" : "/month"}</span>
                     </>
@@ -337,8 +337,8 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                 {/* Auto-renewal disclosure */}
                 <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed -mt-1">
                   {plan === "annual"
-                    ? "Shepherd's Path Pro – Annual · $44.99/year ($3.75/mo) · Auto-renews annually. Cancel anytime."
-                    : "Shepherd's Path Pro – Monthly · $5.99/month · Auto-renews monthly. Cancel anytime."
+                    ? "Shepherd's Path Pro – Annual · $79.99/year ($6.67/mo) · Auto-renews annually. Cancel anytime."
+                    : "Shepherd's Path Pro – Monthly · $7.99/month · Auto-renews monthly. Cancel anytime."
                   }
                 </p>
 

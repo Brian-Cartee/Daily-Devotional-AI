@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw, Volume2 } from "lucide-react";
+import { Check, Zap, Loader2, ShieldCheck, Mail, Sparkles, BookOpen, Sun, Compass, ScrollText, Flame, FileText, History, BookMarked, Lock, Building2, Users, Globe, Phone, Paintbrush, MessageSquare, TrendingUp, Download, CalendarClock, Star, Quote, Church, Smartphone, RefreshCw, Volume2, Cross, Heart } from "lucide-react";
+import { PRICING } from "@/lib/pricing";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } from "@/lib/referralConfig";
 import { Button } from "@/components/ui/button";
@@ -194,7 +195,7 @@ export default function PricingPage() {
       </motion.div>
 
       {/* Cards */}
-      <div className="max-w-2xl mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
+      <div className="max-w-4xl mx-auto px-5 grid grid-cols-1 md:grid-cols-3 gap-4 pb-8">
 
         {/* Free card */}
         <motion.div
@@ -257,14 +258,14 @@ export default function PricingPage() {
             <div className="flex items-baseline gap-2 mb-1 flex-wrap">
               {plan === "annual" ? (
                 <>
-                  <span className="text-3xl font-extrabold text-foreground">$44.99</span>
+                  <span className="text-3xl font-extrabold text-foreground">$79.99</span>
                   <span className="text-sm text-muted-foreground">/year</span>
-                  <span className="text-xs text-muted-foreground/60 line-through">$71.88</span>
-                  <span className="text-xs font-bold text-amber-600 bg-amber-400/15 rounded px-1.5 py-0.5">Save $26.89</span>
+                  <span className="text-xs text-muted-foreground/60 line-through">$95.88</span>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-400/15 rounded px-1.5 py-0.5">Save $15.89</span>
                 </>
               ) : (
                 <>
-                  <span className="text-3xl font-extrabold text-foreground">$5.99</span>
+                  <span className="text-3xl font-extrabold text-foreground">$7.99</span>
                   <span className="text-sm text-muted-foreground">/month</span>
                 </>
               )}
@@ -350,14 +351,14 @@ export default function PricingPage() {
                   disabled={loading}
                 >
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
-                  {loading ? "Redirecting…" : plan === "annual" ? "Continue deeper — $44.99/yr" : "Continue deeper — $5.99/mo"}
+                  {loading ? "Redirecting…" : plan === "annual" ? "Continue deeper — $79.99/yr" : "Continue deeper — $7.99/mo"}
                 </Button>
 
                 {/* Trust anchor */}
                 <p className="text-[11px] text-muted-foreground text-center">
                   {plan === "annual"
-                    ? "Just $3.75/mo — less than a cup of coffee a month"
-                    : "Less than $0.20/day — cancel anytime, no questions asked"}
+                    ? "Just $6.67/mo — cancel anytime, no questions asked"
+                    : "Less than $0.27/day — cancel anytime, no questions asked"}
                 </p>
 
                 {/* Monthly reassurance — shown when annual is selected */}
@@ -369,7 +370,7 @@ export default function PricingPage() {
                       onClick={() => setPlan("monthly")}
                       className="underline hover:text-muted-foreground transition-colors"
                     >
-                      Switch to $5.99/month
+                      Switch to $7.99/month
                     </button>{" "}
                     — cancel anytime.
                   </p>
@@ -392,6 +393,88 @@ export default function PricingPage() {
             )}
           </div>
         </motion.div>
+
+        {/* Mission Partner card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.36 }}
+          className="bg-background border-2 border-amber-500/40 rounded-3xl overflow-hidden flex flex-col shadow-lg shadow-amber-500/10 relative"
+        >
+          <div className="absolute top-4 right-4">
+            <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-500 text-white rounded-full px-2.5 py-1">
+              Mission
+            </span>
+          </div>
+
+          <div className="px-6 pt-6 pb-5 border-b border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+            <div className="flex items-center gap-2 mb-1">
+              <Cross className="w-3.5 h-3.5 text-amber-600" />
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-600">Mission Partner</p>
+            </div>
+            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+              {plan === "annual" ? (
+                <>
+                  <span className="text-3xl font-extrabold text-foreground">${PRICING.missionPartner.annual}</span>
+                  <span className="text-sm text-muted-foreground">/year</span>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-400/15 rounded px-1.5 py-0.5">Save ${PRICING.missionPartner.annualSavingsVsMonthly}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl font-extrabold text-foreground">${PRICING.missionPartner.monthly}</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                </>
+              )}
+            </div>
+            <p className="text-[13px] text-muted-foreground leading-snug">
+              Everything in Pro — plus you fund the mission.
+            </p>
+          </div>
+
+          <div className="px-6 py-5 flex-1 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                <Check className="w-3 h-3 text-amber-600" />
+              </div>
+              <span className="text-sm text-foreground/80 leading-snug">Everything in Pro</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                <Check className="w-3 h-3 text-amber-600" />
+              </div>
+              <span className="text-sm text-foreground/80 leading-snug">Unlimited listens — no daily cap</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                <Heart className="w-3 h-3 text-amber-600" />
+              </div>
+              <span className="text-sm text-foreground/80 leading-snug">Your support helps others access Shepherd's Path who cannot afford it</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                <Cross className="w-3 h-3 text-amber-600" />
+              </div>
+              <span className="text-sm text-foreground/80 leading-snug">Mission Partner badge on your profile</span>
+            </div>
+          </div>
+
+          <div className="px-6 pb-6 space-y-2">
+            <Button
+              data-testid="btn-pricing-mission-partner-cta"
+              className="w-full rounded-2xl font-bold py-5 text-sm bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 transition-opacity border-0 text-white"
+              onClick={handleCheckout}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Heart className="w-4 h-4 mr-2" />}
+              {loading ? "Redirecting…" : plan === "annual" ? "Join the mission — $149.99/yr" : "Join the mission — $14.99/mo"}
+            </Button>
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />
+              <span>30-day money-back guarantee</span>
+            </div>
+          </div>
+        </motion.div>
+
       </div>
 
       {/* "What changes with Pro?" scenarios */}

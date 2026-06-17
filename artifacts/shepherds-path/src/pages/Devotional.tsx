@@ -1682,10 +1682,10 @@ export default function Devotional() {
                           <p className="text-[13px] font-semibold text-foreground leading-none">Full devotional</p>
                           <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">
                             {fullListenReady
-                              ? "Verse · Reflection · Prayer — one continuous listen"
+                              ? "Verse · Encouragement · Prayer — one continuous listen"
                               : prayerLoading || !prayerContent.trim()
-                                ? "Verse · Reflection · Prayer preparing…"
-                                : "Verse · Reflection · Prayer preparing…"}
+                                ? "Verse · Encouragement · Prayer preparing…"
+                                : "Verse · Encouragement · Prayer preparing…"}
                           </p>
                         </>
                       )}
@@ -2275,7 +2275,7 @@ export default function Devotional() {
                     disabled={!gratitudeInput.trim() || gratitudePrayerLoading}
                     data-testid="button-generate-gratitude-prayer"
                     className="relative w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
-                    style={{ background: "linear-gradient(135deg, #d97706, #ea580c)", boxShadow: gratitudeInput.trim() ? "0 6px 22px rgba(217,119,6,0.28)" : undefined }}
+                    style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: gratitudeInput.trim() ? "0 6px 22px rgba(124,58,237,0.28)" : undefined }}
                   >
                     {gratitudePrayerLoading
                       ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding words…</>

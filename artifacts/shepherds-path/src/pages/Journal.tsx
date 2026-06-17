@@ -183,7 +183,7 @@ function PremiumModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <p className="text-center text-[10px] text-muted-foreground/60 pt-1">
-            $5.99/month or $44.99/year · Cancel anytime
+            $7.99/month or $79.99/year · Cancel anytime
           </p>
         </div>
       </motion.div>
