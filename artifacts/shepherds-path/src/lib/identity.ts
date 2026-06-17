@@ -4,6 +4,7 @@ import {
   hasRealProEmail,
   isIdentityConnected,
   markIdentityConnected,
+  markProVerified,
   setProEmail,
   linkProSessionForContinuity,
 } from "@/lib/proStatus";
@@ -66,6 +67,9 @@ export async function connectIdentity(input: ConnectIdentityInput): Promise<{
     }
 
     markIdentityConnected(email);
+    if (data.isPro) {
+      markProVerified(email);
+    }
     if (input.subscribeDaily !== false) {
       markEmailSubscribed(email);
     }
