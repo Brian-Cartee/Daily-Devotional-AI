@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartphone } from "lucide-react";
 import { useLocation } from "wouter";
@@ -46,6 +46,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
   const [activatingCode, setActivatingCode] = useState(false);
 
   const platform = getPaymentPlatform();
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
 
   const resetTime = (() => {
     const now = new Date();
@@ -252,6 +253,30 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                   <p className="text-[12px] text-muted-foreground leading-relaxed pl-7">{what}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Collapsible full feature list */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowAllFeatures(v => !v)}
+                className="w-full flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <Check className="w-3 h-3" />
+                {showAllFeatures ? "Hide full list" : "See everything that's included"}
+              </button>
+              {showAllFeatures && (
+                <div className="mt-3 space-y-2 border-t border-border pt-3">
+                  {PRO_FEATURE_BULLETS.map((f) => (
+                    <div key={f} className="flex items-start gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-2.5 h-2.5 text-primary" />
+                      </div>
+                      <span className="text-[12px] text-muted-foreground leading-snug">{f}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {platform !== "ios" && (
