@@ -80,21 +80,53 @@ export const PRO_FEATURES: FeatureLine[] = [
 
 export const PRO_FEATURE_BULLETS = PRO_FEATURES.map((f) => f.text);
 
+/**
+ * Modal moments — 3 emotionally specific outcomes shown in the upgrade modal.
+ * Short. Visceral. What Pro feels like in the moment you need it.
+ */
+export const PRO_MODAL_MOMENTS: { icon: LucideIcon; moment: string; what: string }[] = [
+  {
+    icon: Zap,
+    moment: "You're mid-prayer and something breaks open.",
+    what: "Pro never cuts you off. Every reflection, every question, every prayer goes as deep as it needs to.",
+  },
+  {
+    icon: Volume2,
+    moment: "You want to close your eyes and just listen.",
+    what: "Unlimited audio — hear the verse, the encouragement, and the prayer as one unbroken flow. No limits, no counting.",
+  },
+  {
+    icon: MapPin,
+    moment: "You're carrying something heavy and don't know where to start.",
+    what: "Talk It Through builds a guided journey from your situation — grief, anxiety, loneliness, doubt. Just for you, right now.",
+  },
+];
+
 export const PRO_SCENARIOS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: Zap,
-    title: "Never cut off mid-reflection",
-    body: "Free includes a generous daily AI allowance. Pro removes the cap so every question, prayer, and reflection can go as deep as you need.",
+    title: "You're mid-prayer. Don't stop.",
+    body: "Free includes a generous daily allowance. But when something opens up in you, Pro removes every limit so that moment can go as far as God takes it.",
+  },
+  {
+    icon: Volume2,
+    title: "Close your eyes. Just listen.",
+    body: "Unlimited audio means you can hear the verse, the encouragement, and the prayer as one unbroken experience — every day, without counting.",
+  },
+  {
+    icon: MapPin,
+    title: "Something heavy landed on you today.",
+    body: "Talk It Through builds a 7-day guided journey shaped from your exact situation — grief, anxiety, loneliness, or doubt. Not generic. Yours.",
   },
   {
     icon: History,
-    title: "Your whole walk, remembered",
-    body: `Search every prayer and reflection you've saved — not just the last ${FREE_ARCHIVE_VISIBLE_DAYS} days. Revisit devotional days when life was heavy or hopeful.`,
+    title: "That prayer from six months ago. Find it.",
+    body: `Your whole walk is searchable — not just the last ${FREE_ARCHIVE_VISIBLE_DAYS} days. Every prayer, every reflection, every day God showed up. All of it.`,
   },
   {
     icon: Flame,
-    title: "Streak protection built in",
-    body: "Miss one day of life, not your whole walk. Pro gives you one grace day each month so your streak can continue when life gets in the way once.",
+    title: "Life happened. Your streak didn't have to end.",
+    body: "One grace day per month means missing a day doesn't erase what you've built. Your walk continues. Your streak continues.",
   },
 ];
 

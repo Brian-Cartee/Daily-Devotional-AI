@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Lock, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartphone } from "lucide-react";
+import { Sparkles, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartphone } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { PRO_FEATURE_BULLETS } from "@/lib/proFeatures";
+import { PRO_FEATURE_BULLETS, PRO_MODAL_MOMENTS } from "@/lib/proFeatures";
 import {
   UPGRADE_MODAL_BADGE_DEFAULT,
   UPGRADE_MODAL_CTA_DEFAULT,
@@ -239,14 +239,17 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
               </div>
             )}
 
-            {/* Feature list */}
-            <div className="space-y-2.5">
-              {PRO_FEATURES.map((f) => (
-                <div key={f} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Check className="w-3 h-3 text-primary" />
+            {/* 3 moments — what Pro feels like when you need it */}
+            <div className="space-y-3">
+              {PRO_MODAL_MOMENTS.map(({ icon: Icon, moment, what }) => (
+                <div key={moment} className="rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                      <Icon className="w-3 h-3 text-primary" />
+                    </div>
+                    <p className="text-[13px] font-bold text-foreground leading-snug">{moment}</p>
                   </div>
-                  <span className="text-sm text-foreground/80 leading-snug">{f}</span>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed pl-7">{what}</p>
                 </div>
               ))}
             </div>

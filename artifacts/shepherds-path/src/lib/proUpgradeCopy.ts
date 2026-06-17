@@ -6,12 +6,12 @@
 import { getAiDailyLimits } from "@/lib/aiLimits";
 import { getRelationshipAge } from "@/lib/relationship";
 
-export const UPGRADE_MODAL_BADGE_DEFAULT = "Go deeper — from $3.75/mo";
+export const UPGRADE_MODAL_BADGE_DEFAULT = "Go deeper — from $6.67/mo";
 
-export const UPGRADE_MODAL_TITLE_DEFAULT = "You've found your rhythm here.";
+export const UPGRADE_MODAL_TITLE_DEFAULT = "Don't stop here.";
 
 export const UPGRADE_MODAL_SUBTITLE_DEFAULT =
-  "Scripture and prayer stay free — always. Pro removes limits so you can go as deep as you need, whenever you need it.";
+  "Something is opening in you. Pro removes every limit so you can follow it wherever it leads — today, and every day after.";
 
 export const UPGRADE_MODAL_CTA_DEFAULT = "Continue deeper →";
 
@@ -32,13 +32,13 @@ export function upgradeModalResetLine(): string {
 
 export const LISTEN_LIMIT_COPY_PASTORAL = {
   devotional:
-    "Today's full listen is complete. Pro lets you hear devotionals and longer sessions without counting — Scripture reading stays free.",
+    "You've used your free listens for today. Upgrade to Pro for unlimited listening — every devotional, every prayer, uninterrupted.",
   guidance:
     "Hearing the full guidance flow — verse, reflection, and prayer together — is part of Pro. You can still read everything free.",
-  snippet: "Today's listen pace is full. Pro includes more audio when you want it.",
+  snippet: "You've used your free listens for today. Upgrade to Pro for unlimited listening.",
   verse: "This passage is long for one listen. Try a shorter section, or read at your pace.",
   text_too_long: "We'll read the first part aloud. The full passage is still here to read.",
-  listen_daily_cap: "Today's listen pace is full. Pro adds more audio — optional.",
+  listen_daily_cap: "You've used your free listens for today. Upgrade to Pro for unlimited listening.",
   pro_required: "Full audio for this section is part of Pro. Reading is always free.",
   session_required: "Please refresh and try listen again.",
 } as const;

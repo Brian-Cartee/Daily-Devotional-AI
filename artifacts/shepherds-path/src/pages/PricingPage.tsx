@@ -488,7 +488,7 @@ export default function PricingPage() {
         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center mb-4">
           What actually changes with Pro
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {PRO_SCENARIOS.map(({ icon: Icon, title, body }) => (
             <div
               key={title}
