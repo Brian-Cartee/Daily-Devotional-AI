@@ -76,7 +76,7 @@ export function ShareInviteCard({ variant = "full", className = "" }: ShareInvit
 
   return (
     <div
-      className={`${isCompact ? "mt-4" : "mt-8"} rounded-2xl border border-amber-200/40 bg-gradient-to-br from-amber-50/60 to-purple-50/40 dark:from-amber-900/10 dark:to-purple-900/10 dark:border-amber-700/20 ${isCompact ? "p-4" : "p-5"} ${className}`}
+      className={`${isCompact ? "mt-4" : "mt-8"} rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/10 to-primary/10 dark:from-amber-500/15 dark:to-primary/10 dark:border-amber-500/30 ${isCompact ? "p-4" : "p-5"} ${className}`}
       data-testid="share-invite-card"
     >
       <div className={`flex items-start gap-3 ${isCompact ? "mb-2" : "mb-3"}`}>
@@ -84,10 +84,10 @@ export function ShareInviteCard({ variant = "full", className = "" }: ShareInvit
           <Gift className="w-4 h-4 text-amber-600 dark:text-amber-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
+          <p className="font-semibold text-sm text-foreground">
             {isCompact ? "Share the walk" : `Invite a friend — earn ${bonusDays} free Pro days`}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
             Friends get <strong>{welcomeDays} days of Pro</strong> when they join through your link.
             You earn <strong>{bonusDays} bonus days</strong> per friend.
             {!isCompact && " No limits."}
