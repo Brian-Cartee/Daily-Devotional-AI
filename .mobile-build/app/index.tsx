@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
-import { injectApplePro, reloadEmbeddedWeb } from "@/lib/inject-pro";
+import { injectApplePro, injectAppleMissionPartner, reloadEmbeddedWeb } from "@/lib/inject-pro";
 import { syncMobileProToServer } from "@/lib/sync-mobile-pro";
 import {
   buildNativeProfileSeedJs,
@@ -214,7 +214,7 @@ const VISIBILITY_PROBE_JS = `(function(){
 
 export default function MainScreen() {
   const router = useRouter();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isMissionPartner, tier } = useSubscription();
   const webviewRef = useRef<WebView>(null);
   const wasSubscribedRef = useRef(false);
   const [entryUrl, setEntryUrl] = useState<string | null>(null);
@@ -337,11 +337,15 @@ export default function MainScreen() {
   }, []);
 
   const syncAppleProToWeb = useCallback(
-    async (reloadAfterInject = false) => {
-      injectApplePro(webviewRef);
+    async (reloadAfterInject = false, currentTier: "pro" | "mission_partner" = "pro") => {
+      if (currentTier === "mission_partner") {
+        injectAppleMissionPartner(webviewRef);
+      } else {
+        injectApplePro(webviewRef);
+      }
       try {
         const { sessionId } = await loadNativeUserProfile();
-        await syncMobileProToServer(sessionId, true);
+        await syncMobileProToServer(sessionId, true, null, currentTier);
       } catch {
         /* non-blocking */
       }
@@ -357,15 +361,15 @@ export default function MainScreen() {
       if (!isSubscribed) return;
       const firstUnlock = !wasSubscribedRef.current;
       wasSubscribedRef.current = true;
-      syncAppleProToWeb(firstUnlock);
-    }, [isSubscribed, syncAppleProToWeb]),
+      syncAppleProToWeb(firstUnlock, isMissionPartner ? "mission_partner" : "pro");
+    }, [isSubscribed, isMissionPartner, syncAppleProToWeb]),
   );
 
   useEffect(() => {
     if (isSubscribed && appReady) {
-      syncAppleProToWeb(false);
+      syncAppleProToWeb(false, isMissionPartner ? "mission_partner" : "pro");
     }
-  }, [isSubscribed, appReady, syncAppleProToWeb]);
+  }, [isSubscribed, isMissionPartner, appReady, syncAppleProToWeb]);
 
   useEffect(() => {
     webUiConfirmedRef.current = false;

@@ -2408,12 +2408,13 @@ What you never do:
     try {
       const input = mobileSyncProSchema.parse(req.body);
       const expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+      const tier = input.tier ?? (input.isPro ? "pro" : "free");
       await storage.upsertMobileSubscription({
         sessionId: input.sessionId,
         isPro: input.isPro,
         expiresAt,
       });
-      res.json({ synced: true, isPro: input.isPro });
+      res.json({ synced: true, isPro: input.isPro, tier });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0]?.message ?? "Invalid request" });

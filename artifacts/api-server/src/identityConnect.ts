@@ -14,6 +14,7 @@ export const identityConnectSchema = z.object({
 export const mobileSyncProSchema = z.object({
   sessionId: z.string().min(8),
   isPro: z.boolean(),
+  tier: z.enum(["free", "pro", "mission_partner"]).optional(),
   platform: z.enum(["ios", "android"]).default("ios"),
   expiresAt: z.string().datetime().optional(),
 });

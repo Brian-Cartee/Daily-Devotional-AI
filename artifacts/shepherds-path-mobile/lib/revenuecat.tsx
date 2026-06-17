@@ -9,6 +9,9 @@ const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
 
 export const REVENUECAT_ENTITLEMENT_IDENTIFIER = "pro";
+export const REVENUECAT_MISSION_PARTNER_ENTITLEMENT = "mission_partner";
+
+export type SubscriptionTier = "free" | "pro" | "mission_partner";
 
 function getRevenueCatApiKey(): string {
   const isExpoGo = Constants.executionEnvironment === "storeClient";
@@ -75,13 +78,20 @@ function useSubscriptionContext() {
     onSuccess: () => customerInfoQuery.refetch(),
   });
 
+  const isMissionPartner =
+    customerInfoQuery.data?.entitlements.active?.[REVENUECAT_MISSION_PARTNER_ENTITLEMENT] !== undefined;
   const isSubscribed =
+    isMissionPartner ||
     customerInfoQuery.data?.entitlements.active?.[REVENUECAT_ENTITLEMENT_IDENTIFIER] !== undefined;
+
+  const tier: SubscriptionTier = isMissionPartner ? "mission_partner" : isSubscribed ? "pro" : "free";
 
   return {
     customerInfo: customerInfoQuery.data,
     offerings: offeringsQuery.data,
     isSubscribed,
+    isMissionPartner,
+    tier,
     isLoading: customerInfoQuery.isLoading || offeringsQuery.isLoading,
     purchase: purchaseMutation.mutateAsync,
     restore: restoreMutation.mutateAsync,

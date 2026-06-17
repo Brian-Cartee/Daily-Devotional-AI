@@ -6,6 +6,7 @@ export async function syncMobileProToServer(
   sessionId: string,
   isPro: boolean,
   expiresAt?: string | null,
+  tier?: "pro" | "mission_partner",
 ): Promise<void> {
   if (!sessionId) return;
   try {
@@ -15,6 +16,7 @@ export async function syncMobileProToServer(
       body: JSON.stringify({
         sessionId,
         isPro,
+        tier: tier ?? (isPro ? "pro" : "free"),
         platform: Platform.OS === "android" ? "android" : "ios",
         expiresAt: expiresAt ?? undefined,
       }),
