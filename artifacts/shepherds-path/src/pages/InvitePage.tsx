@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { BackButton } from "@/components/BackButton";
 import { ShareInviteCard } from "@/components/ShareInviteCard";
 import { Gift, Heart, Sparkles } from "lucide-react";
 import { REFERRAL_DAYS_PER_FRIEND, REFERRAL_WELCOME_DAYS } from "@/lib/referralConfig";
@@ -9,8 +8,6 @@ export default function InvitePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-xl mx-auto px-5 pt-6 pb-16">
-        <BackButton fallback="/" />
-
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

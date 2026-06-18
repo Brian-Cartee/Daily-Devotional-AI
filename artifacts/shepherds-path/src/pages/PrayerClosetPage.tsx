@@ -10,7 +10,6 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { PrayerClosetRoom } from "@/components/PrayerClosetRoom";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { easternVerseDateKey } from "@/lib/shareVerse";
@@ -268,11 +267,6 @@ export default function PrayerClosetPage() {
           className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-2 sm:px-3 pb-1.5 pt-[max(0.35rem,env(safe-area-inset-top))] bg-[#07050f]/92 backdrop-blur-md border-b border-white/5"
           data-testid="closet-page-header"
         >
-            <BackButton
-              backToPaths
-              testId="button-back-prayer-closet"
-              className="relative z-50"
-            />
             <div className="flex-1 text-center min-w-0 px-1">
               <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-violet-200/45 truncate">
                 A room set apart

@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Star, Send, Check, X, ChevronDown, ChevronRight } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { useLocation } from "wouter";
 
 const CATEGORIES = [
@@ -153,11 +152,6 @@ export default function StoriesPage() {
             style={{ objectPosition: "center 40%" }}
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)" }} />
-          <BackButton
-            backToPaths
-            testId="button-back-stories"
-            className="absolute top-3 left-3 z-20"
-          />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 text-center px-6">
             <h1 className="text-[26px] font-bold text-white leading-tight mb-1">Real Faith. Real Stories.</h1>
             <p className="text-[13px] text-white/75 max-w-xs leading-snug">

@@ -66,7 +66,7 @@ export default function TheThreadPage() {
             textDecoration: "none",
           }}
         >
-          ← Home
+          Home
         </Link>
       </div>
 

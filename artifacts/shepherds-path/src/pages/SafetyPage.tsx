@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { Shield, BookOpen, Phone } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import {
   CRISIS_LIFELINE_DISPLAY,
   CRISIS_LIFELINE_TEL,
@@ -12,9 +11,8 @@ export default function SafetyPage() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <div className="sticky top-0 z-20 bg-background/90 backdrop-blur-md border-b border-border/40">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-[17px] font-bold text-foreground flex items-center gap-2">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center">
+<h1 className="text-[17px] font-bold text-foreground flex items-center gap-2">
             <Shield className="w-4 h-4 text-primary" aria-hidden />
             Safety & boundaries
           </h1>

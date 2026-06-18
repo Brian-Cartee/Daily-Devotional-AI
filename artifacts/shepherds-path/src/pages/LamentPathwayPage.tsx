@@ -108,7 +108,6 @@ export default function LamentPathwayPage() {
           onClick={() => markReturnToHomePaths()}
           className="flex items-center gap-1.5 text-[13px] text-white/45 hover:text-white/75 py-2"
         >
-          <ArrowLeft className="w-4 h-4" />
           Home
         </Link>
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400/60">

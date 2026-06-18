@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { useLocation } from "wouter";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
@@ -505,11 +504,6 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.70) 100%)" }} />
-        <BackButton
-          testId="button-back-study"
-          backToPaths
-          className="absolute top-[60px] left-3 z-10"
-        />
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
           <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Explore Scripture</h2>
           <p className="text-white/70 text-[12px] mt-1">Bring a question, a passage, or what's on your mind.</p>

@@ -886,7 +886,7 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
             data-testid="btn-journey-back"
             className="self-start flex items-center gap-1.5 text-white/85 hover:text-white text-sm font-medium transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> {backLabel}
+            {backLabel}
           </button>
           <div className="flex-1 flex flex-col justify-end pb-1">
             {journey.badgeText && (

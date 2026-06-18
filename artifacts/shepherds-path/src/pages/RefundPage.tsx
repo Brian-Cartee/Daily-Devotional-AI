@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
@@ -48,12 +47,7 @@ export default function RefundPage() {
       <div className="max-w-md w-full space-y-8">
 
         {/* Back */}
-        <BackButton
-          onClick={goHome}
-          testId="link-back-home"
-        />
-
-        {/* Header */}
+{/* Header */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
             <ShieldCheck className="w-8 h-8 text-primary" />

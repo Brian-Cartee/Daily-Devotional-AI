@@ -122,7 +122,6 @@ export default function SurrenderStonePage() {
           onClick={() => markReturnToHomePaths()}
           className="flex items-center gap-1.5 text-[13px] text-white/45 hover:text-white/70 py-2"
         >
-          <ArrowLeft className="w-4 h-4" />
           Home
         </Link>
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">

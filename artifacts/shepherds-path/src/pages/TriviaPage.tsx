@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { BackButton } from "@/components/BackButton";
 import {
   Trophy, Share2, RefreshCw, ChevronRight, BookOpen,
   Copy, Check, Star, Users, Sparkles, BookMarked, ImageIcon, Loader2, ArrowLeft
@@ -275,14 +274,7 @@ export default function TriviaPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Back button — fixed, out of flow so content centers cleanly */}
-      {phase === "select" && (
-        <BackButton
-          backToPaths
-          testId="btn-trivia-back"
-          className="fixed top-[60px] left-3 z-30"
-        />
-      )}
+
       <div className="max-w-lg mx-auto px-4 pt-2">
 
         {/* ── Category Selection ─────────────────────────────────────── */}

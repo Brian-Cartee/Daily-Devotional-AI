@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus, Plus, Check, Heart } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ListenButton } from "@/components/ListenButton";
@@ -272,11 +271,6 @@ export default function ReadBible() {
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/65" />
-          <BackButton
-            testId="button-back-read"
-            backToPaths
-            className="absolute top-3 left-3 z-20"
-          />
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

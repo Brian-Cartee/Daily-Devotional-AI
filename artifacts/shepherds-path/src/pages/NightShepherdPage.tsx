@@ -220,7 +220,6 @@ export default function NightShepherdPage() {
           className="flex items-center gap-1.5 text-[13px] font-medium text-white/45 hover:text-white/75 transition-colors py-2"
           data-testid="link-night-home"
         >
-          <ArrowLeft className="w-4 h-4" />
           Home
         </button>
         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-300/50">

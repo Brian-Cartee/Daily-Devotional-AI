@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, Zap } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { getSessionId } from "@/lib/session";
 import { checkProWithServer, linkProSessionForContinuity, markIdentityConnected } from "@/lib/proStatus";
 import { BRAND_ICON } from "@/lib/brand";
@@ -60,13 +59,7 @@ export default function RestorePage() {
           className="relative z-10"
         >
           {/* Back */}
-          <BackButton
-            onClick={() => navigate("/")}
-            testId="button-back-restore"
-            className="mb-8"
-          />
-
-          {/* App icon */}
+{/* App icon */}
           <div className="flex justify-center mb-5">
             <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl ring-1 ring-white/10">
               <img src={BRAND_ICON} alt="Shepherd's Path" className="w-full h-full object-cover" />

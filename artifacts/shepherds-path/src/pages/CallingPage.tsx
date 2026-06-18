@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Share2, Heart, BookOpen, Loader2, Palette, Sparkles, Wand2, Send, X, Download, RefreshCw, Copy, MessageCircle } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { createShareImage, createPurpleShareImage, createStoryShareImage, createPurpleStoryImage, PHOTO_POOL } from "@/lib/shareImage";
 import {
@@ -434,11 +433,6 @@ export default function CallingPage() {
         }
       `}</style>
 
-      <BackButton
-        backToPaths
-        testId="button-calling-back"
-        className="fixed top-4 left-4 z-50"
-      />
 
       {/* HERO */}
       <div className="relative w-full" style={{ height: "92svh", minHeight: 520 }}>

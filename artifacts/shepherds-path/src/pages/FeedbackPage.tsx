@@ -82,7 +82,7 @@ export default function FeedbackPage() {
           Your thoughts help shape Shepherd's Path into something truly useful. We're grateful you took the time.
         </p>
         <Link href="/" className="text-sm font-medium text-foreground/70 hover:text-foreground transition-colors">
-          ← Back to Shepherd's Path
+          Back to Shepherd's Path
         </Link>
       </div>
     );

@@ -209,11 +209,6 @@ export default function ReadingPlansPage() {
           {/* ── PHASE 1b: Daily pace ── */}
           {phase === "intake-pace" && (
             <motion.div key="intake-pace" {...fadeUp}>
-              <BackButton
-                onClick={() => setPhase("intake-where")}
-                className="mb-7"
-              />
-
               <div className="mb-8 text-center">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300/70 mb-3">Your Walk</p>
                 <h1 className="text-[28px] font-bold text-foreground leading-tight mb-3">

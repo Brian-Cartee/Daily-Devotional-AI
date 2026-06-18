@@ -271,7 +271,6 @@ export default function SighRoomPage() {
           className="flex items-center gap-1.5 text-[13px] font-medium text-white/50 hover:text-white/80 transition-colors py-2"
           data-testid="link-sigh-exit"
         >
-          <ArrowLeft className="w-4 h-4" />
           Home
         </Link>
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
