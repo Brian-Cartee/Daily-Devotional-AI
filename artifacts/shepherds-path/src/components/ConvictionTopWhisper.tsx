@@ -30,8 +30,8 @@ export function ConvictionTopWhisper() {
         aria-hidden
         style={{
           position: "absolute",
-          top: "7px",
-          right: "7px",
+          top: "10px",
+          right: "10px",
           width: "9px",
           height: "9px",
           color: "rgb(220,38,38)",
