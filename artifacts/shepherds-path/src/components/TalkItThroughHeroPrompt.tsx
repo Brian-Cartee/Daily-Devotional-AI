@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mic, MicOff } from "lucide-react";
 import { waitMs } from "@/lib/pauseEngine";
 import { CRISIS_LIFELINE_DISPLAY, CRISIS_LIFELINE_TEL } from "@/lib/crisisResources";
 import type { ThresholdNeed } from "@/lib/thresholdState";
@@ -41,7 +41,11 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
   const [topicId, setTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [beginning, setBeginning] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const recRef = useRef<any>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   const placeholders = thresholdNeed && NEED_PLACEHOLDERS[thresholdNeed]
     ? [NEED_PLACEHOLDERS[thresholdNeed]!, ...PLACEHOLDERS]
@@ -53,6 +57,44 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
     }, 5500);
     return () => clearInterval(t);
   }, [placeholders.length]);
+
+  const toggleVoice = () => {
+    if (isListening) {
+      recRef.current?.stop();
+      setIsListening(false);
+      setInterimTranscript("");
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    recRef.current = rec;
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (e: any) => {
+      let interim = "";
+      let final = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (final) setValue(prev => (prev ? `${prev} ${final}` : final).trim());
+      setInterimTranscript(interim);
+    };
+    rec.onend = () => {
+      setIsListening(false);
+      setInterimTranscript("");
+      setValue(prev => {
+        const text = prev.trim();
+        if (text.length > 8) setTimeout(() => goToGuidance(text), 1000);
+        return prev;
+      });
+    };
+    rec.onerror = () => { setIsListening(false); setInterimTranscript(""); };
+    setIsListening(true);
+    rec.start();
+  };
 
   const goToGuidance = (text: string) => {
     if (text) {
@@ -111,6 +153,51 @@ export function TalkItThroughHeroPrompt({ phase, thresholdNeed }: TalkItThroughH
           advice.
         </p>
       </div>
+
+      {hasSpeechSupport && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "16px" }}>
+          <button
+            type="button"
+            onClick={toggleVoice}
+            data-testid="btn-hero-voice"
+            style={{
+              position: "relative",
+              width: "80px",
+              height: "80px",
+              borderRadius: "50%",
+              border: isListening ? "2px solid rgba(239,68,68,0.6)" : "2px solid rgba(255,255,255,0.22)",
+              background: isListening
+                ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(239,68,68,0.06) 100%)"
+                : "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {isListening && (
+              <span style={{
+                position: "absolute", inset: 0, borderRadius: "50%",
+                animation: "ping 1s cubic-bezier(0,0,0.2,1) infinite",
+                background: "rgba(239,68,68,0.2)",
+              }} />
+            )}
+            {isListening
+              ? <MicOff style={{ width: 28, height: 28, color: "rgba(239,68,68,0.9)", position: "relative", zIndex: 1 }} />
+              : <Mic style={{ width: 28, height: 28, color: "rgba(255,255,255,0.80)", position: "relative", zIndex: 1 }} />
+            }
+          </button>
+          <p style={{ marginTop: "8px", fontSize: "12px", color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
+            {isListening ? "Listening — tap to stop" : "Tap to speak"}
+          </p>
+          {isListening && interimTranscript && (
+            <p style={{ marginTop: "6px", fontSize: "13px", color: "rgba(255,255,255,0.42)", fontStyle: "italic", textAlign: "center", maxWidth: "240px", lineHeight: 1.4 }}>
+              {interimTranscript}
+            </p>
+          )}
+        </div>
+      )}
 
       <SituationPills
         variant="dark"

@@ -1,15 +1,15 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Camera, X, ChevronRight, Loader2, Volume2, VolumeX,
-  BookMarked, CheckCheck, ImageIcon, Heart,
+  X, ChevronRight, Loader2, Volume2, VolumeX,
+  BookMarked, CheckCheck, Heart,
 } from "lucide-react";
 import { useTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { apiSessionExtras } from "@/lib/requestExtras";
 
-type Step = "upload" | "questions" | "generating" | "result" | "error";
+type Step = "questions" | "generating" | "result" | "error";
 
 interface Props {
   situation: string;
@@ -17,42 +17,21 @@ interface Props {
 }
 
 export function PrayerPortrait({ situation, onClose }: Props) {
-  const [step, setStep] = useState<Step>("upload");
-  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [mimeType, setMimeType] = useState("image/jpeg");
+  const [step, setStep] = useState<Step>("questions");
   const [belief, setBelief] = useState("");
   const [burden, setBurden] = useState("");
   const [cover, setCover] = useState("");
   const [prayer, setPrayer] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const tts = useTTS();
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setMimeType(file.type || "image/jpeg");
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setImageDataUrl(dataUrl);
-      setImageBase64(dataUrl.split(",")[1]);
-      setStep("questions");
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleGenerate = async () => {
-    if (!imageBase64) return;
     setStep("generating");
     try {
       const res = await fetch("/api/guidance/prayer-portrait", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageBase64,
-          mimeType,
           situation: situation.slice(0, 800),
           answers: {
             belief: belief.trim(),
@@ -110,54 +89,7 @@ export function PrayerPortrait({ situation, onClose }: Props) {
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
         <AnimatePresence mode="wait">
 
-          {/* Step 1 — Upload */}
-          {step === "upload" && (
-            <motion.div
-              key="upload"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="flex flex-col items-center text-center gap-6"
-            >
-              <div className="pt-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/25">
-                  <Camera className="w-8 h-8 text-white" />
-                </div>
-                <h1 className="text-[22px] font-bold text-foreground mb-2 leading-tight">
-                  A prayer spoken over your life
-                </h1>
-                <p className="text-[14px] text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
-                  Share a photo of yourself and a few things on your heart. We'll craft a prayer written just for you — in this moment.
-                </p>
-              </div>
-
-              <button
-                onClick={() => fileRef.current?.click()}
-                data-testid="btn-portrait-upload"
-                className="w-full flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 py-10 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-              >
-                <ImageIcon className="w-8 h-8 text-amber-400" />
-                <span className="text-[14px] font-semibold text-amber-700 dark:text-amber-400">
-                  Tap to choose a photo
-                </span>
-                <span className="text-[11px] text-muted-foreground">From your camera roll or take one now</span>
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                capture="user"
-                onChange={handleFile}
-                className="hidden"
-              />
-
-              <p className="text-[11px] text-muted-foreground/60 leading-relaxed max-w-[280px]">
-                Your photo is sent privately to generate your prayer and is never stored on our servers.
-              </p>
-            </motion.div>
-          )}
-
-          {/* Step 2 — Questions */}
+          {/* Step 1 — Questions */}
           {step === "questions" && (
             <motion.div
               key="questions"
@@ -166,16 +98,16 @@ export function PrayerPortrait({ situation, onClose }: Props) {
               exit={{ opacity: 0, y: -8 }}
               className="flex flex-col gap-6"
             >
-              {/* Photo preview */}
-              {imageDataUrl && (
-                <div className="relative w-24 h-24 mx-auto rounded-2xl overflow-hidden shadow-lg ring-2 ring-amber-400/30">
-                  <img src={imageDataUrl} alt="" className="w-full h-full object-cover" />
+              <div className="text-center pt-2">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/25">
+                  <Heart className="w-7 h-7 text-white" />
                 </div>
-              )}
-
-              <div className="text-center">
-                <h2 className="text-[18px] font-bold text-foreground mb-1">A few things on your heart</h2>
-                <p className="text-[13px] text-muted-foreground">Answer as much or as little as you'd like.</p>
+                <h1 className="text-[22px] font-bold text-foreground mb-2 leading-tight">
+                  A prayer spoken over your life
+                </h1>
+                <p className="text-[13px] text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
+                  Share a few things on your heart. We'll craft a prayer written just for you — in this moment.
+                </p>
               </div>
 
               <div className="space-y-5">
@@ -225,22 +157,16 @@ export function PrayerPortrait({ situation, onClose }: Props) {
               <button
                 onClick={handleGenerate}
                 data-testid="btn-portrait-generate"
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-[15px] py-4 shadow-md shadow-amber-500/25 hover:from-amber-400 hover:to-orange-400 transition-all active:scale-[0.98]"
+                disabled={!belief.trim() && !burden.trim() && !cover.trim()}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-[15px] py-4 shadow-md shadow-amber-500/25 hover:from-amber-400 hover:to-orange-400 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
               >
                 Speak a prayer over my life
                 <ChevronRight className="w-5 h-5" />
               </button>
-
-              <button
-                onClick={() => setStep("upload")}
-                className="w-full text-center text-[12px] text-muted-foreground py-1"
-              >
-                Change photo
-              </button>
             </motion.div>
           )}
 
-          {/* Step 3 — Generating */}
+          {/* Step 2 — Generating */}
           {step === "generating" && (
             <motion.div
               key="generating"
@@ -249,25 +175,20 @@ export function PrayerPortrait({ situation, onClose }: Props) {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center"
             >
-              {imageDataUrl && (
-                <div className="relative w-28 h-28 rounded-full overflow-hidden ring-4 ring-amber-400/40 shadow-xl">
-                  <img src={imageDataUrl} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-amber-900/40 to-transparent" />
-                </div>
-              )}
-              <div>
-                <motion.p
-                  animate={{ opacity: [0.45, 1, 0.45] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-                  className="text-[15px] text-muted-foreground max-w-[240px] mx-auto leading-relaxed italic"
-                >
-                  Taking a moment to hold what you shared and speak it before God.
-                </motion.p>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                <Heart className="w-7 h-7 text-white" />
               </div>
+              <motion.p
+                animate={{ opacity: [0.45, 1, 0.45] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                className="text-[15px] text-muted-foreground max-w-[240px] mx-auto leading-relaxed italic"
+              >
+                Taking a moment to hold what you shared and speak it before God.
+              </motion.p>
             </motion.div>
           )}
 
-          {/* Step 4 — Result */}
+          {/* Step 3 — Result */}
           {step === "result" && prayer && (
             <motion.div
               key="result"
@@ -276,19 +197,7 @@ export function PrayerPortrait({ situation, onClose }: Props) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-5"
             >
-              {/* Photo + halo */}
-              {imageDataUrl && (
-                <div className="flex justify-center pt-2">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-full bg-amber-400/25 blur-xl scale-125" />
-                    <div className="relative w-28 h-28 rounded-full overflow-hidden ring-4 ring-amber-400/50 shadow-2xl shadow-amber-500/20">
-                      <img src={imageDataUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="text-center">
+              <div className="text-center pt-2">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
                   A prayer over your life
                 </p>
@@ -345,9 +254,12 @@ export function PrayerPortrait({ situation, onClose }: Props) {
                 </div>
               )}
 
-              <p className="text-[11px] text-muted-foreground/50 text-center leading-relaxed pb-4">
-                Your photo was used only to craft this prayer and was not stored.
-              </p>
+              <button
+                onClick={() => { setStep("questions"); setPrayer(null); setSaved(false); }}
+                className="w-full text-center text-[12px] text-muted-foreground py-2"
+              >
+                Pray again
+              </button>
             </motion.div>
           )}
 

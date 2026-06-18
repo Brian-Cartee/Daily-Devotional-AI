@@ -4,7 +4,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Lock, Camera, Sparkles } from "lucide-react";
+import { Heart, Lock, Sparkles, Pencil } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { navigateBackToHomePaths } from "@/lib/homePathsNav";
 
@@ -63,16 +63,16 @@ export default function PrayerPortraitPage() {
                 Personal Prayer Portrait
               </h1>
               <p className="text-[14px] text-foreground/70 leading-relaxed">
-                Share a photo and what&rsquo;s on your heart. We&rsquo;ll craft a prayer written just for you — right now.
+                Share what&rsquo;s on your heart. We&rsquo;ll craft a prayer written just for you — right now.
               </p>
             </div>
 
             {/* Feature highlights */}
             <div className="w-full space-y-2.5 text-left">
               {[
-                { Icon: Camera,   text: "Upload a photo of yourself" },
+                { Icon: Pencil,   text: "Tell us what's on your heart" },
                 { Icon: Sparkles, text: "A prayer crafted just for you" },
-                { Icon: Heart,    text: "Deeply personal — never stored on our servers" },
+                { Icon: Heart,    text: "Deeply personal — save it to your journal" },
               ].map(({ Icon, text }) => (
                 <div key={text} className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.16)" }}>
                   <Icon className="w-4 h-4 text-amber-500 shrink-0" />

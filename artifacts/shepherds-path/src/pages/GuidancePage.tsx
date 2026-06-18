@@ -191,9 +191,11 @@ export default function GuidancePage() {
   const [bridgeAnswer, setBridgeAnswer] = useState("");
   const [bridgeSubmitted, setBridgeSubmitted] = useState(false);
   const [heartInput, setHeartInput] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [heartListening, setHeartListening] = useState(false);
+  const heartRecRef = useRef<any>(null);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -849,18 +851,41 @@ export default function GuidancePage() {
   };
 
   const toggleHeartVoice = () => {
-    if (heartListening) { setHeartListening(false); return; }
+    if (heartListening) {
+      heartRecRef.current?.stop();
+      setHeartListening(false);
+      setInterimTranscript("");
+      return;
+    }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     const rec = new SR();
+    heartRecRef.current = rec;
     rec.lang = "en-US";
-    rec.interimResults = false;
+    rec.interimResults = true;
+    rec.continuous = false;
     rec.onresult = (e: any) => {
-      const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
-      setHeartInput(prev => (prev ? prev + " " + transcript : transcript));
+      let interim = "";
+      let final = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (final) setHeartInput(prev => (prev ? `${prev} ${final}` : final).trim());
+      setInterimTranscript(interim);
     };
-    rec.onend = () => setHeartListening(false);
-    rec.onerror = () => setHeartListening(false);
+    rec.onend = () => {
+      setHeartListening(false);
+      setInterimTranscript("");
+      setHeartInput(prev => {
+        const text = prev.trim();
+        if (text.length > 8) {
+          setTimeout(() => beginGuidanceEntry(text), 1200);
+        }
+        return prev;
+      });
+    };
+    rec.onerror = () => { setHeartListening(false); setInterimTranscript(""); };
     setHeartListening(true);
     rec.start();
   };
@@ -1088,6 +1113,55 @@ export default function GuidancePage() {
                         : "Whatever weighs on your heart, bring it here. You are more seen and more loved than you may feel right now."}
                     </p>
 
+                    {/* Voice-first entry */}
+                    {hasSpeechSupport && (
+                      <div className="flex flex-col items-center mb-5">
+                        <button
+                          type="button"
+                          onClick={toggleHeartVoice}
+                          data-testid="button-guidance-heart-voice"
+                          className="relative flex flex-col items-center justify-center gap-2 w-24 h-24 rounded-full transition-all active:scale-95"
+                          style={{
+                            background: heartListening
+                              ? "radial-gradient(circle, rgba(239,68,68,0.25) 0%, rgba(239,68,68,0.08) 100%)"
+                              : "radial-gradient(circle, rgba(139,92,246,0.30) 0%, rgba(109,40,217,0.12) 100%)",
+                            border: heartListening
+                              ? "2px solid rgba(239,68,68,0.55)"
+                              : "2px solid rgba(139,92,246,0.45)",
+                            boxShadow: heartListening
+                              ? "0 0 0 0 rgba(239,68,68,0.4)"
+                              : "0 0 0 0 rgba(139,92,246,0.3)",
+                          }}
+                        >
+                          {heartListening && (
+                            <span className="absolute inset-0 rounded-full animate-ping"
+                              style={{ background: "rgba(239,68,68,0.18)" }} />
+                          )}
+                          {heartListening
+                            ? <MicOff className="w-8 h-8 text-red-400 relative z-10" />
+                            : <Mic className="w-8 h-8 text-violet-300 relative z-10" />
+                          }
+                        </button>
+                        <p className="mt-2.5 text-[13px] font-medium text-white/65">
+                          {heartListening ? "Listening — tap to stop" : "Tap to speak"}
+                        </p>
+                        {(heartListening && interimTranscript) && (
+                          <p className="mt-2 text-[14px] text-white/50 italic text-center max-w-[260px] leading-snug">
+                            {interimTranscript}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="flex-1 h-px bg-white/10" />
+                      <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.18em]">
+                        {hasSpeechSupport ? "or type below" : "what's on your heart"}
+                      </span>
+                      <div className="flex-1 h-px bg-white/10" />
+                    </div>
+
                     <SituationPills
                       variant="dark"
                       selectedId={situationTopicId}
@@ -1110,9 +1184,9 @@ export default function GuidancePage() {
                       autoCapitalize="sentences"
                       autoCorrect="on"
                       placeholder={GUIDANCE_PLACEHOLDERS[placeholderIdx]}
-                      rows={3}
+                      rows={2}
                       data-testid="input-guidance-heart"
-                      className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3.5 text-[17px] text-white placeholder:text-white/45 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
+                      className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3 text-[16px] text-white placeholder:text-white/40 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
                     />
 
                     <button
@@ -1125,28 +1199,6 @@ export default function GuidancePage() {
                       Begin with Scripture
                       <ArrowRight className="w-4 h-4" />
                     </button>
-
-                    {hasSpeechSupport && (
-                      <button
-                        type="button"
-                        onClick={toggleHeartVoice}
-                        data-testid="button-guidance-heart-voice"
-                        className="mt-2.5 flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-medium text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-colors relative"
-                      >
-                        {heartListening ? (
-                          <>
-                            <MicOff className="w-4 h-4 text-red-400" />
-                            <span>Stop listening</span>
-                            <span className="absolute inset-0 rounded-xl animate-ping bg-red-400/10" />
-                          </>
-                        ) : (
-                          <>
-                            <Mic className="w-4 h-4" />
-                            <span>Speak instead</span>
-                          </>
-                        )}
-                      </button>
-                    )}
 
                     <p className="mt-3 text-center text-[12px] text-white/50 leading-relaxed">
                       Private · grounded in the Bible · no perfect words required
