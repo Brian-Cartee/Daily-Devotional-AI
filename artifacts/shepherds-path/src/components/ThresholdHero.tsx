@@ -239,8 +239,8 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
             <p
               style={{
                 marginTop: "8px",
-                fontSize: "15px",
-                color: "rgba(255,255,255,0.90)",
+                fontSize: "16px",
+                color: "rgba(255,255,255,0.93)",
                 fontWeight: 500,
                 textShadow: "0 1px 8px rgba(0,0,0,0.55)",
               }}
@@ -283,7 +283,8 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.2em",
-              color: "rgba(255,255,255,0.50)",
+              color: "rgba(212,170,60,0.90)",
+              textShadow: "0 0 12px rgba(212,170,60,0.25)",
               background: "none",
               border: "none",
               padding: 0,
