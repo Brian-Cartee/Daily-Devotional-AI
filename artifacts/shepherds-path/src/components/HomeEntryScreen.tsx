@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserName, syncUserNameFromServer } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
+import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState";
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -21,7 +22,7 @@ function getOnboardingBurdenLine(): string | null {
   } catch { return null; }
 }
 
-type EntryType = "whisper" | "heart" | "letter";
+type EntryType = "brand" | "heart" | "letter";
 
 const DAILY_VERSES = [
   { text: "Cast all your anxiety on Him because He cares for you.", ref: "1 Peter 5:7" },
@@ -42,6 +43,15 @@ const HEART_EMOTIONS = [
   { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks",    verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },
 ];
 
+/** Images + single-line copy for rotating brand splash (visit 3+). One per day. */
+const BRAND_SPLASH_POOL = [
+  { image: "/hero-landing.webp",      line: "The path is still here." },
+  { image: "/hero-devotional.webp",   line: "Something brought you back." },
+  { image: "/hero-read.webp",         line: "He's been waiting." },
+  { image: "/hero-understand.webp",   line: "Come in. Nothing is required." },
+  { image: "/hero-guidance.jpg",      line: "This is still yours." },
+];
+
 function getTodayStr() {
   return new Date().toISOString().split("T")[0];
 }
@@ -49,6 +59,12 @@ function getTodayStr() {
 function getDayVerse() {
   const idx = Math.floor(Date.now() / 86_400_000) % DAILY_VERSES.length;
   return DAILY_VERSES[idx];
+}
+
+/** Pick today's pool entry — same image all day, changes daily */
+function getTodayPoolEntry() {
+  const idx = Math.floor(Date.now() / 86_400_000) % BRAND_SPLASH_POOL.length;
+  return BRAND_SPLASH_POOL[idx]!;
 }
 
 function getEntryType(): EntryType {
@@ -61,7 +77,7 @@ function getEntryType(): EntryType {
   }
   if (dayOfWeek === 0) return "letter";
   if (hour >= 19 || isLateNight()) return "heart";
-  return "whisper";
+  return "brand";
 }
 
 export function markEntryShown() {
@@ -69,126 +85,136 @@ export function markEntryShown() {
   localStorage.setItem(LAST_VISIT_KEY, getTodayStr());
 }
 
-function WhisperEntry({ onDismiss }: { onDismiss: () => void }) {
-  const [displayedText, setDisplayedText] = useState("");
-  const [showCta, setShowCta] = useState(false);
-  const [typingDone, setTypingDone] = useState(false);
-  const verse = getDayVerse();
+// ─── Brand Splash ────────────────────────────────────────────────────────────
+
+function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
+  const [ready, setReady] = useState(false);
+  const [allowDismiss, setAllowDismiss] = useState(false);
+  const visitCount = getBrandSplashCount(); // read BEFORE increment
+
+  const isFirst  = visitCount === 0;
+  const isSecond = visitCount === 1;
+  const pool     = getTodayPoolEntry();
+
+  const image   = isFirst || isSecond ? "/hero-landing.webp" : pool.image;
+  const headline = isFirst
+    ? "Step inside."
+    : isSecond
+    ? "Glad you came back."
+    : pool.line;
+  const subline  = isSecond ? "Come in." : null;
+  const cta      = isFirst ? "Enter" : isSecond ? "I'm here" : "Enter";
 
   useEffect(() => {
-    let i = 0;
-    const delay = setTimeout(() => {
-      const interval = setInterval(() => {
-        if (i < verse.text.length) {
-          setDisplayedText(verse.text.slice(0, i + 1));
-          i++;
-        } else {
-          clearInterval(interval);
-          setTypingDone(true);
-          setTimeout(() => setShowCta(true), 600);
-        }
-      }, 35);
-      return () => clearInterval(interval);
-    }, 400);
-    return () => clearTimeout(delay);
+    incrementBrandSplashCount();
+    // Show content after image loads feel
+    const t1 = setTimeout(() => setReady(true), 300);
+    // Allow tap-anywhere dismiss after brief moment
+    const t2 = setTimeout(() => setAllowDismiss(true), 900);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
-      style={{ background: "#0d0a1a" }}
+      className="fixed inset-0 z-50 overflow-hidden"
+      style={{ background: "#000" }}
+      onClick={() => allowDismiss && onDismiss()}
     >
-      {/* Dismiss X — top right */}
-      <button
-        onClick={onDismiss}
-        data-testid="button-whisper-dismiss"
-        className="absolute top-12 right-5 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-colors"
-        style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.55)" }}
-        aria-label="Dismiss"
+      {/* Full-bleed image */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0, scale: 1.04 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
       >
-        <span className="text-lg leading-none">×</span>
-      </button>
-
-      {/* Full-bleed hero image — top ~45% of screen */}
-      <div className="absolute top-0 left-0 right-0 h-[45vh] overflow-hidden">
         <img
-          src="/hero-landing.webp"
-          alt="The Path"
+          src={image}
+          alt=""
           className="w-full h-full object-cover object-center"
-          style={{ opacity: 0.92 }}
+          style={{ opacity: 0.88 }}
         />
-        {/* Gradient fade: image bleeds into dark background below */}
-        <div
-          className="absolute inset-0"
+      </motion.div>
+
+      {/* Gradient — bottom third */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, transparent 35%, rgba(0,0,0,0.55) 72%, rgba(0,0,0,0.88) 100%)",
+        }}
+      />
+
+      {/* Wordmark — top left */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: ready ? 1 : 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="absolute top-14 left-6 text-white/40 text-[9px] font-semibold tracking-[0.32em] uppercase"
+      >
+        Shepherd&rsquo;s Path
+      </motion.p>
+
+      {/* Text — lower third */}
+      <motion.div
+        className="absolute left-0 right-0"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 140px)" }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 16 }}
+        transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <h1
+          className="text-white text-center px-8 leading-tight"
           style={{
-            background: "linear-gradient(to bottom, rgba(13,10,26,0.08) 0%, rgba(13,10,26,0.0) 40%, rgba(13,10,26,0.75) 80%, rgba(13,10,26,1) 100%)",
+            fontFamily: "'Georgia', serif",
+            fontSize: "clamp(2rem, 7vw, 2.6rem)",
+            fontWeight: 300,
+            letterSpacing: "-0.01em",
           }}
-        />
-        {/* App name — visible above the gradient */}
-        <p className="absolute bottom-4 left-0 right-0 text-center text-white/55 text-[9px] tracking-[0.3em] uppercase font-medium">
-          Shepherd&rsquo;s Path
-        </p>
-      </div>
-
-      {/* Spacer — holds space for the absolutely-positioned image */}
-      <div className="h-[42vh] shrink-0" />
-
-      {/* Verse — lives below the image fade */}
-      <div className="relative z-10 flex flex-col w-full items-center justify-center flex-1 px-8 text-center">
-        <p
-          className="w-full text-white text-center leading-relaxed mb-3 sm:text-2xl"
-          style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", minHeight: "5.5rem" }}
         >
-          {'\u201C'}{displayedText}{!typingDone && <span className="animate-pulse opacity-60">|</span>}{'\u201D'}
-        </p>
-        <p className="w-full text-white/45 text-sm text-center mt-1" style={{ fontFamily: "'Georgia', serif" }}>
-          &mdash; {verse.ref}
-        </p>
-        {getOnboardingBurdenLine() && (
-          <p className="w-full text-white/35 text-xs text-center mt-3 italic">
-            {getOnboardingBurdenLine()} God still does.
+          {headline}
+        </h1>
+        {subline && (
+          <p
+            className="text-white/55 text-center mt-2"
+            style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem", fontWeight: 300 }}
+          >
+            {subline}
           </p>
         )}
-      </div>
+      </motion.div>
 
-      {/* CTAs */}
-      <div
-        className="relative z-10 flex flex-col items-center w-full px-8"
-        style={{ paddingBottom: "max(56px, calc(40px + env(safe-area-inset-bottom, 0px)))" }}
+      {/* CTA — bottom */}
+      <motion.div
+        className="absolute left-6 right-6"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)" }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 10 }}
+        transition={{ duration: 0.6, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={showCta ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-          transition={{ duration: 0.5 }}
-          className="w-full flex flex-col items-center gap-4"
+        <button
+          onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+          data-testid="button-brand-splash-enter"
+          className="w-full py-4 rounded-2xl text-white font-medium text-base tracking-wide transition-opacity active:opacity-70"
+          style={{
+            border: "1px solid rgba(255,255,255,0.28)",
+            background: "rgba(255,255,255,0.08)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          }}
         >
-          <button
-            onClick={onDismiss}
-            className="w-full py-4 rounded-2xl text-white font-medium text-base tracking-wide"
-            style={{
-              background: "linear-gradient(135deg, #7A018D, #442f74)",
-              boxShadow: "0 8px 32px rgba(122,1,141,0.35)",
-            }}
-            data-testid="button-whisper-enter"
-          >
-            Walk with me today
-          </button>
-          <button onClick={onDismiss} className="text-white/55 text-xs py-1" data-testid="button-whisper-skip">
-            Skip
-          </button>
-        </motion.div>
-      </div>
+          {cta}
+        </button>
+      </motion.div>
     </div>
   );
 }
+
+// ─── Heart Entry ──────────────────────────────────────────────────────────────
 
 function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-  };
+  const handleSubmit = () => { setSubmitted(true); };
 
   if (submitted) {
     const emotion = selected !== null ? HEART_EMOTIONS[selected] : null;
@@ -205,13 +231,8 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
         style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
       >
         <div className="text-5xl mb-6">{displayIcon}</div>
-        <p className="text-white/50 text-xs tracking-widest uppercase mb-4">
-          {displayLabel}
-        </p>
-        <p
-          className="text-white text-xl leading-relaxed mb-2"
-          style={{ fontFamily: "'Georgia', serif" }}
-        >
+        <p className="text-white/50 text-xs tracking-widest uppercase mb-4">{displayLabel}</p>
+        <p className="text-white text-xl leading-relaxed mb-2" style={{ fontFamily: "'Georgia', serif" }}>
           "{displayVerse.text}"
         </p>
         <p className="text-white/45 text-sm mb-8" style={{ fontFamily: "'Georgia', serif" }}>
@@ -235,12 +256,8 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
       style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
     >
       <div className="shrink-0 flex items-center justify-between px-6 pt-12 pb-1">
-        <div>
-          <p className="text-white/35 text-xs tracking-widest uppercase">Shepherd's Path</p>
-        </div>
-        <button onClick={onDismiss} className="text-white/30 text-xs py-1 px-2">
-          Skip
-        </button>
+        <p className="text-white/35 text-xs tracking-widest uppercase">Shepherd's Path</p>
+        <button onClick={onDismiss} className="text-white/30 text-xs py-1 px-2">Skip</button>
       </div>
 
       <div
@@ -275,16 +292,9 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
                 <p className="text-white/40 text-xs mt-0.5">{e.desc}</p>
               </div>
               {selected === i && (
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: e.color }}
-                >
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: e.color }}>
                   <svg className="w-3 h-3" fill="white" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>
               )}
@@ -308,21 +318,20 @@ function HeartEntry({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+// ─── Letter Entry ─────────────────────────────────────────────────────────────
+
 function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
   const [name, setName] = useState<string | null>(getUserName);
   const hour = new Date().getHours();
 
   useEffect(() => {
-    if (!name) {
-      syncUserNameFromServer().then((n) => { if (n) setName(n); });
-    }
+    if (!name) syncUserNameFromServer().then((n) => { if (n) setName(n); });
   }, []);
+
   const dayOfWeek = new Date().getDay();
   const isSunday = dayOfWeek === 0;
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const verse = getDayVerse();
-
   const burdenLine = getOnboardingBurdenLine();
   const pastoralLines = isSunday
     ? `A new week begins. Whatever last week carried, today is a fresh page. God's mercies are new every morning — and especially on this one.${burdenLine ? ` ${burdenLine} That hasn't changed.` : ""}`
@@ -330,41 +339,22 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#faf8f5" }}>
-      <div
-        className="shrink-0 px-6 pt-14 pb-6"
-        style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}
-      >
+      <div className="shrink-0 px-6 pt-14 pb-6" style={{ background: "linear-gradient(160deg, #442f74 0%, #2d1a5e 100%)" }}>
         <p className="text-white/65 text-xs tracking-widest uppercase mb-2">Shepherd's Path</p>
         <div className="flex items-end justify-between">
-          <div>
-            <h1
-              className="text-white font-light"
-              style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem" }}
-            >
-              {greeting}{name ? `, ${name}.` : "."}
-            </h1>
-          </div>
-          <button onClick={onDismiss} className="text-white/60 text-sm pb-1">
-            Skip
-          </button>
+          <h1 className="text-white font-light" style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem" }}>
+            {greeting}{name ? `, ${name}.` : "."}
+          </h1>
+          <button onClick={onDismiss} className="text-white/60 text-sm pb-1">Skip</button>
         </div>
       </div>
 
-      <div
-        className="mx-5 -mt-4 rounded-2xl p-5 shadow-sm"
-        style={{ background: "white", border: "1px solid rgba(68,47,116,0.08)" }}
-      >
-        <p
-          className="leading-relaxed text-gray-700 mb-4"
-          style={{ fontFamily: "'Georgia', serif", fontSize: "1rem" }}
-        >
+      <div className="mx-5 -mt-4 rounded-2xl p-5 shadow-sm" style={{ background: "white", border: "1px solid rgba(68,47,116,0.08)" }}>
+        <p className="leading-relaxed text-gray-700 mb-4" style={{ fontFamily: "'Georgia', serif", fontSize: "1rem" }}>
           {pastoralLines}
         </p>
         <div className="pl-4 border-l-2 mb-1" style={{ borderColor: "#442f74" }}>
-          <p
-            className="text-gray-600 italic leading-relaxed"
-            style={{ fontFamily: "'Georgia', serif", fontSize: "0.9375rem" }}
-          >
+          <p className="text-gray-600 italic leading-relaxed" style={{ fontFamily: "'Georgia', serif", fontSize: "0.9375rem" }}>
             "{verse.text}"
           </p>
           <p className="text-gray-500 mt-1.5" style={{ fontSize: "0.8125rem" }}>— {verse.ref}</p>
@@ -378,10 +368,7 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
         <button
           onClick={onDismiss}
           className="w-full py-4 rounded-2xl text-white font-medium text-base"
-          style={{
-            background: "linear-gradient(135deg, #7A018D, #442f74)",
-            boxShadow: "0 8px 32px rgba(122,1,141,0.25)",
-          }}
+          style={{ background: "linear-gradient(135deg, #7A018D, #442f74)", boxShadow: "0 8px 32px rgba(122,1,141,0.25)" }}
           data-testid="button-letter-enter"
         >
           {isSunday ? "Begin this week" : "I'm here"}
@@ -390,6 +377,8 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
     </div>
   );
 }
+
+// ─── Main export ──────────────────────────────────────────────────────────────
 
 interface HomeEntryScreenProps {
   onDismiss: () => void;
@@ -410,10 +399,10 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.35 }}
       >
-        {entryType === "whisper" && <WhisperEntry onDismiss={handleDismiss} />}
-        {entryType === "heart" && <HeartEntry onDismiss={handleDismiss} />}
+        {entryType === "brand"  && <BrandSplash onDismiss={handleDismiss} />}
+        {entryType === "heart"  && <HeartEntry  onDismiss={handleDismiss} />}
         {entryType === "letter" && <LetterEntry onDismiss={handleDismiss} />}
       </motion.div>
     </AnimatePresence>

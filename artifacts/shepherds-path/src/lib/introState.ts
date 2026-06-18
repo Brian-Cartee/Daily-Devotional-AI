@@ -2,6 +2,7 @@
 
 export const INTRO_COMPLETE_KEY = "sp_intro_flow_complete";
 export const VISIT_COUNT_KEY = "sp_visit_count";
+export const BRAND_SPLASH_COUNT_KEY = "sp_brand_splash_count";
 export const WELCOME_SESSION_KEY = "sp_welcome_shown_this_session";
 export const SPLASH_KEY = "sp_splash_shown";
 export const RETURNING_HOME_KEY = "sp_returning_home";
@@ -91,4 +92,15 @@ export function shouldShowWelcomeOverlay(forceIntro: boolean): boolean {
 
 export function recordWelcomeShownThisSession(): void {
   storageSet(WELCOME_SESSION_KEY, "1", sessionStorage);
+}
+
+/** Brand splash visit count — persists across all time, never resets. */
+export function getBrandSplashCount(): number {
+  return parseInt(storageGet(BRAND_SPLASH_COUNT_KEY, localStorage) ?? "0", 10);
+}
+
+export function incrementBrandSplashCount(): number {
+  const next = getBrandSplashCount() + 1;
+  storageSet(BRAND_SPLASH_COUNT_KEY, String(next), localStorage);
+  return next;
 }
