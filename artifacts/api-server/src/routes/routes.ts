@@ -463,6 +463,31 @@ export async function registerRoutes(
     }
   });
 
+  // ── User profile phone ───────────────────────────────────────────────────────
+  app.get("/api/user-phone", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.json({ phone: null });
+    try {
+      const phone = await storage.getUserProfilePhone(sessionId);
+      res.json({ phone });
+    } catch {
+      res.json({ phone: null });
+    }
+  });
+
+  app.post("/api/user-phone", async (req, res) => {
+    const { sessionId, phone } = req.body as { sessionId?: string; phone?: string };
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    const trimmed = typeof phone === "string" ? phone.trim() : "";
+    if (!trimmed) return res.status(400).json({ message: "phone required" });
+    try {
+      await storage.setUserProfilePhone(sessionId, trimmed);
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
   // ── User profile name (persists across Safari/iOS localStorage clears) ────────
   app.get("/api/user-name", async (req, res) => {
     const sessionId = req.query.sessionId as string;

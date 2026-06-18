@@ -384,6 +384,7 @@ export type SermonSegment = typeof sermonSegments.$inferSelect;
 export const userProfiles = pgTable("user_profiles", {
   sessionId: text("session_id").primaryKey(),
   name: text("name"),
+  phone: text("phone"),
   updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
 });
 

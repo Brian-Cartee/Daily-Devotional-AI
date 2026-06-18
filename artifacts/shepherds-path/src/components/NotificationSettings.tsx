@@ -192,6 +192,130 @@ function EmailSection() {
   );
 }
 
+function PhoneSection() {
+  const sessionId = getSessionId();
+  const { toast } = useToast();
+  const [phone, setPhone] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/user-phone?sessionId=${encodeURIComponent(sessionId)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.phone) { setPhone(d.phone); setSaved(true); } })
+      .catch(() => {});
+  }, [sessionId]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = phone.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    try {
+      const r = await fetch("/api/user-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, phone: trimmed }),
+      });
+      if (r.ok) {
+        setSaved(true);
+        setExpanded(false);
+        toast({ description: "Phone number saved — we'll reach out when text check-ins are ready." });
+      }
+    } catch {
+      toast({ description: "Couldn't save right now — try again.", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        border: "1px solid rgba(255,255,255,0.10)",
+        backgroundColor: "rgba(255,255,255,0.04)",
+        overflow: "hidden",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "12px 16px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        <div style={{ width: 32, height: 32, borderRadius: 12, backgroundColor: "rgba(52,211,153,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 15 }}>📱</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.90)", margin: 0 }}>
+            Text check-ins <span style={{ fontSize: 11, fontWeight: 500, color: "rgba(52,211,153,0.80)", marginLeft: 6 }}>Coming soon</span>
+          </p>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", margin: "2px 0 0" }}>
+            {saved ? `Saved — we'll text ${phone}` : "Add your number — we'll reach out like a friend"}
+          </p>
+        </div>
+        {saved && <span style={{ fontSize: 13, color: "rgb(52,211,153)", fontWeight: 700, flexShrink: 0 }}>✓</span>}
+        {!saved && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>}
+      </button>
+
+      {expanded && !saved && (
+        <form onSubmit={handleSave} style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: 0, lineHeight: 1.5 }}>
+            Optional. When text accountability is live, we&apos;ll send a short morning check-in — no marketing, no spam. Easy to stop anytime.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 (555) 000-0000"
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                fontSize: 14,
+                color: "rgba(255,255,255,0.90)",
+                outline: "none",
+                minWidth: 0,
+              }}
+            />
+            <button
+              type="submit"
+              disabled={loading || !phone.trim()}
+              style={{
+                backgroundColor: "rgba(52,211,153,0.20)",
+                border: "1px solid rgba(52,211,153,0.40)",
+                borderRadius: 12,
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "rgb(52,211,153)",
+                cursor: loading || !phone.trim() ? "not-allowed" : "pointer",
+                flexShrink: 0,
+                opacity: loading || !phone.trim() ? 0.5 : 1,
+              }}
+            >
+              {loading ? "…" : "Save"}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 interface StreakData {
   currentStreak: number;
   longestStreak: number;
@@ -602,6 +726,9 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
 
           {/* ── Email section ── */}
           <EmailSection />
+
+          {/* ── Phone section ── */}
+          <PhoneSection />
 
           <Link
             href="/how-to-use"

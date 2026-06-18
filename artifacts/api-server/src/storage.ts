@@ -884,6 +884,18 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getUserProfilePhone(sessionId: string): Promise<string | null> {
+    const [row] = await db.select({ phone: userProfiles.phone }).from(userProfiles).where(eq(userProfiles.sessionId, sessionId));
+    return row?.phone ?? null;
+  }
+
+  async setUserProfilePhone(sessionId: string, phone: string): Promise<void> {
+    await db.insert(userProfiles).values({ sessionId, phone }).onConflictDoUpdate({
+      target: userProfiles.sessionId,
+      set: { phone, updatedAt: new Date() },
+    });
+  }
+
   async getUserMemory(sessionId: string): Promise<UserMemoryRow | undefined> {
     const [row] = await db.select().from(userMemory).where(eq(userMemory.sessionId, sessionId));
     return row;
