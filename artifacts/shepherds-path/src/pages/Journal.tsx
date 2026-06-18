@@ -259,7 +259,7 @@ function ExportMenu({
             <p className="text-sm font-semibold text-foreground">Save as Text</p>
             <p className="text-[11px] text-muted-foreground">All entries · .txt file</p>
           </div>
-          <span className="ml-auto text-[10px] font-semibold text-green-600 bg-green-50 dark:bg-green-950/50 dark:text-green-400 px-2 py-0.5 rounded-full">Free</span>
+          <span className="ml-auto text-[10px] font-semibold text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.09)" }}>Free</span>
         </button>
 
         {/* Pro: print / save as PDF via browser */}
@@ -275,7 +275,7 @@ function ExportMenu({
             <p className="text-sm font-semibold text-foreground">Print / Save as PDF</p>
             <p className="text-[11px] text-muted-foreground">Full archive · browser print</p>
           </div>
-          <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-400 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+          <span className="ml-auto text-[10px] font-bold text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full flex items-center gap-0.5" style={{ background: "rgba(245,158,11,0.09)" }}>
             <Lock className="w-2.5 h-2.5" /> Pro
           </span>
         </button>
@@ -393,7 +393,8 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: nu
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.3 }}
-      className="bg-[#fdf8f0] dark:bg-zinc-900/45 border border-amber-200/60 dark:border-white/10 rounded-2xl p-5 relative group"
+      className="rounded-2xl p-5 relative group"
+      style={{ background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }}
       data-testid={`journal-entry-${entry.id}`}
     >
       {entry.reference && (
@@ -579,7 +580,8 @@ function SermonRecorder({ onSave }: { onSave: () => void }) {
   if (state === "recording") return (
     <motion.div
       initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-      className="mb-4 rounded-2xl border-2 border-red-400/30 bg-red-50/50 dark:bg-red-950/20 p-4"
+      className="mb-4 rounded-2xl p-4"
+      style={{ background: "rgba(244,63,94,0.09)", border: "2px solid rgba(244,63,94,0.25)" }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -671,7 +673,7 @@ function SermonRecorder({ onSave }: { onSave: () => void }) {
         )}
 
         {result.application && (
-          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30 rounded-xl px-4 py-3">
+          <div className="rounded-xl px-4 py-3" style={{ background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Application</span>
@@ -834,7 +836,7 @@ function MemoryVerseCard({ verse, onDelete, onReview }: { verse: MemoryVerse; on
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[14px] font-bold text-foreground">{verse.reference}</span>
           {isDue && (
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-400" style={{ background: "rgba(245,158,11,0.09)" }}>
               Due for review
             </span>
           )}
@@ -936,7 +938,7 @@ function MemoryTab({ verses, isLoading, onDelete, onReview }: { verses: MemoryVe
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center justify-center py-16 text-center"
       >
-        <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(245,158,11,0.09)" }}>
           <Star className="w-6 h-6 text-amber-400/60" />
         </div>
         <p className="text-sm font-semibold text-foreground max-w-[220px]">No memory verses yet.</p>
@@ -1289,7 +1291,7 @@ export default function Journal() {
                 </button>
                 <div className="px-5 pt-5 pb-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(20,184,166,0.09)" }}>
                       <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                     </div>
                     <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
@@ -1396,7 +1398,7 @@ export default function Journal() {
                   {!letterGenerated ? (
                     <>
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.09)" }}>
                           <Feather className="w-3.5 h-3.5 text-indigo-500" />
                         </div>
                         <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
@@ -1425,7 +1427,7 @@ export default function Journal() {
                   ) : (
                     <>
                       <div className="flex items-center gap-2 mb-4">
-                        <div className="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.09)" }}>
                           <Feather className="w-3.5 h-3.5 text-indigo-500" />
                         </div>
                         <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">

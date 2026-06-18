@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Sparkles, HeartHandshake, ChevronDown, X, BookmarkPlus, Check, BookOpen, SendHorizonal } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
@@ -25,11 +25,11 @@ const SUGGESTIONS = [
   "hope", "John 3:16", "grace", "Psalm 23", "faith vs works",
 ];
 
-const TRACK_COLORS: Record<TrackId, { bg: string; border: string; pill: string; icon: string }> = {
-  psalms:   { bg: "bg-amber-50/60",  border: "border-amber-200/60",  pill: "bg-amber-100 text-amber-700",   icon: "text-amber-500" },
-  proverbs: { bg: "bg-yellow-50/60", border: "border-yellow-200/60", pill: "bg-yellow-100 text-yellow-700",  icon: "text-yellow-600" },
-  gospel:   { bg: "bg-indigo-50/60", border: "border-indigo-200/60", pill: "bg-indigo-100 text-indigo-700",  icon: "text-indigo-500" },
-  wisdom:   { bg: "bg-teal-50/60",   border: "border-teal-200/60",   pill: "bg-teal-100 text-teal-700",     icon: "text-teal-600" },
+const TRACK_COLORS: Record<TrackId, { bgStyle: React.CSSProperties; borderStyle: string; pillText: string; pillBg: string; icon: string }> = {
+  psalms:   { bgStyle: { background: "rgba(245,158,11,0.09)" },  borderStyle: "rgba(245,158,11,0.25)",  pillText: "text-amber-700",   pillBg: "rgba(245,158,11,0.09)",  icon: "text-amber-500" },
+  proverbs: { bgStyle: { background: "rgba(245,158,11,0.09)" },  borderStyle: "rgba(245,158,11,0.25)",  pillText: "text-yellow-700",  pillBg: "rgba(245,158,11,0.09)",  icon: "text-yellow-600" },
+  gospel:   { bgStyle: { background: "rgba(99,102,241,0.09)" },  borderStyle: "rgba(99,102,241,0.25)",  pillText: "text-indigo-700",  pillBg: "rgba(99,102,241,0.09)",  icon: "text-indigo-500" },
+  wisdom:   { bgStyle: { background: "rgba(20,184,166,0.09)" },  borderStyle: "rgba(20,184,166,0.25)",  pillText: "text-teal-700",    pillBg: "rgba(20,184,166,0.09)",  icon: "text-teal-600" },
 };
 
 function useJournalSave() {
@@ -541,7 +541,8 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="relative bg-card dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/30 rounded-2xl overflow-hidden shadow-sm mb-5"
+            className="relative bg-card rounded-2xl overflow-hidden shadow-sm mb-5"
+            style={{ border: "1px solid rgba(245,158,11,0.25)" }}
           >
             {/* Signature top accent bar */}
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-300" />
@@ -571,7 +572,8 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                         key={s}
                         data-testid={`suggestion-${s}`}
                         onClick={() => { setTopic(s); generate(null, s); }}
-                        className="px-3.5 py-1.5 rounded-full bg-white dark:bg-amber-950/30 hover:bg-amber-50 dark:hover:bg-amber-900/40 border border-amber-300/60 dark:border-amber-700/40 text-[12px] font-semibold text-amber-900/80 dark:text-amber-300/90 hover:text-amber-900 hover:border-amber-400/70 transition-all active:scale-95 shadow-sm"
+                        className="px-3.5 py-1.5 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/40 text-[12px] font-semibold text-amber-900/80 dark:text-amber-300/90 hover:text-amber-900 transition-all active:scale-95 shadow-sm"
+                        style={{ background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }}
                       >
                         {s}
                       </button>
@@ -662,15 +664,19 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                     data-testid={`track-btn-${track.id}`}
                     className={`relative rounded-2xl p-4 text-left transition-all duration-300 border ${
                       isActive
-                        ? `${colors.bg} ${colors.border} shadow-md ring-2 ring-offset-1 ring-offset-background ring-current/20`
-                        : "bg-[#fdf8f0] dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300/70 hover:shadow-md hover:shadow-amber-100/50"
+                        ? "shadow-md ring-2 ring-offset-1 ring-offset-background ring-current/20"
+                        : "hover:shadow-md hover:shadow-amber-100/50"
                     }`}
+                    style={isActive
+                      ? { ...colors.bgStyle, border: `1px solid ${colors.borderStyle}` }
+                      : { background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }
+                    }
                   >
                     <span className="text-2xl mb-2 block">{track.icon}</span>
                     <p className="text-sm font-bold text-amber-900 dark:text-amber-100 leading-tight">{track.name}</p>
                     <p className="text-[11px] text-amber-700/60 dark:text-amber-400/60 mt-0.5 leading-tight">{track.description}</p>
                     {isActive && (
-                      <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${colors.pill}`}>
+                      <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${colors.pillText}`} style={{ background: colors.pillBg }}>
                         Active
                       </span>
                     )}
@@ -687,9 +693,13 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                 }}
                 className={`col-span-2 rounded-2xl p-4 text-left transition-all duration-300 border ${
                   storyFinderOpen
-                    ? "bg-violet-50/70 dark:bg-violet-950/30 border-violet-300/60 dark:border-violet-700/50 shadow-sm"
-                    : "bg-[#fdf8f0] dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300/70 hover:shadow-md hover:shadow-amber-100/50"
+                    ? "shadow-sm"
+                    : "hover:shadow-md hover:shadow-amber-100/50"
                 }`}
+                style={storyFinderOpen
+                  ? { background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }
+                  : { background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }
+                }
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -719,7 +729,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                   transition={{ duration: 0.3 }}
                   className="overflow-hidden"
                 >
-                  <div className="mt-2.5 bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-700/40 rounded-2xl px-5 py-5 space-y-4">
+                  <div className="mt-2.5 rounded-2xl px-5 py-5 space-y-4" style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }}>
 
                     {!storyResult ? (
                       <>

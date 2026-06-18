@@ -1616,7 +1616,7 @@ export default function GuidancePage() {
                       <div className="space-y-2 animate-pulse">
                         <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-full" />
                         <div className="h-4 bg-amber-200/50 dark:bg-amber-700/20 rounded w-4/5" />
-                        <div className="h-3 bg-amber-100/50 dark:bg-amber-800/15 rounded w-28 mt-1" />
+                        <div className="h-3 rounded w-28 mt-1" style={{ background: "rgba(245,158,11,0.09)" }} />
                       </div>
                     ) : walkToday && (
                       <>
@@ -2131,7 +2131,7 @@ export default function GuidancePage() {
                   (() => {
                     const suggested = suggestPathwayForSituation(situation);
                     return (
-                      <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-5 py-4">
+                      <div className="rounded-2xl px-5 py-4" style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }}>
                         {suggested ? (
                           <>
                             <p className="text-sm text-foreground/85 leading-relaxed mb-2">
@@ -2156,7 +2156,7 @@ export default function GuidancePage() {
                     );
                   })()
                 ) : journeyLoading ? (
-                  <div className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-7 pt-6 pb-5">
+                  <div className="rounded-2xl px-7 pt-6 pb-5" style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }}>
                     <p className="text-[16px] leading-relaxed font-medium text-foreground/60 italic mb-2">
                       "Your word is a lamp to my feet and a light to my path."
                     </p>
@@ -2183,7 +2183,7 @@ export default function GuidancePage() {
                         {journey.entries?.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-3">
                             {journey.entries.slice(0, 5).map(ch => (
-                              <span key={ch.id} className="text-[11px] px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-medium">
+                              <span key={ch.id} className="text-[11px] px-2 py-0.5 rounded-full text-violet-700 dark:text-violet-300 font-medium" style={{ background: "rgba(139,92,246,0.09)" }}>
                                 {ch.theme}
                               </span>
                             ))}
@@ -2211,7 +2211,8 @@ export default function GuidancePage() {
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl bg-violet-50/80 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 px-7 pt-6 pb-5"
+                    className="rounded-2xl px-7 pt-6 pb-5"
+                    style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }}
                   >
                     <p className="text-sm text-muted-foreground mb-3">
                       We couldn't shape your journey just yet — worth trying once more.

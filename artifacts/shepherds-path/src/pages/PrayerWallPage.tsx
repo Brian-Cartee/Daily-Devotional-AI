@@ -186,7 +186,8 @@ export default function PrayerWallPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="rounded-2xl border border-violet-200/60 dark:border-violet-800/40 bg-violet-50/40 dark:bg-violet-950/20 overflow-hidden"
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }}
               >
                 <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 to-rose-500 rounded-t-2xl" />
                 <div className="p-4">
@@ -376,9 +377,10 @@ export default function PrayerWallPage() {
                       disabled={hasPrayed || prayMutation.isPending}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[13px] font-semibold transition-all ${
                         hasPrayed
-                          ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 border border-violet-200/60 dark:border-violet-700/50"
+                          ? "text-violet-600 dark:text-violet-300 border"
                           : "border border-border hover:border-violet-300 hover:bg-violet-50/50 dark:hover:bg-violet-950/30 text-foreground/70 hover:text-violet-600"
                       }`}
+                      style={hasPrayed ? { background: "rgba(139,92,246,0.09)", borderColor: "rgba(139,92,246,0.25)" } : undefined}
                     >
                       <span className="text-[15px]">🙏</span>
                       <span>{hasPrayed ? "Praying" : "I'm praying"}</span>
@@ -398,9 +400,10 @@ export default function PrayerWallPage() {
                         disabled={hasReminded || remindMutation.isPending}
                         className={`flex items-center gap-1.5 text-[11px] font-semibold transition-all px-2.5 py-1.5 rounded-lg ${
                           hasReminded
-                            ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                            ? "text-amber-600 dark:text-amber-400"
                             : "text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/70 dark:hover:bg-amber-900/20"
                         }`}
+                        style={hasReminded ? { background: "rgba(245,158,11,0.09)" } : undefined}
                       >
                         {hasReminded
                           ? <><BellRing className="w-3.5 h-3.5" /> Reminder set for tomorrow</>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/BackButton";
@@ -456,9 +456,10 @@ export default function TriviaPage() {
                   const isSelected = selectedAnswer === idx;
                   const isCorrect = idx === q.correctIndex;
                   let style = "border-border bg-card hover:bg-muted/50 active:scale-[0.98]";
+                  let inlineStyle: React.CSSProperties | undefined;
                   if (revealed) {
-                    if (isCorrect)       style = "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30";
-                    else if (isSelected) style = "border-rose-400 bg-rose-50 dark:bg-rose-950/30";
+                    if (isCorrect)       { style = "border-emerald-400"; inlineStyle = { background: "rgba(16,185,129,0.09)" }; }
+                    else if (isSelected) { style = "border-rose-400"; inlineStyle = { background: "rgba(244,63,94,0.09)" }; }
                     else                 style = "border-border bg-card opacity-50";
                   } else if (isSelected) {
                     style = "border-primary bg-primary/8";
@@ -470,6 +471,7 @@ export default function TriviaPage() {
                       data-testid={`btn-answer-${idx}`}
                       disabled={revealed}
                       className={`w-full text-left rounded-xl border px-4 py-3.5 transition-all ${style} cursor-pointer`}
+                      style={inlineStyle}
                     >
                       <div className="flex items-start gap-3">
                         <span className={`text-[13px] font-bold shrink-0 mt-0.5 ${revealed && isCorrect ? "text-emerald-600" : revealed && isSelected ? "text-rose-500" : "text-muted-foreground"}`}>
@@ -488,7 +490,11 @@ export default function TriviaPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`rounded-xl px-4 py-3 mb-4 border ${selectedAnswer === q.correctIndex ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/40" : "bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-800/40"}`}
+                    className="rounded-xl px-4 py-3 mb-4"
+                    style={selectedAnswer === q.correctIndex
+                      ? { background: "rgba(16,185,129,0.09)", border: "1px solid rgba(16,185,129,0.25)" }
+                      : { background: "rgba(244,63,94,0.09)", border: "1px solid rgba(244,63,94,0.25)" }
+                    }
                   >
                     <p className={`text-[12px] font-bold mb-0.5 ${selectedAnswer === q.correctIndex ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                       {selectedAnswer === q.correctIndex ? "✓ Correct!" : `✗ The answer is ${q.options[q.correctIndex]}`}

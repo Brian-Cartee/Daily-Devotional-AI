@@ -137,7 +137,7 @@ export default function RefundPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center gap-4 text-center py-4"
               >
-                <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-950/40 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.09)" }}>
                   <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="space-y-1.5">
@@ -172,7 +172,7 @@ export default function RefundPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center gap-4 text-center py-4"
               >
-                <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(245,158,11,0.09)" }}>
                   <XCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div className="space-y-1.5">
@@ -212,7 +212,7 @@ export default function RefundPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center gap-4 text-center py-4"
               >
-                <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(244,63,94,0.09)" }}>
                   <XCircle className="w-7 h-7 text-red-500" />
                 </div>
                 <div className="space-y-1.5">

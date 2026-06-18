@@ -2449,7 +2449,8 @@ export default function Devotional() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-xl px-4 py-3 shadow-sm"
+              className="rounded-xl px-4 py-3 shadow-sm"
+              style={{ background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }}
               data-testid="devotional-journal-save"
             >
               <div className="flex items-center gap-3">
@@ -2662,7 +2663,8 @@ export default function Devotional() {
               <Link
                 href="/pricing"
                 data-testid="link-streak-pro-nudge"
-                className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-colors group"
+                className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl text-amber-700 dark:text-amber-400 text-[12px] font-medium transition-colors group"
+                style={{ background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.25)" }}
               >
                 <Zap className="w-3 h-3 shrink-0" />
                 <span>If this rhythm is helping, Pro adds more listening, your full archive, and one grace day each month — optional.</span>

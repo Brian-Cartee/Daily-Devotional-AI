@@ -642,12 +642,12 @@ function JourneyHub({
             >
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-indigo-500/5 pointer-events-none" />
               <div className="relative z-10 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(139,92,246,0.09)" }}>
                   <Heart className="w-5 h-5 text-violet-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded-full">Personalized</span>
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.09)" }}>Personalized</span>
                   </div>
                   <h2 className="text-[17px] font-bold text-foreground leading-tight">Start with what you're walking through</h2>
                   <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1.5">7 passages, shaped for where you are</p>
@@ -954,7 +954,8 @@ function JourneyDetail({ journey, onBack, backLabel = "All Journeys" }: { journe
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.35 }}
-            className="bg-violet-50/70 dark:bg-violet-900/20 border border-violet-200/50 dark:border-violet-700/30 rounded-2xl px-5 py-4 mb-5"
+            className="rounded-2xl px-5 py-4 mb-5"
+            style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.25)" }}
           >
             <div className="flex items-start gap-3">
               <ShepherdCrookMark className="w-7 h-7 flex-shrink-0 opacity-70 mt-0.5" />

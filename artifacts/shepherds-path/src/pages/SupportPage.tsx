@@ -136,7 +136,8 @@ export default function SupportPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="rounded-2xl border border-green-200/60 dark:border-green-800/40 bg-green-50/60 dark:bg-green-950/20 p-6 text-center"
+              className="rounded-2xl p-6 text-center"
+              style={{ background: "rgba(16,185,129,0.09)", border: "1px solid rgba(16,185,129,0.25)" }}
             >
               <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400 mx-auto mb-3" />
               <p className="text-[16px] font-bold text-foreground mb-1">Message received</p>

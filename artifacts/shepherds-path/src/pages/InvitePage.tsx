@@ -16,7 +16,7 @@ export default function InvitePage() {
           animate={{ opacity: 1, y: 0 }}
           className="mt-6 mb-8"
         >
-          <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(245,158,11,0.09)" }}>
             <Gift className="w-6 h-6 text-amber-600 dark:text-amber-400" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight" data-testid="invite-page-title">

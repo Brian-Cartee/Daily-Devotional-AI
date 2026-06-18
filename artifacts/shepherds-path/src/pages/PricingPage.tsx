@@ -309,7 +309,7 @@ export default function PricingPage() {
               </>
             ) : isIOS() ? (
               <>
-                <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3 mb-1">
+                <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-1" style={{ background: "rgba(59,130,246,0.09)", border: "1px solid rgba(59,130,246,0.25)" }}>
                   <Smartphone className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
                     To subscribe, visit{" "}
