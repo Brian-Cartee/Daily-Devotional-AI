@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Compass, Heart, Home, NotebookPen, Search, Sun } from "lucide-react";
+import { BookOpen, Compass, Home, MessageCircle, NotebookPen, Search, Sun } from "lucide-react";
 import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
 import { ConvictionTopWhisper } from "@/components/ConvictionTopWhisper";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -38,7 +38,6 @@ const NAV_ITEMS = [
 
 const BOTTOM_NAV_ITEMS = [
   { href: "/", label: "For You", icon: Home, bookmark: null, navId: "for-you" },
-  { href: "/guidance", label: TALK_IT_THROUGH_LABEL, icon: Heart, bookmark: null, navId: "guidance" },
   {
     href: "/devotional",
     label: "Today",
@@ -46,6 +45,7 @@ const BOTTOM_NAV_ITEMS = [
     bookmark: "devotional" as BookmarkSection,
     navId: "today",
   },
+  { href: "/guidance", label: TALK_IT_THROUGH_LABEL, icon: MessageCircle, bookmark: null, navId: "guidance" },
   {
     href: "/understand",
     label: "Journey",

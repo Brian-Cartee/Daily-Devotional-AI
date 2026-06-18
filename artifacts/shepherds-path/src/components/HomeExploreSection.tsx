@@ -162,7 +162,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
               color: NATIVE_TEXT_SOFT,
             }}
           >
-            All paths
+            More ways in
           </p>
           <p
             style={{
@@ -170,12 +170,9 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
               fontWeight: 600,
               color: NATIVE_TEXT_MUTED,
               marginTop: "2px",
-              fontVariantNumeric: "tabular-nums",
             }}
           >
-            {expanded
-              ? `${HOME_EXPLORE_PATH_COUNT} ways to walk`
-              : `${previewCount} shown · ${HOME_EXPLORE_PATH_COUNT} total`}
+            {expanded ? "Every path, all at once" : "A few places to start"}
           </p>
         </div>
         {expanded && (
@@ -185,7 +182,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
             data-testid="btn-collapse-explore"
             className="text-[12px] font-semibold text-muted-foreground hover:text-foreground px-2 py-1"
           >
-            Fewer
+            Show less
           </button>
         )}
       </div>
@@ -234,7 +231,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
                 boxSizing: "border-box",
               }}
             >
-              See all {HOME_EXPLORE_PATH_COUNT} paths
+              See all paths
               <ChevronDown className="w-4 h-4 shrink-0" aria-hidden />
             </button>
           </motion.div>

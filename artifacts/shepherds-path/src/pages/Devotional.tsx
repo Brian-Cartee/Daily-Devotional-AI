@@ -894,12 +894,17 @@ export default function Devotional() {
   const fireDevotionalCompletionAchievements = () => {
     if (isSacredSessionQuiet()) return;
     const devotionalAchievement = checkDevotionalFirstComplete();
-    if (devotionalAchievement) {
+    // If streak > 1 the user has clearly completed before — mark silently, never show again.
+    const alreadyPastFirstDay = (streak?.currentStreak ?? 0) > 1 || pendingStreakAchievementRef.current !== null;
+    if (devotionalAchievement && !alreadyPastFirstDay) {
       setTimeout(() => {
         markAchievementSeen(devotionalAchievement.id);
         setCurrentAchievement(devotionalAchievement);
       }, 800);
-    } else if (pendingStreakAchievementRef.current) {
+      return;
+    }
+    if (devotionalAchievement) markAchievementSeen(devotionalAchievement.id);
+    if (pendingStreakAchievementRef.current) {
       const streakAchievement = pendingStreakAchievementRef.current;
       pendingStreakAchievementRef.current = null;
       setTimeout(() => {
@@ -2084,26 +2089,10 @@ export default function Devotional() {
                       Stay here for a moment if you need to.
                     </p>
                     {!prayerLoading && (
-                      <>
-                        <div className="mt-6 flex items-center justify-center">
-                          <button
-                            data-testid="button-remember-verse"
-                            onClick={handleToggleMemory}
-                            className={`inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-full border transition-all ${
-                              verseInMemory
-                                ? "text-amber-500 bg-amber-400/10 border-amber-400/40 dark:bg-amber-950/40"
-                                : "text-amber-400/80 border-amber-400/25 hover:text-amber-400 hover:bg-amber-400/8 hover:border-amber-400/45"
-                            }`}
-                          >
-                            <Star className={`w-4 h-4 transition-all ${verseInMemory ? "fill-amber-400 text-amber-400 scale-110" : "text-amber-400/70"}`} />
-                            {verseInMemory ? "Remembered" : "Remember this verse"}
-                          </button>
-                        </div>
-                        <div className="mt-4 flex items-center gap-4">
-                          <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
-                          <ListenButton text={prayerContent} label="Listen quietly" />
-                        </div>
-                      </>
+                      <div className="mt-4 flex items-center gap-4">
+                        <ShareButton title={`Prayer — ${verse.reference}`} text={prayerContent} className="text-[12px] font-semibold" />
+                        <ListenButton text={prayerContent} label="Listen quietly" />
+                      </div>
                     )}
                   </motion.div>
                 )}
@@ -2472,6 +2461,7 @@ export default function Devotional() {
                     { label: "Reflection", available: !!reflectionContent, saved: savedReflection },
                     { label: "Prayer", available: !!prayerContent, saved: savedPrayer },
                     ...(gratitudePrayer ? [{ label: "Closing Prayer", available: true, saved: savedGratitude }] : []),
+                    { label: "Memory", available: !!verse?.text, saved: verseInMemory },
                   ].map(({ label, available, saved }) => (
                     <div key={label} className="flex items-center gap-1.5">
                       <div className={`w-3 h-3 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-all ${saved ? "bg-amber-500 border-amber-500" : "border-amber-300/80 dark:border-amber-600"}`}>
@@ -2491,13 +2481,15 @@ export default function Devotional() {
                     (savedVerse || !verse?.text) &&
                     (savedReflection || !reflectionContent) &&
                     (savedPrayer || !prayerContent) &&
-                    (!gratitudePrayer || savedGratitude)
+                    (!gratitudePrayer || savedGratitude) &&
+                    (verseInMemory || !verse?.text)
                   }
                   onClick={() => {
                     if (!savedVerse && verse?.text) saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date });
                     if (!savedReflection && reflectionContent) saveMutation.mutate({ type: "reflection", content: reflectionContent, reference: verse?.reference, verseDate: verse?.date });
                     if (!savedPrayer && prayerContent) saveMutation.mutate({ type: "prayer", content: prayerContent, reference: verse?.reference, verseDate: verse?.date });
                     if (!savedGratitude && gratitudePrayer) { saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse?.reference, verseDate: verse?.date }); setSavedGratitude(true); }
+                    if (!verseInMemory && verse?.text) handleToggleMemory();
                   }}
                 >
                   {saveMutation.isPending

@@ -19,7 +19,11 @@ export function isLateNight(): boolean {
 }
 
 export function getNightTimeLabel(): string {
-  return getEasternTimeLabel();
+  return new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 // A gentle, quiet opening for the late-night context —

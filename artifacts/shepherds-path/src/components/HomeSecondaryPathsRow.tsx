@@ -65,7 +65,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
                 marginTop: "2px",
               }}
             >
-              When you need more than reading
+              When you're carrying something
             </p>
           </div>
           <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />

@@ -5,7 +5,6 @@ import { isProVerifiedLocally } from "@/lib/proStatus";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Lock, Sparkles, Pencil } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { navigateBackToHomePaths } from "@/lib/homePathsNav";
 
 // Warm, contemplative photo — sunlight through forest canopy
@@ -34,13 +33,6 @@ export default function PrayerPortraitPage() {
               />
               <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, transparent 38%, transparent 52%, rgba(13,10,26,1) 100%)" }} />
             </div>
-
-            {/* Back button */}
-            <BackButton
-              backToPaths
-              testId="button-back-prayer-portrait"
-              className="absolute top-3 left-4 z-10"
-            />
 
             {/* Icon badge — bleeds out of the strip, NOT clipped */}
             <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 z-10">

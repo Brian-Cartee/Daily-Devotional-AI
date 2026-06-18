@@ -10,7 +10,7 @@ export const EXPLORE_PATH_VARIANT: Record<string, ShortcutIconVariant> = {
   "/prayer-wall": "prayer",
   "/reading-plans": "walk",
   "/study": "study",
-  "/read": "deeper",
+  "/read": "media",
   "/stories": "media",
   "/trivia": "study",
   "/prayer-portrait": "portrait",

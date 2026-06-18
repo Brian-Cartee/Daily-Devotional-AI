@@ -402,17 +402,11 @@ export default function DisplayMode() {
             transition={{ duration: 0.3 }}
             className="absolute inset-0 pointer-events-none"
           >
-            {/* Top bar */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-5">
-              <Link href="/" onClick={() => markReturnToHomePaths()} className="pointer-events-auto">
-                <span className="text-[10px] text-white/25 uppercase tracking-widest font-semibold hover:text-white/50 transition-colors">
-                  ← Home
-                </span>
-              </Link>
-
+            {/* Top bar — minimal; this is a shared/TV screen */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-end px-6 pt-5 gap-3">
               {/* Cast button */}
               <button
-                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/40 hover:text-white/70 hover:border-white/20 transition-colors"
+                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/35 hover:text-white/65 hover:border-white/20 transition-colors"
                 onClick={e => { e.stopPropagation(); resetUI(); triggerCast(() => setShowCast(true)); }}
                 data-testid="btn-cast-display"
               >
@@ -420,18 +414,12 @@ export default function DisplayMode() {
                 <span className="text-[10px] uppercase tracking-widest font-semibold">Cast</span>
               </button>
 
-              {/* Trial / Pro badge */}
-              {isInTrial ? (
-                <Link href="/upgrade" className="pointer-events-auto">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-amber-400/20 bg-amber-400/5 text-amber-300/60 hover:text-amber-300/90 transition-colors">
-                    {trialDaysLeft === 1 ? "Last free day" : `${trialDaysLeft} free days left`}
-                  </span>
-                </Link>
-              ) : (
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-purple-400/20 bg-purple-400/5 text-purple-300/50">
-                  Pro
+              {/* Exit — unobtrusive text link, far right */}
+              <Link href="/" onClick={() => markReturnToHomePaths()} className="pointer-events-auto">
+                <span className="text-[10px] text-white/20 uppercase tracking-widest font-semibold hover:text-white/45 transition-colors">
+                  Exit
                 </span>
-              )}
+              </Link>
             </div>
 
             {/* Tap hint */}

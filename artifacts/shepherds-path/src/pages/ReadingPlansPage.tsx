@@ -155,15 +155,6 @@ export default function ReadingPlansPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
 
-        {/* Back — hidden on intake-pace which has its own inline back button */}
-        {phase !== "intake-pace" && (
-          <BackButton
-            testId="button-back-reading-plans"
-            backToPaths
-            className="mb-6"
-          />
-        )}
-
         <AnimatePresence mode="wait">
 
           {/* ── PHASE 1a: Where are you? ── */}

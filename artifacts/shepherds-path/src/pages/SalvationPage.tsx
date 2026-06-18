@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { Heart, ChevronDown, ArrowRight, BookOpen, Compass, Sun, Sunrise, Check } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 
 const SALVATION_MOMENT_KEY = "sp_salvation_moment";
@@ -152,13 +151,6 @@ export default function SalvationPage() {
         {/* Deep overlay */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.80) 0%, rgba(20,8,50,0.18) 45%, rgba(10,5,28,0.88) 100%)" }} />
         <div className="absolute inset-x-0 bottom-0 h-2/3" style={{ background: "linear-gradient(to top, rgba(245,158,11,0.12) 0%, transparent 100%)" }} />
-
-        {/* Back button */}
-        <BackButton
-          backToPaths
-          testId="button-back-salvation"
-          className="absolute top-[62px] left-4 z-10"
-        />
 
         {/* Hero text — centered, bottom-anchored */}
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-10 px-6 text-center">
