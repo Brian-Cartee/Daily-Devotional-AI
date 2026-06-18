@@ -39,7 +39,7 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_NAV_ITEMS = [
-  { href: "/", label: "For You", icon: Home, bookmark: null, navId: "for-you" },
+  { href: "/", label: "Home", icon: Home, bookmark: null, navId: "for-you" },
   {
     href: "/devotional",
     label: "Today",
@@ -72,7 +72,7 @@ function BottomNavVisual({
     return (
       <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
         <Icon className="w-[17px] h-[17px] text-white shrink-0" aria-hidden />
-        <span className="text-[12px] font-bold text-white leading-none">{label}</span>
+        <span className="text-[12px] font-bold text-white leading-none whitespace-nowrap">{label}</span>
       </div>
     );
   }
@@ -420,21 +420,21 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                 left: 0,
                 right: 0,
                 zIndex: 9998,
-                paddingBottom: "env(safe-area-inset-bottom, 0px)",
                 backgroundColor: "rgba(9, 9, 11, 0.92)",
                 borderTop: "1px solid rgba(255,255,255,0.10)",
               }
-            : { paddingBottom: "env(safe-area-inset-bottom, 0px)" }
+            : undefined
         }
         className={inNativeApp ? "sm:hidden" : "sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/82 backdrop-blur-xl border-t border-white/10"}
       >
+        {/* Content row — fixed 34px, no safe-area padding here */}
         <div
           style={
             inNativeApp
-              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "38px", paddingLeft: "2px", paddingRight: "2px" }
+              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "34px", paddingLeft: "2px", paddingRight: "2px" }
               : undefined
           }
-          className={inNativeApp ? undefined : "flex items-center justify-around h-[38px] px-0.5"}
+          className={inNativeApp ? undefined : "flex items-center justify-around h-[34px] px-0.5"}
         >
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";
@@ -496,6 +496,8 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
             );
           })}
         </div>
+        {/* Safe-area fill — sits below the content row, reads as page margin not toolbar */}
+        <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
       </nav>
 
       <AnimatePresence>

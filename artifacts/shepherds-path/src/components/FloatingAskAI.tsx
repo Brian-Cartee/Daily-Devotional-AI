@@ -79,7 +79,7 @@ const FAB_BOTTOM_DESKTOP =
 const FAB_BOTTOM_MOBILE_HOME =
   "calc(0.75rem + env(safe-area-inset-bottom, 0px))";
 const FAB_BOTTOM_MOBILE_INNER =
-  "calc(3.75rem + env(safe-area-inset-bottom, 0px))";
+  "calc(3.5rem + env(safe-area-inset-bottom, 0px))";
 
 export function FloatingAskAI() {
   const [location, navigate] = useLocation();
