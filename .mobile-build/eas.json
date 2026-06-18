@@ -1,8 +1,7 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "appVersionSource": "local",
-    "projectRoot": ".mobile-build"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {

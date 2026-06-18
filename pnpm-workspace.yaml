@@ -4,6 +4,7 @@ packages:
   - lib/integrations/*
   - scripts
   - packages/*
+  - .mobile-build
 
 autoInstallPeers: false
 
