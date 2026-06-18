@@ -942,6 +942,19 @@ export default function GuidancePage() {
     }
   };
 
+  const handlePhase1Skip = async () => {
+    if (phase2Loading || !phase1Response || phase2Started) return;
+    setPhase2Loading(true);
+    setPhase2Started(true);
+    setConversationPhase(2);
+    setIsReflecting(true);
+    setTimeout(() => setIsReflecting(false), 700);
+    startPhase2(null);
+    const initialUserMsg: Message = { role: "user", content: situation };
+    await streamResponse([initialUserMsg]);
+    setPhase2Loading(false);
+  };
+
   const handlePhase1Continue = async () => {
     const reply = phase1UserReply.trim();
     if (!reply || phase2Loading || !phase1Response || phase2Started) return;
@@ -1339,7 +1352,7 @@ export default function GuidancePage() {
                 className="py-6 mb-2"
               >
                 <p className="text-[15px] text-foreground/65 italic leading-relaxed">
-                  Reading this carefully…
+                  Sitting with what you shared…
                 </p>
               </motion.div>
             )}
@@ -1425,7 +1438,16 @@ export default function GuidancePage() {
                     data-testid="input-guidance-phase1-reply"
                     className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
                   />
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => void handlePhase1Skip()}
+                      disabled={phase2Loading}
+                      data-testid="button-guidance-phase1-skip"
+                      className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors disabled:opacity-40"
+                    >
+                      Just walk with me →
+                    </button>
                     <button
                       type="button"
                       onClick={() => void handlePhase1Continue()}
@@ -2183,14 +2205,14 @@ export default function GuidancePage() {
             )}
           </AnimatePresence>
 
-          {/* Release Moment — a quiet word of release after everything has arrived */}
+          {/* Release Moment — quiet word of release; appears whether or not journey loaded */}
           <AnimatePresence>
-            {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && journey && (
+            {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && (
               <motion.div
                 key="release"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 4, duration: 1.2, ease: "easeIn" }}
+                transition={{ delay: 2.5, duration: 1.2, ease: "easeIn" }}
                 className="mt-10 mb-2 text-center"
               >
                 <div className="inline-block w-8 h-px bg-border/40 mb-5" />
@@ -2203,12 +2225,6 @@ export default function GuidancePage() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 4 && (
-            <div className="mt-8 mb-4">
-              <ShareInviteCard variant="compact" />
-            </div>
-          )}
 
           <div ref={bottomRef} />
         </div>
