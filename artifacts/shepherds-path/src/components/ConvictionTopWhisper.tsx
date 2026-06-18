@@ -24,23 +24,22 @@ export function ConvictionTopWhisper() {
       className={nativeShell || compact ? undefined : `${topMoreMenuButtonClass(false)} shrink-0`}
       style={nativeShell || compact ? topMoreMenuButtonStyle(false) : undefined}
     >
-      {/* Hand outline + filled red heart overlaid on the heart portion of the glyph */}
-      <span style={{ position: "relative", display: "inline-flex", width: "18px", height: "18px" }}>
-        <HandHeart style={{ width: "18px", height: "18px", color: "rgba(255,255,255,0.92)" }} strokeWidth={2.1} />
-        <Heart
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: "0px",
-            right: "0px",
-            width: "9px",
-            height: "9px",
-            color: "rgb(239,68,68)",
-            fill: "rgb(239,68,68)",
-            filter: "drop-shadow(0 0 1.5px rgba(0,0,0,0.6))",
-          }}
-        />
-      </span>
+      <HandHeart style={{ width: "18px", height: "18px", color: "rgba(255,255,255,0.92)" }} strokeWidth={2.1} />
+      {/* Filled red heart overlaid precisely on the heart portion of the HandHeart glyph */}
+      <Heart
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: "7px",
+          right: "7px",
+          width: "9px",
+          height: "9px",
+          color: "rgb(220,38,38)",
+          fill: "rgb(220,38,38)",
+          filter: "drop-shadow(0 0 2px rgba(0,0,0,0.7))",
+          pointerEvents: "none",
+        }}
+      />
     </button>
   );
 }
