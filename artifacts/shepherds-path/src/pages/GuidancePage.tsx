@@ -196,6 +196,9 @@ export default function GuidancePage() {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [heartListening, setHeartListening] = useState(false);
   const heartRecRef = useRef<any>(null);
+  const [phase1Listening, setPhase1Listening] = useState(false);
+  const [phase1Interim, setPhase1Interim] = useState("");
+  const phase1RecRef = useRef<any>(null);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -833,6 +836,44 @@ export default function GuidancePage() {
     }, 80);
   }, [streamingText, isSending, messages]);
 
+  const togglePhase1Voice = () => {
+    if (phase1Listening) {
+      phase1RecRef.current?.stop();
+      setPhase1Listening(false);
+      setPhase1Interim("");
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    phase1RecRef.current = rec;
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (e: any) => {
+      let interim = "";
+      let final = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (final) setPhase1UserReply(prev => (prev ? `${prev} ${final}` : final).trim());
+      setPhase1Interim(interim);
+    };
+    rec.onend = () => {
+      setPhase1Listening(false);
+      setPhase1Interim("");
+      setPhase1UserReply(prev => {
+        const text = prev.trim();
+        if (text.length > 8) setTimeout(() => void handlePhase1Continue(), 1200);
+        return prev;
+      });
+    };
+    rec.onerror = () => { setPhase1Listening(false); setPhase1Interim(""); };
+    setPhase1Listening(true);
+    rec.start();
+  };
+
   const toggleFollowUpVoice = () => {
     if (isListening) { setIsListening(false); return; }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -1327,19 +1368,63 @@ export default function GuidancePage() {
 
               {phase1Complete && !phase2Started && (
                 <div className="mt-5 space-y-3">
+                  {/* Voice-first reply */}
+                  {hasSpeechSupport && (
+                    <div className="flex flex-col items-center py-2">
+                      <button
+                        type="button"
+                        onClick={togglePhase1Voice}
+                        data-testid="button-guidance-phase1-voice"
+                        disabled={isSending || phase2Loading}
+                        className="relative flex flex-col items-center justify-center w-20 h-20 rounded-full transition-all active:scale-95 disabled:opacity-40"
+                        style={{
+                          background: phase1Listening
+                            ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(239,68,68,0.06) 100%)"
+                            : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.06) 100%)",
+                          border: phase1Listening
+                            ? "2px solid rgba(239,68,68,0.55)"
+                            : "2px solid rgba(139,92,246,0.30)",
+                        }}
+                      >
+                        {phase1Listening && (
+                          <span className="absolute inset-0 rounded-full animate-ping"
+                            style={{ background: "rgba(239,68,68,0.15)" }} />
+                        )}
+                        {phase1Listening
+                          ? <MicOff className="w-7 h-7 text-red-400 relative z-10" />
+                          : <Mic className="w-7 h-7 text-violet-400 relative z-10" />
+                        }
+                      </button>
+                      <p className="mt-2 text-[12px] text-muted-foreground/70 font-medium">
+                        {phase1Listening ? "Listening — tap to stop" : "Tap to speak"}
+                      </p>
+                      {phase1Listening && phase1Interim && (
+                        <p className="mt-1.5 text-[13px] text-muted-foreground/55 italic text-center max-w-[260px] leading-snug">
+                          {phase1Interim}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border/50" />
+                    <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.16em]">
+                      {hasSpeechSupport ? "or type below" : "your reply"}
+                    </span>
+                    <div className="flex-1 h-px bg-border/50" />
+                  </div>
+
                   <textarea
                     value={phase1UserReply}
                     onChange={(e) => setPhase1UserReply(e.target.value)}
                     onKeyDown={handlePhase1KeyDown}
                     placeholder="Keep going... there's no right answer."
-                    rows={3}
+                    rows={2}
                     disabled={isSending || phase2Loading}
                     data-testid="input-guidance-phase1-reply"
-                    className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
+                    className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
                   />
-                  <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
-                    One more thought and we&apos;ll walk through this together.
-                  </p>
                   <div className="flex justify-end">
                     <button
                       type="button"
