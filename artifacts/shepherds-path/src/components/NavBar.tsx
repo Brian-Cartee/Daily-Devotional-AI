@@ -79,7 +79,7 @@ function BottomNavVisual({
 
   return (
     <div className="relative flex items-center justify-center w-10 h-10 rounded-xl">
-      <Icon className="w-[19px] h-[19px] text-zinc-300/85" aria-hidden />
+      <Icon className="w-[17px] h-[17px] text-zinc-300/85" aria-hidden />
       {hasPlace && (
         <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
       )}
