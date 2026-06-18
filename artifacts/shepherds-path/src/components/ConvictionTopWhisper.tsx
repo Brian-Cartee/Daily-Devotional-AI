@@ -28,8 +28,8 @@ export function ConvictionTopWhisper() {
         style={{
           width: "22px",
           height: "22px",
-          color: "rgb(220,38,38)",
-          fill: "rgb(220,38,38)",
+          color: "rgba(255,255,255,0.92)",
+          fill: "rgba(255,255,255,0.92)",
           filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))",
         }}
       />

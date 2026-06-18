@@ -70,16 +70,9 @@ function BottomNavVisual({
 }) {
   if (active) {
     return (
-      <div
-        className="flex items-center gap-1 px-3 py-1 rounded-full ring-1 shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
-        style={{
-          backgroundColor: "rgba(212,170,60,0.92)",
-          borderColor: "rgba(212,170,60,0.40)",
-          ringColor: "rgba(0,0,0,0.40)",
-        }}
-      >
-        <Icon className="w-[17px] h-[17px] shrink-0" style={{ color: "rgba(20,14,4,0.90)" }} aria-hidden />
-        <span className="text-[12px] font-bold leading-none whitespace-nowrap" style={{ color: "rgba(20,14,4,0.90)" }}>{label}</span>
+      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+        <Icon className="w-[17px] h-[17px] text-white shrink-0" aria-hidden />
+        <span className="text-[12px] font-bold text-white leading-none whitespace-nowrap">{label}</span>
       </div>
     );
   }
