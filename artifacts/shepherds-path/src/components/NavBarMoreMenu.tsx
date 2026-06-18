@@ -40,6 +40,7 @@ function MenuRow({
   testId,
   accent,
   nudge,
+  done,
 }: {
   icon: LucideIcon;
   label: string;
@@ -49,6 +50,7 @@ function MenuRow({
   testId?: string;
   accent?: boolean;
   nudge?: boolean;
+  done?: boolean;
 }) {
   const className =
     "w-full flex items-center gap-3 px-3.5 py-3 min-h-[48px] text-sm hover:bg-muted/70 active:bg-muted transition-colors text-left";
@@ -66,6 +68,11 @@ function MenuRow({
           <span className="text-[11px] text-muted-foreground leading-snug block mt-0.5">{hint}</span>
         )}
       </div>
+      {done && (
+        <span style={{ color: "rgb(34,197,94)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
+          ✓
+        </span>
+      )}
     </>
   );
 
@@ -177,6 +184,7 @@ export function NavBarMoreMenu({
               hint={rhythmDone ? "Gentle reminders & morning email" : "Tap to set up your reminders ✦"}
               testId="button-reminders-open"
               nudge={!rhythmDone}
+              done={rhythmDone}
               onClick={() => {
                 onClose();
                 onOpenNotifications();
@@ -190,6 +198,7 @@ export function NavBarMoreMenu({
               hint={emailDone ? "Morning verse in your inbox" : "Tap to subscribe to daily Scripture ✦"}
               testId="button-subscribe-toggle"
               nudge={!emailDone}
+              done={emailDone}
               onClick={() => {
                 onClose();
                 onOpenEmail();

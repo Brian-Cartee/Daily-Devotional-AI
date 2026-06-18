@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpen,
   Heart,
+  Home,
   Settings2,
   Sparkles,
   X,
@@ -267,6 +268,14 @@ export default function PrayerClosetPage() {
           className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-2 sm:px-3 pb-1.5 pt-[max(0.35rem,env(safe-area-inset-top))] bg-[#07050f]/92 backdrop-blur-md border-b border-white/5"
           data-testid="closet-page-header"
         >
+            <Link
+              href="/"
+              aria-label="Go home"
+              className="relative z-50 flex items-center justify-center w-11 h-11 rounded-full bg-black/55 border border-white/15 text-white/90 backdrop-blur-sm active:scale-95 shrink-0"
+              style={{ touchAction: "manipulation" }}
+            >
+              <Home className="w-5 h-5" />
+            </Link>
             <div className="flex-1 text-center min-w-0 px-1">
               <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-violet-200/45 truncate">
                 A room set apart
