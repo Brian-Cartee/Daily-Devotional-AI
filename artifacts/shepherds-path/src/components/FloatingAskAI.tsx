@@ -77,9 +77,9 @@ function isPersonalMessage(text: string): boolean {
 const FAB_BOTTOM_DESKTOP =
   "calc(1.5rem + env(safe-area-inset-bottom, 0px))";
 const FAB_BOTTOM_MOBILE_HOME =
-  "calc(0.35rem + env(safe-area-inset-bottom, 0px))";
+  "calc(0.75rem + env(safe-area-inset-bottom, 0px))";
 const FAB_BOTTOM_MOBILE_INNER =
-  "calc(3.35rem + env(safe-area-inset-bottom, 0px))";
+  "calc(3.75rem + env(safe-area-inset-bottom, 0px))";
 
 export function FloatingAskAI() {
   const [location, navigate] = useLocation();
