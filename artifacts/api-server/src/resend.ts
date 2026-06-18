@@ -181,11 +181,7 @@ ${emailPreheader(preheader)}
               You subscribed to daily Scripture from Shepherd&rsquo;s Path.<br />
               Not a substitute for church, counseling, or emergency care.
             </p>
-            <p style="margin:0 0 16px;font-family:${T.sans};font-size:12px;color:${T.textMuted};">
-              Want to go deeper?
-              <a href="${data.appUrl}/pricing" style="color:${T.accent};text-decoration:none;font-weight:600;">Pro removes all limits</a>
-              &mdash; less than $4/mo.
-            </p>
+
             <p style="margin:0 0 20px;font-family:${T.sans};font-size:12px;color:${T.textMuted};">
               <a href="${data.appUrl}/api/unsubscribe?email={{email}}" style="color:${T.accent};text-decoration:underline;">Unsubscribe</a>
               <span style="color:${T.textMuted};"> &middot; </span>
