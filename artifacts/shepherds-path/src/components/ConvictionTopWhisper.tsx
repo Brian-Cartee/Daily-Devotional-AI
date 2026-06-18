@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { HandHeart } from "lucide-react";
+import { HandHeart, Heart } from "lucide-react";
 import { CONVICTION_PANEL_EYEBROW } from "@/content/convictionManifesto";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 import { shouldShowConvictionTab } from "@/lib/convictionTabVisibility";
@@ -22,27 +22,25 @@ export function ConvictionTopWhisper() {
       aria-label={`${CONVICTION_PANEL_EYEBROW} — Scripture, faith, and mission`}
       title={CONVICTION_PANEL_EYEBROW}
       className={nativeShell || compact ? undefined : `${topMoreMenuButtonClass(false)} shrink-0`}
-      style={nativeShell || compact ? { ...topMoreMenuButtonStyle(false), position: "relative" } : { position: "relative" }}
+      style={nativeShell || compact ? topMoreMenuButtonStyle(false) : undefined}
     >
-      <HandHeart className="w-[18px] h-[18px]" strokeWidth={2.1} style={{ color: "rgba(255,255,255,0.92)" }} />
-      {/* Tiny filled red heart badge */}
-      <svg
-        viewBox="0 0 10 10"
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: "2px",
-          right: "2px",
-          width: "8px",
-          height: "8px",
-          filter: "drop-shadow(0 0 2px rgba(0,0,0,0.5))",
-        }}
-      >
-        <path
-          d="M5 8.5C5 8.5 1 5.8 1 3.3a2 2 0 0 1 4-0.6A2 2 0 0 1 9 3.3C9 5.8 5 8.5 5 8.5z"
-          fill="rgb(239,68,68)"
+      {/* Hand outline + filled red heart overlaid on the heart portion of the glyph */}
+      <span style={{ position: "relative", display: "inline-flex", width: "18px", height: "18px" }}>
+        <HandHeart style={{ width: "18px", height: "18px", color: "rgba(255,255,255,0.92)" }} strokeWidth={2.1} />
+        <Heart
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "0px",
+            right: "0px",
+            width: "9px",
+            height: "9px",
+            color: "rgb(239,68,68)",
+            fill: "rgb(239,68,68)",
+            filter: "drop-shadow(0 0 1.5px rgba(0,0,0,0.6))",
+          }}
         />
-      </svg>
+      </span>
     </button>
   );
 }
