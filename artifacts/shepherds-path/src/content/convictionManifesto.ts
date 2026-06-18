@@ -8,7 +8,7 @@ export const CONVICTION_PANEL_EYEBROW = "Our conviction";
 export const CONVICTION_PANEL_TITLE = "Why we exist";
 
 export const CONVICTION_PANEL_SUBTITLE =
-  "A mission-driven team—not a content farm.";
+  "Built for the soul, not for scale.";
 
 export const CONVICTION_SCRIPTURE = {
   title: "Scripture is the authority",
@@ -28,7 +28,7 @@ export const CONVICTION_FAITH_AI = {
 } as const;
 
 export const CONVICTION_MISSION = {
-  title: "Mission & Pro",
+  title: "How we're sustained",
   body: "Shepherd's Path is built as ministry-minded stewardship. Pro memberships and gifts help pay for hosting, Bible audio, and grounded AI so we can keep the threshold generous for the person who cannot pay tonight.",
   closing:
     "If giving is not yours to carry right now, you belong here anyway. Your presence, your prayers, and your honesty with God are enough.",
