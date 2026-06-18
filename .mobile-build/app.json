@@ -18,7 +18,8 @@
       "requireFullScreen": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Shepherd's Path does not use the camera.",
-        "NSMicrophoneUsageDescription": "Shepherd's Path uses the microphone in Sermon Mode to detect scripture references as your pastor speaks.",
+        "NSMicrophoneUsageDescription": "Shepherd's Path uses the microphone to let you speak your heart — in Talk It Through and Sermon Mode.",
+        "NSSpeechRecognitionUsageDescription": "Shepherd's Path uses speech recognition so you can speak instead of type when sharing what's on your heart.",
         "NSPhotoLibraryUsageDescription": "Shepherd's Path does not access your photo library.",
         "ITSAppUsesNonExemptEncryption": false,
         "UIRequiresFullScreen": true

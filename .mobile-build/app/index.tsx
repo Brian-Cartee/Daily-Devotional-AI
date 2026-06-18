@@ -527,6 +527,7 @@ export default function MainScreen() {
         {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
+        mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
         cacheEnabled={false}

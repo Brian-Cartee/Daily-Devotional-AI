@@ -57,7 +57,6 @@ import {
 } from "@/lib/guidanceVersePrayer";
 
 import { useToast } from "@/hooks/use-toast";
-import { isNativeWebViewShell } from "@/lib/platform";
 
 interface VerseResult {
   reference: string;
@@ -207,10 +206,7 @@ export default function GuidancePage() {
   const [showAiPause, setShowAiPause] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
   const [isListening, setIsListening] = useState(false);
-  // iOS WKWebView exposes webkitSpeechRecognition but it doesn't actually work
-  const hasSpeechSupport = typeof window !== "undefined"
-    && !isNativeWebViewShell()
-    && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
   const framework = getTodayFramework();
   const queryClient = useQueryClient();
   const { data: dailyVerse } = useDailyVerse();
