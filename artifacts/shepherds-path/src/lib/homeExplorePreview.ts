@@ -40,8 +40,10 @@ export function buildHomeExplorePreviewHrefs(
   exclude: ReadonlySet<string>,
   count = HOME_EXPLORE_PREVIEW_COUNT,
 ): string[] {
-  const pinned = getPinnedPaths().filter((h) => !exclude.has(h));
+  // Pinned paths always show — they override the exclude filter
+  const pinned = getPinnedPaths();
   const picked = [...pinned];
+  // Fill remaining slots from the pool (respecting excludes)
   for (const href of HOME_EXPLORE_PREVIEW_POOL) {
     if (picked.length >= count) break;
     if (exclude.has(href) || picked.includes(href)) continue;

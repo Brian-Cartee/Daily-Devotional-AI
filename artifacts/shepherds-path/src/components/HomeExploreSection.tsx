@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Pin, PinOff } from "lucide-react";
+import { ChevronDown, Pin } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 import { buildHomeExplorePreviewHrefs, getPinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
@@ -103,20 +103,18 @@ function PathCard({
           position: "absolute",
           top: "5px",
           right: "5px",
-          padding: "3px",
+          padding: "4px",
           borderRadius: "6px",
-          background: pinned ? "rgba(196,78,224,0.20)" : "rgba(255,255,255,0.06)",
-          border: "none",
+          background: pinned ? "rgba(34,197,94,0.22)" : "rgba(34,197,94,0.10)",
+          border: `1px solid ${pinned ? "rgba(34,197,94,0.50)" : "rgba(34,197,94,0.25)"}`,
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: pinned ? "rgba(216,138,240,0.95)" : "rgba(255,255,255,0.30)",
+          color: pinned ? "rgb(74,222,128)" : "rgba(74,222,128,0.60)",
         }}
       >
-        {pinned
-          ? <PinOff style={{ width: "10px", height: "10px" }} />
-          : <Pin style={{ width: "10px", height: "10px" }} />}
+        <Pin style={{ width: "10px", height: "10px", fill: pinned ? "rgb(74,222,128)" : "none" }} />
       </button>
     </div>
   );
