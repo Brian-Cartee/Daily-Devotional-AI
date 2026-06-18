@@ -311,7 +311,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                     marginRight: "auto",
                     paddingLeft: "12px",
                     paddingRight: "12px",
-                    height: "44px",
+                    height: "42px",
                     display: "flex",
                     alignItems: "center",
                     pointerEvents: "none",
@@ -431,10 +431,10 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         <div
           style={
             inNativeApp
-              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "44px", paddingLeft: "2px", paddingRight: "2px" }
+              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "42px", paddingLeft: "2px", paddingRight: "2px" }
               : undefined
           }
-          className={inNativeApp ? undefined : "flex items-center justify-around h-[44px] px-0.5"}
+          className={inNativeApp ? undefined : "flex items-center justify-around h-[42px] px-0.5"}
         >
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";
