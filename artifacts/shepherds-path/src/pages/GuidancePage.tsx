@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from "react";
 import { useSearch, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw, Lock } from "lucide-react";
 import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import {
@@ -1687,21 +1687,33 @@ export default function GuidancePage() {
                           </p>
 
                           <div className="flex items-center gap-3 flex-wrap">
-                            <button
-                              onClick={() => tts.toggle(prayer!, "nova")}
-                              disabled={tts.loading}
-                              data-testid="button-pray-aloud"
-                              className="flex items-center gap-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold px-4 py-2 transition-colors disabled:opacity-60 shadow-sm"
-                            >
-                              {tts.loading ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : tts.playing ? (
-                                <VolumeX className="w-3.5 h-3.5" />
-                              ) : (
-                                <Volume2 className="w-3.5 h-3.5" />
-                              )}
-                              {tts.playing ? "Stop" : "Pray this"}
-                            </button>
+                            {isProVerifiedLocally() ? (
+                              <button
+                                onClick={() => tts.toggle(prayer!, "nova")}
+                                disabled={tts.loading}
+                                data-testid="button-pray-aloud"
+                                className="flex items-center gap-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-semibold px-4 py-2 transition-colors disabled:opacity-60 shadow-sm"
+                              >
+                                {tts.loading ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : tts.playing ? (
+                                  <VolumeX className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                )}
+                                {tts.playing ? "Stop" : "Pray this"}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setShowUpgrade(true)}
+                                data-testid="button-pray-aloud-upgrade"
+                                className="flex items-center gap-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-400 text-[13px] font-semibold px-4 py-2 transition-colors border border-amber-400/30"
+                              >
+                                <Lock className="w-3.5 h-3.5" />
+                                Pray this
+                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">Pro</span>
+                              </button>
+                            )}
 
                             <button
                               onClick={savePrayerToJournal}
@@ -1750,12 +1762,24 @@ export default function GuidancePage() {
                 )}
                 {showPhase2Content && responseComplete && (
                   <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <ListenButton
-                      text={cleanResponse(assistantMessages[0]?.content ?? "")}
-                      label="Hear this"
-                      size="sm"
-                      data-testid="button-guidance-listen-text"
-                    />
+                    {isProVerifiedLocally() ? (
+                      <ListenButton
+                        text={cleanResponse(assistantMessages[0]?.content ?? "")}
+                        label="Hear this"
+                        size="sm"
+                        data-testid="button-guidance-listen-text"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setShowUpgrade(true)}
+                        data-testid="button-guidance-listen-text-upgrade"
+                        className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                      >
+                        <Lock className="w-3 h-3" />
+                        Hear this
+                        <span className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">Pro</span>
+                      </button>
+                    )}
                     {verse && verseDisplay && assistantMessages[0]?.content && (
                       <ShareVerseTrigger
                         text={verseDisplay.text}
