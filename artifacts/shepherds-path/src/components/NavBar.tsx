@@ -420,14 +420,14 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                 left: 0,
                 right: 0,
                 zIndex: 9998,
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
                 backgroundColor: "rgba(9, 9, 11, 0.92)",
                 borderTop: "1px solid rgba(255,255,255,0.10)",
               }
-            : undefined
+            : { paddingBottom: "env(safe-area-inset-bottom, 0px)" }
         }
         className={inNativeApp ? "sm:hidden" : "sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/82 backdrop-blur-xl border-t border-white/10"}
       >
-        {/* Content row — fixed 34px, no safe-area padding here */}
         <div
           style={
             inNativeApp
@@ -496,8 +496,6 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
             );
           })}
         </div>
-        {/* Safe-area fill — sits below the content row, reads as page margin not toolbar */}
-        <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
       </nav>
 
       <AnimatePresence>
