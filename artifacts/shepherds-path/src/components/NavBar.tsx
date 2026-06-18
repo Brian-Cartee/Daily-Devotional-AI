@@ -70,16 +70,16 @@ function BottomNavVisual({
 }) {
   if (active) {
     return (
-      <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-        <Icon className="w-[18px] h-[18px] text-white shrink-0" aria-hidden />
-        <span className="text-[13px] font-bold text-white leading-none">{label}</span>
+      <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+        <Icon className="w-[17px] h-[17px] text-white shrink-0" aria-hidden />
+        <span className="text-[12px] font-bold text-white leading-none">{label}</span>
       </div>
     );
   }
 
   return (
-    <div className="relative flex items-center justify-center w-11 h-11 rounded-xl">
-      <Icon className="w-[22px] h-[22px] text-zinc-300/85" aria-hidden />
+    <div className="relative flex items-center justify-center w-10 h-10 rounded-xl">
+      <Icon className="w-[19px] h-[19px] text-zinc-300/85" aria-hidden />
       {hasPlace && (
         <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
       )}
@@ -311,7 +311,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                     marginRight: "auto",
                     paddingLeft: "12px",
                     paddingRight: "12px",
-                    height: "56px",
+                    height: "48px",
                     display: "flex",
                     alignItems: "center",
                     pointerEvents: "none",
@@ -431,10 +431,10 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         <div
           style={
             inNativeApp
-              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "56px", paddingLeft: "2px", paddingRight: "2px" }
+              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "48px", paddingLeft: "2px", paddingRight: "2px" }
               : undefined
           }
-          className={inNativeApp ? undefined : "flex items-center justify-around h-[56px] px-0.5"}
+          className={inNativeApp ? undefined : "flex items-center justify-around h-[48px] px-0.5"}
         >
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";
