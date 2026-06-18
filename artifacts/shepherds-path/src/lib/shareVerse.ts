@@ -190,7 +190,7 @@ export function shareImageFilename(reference: string): string {
 export async function shareImageBlob(
   blob: Blob,
   opts: { filename: string; title?: string; text: string; url?: string },
-): Promise<"shared" | "saved" | "cancelled" | "failed"> {
+): Promise<"shared" | "copied" | "saved" | "cancelled" | "failed"> {
   const file = new File([blob], opts.filename, { type: "image/png" });
   const canTryFiles = !navigator.canShare || navigator.canShare({ files: [file] });
   if (canTryFiles && navigator.share) {

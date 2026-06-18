@@ -41,7 +41,6 @@ async function fetchOnce(
     body: JSON.stringify({
       situation: situation.trim(),
       ...(phase1UserReply?.trim() ? { phase1UserReply: phase1UserReply.trim() } : {}),
-      sessionId: getSessionId(),
       userName: getUserName() ?? undefined,
       ...apiSessionExtras(),
     }),
