@@ -16,10 +16,10 @@ export function pickHomeReturnOverlay(options: {
   const { blockHomeOverlays, inNativeApp, homeVisitAfterThreshold, chapelWeekFocus, forceIntro } =
     options;
 
-  // Never show an overlay when navigating back within the same session (e.g. after devotional).
-  // In native iOS WebView, sessionStorage persists across background/foreground, so
-  // isReturningHome() is unreliable there — skip this check for native.
-  if (!inNativeApp && isReturningHome()) return null;
+  // Never show an overlay when navigating back within the same session (e.g. tapping
+  // the Home button from inside the app). markReturningHome() sets this flag — if it's
+  // set, the user is navigating internally, not doing a cold launch.
+  if (isReturningHome()) return null;
 
   // sacredFirstHome (first-ever home visit post-onboarding) blocks everything —
   // BeginTodaysWalk handles that moment. homeVisitAfterThreshold === 1 is that visit.
