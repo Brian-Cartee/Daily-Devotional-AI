@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Shield, Star, Plus, X, ChevronDown, ChevronUp, Pencil, Check, RefreshCw, Swords } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -457,39 +456,28 @@ export default function IronCirclePage() {
   return (
     <div className="min-h-screen bg-background pb-24">
 
-      {/* Hero */}
+      {/* Hero — typographic, no stock photo */}
       <div className="relative pt-2">
-        <div className="relative w-full overflow-hidden" style={{ minHeight: 280 }}>
-          {/* Friends photo — visible at bottom, fades into purple at top */}
-          <img
-            src="/hero-iron-circle.png"
-            alt="Friends in an Iron Circle"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-            style={{ objectPosition: "center 30%" }}
-          />
-          {/* Purple gradient — solid at top, fades to reveal photo at bottom */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to bottom, #1e1035 0%, rgba(76,29,149,0.88) 30%, rgba(76,29,149,0.5) 62%, rgba(30,16,53,0.18) 100%)"
-            }}
-          />
+        <div
+          className="relative w-full overflow-hidden"
+          style={{
+            minHeight: 280,
+            background: "linear-gradient(160deg, #120a2e 0%, #1e1035 40%, #2d1060 100%)",
+          }}
+        >
+          {/* Subtle forge glow */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 65% 50% at 50% 60%, rgba(139,92,246,0.22) 0%, transparent 70%)" }} />
           {/* Content */}
           <div className="relative z-10 flex flex-col items-center justify-start text-center px-6 pt-6 pb-8">
-            <BackButton
-              backToPaths
-              testId="button-back-iron-circle"
-              className="absolute top-3 left-3 z-50"
-            />
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 shadow-lg mt-2">
-              <Swords className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mt-2" style={{ background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.40)" }}>
+              <Swords className="w-6 h-6 text-violet-300" />
             </div>
-            <h1 className="text-white text-xl font-extrabold tracking-tight leading-snug drop-shadow-md">
+            <h1 className="text-white text-xl font-extrabold tracking-tight leading-snug">
               Your Iron Circle
             </h1>
             {/* Foundation verse — front and center */}
-            <div className="mt-4 max-w-xs mx-auto bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20">
-              <p className="text-white text-[14px] font-bold leading-snug drop-shadow-sm">
+            <div className="mt-4 max-w-xs mx-auto rounded-2xl px-5 py-3" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)" }}>
+              <p className="text-white text-[14px] font-bold leading-snug">
                 "As iron sharpens iron, so one person sharpens another."
               </p>
               <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mt-1.5">
