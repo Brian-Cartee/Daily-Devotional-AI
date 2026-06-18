@@ -200,6 +200,8 @@ export default function Devotional() {
   const [showAiArt, setShowAiArt] = useState(true);
   const [friendIntercessionDismissed, setFriendIntercessionDismissed] = useState(false);
   const [showPostCompletionCtas, setShowPostCompletionCtas] = useState(false);
+  const [showOptionalReflection, setShowOptionalReflection] = useState(false);
+  const [showOptionalGratitude, setShowOptionalGratitude] = useState(false);
   /** After closing gratitude: null = gentle fork; carry = send-off; stay = daily message + optional depth */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
 
@@ -2117,10 +2119,24 @@ export default function Devotional() {
           {/* OPTIONAL: Personal reflection (after prayer — journal & listen only) */}
           {devotionalCoreComplete && (
             <div
-              className="bg-card border border-border/50 rounded-2xl px-5 py-6 shadow-sm"
+              className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden"
               data-testid="optional-devotional-reflection"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/45 mb-3">
+              {!showOptionalReflection && !reflectionInputSubmitted ? (
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalReflection(true)}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left active:bg-muted/30 transition-colors"
+                >
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60 mb-0.5">Optional</p>
+                    <p className="text-[14px] font-medium text-foreground/80">What struck you about this verse?</p>
+                  </div>
+                  <span className="text-muted-foreground/40 text-lg ml-3">+</span>
+                </button>
+              ) : (
+              <div className="px-5 py-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60 mb-3">
                 Optional
               </p>
               <p className="text-[15px] font-medium text-foreground/90 mb-1 leading-snug">
@@ -2232,18 +2248,35 @@ export default function Devotional() {
                   )}
                 </>
               )}
+              </div>
+              )}
             </div>
           )}
 
           {/* OPTIONAL: Gratitude */}
           {devotionalCoreComplete && (
-          <div className="relative overflow-hidden rounded-2xl px-7 py-7 shadow-sm" style={{ background: "linear-gradient(160deg, hsl(38 80% 6% / 0.5) 0%, hsl(var(--card)) 100%)", border: "1px solid hsl(38 70% 55% / 0.22)" }}>
+          <div className="relative overflow-hidden rounded-2xl shadow-sm" style={{ background: "linear-gradient(160deg, hsl(38 80% 6% / 0.5) 0%, hsl(var(--card)) 100%)", border: "1px solid hsl(38 70% 55% / 0.22)" }}>
             {/* Top warm glow line */}
             <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(217,119,6,0.6), rgba(234,88,12,0.6), transparent)" }} />
             {/* Subtle warm ambient glow top-right */}
             <div className="absolute -top-6 -right-6 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.10) 0%, transparent 70%)", filter: "blur(20px)" }} />
+
+            {!showOptionalGratitude && !gratitudePrayer ? (
+              <button
+                type="button"
+                onClick={() => setShowOptionalGratitude(true)}
+                className="w-full flex items-center justify-between px-7 py-4 text-left active:bg-amber-950/20 transition-colors"
+              >
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500/70 mb-0.5">Optional · Give Thanks</p>
+                  <p className="text-[14px] font-medium text-foreground/80">What feels like a gift today?</p>
+                </div>
+                <span className="text-amber-500/50 text-lg ml-3">+</span>
+              </button>
+            ) : (
+            <div className="px-7 py-7">
             <StepLabel number={4} label="Give thanks" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45 mb-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-500/70 mb-2">
               Optional
             </p>
             <p className="text-[14px] text-muted-foreground mb-4 leading-relaxed">
@@ -2380,6 +2413,8 @@ export default function Devotional() {
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
+            )}
           </div>
           )}
 
@@ -2482,6 +2517,7 @@ export default function Devotional() {
                 window.setTimeout(() => setShowStillness(true), 450);
               }}
               onStay={() => setCompletionPath("stay")}
+              onUpgrade={() => setShowUpgrade(true)}
             />
           )}
 

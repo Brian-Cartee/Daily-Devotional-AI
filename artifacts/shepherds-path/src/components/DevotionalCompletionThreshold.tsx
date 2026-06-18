@@ -1,18 +1,22 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
-import { Sun } from "lucide-react";
+import { Sun, BookOpen, Lock } from "lucide-react";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 
 type Props = {
   onCarry: () => void;
   onStay: () => void;
+  onUpgrade?: () => void;
 };
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 export const DevotionalCompletionThreshold = forwardRef<HTMLDivElement, Props>(function DevotionalCompletionThreshold(
-  { onCarry, onStay },
+  { onCarry, onStay, onUpgrade },
   ref,
 ) {
+  const isPro = isProVerifiedLocally();
+
   return (
     <motion.div
       ref={ref}
@@ -58,14 +62,59 @@ export const DevotionalCompletionThreshold = forwardRef<HTMLDivElement, Props>(f
         </div>
       </button>
 
-      <button
-        type="button"
-        data-testid="btn-devotional-stay-word"
-        onClick={onStay}
-        className="block mx-auto text-[13px] font-medium text-muted-foreground/60 hover:text-primary/80 transition-colors underline-offset-2 hover:underline"
-      >
-        Stay with the Word — I have a few more minutes
-      </button>
+      {isPro ? (
+        <button
+          type="button"
+          data-testid="btn-devotional-stay-word"
+          onClick={onStay}
+          className="w-full rounded-2xl px-5 py-4 text-left transition-all active:scale-[0.99] shadow-sm"
+          style={{
+            background: "linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card)) 100%)",
+            border: "1px solid hsl(var(--border) / 0.6)",
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "hsl(var(--muted) / 0.5)" }}
+            >
+              <BookOpen className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-foreground">Go Deeper — Stay with the Word</p>
+              <p className="text-[12px] text-muted-foreground/75 mt-1 leading-snug">
+                Pastor message, guided reflection, and more.
+              </p>
+            </div>
+          </div>
+        </button>
+      ) : (
+        <button
+          type="button"
+          data-testid="btn-devotional-stay-word-upgrade"
+          onClick={onUpgrade}
+          className="w-full rounded-2xl px-5 py-4 text-left transition-all active:scale-[0.99] shadow-sm"
+          style={{
+            background: "linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card)) 100%)",
+            border: "1px solid hsl(var(--border) / 0.6)",
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "hsl(var(--muted) / 0.5)" }}
+            >
+              <Lock className="w-5 h-5 text-muted-foreground/60" />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-foreground">Go Deeper — Stay with the Word</p>
+              <p className="text-[12px] text-muted-foreground/75 mt-1 leading-snug">
+                Pastor message, guided reflection, and more. <span className="text-primary font-semibold">Pro</span>
+              </p>
+            </div>
+          </div>
+        </button>
+      )}
     </motion.div>
   );
 });
