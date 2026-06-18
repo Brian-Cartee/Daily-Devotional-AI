@@ -3,6 +3,13 @@
 # Usage: bash scripts/deploy-lightsail.sh
 set -euo pipefail
 
+# Ensure npm global bins (including pm2) are on PATH regardless of how the script is invoked
+export PATH="$HOME/.npm/_npx/5f7878ce38f1eb13/node_modules/pm2/bin:$(npm root -g 2>/dev/null || true)/../../bin:$PATH"
+# Also try common global install locations
+for _pm2_path in "$HOME/.npm-global/bin" "$HOME/.local/bin" "/usr/local/bin" "/opt/homebrew/bin"; do
+  [[ -d "$_pm2_path" ]] && export PATH="$_pm2_path:$PATH"
+done
+
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 

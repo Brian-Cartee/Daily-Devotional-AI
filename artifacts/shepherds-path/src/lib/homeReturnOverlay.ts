@@ -2,7 +2,7 @@
 
 import { shouldShowHomeEntry } from "@/components/HomeEntryScreen";
 import { shouldShowWalkthrough } from "@/components/GuidedWalkthrough";
-import { shouldShowSplash, shouldShowWelcomeOverlay } from "@/lib/introState";
+import { shouldShowSplash, shouldShowWelcomeOverlay, isReturningHome } from "@/lib/introState";
 
 export type HomeReturnOverlay = "splash" | "welcome" | "entry" | "walkthrough" | null;
 
@@ -16,16 +16,22 @@ export function pickHomeReturnOverlay(options: {
   const { blockHomeOverlays, inNativeApp, homeVisitAfterThreshold, chapelWeekFocus, forceIntro } =
     options;
 
-  if (blockHomeOverlays) return null;
+  // Never show an overlay when navigating back within the same session (e.g. after devotional).
+  if (isReturningHome()) return null;
+
+  // sacredFirstHome (first-ever home visit post-onboarding) blocks everything —
+  // BeginTodaysWalk handles that moment. homeVisitAfterThreshold === 1 is that visit.
+  // inNativeApp alone does NOT block the daily entry screen — native users need it too.
+  const isSacredFirstHome = blockHomeOverlays && !inNativeApp;
+  if (isSacredFirstHome) return null;
 
   if (forceIntro && !inNativeApp) return "welcome";
 
-  if (shouldShowSplash()) return "splash";
+  if (!inNativeApp && shouldShowSplash()) return "splash";
 
-  // Allow daily entry screen from visit 2 onwards — week-one users need the warm
-  // daily welcome just as much as established users. sacredFirstHome (visit 1) is
-  // handled by BeginTodaysWalk; from visit 2 the HomeEntryScreen takes over daily.
-  const eligibleForEntry = !inNativeApp && homeVisitAfterThreshold > 1;
+  // Daily entry screen eligible from visit 2 onwards, including native app shell.
+  // homeVisitAfterThreshold > 1 naturally guards the first home visit.
+  const eligibleForEntry = homeVisitAfterThreshold > 1;
   const eligibleForOtherLayers = !inNativeApp && !chapelWeekFocus && homeVisitAfterThreshold > 2;
 
   if (!eligibleForEntry && !eligibleForOtherLayers) return null;
