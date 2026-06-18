@@ -464,6 +464,13 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
     setSaving(false);
   }, [settings, sessionId]);
 
+  // Lock body scroll while sheet is open (iOS WebView fix)
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   const pushCards = [
     { icon: Sun, colorIcon: "rgb(245,158,11)", colorBg: "rgba(245,158,11,0.10)", label: "Morning devotional", desc: "Daily word to start your day" },
     { icon: Clock, colorIcon: "rgb(56,189,248)", colorBg: "rgba(56,189,248,0.10)", label: "Midday check-in", desc: "Gentle nudge if you haven't opened yet" },
@@ -485,6 +492,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -492,6 +500,8 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         exit={{ opacity: 0, y: 16 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full sm:max-w-md bg-card border border-border/60 rounded-t-3xl sm:rounded-2xl shadow-2xl mx-0 sm:mx-4 overflow-hidden max-h-[90vh] overflow-y-auto"
+        style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         {/* ── Header ── */}
         <div className="px-5 pt-5 pb-4 flex items-center justify-between sticky top-0 bg-card border-b border-border/30 z-10">
