@@ -113,6 +113,21 @@ if (!mountEl) {
   rootEl.appendChild(mountEl);
 }
 
+declare const __BUILD_HASH__: string;
+
+async function checkForStaleBuildAndReload(): Promise<void> {
+  try {
+    const r = await fetch("/native-manifest.json", { cache: "no-store" });
+    const j: { builtAt?: string } = await r.json();
+    const serverHash = j.builtAt ?? "";
+    if (serverHash && serverHash !== __BUILD_HASH__) {
+      window.location.reload();
+    }
+  } catch {
+    // network unavailable — skip
+  }
+}
+
 async function mountApp() {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
@@ -121,6 +136,7 @@ async function mountApp() {
     removeNativeBootPlaceholder();
   }
   if (native) {
+    await checkForStaleBuildAndReload();
     const bootStatus = document.getElementById("sp-boot-splash-status");
     if (bootStatus) bootStatus.textContent = "Loading…";
     hydrateSubscriberFromUrlParam();

@@ -87,7 +87,7 @@ function swCacheVersionPlugin() {
             const manifestPath = path.resolve(import.meta.dirname, "dist/public/native-manifest.json");
             fs.writeFileSync(
               manifestPath,
-              JSON.stringify({ mainJs: moduleSrc, builtAt: new Date().toISOString() }, null, 2),
+              JSON.stringify({ mainJs: moduleSrc, builtAt: SW_CACHE_VERSION }, null, 2),
               "utf-8",
             );
           }
@@ -125,6 +125,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: basePath,
+    define: {
+      __BUILD_HASH__: JSON.stringify(SW_CACHE_VERSION),
+    },
     plugins: [
       react(),
       runtimeErrorOverlay(),
