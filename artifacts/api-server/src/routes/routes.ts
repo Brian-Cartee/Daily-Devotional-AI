@@ -464,6 +464,29 @@ export async function registerRoutes(
   });
 
   // ── User profile phone ───────────────────────────────────────────────────────
+  app.get("/api/user/pinned-paths", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.json({ paths: [] });
+    try {
+      const paths = await storage.getUserPinnedPaths(sessionId);
+      res.json({ paths });
+    } catch {
+      res.json({ paths: [] });
+    }
+  });
+
+  app.post("/api/user/pinned-paths", async (req, res) => {
+    const { sessionId, paths } = req.body as { sessionId?: string; paths?: string[] };
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    if (!Array.isArray(paths)) return res.status(400).json({ message: "paths must be array" });
+    try {
+      await storage.setUserPinnedPaths(sessionId, paths.slice(0, 4));
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
   app.get("/api/user-phone", async (req, res) => {
     const sessionId = req.query.sessionId as string;
     if (!sessionId) return res.json({ phone: null });

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Pin } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
-import { buildHomeExplorePreviewHrefs, getPinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
+import { buildHomeExplorePreviewHrefs, getPinnedPaths, setPinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
+import { getSessionId } from "@/lib/session";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
 import {
   NATIVE_PRIMARY,
@@ -135,9 +136,30 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
       .catch(() => {});
   }, []);
 
+  // Hydrate pinned paths from server on mount (survives iOS localStorage wipes)
+  useEffect(() => {
+    const sessionId = getSessionId();
+    fetch(`/api/user/pinned-paths?sessionId=${encodeURIComponent(sessionId)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (Array.isArray(data?.paths) && data.paths.length > 0) {
+          setPinnedPaths(data.paths);
+          setPinnedPaths(data.paths);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleTogglePin = useCallback((href: string) => {
     const next = togglePinnedPath(href);
     setPinnedPaths(next);
+    // Persist to server so pins survive iOS cold-launch localStorage wipes
+    const sessionId = getSessionId();
+    fetch("/api/user/pinned-paths", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, paths: next }),
+    }).catch(() => {});
   }, []);
 
   const [expanded, setExpanded] = useState(() => {

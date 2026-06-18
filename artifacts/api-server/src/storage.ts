@@ -896,6 +896,20 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getUserPinnedPaths(sessionId: string): Promise<string[]> {
+    const [row] = await db.select({ pinnedPaths: userProfiles.pinnedPaths }).from(userProfiles).where(eq(userProfiles.sessionId, sessionId));
+    if (!row?.pinnedPaths) return [];
+    try { return JSON.parse(row.pinnedPaths); } catch { return []; }
+  }
+
+  async setUserPinnedPaths(sessionId: string, paths: string[]): Promise<void> {
+    const pinnedPaths = JSON.stringify(paths);
+    await db.insert(userProfiles).values({ sessionId, pinnedPaths }).onConflictDoUpdate({
+      target: userProfiles.sessionId,
+      set: { pinnedPaths, updatedAt: new Date() },
+    });
+  }
+
   async getUserMemory(sessionId: string): Promise<UserMemoryRow | undefined> {
     const [row] = await db.select().from(userMemory).where(eq(userMemory.sessionId, sessionId));
     return row;

@@ -385,6 +385,7 @@ export const userProfiles = pgTable("user_profiles", {
   sessionId: text("session_id").primaryKey(),
   name: text("name"),
   phone: text("phone"),
+  pinnedPaths: text("pinned_paths"),
   updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
 });
 
