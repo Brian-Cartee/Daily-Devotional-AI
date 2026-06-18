@@ -185,7 +185,7 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
       {/* CTA — bottom */}
       <motion.div
         className="absolute left-6 right-6"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 104px)" }}
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)" }}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 10 }}
         transition={{ duration: 0.6, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
@@ -363,7 +363,7 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
 
       <div
         className="flex-1 overflow-y-auto flex flex-col items-center justify-end px-5 gap-3"
-        style={{ paddingBottom: "max(104px, calc(88px + env(safe-area-inset-bottom, 0px)))", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+        style={{ paddingBottom: "max(48px, calc(24px + env(safe-area-inset-bottom, 0px)))", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
       >
         <button
           onClick={onDismiss}
