@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Pin, PinOff } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
-import { buildHomeExplorePreviewHrefs } from "@/lib/homeExplorePreview";
+import { buildHomeExplorePreviewHrefs, getPinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
 import {
   NATIVE_PRIMARY,
@@ -54,43 +54,71 @@ function PathCard({
   label,
   bg,
   testid,
-}: (typeof EXPLORE_ITEMS)[number]) {
+  pinned,
+  onTogglePin,
+}: (typeof EXPLORE_ITEMS)[number] & { pinned: boolean; onTogglePin: (href: string) => void }) {
   const colors = EXPLORE_CARD_STYLES[bg] ?? { border: "rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" };
   return (
-    <Link href={href} className="sp-native-card-link">
-      <div
-        data-testid={`card-${testid}`}
-        style={{
-          borderRadius: "12px",
-          border: `1px solid ${colors.border}`,
-          backgroundColor: colors.background,
-          cursor: "pointer",
-          height: "100%",
-          minHeight: "76px",
-          padding: "10px",
-          display: "flex",
-          flexDirection: "column",
-          boxSizing: "border-box",
-        }}
-      >
-        <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
-        <p
+    <div style={{ position: "relative" }}>
+      <Link href={href} className="sp-native-card-link">
+        <div
+          data-testid={`card-${testid}`}
           style={{
-            fontWeight: 700,
-            color: NATIVE_TEXT,
-            lineHeight: 1.25,
-            fontSize: "12px",
-            marginTop: "6px",
-            overflow: "hidden",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
+            borderRadius: "12px",
+            border: `1px solid ${pinned ? "rgba(196,78,224,0.45)" : colors.border}`,
+            backgroundColor: pinned ? "rgba(196,78,224,0.10)" : colors.background,
+            cursor: "pointer",
+            height: "100%",
+            minHeight: "76px",
+            padding: "10px",
+            paddingTop: "22px",
+            display: "flex",
+            flexDirection: "column",
+            boxSizing: "border-box",
           }}
         >
-          {label}
-        </p>
-      </div>
-    </Link>
+          <ShortcutPathIcon variant={explorePathVariant(href)} size="sm" />
+          <p
+            style={{
+              fontWeight: 700,
+              color: NATIVE_TEXT,
+              lineHeight: 1.25,
+              fontSize: "12px",
+              marginTop: "6px",
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+            }}
+          >
+            {label}
+          </p>
+        </div>
+      </Link>
+      <button
+        type="button"
+        aria-label={pinned ? "Unpin from home" : "Pin to home"}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTogglePin(href); }}
+        style={{
+          position: "absolute",
+          top: "5px",
+          right: "5px",
+          padding: "3px",
+          borderRadius: "6px",
+          background: pinned ? "rgba(196,78,224,0.20)" : "rgba(255,255,255,0.06)",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: pinned ? "rgba(216,138,240,0.95)" : "rgba(255,255,255,0.30)",
+        }}
+      >
+        {pinned
+          ? <PinOff style={{ width: "10px", height: "10px" }} />
+          : <Pin style={{ width: "10px", height: "10px" }} />}
+      </button>
+    </div>
   );
 }
 
@@ -99,6 +127,13 @@ type HomeExploreSectionProps = {
 };
 
 export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSectionProps) {
+  const [pinnedPaths, setPinnedPaths] = useState<string[]>(() => getPinnedPaths());
+
+  const handleTogglePin = useCallback((href: string) => {
+    const next = togglePinnedPath(href);
+    setPinnedPaths(next);
+  }, []);
+
   const [expanded, setExpanded] = useState(() => {
     try {
       return localStorage.getItem(HOME_EXPLORE_OPEN_KEY) === "1";
@@ -197,7 +232,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
           >
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
               {EXPLORE_ITEMS.map((item) => (
-                <PathCard key={item.href} {...item} />
+                <PathCard key={item.href} {...item} pinned={pinnedPaths.includes(item.href)} onTogglePin={handleTogglePin} />
               ))}
             </div>
           </motion.div>
@@ -205,7 +240,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
           <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
               {previewItems.map((item) => (
-                <PathCard key={item.href} {...item} />
+                <PathCard key={item.href} {...item} pinned={pinnedPaths.includes(item.href)} onTogglePin={handleTogglePin} />
               ))}
             </div>
             <button
