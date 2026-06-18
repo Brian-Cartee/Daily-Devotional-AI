@@ -63,11 +63,11 @@ export function HeavenEasterEgg() {
 
   const dismiss = () => {
     setOpacity(0);
-    setHtmlBg(false);
     holdTimer.current = setTimeout(() => {
       visibleRef.current = false;
       setVisible(false);
-    }, 600);
+      setHtmlBg(false); // remove gold only after fade completes — never flash black
+    }, 650);
   };
 
   useEffect(() => {
@@ -111,13 +111,19 @@ export function HeavenEasterEgg() {
       }
     };
 
+    const lockScroll = (e: TouchEvent) => {
+      if (visibleRef.current) e.preventDefault();
+    };
+
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchmove",  onTouchMove,  { passive: true });
+    document.addEventListener("touchmove",  lockScroll,   { passive: false });
     document.addEventListener("touchend",   onTouchEnd,   { passive: true });
 
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove",  onTouchMove);
+      document.removeEventListener("touchmove",  lockScroll);
       document.removeEventListener("touchend",   onTouchEnd);
       if (holdTimer.current) clearTimeout(holdTimer.current);
     };
@@ -136,8 +142,7 @@ export function HeavenEasterEgg() {
         transition: "opacity 0.55s ease",
         // pointerEvents ACTIVE — blocks touches so nothing underneath is tapped
         pointerEvents: "all",
-        background:
-          "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255,220,120,0.98) 0%, rgba(255,180,60,0.90) 30%, rgba(180,110,20,0.92) 60%, rgba(40,18,5,1) 100%)",
+        background: "rgba(90,50,10,1)", // rich amber fallback — never black
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
