@@ -5,7 +5,6 @@ import {
   Check, BookOpen, ChevronDown, ArrowRight, Trophy,
   Sprout, RotateCcw, Home, Flame, Anchor, ChevronRight,
 } from "lucide-react";
-import { BackButton } from "@/components/BackButton";
 import {
   READING_PLANS, type ReadingPlan, type WhereAreYou, type DailyPace,
   getPlanProgress, markDayComplete, markDayIncomplete,
@@ -153,7 +152,25 @@ export default function ReadingPlansPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
+
+      {/* Hero */}
+      <div className="relative overflow-hidden" style={{ height: "38vh", minHeight: "240px", maxHeight: "340px" }}>
+        <img
+          src="/hero-landing.webp"
+          alt="A path stretching into the distance"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center 55%" }}
+        />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,5,28,0.65) 0%, rgba(20,8,50,0.15) 45%, rgba(10,5,28,0.92) 100%)" }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 px-6 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/50 mb-2">Your Walk</p>
+          <h1 className="text-[28px] font-black text-white leading-tight" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.7)", letterSpacing: "-0.02em" }}>
+            Where are you right now?
+          </h1>
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 pt-6 pb-28">
 
         <AnimatePresence mode="wait">
 
@@ -161,10 +178,6 @@ export default function ReadingPlansPage() {
           {phase === "intake-where" && (
             <motion.div key="intake-where" {...fadeUp}>
               <div className="mb-8 text-center">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300/70 mb-3">Your Walk</p>
-                <h1 className="text-[28px] font-bold text-foreground leading-tight mb-3">
-                  Where are you right now?
-                </h1>
                 <p className="text-[14px] text-muted-foreground leading-relaxed">
                   Be honest. There's no wrong answer — your path is built around where you actually are.
                 </p>
@@ -422,7 +435,8 @@ export default function ReadingPlansPage() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="rounded-2xl border border-amber-200/60 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-800/40 p-5 mb-4 text-center"
+                    className="rounded-2xl p-5 mb-4 text-center"
+                    style={{ background: "rgba(245,158,11,0.09)", border: "1px solid rgba(245,158,11,0.28)" }}
                   >
                     <Trophy className="w-10 h-10 text-amber-500 mx-auto mb-2" />
                     <p className="text-[16px] font-bold text-foreground">You finished it.</p>
