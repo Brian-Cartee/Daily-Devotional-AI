@@ -319,21 +319,22 @@ export default function ReadBible() {
                 })()}
               </AnimatePresence>
               <div className="text-center mb-10">
-                <p className="text-amber-700/60 dark:text-amber-400/50 text-sm">Choose a book to begin reading</p>
+                <p className="text-sm" style={{ color: "rgba(251,191,36,0.50)" }}>Choose a book to begin reading</p>
               </div>
               {[{ label: "Old Testament", books: OT }, { label: "New Testament", books: NT }].map(({ label, books }) => (
                 <div key={label} className="mb-8">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-amber-700/70 dark:text-amber-500/60 mb-3 px-1">{label}</h2>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 px-1" style={{ color: "rgba(251,191,36,0.55)" }}>{label}</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {books.map((b) => (
                       <button
                         key={b.name}
                         onClick={() => handleBookSelect(b.name)}
                         data-testid={`book-${b.short}`}
-                        className="bg-[#fdf8f0] dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 rounded-xl px-3 py-3 text-left hover:border-amber-400/60 dark:hover:border-amber-600/50 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:shadow-md hover:shadow-amber-100/60 dark:-hover:shadow-amber-900/20 transition-all group"
+                        className="rounded-xl px-3 py-3 text-left transition-all group"
+                        style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.22)" }}
                       >
-                        <p className="text-[12px] font-semibold text-amber-900 dark:text-amber-200 leading-tight group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors break-words">{b.name}</p>
-                        <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">{b.chapters} ch</p>
+                        <p className="text-[12px] font-semibold leading-tight break-words" style={{ color: "rgba(251,191,36,0.90)" }}>{b.name}</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "rgba(251,191,36,0.55)" }}>{b.chapters} ch</p>
                       </button>
                     ))}
                   </div>
@@ -443,7 +444,7 @@ export default function ReadBible() {
                 </div>
 
                 {/* Chapter text */}
-                <div className="flex-1 px-6 sm:px-10 py-10 max-w-xl mx-auto w-full bg-[#faf5ea] dark:bg-transparent">
+                <div className="flex-1 px-6 sm:px-10 py-10 max-w-xl mx-auto w-full">
                   {chapterText.isLoading && (
                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
                       <Loader2 className="w-6 h-6 animate-spin" />
@@ -518,7 +519,7 @@ export default function ReadBible() {
 
               {/* AI sidebar */}
               {chapterText.data && (
-                <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-white/20 dark:border-slate-700/30 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm">
+                <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-white/10 backdrop-blur-sm" style={{ background: "rgba(255,255,255,0.04)" }}>
                   <div className="p-4 sticky top-14">
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="w-4 h-4 text-primary" />
