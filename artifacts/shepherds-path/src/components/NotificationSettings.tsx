@@ -192,6 +192,62 @@ function EmailSection() {
   );
 }
 
+interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  visitDates: string[];
+}
+
+function StreakCard({ streak }: { streak: StreakData }) {
+  const today = new Date();
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  // Build 7-day window: Sun through Sat of current week
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  const visitSet = new Set(streak.visitDates);
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const isToday = key === today.toISOString().slice(0, 10);
+    return { label: days[i]!, visited: visitSet.has(key), isToday };
+  });
+
+  return (
+    <div style={{ borderRadius: "16px", border: "1px solid rgba(255,180,0,0.18)", backgroundColor: "rgba(255,180,0,0.06)", padding: "14px 16px" }}>
+      {streak.currentStreak >= 1 && (
+        <p style={{ fontSize: "14px", fontWeight: 700, color: "rgba(255,255,255,0.88)", marginBottom: "10px" }}>
+          🔥 <strong>Day {streak.currentStreak}</strong> walking with God
+        </p>
+      )}
+      {streak.visitDates.length > 0 && (
+        <>
+          <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.35)", marginBottom: "8px" }}>
+            This week
+          </p>
+          <div style={{ display: "flex", gap: "6px", justifyContent: "space-between" }}>
+            {weekDays.map(({ label, visited, isToday }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                <div
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    backgroundColor: visited ? "rgba(34,197,94,0.75)" : "rgba(255,255,255,0.07)",
+                    border: isToday ? "2px solid rgba(255,180,0,0.55)" : "2px solid transparent",
+                  }}
+                />
+                <span style={{ fontSize: "9px", fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function NotificationSettings({ onClose }: { onClose: () => void }) {
   const sessionId = getSessionId();
   const { toast } = useToast();
@@ -200,6 +256,14 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
   const [settings, setSettings] = useState<PushSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/streak")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setStreakData(data); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if ("Notification" in window) setPermission(Notification.permission);
@@ -530,6 +594,11 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
 
           {/* ── Divider (browser only) ── */}
           {!isNativeWebViewShell() && <div className="h-px bg-border/30" />}
+
+          {/* ── Streak + weekly dots ── */}
+          {streakData && (streakData.currentStreak >= 1 || streakData.visitDates.length > 0) && (
+            <StreakCard streak={streakData} />
+          )}
 
           {/* ── Email section ── */}
           <EmailSection />

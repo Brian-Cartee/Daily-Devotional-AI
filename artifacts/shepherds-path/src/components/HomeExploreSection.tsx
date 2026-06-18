@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Pin } from "lucide-react";
@@ -126,6 +126,14 @@ type HomeExploreSectionProps = {
 
 export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSectionProps) {
   const [pinnedPaths, setPinnedPaths] = useState<string[]>(() => getPinnedPaths());
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
+
+  useEffect(() => {
+    fetch("/api/streak")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.currentStreak) setCurrentStreak(data.currentStreak); })
+      .catch(() => {});
+  }, []);
 
   const handleTogglePin = useCallback((href: string) => {
     const next = togglePinnedPath(href);
@@ -207,6 +215,22 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
           >
             {expanded ? "Every path, all at once" : "A few places to start"}
           </p>
+          {currentStreak >= 2 && (
+            <p
+              style={{
+                fontSize: "10px",
+                fontWeight: 600,
+                color: NATIVE_TEXT_MUTED,
+                marginTop: "4px",
+                display: "flex",
+                alignItems: "center",
+                gap: "3px",
+              }}
+            >
+              <span>🔥</span>
+              <span>{currentStreak} days</span>
+            </p>
+          )}
         </div>
         {expanded && (
           <button

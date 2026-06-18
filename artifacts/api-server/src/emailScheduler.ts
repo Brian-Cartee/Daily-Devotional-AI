@@ -8,6 +8,7 @@ import { db } from "./db";
 import { verses } from "@workspace/db";
 import { hasEmailSentToday, markEmailSentToday } from "./schedulerState";
 import { getCulturalMomentEmailSubject } from "./culturalMoments";
+import { daysSinceLastVisit } from "./streakLogic";
 
 const TARGET_HOUR_UTC = 12; // 12:00 UTC = 5 AM PDT / 6 AM MDT / 7 AM CDT / 8 AM EDT
 // ⚠️ When DST ends in November (PST = UTC-8), change to 13 to maintain these local times
@@ -254,6 +255,7 @@ export async function sendDailyEmailsToAllSubscribers() {
         // Falls back gracefully to the standard email for anyone without session context.
         let personalEncouragement: string | null = null;
         let personalSubject: string | null = null;
+        let followUp: string | null = null;
 
         if (subscriber.sessionId) {
           const seasonal = await getSeasonalContent(
@@ -267,6 +269,20 @@ export async function sendDailyEmailsToAllSubscribers() {
             personalSubject = seasonal.subject;
             console.log(`[email] Seasonal content generated for ${subscriber.email}`);
           }
+
+          // Streak-based follow-up line
+          const streak = await storage.getStreak(subscriber.sessionId);
+          if (streak) {
+            const gapDays = streak.visitDates.length > 0
+              ? daysSinceLastVisit(streak.visitDates[streak.visitDates.length - 1]!, today)
+              : null;
+
+            if (gapDays === 2) {
+              followUp = "It looks like yesterday was a busy one. That's okay — you're here now. God's door is always open.";
+            } else if (streak.currentStreak >= 3) {
+              followUp = `Day ${streak.currentStreak} of walking with God. You have been faithful — keep going.`;
+            }
+          }
         }
 
         const html = buildDailyVerseEmailHtml({
@@ -274,6 +290,7 @@ export async function sendDailyEmailsToAllSubscribers() {
           appUrl,
           artImageUrl,
           personalEncouragement,
+          followUp,
         }).replace("{{email}}", encodeURIComponent(subscriber.email));
         const text = buildDailyVerseEmailText({ ...verse, appUrl });
 
@@ -281,9 +298,26 @@ export async function sendDailyEmailsToAllSubscribers() {
           ? `Shepherd's Path <${fromEmail}>`
           : fromEmail;
 
-        // Subject priority: cultural moment > personal season > generic
+        // Miss-day subject warmth (only when no cultural moment applies)
+        const culturalSubject = getCulturalMomentEmailSubject(today, verse.reference);
+        let missDaySubject: string | null = null;
+        if (!culturalSubject && subscriber.sessionId) {
+          const streak = await storage.getStreak(subscriber.sessionId);
+          if (streak && streak.visitDates.length > 0) {
+            const gapDays = daysSinceLastVisit(streak.visitDates[streak.visitDates.length - 1]!, today);
+            const firstName = subscriber.name?.split(" ")[0] ?? null;
+            if (gapDays >= 5) {
+              missDaySubject = `The door is still open — ${firstName || "friend"}`;
+            } else if (gapDays >= 3) {
+              missDaySubject = "Still here — a quiet word for you this morning";
+            }
+          }
+        }
+
+        // Subject priority: cultural moment > miss-day warmth > personal season > generic
         const emailSubject =
-          getCulturalMomentEmailSubject(today, verse.reference)
+          culturalSubject
+          ?? missDaySubject
           ?? personalSubject
           ?? `${verse.reference} — a word for your morning`;
 
