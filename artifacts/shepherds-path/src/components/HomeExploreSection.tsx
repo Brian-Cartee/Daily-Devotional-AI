@@ -147,7 +147,7 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
     return hrefs
       .map((href) => EXPLORE_ITEMS.find((item) => item.href === href))
       .filter((item): item is (typeof EXPLORE_ITEMS)[number] => !!item);
-  }, [excludeSet]);
+  }, [excludeSet, pinnedPaths]);
 
   const setExpandedPersisted = (next: boolean) => {
     setExpanded(next);

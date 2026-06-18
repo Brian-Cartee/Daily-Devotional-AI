@@ -39,6 +39,7 @@ function MenuRow({
   href,
   testId,
   accent,
+  nudge,
 }: {
   icon: LucideIcon;
   label: string;
@@ -47,12 +48,16 @@ function MenuRow({
   href?: string;
   testId?: string;
   accent?: boolean;
+  nudge?: boolean;
 }) {
   const className =
     "w-full flex items-center gap-3 px-3.5 py-3 min-h-[48px] text-sm hover:bg-muted/70 active:bg-muted transition-colors text-left";
   const inner = (
     <>
-      <Icon className={`w-4 h-4 shrink-0 ${accent ? "text-amber-500" : "text-muted-foreground"}`} />
+      <Icon
+        className={`w-4 h-4 shrink-0 ${accent ? "text-amber-500" : nudge ? "" : "text-muted-foreground"}`}
+        style={nudge ? { color: "rgb(34,197,94)" } : undefined}
+      />
       <div className="flex-1 min-w-0">
         <span className={`font-medium block leading-tight ${accent ? "text-amber-600 dark:text-amber-400" : ""}`}>
           {label}
@@ -96,6 +101,9 @@ type Props = {
   onOpenNotifications: () => void;
   onOpenConviction: () => void;
   hasNotificationBadge?: boolean;
+  hasSetupBadge?: boolean;
+  rhythmDone?: boolean;
+  emailDone?: boolean;
   menuRef: React.RefObject<HTMLDivElement | null>;
 };
 
@@ -117,6 +125,9 @@ export function NavBarMoreMenu({
   onClose,
   menuRef,
   hasNotificationBadge = false,
+  hasSetupBadge = false,
+  rhythmDone = true,
+  emailDone = true,
 }: Props) {
   const toneLabel = guidanceTone === "coach" ? "Direct & accountable" : "Gentle & encouraging";
   const voiceLabel = voicePref === "onyx" ? "Male voice" : "Female voice";
@@ -139,8 +150,11 @@ export function NavBarMoreMenu({
         style={nativeShell || compact ? topMoreMenuButtonStyle(open) : undefined}
       >
         <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} style={{ color: "rgba(255,255,255,0.92)" }} />
-        {hasNotificationBadge && (
+        {hasNotificationBadge && !hasSetupBadge && (
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+        )}
+        {hasSetupBadge && (
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "rgb(34,197,94)" }} />
         )}
       </button>
 
@@ -155,26 +169,32 @@ export function NavBarMoreMenu({
           role="menu"
         >
           <MenuLabel>Stay connected</MenuLabel>
-          <MenuRow
-            icon={Bell}
-            label="My rhythm"
-            hint="Gentle reminders & morning email"
-            testId="button-reminders-open"
-            onClick={() => {
-              onClose();
-              onOpenNotifications();
-            }}
-          />
-          <MenuRow
-            icon={Mail}
-            label="Daily verse email"
-            hint="Morning verse in your inbox"
-            testId="button-subscribe-toggle"
-            onClick={() => {
-              onClose();
-              onOpenEmail();
-            }}
-          />
+          <div style={!rhythmDone ? { borderRadius: "10px", boxShadow: "0 0 0 1.5px rgba(34,197,94,0.45)" } : undefined}>
+            <MenuRow
+              icon={Bell}
+              label="My rhythm"
+              hint={rhythmDone ? "Gentle reminders & morning email" : "Tap to set up your reminders ✦"}
+              testId="button-reminders-open"
+              nudge={!rhythmDone}
+              onClick={() => {
+                onClose();
+                onOpenNotifications();
+              }}
+            />
+          </div>
+          <div style={!emailDone ? { borderRadius: "10px", boxShadow: "0 0 0 1.5px rgba(34,197,94,0.45)", marginTop: "4px" } : undefined}>
+            <MenuRow
+              icon={Mail}
+              label="Today's word email"
+              hint={emailDone ? "Morning verse in your inbox" : "Tap to subscribe to daily Scripture ✦"}
+              testId="button-subscribe-toggle"
+              nudge={!emailDone}
+              onClick={() => {
+                onClose();
+                onOpenEmail();
+              }}
+            />
+          </div>
 
           <div className="mx-3 my-1 h-px bg-border/50" />
 

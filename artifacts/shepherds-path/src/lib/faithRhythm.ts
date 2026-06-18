@@ -24,6 +24,7 @@ export function getRhythm(): FaithRhythm | null {
 
 export function saveRhythm(r: FaithRhythm): void {
   localStorage.setItem(RHYTHM_KEY, JSON.stringify(r));
+  window.dispatchEvent(new Event("sp-rhythm-updated"));
 }
 
 export function clearRhythm(): void {

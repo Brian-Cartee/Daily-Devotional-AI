@@ -27,6 +27,8 @@ import { markReturningHome } from "@/lib/introState";
 import { applyHomeScrollToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
+import { getRhythm } from "@/lib/faithRhythm";
+import { isDailyEmailLinked } from "@/hooks/use-email-subscription";
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -171,6 +173,24 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     };
   }, [moreOpen]);
 
+  const [rhythmDone, setRhythmDone] = useState(() => getRhythm() !== null);
+  const [emailDone, setEmailDone] = useState(() => isDailyEmailLinked());
+
+  useEffect(() => {
+    const refresh = () => {
+      setRhythmDone(getRhythm() !== null);
+      setEmailDone(isDailyEmailLinked());
+    };
+    window.addEventListener("sp-email-subscription-updated", refresh);
+    window.addEventListener("sp-rhythm-updated", refresh);
+    return () => {
+      window.removeEventListener("sp-email-subscription-updated", refresh);
+      window.removeEventListener("sp-rhythm-updated", refresh);
+    };
+  }, []);
+
+  const needsSetupNudge = !rhythmDone || !emailDone;
+
   const overHomeHero = location === "/" || location === "";
   const overCinematicHero =
     overHomeHero ||
@@ -216,6 +236,9 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       onOpenLanguage={() => setLangOpen(true)}
       onOpenNotifications={() => setNotifOpen(true)}
       hasNotificationBadge={needsNotificationNudge}
+      hasSetupBadge={needsSetupNudge}
+      rhythmDone={rhythmDone}
+      emailDone={emailDone}
     />
   );
 
