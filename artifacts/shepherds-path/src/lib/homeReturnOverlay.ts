@@ -17,7 +17,9 @@ export function pickHomeReturnOverlay(options: {
     options;
 
   // Never show an overlay when navigating back within the same session (e.g. after devotional).
-  if (isReturningHome()) return null;
+  // In native iOS WebView, sessionStorage persists across background/foreground, so
+  // isReturningHome() is unreliable there — skip this check for native.
+  if (!inNativeApp && isReturningHome()) return null;
 
   // sacredFirstHome (first-ever home visit post-onboarding) blocks everything —
   // BeginTodaysWalk handles that moment. homeVisitAfterThreshold === 1 is that visit.
