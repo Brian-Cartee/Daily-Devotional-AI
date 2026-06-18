@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Pin } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
-import { buildHomeExplorePreviewHrefs, getPinnedPaths, setPinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
+import { buildHomeExplorePreviewHrefs, getPinnedPaths, setPinnedPaths as savePinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
 import { getSessionId } from "@/lib/session";
 import { HOME_EXPLORE_OPEN_KEY } from "@/lib/homePathsNav";
 import {
@@ -143,8 +143,8 @@ export function HomeExploreSection({ excludePreviewHrefs = [] }: HomeExploreSect
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (Array.isArray(data?.paths) && data.paths.length > 0) {
-          setPinnedPaths(data.paths);
-          setPinnedPaths(data.paths);
+          savePinnedPaths(data.paths); // write back to localStorage
+          setPinnedPaths(data.paths);  // update React state
         }
       })
       .catch(() => {});
