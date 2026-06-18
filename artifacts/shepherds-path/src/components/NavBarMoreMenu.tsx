@@ -167,6 +167,7 @@ export function NavBarMoreMenu({
           transition={{ duration: 0.15 }}
           className="fixed right-2 top-[calc(env(safe-area-inset-top,0px)+3.4rem)] sm:absolute sm:right-0 sm:top-11 z-[250] bg-background border border-border rounded-2xl shadow-xl py-1 min-w-[240px] w-[min(280px,calc(100vw-1rem))] sm:w-auto max-h-[calc(100dvh-env(safe-area-inset-top,0px)-5rem)] sm:max-h-[min(80dvh,560px)] overflow-y-auto overscroll-contain"
           role="menu"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}
         >
           <MenuLabel>Stay connected</MenuLabel>
           <div style={!rhythmDone ? { borderRadius: "10px", boxShadow: "0 0 0 1.5px rgba(34,197,94,0.45)" } : undefined}>

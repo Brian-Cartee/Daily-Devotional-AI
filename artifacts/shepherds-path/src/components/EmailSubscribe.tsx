@@ -95,7 +95,7 @@ export function EmailSubscribePanel({ onClose }: { onClose: () => void }) {
         <>
           <div className="mb-4">
             <h3 className="font-bold text-foreground text-sm tracking-tight">
-              Get today's verse by email
+              Get today's word by email
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Delivered to your inbox each morning
@@ -249,7 +249,7 @@ export function InlineEmailSignup() {
             <Mail className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="text-[13px] font-bold text-foreground leading-tight">Get today's verse by email</p>
+            <p className="text-[13px] font-bold text-foreground leading-tight">Get today's word by email</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">One email, no account — daily Scripture, free.</p>
           </div>
         </div>

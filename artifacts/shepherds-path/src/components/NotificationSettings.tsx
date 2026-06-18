@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { isNativeWebViewShell } from "@/lib/platform";
 import {
   Bell, BellOff, Mail, Check, Loader2, X, Sun, Moon,
   Clock, AlarmClock, CalendarDays, ChevronDown, ShieldCheck, HelpCircle, ArrowRight,
@@ -437,8 +438,43 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
                 Turn off all push notifications
               </button>
             </div>
+          ) : isNativeWebViewShell() ? (
+            /* ── iOS APP — push not supported in WebView ── */
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-amber-500/8 border border-amber-400/25 px-4 py-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-amber-500 shrink-0" />
+                  <p className="text-[14px] font-bold text-foreground">Use the daily email for reminders</p>
+                </div>
+                <p className="text-[12px] text-muted-foreground leading-relaxed pl-6">
+                  In-app push reminders aren&apos;t available yet. Subscribe to Today&apos;s Word below — it arrives each morning and keeps you connected without needing notifications turned on.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-primary/15 bg-primary/4 divide-y divide-primary/10 overflow-hidden">
+                {[
+                  { icon: Sun, color: "text-amber-500 bg-amber-400/12", label: "Morning devotional", desc: "Daily verse to start your day" },
+                  { icon: Clock, color: "text-sky-500 bg-sky-400/12", label: "Midday check-in", desc: "Optional noon reminder" },
+                  { icon: Moon, color: "text-indigo-400 bg-indigo-400/12", label: "Evening reflection", desc: "Close the day with intention" },
+                  { icon: AlarmClock, color: "text-rose-400 bg-rose-400/12", label: "Streak reminder", desc: "Nudge if today's visit is still open" },
+                  { icon: CalendarDays, color: "text-violet-400 bg-violet-400/12", label: "Weekly summary", desc: "Your week, reflected back" },
+                ].map(({ icon: Icon, color, label, desc }) => (
+                  <div key={label} className="flex items-center gap-3 px-4 py-2.5 opacity-40">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${color.split(" ")[1]}`}>
+                      <Icon className={`w-3.5 h-3.5 ${color.split(" ")[0]}`} />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-semibold text-foreground">{label}</p>
+                      <p className="text-[11px] text-muted-foreground">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
+                Push notifications coming in a future update. For now, subscribe to the daily email below.
+              </p>
+            </div>
           ) : (
-            /* ── NOT YET ENABLED STATE ── */
+            /* ── BROWSER — enable push ── */
             <div className="space-y-4">
               {/* OFF status card */}
               <div className="rounded-2xl bg-muted/50 border border-border/40 px-4 py-3 flex items-center gap-3">
