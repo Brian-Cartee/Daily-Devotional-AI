@@ -78,7 +78,7 @@ function BottomNavVisual({
   }
 
   return (
-    <div className="relative flex items-center justify-center w-10 h-10 rounded-xl">
+    <div className="relative flex items-center justify-center w-9 h-9 rounded-xl">
       <Icon className="w-[17px] h-[17px] text-zinc-300/85" aria-hidden />
       {hasPlace && (
         <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
@@ -311,7 +311,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
                     marginRight: "auto",
                     paddingLeft: "12px",
                     paddingRight: "12px",
-                    height: "42px",
+                    height: "38px",
                     display: "flex",
                     alignItems: "center",
                     pointerEvents: "none",
@@ -431,10 +431,10 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         <div
           style={
             inNativeApp
-              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "42px", paddingLeft: "2px", paddingRight: "2px" }
+              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "38px", paddingLeft: "2px", paddingRight: "2px" }
               : undefined
           }
-          className={inNativeApp ? undefined : "flex items-center justify-around h-[42px] px-0.5"}
+          className={inNativeApp ? undefined : "flex items-center justify-around h-[38px] px-0.5"}
         >
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";

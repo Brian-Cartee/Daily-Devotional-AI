@@ -718,6 +718,9 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
 function LandingHomeInner() {
   const sessionId = getSessionId();
   const inNativeApp = isNativeWebViewShell();
+  // In the iOS app, permanently mark intro complete so cold-launch sessionStorage
+  // loss never triggers the "step inside" splash when tapping the Home button.
+  if (inNativeApp) markIntroFlowComplete();
   const skipIntrosForHome = isReturningHome() || inNativeApp;
 
   const [homeVisitAfterThreshold] = useState(() =>
