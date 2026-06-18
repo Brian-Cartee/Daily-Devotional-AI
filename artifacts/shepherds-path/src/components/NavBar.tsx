@@ -431,10 +431,10 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         <div
           style={
             inNativeApp
-              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "34px", paddingLeft: "2px", paddingRight: "2px" }
+              ? { display: "flex", alignItems: "center", justifyContent: "space-around", height: "30px", paddingLeft: "2px", paddingRight: "2px" }
               : undefined
           }
-          className={inNativeApp ? undefined : "flex items-center justify-around h-[34px] px-0.5"}
+          className={inNativeApp ? undefined : "flex items-center justify-around h-[30px] px-0.5"}
         >
           {BOTTOM_NAV_ITEMS.map(({ href, label, icon, bookmark, navId }) => {
             const isHome = href === "/";
