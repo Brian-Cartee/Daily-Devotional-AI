@@ -61,13 +61,13 @@ export const FREE_FEATURES: FeatureLine[] = [
 
 /** Only what Pro adds — do not repeat free baseline items here */
 export const PRO_FEATURES: FeatureLine[] = [
-  { icon: Volume2, text: "Unlimited listen — devotional, Guidance chains, replays, listen-first" },
+  { icon: Volume2, text: "Unlimited listen — 'Pray this' aloud, 'Hear this guidance', full chains, replays, listen-first" },
   { icon: Zap, text: "Unlimited AI — no daily cap" },
   { icon: History, text: "Full sacred archive — search & every saved devotional day" },
   { icon: Flame, text: "Streak protection — one grace day per month" },
   { icon: Mail, text: "Weekly Spiritual Weather email (Sunday, when Pro email is linked)" },
   { icon: BookMarked, text: "Unlimited AI sermon notes & recordings" },
-  { icon: Heart, text: "Personal Prayer Portrait" },
+  { icon: Heart, text: "Personal Prayer Portrait — a prayer crafted from what's on your heart" },
   { icon: FileText, text: "Print / save full journal (browser PDF)" },
   { icon: Sparkles, text: "Deeper in-app Spiritual Weather + season letter" },
   { icon: MapPin, text: "7-day Guided Pathways — grief, anxiety, loneliness, doubt & more" },
@@ -93,7 +93,7 @@ export const PRO_MODAL_MOMENTS: { icon: LucideIcon; moment: string; what: string
   {
     icon: Volume2,
     moment: "You want to close your eyes and just listen.",
-    what: "Unlimited audio — hear the verse, the encouragement, and the prayer as one unbroken flow. No limits, no counting.",
+    what: "Pro unlocks 'Pray this' spoken aloud, 'Hear this guidance', and the full unbroken chain — verse, reflection, and prayer together. No limits.",
   },
   {
     icon: MapPin,
