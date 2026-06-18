@@ -68,9 +68,8 @@ const NEXT_STEPS = [
     desc: "Begin reading Jesus' own story. John is the best first book — personal, direct, and full of moments where Jesus says exactly who He is.",
     href: "/read",
     linkText: "Open the Bible",
-    color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-50 dark:bg-blue-950/30",
-    border: "border-blue-200/60 dark:border-blue-800/40",
+    iconColor: "#60a5fa",
+    cardStyle: { background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.20)" },
   },
   {
     icon: Compass,
@@ -78,9 +77,8 @@ const NEXT_STEPS = [
     desc: "Tell us where you are right now — what you're carrying, what you're hoping for — and we'll build a journey through Scripture just for you.",
     href: "/understand",
     linkText: "Start your journey",
-    color: "text-violet-600 dark:text-violet-400",
-    bg: "bg-violet-50 dark:bg-violet-950/30",
-    border: "border-violet-200/60 dark:border-violet-800/40",
+    iconColor: "#a78bfa",
+    cardStyle: { background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.20)" },
   },
   {
     icon: Sun,
@@ -88,9 +86,8 @@ const NEXT_STEPS = [
     desc: "A new scripture and personal reflection every morning. Five minutes that can quietly become the most important part of your day.",
     href: "/devotional",
     linkText: "Today's devotional",
-    color: "text-amber-600 dark:text-amber-500",
-    bg: "bg-amber-50 dark:bg-amber-950/30",
-    border: "border-amber-200/60 dark:border-amber-800/40",
+    iconColor: "#fbbf24",
+    cardStyle: { background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.20)" },
   },
 ];
 
@@ -225,7 +222,7 @@ export default function SalvationPage() {
 
         {/* Prayer section */}
         <motion.div {...fadeUp(0.2)} className="mb-8">
-          <div className="relative rounded-2xl border border-rose-200/60 dark:border-rose-800/40 bg-rose-50/60 dark:bg-rose-950/20 overflow-hidden">
+          <div className="relative rounded-2xl overflow-hidden" style={{ background: "rgba(244,63,94,0.07)", border: "1px solid rgba(244,63,94,0.22)" }}>
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-rose-500 via-amber-400 to-rose-400" />
             <div className="p-5">
               <h2 className="text-[18px] font-bold text-foreground mb-2">A prayer of faith</h2>
@@ -238,7 +235,8 @@ export default function SalvationPage() {
                   <motion.button
                     data-testid="btn-show-prayer"
                     onClick={() => setShowPrayer(true)}
-                    className="w-full py-3 rounded-xl border border-rose-300/60 dark:border-rose-700/50 text-[14px] font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-100/50 dark:hover:bg-rose-900/30 transition-colors"
+                    className="w-full py-3 rounded-xl text-[14px] font-semibold transition-colors"
+                    style={{ border: "1px solid rgba(244,63,94,0.35)", color: "rgba(251,113,133,0.9)" }}
                     exit={{ opacity: 0 }}
                   >
                     Read the prayer
@@ -267,13 +265,14 @@ export default function SalvationPage() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="rounded-xl bg-gradient-to-br from-amber-50 to-rose-50 dark:from-amber-950/30 dark:to-rose-950/20 border border-amber-200/60 dark:border-amber-700/40 px-5 py-4 text-center"
+                        className="rounded-xl px-5 py-4 text-center"
+                        style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.25)" }}
                       >
                         <p className="text-[22px] mb-1">🎉</p>
-                        <p className="text-[15px] font-black text-amber-800 dark:text-amber-300 leading-tight mb-1">
+                        <p className="text-[15px] font-black leading-tight mb-1" style={{ color: "rgba(251,191,36,0.95)" }}>
                           Hallelujah! You're part of God's eternal family!
                         </p>
-                        <p className="text-[12px] text-amber-700/70 dark:text-amber-400/70 leading-relaxed mb-2">
+                        <p className="text-[12px] leading-relaxed mb-2" style={{ color: "rgba(251,191,36,0.65)" }}>
                           Your name is written in the Book of Life. You have eternal life — nothing and no one can take that from you.
                         </p>
                         <p className="text-[11px] text-muted-foreground/50 font-medium">
@@ -331,16 +330,17 @@ export default function SalvationPage() {
               <Link key={i} href={step.href}>
                 <div
                   data-testid={`card-next-step-${i}`}
-                  className={`rounded-2xl border p-4 flex items-start gap-4 cursor-pointer active:scale-[0.99] transition-transform ${step.bg} ${step.border}`}
+                  className="rounded-2xl p-4 flex items-start gap-4 cursor-pointer active:scale-[0.99] transition-transform"
+                  style={step.cardStyle}
                 >
-                  <div className={`w-10 h-10 rounded-xl bg-white/60 dark:bg-black/20 flex items-center justify-center shrink-0`}>
-                    <step.icon className={`w-5 h-5 ${step.color}`} />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.07)" }}>
+                    <step.icon className="w-5 h-5" style={{ color: step.iconColor }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-bold text-foreground leading-snug">{step.title}</p>
                     <p className="text-[12px] text-foreground/65 leading-snug mt-1">{step.desc}</p>
                   </div>
-                  <ArrowRight className={`w-4 h-4 ${step.color} shrink-0 mt-0.5`} />
+                  <ArrowRight className="w-4 h-4 shrink-0 mt-0.5" style={{ color: step.iconColor }} />
                 </div>
               </Link>
             ))}
