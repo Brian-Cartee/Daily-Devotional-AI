@@ -321,34 +321,35 @@ function RingSection({ ring, circle, onChange }: { ring: RingConfig; circle: Cir
   const { Icon } = ring;
 
   return (
-    <div className={`rounded-2xl border ${ring.border} ${ring.bg} overflow-hidden mb-5`}>
-      <div className={`absolute inset-x-0 top-0 h-[3px] ${ring.accent}`} style={{ position: "relative" }} />
+    <div className="rounded-2xl overflow-hidden mb-5" style={ring.cardStyle}>
+      <div className={`h-[3px] ${ring.accent}`} />
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl ${ring.pillBg} flex items-center justify-center shrink-0`}>
-              <Icon className={`w-4 h-4 ${ring.color}`} />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={ring.pillStyle}>
+              <Icon className="w-4 h-4" style={{ color: ring.hex }} />
             </div>
             <div>
-              <p className={`text-[11px] font-bold uppercase tracking-widest ${ring.pillText} mb-0.5`}>{ring.label}</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-0.5" style={{ color: ring.hex }}>{ring.label}</p>
               <p className="text-[15px] font-extrabold text-foreground leading-snug">{ring.tagline}</p>
             </div>
           </div>
-          <span className={`text-[11px] font-bold shrink-0 mt-1 ${ring.pillText} ${ring.pillBg} rounded-full px-2 py-0.5`}>
+          <span className="text-[11px] font-bold shrink-0 mt-1 rounded-full px-2 py-0.5" style={{ color: ring.hex, ...ring.pillStyle }}>
             {people.length}/5
           </span>
         </div>
 
         {/* Scripture foundation — bold, unmissable */}
-        <div className="mb-4 rounded-xl bg-background/70 border border-current/10 px-4 py-3 relative overflow-hidden">
+        <div className="mb-4 rounded-xl px-4 py-3 relative overflow-hidden" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
           <span
-            className={`absolute left-2 top-1 text-5xl font-serif leading-none ${ring.color} opacity-15 select-none pointer-events-none`}
+            className="absolute left-2 top-1 text-5xl font-serif leading-none opacity-15 select-none pointer-events-none"
+            style={{ color: ring.hex }}
             aria-hidden="true"
           >"</span>
-          <p className={`text-[14px] font-bold leading-snug text-foreground/90 pl-4`}>
+          <p className="text-[14px] font-bold leading-snug text-foreground/90 pl-4">
             {ring.verse}
           </p>
-          <p className={`text-[11px] font-bold uppercase tracking-widest mt-1.5 pl-4 ${ring.pillText}`}>
+          <p className="text-[11px] font-bold uppercase tracking-widest mt-1.5 pl-4" style={{ color: ring.hex }}>
             — {ring.verseRef}
           </p>
         </div>
@@ -379,7 +380,8 @@ function RingSection({ ring, circle, onChange }: { ring: RingConfig; circle: Cir
           <button
             onClick={() => setAddOpen(true)}
             data-testid={`btn-add-person-${ring.key}`}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-current/30 ${ring.color} opacity-60 hover:opacity-90 transition-opacity text-[12px] font-bold uppercase tracking-wide`}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed opacity-60 hover:opacity-90 transition-opacity text-[12px] font-bold uppercase tracking-wide"
+            style={{ borderColor: `${ring.hex}55`, color: ring.hex }}
           >
             <Plus className="w-3.5 h-3.5" />
             Add someone
@@ -405,12 +407,10 @@ export default function IronCirclePage() {
       verse: "I urge, then, that petitions, prayers, intercession and thanksgiving be made for all people.",
       verseRef: "1 Timothy 2:1",
       Icon: Shield,
-      color: "text-violet-500",
-      border: "border-violet-200 dark:border-violet-800/50",
-      bg: "bg-violet-50/60 dark:bg-violet-950/20",
+      hex: "#a78bfa",
+      cardStyle: { background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.25)" },
       accent: "bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-400",
-      pillBg: "bg-violet-100 dark:bg-violet-900/40",
-      pillText: "text-violet-700 dark:text-violet-300",
+      pillStyle: { background: "rgba(139,92,246,0.15)" },
     },
     {
       key: "walk",
@@ -419,12 +419,10 @@ export default function IronCirclePage() {
       verse: "Walk with the wise and become wise, for a companion of fools suffers harm.",
       verseRef: "Proverbs 13:20",
       Icon: Users,
-      color: "text-blue-500",
-      border: "border-blue-200 dark:border-blue-800/50",
-      bg: "bg-blue-50/60 dark:bg-blue-950/20",
+      hex: "#60a5fa",
+      cardStyle: { background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)" },
       accent: "bg-gradient-to-r from-blue-500 via-sky-500 to-blue-400",
-      pillBg: "bg-blue-100 dark:bg-blue-900/40",
-      pillText: "text-blue-700 dark:text-blue-300",
+      pillStyle: { background: "rgba(59,130,246,0.15)" },
     },
     {
       key: "aspire",
@@ -433,12 +431,10 @@ export default function IronCirclePage() {
       verse: "As iron sharpens iron, so one person sharpens another.",
       verseRef: "Proverbs 27:17",
       Icon: Star,
-      color: "text-amber-500",
-      border: "border-amber-200 dark:border-amber-800/50",
-      bg: "bg-amber-50/60 dark:bg-amber-950/20",
+      hex: "#fbbf24",
+      cardStyle: { background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" },
       accent: "bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-400",
-      pillBg: "bg-amber-100 dark:bg-amber-900/40",
-      pillText: "text-amber-700 dark:text-amber-300",
+      pillStyle: { background: "rgba(245,158,11,0.15)" },
     },
   ];
 
@@ -522,10 +518,11 @@ export default function IronCirclePage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08 }}
-          className="mb-6 rounded-2xl border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/60 dark:bg-indigo-950/20 px-5 py-4 shadow-sm overflow-hidden relative"
+          className="mb-6 rounded-2xl px-5 py-4 overflow-hidden relative"
+          style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)" }}
         >
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-400" />
-          <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2">
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(129,140,248,0.9)" }}>
             This week's question
           </p>
           <p className="text-[15px] font-bold text-foreground leading-snug">
