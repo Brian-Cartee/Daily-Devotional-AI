@@ -147,7 +147,7 @@ function EmailSection() {
           <Mail className="w-4 h-4 text-indigo-500" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-foreground">Daily email verse</p>
+          <p className="text-[13px] font-semibold text-foreground">Today&apos;s word — daily email</p>
           <p className="text-[11px] text-muted-foreground">{getDailyEmailDeliveryDescription()}</p>
         </div>
         {isActive && (
@@ -317,7 +317,9 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
           <div>
             <h2 className="text-[16px] font-bold text-foreground">My rhythm</h2>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              Gentle phone reminders in your local time · optional morning email
+              {isNativeWebViewShell()
+                ? "Your daily word, delivered each morning"
+                : "Gentle phone reminders in your local time · optional morning email"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -331,7 +333,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         <div className="px-5 py-5 space-y-5">
 
           {/* ── Push status banner ── */}
-          {permission === "denied" ? (
+          {isNativeWebViewShell() ? null : permission === "denied" ? (
             <div className="rounded-2xl bg-rose-500/8 border border-rose-400/25 px-4 py-4 space-y-1">
               <div className="flex items-center gap-2">
                 <BellOff className="w-4 h-4 text-rose-500 shrink-0" />
@@ -526,8 +528,8 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* ── Divider ── */}
-          <div className="h-px bg-border/30" />
+          {/* ── Divider (browser only) ── */}
+          {!isNativeWebViewShell() && <div className="h-px bg-border/30" />}
 
           {/* ── Email section ── */}
           <EmailSection />

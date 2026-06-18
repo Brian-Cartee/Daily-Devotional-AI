@@ -28,7 +28,7 @@ import { applyHomeScrollToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
 import { getRhythm } from "@/lib/faithRhythm";
-import { isDailyEmailLinked } from "@/hooks/use-email-subscription";
+import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -173,23 +173,19 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
     };
   }, [moreOpen]);
 
+  const { subscribed: emailSubscribed } = useEmailSubscriptionStatus();
   const [rhythmDone, setRhythmDone] = useState(() => getRhythm() !== null);
-  const [emailDone, setEmailDone] = useState(() => isDailyEmailLinked());
 
   useEffect(() => {
-    const refresh = () => {
-      setRhythmDone(getRhythm() !== null);
-      setEmailDone(isDailyEmailLinked());
-    };
-    window.addEventListener("sp-email-subscription-updated", refresh);
+    const refresh = () => setRhythmDone(getRhythm() !== null);
     window.addEventListener("sp-rhythm-updated", refresh);
-    return () => {
-      window.removeEventListener("sp-email-subscription-updated", refresh);
-      window.removeEventListener("sp-rhythm-updated", refresh);
-    };
+    return () => window.removeEventListener("sp-rhythm-updated", refresh);
   }, []);
 
-  const needsSetupNudge = !rhythmDone || !emailDone;
+  const emailDone = emailSubscribed;
+  // On iOS, "My rhythm" = daily email (no push available), so rhythm is done when email is done
+  const effectiveRhythmDone = inNativeApp ? emailDone : rhythmDone;
+  const needsSetupNudge = !effectiveRhythmDone || !emailDone;
 
   const overHomeHero = location === "/" || location === "";
   const overCinematicHero =
@@ -237,7 +233,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
       onOpenNotifications={() => setNotifOpen(true)}
       hasNotificationBadge={needsNotificationNudge}
       hasSetupBadge={needsSetupNudge}
-      rhythmDone={rhythmDone}
+      rhythmDone={effectiveRhythmDone}
       emailDone={emailDone}
     />
   );
