@@ -9,6 +9,7 @@ import { useWelcomeOverlay } from "@/hooks/use-welcome-overlay";
 import { SplashScreen } from "@/components/SplashScreen";
 import { pickHomeReturnOverlay } from "@/lib/homeReturnOverlay";
 import { clearReturningHome, isReturningHome, markIntroFlowComplete } from "@/lib/introState";
+import { setEntryOverlayActive } from "@/lib/entryOverlayState";
 import { hydrateWhyPanelFromServer } from "@/lib/homeHeroState";
 import {
   consumeThresholdJustCompleted,
@@ -766,6 +767,10 @@ function LandingHomeInner() {
     try { return !!localStorage.getItem("sp_start_burden") && !hasShownBeginWalk(); } catch { return false; }
   });
   const [showEntryScreen, setShowEntryScreen] = useState(() => homeReturnOverlay === "entry");
+  useEffect(() => {
+    setEntryOverlayActive(showEntryScreen);
+    return () => setEntryOverlayActive(false);
+  }, [showEntryScreen]);
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
@@ -775,6 +780,9 @@ function LandingHomeInner() {
   const welcomeOverlayEnabled = homeReturnOverlay === "welcome";
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
   const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
+  useEffect(() => {
+    if (showWelcomeOverlay) setEntryOverlayActive(true);
+  }, [showWelcomeOverlay]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
     if (!showWalkthrough) return;

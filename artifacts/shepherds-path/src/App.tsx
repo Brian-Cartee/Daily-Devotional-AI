@@ -41,6 +41,7 @@ import GuidancePage from "@/pages/GuidancePage";
 import { FloatingAskAI } from "@/components/FloatingAskAI";
 import { ConvictionPanel } from "@/components/ConvictionPanel";
 import { NavBar } from "@/components/NavBar";
+import { useEntryOverlayActive } from "@/lib/entryOverlayState";
 import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
 import PrayerClosetPage from "@/pages/PrayerClosetPage";
 import AdminPage from "@/pages/AdminPage";
@@ -150,7 +151,7 @@ function NativeRouteBeacon() {
 function Router() {
   const [location] = useLocation();
   const hideFloater = isSacredPresenceRoute(location);
-  const hideNav = isSacredPresenceRoute(location);
+  const hideNav = isSacredPresenceRoute(location) || useEntryOverlayActive();
 
   return (
     <>
