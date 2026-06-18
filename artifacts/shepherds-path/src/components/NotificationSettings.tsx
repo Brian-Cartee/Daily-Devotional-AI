@@ -92,7 +92,7 @@ function TimeSelect({ value, options, onChange }: { value: string; options: stri
   );
 }
 
-function EmailSection() {
+function useEmailSectionState() {
   const { toast } = useToast();
   const { subscribed, email: syncedEmail } = useEmailSubscriptionStatus();
   const [email, setEmail] = useState(() => getStoredSubscriberEmail() ?? "");
@@ -118,87 +118,71 @@ function EmailSection() {
   }, [syncedEmail]);
 
   const isActive = linkSuccess || localActive || subscribed || isDailyEmailLinked();
-  const displayEmail =
-    getStoredSubscriberEmail() || syncedEmail || email || getKnownDeviceEmail();
+  const displayEmail = getStoredSubscriberEmail() || syncedEmail || email || getKnownDeviceEmail();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
-    const result = await subscribeWithIdentity({
-      email: email.trim(),
-      source: "notification-settings",
-    });
+    const result = await subscribeWithIdentity({ email: email.trim(), source: "notification-settings" });
     if (result.ok) {
       markEmailSubscribed(email.trim());
       setLocalActive(true);
       setLinkSuccess(true);
-      toast({ description: result.message || "Daily verse email linked on this device." });
+      toast({ description: result.message || "Daily word email linked on this device." });
     } else {
       toast({ description: result.message, variant: "destructive" });
     }
     setLoading(false);
   };
 
+  return { email, setEmail, loading, isActive, displayEmail, handleSubscribe };
+}
+
+function EmailSectionInner() {
+  const { email, setEmail, loading, isActive, displayEmail, handleSubscribe } = useEmailSectionState();
   return (
-    <div className="rounded-2xl border border-border/50 bg-muted/30 overflow-hidden">
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-border/30">
-        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
-          <Mail className="w-4 h-4 text-indigo-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-foreground">Today&apos;s word — daily email</p>
-          <p className="text-[11px] text-muted-foreground">{getDailyEmailDeliveryDescription()}</p>
-        </div>
-        {isActive && (
-          <div className="flex items-center gap-1 text-emerald-600 shrink-0">
-            <Check className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-bold uppercase tracking-wide">Active</span>
-          </div>
-        )}
-      </div>
-      <div className="px-4 py-3">
-        {isActive ? (
+    <div style={{ padding: "0 16px 14px" }}>
+      {isActive ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>✅</span>
           <div>
-            <p className="text-[13px] font-semibold text-foreground">You&apos;re receiving daily Scripture by email</p>
-            <p className="text-[12px] text-muted-foreground mt-1 flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              Sending to <span className="text-foreground font-medium">{displayEmail}</span>
-            </p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.88)", margin: 0 }}>Subscribed</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "2px 0 0" }}>Sending to {displayEmail} · {getDailyEmailDeliveryDescription()}</p>
           </div>
-        ) : (
-          <form onSubmit={handleSubscribe} className="space-y-2">
-            <p className="text-[12px] text-muted-foreground">
-              Already on our list? Enter your address once to link this device.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                data-testid="notif-email-input"
-                className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/25 min-w-0"
-              />
-              <Button type="submit" size="sm" disabled={loading || !email.trim()} className="rounded-xl shrink-0 text-[12px]" data-testid="notif-email-submit">
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Link"}
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubscribe} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", margin: 0, lineHeight: 1.5 }}>
+            Already subscribed? Enter your address to link this device, or subscribe now.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+              data-testid="notif-email-input"
+              style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 12, padding: "9px 13px", fontSize: 14, color: "rgba(255,255,255,0.90)", outline: "none", minWidth: 0 }}
+            />
+            <Button type="submit" size="sm" disabled={loading || !email.trim()} className="rounded-xl shrink-0 text-[12px]" data-testid="notif-email-submit">
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Link"}
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
 
-function PhoneSection() {
+function SmsCard() {
   const sessionId = getSessionId();
   const { toast } = useToast();
   const [phone, setPhone] = useState("");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/user-phone?sessionId=${encodeURIComponent(sessionId)}`)
@@ -220,97 +204,98 @@ function PhoneSection() {
       });
       if (r.ok) {
         setSaved(true);
-        setExpanded(false);
-        toast({ description: "Phone number saved — we'll reach out when text check-ins are ready." });
+        setOpen(false);
+        toast({ description: "You're on the list. When morning texts go live, you'll be first." });
       }
     } catch {
-      toast({ description: "Couldn't save right now — try again.", variant: "destructive" });
+      toast({ description: "Couldn't save — try again.", variant: "destructive" });
     }
     setLoading(false);
   };
 
   return (
-    <div
-      style={{
-        borderRadius: "16px",
-        border: "1px solid rgba(255,255,255,0.10)",
-        backgroundColor: "rgba(255,255,255,0.04)",
-        overflow: "hidden",
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          padding: "12px 16px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-        }}
-      >
-        <div style={{ width: 32, height: 32, borderRadius: 12, backgroundColor: "rgba(52,211,153,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: 15 }}>📱</span>
+    <div style={{ borderRadius: 18, border: "1px solid rgba(52,211,153,0.25)", backgroundColor: "rgba(52,211,153,0.06)", overflow: "hidden" }}>
+      {/* Header row */}
+      <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 14, backgroundColor: "rgba(52,211,153,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>
+          💬
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.90)", margin: 0 }}>
-            Text check-ins <span style={{ fontSize: 11, fontWeight: 500, color: "rgba(52,211,153,0.80)", marginLeft: 6 }}>Coming soon</span>
-          </p>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", margin: "2px 0 0" }}>
-            {saved ? `Saved — we'll text ${phone}` : "Add your number — we'll reach out like a friend"}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)", margin: 0 }}>
+              Text message
+            </p>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", backgroundColor: "rgba(52,211,153,0.20)", color: "rgb(52,211,153)", borderRadius: 6, padding: "2px 7px" }}>
+              Best
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>
+              Coming soon
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: "4px 0 0", lineHeight: 1.5 }}>
+            A morning text the way a close friend reaches out — not a notification to dismiss, but a word that lands.
           </p>
         </div>
-        {saved && <span style={{ fontSize: 13, color: "rgb(52,211,153)", fontWeight: 700, flexShrink: 0 }}>✓</span>}
-        {!saved && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>}
-      </button>
+        {saved && (
+          <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>✅</span>
+        )}
+      </div>
 
-      {expanded && !saved && (
-        <form onSubmit={handleSave} style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: 0, lineHeight: 1.5 }}>
-            Optional. When text accountability is live, we&apos;ll send a short morning check-in — no marketing, no spam. Easy to stop anytime.
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 12,
-                padding: "8px 12px",
-                fontSize: 14,
-                color: "rgba(255,255,255,0.90)",
-                outline: "none",
-                minWidth: 0,
-              }}
-            />
-            <button
-              type="submit"
-              disabled={loading || !phone.trim()}
-              style={{
-                backgroundColor: "rgba(52,211,153,0.20)",
-                border: "1px solid rgba(52,211,153,0.40)",
-                borderRadius: 12,
-                padding: "8px 16px",
-                fontSize: 13,
-                fontWeight: 700,
-                color: "rgb(52,211,153)",
-                cursor: loading || !phone.trim() ? "not-allowed" : "pointer",
-                flexShrink: 0,
-                opacity: loading || !phone.trim() ? 0.5 : 1,
-              }}
-            >
-              {loading ? "…" : "Save"}
-            </button>
-          </div>
-        </form>
+      {/* Saved state */}
+      {saved ? (
+        <div style={{ padding: "0 16px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "rgb(52,211,153)", fontWeight: 600 }}>
+            Saved — we&apos;ll text {phone} when this goes live
+          </span>
+          <button
+            type="button"
+            onClick={() => { setSaved(false); setOpen(true); }}
+            style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+          >
+            Change
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* CTA */}
+          {!open && (
+            <div style={{ padding: "0 16px 14px" }}>
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                style={{ fontSize: 13, fontWeight: 700, color: "rgb(52,211,153)", background: "none", border: "1px solid rgba(52,211,153,0.35)", borderRadius: 12, padding: "8px 18px", cursor: "pointer" }}
+              >
+                Reserve my spot
+              </button>
+            </div>
+          )}
+
+          {/* Input form */}
+          {open && (
+            <form onSubmit={handleSave} style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.6 }}>
+                One short morning message. No marketing. No spam. Opt out anytime with a single reply.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  autoFocus
+                  style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "9px 13px", fontSize: 14, color: "rgba(255,255,255,0.90)", outline: "none", minWidth: 0 }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !phone.trim()}
+                  style={{ backgroundColor: "rgba(52,211,153,0.22)", border: "1px solid rgba(52,211,153,0.45)", borderRadius: 12, padding: "9px 18px", fontSize: 13, fontWeight: 700, color: "rgb(52,211,153)", cursor: loading || !phone.trim() ? "not-allowed" : "pointer", flexShrink: 0, opacity: loading || !phone.trim() ? 0.5 : 1 }}
+                >
+                  {loading ? "…" : "Save"}
+                </button>
+              </div>
+            </form>
+          )}
+        </>
       )}
     </div>
   );
@@ -479,6 +464,14 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
     setSaving(false);
   }, [settings, sessionId]);
 
+  const pushCards = [
+    { icon: Sun, colorIcon: "rgb(245,158,11)", colorBg: "rgba(245,158,11,0.10)", label: "Morning devotional", desc: "Daily word to start your day" },
+    { icon: Clock, colorIcon: "rgb(56,189,248)", colorBg: "rgba(56,189,248,0.10)", label: "Midday check-in", desc: "Gentle nudge if you haven't opened yet" },
+    { icon: Moon, colorIcon: "rgb(129,140,248)", colorBg: "rgba(129,140,248,0.10)", label: "Evening reflection", desc: "A closing word before the day ends" },
+    { icon: AlarmClock, colorIcon: "rgb(248,113,113)", colorBg: "rgba(248,113,113,0.10)", label: "Streak keeper", desc: "Nudge if today's visit is still open" },
+    { icon: CalendarDays, colorIcon: "rgb(167,139,250)", colorBg: "rgba(167,139,250,0.10)", label: "Weekly recap", desc: "Your week, reflected back every Sunday" },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -503,14 +496,12 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         {/* ── Header ── */}
         <div className="px-5 pt-5 pb-4 flex items-center justify-between sticky top-0 bg-card border-b border-border/30 z-10">
           <div>
-            <h2 className="text-[16px] font-bold text-foreground">My rhythm</h2>
+            <h2 className="text-[16px] font-bold text-foreground">How should your Shepherd reach you?</h2>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              {isNativeWebViewShell()
-                ? "Your daily word, delivered each morning"
-                : "Gentle phone reminders in your local time · optional morning email"}
+              The more connected we stay, the more this becomes a real companion — not just an app you open when you remember.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 ml-3">
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors" data-testid="notif-close">
               <X className="w-4 h-4 text-muted-foreground" />
@@ -518,217 +509,143 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="px-5 py-5 space-y-5">
+        <div className="px-5 py-5 space-y-4">
 
-          {/* ── Push status banner ── */}
-          {isNativeWebViewShell() ? null : permission === "denied" ? (
-            <div className="rounded-2xl bg-rose-500/8 border border-rose-400/25 px-4 py-4 space-y-1">
-              <div className="flex items-center gap-2">
-                <BellOff className="w-4 h-4 text-rose-500 shrink-0" />
-                <p className="text-[14px] font-bold text-foreground">Notifications blocked</p>
+          {/* ── Section label ── */}
+          <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: 0 }}>
+            Preferred method
+          </p>
+
+          {/* ── 1. SMS — the gold standard ── */}
+          <SmsCard />
+
+          {/* ── 2. Push notifications ── */}
+          <div style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.10)", backgroundColor: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+            {/* Push header */}
+            <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 14, backgroundColor: "rgba(251,191,36,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>
+                🔔
               </div>
-              <p className="text-[12px] text-muted-foreground leading-relaxed pl-6">
-                To enable them, open your browser Settings → Site Settings → Notifications → Allow this site.
-              </p>
-            </div>
-          ) : subscribed ? (
-            /* ── ENABLED STATE ── */
-            <div className="space-y-4">
-              {/* Active status card */}
-              <div className="rounded-2xl bg-emerald-500/8 border border-emerald-400/25 px-4 py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/12 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-emerald-500" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)", margin: 0 }}>
+                    Push notification
+                  </p>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", backgroundColor: "rgba(251,191,36,0.15)", color: "rgb(251,191,36)", borderRadius: 6, padding: "2px 7px" }}>
+                    Great
+                  </span>
+                  {isNativeWebViewShell() && (
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>Coming soon</span>
+                  )}
+                  {!isNativeWebViewShell() && subscribed && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "rgb(52,211,153)" }}>● ON</span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-emerald-600 dark:text-emerald-400">Push notifications are ON</p>
-                  <p className="text-[11px] text-muted-foreground">Adjust which ones you receive below</p>
-                </div>
-              </div>
-
-              {/* Individual toggles */}
-              <div className="rounded-2xl border border-border/50 bg-muted/20 divide-y divide-border/30 overflow-hidden">
-
-                {/* Morning */}
-                <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-400/12 flex items-center justify-center shrink-0">
-                    <Sun className="w-4 h-4 text-amber-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Morning devotional</p>
-                    <p className="text-[11px] text-muted-foreground">Daily verse + reflection prompt</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {settings.morningEnabled && (
-                      <TimeSelect value={settings.morningTime} options={MORNING_TIMES} onChange={(v) => saveSetting("morningTime", v)} />
-                    )}
-                    <Toggle checked={settings.morningEnabled} onChange={(v) => saveSetting("morningEnabled", v)} />
-                  </div>
-                </div>
-
-                {/* Midday */}
-                <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-sky-400/12 flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-sky-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Midday check-in</p>
-                    <p className="text-[11px] text-muted-foreground">Gentle nudge at noon if not done yet</p>
-                  </div>
-                  <Toggle checked={settings.middayEnabled} onChange={(v) => saveSetting("middayEnabled", v)} />
-                </div>
-
-                {/* Evening */}
-                <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-400/12 flex items-center justify-center shrink-0">
-                    <Moon className="w-4 h-4 text-indigo-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Evening reflection</p>
-                    <p className="text-[11px] text-muted-foreground">A closing nudge before the day ends</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {settings.eveningEnabled && (
-                      <TimeSelect value={settings.eveningTime} options={EVENING_TIMES} onChange={(v) => saveSetting("eveningTime", v)} />
-                    )}
-                    <Toggle checked={settings.eveningEnabled} onChange={(v) => saveSetting("eveningEnabled", v)} />
-                  </div>
-                </div>
-
-                {/* Streak */}
-                <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-400/12 flex items-center justify-center shrink-0">
-                    <AlarmClock className="w-4 h-4 text-rose-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Streak reminder</p>
-                    <p className="text-[11px] text-muted-foreground">Evening nudge if you haven't visited today</p>
-                  </div>
-                  <Toggle checked={settings.streakReminder} onChange={(v) => saveSetting("streakReminder", v)} />
-                </div>
-
-                {/* Weekly */}
-                <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-violet-400/12 flex items-center justify-center shrink-0">
-                    <CalendarDays className="w-4 h-4 text-violet-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Weekly summary</p>
-                    <p className="text-[11px] text-muted-foreground">Your week in review, every Sunday</p>
-                  </div>
-                  <Toggle checked={settings.weeklySummary} onChange={(v) => saveSetting("weeklySummary", v)} />
-                </div>
-              </div>
-
-              {/* Turn off */}
-              <button
-                onClick={handleDisable}
-                className="w-full text-center text-[12px] text-muted-foreground/50 hover:text-rose-500 py-1 transition-colors"
-                data-testid="notif-push-disable"
-              >
-                Turn off all push notifications
-              </button>
-            </div>
-          ) : isNativeWebViewShell() ? (
-            /* ── iOS APP — push not supported in WebView ── */
-            <div className="space-y-4">
-              <div className="rounded-2xl bg-amber-500/8 border border-amber-400/25 px-4 py-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-amber-500 shrink-0" />
-                  <p className="text-[14px] font-bold text-foreground">Use the daily email for reminders</p>
-                </div>
-                <p className="text-[12px] text-muted-foreground leading-relaxed pl-6">
-                  In-app push reminders aren&apos;t available yet. Subscribe to Today&apos;s Word below — it arrives each morning and keeps you connected without needing notifications turned on.
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: "4px 0 0", lineHeight: 1.5 }}>
+                  Tap your shoulder on the lock screen — quiet, personal, easy to act on in one tap.
                 </p>
               </div>
-              <div className="rounded-2xl border border-primary/15 bg-primary/4 divide-y divide-primary/10 overflow-hidden">
-                {[
-                  { icon: Sun, color: "text-amber-500 bg-amber-400/12", label: "Morning devotional", desc: "Daily verse to start your day" },
-                  { icon: Clock, color: "text-sky-500 bg-sky-400/12", label: "Midday check-in", desc: "Optional noon reminder" },
-                  { icon: Moon, color: "text-indigo-400 bg-indigo-400/12", label: "Evening reflection", desc: "Close the day with intention" },
-                  { icon: AlarmClock, color: "text-rose-400 bg-rose-400/12", label: "Streak reminder", desc: "Nudge if today's visit is still open" },
-                  { icon: CalendarDays, color: "text-violet-400 bg-violet-400/12", label: "Weekly summary", desc: "Your week, reflected back" },
-                ].map(({ icon: Icon, color, label, desc }) => (
-                  <div key={label} className="flex items-center gap-3 px-4 py-2.5 opacity-40">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${color.split(" ")[1]}`}>
-                      <Icon className={`w-3.5 h-3.5 ${color.split(" ")[0]}`} />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-semibold text-foreground">{label}</p>
-                      <p className="text-[11px] text-muted-foreground">{desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-                Push notifications coming in a future update. For now, subscribe to the daily email below.
-              </p>
             </div>
-          ) : (
-            /* ── BROWSER — enable push ── */
-            <div className="space-y-4">
-              {/* OFF status card */}
-              <div className="rounded-2xl bg-muted/50 border border-border/40 px-4 py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <BellOff className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[14px] font-bold text-foreground">Push notifications are OFF</p>
-                  <p className="text-[11px] text-muted-foreground">You won't receive any reminders</p>
+
+            {/* Push body — varies by state */}
+            {isNativeWebViewShell() ? (
+              <div style={{ padding: "0 16px 14px" }}>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", margin: 0, lineHeight: 1.6 }}>
+                  Native push is coming in a future app update. Add your number above to be reached in the meantime.
+                </p>
+              </div>
+            ) : permission === "denied" ? (
+              <div style={{ padding: "0 16px 14px" }}>
+                <div style={{ backgroundColor: "rgba(248,113,113,0.10)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: 12, padding: "10px 13px" }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "rgb(248,113,113)", margin: "0 0 4px" }}>Blocked in phone settings</p>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.40)", margin: 0, lineHeight: 1.5 }}>
+                    Go to Settings → Notifications → Shepherd&apos;s Path → Allow
+                  </p>
                 </div>
               </div>
-
-              {/* What you'll get */}
-              <div className="rounded-2xl border border-primary/15 bg-primary/4 divide-y divide-primary/10 overflow-hidden">
-                {[
-                  { icon: Sun, color: "text-amber-500 bg-amber-400/12", label: "Morning devotional", desc: "Daily verse to start your day" },
-                  { icon: Clock, color: "text-sky-500 bg-sky-400/12", label: "Midday check-in", desc: "Optional noon reminder" },
-                  { icon: Moon, color: "text-indigo-400 bg-indigo-400/12", label: "Evening reflection", desc: "Close the day with intention" },
-                  { icon: AlarmClock, color: "text-rose-400 bg-rose-400/12", label: "Streak reminder", desc: "Nudge if today's visit is still open" },
-                  { icon: CalendarDays, color: "text-violet-400 bg-violet-400/12", label: "Weekly summary", desc: "Your week, reflected back" },
-                ].map(({ icon: Icon, color, label, desc }) => (
-                  <div key={label} className="flex items-center gap-3 px-4 py-2.5">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${color.split(" ")[1]}`}>
-                      <Icon className={`w-3.5 h-3.5 ${color.split(" ")[0]}`} />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-semibold text-foreground">{label}</p>
-                      <p className="text-[11px] text-muted-foreground">{desc}</p>
-                    </div>
-                  </div>
-                ))}
+            ) : subscribed ? (
+              <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                {/* Individual toggles */}
+                <div style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                  {pushCards.map(({ icon: Icon, colorIcon, colorBg, label, desc }, i) => {
+                    const keys: (keyof PushSettings)[] = ["morningEnabled","middayEnabled","eveningEnabled","streakReminder","weeklySummary"];
+                    const timeKeys: (keyof PushSettings | null)[] = ["morningTime", null, "eveningTime", null, null];
+                    const timeOptions = [MORNING_TIMES, [], EVENING_TIMES, [], []];
+                    const key = keys[i]!;
+                    const timeKey = timeKeys[i];
+                    return (
+                      <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: i < pushCards.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: colorBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon style={{ width: 15, height: 15, color: colorIcon }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", margin: 0 }}>{label}</p>
+                          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", margin: "1px 0 0" }}>{desc}</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          {timeKey && settings[key] && (
+                            <TimeSelect value={settings[timeKey] as string} options={timeOptions[i]!} onChange={(v) => saveSetting(timeKey, v)} />
+                          )}
+                          <Toggle checked={settings[key] as boolean} onChange={(v) => saveSetting(key, v)} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button onClick={handleDisable} className="w-full text-center text-[11px] text-muted-foreground/40 hover:text-rose-500 py-1 transition-colors" data-testid="notif-push-disable">
+                  Turn off push notifications
+                </button>
               </div>
+            ) : (
+              <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                  {pushCards.map(({ icon: Icon, colorIcon, colorBg, label, desc }, i) => (
+                    <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: i < pushCards.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", opacity: 0.55 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: colorBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon style={{ width: 15, height: 15, color: colorIcon }} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", margin: 0 }}>{label}</p>
+                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", margin: "1px 0 0" }}>{desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={handleEnable} disabled={loading} className="w-full rounded-2xl h-11 text-[14px] font-semibold" data-testid="notif-push-enable">
+                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enabling…</> : <><Bell className="w-4 h-4 mr-2" /> Let my Shepherd reach me</>}
+                </Button>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", textAlign: "center", margin: 0 }}>
+                  Quiet. Respectful. Turn off anytime from your phone settings.
+                </p>
+              </div>
+            )}
+          </div>
 
-              <Button
-                onClick={handleEnable}
-                disabled={loading}
-                className="w-full rounded-2xl h-12 text-[15px] font-semibold"
-                data-testid="notif-push-enable"
-              >
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enabling…</>
-                ) : (
-                  <><Bell className="w-4 h-4 mr-2" /> Turn On Notifications</>
-                )}
-              </Button>
-              <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-                Quiet. Respectful. Turn off anytime below or in your phone settings.
-              </p>
+          {/* ── 3. Email ── */}
+          <div style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.10)", backgroundColor: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+            <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 14, backgroundColor: "rgba(99,102,241,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>
+                ✉️
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)", margin: 0 }}>Daily email</p>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", backgroundColor: "rgba(99,102,241,0.18)", color: "rgb(129,140,248)", borderRadius: 6, padding: "2px 7px" }}>
+                    Good
+                  </span>
+                </div>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: "4px 0 0", lineHeight: 1.5 }}>
+                  Today&apos;s word delivered to your inbox each morning — read it whenever you get there.
+                </p>
+              </div>
             </div>
-          )}
+            <EmailSectionInner />
+          </div>
 
-          {/* ── Divider (browser only) ── */}
-          {!isNativeWebViewShell() && <div className="h-px bg-border/30" />}
-
-          {/* ── Streak + weekly dots ── */}
+          {/* ── Streak card ── */}
           {streakData && (streakData.currentStreak >= 1 || streakData.visitDates.length > 0) && (
             <StreakCard streak={streakData} />
           )}
-
-          {/* ── Email section ── */}
-          <EmailSection />
-
-          {/* ── Phone section ── */}
-          <PhoneSection />
 
           <Link
             href="/how-to-use"
