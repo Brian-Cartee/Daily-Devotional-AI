@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Image,
   Linking,
   Platform,
@@ -34,7 +35,7 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
 // Update this every release — must match app.json version string.
-const APP_VERSION = "2.1.6";
+const APP_VERSION = "2.1.8";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
 function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
@@ -217,6 +218,7 @@ export default function MainScreen() {
   const { isSubscribed, isMissionPartner, tier } = useSubscription();
   const webviewRef = useRef<WebView>(null);
   const wasSubscribedRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
   const [entryUrl, setEntryUrl] = useState<string | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
   const [showSlowOptions, setShowSlowOptions] = useState(false);
@@ -265,6 +267,22 @@ export default function MainScreen() {
         );
       },
     );
+  }, []);
+
+  // When iOS brings the app to foreground, tell the WebView to check if a
+  // splash screen should be shown. This is the reliable alternative to
+  // visibilitychange/focus events which are unreliable in WKWebView.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextState;
+      if (prev.match(/inactive|background/) && nextState === "active") {
+        webviewRef.current?.injectJavaScript(
+          `(function(){try{window.__onAppForeground?.();}catch(e){}true;})();`,
+        );
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   const pushNativeDiag = useCallback((event: string, detail = "") => {

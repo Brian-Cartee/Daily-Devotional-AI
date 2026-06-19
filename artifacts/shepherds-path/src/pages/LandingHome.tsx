@@ -803,12 +803,16 @@ function LandingHomeInner() {
       tryShowSplash();
     };
 
+    // Native AppState bridge — called by index.tsx when iOS brings app to foreground
+    (window as any).__onAppForeground = tryShowSplash;
+
     // Record when app goes to background, check on return
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", tryShowSplash);
     window.addEventListener("pageshow", tryShowSplash);
     const poll = setInterval(tryShowSplash, 2000);
     return () => {
+      (window as any).__onAppForeground = undefined;
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", tryShowSplash);
       window.removeEventListener("pageshow", tryShowSplash);
