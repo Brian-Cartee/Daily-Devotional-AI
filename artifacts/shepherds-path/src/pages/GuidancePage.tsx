@@ -1653,6 +1653,14 @@ export default function GuidancePage() {
                             </div>
                           }
                         />
+                        {/* Bible nudge — honors the physical Bible, surfaces today's word */}
+                        <div className="mt-4 px-1">
+                          <p className="text-[13px] text-foreground/50 italic leading-relaxed">
+                            {dailyVerse?.reference && dailyVerse.reference !== verse.reference
+                              ? `If you have a Bible nearby, turn to ${verse.reference} — and today's word is ${dailyVerse.reference}.`
+                              : `If you have a Bible nearby, turn to ${verse.reference}. There's something about holding the page.`}
+                          </p>
+                        </div>
                       </>
                     ) : (
                       <div className="rounded-2xl bg-primary/8 border border-primary/25 px-6 py-5">
