@@ -787,28 +787,33 @@ function LandingHomeInner() {
       localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
     };
 
-    const onForeground = () => {
+    const tryShowSplash = () => {
       const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
       const elapsed = Date.now() - last;
+      if (elapsed < REOPEN_THRESHOLD_MS) return;
       recordActive();
-      if (elapsed < REOPEN_THRESHOLD_MS) return; // just switching tabs
       clearReturningHome();
       if (shouldShowHomeEntry(true)) {
         setShowEntryScreen(true);
       }
     };
 
-    const onVisible = () => {
+    const onVisibility = () => {
       if (document.visibilityState === "hidden") { recordActive(); return; }
-      if (document.visibilityState === "visible") onForeground();
+      tryShowSplash();
     };
 
+    // Poll every 2 seconds — catches WKWebView foreground even when events don't fire
     recordActive();
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onForeground);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", tryShowSplash);
+    window.addEventListener("pageshow", tryShowSplash);
+    const poll = setInterval(tryShowSplash, 2000);
     return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onForeground);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", tryShowSplash);
+      window.removeEventListener("pageshow", tryShowSplash);
+      clearInterval(poll);
     };
   }, []);
   const [shared, setShared] = useState(false);
