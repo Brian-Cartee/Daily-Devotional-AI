@@ -2084,11 +2084,44 @@ export default function GuidancePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="mb-8 flex flex-col items-center gap-3"
+              className="mb-8 flex flex-col items-center gap-4"
             >
-              <p className="text-[13px] text-muted-foreground/65 italic text-center" style={{ fontFamily: "'Georgia', serif" }}>
-                Go in peace. What you received is enough for today.
-              </p>
+              {/* Send-off */}
+              <div
+                className="w-full rounded-2xl px-5 py-5 text-center"
+                style={{ background: "linear-gradient(145deg, rgba(139,92,246,0.10), rgba(109,40,217,0.05))", border: "1px solid rgba(139,92,246,0.20)" }}
+              >
+                <p className="text-[17px] leading-relaxed mb-1" style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--foreground) / 0.90)" }}>
+                  You brought something real today.
+                </p>
+                <p className="text-[13px] text-muted-foreground/65 leading-relaxed">
+                  That matters. Come back when you need to — this is always here.
+                </p>
+              </div>
+
+              {/* Return seed — tomorrow nudge */}
+              <div
+                className="w-full rounded-2xl px-5 py-4 flex items-center gap-4"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg"
+                  style={{ background: "rgba(245,158,11,0.15)" }}
+                >
+                  🌅
+                </div>
+                <div className="flex-1">
+                  <p className="text-[14px] font-semibold text-foreground/90">Tomorrow's door is already open</p>
+                  <p className="text-[12px] text-muted-foreground/60 mt-0.5 leading-snug">
+                    A new verse and reflection wait for you each morning.
+                  </p>
+                </div>
+                <Link href="/devotional">
+                  <span className="text-[12px] font-bold text-primary shrink-0">Today's →</span>
+                </Link>
+              </div>
+
+              {/* Stillness + escape hatch */}
               <button
                 type="button"
                 onClick={() => setShowStillness(true)}
