@@ -249,6 +249,33 @@ export default function GuidancePage() {
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
+  // Voice greeting — plays once per session on the empty entry screen
+  useEffect(() => {
+    if (situation.trim()) return; // already have a situation, skip
+    const sessionKey = "sp_guidance_greeted_this_session";
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+    const greeting = isFirstVisit
+      ? "I'm here. Take your time — what's on your heart?"
+      : "Welcome back. What are you carrying today?";
+    const delay = setTimeout(() => {
+      prewarmTTS(greeting, getUserVoice());
+      // Small delay so the page has settled before audio plays
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(greeting);
+        utterance.rate = 0.92;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.85;
+        // Use Web Speech API as a lightweight fallback — no API cost, immediate
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utterance);
+        }
+      }, 400);
+    }, 1200);
+    return () => clearTimeout(delay);
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => {
       setPlaceholderIdx((i) => (i + 1) % GUIDANCE_PLACEHOLDERS.length);
