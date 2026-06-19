@@ -420,6 +420,7 @@ export default function GuidancePage() {
   /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
   const [sendOffText, setSendOffText] = useState<string | null>(null);
+  const [sessionFeedback, setSessionFeedback] = useState<"yes" | "not-quite" | null>(null);
   const latestResponseRef = useRef<HTMLDivElement>(null);
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
@@ -2188,6 +2189,63 @@ export default function GuidancePage() {
                   <span className="text-[12px] font-bold text-primary shrink-0">Today's →</span>
                 </Link>
               </div>
+
+              {/* Session feedback — one tap, fires silently */}
+              <AnimatePresence mode="wait">
+                {sessionFeedback === null ? (
+                  <motion.div
+                    key="feedback-ask"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="w-full text-center"
+                  >
+                    <p className="text-[12px] text-muted-foreground/55 mb-2.5">Did this feel like what you needed today?</p>
+                    <div className="flex justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSessionFeedback("yes");
+                          fetch("/api/guidance/feedback", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sessionId: getSessionId(), feedback: "yes", situation: situation.trim().slice(0, 200) }),
+                          }).catch(() => {});
+                        }}
+                        className="px-4 py-2 rounded-full text-[13px] font-semibold transition-all active:scale-95"
+                        style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.30)", color: "rgba(167,139,250,0.95)" }}
+                      >
+                        Yes, it did
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSessionFeedback("not-quite");
+                          fetch("/api/guidance/feedback", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sessionId: getSessionId(), feedback: "not-quite", situation: situation.trim().slice(0, 200) }),
+                          }).catch(() => {});
+                        }}
+                        className="px-4 py-2 rounded-full text-[13px] font-semibold transition-all active:scale-95"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.45)" }}
+                      >
+                        Not quite
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.p
+                    key="feedback-thanks"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-[12px] text-muted-foreground/45 italic text-center"
+                  >
+                    {sessionFeedback === "yes" ? "Glad it helped. See you next time." : "Noted — we'll keep listening."}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
               {/* Stillness + escape hatch */}
               <button

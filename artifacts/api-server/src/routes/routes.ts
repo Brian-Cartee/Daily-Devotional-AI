@@ -3590,6 +3590,25 @@ Rules:
     }
   });
 
+  // ── Guidance: session feedback (did this help?) ──────────────────────────────
+  app.post("/api/guidance/feedback", async (req, res) => {
+    const { sessionId, feedback, situation } = req.body as {
+      sessionId?: string; feedback?: string; situation?: string;
+    };
+    if (!sessionId || !feedback) return res.status(400).json({ message: "missing fields" });
+    try {
+      await storage.createJournalEntry({
+        sessionId,
+        type: "guidance_feedback",
+        content: feedback,
+        title: situation?.slice(0, 120) ?? undefined,
+      });
+      res.json({ ok: true });
+    } catch {
+      res.json({ ok: true }); // never surface errors to user for feedback
+    }
+  });
+
   // ── Witness Letter — quiet continuity from last guidance memory ───────────────
   app.get("/api/guidance/witness-letter", async (req, res) => {
     const sessionId = req.query.sessionId as string | undefined;
