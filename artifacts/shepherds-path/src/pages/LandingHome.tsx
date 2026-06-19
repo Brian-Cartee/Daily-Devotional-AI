@@ -721,7 +721,9 @@ function LandingHomeInner() {
   // In the iOS app, permanently mark intro complete so cold-launch sessionStorage
   // loss never triggers the "step inside" splash when tapping the Home button.
   if (inNativeApp) markIntroFlowComplete();
-  // For native WebView: don't skip the daily entry screen, only skip non-entry overlays
+  // Native WebView: clear returning-home flag on every mount so cold launch always
+  // evaluates fresh. Internal navigation re-sets it immediately via markReturningHome().
+  if (inNativeApp) clearReturningHome();
   const skipIntrosForHome = isReturningHome() && !inNativeApp;
 
   const [homeVisitAfterThreshold] = useState(() =>
@@ -781,15 +783,26 @@ function LandingHomeInner() {
   // show the splash if still eligible for today.
   useEffect(() => {
     if (!isNativeWebViewShell()) return;
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
+    let lastHidden = false;
+    const onForeground = () => {
+      if (!lastHidden) return;
+      lastHidden = false;
       clearReturningHome();
       if (shouldShowHomeEntry(true)) {
         setShowEntryScreen(true);
       }
     };
+    const onHidden = () => { lastHidden = true; };
+    const onVisible = () => {
+      if (document.visibilityState === "hidden") { onHidden(); return; }
+      if (document.visibilityState === "visible") onForeground();
+    };
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onForeground);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onForeground);
+    };
   }, []);
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
