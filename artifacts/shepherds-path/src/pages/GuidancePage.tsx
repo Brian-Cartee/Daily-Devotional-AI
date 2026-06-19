@@ -702,7 +702,7 @@ export default function GuidancePage() {
 
   // Save guidance memory silently when first response completes
   useEffect(() => {
-    if (!responseComplete || !situation.trim() || situation.trim().length < 30) return;
+    if (!responseComplete || !situation.trim() || situation.trim().length < 8) return;
     const assistantMessages = messages.filter(m => m.role === "assistant");
     const firstResponse = assistantMessages[0]?.content;
     if (!firstResponse) return;

@@ -4,7 +4,7 @@ import { hasTalkItThroughEntitlement, type FreeTrialState } from "@/lib/subscrip
 import { getCachedFreeTrial } from "@/lib/freeTrialState";
 
 export const GUIDANCE_WEEKLY_LIMIT_MESSAGE =
-  "You've had 3 conversations this week. Upgrade to Pro for unlimited Talk It Through access.";
+  "You've reached today's Talk It Through limit. Upgrade to Pro for unlimited daily conversations.";
 
 export type GuidanceWeeklyAllowance = {
   unlimited: boolean;

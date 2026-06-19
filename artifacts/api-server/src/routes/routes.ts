@@ -3493,7 +3493,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
         [{ role: "system", content: systemMsg }, ...conversationHistory],
         res,
         // 280 tokens ≈ 200-word ceiling; follow-ups are shorter at 160 tokens
-        { temperature: 0.82, maxTokens: isFollowUp ? 160 : 280, req }
+        { temperature: 0.82, maxTokens: isFollowUp ? 240 : 280, req }
       );
       if (sessionId) {
         const responseMsgCount = incrementMessageCount(sessionId);
