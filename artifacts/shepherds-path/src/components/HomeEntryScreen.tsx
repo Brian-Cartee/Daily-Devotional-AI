@@ -436,9 +436,10 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
   );
 }
 
-export function shouldShowHomeEntry(): boolean {
+export function shouldShowHomeEntry(inNativeApp = false): boolean {
   const welcomed = localStorage.getItem("sp_welcomed");
-  if (!welcomed) return false;
+  // Native shell users are always past onboarding — don't require sp_welcomed
+  if (!welcomed && !inNativeApp) return false;
   const today = getTodayStr();
   const lastDate = localStorage.getItem(DAILY_OPEN_DATE_KEY);
   const count = lastDate === today

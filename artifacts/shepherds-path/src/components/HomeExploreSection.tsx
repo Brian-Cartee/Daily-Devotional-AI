@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Pin } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { explorePathVariant } from "@/lib/explorePathVariants";
 import { buildHomeExplorePreviewHrefs, getPinnedPaths, setPinnedPaths as savePinnedPaths, togglePinnedPath } from "@/lib/homeExplorePreview";
@@ -106,16 +106,18 @@ function PathCard({
           right: "5px",
           padding: "4px",
           borderRadius: "6px",
-          background: pinned ? "rgba(34,197,94,0.22)" : "rgba(34,197,94,0.10)",
-          border: `1px solid ${pinned ? "rgba(34,197,94,0.50)" : "rgba(34,197,94,0.25)"}`,
+          background: pinned ? "rgba(212,170,60,0.22)" : "rgba(212,170,60,0.10)",
+          border: `1px solid ${pinned ? "rgba(212,170,60,0.55)" : "rgba(212,170,60,0.25)"}`,
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: pinned ? "rgb(74,222,128)" : "rgba(74,222,128,0.60)",
         }}
       >
-        <Pin style={{ width: "10px", height: "10px", fill: pinned ? "rgb(74,222,128)" : "none" }} />
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="0" width="2" height="10" rx="1" fill={pinned ? "rgba(212,170,60,1)" : "rgba(212,170,60,0.50)"} />
+          <rect x="0" y="3" width="10" height="2" rx="1" fill={pinned ? "rgba(212,170,60,1)" : "rgba(212,170,60,0.50)"} />
+        </svg>
       </button>
     </div>
   );

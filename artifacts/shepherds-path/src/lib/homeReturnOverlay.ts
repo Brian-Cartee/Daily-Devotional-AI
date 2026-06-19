@@ -39,7 +39,7 @@ export function pickHomeReturnOverlay(options: {
   if (!eligibleForEntry && !eligibleForOtherLayers) return null;
 
   if (eligibleForOtherLayers && shouldShowWelcomeOverlay(!!forceIntro)) return "welcome";
-  if (eligibleForEntry && shouldShowHomeEntry()) return "entry";
+  if (eligibleForEntry && shouldShowHomeEntry(inNativeApp)) return "entry";
   if (eligibleForOtherLayers && shouldShowWalkthrough()) return "walkthrough";
 
   return null;

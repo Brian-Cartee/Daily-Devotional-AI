@@ -721,7 +721,8 @@ function LandingHomeInner() {
   // In the iOS app, permanently mark intro complete so cold-launch sessionStorage
   // loss never triggers the "step inside" splash when tapping the Home button.
   if (inNativeApp) markIntroFlowComplete();
-  const skipIntrosForHome = isReturningHome() || inNativeApp;
+  // For native WebView: don't skip the daily entry screen, only skip non-entry overlays
+  const skipIntrosForHome = isReturningHome() && !inNativeApp;
 
   const [homeVisitAfterThreshold] = useState(() =>
     isThresholdComplete() ? bumpHomeVisitAfterThreshold() : 0,
@@ -783,7 +784,7 @@ function LandingHomeInner() {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
       clearReturningHome();
-      if (shouldShowHomeEntry()) {
+      if (shouldShowHomeEntry(true)) {
         setShowEntryScreen(true);
       }
     };
