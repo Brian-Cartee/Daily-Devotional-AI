@@ -55,7 +55,7 @@ import { readCarryToday } from "@/lib/devotionalContinuity";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { NATIVE_CARD, NATIVE_PAGE, NATIVE_TEXT, NATIVE_TEXT_SOFT } from "@/lib/nativeColors";
 import { nativeDiag } from "@/lib/nativeDiag";
-import { HomeEntryScreen, markEntryShown } from "@/components/HomeEntryScreen";
+import { HomeEntryScreen, markEntryShown, shouldShowHomeEntry } from "@/components/HomeEntryScreen";
 import { BeginTodaysWalk, hasShownBeginWalk, markBeginWalkShown } from "@/components/BeginTodaysWalk";
 import {
   bumpHomeVisitAfterThreshold,
@@ -774,6 +774,22 @@ function LandingHomeInner() {
     setEntryOverlayActive(showEntryScreen);
     return () => setEntryOverlayActive(false);
   }, [showEntryScreen]);
+
+  // In native WebView (TestFlight), force-close/reopen doesn't reload the page —
+  // the WebView resumes. Use visibilitychange to detect foreground return and
+  // show the splash if still eligible for today.
+  useEffect(() => {
+    if (!isNativeWebViewShell()) return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      clearReturningHome();
+      if (shouldShowHomeEntry()) {
+        setShowEntryScreen(true);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
   const [shared, setShared] = useState(false);
   const [rhythm, setRhythm] = useState<FaithRhythm | null>(() => getRhythm());
   const [showRhythmSetup, setShowRhythmSetup] = useState(false);
