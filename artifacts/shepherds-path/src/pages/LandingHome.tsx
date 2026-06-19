@@ -721,9 +721,6 @@ function LandingHomeInner() {
   // In the iOS app, permanently mark intro complete so cold-launch sessionStorage
   // loss never triggers the "step inside" splash when tapping the Home button.
   if (inNativeApp) markIntroFlowComplete();
-  // Native WebView: clear returning-home flag on every mount so cold launch always
-  // evaluates fresh. Internal navigation re-sets it immediately via markReturningHome().
-  if (inNativeApp) clearReturningHome();
   const skipIntrosForHome = isReturningHome() && !inNativeApp;
 
   const [homeVisitAfterThreshold] = useState(() =>
