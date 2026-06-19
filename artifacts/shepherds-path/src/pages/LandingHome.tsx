@@ -778,25 +778,35 @@ function LandingHomeInner() {
     return () => setEntryOverlayActive(false);
   }, [showEntryScreen]);
 
-  // In native WebView (TestFlight), force-close/reopen doesn't reload the page —
-  // the WebView resumes. Use visibilitychange to detect foreground return and
-  // show the splash if still eligible for today.
+  // In native WebView (TestFlight), force-close/reopen doesn't reload the page.
+  // Use a heartbeat timestamp + visibilitychange to detect when the app returns
+  // from background after 30+ seconds (real reopen vs just switching tabs).
   useEffect(() => {
     if (!isNativeWebViewShell()) return;
-    let lastHidden = false;
+    const LAST_ACTIVE_KEY = "sp_last_active_ts";
+    const REOPEN_THRESHOLD_MS = 30_000;
+
+    const recordActive = () => {
+      localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+    };
+
     const onForeground = () => {
-      if (!lastHidden) return;
-      lastHidden = false;
+      const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
+      const elapsed = Date.now() - last;
+      recordActive();
+      if (elapsed < REOPEN_THRESHOLD_MS) return; // just switching tabs
       clearReturningHome();
       if (shouldShowHomeEntry(true)) {
         setShowEntryScreen(true);
       }
     };
-    const onHidden = () => { lastHidden = true; };
+
     const onVisible = () => {
-      if (document.visibilityState === "hidden") { onHidden(); return; }
+      if (document.visibilityState === "hidden") { recordActive(); return; }
       if (document.visibilityState === "visible") onForeground();
     };
+
+    recordActive();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onForeground);
     return () => {
