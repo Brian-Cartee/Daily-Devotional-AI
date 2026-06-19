@@ -19,7 +19,8 @@ export function pickHomeReturnOverlay(options: {
   // Never show an overlay when navigating back within the same session (e.g. tapping
   // the Home button from inside the app). markReturningHome() sets this flag — if it's
   // set, the user is navigating internally, not doing a cold launch.
-  if (isReturningHome()) return null;
+  // For native WebView: visibilitychange handles this — don't block on mount.
+  if (!inNativeApp && isReturningHome()) return null;
 
   // sacredFirstHome (first-ever home visit post-onboarding) blocks everything —
   // BeginTodaysWalk handles that moment. homeVisitAfterThreshold === 1 is that visit.

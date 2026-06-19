@@ -114,9 +114,18 @@ function PathCard({
           justifyContent: "center",
         }}
       >
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="0" width="2" height="10" rx="1" fill={pinned ? "rgba(212,170,60,1)" : "rgba(212,170,60,0.50)"} />
-          <rect x="0" y="3" width="10" height="2" rx="1" fill={pinned ? "rgba(212,170,60,1)" : "rgba(212,170,60,0.50)"} />
+        <svg width="11" height="13" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="crossGold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={pinned ? "#f5d97a" : "rgba(245,217,122,0.6)"} />
+              <stop offset="50%" stopColor={pinned ? "#d4aa3c" : "rgba(212,170,60,0.5)"} />
+              <stop offset="100%" stopColor={pinned ? "#b8880a" : "rgba(184,136,10,0.4)"} />
+            </linearGradient>
+          </defs>
+          {/* Vertical bar — taller */}
+          <rect x="4" y="0" width="3" height="13" rx="1.2" fill="url(#crossGold)" />
+          {/* Horizontal bar — shorter, positioned upper third */}
+          <rect x="0" y="3.5" width="11" height="3" rx="1.2" fill="url(#crossGold)" />
         </svg>
       </button>
     </div>
