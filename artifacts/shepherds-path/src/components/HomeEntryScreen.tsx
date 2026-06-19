@@ -6,6 +6,10 @@ import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
+const DAILY_OPEN_COUNT_KEY = "sp_daily_open_count";
+const DAILY_OPEN_DATE_KEY = "sp_daily_open_date";
+const DAILY_POOL_IDX_KEY = "sp_daily_pool_idx";
+const MAX_SPLASHES_PER_DAY = 3;
 
 function getOnboardingBurdenLine(): string | null {
   try {
@@ -53,7 +57,7 @@ const BRAND_SPLASH_POOL = [
 ];
 
 function getTodayStr() {
-  return new Date().toISOString().split("T")[0];
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
 
 function getDayVerse() {
@@ -61,10 +65,33 @@ function getDayVerse() {
   return DAILY_VERSES[idx];
 }
 
-/** Pick today's pool entry — same image all day, changes daily */
-function getTodayPoolEntry() {
-  const idx = Math.floor(Date.now() / 86_400_000) % BRAND_SPLASH_POOL.length;
-  return BRAND_SPLASH_POOL[idx]!;
+/** Get/increment today's open count and return the pool entry for this open. */
+function getDailyOpenEntry(): { entry: typeof BRAND_SPLASH_POOL[0]; openIndex: number } {
+  const today = getTodayStr();
+  const lastDate = localStorage.getItem(DAILY_OPEN_DATE_KEY);
+  let count = 0;
+  let poolIdx = 0;
+
+  if (lastDate === today) {
+    count = parseInt(localStorage.getItem(DAILY_OPEN_COUNT_KEY) ?? "0", 10);
+    poolIdx = parseInt(localStorage.getItem(DAILY_POOL_IDX_KEY) ?? "0", 10);
+  } else {
+    // New day — reset, but offset pool index so we don't always start on same image
+    const dayOffset = Math.floor(Date.now() / 86_400_000);
+    poolIdx = dayOffset % BRAND_SPLASH_POOL.length;
+    localStorage.setItem(DAILY_OPEN_DATE_KEY, today);
+    localStorage.setItem(DAILY_POOL_IDX_KEY, String(poolIdx));
+    localStorage.setItem(DAILY_OPEN_COUNT_KEY, "0");
+  }
+
+  const entry = BRAND_SPLASH_POOL[poolIdx % BRAND_SPLASH_POOL.length]!;
+  // Advance for next open
+  const nextIdx = (poolIdx + 1) % BRAND_SPLASH_POOL.length;
+  localStorage.setItem(DAILY_POOL_IDX_KEY, String(nextIdx));
+  localStorage.setItem(DAILY_OPEN_COUNT_KEY, String(count + 1));
+  localStorage.setItem(DAILY_OPEN_DATE_KEY, today);
+
+  return { entry, openIndex: count };
 }
 
 function getEntryType(): EntryType {
@@ -90,18 +117,18 @@ export function markEntryShown() {
 function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const [ready, setReady] = useState(false);
   const [allowDismiss, setAllowDismiss] = useState(false);
-  const visitCount = getBrandSplashCount(); // read BEFORE increment
+  const visitCount = getBrandSplashCount(); // all-time count for first/second ever
+  const { entry } = getDailyOpenEntry();
 
   const isFirst  = visitCount === 0;
   const isSecond = visitCount === 1;
-  const pool     = getTodayPoolEntry();
 
-  const image   = isFirst || isSecond ? "/hero-landing.webp" : pool.image;
+  const image    = isFirst || isSecond ? "/hero-landing.webp" : entry.image;
   const headline = isFirst
     ? "Step inside."
     : isSecond
     ? "Glad you came back."
-    : pool.line;
+    : entry.line;
   const subline  = isSecond ? "Come in." : null;
   const cta      = isFirst ? "Enter" : isSecond ? "I'm here" : "Enter";
 
@@ -410,8 +437,12 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
 }
 
 export function shouldShowHomeEntry(): boolean {
-  const today = getTodayStr();
-  const lastShown = localStorage.getItem(ENTRY_KEY);
   const welcomed = localStorage.getItem("sp_welcomed");
-  return !!welcomed && lastShown !== today;
+  if (!welcomed) return false;
+  const today = getTodayStr();
+  const lastDate = localStorage.getItem(DAILY_OPEN_DATE_KEY);
+  const count = lastDate === today
+    ? parseInt(localStorage.getItem(DAILY_OPEN_COUNT_KEY) ?? "0", 10)
+    : 0;
+  return count < MAX_SPLASHES_PER_DAY;
 }
