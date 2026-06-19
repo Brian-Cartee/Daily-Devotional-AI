@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
+  NativeModules,
   Image,
   Linking,
   Platform,
@@ -35,7 +36,7 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
 // Update this every release — must match app.json version string.
-const APP_VERSION = "2.1.8";
+const APP_VERSION = "2.1.9";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
 function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
@@ -280,10 +281,31 @@ export default function MainScreen() {
         webviewRef.current?.injectJavaScript(
           `(function(){try{window.__onAppForeground?.();}catch(e){}true;})();`,
         );
+        // Check if Siri launched us into a specific screen
+        checkSiriLaunchScreen();
       }
     });
     return () => sub.remove();
   }, []);
+
+  // "Hey Siri, start Talk It Through" — navigate WebView when intent fires.
+  // The App Intent stores "guidance" in UserDefaults; we read and clear it here.
+  const checkSiriLaunchScreen = useCallback(() => {
+    const SpLaunch = NativeModules.SpLaunch;
+    if (!SpLaunch?.getLaunchScreen) return;
+    SpLaunch.getLaunchScreen((screen: string | null) => {
+      if (screen === "guidance") {
+        webviewRef.current?.injectJavaScript(
+          `(function(){try{window.location.href='/guidance';}catch(e){}true;})();`,
+        );
+      }
+    });
+  }, []);
+
+  // Also check on initial mount (app launched cold by Siri)
+  useEffect(() => {
+    checkSiriLaunchScreen();
+  }, [checkSiriLaunchScreen]);
 
   const pushNativeDiag = useCallback((event: string, detail = "") => {
     const entry: WebViewDiagEntry = {
