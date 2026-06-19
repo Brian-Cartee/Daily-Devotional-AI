@@ -41,15 +41,22 @@ export function markIntroFlowComplete(): void {
 }
 
 export function markReturningHome(): void {
+  // Use localStorage in native WebView — sessionStorage persists across backgrounding
+  // so tapping Home, backgrounding, and foregrounding would still block the splash.
+  storageSet(RETURNING_HOME_KEY, "1", localStorage);
   storageSet(RETURNING_HOME_KEY, "1", sessionStorage);
 }
 
 export function isReturningHome(): boolean {
-  return storageGet(RETURNING_HOME_KEY, sessionStorage) === "1";
+  return (
+    storageGet(RETURNING_HOME_KEY, localStorage) === "1" ||
+    storageGet(RETURNING_HOME_KEY, sessionStorage) === "1"
+  );
 }
 
 export function clearReturningHome(): void {
   try {
+    localStorage.removeItem(RETURNING_HOME_KEY);
     sessionStorage.removeItem(RETURNING_HOME_KEY);
   } catch {
     /* noop */
