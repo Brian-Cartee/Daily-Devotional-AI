@@ -123,6 +123,7 @@ export interface IStorage {
   upsertExpoPushToken(sessionId: string, token: string, hour: number, minute: number): Promise<ExpoPushToken>;
   deleteExpoPushToken(sessionId: string): Promise<void>;
   getExpoPushTokensForHourMinute(hour: number, minute: number): Promise<ExpoPushToken[]>;
+  getExpoPushTokenBySessionId(sessionId: string): Promise<ExpoPushToken | undefined>;
   logAiUsage(data: InsertAiUsageLog): Promise<void>;
   getAiUsageLogs(limit?: number): Promise<AiUsageLog[]>;
   getAiUsageBySession(sessionId: string): Promise<AiUsageLog[]>;
@@ -951,6 +952,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(expoPushTokens)
       .where(and(eq(expoPushTokens.hour, hour), eq(expoPushTokens.minute, minute), eq(expoPushTokens.enabled, true)));
+  }
+
+  async getExpoPushTokenBySessionId(sessionId: string): Promise<ExpoPushToken | undefined> {
+    const [row] = await db
+      .select()
+      .from(expoPushTokens)
+      .where(and(eq(expoPushTokens.sessionId, sessionId), eq(expoPushTokens.enabled, true)));
+    return row;
   }
 
   async logAiUsage(data: InsertAiUsageLog): Promise<void> {

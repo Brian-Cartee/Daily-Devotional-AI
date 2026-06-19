@@ -17,6 +17,91 @@ const expo = new Expo();
 
 const vapidEnabled = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 
+// ── Guidance follow-up: morning notification after a Talk It Through session ──
+type PendingGuidanceFollowUp = {
+  sessionId: string;
+  token: string;
+  scheduledAt: Date; // UTC time to fire (~8am in user's timezone)
+  message: string;
+};
+
+const pendingGuidanceFollowUps: PendingGuidanceFollowUp[] = [];
+
+const GUIDANCE_FOLLOWUP_MESSAGES = [
+  "Yesterday you brought something heavy. A verse is waiting when you're ready.",
+  "What you carried into Talk It Through yesterday — God hasn't forgotten it.",
+  "You were honest yesterday. Come back for a moment whenever you're ready.",
+  "Yesterday's conversation left something open. The door is still here.",
+  "You didn't come yesterday just to leave it unfinished. A word is waiting.",
+];
+
+function getMorning8amUTC(timezone: string): Date {
+  const now = new Date();
+  const tz = resolveTimezone(timezone);
+  const local = getLocalTimeInZone(now, tz);
+  // Hours until next 8am in user's local time (if past 8am, aim for tomorrow)
+  const hoursUntil8am = local.hour < 8
+    ? (8 - local.hour) - local.minute / 60
+    : (32 - local.hour) - local.minute / 60;
+  return new Date(now.getTime() + hoursUntil8am * 3600 * 1000);
+}
+
+export function scheduleGuidanceFollowUp(
+  sessionId: string,
+  token: string,
+  timezone: string,
+  situationSnippet: string,
+) {
+  if (!Expo.isExpoPushToken(token)) return;
+  // Remove any existing pending follow-up for this session (deduplicate)
+  const idx = pendingGuidanceFollowUps.findIndex(p => p.sessionId === sessionId);
+  if (idx !== -1) pendingGuidanceFollowUps.splice(idx, 1);
+
+  const hash = situationSnippet.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const message = GUIDANCE_FOLLOWUP_MESSAGES[hash % GUIDANCE_FOLLOWUP_MESSAGES.length];
+
+  pendingGuidanceFollowUps.push({
+    sessionId,
+    token,
+    scheduledAt: getMorning8amUTC(timezone),
+    message,
+  });
+  console.log(`[guidance-followup] Scheduled for ${sessionId} at ${getMorning8amUTC(timezone).toISOString()}`);
+}
+
+async function sendScheduledGuidanceFollowUps(now: Date) {
+  const due = pendingGuidanceFollowUps.filter(p => p.scheduledAt <= now);
+  if (due.length === 0) return;
+
+  const messages = due
+    .filter(p => Expo.isExpoPushToken(p.token))
+    .map(p => ({
+      to: p.token,
+      sound: "default" as const,
+      title: "A word is waiting 🕊️",
+      body: p.message,
+      data: { screen: "guidance" },
+    }));
+
+  // Remove fired ones from the queue
+  for (const p of due) {
+    const idx = pendingGuidanceFollowUps.indexOf(p);
+    if (idx !== -1) pendingGuidanceFollowUps.splice(idx, 1);
+  }
+
+  if (messages.length === 0) return;
+
+  try {
+    const chunks = expo.chunkPushNotifications(messages);
+    for (const chunk of chunks) {
+      await expo.sendPushNotificationsAsync(chunk);
+    }
+    console.log(`[guidance-followup] Sent ${messages.length} morning follow-up(s)`);
+  } catch (err) {
+    console.error("[guidance-followup] send error:", err);
+  }
+}
+
 if (vapidEnabled) {
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || "mailto:admin@shepherdspathAI.com",
@@ -315,6 +400,7 @@ async function tickScheduledNotifications() {
   await sendEveningNotifications(now);
   await sendStreakReminders(now);
   await sendWeeklySummary(now);
+  await sendScheduledGuidanceFollowUps(now);
 }
 
 export function schedulePushNotifications() {

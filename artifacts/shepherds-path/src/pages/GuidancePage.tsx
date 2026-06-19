@@ -2138,7 +2138,12 @@ export default function GuidancePage() {
                 fetch("/api/guidance/send-off", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ situation: situation.trim(), userName: getUserName() ?? undefined }),
+                  body: JSON.stringify({
+                    situation: situation.trim(),
+                    userName: getUserName() ?? undefined,
+                    sessionId: getSessionId() ?? undefined,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  }),
                 })
                   .then(r => r.ok ? r.json() : null)
                   .then(d => { if (d?.sendOff) setSendOffText(d.sendOff); })

@@ -27,7 +27,7 @@ import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEma
 import { scheduleDailyEmails } from "../emailScheduler";
 import { scheduleDailyVerseSync } from "../verseSyncScheduler";
 import { scheduleOnboardingEmails } from "../onboardingEmailScheduler";
-import { schedulePushNotifications, scheduleExpoPushNotifications } from "../pushScheduler";
+import { schedulePushNotifications, scheduleExpoPushNotifications, scheduleGuidanceFollowUp } from "../pushScheduler";
 import { scheduleProWeeklySpiritualWeatherEmails } from "../spiritualWeatherScheduler";
 import { ensureIdentitySchema } from "../identityMigrations";
 import {
@@ -3547,7 +3547,9 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 
   // ── Guidance: personalized session send-off ──────────────────────────────────
   app.post("/api/guidance/send-off", async (req, res) => {
-    const { situation, userName } = req.body as { situation?: string; userName?: string };
+    const { situation, userName, sessionId, timezone } = req.body as {
+      situation?: string; userName?: string; sessionId?: string; timezone?: string;
+    };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     const nameNote = userName?.trim() ? ` Their name is ${userName.trim()}.` : "";
     try {
@@ -3583,6 +3585,19 @@ Rules:
         ],
       });
       const sendOff = completion.choices[0]?.message?.content?.trim();
+      // Schedule morning follow-up if user has an Expo push token
+      if (sessionId) {
+        storage.getExpoPushTokenBySessionId(sessionId).then(tokenRow => {
+          if (tokenRow?.token) {
+            scheduleGuidanceFollowUp(
+              sessionId,
+              tokenRow.token,
+              timezone ?? "America/New_York",
+              situation.trim().slice(0, 60),
+            );
+          }
+        }).catch(() => { /* non-critical */ });
+      }
       if (!sendOff) return res.json({ sendOff: "What you brought here today mattered." });
       res.json({ sendOff });
     } catch {
