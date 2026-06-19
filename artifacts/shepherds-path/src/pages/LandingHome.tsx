@@ -803,8 +803,7 @@ function LandingHomeInner() {
       tryShowSplash();
     };
 
-    // Poll every 2 seconds — catches WKWebView foreground even when events don't fire
-    recordActive();
+    // Record when app goes to background, check on return
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", tryShowSplash);
     window.addEventListener("pageshow", tryShowSplash);
