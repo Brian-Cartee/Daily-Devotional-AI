@@ -176,6 +176,7 @@ export default function GuidancePage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  const [witnessLetter, setWitnessLetter] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
@@ -274,6 +275,17 @@ export default function GuidancePage() {
       }, 400);
     }, 1200);
     return () => clearTimeout(delay);
+  }, []);
+
+  // Fetch witness letter — "last time you were here" continuity line
+  useEffect(() => {
+    if (situation.trim()) return; // don't show on pre-filled sessions
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+    fetch(`/api/guidance/witness-letter?sessionId=${encodeURIComponent(sessionId)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.letter) setWitnessLetter(d.letter); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -1185,6 +1197,24 @@ export default function GuidancePage() {
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
+                  {/* Witness letter — continuity from last session */}
+                  {witnessLetter && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.3 }}
+                      className="mb-4 px-4 py-3 rounded-xl"
+                      style={{ background: "rgba(139,92,246,0.10)", border: "1px solid rgba(139,92,246,0.22)" }}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/60 mb-1.5">
+                        Last time you were here
+                      </p>
+                      <p className="text-[14px] text-white/75 leading-relaxed italic" style={{ fontFamily: "var(--font-reading)" }}>
+                        {witnessLetter}
+                      </p>
+                    </motion.div>
+                  )}
+
                   <div
                     className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/25 mb-6 focus-within:ring-2 focus-within:ring-violet-400/35 transition-shadow"
                     data-testid="card-guidance-entry"
