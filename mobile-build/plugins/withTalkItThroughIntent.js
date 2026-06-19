@@ -33,10 +33,9 @@ struct ShepherdsPathShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: TalkItThroughIntent(),
             phrases: [
-                "Start Talk It Through",
                 "Start Talk It Through on \\(.applicationName)",
-                "Open Talk It Through",
                 "Open Talk It Through on \\(.applicationName)",
+                "Talk it through on \\(.applicationName)",
             ],
             shortTitle: "Talk It Through",
             systemImageName: "mic.fill"
