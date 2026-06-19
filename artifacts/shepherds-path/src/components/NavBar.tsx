@@ -70,9 +70,9 @@ function BottomNavVisual({
 }) {
   if (active) {
     return (
-      <div className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-        <Icon className="w-[17px] h-[17px] text-white shrink-0" aria-hidden />
-        <span className="text-[12px] font-bold text-white leading-none whitespace-nowrap">{label}</span>
+      <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+        <Icon className="w-[18px] h-[18px] text-white shrink-0" aria-hidden />
+        <span className="text-[13px] font-bold text-white leading-none whitespace-nowrap">{label}</span>
       </div>
     );
   }
