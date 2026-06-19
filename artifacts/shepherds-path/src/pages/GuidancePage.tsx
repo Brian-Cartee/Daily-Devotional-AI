@@ -380,6 +380,7 @@ export default function GuidancePage() {
   );
   /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
+  const [sendOffText, setSendOffText] = useState<string | null>(null);
   const latestResponseRef = useRef<HTMLDivElement>(null);
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
@@ -2074,7 +2075,17 @@ export default function GuidancePage() {
           {/* Completion fork — after prayer, before optional depth */}
           {showPhase2Content && responseComplete && revealStage >= 3 && completionPath === null && (
             <GuidanceCompletionThreshold
-              onCarry={() => setCompletionPath("carry")}
+              onCarry={() => {
+                setCompletionPath("carry");
+                fetch("/api/guidance/send-off", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ situation: situation.trim(), userName: getUserName() ?? undefined }),
+                })
+                  .then(r => r.ok ? r.json() : null)
+                  .then(d => { if (d?.sendOff) setSendOffText(d.sendOff); })
+                  .catch(() => {});
+              }}
               onStay={() => setCompletionPath("stay")}
             />
           )}
@@ -2092,10 +2103,10 @@ export default function GuidancePage() {
                 style={{ background: "linear-gradient(145deg, rgba(139,92,246,0.10), rgba(109,40,217,0.05))", border: "1px solid rgba(139,92,246,0.20)" }}
               >
                 <p className="text-[17px] leading-relaxed mb-1" style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--foreground) / 0.90)" }}>
-                  You brought something real today.
+                  {sendOffText ?? "You brought something real today."}
                 </p>
                 <p className="text-[13px] text-muted-foreground/65 leading-relaxed">
-                  That matters. Come back when you need to — this is always here.
+                  Come back when you need to — this is always here.
                 </p>
               </div>
 

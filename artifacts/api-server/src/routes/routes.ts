@@ -3545,6 +3545,51 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
     }
   });
 
+  // ── Guidance: personalized session send-off ──────────────────────────────────
+  app.post("/api/guidance/send-off", async (req, res) => {
+    const { situation, userName } = req.body as { situation?: string; userName?: string };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    const nameNote = userName?.trim() ? ` Their name is ${userName.trim()}.` : "";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 60,
+        temperature: 0.85,
+        messages: [
+          {
+            role: "system",
+            content: `You write a single closing sentence — a send-off — for someone who just finished a Talk It Through session.${nameNote}
+
+Rules:
+- ONE sentence only. Under 18 words.
+- Do NOT quote or paraphrase their words back to them.
+- Read the emotional register (grief, fear, anxiety, gratitude, seeking, relief, joy) and reflect the ESSENCE — what it meant, not what they said.
+- Sound like a trusted friend who just walked with them through something real.
+- Warm, specific to the emotional tone, never generic.
+- Never start with "You" as the first word more than occasionally. Vary the opening.
+- Never use: "journey", "path forward", "healing", "this too shall pass", "God's plan", "blessed".
+- Examples of good send-offs:
+  "Carrying something that heavy here took real courage."
+  "What you named today mattered — more than you may know right now."
+  "That kind of honesty before God doesn't go unnoticed."
+  "Grief and faith can live in the same breath. You showed that today."
+  "Gratitude like that is its own kind of prayer."
+  "Whatever tomorrow holds, you didn't face today alone."`,
+          },
+          {
+            role: "user",
+            content: situation.trim().slice(0, 800),
+          },
+        ],
+      });
+      const sendOff = completion.choices[0]?.message?.content?.trim();
+      if (!sendOff) return res.json({ sendOff: "What you brought here today mattered." });
+      res.json({ sendOff });
+    } catch {
+      res.json({ sendOff: "What you brought here today mattered." });
+    }
+  });
+
   // ── Witness Letter — quiet continuity from last guidance memory ───────────────
   app.get("/api/guidance/witness-letter", async (req, res) => {
     const sessionId = req.query.sessionId as string | undefined;
