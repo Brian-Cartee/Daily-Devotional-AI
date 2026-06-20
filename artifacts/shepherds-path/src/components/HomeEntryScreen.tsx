@@ -47,15 +47,33 @@ const HEART_EMOTIONS = [
   { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks",    verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },
 ];
 
-/** Images + single-line copy for rotating brand splash (visit 3+). One per day. */
-const BRAND_SPLASH_POOL = [
-  { image: "/splash-shepherd.png",    line: "The path is still here." },
-  { image: "/splash-forest.png",      line: "Something brought you back." },
+// Visits 1–2 are handled separately (door, road-sunset).
+// Visits 3–12: show all 10 remaining images in order — every new user sees everything.
+const ONBOARDING_SEQUENCE = [
   { image: "/splash-bible-glow-REV.png",  line: "He's been waiting." },
-  { image: "/splash-well.png",        line: "Draw near." },
-  { image: "/splash-prayer.png",      line: "You don't have to have it figured out." },
-  { image: "/splash-cobblestone.png", line: "He meets you where you are." },
-  { image: "/splash-candle.png",      line: "He's still here." },
+  { image: "/splash-shepherd.png",        line: "The path is still here." },
+  { image: "/splash-candle.png",          line: "He's still here." },
+  { image: "/splash-forest.png",          line: "Something brought you back." },
+  { image: "/splash-prayer.png",          line: "You don't have to have it figured out." },
+  { image: "/splash-well.png",            line: "Draw near." },
+  { image: "/splash-cobblestone.png",     line: "He meets you where you are." },
+  { image: "/splash-pew.png",             line: "Come back whenever you're ready." },
+  { image: "/splash-bible-sun-REV.png",   line: "Today's word is waiting." },
+  { image: "/splash-mic-REV.png",         line: "Talk it through. He's listening." },
+];
+
+// Visit 13+: rotating pool (same images, daily variety)
+const BRAND_SPLASH_POOL = [
+  { image: "/splash-shepherd.png",        line: "The path is still here." },
+  { image: "/splash-forest.png",          line: "Something brought you back." },
+  { image: "/splash-bible-glow-REV.png",  line: "He's been waiting." },
+  { image: "/splash-well.png",            line: "Draw near." },
+  { image: "/splash-prayer.png",          line: "You don't have to have it figured out." },
+  { image: "/splash-cobblestone.png",     line: "He meets you where you are." },
+  { image: "/splash-candle.png",          line: "He's still here." },
+  { image: "/splash-pew.png",             line: "Come back whenever you're ready." },
+  { image: "/splash-bible-sun-REV.png",   line: "Today's word is waiting." },
+  { image: "/splash-mic-REV.png",         line: "Talk it through. He's listening." },
 ];
 
 function getTodayStr() {
@@ -115,15 +133,26 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
 
   const isFirst  = visitCount === 0;
   const isSecond = visitCount === 1;
+  // Visits 3–12 (index 2–11): fixed onboarding sequence
+  const isOnboarding = visitCount >= 2 && visitCount < 2 + ONBOARDING_SEQUENCE.length;
+  const onboardingEntry = isOnboarding ? ONBOARDING_SEQUENCE[visitCount - 2] : null;
 
-  const image    = isFirst ? "/splash-door.png" : isSecond ? "/splash-road-sunset-REV.png" : entry.image;
+  const image    = isFirst
+    ? "/splash-door.png"
+    : isSecond
+    ? "/splash-road-sunset-REV.png"
+    : isOnboarding && onboardingEntry
+    ? onboardingEntry.image
+    : entry.image;
   const headline = isFirst
     ? "Step inside."
     : isSecond
     ? "Glad you came back."
+    : isOnboarding && onboardingEntry
+    ? onboardingEntry.line
     : entry.line;
   const subline  = isSecond ? "Come in." : null;
-  const cta      = isFirst ? "Enter" : isSecond ? "I'm here" : "Enter";
+  const cta      = isSecond ? "I'm here" : "Enter";
 
   useEffect(() => {
     incrementBrandSplashCount();
