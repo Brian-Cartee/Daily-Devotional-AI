@@ -140,7 +140,7 @@ export default function SalvationPage() {
       {/* ── Cinematic hero ── */}
       <div className="relative overflow-hidden" style={{ height: "46vh", minHeight: "300px", maxHeight: "420px" }}>
         <img
-          src="/hero-salvation.png"
+          src="/hero-salvation.jpg"
           alt="A path leading into dawn light"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: "center 40%" }}

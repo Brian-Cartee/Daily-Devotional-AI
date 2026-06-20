@@ -7,9 +7,9 @@ function periodIndex(): number {
 }
 
 const HEROES: Record<string, string[]> = {
-  devotional: ["/hero-devotional.png", "/hero-devotional-2.png", "/hero-devotional-3.png"],
-  understand: ["/hero-understand.png", "/hero-understand-2.png", "/hero-understand-3.png"],
-  read: ["/hero-read.png", "/hero-read-2.png", "/hero-read-3.png"],
+  devotional: ["/hero-devotional.webp", "/hero-devotional-2.webp", "/hero-devotional-3.webp"],
+  understand: ["/hero-understand.webp", "/hero-understand-2.webp", "/hero-understand-3.webp"],
+  read: ["/hero-read.webp", "/hero-read-2.webp", "/hero-read-3.webp"],
 };
 
 export function getHeroImage(name: "devotional" | "understand" | "read"): string {

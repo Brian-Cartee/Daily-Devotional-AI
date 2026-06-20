@@ -67,7 +67,7 @@ const SHOTS: ShotSpec[] = [
     headline: "Beginning with Jesus starts right where you are.",
     subheadline: "No pressure. No pretending. Just an honest path toward God.",
     phoneSrc: img5764,
-    bgSrc: "/hero-salvation.png",
+    bgSrc: "/hero-salvation.jpg",
     filename: "ss-06-beginning-jesus",
   },
   {
@@ -88,7 +88,7 @@ const SHOTS: ShotSpec[] = [
     headline: "Stay connected to people walking the same path.",
     subheadline: "Grow alongside believers seeking wisdom, encouragement, and accountability.",
     phoneSrc: img5763,
-    bgSrc: "/hero-iron-circle.png",
+    bgSrc: "/hero-iron-circle.jpg",
     filename: "ss-09-same-path",
   },
   {
