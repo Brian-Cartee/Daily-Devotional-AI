@@ -545,8 +545,9 @@
       document.documentElement.setAttribute("data-sp-shell", "native");
     })();
     </script>
-    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#0d0612;">
-      <p id="sp-boot-splash-status" style="display:none;"></p>
+    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#0d0612;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <img src="/logo-mark-white.png" alt="" width="64" height="64" style="border-radius:16px;opacity:0.85;" />
+      <p id="sp-boot-splash-status" style="margin:16px 0 0;font-size:14px;color:rgba(255,255,255,0.35);font-family:-apple-system,sans-serif;">Loading…</p>
       <button type="button" id="sp-enter-btn" style="display:none;">Continue</button>
       <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="display:none;">Open in Safari instead</a>
     </div>
