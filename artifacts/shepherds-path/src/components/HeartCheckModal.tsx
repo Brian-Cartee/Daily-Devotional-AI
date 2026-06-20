@@ -47,9 +47,20 @@ export function HeartCheckModal({ onDismiss }: Props) {
   const [trendMessage, setTrendMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const prevent = (e: TouchEvent) => e.preventDefault();
-    document.addEventListener("touchmove", prevent, { passive: false });
-    return () => document.removeEventListener("touchmove", prevent);
+    // iOS WKWebView ignores overflow:hidden on body — position:fixed is the only reliable lock
+    const scrollY = window.scrollY;
+    const body = document.body;
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.position = "";
+      body.style.top = "";
+      body.style.width = "";
+      body.style.overflow = "";
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   const handleWeatherSelect = (w: HeartWeather) => {
