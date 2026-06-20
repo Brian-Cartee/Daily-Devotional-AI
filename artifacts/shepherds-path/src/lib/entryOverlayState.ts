@@ -5,8 +5,11 @@ import { shouldShowHomeEntry } from "@/components/HomeEntryScreen";
 function computeInitialActive(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    if (!isNativeWebViewShell()) return false;
+    // ReactNativeWebView may not be injected yet at module load, so check
+    // the timestamp directly — if sp_last_active_ts exists the user has
+    // opened before, meaning we're in a native reopen scenario.
     const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+    if (last === 0) return false;
     return Date.now() - last >= 5_000 && shouldShowHomeEntry(true);
   } catch {
     return false;
