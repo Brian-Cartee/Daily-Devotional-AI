@@ -55,14 +55,40 @@ function readHeartStateCookie(): HeartState | null {
 function writeHeartStateCookie(state: HeartState): void {
   try {
     const val = encodeURIComponent(`${state.weather}|${state.topic ?? ""}|${state.ts}`);
-    document.cookie = `sp_hs=${val}; path=/; max-age=86400; SameSite=Lax`;
+    const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `sp_hs=${val}; path=/; max-age=63072000; SameSite=Lax${secure}; domain=.shepherdspathai.com`;
   } catch {}
 }
 
+function readNativeHeartState(): HeartState | null {
+  try {
+    const v = typeof window !== "undefined" ? (window as any).__spNativeHeartState : undefined;
+    if (v && typeof v.weather === "string" && typeof v.ts === "number") {
+      return {
+        weather: v.weather as HeartWeather,
+        topic: (v.topic ?? null) as HeartTopic | null,
+        ts: v.ts,
+      };
+    }
+  } catch {}
+  return null;
+}
+
+function pickNewestHeartState(...candidates: (HeartState | null)[]): HeartState | null {
+  let best: HeartState | null = null;
+  for (const c of candidates) {
+    if (!c) continue;
+    if (!best || c.ts > best.ts) best = c;
+  }
+  return best;
+}
+
 export function getCurrentHeartState(): HeartState | null {
-  const fromStorage = safeGet<HeartState | null>(KEY_CURRENT, null);
-  if (fromStorage) return fromStorage;
-  return readHeartStateCookie();
+  return pickNewestHeartState(
+    safeGet<HeartState | null>(KEY_CURRENT, null),
+    readNativeHeartState(),
+    readHeartStateCookie(),
+  );
 }
 
 export function saveHeartCheck(weather: HeartWeather, topic: HeartTopic | null): void {
@@ -72,6 +98,7 @@ export function saveHeartCheck(weather: HeartWeather, topic: HeartTopic | null):
   safeSet(KEY_CURRENT, state);
   writeHeartStateCookie(state);
   safeSet(KEY_LAST_SHOWN, ts);
+  syncHeartStateToNative(state);
   syncHeartLastShownToNative(ts);
 
   const history = safeGet<HeartEntry[]>(KEY_HISTORY, []);
@@ -91,6 +118,17 @@ function syncHeartLastShownToNative(ts: number): void {
     if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
       (window as any).__spNativeHeartLastShown = ts;
       (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "sp_ui_state", heartLastShown: ts }));
+    }
+  } catch {}
+}
+
+function syncHeartStateToNative(state: HeartState): void {
+  try {
+    if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+      (window as any).__spNativeHeartState = state;
+      (window as any).ReactNativeWebView.postMessage(
+        JSON.stringify({ type: "sp_ui_state", heartState: state, heartLastShown: state.ts }),
+      );
     }
   } catch {}
 }

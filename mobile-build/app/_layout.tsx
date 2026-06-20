@@ -10,7 +10,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -53,13 +53,8 @@ async function rescheduleNotifications() {
 
 const FONT_LOAD_TIMEOUT_MS = 3500;
 
-function LoadingScreen({ message }: { message: string }) {
-  return (
-    <View style={styles.loadingScreen}>
-      <ActivityIndicator size="large" color="#7A018D" />
-      <Text style={styles.loadingText}>{message}</Text>
-    </View>
-  );
+function LoadingScreen() {
+  return <View style={styles.loadingScreen} />;
 }
 
 function RootLayoutNav() {
@@ -99,7 +94,7 @@ export default function RootLayout() {
   }, [fontsReady]);
 
   if (!fontsReady) {
-    return <LoadingScreen message="Loading..." />;
+    return <LoadingScreen />;
   }
 
   return (
@@ -122,14 +117,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingScreen: {
     flex: 1,
-    backgroundColor: "#0d0612",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#c0a8cc",
-    textAlign: "center",
+    backgroundColor: "#000",
   },
 });

@@ -9,11 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#0d0612"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "bundleIdentifier": "com.shepherdspath.app",
-      "buildNumber": "191",
+      "buildNumber": "192",
       "supportsTablet": true,
       "requireFullScreen": true,
       "infoPlist": {

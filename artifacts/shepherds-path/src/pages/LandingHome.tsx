@@ -743,6 +743,7 @@ function HeartStateLabel() {
   return (
     <button
       type="button"
+      data-testid="text-heart-state-label"
       onClick={() => window.dispatchEvent(new CustomEvent("sp-open-heart-check"))}
       style={{
         display: "flex",

@@ -10,6 +10,26 @@ const EMAIL_SUBSCRIBED_KEY = "sp_email_subscribed";
 const SECURE_SUBSCRIBER_EMAIL_KEY = "sp_secure_subscriber_email";
 const SPLASH_COUNT_KEY = "sp_native_splash_count";
 const HEART_LAST_SHOWN_KEY = "sp_native_heart_last_shown";
+const HEART_STATE_KEY = "sp_native_heart_state";
+
+export type NativeHeartState = {
+  weather: string;
+  topic: string | null;
+  ts: number;
+};
+
+function parseNativeHeartState(raw: string | null): NativeHeartState | null {
+  if (!raw) return null;
+  try {
+    const o = JSON.parse(raw) as NativeHeartState;
+    if (typeof o.weather === "string" && typeof o.ts === "number") {
+      return { weather: o.weather, topic: o.topic ?? null, ts: o.ts };
+    }
+  } catch {
+    /* invalid */
+  }
+  return null;
+}
 
 function newSessionId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
@@ -40,6 +60,7 @@ export async function loadNativeUserProfile(): Promise<{
   emailSubscribed: boolean;
   splashCount: number;
   heartLastShown: number;
+  heartState: NativeHeartState | null;
 }> {
   const sessionId = await getOrCreateNativeSessionId();
   const name = (await AsyncStorage.getItem(USER_NAME_KEY)) ?? "";
@@ -53,15 +74,27 @@ export async function loadNativeUserProfile(): Promise<{
     !!subscriberEmail.trim();
   const splashCount = parseInt((await AsyncStorage.getItem(SPLASH_COUNT_KEY)) ?? "0", 10) || 0;
   const heartLastShown = parseInt((await AsyncStorage.getItem(HEART_LAST_SHOWN_KEY)) ?? "0", 10) || 0;
-  return { sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown };
+  const heartState = parseNativeHeartState(await AsyncStorage.getItem(HEART_STATE_KEY));
+  return { sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState };
 }
 
-export async function saveNativeUiState(patch: { splashCount?: number; heartLastShown?: number }): Promise<void> {
+export async function saveNativeUiState(patch: {
+  splashCount?: number;
+  heartLastShown?: number;
+  heartState?: NativeHeartState | null;
+}): Promise<void> {
   if (patch.splashCount !== undefined) {
     await AsyncStorage.setItem(SPLASH_COUNT_KEY, String(patch.splashCount));
   }
   if (patch.heartLastShown !== undefined) {
     await AsyncStorage.setItem(HEART_LAST_SHOWN_KEY, String(patch.heartLastShown));
+  }
+  if (patch.heartState !== undefined) {
+    if (patch.heartState) {
+      await AsyncStorage.setItem(HEART_STATE_KEY, JSON.stringify(patch.heartState));
+    } else {
+      await AsyncStorage.removeItem(HEART_STATE_KEY);
+    }
   }
 }
 
@@ -156,6 +189,7 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
   emailSubscribed: boolean;
   splashCount: number;
   heartLastShown: number;
+  heartState: NativeHeartState | null;
 }> {
   const profile = await loadNativeUserProfile();
   let email = profile.subscriberEmail.trim().toLowerCase();
@@ -176,6 +210,7 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
     emailSubscribed: profile.emailSubscribed || email.includes("@"),
     splashCount: profile.splashCount,
     heartLastShown: profile.heartLastShown,
+    heartState: profile.heartState,
   };
 }
 
@@ -192,6 +227,7 @@ export function buildNativeProfileSeedJs(
   emailSubscribed = false,
   splashCount = 0,
   heartLastShown = 0,
+  heartState: NativeHeartState | null = null,
 ): string {
   const sid = jsString(sessionId);
   const nm = jsString(name.trim());
@@ -221,8 +257,18 @@ export function buildNativeProfileSeedJs(
       }catch(e){}
     }
     if(sid){window.__SP_SESSION_BOOT__=sid;}
-    window.__spNativeSplashCount=${splashCount};
+    var sc=${splashCount};
+    var curSc=typeof window.__spNativeSplashCount==='number'?window.__spNativeSplashCount:0;
+    window.__spNativeSplashCount=Math.max(sc,curSc);
     window.__spNativeHeartLastShown=${heartLastShown};
+    var hs=${JSON.stringify(heartState)};
+    if(hs&&hs.weather&&hs.ts){
+      window.__spNativeHeartState=hs;
+      localStorage.setItem('sp_heart_current',JSON.stringify(hs));
+      document.cookie='sp_hs='+encodeURIComponent(hs.weather+'|'+(hs.topic||'')+'|'+hs.ts)+dom;
+    }else{
+      window.__spNativeHeartState=null;
+    }
   }catch(e){}
   true;
 })();`;
