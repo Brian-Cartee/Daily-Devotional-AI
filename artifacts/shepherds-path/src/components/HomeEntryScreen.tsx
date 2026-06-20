@@ -51,7 +51,7 @@ const HEART_EMOTIONS = [
 const BRAND_SPLASH_POOL = [
   { image: "/splash-shepherd.png",    line: "The path is still here." },
   { image: "/splash-forest.png",      line: "Something brought you back." },
-  { image: "/splash-bible-glow.png",  line: "He's been waiting." },
+  { image: "/splash-bible-glow-REV.png",  line: "He's been waiting." },
   { image: "/splash-well.png",        line: "Draw near." },
   { image: "/splash-prayer.png",      line: "You don't have to have it figured out." },
   { image: "/splash-cobblestone.png", line: "He meets you where you are." },
@@ -125,7 +125,7 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const isFirst  = visitCount === 0;
   const isSecond = visitCount === 1;
 
-  const image    = isFirst ? "/splash-door.png" : isSecond ? "/splash-road-sunset.png" : entry.image;
+  const image    = isFirst ? "/splash-door.png" : isSecond ? "/splash-road-sunset-REV.png" : entry.image;
   const headline = isFirst
     ? "Step inside."
     : isSecond
