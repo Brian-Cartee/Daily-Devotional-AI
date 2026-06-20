@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw, Lock } from "lucide-react";
 import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
+import { getCurrentHeartState, buildHeartContext } from "@/lib/heartCheck";
 import {
   grantCoachConsentThisSession,
   hasCoachConsentThisSession,
@@ -455,6 +456,7 @@ export default function GuidancePage() {
           userName: getUserName() ?? undefined,
           guidanceMode: explicitMode ?? guidanceMode,
           isLateNight: isLateNight(),
+          heartContext: buildHeartContext(getCurrentHeartState()),
           ...(phase1Context ?? {}),
           ...apiSessionExtras(),
         }),

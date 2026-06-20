@@ -3459,6 +3459,11 @@ Sacred restraint: fewer words are better.`;
 
     const { prompt: variantPrompt, variant: responseVariant } = buildVariantSystemPrompt(sessionId ?? "", "response");
 
+    const heartContext = ((req.body as any).heartContext as string | undefined)?.trim() || "";
+    const heartNote = heartContext
+      ? `\n\nHeart check context — before this conversation began, this person shared how they're doing: ${heartContext} Let this quietly shape your emotional register and opening — not as something to reference directly ("you mentioned you're feeling heavy"), but as context that informs how you receive and respond to them. Meet them where they actually are.`
+      : "";
+
     const systemMsg = `${variantPrompt}
 
 ${TALK_IT_THROUGH_RESPONSE_SCOPE}
@@ -3471,7 +3476,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${nameNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     // Build conversation history — for two-phase flow, include phase1 exchange as proper
     // message turns rather than re-injecting them into the system prompt

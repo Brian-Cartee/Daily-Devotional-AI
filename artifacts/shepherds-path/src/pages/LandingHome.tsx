@@ -86,6 +86,8 @@ import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathsBlock } from "@/components/HomePathsBlock";
 import { TalkItThroughCard } from "@/components/TalkItThroughCard";
+import { HeartCheckModal } from "@/components/HeartCheckModal";
+import { shouldShowHeartCheck, markHeartCheckShown } from "@/lib/heartCheck";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
@@ -797,6 +799,11 @@ function LandingHomeInner() {
     return () => setEntryOverlayActive(false);
   }, [showEntryScreen]);
 
+  const [showHeartCheck, setShowHeartCheck] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return !showEntryScreen && shouldShowHeartCheck(); } catch { return false; }
+  });
+
   useEffect(() => {
     if (!showEntryScreen) {
       // No splash — signal native after paint so boot cover drops onto home screen
@@ -1019,6 +1026,11 @@ function LandingHomeInner() {
         {!showBeginWalk && showWelcomeOverlay && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
       {!showBeginWalk && showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      <AnimatePresence>
+        {showHeartCheck && !showEntryScreen && !showBeginWalk && !showWelcomeOverlay && (
+          <HeartCheckModal onDismiss={() => { setShowHeartCheck(false); markHeartCheckShown(); }} />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {showRhythmSetup && (
           <FaithRhythmSetup onDone={handleRhythmDone} onDismiss={handleRhythmDismiss} />
