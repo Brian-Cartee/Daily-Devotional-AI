@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   type HeartWeather,
@@ -46,6 +46,12 @@ export function HeartCheckModal({ onDismiss }: Props) {
   const [weather, setWeather] = useState<HeartWeather | null>(null);
   const [trendMessage, setTrendMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   const handleWeatherSelect = (w: HeartWeather) => {
     setWeather(w);
     setStep("topic");
@@ -89,6 +95,9 @@ export function HeartCheckModal({ onDismiss }: Props) {
           borderBottom: "none",
           padding: "28px 24px",
           paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))",
+          maxHeight: "88vh",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <AnimatePresence mode="wait">
@@ -109,30 +118,33 @@ export function HeartCheckModal({ onDismiss }: Props) {
                 How is your heart today?
               </h2>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {WEATHER_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleWeatherSelect(opt.value)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "14px",
-                      padding: "13px 16px",
-                      borderRadius: "14px",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      textAlign: "left",
-                      width: "100%",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(139,92,246,0.14)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-                  >
-                    <span style={{ fontSize: "22px", lineHeight: 1 }}>{opt.emoji}</span>
-                    <span style={{ fontSize: "16px", fontWeight: 500, color: "rgba(255,255,255,0.88)" }}>{opt.label}</span>
-                  </button>
-                ))}
+              <div style={{ overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", flex: 1 } as React.CSSProperties}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {WEATHER_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleWeatherSelect(opt.value)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "14px",
+                        padding: "13px 16px",
+                        borderRadius: "14px",
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        textAlign: "left",
+                        width: "100%",
+                        transition: "background 0.15s",
+                        flexShrink: 0,
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(139,92,246,0.14)")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                    >
+                      <span style={{ fontSize: "22px", lineHeight: 1 }}>{opt.emoji}</span>
+                      <span style={{ fontSize: "16px", fontWeight: 500, color: "rgba(255,255,255,0.88)" }}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
