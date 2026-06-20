@@ -278,9 +278,20 @@ export default function MainScreen() {
       const prev = appStateRef.current;
       appStateRef.current = nextState;
       if (prev.match(/inactive|background/) && nextState === "active") {
-        webviewRef.current?.injectJavaScript(
-          `(function(){try{window.__onAppForeground?.();}catch(e){}true;})();`,
-        );
+        // Inject a black cover instantly so there's no flash of home screen
+        // before React renders the splash. The cover removes itself after 1.2s
+        // (splash animation is well underway by then).
+        webviewRef.current?.injectJavaScript(`(function(){
+          var existing=document.getElementById('sp-fg-cover');
+          if(existing)existing.remove();
+          var c=document.createElement('div');
+          c.id='sp-fg-cover';
+          c.style.cssText='position:fixed;inset:0;z-index:999999;background:#000;pointer-events:none;transition:opacity 0.35s ease;';
+          document.body.appendChild(c);
+          setTimeout(function(){c.style.opacity='0';setTimeout(function(){c.remove();},400);},1200);
+          try{window.__onAppForeground?.();}catch(e){}
+          true;
+        })();`);
         // Check if Siri launched us into a specific screen
         checkSiriLaunchScreen();
       }

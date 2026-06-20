@@ -4,6 +4,20 @@ import { getUserName, syncUserNameFromServer } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
 import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState";
 
+// Preload all splash images immediately so they're in browser cache when needed
+if (typeof window !== "undefined") {
+  const ALL_SPLASH_IMAGES = [
+    "/splash-door.jpg", "/splash-road-sunset-REV.jpg", "/splash-bible-glow-REV.jpg",
+    "/splash-shepherd.jpg", "/splash-candle.jpg", "/splash-forest.jpg",
+    "/splash-prayer.jpg", "/splash-well.jpg", "/splash-cobblestone.jpg",
+    "/splash-pew.jpg", "/splash-bible-sun-REV.jpg", "/splash-mic-REV.jpg",
+  ];
+  // Stagger preloads so they don't compete with page load
+  ALL_SPLASH_IMAGES.forEach((src, i) => {
+    setTimeout(() => { const img = new Image(); img.src = src; }, i * 300);
+  });
+}
+
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
 const DAILY_OPEN_COUNT_KEY = "sp_daily_open_count";
