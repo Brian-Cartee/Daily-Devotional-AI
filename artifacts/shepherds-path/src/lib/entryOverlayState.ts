@@ -8,9 +8,11 @@ function computeInitialActive(): boolean {
     // ReactNativeWebView may not be injected yet at module load, so check
     // the timestamp directly — if sp_last_active_ts exists the user has
     // opened before, meaning we're in a native reopen scenario.
+    const isNative = document.documentElement.dataset.spShell === "native";
+    if (!isNative) return false;
     const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-    if (last === 0) return false;
-    return Date.now() - last >= 5_000 && shouldShowHomeEntry(true);
+    const elapsed = last > 0 ? Date.now() - last : Infinity;
+    return elapsed >= 5_000 && shouldShowHomeEntry(true);
   } catch {
     return false;
   }

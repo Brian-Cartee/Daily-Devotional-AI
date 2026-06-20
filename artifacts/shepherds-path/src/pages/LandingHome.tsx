@@ -771,12 +771,15 @@ function LandingHomeInner() {
   });
   const [showEntryScreen, setShowEntryScreen] = useState(() => {
     if (homeReturnOverlay === "entry") return true;
-    // Check synchronously so splash shows before home renders (no flash).
-    // sp_last_active_ts is only written by the native useEffect below,
-    // so this path is naturally skipped on web where the key is never set.
+    // data-sp-shell is set by injectedJavaScriptBeforeContentLoaded — available synchronously.
+    // ReactNativeWebView bridge is NOT ready yet at this point, so we can't use isNativeWebViewShell().
     try {
+      const isNative = document.documentElement.dataset.spShell === "native";
+      if (!isNative) return false;
       const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-      if (last > 0 && Date.now() - last >= 5_000 && shouldShowHomeEntry(true)) return true;
+      // Treat missing timestamp as long absence (first open / force-close with no bg event)
+      const elapsed = last > 0 ? Date.now() - last : Infinity;
+      if (elapsed >= 5_000 && shouldShowHomeEntry(true)) return true;
     } catch { /* storage unavailable */ }
     return false;
   });
