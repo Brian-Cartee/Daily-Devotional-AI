@@ -29,49 +29,6 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }} data-testid="home-secondary-paths">
-      <Link href="/guidance" className="sp-native-card-link">
-        <div
-          data-testid="home-secondary-guidance"
-          data-card="talk-it-through"
-          className="border border-violet-500/60"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            borderRadius: "12px",
-            background:
-              "linear-gradient(135deg, rgba(139,92,246,0.30) 0%, rgba(109,40,217,0.18) 50%, rgba(88,28,220,0.10) 100%)",
-            padding: "12px 16px",
-            boxSizing: "border-box",
-            boxShadow:
-              "0 0 24px rgba(139,92,246,0.30), 0 0 8px rgba(139,92,246,0.20), inset 0 0 20px rgba(139,92,246,0.08)",
-          }}
-        >
-          <span style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.5))" }}>
-            <ShortcutPathIcon variant="guidance" size="sm" />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-violet-300 mb-0.5 block">
-              ✦ signature
-            </span>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
-              Talk it through
-            </p>
-            <p
-              style={{
-                fontSize: "12px",
-                color: NATIVE_TEXT_MUTED,
-                lineHeight: 1.375,
-                marginTop: "2px",
-              }}
-            >
-              When you're carrying something
-            </p>
-          </div>
-          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />
-        </div>
-      </Link>
-
       {!hideCloset && (
         <Link href="/prayer-closet" className="sp-native-card-link">
           <div
