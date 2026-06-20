@@ -148,8 +148,7 @@ export function HeartCheckModal({ onDismiss }: Props) {
                 How is your heart today?
               </h2>
 
-              <div onTouchMove={e => e.stopPropagation()} style={{ overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", flex: 1 } as React.CSSProperties}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {WEATHER_OPTIONS.map(opt => (
                     <button
                       key={opt.value}
@@ -157,9 +156,9 @@ export function HeartCheckModal({ onDismiss }: Props) {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "14px",
-                        padding: "13px 16px",
-                        borderRadius: "14px",
+                        gap: "12px",
+                        padding: "10px 16px",
+                        borderRadius: "12px",
                         background: "rgba(255,255,255,0.05)",
                         border: "1px solid rgba(255,255,255,0.08)",
                         textAlign: "left",
@@ -170,11 +169,10 @@ export function HeartCheckModal({ onDismiss }: Props) {
                       onMouseEnter={e => (e.currentTarget.style.background = "rgba(139,92,246,0.14)")}
                       onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
                     >
-                      <span style={{ fontSize: "22px", lineHeight: 1 }}>{opt.emoji}</span>
-                      <span style={{ fontSize: "16px", fontWeight: 500, color: "rgba(255,255,255,0.88)" }}>{opt.label}</span>
+                      <span style={{ fontSize: "20px", lineHeight: 1 }}>{opt.emoji}</span>
+                      <span style={{ fontSize: "15px", fontWeight: 500, color: "rgba(255,255,255,0.88)" }}>{opt.label}</span>
                     </button>
                   ))}
-                </div>
               </div>
             </motion.div>
           )}
