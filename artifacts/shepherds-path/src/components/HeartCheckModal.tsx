@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   type HeartWeather,
@@ -46,19 +46,36 @@ export function HeartCheckModal({ onDismiss }: Props) {
   const [weather, setWeather] = useState<HeartWeather | null>(null);
   const [trendMessage, setTrendMessage] = useState<string | null>(null);
 
+  const sheetRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    // iOS WKWebView ignores overflow:hidden on body — position:fixed is the only reliable lock
+    // Lock ALL scroll elements the WKWebView might be using
     const scrollY = window.scrollY;
+    const scroller = (document.scrollingElement as HTMLElement | null) || document.body;
+    const savedPos = scroller.scrollTop;
+
     const body = document.body;
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
-    body.style.width = "100%";
+    body.style.left = "0";
+    body.style.right = "0";
     body.style.overflow = "hidden";
+
+    // Belt-and-suspenders: block touchmove on document, allow it only inside the sheet
+    const blockTouch = (e: TouchEvent) => {
+      if (sheetRef.current && sheetRef.current.contains(e.target as Node)) return;
+      e.preventDefault();
+    };
+    document.addEventListener("touchmove", blockTouch, { passive: false });
+
     return () => {
       body.style.position = "";
       body.style.top = "";
-      body.style.width = "";
+      body.style.left = "";
+      body.style.right = "";
       body.style.overflow = "";
+      document.removeEventListener("touchmove", blockTouch);
+      scroller.scrollTop = savedPos;
       window.scrollTo(0, scrollY);
     };
   }, []);
@@ -110,6 +127,8 @@ export function HeartCheckModal({ onDismiss }: Props) {
           display: "flex",
           flexDirection: "column",
         }}
+        // @ts-ignore — motion.div forwards refs
+        ref={sheetRef}
       >
         <AnimatePresence mode="wait">
 
