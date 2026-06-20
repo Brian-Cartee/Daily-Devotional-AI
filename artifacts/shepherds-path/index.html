@@ -425,6 +425,7 @@
       visibility: visible !important;
       opacity: 1 !important;
     }
+    html[data-sp-shell="native"] body::-webkit-scrollbar { display: none !important; }
     html[data-sp-shell="native"] #sp-safari-link,
     html[data-sp-shell="native"] #sp-enter-btn { display: none !important; }
     html[data-sp-shell="native"] #sp-boot-splash-status { opacity: 0.65; font-size: 14px; }
@@ -707,14 +708,23 @@
         if (sent) return;
         if (!force && !hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
-        document.getElementById("sp-boot-splash")?.remove();
         document.getElementById("sp-native-recovery")?.remove();
         sent = true;
+        // NOTE: sp-boot-splash is removed by __spSignalReady (called by React after paint).
+        // Only remove it here as a last-resort fallback (force=true from timeouts).
+        if (force) document.getElementById("sp-boot-splash")?.remove();
         try {
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
       }
+
+      // Called by React components after double-RAF (guaranteed post-paint).
+      // Removes the web boot cover and signals the native overlay to drop.
+      window.__spSignalReady = function() {
+        document.getElementById("sp-boot-splash")?.remove();
+        notify(true);
+      };
 
       // Hard fallback: if React has mounted but we still haven't signalled ready
       // (e.g. app landed on a page whose testid isn't in visibleSelectors),

@@ -170,9 +170,13 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
 
   useEffect(() => {
     incrementBrandSplashCount();
-    // Show content after image loads feel
+    // Signal native overlay to drop only after browser has painted this frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        (window as any).__spSignalReady?.();
+      });
+    });
     const t1 = setTimeout(() => setReady(true), 300);
-    // Allow tap-anywhere dismiss after brief moment
     const t2 = setTimeout(() => setAllowDismiss(true), 900);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);

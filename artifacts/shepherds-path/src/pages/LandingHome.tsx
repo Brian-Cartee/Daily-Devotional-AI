@@ -788,6 +788,17 @@ function LandingHomeInner() {
     return () => setEntryOverlayActive(false);
   }, [showEntryScreen]);
 
+  useEffect(() => {
+    if (!showEntryScreen) {
+      // No splash — signal native after paint so boot cover drops onto home screen
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          (window as any).__spSignalReady?.();
+        });
+      });
+    }
+  }, []);
+
   // In native WebView (TestFlight), force-close/reopen doesn't reload the page.
   // Track background time and show the entry splash on real reopens (5s+ away).
   useEffect(() => {
