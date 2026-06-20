@@ -72,7 +72,7 @@ function BottomNavVisual({
   if (active) {
     return (
       <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary border border-white/15 ring-1 ring-zinc-900/55 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-        <Icon className="w-[18px] h-[18px] text-white shrink-0" aria-hidden />
+        <Icon className="w-[22px] h-[22px] text-white shrink-0" aria-hidden />
         <span className="text-[13px] font-bold text-white leading-none whitespace-nowrap">{label}</span>
       </div>
     );
@@ -80,7 +80,7 @@ function BottomNavVisual({
 
   return (
     <div className="relative flex items-center justify-center w-9 h-9 rounded-xl">
-      <Icon className="w-[17px] h-[17px] text-zinc-300/85" aria-hidden />
+      <Icon className="w-[22px] h-[22px] text-zinc-300/85" aria-hidden />
       {hasPlace && (
         <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />
       )}
