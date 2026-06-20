@@ -799,10 +799,14 @@ function LandingHomeInner() {
     return () => setEntryOverlayActive(false);
   }, [showEntryScreen]);
 
-  const [showHeartCheck, setShowHeartCheck] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return !showEntryScreen && shouldShowHeartCheck(); } catch { return false; }
-  });
+  const [showHeartCheck, setShowHeartCheck] = useState(false);
+
+  useEffect(() => {
+    // Show after any splash/overlay clears — re-evaluate once entry screen is gone
+    if (!showEntryScreen && !showBeginWalk) {
+      try { if (shouldShowHeartCheck()) setShowHeartCheck(true); } catch {}
+    }
+  }, [showEntryScreen, showBeginWalk]);
 
   useEffect(() => {
     if (!showEntryScreen) {
