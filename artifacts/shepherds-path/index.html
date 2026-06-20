@@ -545,9 +545,9 @@
       document.documentElement.setAttribute("data-sp-shell", "native");
     })();
     </script>
-    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#0d0612;">
-      <p id="sp-boot-splash-status" style="display:none;" data-sc=""></p>
-      <script>(function(){try{var sc=parseInt(localStorage.getItem('sp_brand_splash_count')||'0',10);var el=document.getElementById('sp-boot-splash-status');if(el){el.dataset.sc=String(sc);}}catch(e){}})()</script>
+    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#0d0612;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <img src="/logo-mark-white.png" alt="" width="64" height="64" style="border-radius:16px;opacity:0.85;" />
+      <p id="sp-boot-splash-status" style="margin:16px 0 0;font-size:14px;color:rgba(255,255,255,0.35);font-family:-apple-system,sans-serif;">Loading…</p>
       <button type="button" id="sp-enter-btn" style="display:none;">Continue</button>
       <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="display:none;">Open in Safari instead</a>
     </div>
@@ -707,16 +707,21 @@
         if (sent) return;
         if (!force && !hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
-        document.getElementById("sp-boot-splash")?.remove();
         document.getElementById("sp-native-recovery")?.remove();
         sent = true;
+        // NOTE: sp-boot-splash is removed by __spSignalReady (called by React after paint).
+        // Only remove it here as a last-resort fallback (force=true from timeouts).
+        if (force) document.getElementById("sp-boot-splash")?.remove();
         try {
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
       }
 
+      // Called by React components after double-RAF (guaranteed post-paint).
+      // Removes the web boot cover and signals the native overlay to drop.
       window.__spSignalReady = function() {
+        document.getElementById("sp-boot-splash")?.remove();
         notify(true);
       };
 
