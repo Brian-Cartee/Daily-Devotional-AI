@@ -179,6 +179,7 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <div
+      data-testid="sp-splash-active"
       className="fixed inset-0 z-50 overflow-hidden"
       style={{ background: "#000" }}
       onClick={() => allowDismiss && onDismiss()}

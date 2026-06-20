@@ -204,8 +204,9 @@ const PULL_DIAG_JS = `(function(){
 
 const VISIBILITY_PROBE_JS = `(function(){
   try{
-    var sel='[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
-    if(document.querySelector(sel)){
+    var homeSel='[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
+    var splashSel='[data-testid="sp-splash-active"]';
+    if(document.querySelector(splashSel)||document.querySelector(homeSel)){
       document.documentElement.setAttribute('data-native-ui-ready','1');
       document.getElementById('sp-boot-splash')?.remove();
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'web_ui_visible' }));
