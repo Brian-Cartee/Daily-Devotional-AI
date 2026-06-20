@@ -26,7 +26,20 @@ function storageSet(key: string, value: string, store: Storage): void {
   }
 }
 
+function readIntroCookie(): boolean {
+  try {
+    return /(?:^|; )sp_ic=1/.test(document.cookie);
+  } catch { return false; }
+}
+
+function writeIntroCookie(): void {
+  try {
+    document.cookie = "sp_ic=1; path=/; max-age=63072000; SameSite=Lax";
+  } catch {}
+}
+
 export function isIntroFlowComplete(): boolean {
+  if (readIntroCookie()) return true;
   if (storageGet(INTRO_COMPLETE_KEY, localStorage) === "1") return true;
   if (storageGet("sp_onboarding_shown", localStorage)) return true;
   const visits = parseInt(storageGet(VISIT_COUNT_KEY, localStorage) ?? "0", 10);
@@ -38,6 +51,7 @@ export function markIntroFlowComplete(): void {
   storageSet(SPLASH_KEY, "1", localStorage);
   storageSet(WELCOME_SESSION_KEY, "1", sessionStorage);
   storageSet("sp_welcomed", "1", localStorage);
+  writeIntroCookie();
 }
 
 export function markReturningHome(): void {
