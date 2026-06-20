@@ -97,15 +97,6 @@ function getDailyOpenEntry(): { entry: typeof BRAND_SPLASH_POOL[0]; openIndex: n
 }
 
 function getEntryType(): EntryType {
-  const hour = new Date().getHours();
-  const dayOfWeek = new Date().getDay();
-  const lastVisit = localStorage.getItem(LAST_VISIT_KEY);
-  if (lastVisit && lastVisit !== getTodayStr()) {
-    const daysDiff = (Date.now() - new Date(lastVisit).getTime()) / (1000 * 60 * 60 * 24);
-    if (daysDiff >= 3) return "letter";
-  }
-  if (dayOfWeek === 0) return "letter";
-  if (hour >= 19 || isLateNight()) return "heart";
   return "brand";
 }
 
