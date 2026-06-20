@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
+import { isNativeWebViewShell } from "@/lib/platform";
+import { shouldShowHomeEntry } from "@/components/HomeEntryScreen";
 
-let _active = false;
+function computeInitialActive(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (!isNativeWebViewShell()) return false;
+    const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+    return Date.now() - last >= 5_000 && shouldShowHomeEntry(true);
+  } catch {
+    return false;
+  }
+}
+
+let _active = computeInitialActive();
 const _listeners = new Set<() => void>();
 
 export function setEntryOverlayActive(active: boolean) {

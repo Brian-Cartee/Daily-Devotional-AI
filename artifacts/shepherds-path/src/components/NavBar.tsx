@@ -27,6 +27,7 @@ import { markReturningHome } from "@/lib/introState";
 import { applyHomeScrollToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
+import { useEntryOverlayActive } from "@/lib/entryOverlayState";
 import { getRhythm } from "@/lib/faithRhythm";
 import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
 
@@ -127,6 +128,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   const { theme, setTheme } = useTheme();
   const inNativeApp = isNativeWebViewShell();
   const compactTopNav = usesCompactTopNav();
+  const entryOverlayActive = useEntryOverlayActive();
 
   const applyGuidanceTone = (mode: GuidanceMode) => {
     saveGuidanceMode(mode);
@@ -282,7 +284,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         }}
         onDecline={() => setCoachConsentOpen(false)}
       />
-      {showTop && compactTopNav && (
+      {showTop && compactTopNav && !entryOverlayActive && (
         <nav
           data-testid="native-top-nav"
           aria-label="App menu"
@@ -410,7 +412,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         </nav>
       )}
 
-      <nav
+      {!(inNativeApp && entryOverlayActive) && <nav
         aria-label="Main"
         style={
           inNativeApp
@@ -496,7 +498,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
             );
           })}
         </div>
-      </nav>
+      </nav>}
 
       <AnimatePresence>
         {notifOpen && <NotificationSettings onClose={() => setNotifOpen(false)} />}
