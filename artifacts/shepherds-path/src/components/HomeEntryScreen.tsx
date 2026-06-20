@@ -222,12 +222,12 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         <button
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
           data-testid="button-brand-splash-enter"
-          className="w-full py-4 rounded-2xl text-white font-medium text-base tracking-wide transition-opacity active:opacity-70"
+          className="w-full py-4 rounded-2xl text-white font-semibold text-base tracking-wide transition-opacity active:opacity-70"
           style={{
-            border: "1px solid rgba(255,255,255,0.28)",
-            background: "rgba(255,255,255,0.08)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.45)",
+            background: "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
           }}
         >
           {cta}
