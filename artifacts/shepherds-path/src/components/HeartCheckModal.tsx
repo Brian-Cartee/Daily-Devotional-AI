@@ -121,8 +121,8 @@ export function HeartCheckModal({ onDismiss }: Props) {
           background: "linear-gradient(160deg, #1a0d2e 0%, #0d0612 100%)",
           border: "1px solid rgba(139,92,246,0.18)",
           borderBottom: "none",
-          padding: "28px 24px",
-          paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))",
+          padding: "20px 20px",
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
           maxHeight: "88vh",
           display: "flex",
           flexDirection: "column",
@@ -135,7 +135,7 @@ export function HeartCheckModal({ onDismiss }: Props) {
           {/* ── Step 1: Weather ── */}
           {step === "weather" && (
             <motion.div key="weather" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(167,139,250,0.65)" }}>
                   Shepherd's Path
                 </p>
@@ -144,7 +144,7 @@ export function HeartCheckModal({ onDismiss }: Props) {
                 </button>
               </div>
 
-              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem", fontWeight: 300, color: "rgba(255,255,255,0.92)", marginBottom: "20px", lineHeight: 1.3 }}>
+              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.4rem", fontWeight: 300, color: "rgba(255,255,255,0.92)", marginBottom: "14px", lineHeight: 1.3 }}>
                 How is your heart today?
               </h2>
 
