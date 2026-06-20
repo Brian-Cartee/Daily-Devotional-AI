@@ -247,6 +247,7 @@ export default function GuidancePage() {
   const [showStillness, setShowStillness] = useState(false);
   const [showSlowVerse, setShowSlowVerse] = useState(false);
   const listenFirstTriggeredRef = useRef(false);
+  const lastInputWasVoiceRef = useRef(false);
 
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
@@ -864,8 +865,11 @@ export default function GuidancePage() {
 
   useEffect(() => {
     if (!guidanceListenReady || !responseComplete || listenFirstTriggeredRef.current) return;
-    if (!canUseListenFirstAuto() || !getListenFirstPreference()) return;
+    const voiceTriggered = lastInputWasVoiceRef.current;
+    const listenFirstOn = canUseListenFirstAuto() && getListenFirstPreference();
+    if (!voiceTriggered && !listenFirstOn) return;
     listenFirstTriggeredRef.current = true;
+    lastInputWasVoiceRef.current = false;
     const t = setTimeout(() => {
       void startGuidanceListen();
     }, 600);
@@ -912,7 +916,10 @@ export default function GuidancePage() {
       setPhase1Interim("");
       setPhase1UserReply(prev => {
         const text = prev.trim();
-        if (text.length > 8) setTimeout(() => void handlePhase1Continue(), 1200);
+        if (text.length > 8) {
+          lastInputWasVoiceRef.current = true;
+          setTimeout(() => void handlePhase1Continue(), 1200);
+        }
         return prev;
       });
     };
@@ -930,6 +937,7 @@ export default function GuidancePage() {
     rec.interimResults = false;
     rec.onresult = (e: any) => {
       const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
+      if (transcript.trim()) lastInputWasVoiceRef.current = true;
       setFollowUp(prev => (prev ? prev + " " + transcript : transcript));
     };
     rec.onend = () => setIsListening(false);
@@ -968,6 +976,7 @@ export default function GuidancePage() {
       setHeartInput(prev => {
         const text = prev.trim();
         if (text.length > 8) {
+          lastInputWasVoiceRef.current = true;
           setTimeout(() => beginGuidanceEntry(text), 1200);
         }
         return prev;
