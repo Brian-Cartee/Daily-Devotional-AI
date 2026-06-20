@@ -260,20 +260,23 @@ export default function GuidancePage() {
       ? "I'm here. Take your time — what's on your heart?"
       : "Welcome back. What are you carrying today?";
     const delay = setTimeout(() => {
-      prewarmTTS(greeting, getUserVoice());
-      // Small delay so the page has settled before audio plays
-      setTimeout(() => {
-        const utterance = new SpeechSynthesisUtterance(greeting);
-        utterance.rate = 0.92;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.85;
-        // Use Web Speech API as a lightweight fallback — no API cost, immediate
-        if (typeof window !== "undefined" && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-          window.speechSynthesis.speak(utterance);
-        }
-      }, 400);
-    }, 1200);
+      // Use OpenAI TTS for the greeting so it matches the session voice quality
+      const voice = getUserVoice();
+      fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: greeting, voice, scope: "snippet", sessionId: getSessionId() }),
+      })
+        .then(r => r.ok ? r.blob() : null)
+        .then(blob => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.play().catch(() => {});
+          audio.onended = () => URL.revokeObjectURL(url);
+        })
+        .catch(() => {});
+    }, 3500);
     return () => clearTimeout(delay);
   }, []);
 

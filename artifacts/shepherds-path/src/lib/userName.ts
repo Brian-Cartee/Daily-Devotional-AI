@@ -226,9 +226,9 @@ export function getUserVoice(): string {
   try {
     const v = localStorage.getItem(VOICE_KEY);
     if (v === "onyx" || v === "shimmer") return v;
-    return "shimmer";
+    return "onyx";
   } catch {
-    return "shimmer";
+    return "onyx";
   }
 }
 
