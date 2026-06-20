@@ -142,8 +142,8 @@ export function markEntryShown() {
 function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const [ready, setReady] = useState(false);
   const [allowDismiss, setAllowDismiss] = useState(false);
-  const visitCount = getBrandSplashCount(); // all-time count for first/second ever
-  const { entry } = getDailyOpenEntry();
+  const [visitCount] = useState(() => getBrandSplashCount());
+  const [{ entry }] = useState(() => ({ entry: getDailyOpenEntry().entry }));
 
   const isFirst  = visitCount === 0;
   const isSecond = visitCount === 1;
