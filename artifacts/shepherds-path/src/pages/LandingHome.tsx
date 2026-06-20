@@ -776,12 +776,11 @@ function LandingHomeInner() {
   }, [showEntryScreen]);
 
   // In native WebView (TestFlight), force-close/reopen doesn't reload the page.
-  // Use a heartbeat timestamp + visibilitychange to detect when the app returns
-  // from background after 30+ seconds (real reopen vs just switching tabs).
+  // Track background time and show the entry splash on real reopens (5s+ away).
   useEffect(() => {
     if (!isNativeWebViewShell()) return;
     const LAST_ACTIVE_KEY = "sp_last_active_ts";
-    const REOPEN_THRESHOLD_MS = 30_000;
+    const REOPEN_THRESHOLD_MS = 5_000; // 5s — covers force-close and real reopens
 
     const recordActive = () => {
       localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
@@ -791,7 +790,7 @@ function LandingHomeInner() {
       const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
       const elapsed = Date.now() - last;
       if (elapsed < REOPEN_THRESHOLD_MS) return;
-      recordActive();
+      recordActive(); // prevent double-fire
       clearReturningHome();
       if (shouldShowHomeEntry(true)) {
         setShowEntryScreen(true);
@@ -803,14 +802,20 @@ function LandingHomeInner() {
       tryShowSplash();
     };
 
-    // Native AppState bridge — called by index.tsx when iOS brings app to foreground
+    // Native AppState bridge — primary trigger from index.tsx AppState listener
     (window as any).__onAppForeground = tryShowSplash;
 
-    // Record when app goes to background, check on return
+    // Fire immediately on mount — catches cold launch and page navigations back to home
+    tryShowSplash();
+
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", tryShowSplash);
     window.addEventListener("pageshow", tryShowSplash);
-    const poll = setInterval(tryShowSplash, 2000);
+    // Fallback poll — stops itself after firing to avoid double-shows
+    const poll = setInterval(() => {
+      const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
+      if (Date.now() - last >= REOPEN_THRESHOLD_MS) tryShowSplash();
+    }, 1000);
     return () => {
       (window as any).__onAppForeground = undefined;
       document.removeEventListener("visibilitychange", onVisibility);
