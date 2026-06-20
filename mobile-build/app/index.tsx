@@ -718,6 +718,18 @@ export default function MainScreen() {
         onLoadStart={() => {
           setError(false);
           pushNativeDiag("onLoadStart", entryUrl);
+          // Black cover hides any flash of home screen before splash renders.
+          // Injected here (not just on AppState) so it also fires after refresh.
+          webviewRef.current?.injectJavaScript(`(function(){
+            var existing=document.getElementById('sp-fg-cover');
+            if(existing)existing.remove();
+            var c=document.createElement('div');
+            c.id='sp-fg-cover';
+            c.style.cssText='position:fixed;inset:0;z-index:999999;background:#000;pointer-events:none;transition:opacity 0.35s ease;';
+            document.body&&document.body.appendChild(c);
+            setTimeout(function(){c.style.opacity='0';setTimeout(function(){c.remove();},400);},1200);
+            true;
+          })();`);
         }}
         onLoadProgress={({ nativeEvent }) => {
           if (nativeEvent.progress >= 0.25 && nativeEvent.progress < 0.3) {
