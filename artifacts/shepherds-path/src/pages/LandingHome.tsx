@@ -771,13 +771,12 @@ function LandingHomeInner() {
   });
   const [showEntryScreen, setShowEntryScreen] = useState(() => {
     if (homeReturnOverlay === "entry") return true;
-    // Native app: check synchronously so splash shows before home renders (no flash)
+    // Check synchronously so splash shows before home renders (no flash).
+    // sp_last_active_ts is only written by the native useEffect below,
+    // so this path is naturally skipped on web where the key is never set.
     try {
-      if (isNativeWebViewShell()) {
-        const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-        const elapsed = Date.now() - last;
-        if (elapsed >= 5_000 && shouldShowHomeEntry(true)) return true;
-      }
+      const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+      if (last > 0 && Date.now() - last >= 5_000 && shouldShowHomeEntry(true)) return true;
     } catch { /* storage unavailable */ }
     return false;
   });
