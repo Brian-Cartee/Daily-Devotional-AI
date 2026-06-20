@@ -49,11 +49,13 @@ const HEART_EMOTIONS = [
 
 /** Images + single-line copy for rotating brand splash (visit 3+). One per day. */
 const BRAND_SPLASH_POOL = [
-  { image: "/hero-landing.webp",      line: "The path is still here." },
-  { image: "/hero-devotional.webp",   line: "Something brought you back." },
-  { image: "/hero-read.webp",         line: "He's been waiting." },
-  { image: "/hero-understand.webp",   line: "Come in. Nothing is required." },
-  { image: "/hero-guidance.jpg",      line: "This is still yours." },
+  { image: "/splash-shepherd.png",    line: "The path is still here." },
+  { image: "/splash-forest.png",      line: "Something brought you back." },
+  { image: "/splash-bible-glow.png",  line: "He's been waiting." },
+  { image: "/splash-well.png",        line: "Draw near." },
+  { image: "/splash-prayer.png",      line: "You don't have to have it figured out." },
+  { image: "/splash-cobblestone.png", line: "He meets you where you are." },
+  { image: "/splash-candle.png",      line: "He's still here." },
 ];
 
 function getTodayStr() {
@@ -123,7 +125,7 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const isFirst  = visitCount === 0;
   const isSecond = visitCount === 1;
 
-  const image    = isFirst || isSecond ? "/hero-landing.webp" : entry.image;
+  const image    = isFirst ? "/splash-door.png" : isSecond ? "/splash-road-sunset.png" : entry.image;
   const headline = isFirst
     ? "Step inside."
     : isSecond
