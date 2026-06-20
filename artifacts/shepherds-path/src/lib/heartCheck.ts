@@ -42,8 +42,27 @@ function safeSet(key: string, value: unknown): void {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
+function readHeartStateCookie(): HeartState | null {
+  try {
+    const m = document.cookie.match(/(?:^|; )sp_hs=([^;]+)/);
+    if (!m) return null;
+    const [w, t, ts] = decodeURIComponent(m[1]!).split("|");
+    if (!w || !ts) return null;
+    return { weather: w as HeartWeather, topic: (t || null) as HeartTopic | null, ts: parseInt(ts, 10) };
+  } catch { return null; }
+}
+
+function writeHeartStateCookie(state: HeartState): void {
+  try {
+    const val = encodeURIComponent(`${state.weather}|${state.topic ?? ""}|${state.ts}`);
+    document.cookie = `sp_hs=${val}; path=/; max-age=86400; SameSite=Lax`;
+  } catch {}
+}
+
 export function getCurrentHeartState(): HeartState | null {
-  return safeGet<HeartState | null>(KEY_CURRENT, null);
+  const fromStorage = safeGet<HeartState | null>(KEY_CURRENT, null);
+  if (fromStorage) return fromStorage;
+  return readHeartStateCookie();
 }
 
 export function saveHeartCheck(weather: HeartWeather, topic: HeartTopic | null): void {
@@ -51,6 +70,7 @@ export function saveHeartCheck(weather: HeartWeather, topic: HeartTopic | null):
   const entry: HeartEntry = { date: todayStr(), weather, topic, ts };
   const state: HeartState = { weather, topic, ts };
   safeSet(KEY_CURRENT, state);
+  writeHeartStateCookie(state);
   safeSet(KEY_LAST_SHOWN, ts);
   syncHeartLastShownToNative(ts);
 
