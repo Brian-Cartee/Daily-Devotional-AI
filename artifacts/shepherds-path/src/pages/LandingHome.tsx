@@ -769,7 +769,18 @@ function LandingHomeInner() {
   const [showBeginWalk, setShowBeginWalk] = useState(() => {
     try { return !!localStorage.getItem("sp_start_burden") && !hasShownBeginWalk(); } catch { return false; }
   });
-  const [showEntryScreen, setShowEntryScreen] = useState(() => homeReturnOverlay === "entry");
+  const [showEntryScreen, setShowEntryScreen] = useState(() => {
+    if (homeReturnOverlay === "entry") return true;
+    // Native app: check synchronously so splash shows before home renders (no flash)
+    try {
+      if (isNativeWebViewShell()) {
+        const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+        const elapsed = Date.now() - last;
+        if (elapsed >= 5_000 && shouldShowHomeEntry(true)) return true;
+      }
+    } catch { /* storage unavailable */ }
+    return false;
+  });
   useEffect(() => {
     setEntryOverlayActive(showEntryScreen);
     return () => setEntryOverlayActive(false);
