@@ -700,6 +700,10 @@ function ClosingManifesto() {
 
 // Deterministic arch data mirroring the Chris Harrison Bible cross-reference visualization
 // Colors shift blue → green → red based on span (distance between referenced books)
+// Module-level: resets on page reload (cold app open) but persists while navigating within the app.
+// Prevents the splash from re-triggering when the user taps Home from inside the app.
+let _splashShownThisSession = false;
+
 const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
   const out: { left: number; right: number; t: number }[] = [];
   for (let i = 0; i < 160; i++) {
@@ -771,15 +775,16 @@ function LandingHomeInner() {
   });
   const [showEntryScreen, setShowEntryScreen] = useState(() => {
     if (homeReturnOverlay === "entry") return true;
-    // data-sp-shell is set by injectedJavaScriptBeforeContentLoaded — available synchronously.
-    // ReactNativeWebView bridge is NOT ready yet at this point, so we can't use isNativeWebViewShell().
+    if (_splashShownThisSession) return false;
     try {
       const isNative = document.documentElement.dataset.spShell === "native";
       if (!isNative) return false;
       const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-      // Treat missing timestamp as long absence (first open / force-close with no bg event)
       const elapsed = last > 0 ? Date.now() - last : Infinity;
-      if (elapsed >= 5_000 && shouldShowHomeEntry(true)) return true;
+      if (elapsed >= 5_000 && shouldShowHomeEntry(true)) {
+        _splashShownThisSession = true;
+        return true;
+      }
     } catch { /* storage unavailable */ }
     return false;
   });
