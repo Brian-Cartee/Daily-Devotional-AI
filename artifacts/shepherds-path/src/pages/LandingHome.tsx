@@ -1025,7 +1025,7 @@ function LandingHomeInner() {
   const showPrayerClosetCard = shouldShowPrayerClosetOnHome(presenceCtx.door === "quiet");
   const prayerClosetCompactTeaser = isPrayerClosetCompactTeaser(homeDevotionalFocus, daysWithApp);
   const showDailyArt = shouldShowHomeDailyArt();
-  const showGreeting = Boolean(getUserName()); // show from day 1
+  const showGreeting = true; // always show time-aware greeting
 
   useEffect(() => { setLastOpenDate(); }, []);
 

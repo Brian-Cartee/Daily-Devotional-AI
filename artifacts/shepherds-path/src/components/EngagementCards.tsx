@@ -53,7 +53,6 @@ export function GreetingHeader() {
   const name = getUserName();
   const greeting = getTimeGreeting();
   const lateNight = isLateNight();
-  if (!name) return null;
   if (lateNight) {
     return (
       <div data-testid="text-greeting-header" className="px-0.5 -mb-1">
@@ -67,8 +66,8 @@ export function GreetingHeader() {
       data-testid="text-greeting-header"
       className="text-[22px] font-bold text-foreground/85 px-0.5 -mb-1"
     >
-      {greeting}, {name}.
-    </p>
+      {name ? `${greeting}, ${name}.` : `${greeting}.`}
+</p>
   );
 }
 
