@@ -131,6 +131,9 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const { image, headline, subline, cta } = splash;
 
   useEffect(() => {
+    // Hide body scrollbar while splash is covering the screen
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     // Signal native overlay to drop only after browser has painted this frame
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -139,7 +142,11 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
     });
     const t1 = setTimeout(() => setReady(true), 300);
     const t2 = setTimeout(() => setAllowDismiss(true), 900);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => {
+      document.body.style.overflow = prev;
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   return (
