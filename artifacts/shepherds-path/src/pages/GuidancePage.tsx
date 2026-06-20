@@ -1232,33 +1232,40 @@ export default function GuidancePage() {
                     {/* Voice-first entry */}
                     {hasSpeechSupport && (
                       <div className="flex flex-col items-center mb-5">
-                        <button
+                        <motion.button
                           type="button"
                           onClick={toggleHeartVoice}
                           data-testid="button-guidance-heart-voice"
-                          className="relative flex flex-col items-center justify-center gap-2 w-24 h-24 rounded-full transition-all active:scale-95"
+                          className="relative flex items-center justify-center w-28 h-28 rounded-full active:scale-95"
+                          animate={heartListening ? {
+                            boxShadow: [
+                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
+                              "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
+                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
+                            ],
+                          } : {
+                            boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
+                          }}
+                          transition={heartListening ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
                           style={{
                             background: heartListening
-                              ? "radial-gradient(circle, rgba(239,68,68,0.25) 0%, rgba(239,68,68,0.08) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.30) 0%, rgba(109,40,217,0.12) 100%)",
+                              ? "radial-gradient(circle, rgba(239,68,68,0.30) 0%, rgba(180,20,20,0.14) 100%)"
+                              : "radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(109,40,217,0.14) 100%)",
                             border: heartListening
-                              ? "2px solid rgba(239,68,68,0.55)"
-                              : "2px solid rgba(139,92,246,0.45)",
-                            boxShadow: heartListening
-                              ? "0 0 0 0 rgba(239,68,68,0.4)"
-                              : "0 0 0 0 rgba(139,92,246,0.3)",
+                              ? "2px solid rgba(239,68,68,0.70)"
+                              : "2px solid rgba(139,92,246,0.50)",
                           }}
                         >
                           {heartListening && (
                             <span className="absolute inset-0 rounded-full animate-ping"
-                              style={{ background: "rgba(239,68,68,0.18)" }} />
+                              style={{ background: "rgba(239,68,68,0.14)" }} />
                           )}
                           {heartListening
-                            ? <MicOff className="w-8 h-8 text-red-400 relative z-10" />
-                            : <Mic className="w-8 h-8 text-violet-300 relative z-10" />
+                            ? <MicOff className="w-10 h-10 text-red-400 relative z-10" />
+                            : <Mic className="w-10 h-10 text-violet-300 relative z-10" />
                           }
-                        </button>
-                        <p className="mt-2.5 text-[13px] font-medium text-white/65">
+                        </motion.button>
+                        <p className="mt-3 text-[13px] font-medium text-white/65">
                           {heartListening ? "Listening — tap to stop" : "Tap to speak"}
                         </p>
                         {(heartListening && interimTranscript) && (
@@ -1446,31 +1453,41 @@ export default function GuidancePage() {
                   {/* Voice-first reply */}
                   {hasSpeechSupport && (
                     <div className="flex flex-col items-center py-2">
-                      <button
+                      <motion.button
                         type="button"
                         onClick={togglePhase1Voice}
                         data-testid="button-guidance-phase1-voice"
                         disabled={isSending || phase2Loading}
-                        className="relative flex flex-col items-center justify-center w-20 h-20 rounded-full transition-all active:scale-95 disabled:opacity-40"
+                        className="relative flex items-center justify-center w-24 h-24 rounded-full active:scale-95 disabled:opacity-40"
+                        animate={phase1Listening ? {
+                          boxShadow: [
+                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
+                            "0 0 0 16px rgba(239,68,68,0.0), 0 0 42px 14px rgba(239,68,68,0.45)",
+                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
+                          ],
+                        } : {
+                          boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
+                        }}
+                        transition={phase1Listening ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
                         style={{
                           background: phase1Listening
-                            ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(239,68,68,0.06) 100%)"
-                            : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.06) 100%)",
+                            ? "radial-gradient(circle, rgba(239,68,68,0.28) 0%, rgba(180,20,20,0.12) 100%)"
+                            : "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.08) 100%)",
                           border: phase1Listening
-                            ? "2px solid rgba(239,68,68,0.55)"
-                            : "2px solid rgba(139,92,246,0.30)",
+                            ? "2px solid rgba(239,68,68,0.65)"
+                            : "2px solid rgba(139,92,246,0.35)",
                         }}
                       >
                         {phase1Listening && (
                           <span className="absolute inset-0 rounded-full animate-ping"
-                            style={{ background: "rgba(239,68,68,0.15)" }} />
+                            style={{ background: "rgba(239,68,68,0.12)" }} />
                         )}
                         {phase1Listening
-                          ? <MicOff className="w-7 h-7 text-red-400 relative z-10" />
-                          : <Mic className="w-7 h-7 text-violet-400 relative z-10" />
+                          ? <MicOff className="w-9 h-9 text-red-400 relative z-10" />
+                          : <Mic className="w-9 h-9 text-violet-400 relative z-10" />
                         }
-                      </button>
-                      <p className="mt-2 text-[12px] text-muted-foreground/70 font-medium">
+                      </motion.button>
+                      <p className="mt-2.5 text-[12px] text-muted-foreground/70 font-medium">
                         {phase1Listening ? "Listening — tap to stop" : "Tap to speak"}
                       </p>
                       {phase1Listening && phase1Interim && (
