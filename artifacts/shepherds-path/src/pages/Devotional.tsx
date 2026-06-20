@@ -772,31 +772,9 @@ export default function Devotional() {
 
   const handleReflect = async () => {
     const input = reflectionInput.trim();
-    if (!input || !verse || reflectListenLoading) return;
-    if (!canUseAi()) {
-      setShowUpgrade(true);
-      return;
-    }
-    setReflectListenLoading(true);
+    if (!input || !verse) return;
     setReflectionInputSubmitted(input);
-    setReflectListenStreamingText("");
-    setReflectListenResponse("");
-    setReflectListenComplete(false);
-    setReflectListenReply("");
-    setReflectListenReplySubmitted(null);
-    const listenOk = await streamReflectListen(input);
-    setReflectListenLoading(false);
-    if (!listenOk) {
-      setReflectListenStreamingText("");
-      setReflectListenResponse("");
-      setReflectListenComplete(false);
-      setReflectionInputSubmitted(null);
-      toast({
-        title: "Couldn't connect just now",
-        description: "Today's encouragement and prayer are still here — try again when you're ready.",
-        variant: "destructive",
-      });
-    }
+    await saveOptionalReflectionToJournal(input);
   };
 
   const handleReflectListenContinue = async () => {
@@ -2135,7 +2113,7 @@ export default function Devotional() {
                 Share a thought if you&apos;d like — saved to your journal, not required to finish.
               </p>
 
-              {reflectionReplySaved && reflectListenReplySubmitted ? (
+              {reflectionReplySaved && reflectionInputSubmitted ? (
                 <div className="flex items-center gap-2 py-2 text-primary">
                   <Check className="w-4 h-4" />
                   <span className="text-[13px] font-semibold">Saved to your journal</span>
@@ -2165,75 +2143,14 @@ export default function Devotional() {
                         <button
                           type="button"
                           onClick={() => void handleReflect()}
-                          disabled={!reflectionInput.trim() || reflectListenLoading}
+                          disabled={!reflectionInput.trim()}
                           data-testid="button-reflect-with-me"
                           className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[14px] font-semibold text-primary-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {reflectListenLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reflect with me"}
+                          Save to journal
                         </button>
                       </div>
                     </div>
-                  )}
-
-                  {(reflectListenStreamingText || reflectListenResponse) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="mb-4"
-                      data-testid="text-devotional-reflect-listen"
-                    >
-                      <div className="border-l-2 border-violet-500/45 pl-4">
-                        <p
-                          className="text-[16px] leading-[1.75] text-foreground/75 italic"
-                          style={{ fontFamily: "var(--font-reading)" }}
-                        >
-                          {reflectListenStreamingText || reflectListenResponse}
-                          {!reflectListenComplete && reflectListenStreamingText && (
-                            <span className="inline-block w-1.5 h-5 bg-violet-400/50 rounded-sm animate-pulse ml-0.5 align-middle not-italic" />
-                          )}
-                        </p>
-                      </div>
-
-                      {reflectListenComplete && !reflectListenReplySubmitted && (
-                        <div className="mt-5 space-y-3">
-                          <textarea
-                            value={reflectListenReply}
-                            onChange={(e) => setReflectListenReply(e.target.value)}
-                            onKeyDown={handleReflectListenKeyDown}
-                            placeholder="Keep going... there's no right answer."
-                            rows={3}
-                            data-testid="input-devotional-reflect-listen-reply"
-                            className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/40 leading-relaxed"
-                          />
-                          <p className="text-[12px] text-muted-foreground/60 text-center leading-relaxed">
-                            One more thought — we&apos;ll save this to your journal.
-                          </p>
-                          <div className="flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => void handleReflectListenContinue()}
-                              disabled={!reflectListenReply.trim()}
-                              data-testid="button-devotional-reflect-listen-continue"
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Save to journal →
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-
-                  {reflectListenReplySubmitted && !reflectionReplySaved && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-[14px] text-muted-foreground/70 italic text-right max-w-[88%] ml-auto leading-relaxed"
-                      data-testid="text-devotional-reflect-listen-user-reply"
-                    >
-                      {reflectListenReplySubmitted}
-                    </motion.p>
                   )}
                 </>
               )}
@@ -2242,8 +2159,8 @@ export default function Devotional() {
             </div>
           )}
 
-          {/* OPTIONAL: Gratitude */}
-          {devotionalCoreComplete && (
+          {/* Give Thanks section removed — contemplative flow ends at the selah screen */}
+          {false && devotionalCoreComplete && (
           <div className="relative overflow-hidden rounded-2xl shadow-sm" style={{ background: "linear-gradient(160deg, hsl(38 80% 6% / 0.5) 0%, hsl(var(--card)) 100%)", border: "1px solid hsl(38 70% 55% / 0.22)" }}>
             {/* Top warm glow line */}
             <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(217,119,6,0.6), rgba(234,88,12,0.6), transparent)" }} />
@@ -2461,7 +2378,6 @@ export default function Devotional() {
                     { label: "Verse", available: !!verse?.text, saved: savedVerse },
                     { label: "Reflection", available: !!reflectionContent, saved: savedReflection },
                     { label: "Prayer", available: !!prayerContent, saved: savedPrayer },
-                    ...(gratitudePrayer ? [{ label: "Closing Prayer", available: true, saved: savedGratitude }] : []),
                     { label: "Memory", available: !!verse?.text, saved: verseInMemory },
                   ].map(({ label, available, saved }) => (
                     <div key={label} className="flex items-center gap-1.5">
@@ -2482,14 +2398,12 @@ export default function Devotional() {
                     (savedVerse || !verse?.text) &&
                     (savedReflection || !reflectionContent) &&
                     (savedPrayer || !prayerContent) &&
-                    (!gratitudePrayer || savedGratitude) &&
                     (verseInMemory || !verse?.text)
                   }
                   onClick={() => {
                     if (!savedVerse && verse?.text) saveMutation.mutate({ type: "verse", content: verse.text, reference: verse.reference, verseDate: verse.date });
                     if (!savedReflection && reflectionContent) saveMutation.mutate({ type: "reflection", content: reflectionContent, reference: verse?.reference, verseDate: verse?.date });
                     if (!savedPrayer && prayerContent) saveMutation.mutate({ type: "prayer", content: prayerContent, reference: verse?.reference, verseDate: verse?.date });
-                    if (!savedGratitude && gratitudePrayer) { saveMutation.mutate({ type: "prayer", content: gratitudePrayer, reference: verse?.reference, verseDate: verse?.date }); setSavedGratitude(true); }
                     if (!verseInMemory && verse?.text) handleToggleMemory();
                   }}
                 >
