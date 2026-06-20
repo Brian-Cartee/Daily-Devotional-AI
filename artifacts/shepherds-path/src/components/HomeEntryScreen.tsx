@@ -50,30 +50,30 @@ const HEART_EMOTIONS = [
 // Visits 1–2 are handled separately (door, road-sunset).
 // Visits 3–12: show all 10 remaining images in order — every new user sees everything.
 const ONBOARDING_SEQUENCE = [
-  { image: "/splash-bible-glow-REV.png",  line: "He's been waiting." },
-  { image: "/splash-shepherd.png",        line: "The path is still here." },
-  { image: "/splash-candle.png",          line: "He's still here." },
-  { image: "/splash-forest.png",          line: "Something brought you back." },
-  { image: "/splash-prayer.png",          line: "You don't have to have it figured out." },
-  { image: "/splash-well.png",            line: "Draw near." },
-  { image: "/splash-cobblestone.png",     line: "He meets you where you are." },
-  { image: "/splash-pew.png",             line: "Come back whenever you're ready." },
-  { image: "/splash-bible-sun-REV.png",   line: "Today's word is waiting." },
-  { image: "/splash-mic-REV.png",         line: "Talk it through. He's listening." },
+  { image: "/splash-bible-glow-REV.jpg",  line: "He's been waiting." },
+  { image: "/splash-shepherd.jpg",        line: "The path is still here." },
+  { image: "/splash-candle.jpg",          line: "He's still here." },
+  { image: "/splash-forest.jpg",          line: "Something brought you back." },
+  { image: "/splash-prayer.jpg",          line: "You don't have to have it figured out." },
+  { image: "/splash-well.jpg",            line: "Draw near." },
+  { image: "/splash-cobblestone.jpg",     line: "He meets you where you are." },
+  { image: "/splash-pew.jpg",             line: "Come back whenever you're ready." },
+  { image: "/splash-bible-sun-REV.jpg",   line: "Today's word is waiting." },
+  { image: "/splash-mic-REV.jpg",         line: "Talk it through. He's listening." },
 ];
 
 // Visit 13+: rotating pool (same images, daily variety)
 const BRAND_SPLASH_POOL = [
-  { image: "/splash-shepherd.png",        line: "The path is still here." },
-  { image: "/splash-forest.png",          line: "Something brought you back." },
-  { image: "/splash-bible-glow-REV.png",  line: "He's been waiting." },
-  { image: "/splash-well.png",            line: "Draw near." },
-  { image: "/splash-prayer.png",          line: "You don't have to have it figured out." },
-  { image: "/splash-cobblestone.png",     line: "He meets you where you are." },
-  { image: "/splash-candle.png",          line: "He's still here." },
-  { image: "/splash-pew.png",             line: "Come back whenever you're ready." },
-  { image: "/splash-bible-sun-REV.png",   line: "Today's word is waiting." },
-  { image: "/splash-mic-REV.png",         line: "Talk it through. He's listening." },
+  { image: "/splash-shepherd.jpg",        line: "The path is still here." },
+  { image: "/splash-forest.jpg",          line: "Something brought you back." },
+  { image: "/splash-bible-glow-REV.jpg",  line: "He's been waiting." },
+  { image: "/splash-well.jpg",            line: "Draw near." },
+  { image: "/splash-prayer.jpg",          line: "You don't have to have it figured out." },
+  { image: "/splash-cobblestone.jpg",     line: "He meets you where you are." },
+  { image: "/splash-candle.jpg",          line: "He's still here." },
+  { image: "/splash-pew.jpg",             line: "Come back whenever you're ready." },
+  { image: "/splash-bible-sun-REV.jpg",   line: "Today's word is waiting." },
+  { image: "/splash-mic-REV.jpg",         line: "Talk it through. He's listening." },
 ];
 
 function getTodayStr() {
@@ -138,9 +138,9 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const onboardingEntry = isOnboarding ? ONBOARDING_SEQUENCE[visitCount - 2] : null;
 
   const image    = isFirst
-    ? "/splash-door.png"
+    ? "/splash-door.jpg"
     : isSecond
-    ? "/splash-road-sunset-REV.png"
+    ? "/splash-road-sunset-REV.jpg"
     : isOnboarding && onboardingEntry
     ? onboardingEntry.image
     : entry.image;

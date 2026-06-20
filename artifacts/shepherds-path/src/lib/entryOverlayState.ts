@@ -1,18 +1,14 @@
 import { useState, useEffect } from "react";
-import { isNativeWebViewShell } from "@/lib/platform";
-import { shouldShowHomeEntry } from "@/components/HomeEntryScreen";
 
 function computeInitialActive(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    // ReactNativeWebView may not be injected yet at module load, so check
-    // the timestamp directly — if sp_last_active_ts exists the user has
-    // opened before, meaning we're in a native reopen scenario.
-    const isNative = document.documentElement.dataset.spShell === "native";
-    if (!isNative) return false;
+    // data-sp-shell is set by injectedJavaScriptBeforeContentLoaded — always ready.
+    if (document.documentElement.dataset.spShell !== "native") return false;
     const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+    // Missing timestamp = first open or force-close without bg event → show splash
     const elapsed = last > 0 ? Date.now() - last : Infinity;
-    return elapsed >= 5_000 && shouldShowHomeEntry(true);
+    return elapsed >= 5_000;
   } catch {
     return false;
   }
