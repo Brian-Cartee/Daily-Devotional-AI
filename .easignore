@@ -1,12 +1,12 @@
-# EAS must NOT upload the whole monorepo (12GB+). Mobile app only lives in .mobile-build/
-# If you see "archive is too big", run: cd .mobile-build && bash build-mac.sh
+# EAS must NOT upload the whole monorepo (12GB+). Mobile app only lives in mobile-build/
+# If you see "archive is too big", run: cd mobile-build && bash build-mac.sh
 
 *
-!.mobile-build/
+!mobile-build/
 
 # Still trim what EAS installs fresh on the server anyway
-.mobile-build/node_modules/
-.mobile-build/store-assets/
+mobile-build/node_modules/
+mobile-build/store-assets/
 
 # Legacy explicit excludes (if building from a subfolder)
 attached_assets/
