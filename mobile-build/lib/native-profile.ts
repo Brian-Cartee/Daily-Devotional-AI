@@ -8,6 +8,8 @@ const NAME_PROMPTED_KEY = "sp_name_prompted";
 const SUBSCRIBER_EMAIL_KEY = "sp_subscribed_email";
 const EMAIL_SUBSCRIBED_KEY = "sp_email_subscribed";
 const SECURE_SUBSCRIBER_EMAIL_KEY = "sp_secure_subscriber_email";
+const SPLASH_COUNT_KEY = "sp_native_splash_count";
+const HEART_LAST_SHOWN_KEY = "sp_native_heart_last_shown";
 
 function newSessionId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
@@ -36,6 +38,8 @@ export async function loadNativeUserProfile(): Promise<{
   prompted: boolean;
   subscriberEmail: string;
   emailSubscribed: boolean;
+  splashCount: number;
+  heartLastShown: number;
 }> {
   const sessionId = await getOrCreateNativeSessionId();
   const name = (await AsyncStorage.getItem(USER_NAME_KEY)) ?? "";
@@ -47,7 +51,18 @@ export async function loadNativeUserProfile(): Promise<{
   const emailSubscribed =
     (await AsyncStorage.getItem(EMAIL_SUBSCRIBED_KEY)) === "true" ||
     !!subscriberEmail.trim();
-  return { sessionId, name, prompted, subscriberEmail, emailSubscribed };
+  const splashCount = parseInt((await AsyncStorage.getItem(SPLASH_COUNT_KEY)) ?? "0", 10) || 0;
+  const heartLastShown = parseInt((await AsyncStorage.getItem(HEART_LAST_SHOWN_KEY)) ?? "0", 10) || 0;
+  return { sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown };
+}
+
+export async function saveNativeUiState(patch: { splashCount?: number; heartLastShown?: number }): Promise<void> {
+  if (patch.splashCount !== undefined) {
+    await AsyncStorage.setItem(SPLASH_COUNT_KEY, String(patch.splashCount));
+  }
+  if (patch.heartLastShown !== undefined) {
+    await AsyncStorage.setItem(HEART_LAST_SHOWN_KEY, String(patch.heartLastShown));
+  }
 }
 
 export type NativeUserProfilePatch = {
@@ -139,6 +154,8 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
   prompted: boolean;
   subscriberEmail: string;
   emailSubscribed: boolean;
+  splashCount: number;
+  heartLastShown: number;
 }> {
   const profile = await loadNativeUserProfile();
   let email = profile.subscriberEmail.trim().toLowerCase();
@@ -157,6 +174,8 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
     prompted: profile.prompted,
     subscriberEmail: email,
     emailSubscribed: profile.emailSubscribed || email.includes("@"),
+    splashCount: profile.splashCount,
+    heartLastShown: profile.heartLastShown,
   };
 }
 
@@ -164,13 +183,15 @@ function jsString(value: string): string {
   return JSON.stringify(value);
 }
 
-/** Runs before page JS — keeps WebView session + name + email aligned with native storage. */
+/** Runs before page JS — keeps WebView session + name + email + UI state aligned with native storage. */
 export function buildNativeProfileSeedJs(
   sessionId: string,
   name: string,
   prompted: boolean,
   subscriberEmail = "",
   emailSubscribed = false,
+  splashCount = 0,
+  heartLastShown = 0,
 ): string {
   const sid = jsString(sessionId);
   const nm = jsString(name.trim());
@@ -200,6 +221,8 @@ export function buildNativeProfileSeedJs(
       }catch(e){}
     }
     if(sid){window.__SP_SESSION_BOOT__=sid;}
+    window.__spNativeSplashCount=${splashCount};
+    window.__spNativeHeartLastShown=${heartLastShown};
   }catch(e){}
   true;
 })();`;

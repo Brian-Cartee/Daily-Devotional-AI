@@ -25,6 +25,7 @@ import {
   prepareNativeUserProfileForWebView,
   mergeNativeUserProfile,
   saveNativeSubscriberProfile,
+  saveNativeUiState,
   SCRAPE_WEB_SUBSCRIBER_JS,
 } from "@/lib/native-profile";
 import { useSubscription } from "@/lib/revenuecat";
@@ -241,10 +242,10 @@ export default function MainScreen() {
   useEffect(() => {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown }) => {
         if (cancelled) return;
         setBeforeContentJs(
-          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
+          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown)}`,
         );
         setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
       },
@@ -480,9 +481,9 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed }) => {
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, heartLastShown }) => {
       setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed)}`,
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown)}`,
       );
       setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
@@ -627,6 +628,12 @@ export default function MainScreen() {
                 );
               });
             }
+            if (data.type === "sp_ui_state") {
+              const patch: { splashCount?: number; heartLastShown?: number } = {};
+              if (typeof data.splashCount === "number") patch.splashCount = data.splashCount;
+              if (typeof data.heartLastShown === "number") patch.heartLastShown = data.heartLastShown;
+              if (Object.keys(patch).length > 0) void saveNativeUiState(patch);
+            }
             if (data.type === "scroll_home_top") {
               webviewRef.current?.injectJavaScript(
                 `(function(){try{var s=document.scrollingElement||document.body;s.scrollTop=0;try{s.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){}}catch(e){}true;})();`,
@@ -745,7 +752,7 @@ export default function MainScreen() {
         renderLoading={() => (
           <View style={styles.webviewLoading}>
             <Image
-              source={require("../assets/images/icon.png")}
+              source={require("../assets/images/app-icon.png")}
               style={styles.webviewLoadingLogo}
               resizeMode="contain"
             />
@@ -795,7 +802,7 @@ export default function MainScreen() {
       {showOverlay && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <Image
-            source={require("../assets/images/icon.png")}
+            source={require("../assets/images/app-icon.png")}
             style={styles.overlayLogo}
             resizeMode="contain"
           />

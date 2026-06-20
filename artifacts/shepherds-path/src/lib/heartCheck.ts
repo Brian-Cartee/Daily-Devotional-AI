@@ -47,25 +47,46 @@ export function getCurrentHeartState(): HeartState | null {
 }
 
 export function saveHeartCheck(weather: HeartWeather, topic: HeartTopic | null): void {
-  const entry: HeartEntry = { date: todayStr(), weather, topic, ts: Date.now() };
-  const state: HeartState = { weather, topic, ts: Date.now() };
+  const ts = Date.now();
+  const entry: HeartEntry = { date: todayStr(), weather, topic, ts };
+  const state: HeartState = { weather, topic, ts };
   safeSet(KEY_CURRENT, state);
-  safeSet(KEY_LAST_SHOWN, Date.now());
+  safeSet(KEY_LAST_SHOWN, ts);
+  syncHeartLastShownToNative(ts);
 
   const history = safeGet<HeartEntry[]>(KEY_HISTORY, []);
   history.unshift(entry);
   safeSet(KEY_HISTORY, history.slice(0, HISTORY_MAX));
 }
 
+function getNativeHeartLastShown(): number {
+  try {
+    const v = typeof window !== "undefined" ? (window as any).__spNativeHeartLastShown : undefined;
+    return typeof v === "number" && !isNaN(v) ? v : 0;
+  } catch { return 0; }
+}
+
+function syncHeartLastShownToNative(ts: number): void {
+  try {
+    if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+      (window as any).__spNativeHeartLastShown = ts;
+      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "sp_ui_state", heartLastShown: ts }));
+    }
+  } catch {}
+}
+
 export function markHeartCheckShown(): void {
-  safeSet(KEY_LAST_SHOWN, Date.now());
+  const ts = Date.now();
+  safeSet(KEY_LAST_SHOWN, ts);
+  syncHeartLastShownToNative(ts);
 }
 
 export function shouldShowHeartCheck(): boolean {
   try {
-    const lastShown = safeGet<number>(KEY_LAST_SHOWN, 0);
+    const fromStorage = safeGet<number>(KEY_LAST_SHOWN, 0);
+    const fromNative = getNativeHeartLastShown();
+    const lastShown = Math.max(fromStorage, fromNative);
     if (Date.now() - lastShown < SHOW_INTERVAL_MS) return false;
-    // Don't show if checked in today already and weather is still fresh (<3h)
     const current = getCurrentHeartState();
     if (current && Date.now() - current.ts < SHOW_INTERVAL_MS) return false;
     return true;

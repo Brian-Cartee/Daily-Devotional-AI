@@ -114,16 +114,28 @@ function writeSplashCookie(n: number): void {
   } catch {}
 }
 
-/** Brand splash visit count — backed by both localStorage and a cookie so it survives either being wiped. */
+/** Brand splash visit count — native AsyncStorage is source of truth in the iOS shell; localStorage + cookie as fallback for web. */
 export function getBrandSplashCount(): number {
+  const fromNative = typeof window !== "undefined" ? (window as any).__spNativeSplashCount : undefined;
   const fromStorage = parseInt(storageGet(BRAND_SPLASH_COUNT_KEY, localStorage) ?? "0", 10);
   const fromCookie = readSplashCookie();
-  return Math.max(fromStorage, fromCookie);
+  const webMax = Math.max(isNaN(fromStorage) ? 0 : fromStorage, isNaN(fromCookie) ? 0 : fromCookie);
+  if (typeof fromNative === "number" && !isNaN(fromNative)) {
+    return Math.max(fromNative, webMax);
+  }
+  return webMax;
 }
 
 export function incrementBrandSplashCount(): number {
   const next = getBrandSplashCount() + 1;
   storageSet(BRAND_SPLASH_COUNT_KEY, String(next), localStorage);
   writeSplashCookie(next);
+  // Keep native AsyncStorage in sync — survives full WKWebView kills
+  try {
+    if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+      (window as any).__spNativeSplashCount = next;
+      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "sp_ui_state", splashCount: next }));
+    }
+  } catch {}
   return next;
 }
