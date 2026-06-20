@@ -120,12 +120,11 @@ export function markEntryShown() {
 // ─── Brand Splash ────────────────────────────────────────────────────────────
 
 function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
-  const [ready, setReady] = useState(false);
   const [allowDismiss, setAllowDismiss] = useState(false);
   const [splash] = useState(() => {
     const count = getBrandSplashCount();
     incrementBrandSplashCount();
-    return SPLASH_SEQUENCE[Math.min(count, SPLASH_SEQUENCE.length - 1)]!;
+    return SPLASH_SEQUENCE[count % SPLASH_SEQUENCE.length]!;
   });
 
   const { image, headline, subline, cta } = splash;
@@ -140,11 +139,9 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         (window as any).__spSignalReady?.();
       });
     });
-    const t1 = setTimeout(() => setReady(true), 300);
     const t2 = setTimeout(() => setAllowDismiss(true), 900);
     return () => {
       document.body.style.overflow = prev;
-      clearTimeout(t1);
       clearTimeout(t2);
     };
   }, []);
@@ -152,8 +149,8 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   return (
     <div
       data-testid="sp-splash-active"
-      className="fixed inset-0 z-50 overflow-hidden"
-      style={{ background: "#000" }}
+      className="fixed inset-0 overflow-hidden"
+      style={{ zIndex: 99999, background: "#000" }}
       onClick={() => allowDismiss && onDismiss()}
     >
       {/* Full-bleed image */}
@@ -182,8 +179,8 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
       {/* Wordmark — top left */}
       <motion.p
         initial={{ opacity: 0 }}
-        animate={{ opacity: ready ? 1 : 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
         className="absolute top-14 left-6 text-white/70 text-[9px] font-semibold tracking-[0.32em] uppercase"
         style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
       >
@@ -195,8 +192,8 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         className="absolute left-0 right-0"
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 140px)" }}
         initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 16 }}
-        transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       >
         <h1
           className="text-white text-center px-8 leading-tight"
@@ -224,8 +221,8 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         className="absolute left-6 right-6"
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)" }}
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 10 }}
-        transition={{ duration: 0.6, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
       >
         <button
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
@@ -447,6 +444,6 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
 }
 
 export function shouldShowHomeEntry(_inNativeApp = false): boolean {
-  // Show the 5-splash sequence to everyone — native and web — until it's complete
-  return getBrandSplashCount() < SPLASH_SEQUENCE.length;
+  // TEST: 10 total showings (2 full rounds) — revert to SPLASH_SEQUENCE.length for production
+  return getBrandSplashCount() < SPLASH_SEQUENCE.length * 2;
 }
