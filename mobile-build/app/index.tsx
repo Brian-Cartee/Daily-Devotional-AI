@@ -37,7 +37,7 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
 // Update this every release — must match app.json version string.
-const APP_VERSION = "2.2.1";
+const APP_VERSION = "2.2.2";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
 function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
