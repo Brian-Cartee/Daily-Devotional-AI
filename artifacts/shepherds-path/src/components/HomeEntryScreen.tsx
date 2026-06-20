@@ -168,7 +168,8 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: ready ? 1 : 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        className="absolute top-14 left-6 text-white/40 text-[9px] font-semibold tracking-[0.32em] uppercase"
+        className="absolute top-14 left-6 text-white/70 text-[9px] font-semibold tracking-[0.32em] uppercase"
+        style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
       >
         Shepherd&rsquo;s Path
       </motion.p>
