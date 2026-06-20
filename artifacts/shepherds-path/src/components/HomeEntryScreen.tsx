@@ -161,11 +161,11 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const headline = isFirst
     ? "Step inside."
     : isSecond
-    ? "Glad you came back."
+    ? "There you are."
     : isOnboarding && onboardingEntry
     ? onboardingEntry.line
     : entry.line;
-  const subline  = isSecond ? "Come in." : null;
+  const subline  = isSecond ? "He never left." : null;
   const cta      = isSecond ? "I'm here" : "Enter";
 
   useEffect(() => {
