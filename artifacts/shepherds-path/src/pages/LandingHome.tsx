@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
 import { isIOS, isAndroid, isNativeWebViewShell } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -837,11 +837,6 @@ function LandingHomeInner() {
     } catch { /* storage unavailable */ }
     return false;
   });
-  useEffect(() => {
-    setEntryOverlayActive(showEntryScreen);
-    return () => setEntryOverlayActive(false);
-  }, [showEntryScreen]);
-
   const [showHeartCheck, setShowHeartCheck] = useState(false);
 
   useEffect(() => {
@@ -918,9 +913,12 @@ function LandingHomeInner() {
   const welcomeOverlayEnabled = homeReturnOverlay === "welcome";
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
   const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
-  useEffect(() => {
-    if (showWelcomeOverlay) setEntryOverlayActive(true);
-  }, [showWelcomeOverlay]);
+  useLayoutEffect(() => {
+    const blockingOverlay =
+      showEntryScreen || showBeginWalk || showSplash || showWelcomeOverlay;
+    setEntryOverlayActive(blockingOverlay);
+    return () => setEntryOverlayActive(false);
+  }, [showEntryScreen, showBeginWalk, showSplash, showWelcomeOverlay]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
     if (!showWalkthrough) return;

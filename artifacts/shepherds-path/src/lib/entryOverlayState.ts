@@ -1,17 +1,9 @@
 import { useState, useEffect } from "react";
 
 function computeInitialActive(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    // data-sp-shell is set by injectedJavaScriptBeforeContentLoaded — always ready.
-    if (document.documentElement.dataset.spShell !== "native") return false;
-    const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-    // Missing timestamp = first open or force-close without bg event → show splash
-    const elapsed = last > 0 ? Date.now() - last : Infinity;
-    return elapsed >= 5_000;
-  } catch {
-    return false;
-  }
+  // Default false — LandingHome sets this when a full-screen overlay is actually visible.
+  // Guessing "splash will show" here hid the top/bottom nav for the whole session.
+  return false;
 }
 
 let _active = computeInitialActive();
