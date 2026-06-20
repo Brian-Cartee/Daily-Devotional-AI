@@ -512,6 +512,7 @@ export default function GuidancePage() {
           situation,
           situationTopicId: situationTopicId ?? undefined,
           userName: getUserName() ?? undefined,
+          heartContext: buildHeartContext(getCurrentHeartState()),
           ...apiSessionExtras(),
         }),
       });

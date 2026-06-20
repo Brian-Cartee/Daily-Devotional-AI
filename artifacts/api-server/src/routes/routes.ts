@@ -3276,11 +3276,15 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
     const nameNote = userName
       ? `\n\nTheir name is ${userName}. You may use it once, gently, only if it feels natural.`
       : "";
+    const phase1HeartCtx = ((req.body as any).heartContext as string | undefined)?.trim() || "";
+    const phase1HeartNote = phase1HeartCtx
+      ? `\n\nHeart check context: ${phase1HeartCtx} Let this quietly shape your tone — don't reference it directly, just meet them where they are.`
+      : "";
 
     try {
       await streamCompletion(
         [
-          { role: "system", content: `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}` },
+          { role: "system", content: `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}` },
           { role: "user", content: situation.trim() },
         ],
         res,
