@@ -85,6 +85,7 @@ import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathsBlock } from "@/components/HomePathsBlock";
+import { TalkItThroughCard } from "@/components/TalkItThroughCard";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
@@ -1135,6 +1136,8 @@ function LandingHomeInner() {
           )}
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
+
+          <TalkItThroughCard />
 
           {/* ScriptureForYou removed — clutters home, duplicates Today's Word */}
 

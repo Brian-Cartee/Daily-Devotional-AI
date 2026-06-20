@@ -6,7 +6,7 @@ import {
   Gift,
   HandHeart,
   Heart,
-  MessageCircle,
+  Mic,
   Lightbulb,
   Bell,
   Flame,
@@ -59,7 +59,7 @@ const TILE: Record<
     ring: "ring-violet-300/35",
     shadow: "shadow-primary/40",
     bg: "bg-gradient-to-br from-violet-500 via-primary to-violet-950",
-    Icon: MessageCircle,
+    Icon: Mic,
   },
   devotional: {
     halo: "bg-teal-400/35",

@@ -13,15 +13,6 @@ const SHORTCUTS: {
   iconVariant: ShortcutIconVariant;
 }[] = [
   {
-    href: "/guidance",
-    iconVariant: "guidance",
-    label: "Talk it through",
-    desc: "Scripture and prayer shaped for what's on your heart",
-    testid: "shortcut-guidance",
-    border: "rgba(124,58,237,0.20)",
-    background: "linear-gradient(to bottom right, rgba(139,92,246,0.12), rgba(124,58,237,0.08))",
-  },
-  {
     href: "/journal",
     iconVariant: "journal",
     label: "Journal",
