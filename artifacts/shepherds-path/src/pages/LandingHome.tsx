@@ -809,6 +809,12 @@ function LandingHomeInner() {
   }, [showEntryScreen, showBeginWalk]);
 
   useEffect(() => {
+    const handler = () => setShowHeartCheck(true);
+    window.addEventListener("sp-open-heart-check", handler);
+    return () => window.removeEventListener("sp-open-heart-check", handler);
+  }, []);
+
+  useEffect(() => {
     if (!showEntryScreen) {
       // No splash — signal native after paint so boot cover drops onto home screen
       requestAnimationFrame(() => {

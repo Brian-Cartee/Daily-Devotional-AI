@@ -30,6 +30,47 @@ import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
 import { useEntryOverlayActive } from "@/lib/entryOverlayState";
 import { getRhythm } from "@/lib/faithRhythm";
 import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
+import { getCurrentHeartState } from "@/lib/heartCheck";
+import { WEATHER_EMOJI } from "@/lib/heartCheckEmoji";
+
+function HeartWeatherChip() {
+  const [state, setState] = useState(() => getCurrentHeartState());
+  const STALE_MS = 12 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    const refresh = () => setState(getCurrentHeartState());
+    window.addEventListener("sp-heart-updated", refresh);
+    return () => window.removeEventListener("sp-heart-updated", refresh);
+  }, []);
+
+  if (!state) return <div style={{ flex: 1 }} />;
+
+  const stale = Date.now() - state.ts > STALE_MS;
+  const emoji = WEATHER_EMOJI[state.weather];
+
+  return (
+    <button
+      type="button"
+      onClick={() => window.dispatchEvent(new CustomEvent("sp-open-heart-check"))}
+      title="Update your heart check"
+      style={{
+        flex: 1,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        pointerEvents: "auto",
+        background: "none",
+        border: "none",
+        fontSize: "20px",
+        opacity: stale ? 0.35 : 0.85,
+        cursor: "pointer",
+        padding: "4px",
+      }}
+    >
+      {emoji}
+    </button>
+  );
+}
 
 const NAV_ITEMS = [
   { href: "/devotional", label: "Devotional", icon: Sun },
@@ -326,6 +367,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
             <div style={inNativeApp ? { pointerEvents: "auto", flexShrink: 0 } : undefined} className={inNativeApp ? undefined : "pointer-events-auto shrink-0"}>
               <ConvictionTopWhisper />
             </div>
+            <HeartWeatherChip />
             <div
               style={inNativeApp ? { pointerEvents: "auto", marginLeft: "auto", flexShrink: 0, position: "relative" } : undefined}
               className={inNativeApp ? undefined : "ml-auto shrink-0 relative pointer-events-auto"}

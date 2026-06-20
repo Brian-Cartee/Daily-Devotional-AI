@@ -88,6 +88,7 @@ export function HeartCheckModal({ onDismiss }: Props) {
   const handleTopicSelect = (topic: HeartTopic | null) => {
     if (!weather) return;
     saveHeartCheck(weather, topic);
+    window.dispatchEvent(new CustomEvent("sp-heart-updated"));
     const trend = getHeartTrend(weather);
     setTrendMessage(trend.message);
     setStep("ack");
