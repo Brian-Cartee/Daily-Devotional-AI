@@ -47,9 +47,9 @@ export function HeartCheckModal({ onDismiss }: Props) {
   const [trendMessage, setTrendMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    const prevent = (e: TouchEvent) => e.preventDefault();
+    document.addEventListener("touchmove", prevent, { passive: false });
+    return () => document.removeEventListener("touchmove", prevent);
   }, []);
 
   const handleWeatherSelect = (w: HeartWeather) => {
@@ -118,7 +118,7 @@ export function HeartCheckModal({ onDismiss }: Props) {
                 How is your heart today?
               </h2>
 
-              <div style={{ overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", flex: 1 } as React.CSSProperties}>
+              <div onTouchMove={e => e.stopPropagation()} style={{ overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", flex: 1 } as React.CSSProperties}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {WEATHER_OPTIONS.map(opt => (
                     <button
