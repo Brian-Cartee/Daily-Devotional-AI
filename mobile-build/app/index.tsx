@@ -257,13 +257,15 @@ export default function MainScreen() {
 
   const injectProfileSeed = useCallback(() => {
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown }) => {
         const seed = buildNativeProfileSeedJs(
           sessionId,
           name,
           prompted,
           subscriberEmail,
           emailSubscribed,
+          splashCount,
+          heartLastShown,
         );
         webviewRef.current?.injectJavaScript(
           `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
