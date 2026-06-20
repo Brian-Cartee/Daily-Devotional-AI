@@ -142,7 +142,11 @@ export function markEntryShown() {
 function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const [ready, setReady] = useState(false);
   const [allowDismiss, setAllowDismiss] = useState(false);
-  const [visitCount] = useState(() => getBrandSplashCount());
+  const [visitCount] = useState(() => {
+    const count = getBrandSplashCount();
+    incrementBrandSplashCount(); // increment immediately — guaranteed even if component unmounts before useEffect
+    return count;
+  });
   const [{ entry }] = useState(() => ({ entry: getDailyOpenEntry().entry }));
 
   const isFirst  = visitCount === 0;
@@ -169,7 +173,6 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const cta      = isSecond ? "I'm here" : "Enter";
 
   useEffect(() => {
-    incrementBrandSplashCount();
     // Signal native overlay to drop only after browser has painted this frame
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
