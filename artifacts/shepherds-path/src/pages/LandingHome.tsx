@@ -778,10 +778,13 @@ function LandingHomeInner() {
     if (_splashShownThisSession) return false;
     try {
       const isNative = document.documentElement.dataset.spShell === "native";
-      if (!isNative) return false;
-      const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-      const elapsed = last > 0 ? Date.now() - last : Infinity;
-      if (elapsed >= 5_000 && shouldShowHomeEntry(true)) {
+      if (isNative) {
+        // Native: only show if user has been away 5s+ (covers force-close / real reopens)
+        const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+        const elapsed = last > 0 ? Date.now() - last : Infinity;
+        if (elapsed < 5_000) return false;
+      }
+      if (shouldShowHomeEntry(isNative)) {
         _splashShownThisSession = true;
         return true;
       }

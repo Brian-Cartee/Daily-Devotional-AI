@@ -439,9 +439,7 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
   );
 }
 
-export function shouldShowHomeEntry(inNativeApp = false): boolean {
-  const welcomed = localStorage.getItem("sp_welcomed");
-  if (!welcomed && !inNativeApp) return false;
-  // Stop showing after the full 5-splash sequence is complete
+export function shouldShowHomeEntry(_inNativeApp = false): boolean {
+  // Show the 5-splash sequence to everyone — native and web — until it's complete
   return getBrandSplashCount() < SPLASH_SEQUENCE.length;
 }
