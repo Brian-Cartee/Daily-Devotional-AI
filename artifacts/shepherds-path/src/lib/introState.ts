@@ -101,13 +101,29 @@ export function recordWelcomeShownThisSession(): void {
   storageSet(WELCOME_SESSION_KEY, "1", sessionStorage);
 }
 
-/** Brand splash visit count — persists across all time, never resets. */
+function readSplashCookie(): number {
+  try {
+    const m = document.cookie.match(new RegExp("(?:^|; )sp_bsc=([^;]*)"));
+    return m ? parseInt(decodeURIComponent(m[1]), 10) : 0;
+  } catch { return 0; }
+}
+
+function writeSplashCookie(n: number): void {
+  try {
+    document.cookie = "sp_bsc=" + n + "; path=/; max-age=63072000; SameSite=Lax";
+  } catch {}
+}
+
+/** Brand splash visit count — backed by both localStorage and a cookie so it survives either being wiped. */
 export function getBrandSplashCount(): number {
-  return parseInt(storageGet(BRAND_SPLASH_COUNT_KEY, localStorage) ?? "0", 10);
+  const fromStorage = parseInt(storageGet(BRAND_SPLASH_COUNT_KEY, localStorage) ?? "0", 10);
+  const fromCookie = readSplashCookie();
+  return Math.max(fromStorage, fromCookie);
 }
 
 export function incrementBrandSplashCount(): number {
   const next = getBrandSplashCount() + 1;
   storageSet(BRAND_SPLASH_COUNT_KEY, String(next), localStorage);
+  writeSplashCookie(next);
   return next;
 }
