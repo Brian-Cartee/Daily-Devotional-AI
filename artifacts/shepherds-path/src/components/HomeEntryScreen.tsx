@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserName, syncUserNameFromServer } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
@@ -124,21 +124,20 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const [splash] = useState(() => {
     const count = getBrandSplashCount();
     incrementBrandSplashCount();
-    return SPLASH_SEQUENCE[count % SPLASH_SEQUENCE.length]!;
+    return SPLASH_SEQUENCE[Math.min(count, SPLASH_SEQUENCE.length - 1)]!;
   });
 
   const { image, headline, subline, cta } = splash;
+
+  useLayoutEffect(() => {
+    // Drop native/web boot overlays before first paint — no spinner, straight to splash
+    (window as any).__spSignalReady?.();
+  }, []);
 
   useEffect(() => {
     // Hide body scrollbar while splash is covering the screen
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    // Signal native overlay to drop only after browser has painted this frame
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        (window as any).__spSignalReady?.();
-      });
-    });
     const t2 = setTimeout(() => setAllowDismiss(true), 900);
     return () => {
       document.body.style.overflow = prev;
@@ -444,6 +443,5 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
 }
 
 export function shouldShowHomeEntry(_inNativeApp = false): boolean {
-  // TEST: 10 total showings (2 full rounds) — revert to SPLASH_SEQUENCE.length for production
-  return getBrandSplashCount() < SPLASH_SEQUENCE.length * 2;
+  return getBrandSplashCount() < SPLASH_SEQUENCE.length;
 }

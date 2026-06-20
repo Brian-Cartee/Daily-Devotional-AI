@@ -1,7 +1,7 @@
 /**
  * HeavenEasterEgg — pull down from the top of any page to reveal a glimpse of heaven.
  *
- * DISABLED on /start and /threshold — only works once the user is inside the app.
+ * Works everywhere in the app (home, brand splash, devotional, etc.) except /start and /threshold.
  * Pull 90px+ from the very top → heaven image + John 14:2 → holds 2.8s → fades out.
  *
  * iOS black rubber-band fix: set <html> background gold on touchstart so the
@@ -137,7 +137,7 @@ export function HeavenEasterEgg() {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 9999,
+        zIndex: 100001,
         opacity,
         transition: "opacity 0.55s ease",
         // pointerEvents ACTIVE — blocks touches so nothing underneath is tapped

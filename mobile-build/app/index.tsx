@@ -242,10 +242,10 @@ export default function MainScreen() {
   useEffect(() => {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState }) => {
         if (cancelled) return;
         setBeforeContentJs(
-          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown)}`,
+          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState)}`,
         );
         setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
       },
@@ -257,7 +257,7 @@ export default function MainScreen() {
 
   const injectProfileSeed = useCallback(() => {
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState }) => {
         const seed = buildNativeProfileSeedJs(
           sessionId,
           name,
@@ -266,6 +266,7 @@ export default function MainScreen() {
           emailSubscribed,
           splashCount,
           heartLastShown,
+          heartState,
         );
         webviewRef.current?.injectJavaScript(
           `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
@@ -282,17 +283,14 @@ export default function MainScreen() {
       const prev = appStateRef.current;
       appStateRef.current = nextState;
       if (prev.match(/inactive|background/) && nextState === "active") {
-        // Inject a black cover instantly so there's no flash of home screen
-        // before React renders the splash. The cover removes itself after 1.2s
-        // (splash animation is well underway by then).
+        // Black cover until __spSignalReady removes it (splash or home painted).
         webviewRef.current?.injectJavaScript(`(function(){
           var existing=document.getElementById('sp-fg-cover');
           if(existing)existing.remove();
           var c=document.createElement('div');
           c.id='sp-fg-cover';
-          c.style.cssText='position:fixed;inset:0;z-index:999999;background:#000;pointer-events:none;transition:opacity 0.35s ease;';
+          c.style.cssText='position:fixed;inset:0;z-index:999998;background:#000;pointer-events:none;';
           document.body.appendChild(c);
-          setTimeout(function(){c.style.opacity='0';setTimeout(function(){c.remove();},400);},1200);
           try{window.__onAppForeground?.();}catch(e){}
           true;
         })();`);
@@ -483,9 +481,9 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, heartLastShown }) => {
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, heartLastShown, heartState }) => {
       setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown)}`,
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState)}`,
       );
       setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
@@ -554,9 +552,7 @@ export default function MainScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <StatusBar style="light" />
-        <View style={styles.webviewLoading}>
-          <ActivityIndicator size="large" color="#d4a574" />
-        </View>
+        <View style={styles.webviewLoading} />
       </SafeAreaView>
     );
   }
@@ -631,9 +627,25 @@ export default function MainScreen() {
               });
             }
             if (data.type === "sp_ui_state") {
-              const patch: { splashCount?: number; heartLastShown?: number } = {};
+              const patch: {
+                splashCount?: number;
+                heartLastShown?: number;
+                heartState?: { weather: string; topic: string | null; ts: number } | null;
+              } = {};
               if (typeof data.splashCount === "number") patch.splashCount = data.splashCount;
               if (typeof data.heartLastShown === "number") patch.heartLastShown = data.heartLastShown;
+              if (
+                data.heartState &&
+                typeof data.heartState === "object" &&
+                typeof data.heartState.weather === "string" &&
+                typeof data.heartState.ts === "number"
+              ) {
+                patch.heartState = {
+                  weather: data.heartState.weather,
+                  topic: typeof data.heartState.topic === "string" ? data.heartState.topic : null,
+                  ts: data.heartState.ts,
+                };
+              }
               if (Object.keys(patch).length > 0) void saveNativeUiState(patch);
             }
             if (data.type === "scroll_home_top") {
@@ -735,9 +747,8 @@ export default function MainScreen() {
             if(existing)existing.remove();
             var c=document.createElement('div');
             c.id='sp-fg-cover';
-            c.style.cssText='position:fixed;inset:0;z-index:999999;background:#000;pointer-events:none;transition:opacity 0.35s ease;';
+            c.style.cssText='position:fixed;inset:0;z-index:999998;background:#000;pointer-events:none;';
             document.body&&document.body.appendChild(c);
-            setTimeout(function(){c.style.opacity='0';setTimeout(function(){c.remove();},400);},1200);
             true;
           })();`);
         }}
@@ -751,17 +762,7 @@ export default function MainScreen() {
           }
         }}
         startInLoadingState
-        renderLoading={() => (
-          <View style={styles.webviewLoading}>
-            <Image
-              source={require("../assets/images/app-icon.png")}
-              style={styles.webviewLoadingLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.loadingHint}>Shepherd&apos;s Path</Text>
-            <ActivityIndicator size="small" color="#E8C99B" style={{ marginTop: 12 }} />
-          </View>
-        )}
+        renderLoading={() => <View style={styles.webviewLoading} />}
         onLoadEnd={(e) => {
           setPullRefreshing(false);
           const pageUrl = e.nativeEvent.url || entryUrl;
@@ -803,16 +804,20 @@ export default function MainScreen() {
 
       {showOverlay && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
-          <Image
-            source={require("../assets/images/app-icon.png")}
-            style={styles.overlayLogo}
-            resizeMode="contain"
-          />
-          <ActivityIndicator size="large" color="#E8C99B" />
-          <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
-          <Text style={styles.loadingSubhint}>
-            Please wait — the app will open when it&apos;s ready.
-          </Text>
+          {showSlowOptions && (
+            <>
+              <Image
+                source={require("../assets/images/app-icon.png")}
+                style={styles.overlayLogo}
+                resizeMode="contain"
+              />
+              <ActivityIndicator size="large" color="#E8C99B" />
+              <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
+              <Text style={styles.loadingSubhint}>
+                Please wait — the app will open when it&apos;s ready.
+              </Text>
+            </>
+          )}
 
           {showSlowOptions && (
             <View style={styles.slowOptions}>
@@ -875,10 +880,7 @@ const styles = StyleSheet.create({
   },
   webviewLoading: {
     flex: 1,
-    backgroundColor: "#0d0612",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 28,
+    backgroundColor: "#000",
   },
   webviewLoadingLogo: {
     width: 88,
@@ -892,7 +894,7 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(13, 6, 18, 0.96)",
+    backgroundColor: "#000",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
