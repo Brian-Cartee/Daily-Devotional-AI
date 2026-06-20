@@ -492,51 +492,44 @@ export function HomeDailyEmailStatus({
     );
   }
 
+  if (showSubscribed) return null;
+
   return (
     <div id={anchorId} className={className} data-testid="home-footer-email-subscribe">
       {children}
-      {showSubscribed ? (
-        <SubscribedEmailSuccess
-          variant="footer"
-          title="You're receiving daily Scripture by email"
-          detail="A quiet word each morning — straight to your inbox."
-          email={email ?? getKnownDeviceEmail()}
-        />
-      ) : (
-        <div className="rounded-2xl border border-border/50 bg-card/40 px-5 sm:px-6 py-5">
-          <p className="text-[15px] font-semibold text-foreground leading-snug">Daily email verse</p>
-          <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
-            Already on our list? Link the address you subscribed with — one step, no duplicate signup.
-          </p>
-          <form onSubmit={handleLink} className="mt-4 space-y-2">
-            <Input
-              data-testid="input-home-link-email"
-              type="email"
-              placeholder="your@email.com"
-              value={linkEmail}
-              onChange={(e) => setLinkEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="text-base h-12 rounded-xl bg-background"
-              disabled={linkStatus === "loading"}
-            />
-            {linkStatus === "error" && <p className="text-sm text-destructive">{linkMsg}</p>}
-            <Button
-              data-testid="button-home-link-email"
-              type="submit"
-              variant="secondary"
-              disabled={!linkEmail.trim() || linkStatus === "loading"}
-              className="w-full min-h-[44px] rounded-xl font-semibold"
-            >
-              {linkStatus === "loading" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Link my email"
-              )}
-            </Button>
-          </form>
-        </div>
-      )}
+      <div className="rounded-2xl border border-amber-500/40 bg-amber-950/20 px-5 sm:px-6 py-5">
+        <p className="text-[15px] font-semibold text-foreground leading-snug">Daily email verse</p>
+        <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+          Already on our list? Link the address you subscribed with — one step, no duplicate signup.
+        </p>
+        <form onSubmit={handleLink} className="mt-4 space-y-2">
+          <Input
+            data-testid="input-home-link-email"
+            type="email"
+            placeholder="your@email.com"
+            value={linkEmail}
+            onChange={(e) => setLinkEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="text-base h-12 rounded-xl bg-background"
+            disabled={linkStatus === "loading"}
+          />
+          {linkStatus === "error" && <p className="text-sm text-destructive">{linkMsg}</p>}
+          <Button
+            data-testid="button-home-link-email"
+            type="submit"
+            variant="secondary"
+            disabled={!linkEmail.trim() || linkStatus === "loading"}
+            className="w-full min-h-[44px] rounded-xl font-semibold"
+          >
+            {linkStatus === "loading" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              "Link my email"
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
