@@ -87,7 +87,8 @@ import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathsBlock } from "@/components/HomePathsBlock";
 import { TalkItThroughCard } from "@/components/TalkItThroughCard";
 import { HeartCheckModal } from "@/components/HeartCheckModal";
-import { shouldShowHeartCheck, markHeartCheckShown } from "@/lib/heartCheck";
+import { shouldShowHeartCheck, markHeartCheckShown, getCurrentHeartState } from "@/lib/heartCheck";
+import { WEATHER_EMOJI } from "@/lib/heartCheckEmoji";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
 import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
@@ -722,6 +723,48 @@ const BIBLE_ARCHES: { left: number; right: number; t: number }[] = (() => {
   return out;
 })();
 
+function HeartStateLabel() {
+  const STALE_MS = 12 * 60 * 60 * 1000;
+  const [state, setState] = useState(() => getCurrentHeartState());
+
+  useEffect(() => {
+    const refresh = () => setState(getCurrentHeartState());
+    window.addEventListener("sp-heart-updated", refresh);
+    return () => window.removeEventListener("sp-heart-updated", refresh);
+  }, []);
+
+  if (!state) return null;
+
+  const stale = Date.now() - state.ts > STALE_MS;
+  const emoji = WEATHER_EMOJI[state.weather];
+  const weatherLabel = state.weather.charAt(0).toUpperCase() + state.weather.slice(1);
+  const topicLabel = state.topic ? ` · ${state.topic.charAt(0).toUpperCase() + state.topic.slice(1)} on your heart` : "";
+
+  return (
+    <button
+      type="button"
+      onClick={() => window.dispatchEvent(new CustomEvent("sp-open-heart-check"))}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        background: "none",
+        border: "none",
+        padding: "2px 0",
+        cursor: "pointer",
+        opacity: stale ? 0.45 : 1,
+        textAlign: "left",
+      }}
+    >
+      <span style={{ fontSize: "15px", lineHeight: 1 }}>{emoji}</span>
+      <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", fontStyle: "italic" }}>
+        {stale ? `Still feeling ${weatherLabel.toLowerCase()}?` : `Feeling ${weatherLabel.toLowerCase()}${topicLabel}`}
+      </span>
+      <span style={{ fontSize: "11px", color: "rgba(167,139,250,0.7)", fontWeight: 600, marginLeft: "2px" }}>· Update</span>
+    </button>
+  );
+}
+
 function LandingHomeInner() {
   const sessionId = getSessionId();
   const inNativeApp = isNativeWebViewShell();
@@ -1096,6 +1139,7 @@ function LandingHomeInner() {
           style={{ display: "flex", flexDirection: "column", gap: "12px" }}
         >
           {showGreeting && <GreetingHeader />}
+          <HeartStateLabel />
           {!homeDevotionalFocus && !homeMarketplaceCollapsed && carryToday && (
             <div className="rounded-2xl border border-white/10 bg-zinc-900/45 px-4 py-3" data-testid="card-carry-today">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300/80 mb-1">Carry this today</p>

@@ -367,7 +367,6 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
             <div style={inNativeApp ? { pointerEvents: "auto", flexShrink: 0 } : undefined} className={inNativeApp ? undefined : "pointer-events-auto shrink-0"}>
               <ConvictionTopWhisper />
             </div>
-            <HeartWeatherChip />
             <div
               style={inNativeApp ? { pointerEvents: "auto", marginLeft: "auto", flexShrink: 0, position: "relative" } : undefined}
               className={inNativeApp ? undefined : "ml-auto shrink-0 relative pointer-events-auto"}

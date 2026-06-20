@@ -295,23 +295,37 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
           </button>
           )}
 
-          <h1
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("sp-open-heart-check"))}
             style={{
-              fontSize: "clamp(1.5rem, 5vw, 2.1rem)",
-              color: "#ffffff",
-              fontWeight: 700,
-              lineHeight: 1.18,
+              display: "block",
+              textAlign: "left",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
               marginBottom: "8px",
-              letterSpacing: "-0.02em",
+              width: "100%",
             }}
-            data-testid="text-threshold-headline"
           >
-            {(() => {
-              if (!getUserName()) return thresholdHeadline;
-              const stripped = thresholdHeadline.replace(/^Good\s+(morning|afternoon|evening)\s*[,—–\-]+\s*/i, "");
-              return stripped.charAt(0).toUpperCase() + stripped.slice(1);
-            })()}
-          </h1>
+            <h1
+              style={{
+                fontSize: "clamp(1.5rem, 5vw, 2.1rem)",
+                color: "#ffffff",
+                fontWeight: 700,
+                lineHeight: 1.18,
+                letterSpacing: "-0.02em",
+              }}
+              data-testid="text-threshold-headline"
+            >
+              {(() => {
+                if (!getUserName()) return thresholdHeadline;
+                const stripped = thresholdHeadline.replace(/^Good\s+(morning|afternoon|evening)\s*[,—–\-]+\s*/i, "");
+                return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+              })()}
+            </h1>
+          </button>
           <p
             style={{
               fontSize: "16px",
