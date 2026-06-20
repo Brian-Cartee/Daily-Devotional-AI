@@ -527,13 +527,21 @@
   <script>
     (function(){
       try {
-        if (!window.ReactNativeWebView || !navigator.serviceWorker) return;
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
-        });
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({ type: "SKIP_WAITING" });
+        if (!navigator.serviceWorker) return;
+        if (window.ReactNativeWebView) {
+          // Native WebView — unregister any stale SW, don't register a new one
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          });
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: "SKIP_WAITING" });
+          }
+          return;
         }
+        // Web browser — register SW for PWA installability (Android "Add to Home Screen")
+        window.addEventListener("load", function() {
+          navigator.serviceWorker.register("/sw.js").catch(function() {});
+        });
       } catch (e) {}
     })();
   </script>
