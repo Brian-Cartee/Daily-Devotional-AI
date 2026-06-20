@@ -816,12 +816,14 @@ function LandingHomeInner() {
     };
 
     const tryShowSplash = () => {
+      if (_splashShownThisSession) return;
       const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
       const elapsed = Date.now() - last;
       if (elapsed < REOPEN_THRESHOLD_MS) return;
-      recordActive(); // prevent double-fire
+      recordActive();
       clearReturningHome();
       if (shouldShowHomeEntry(true)) {
+        _splashShownThisSession = true;
         setShowEntryScreen(true);
       }
     };
@@ -831,26 +833,16 @@ function LandingHomeInner() {
       tryShowSplash();
     };
 
-    // Native AppState bridge — primary trigger from index.tsx AppState listener
     (window as any).__onAppForeground = tryShowSplash;
-
-    // Fire immediately on mount — catches cold launch and page navigations back to home
-    tryShowSplash();
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", tryShowSplash);
     window.addEventListener("pageshow", tryShowSplash);
-    // Fallback poll — stops itself after firing to avoid double-shows
-    const poll = setInterval(() => {
-      const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
-      if (Date.now() - last >= REOPEN_THRESHOLD_MS) tryShowSplash();
-    }, 1000);
     return () => {
       (window as any).__onAppForeground = undefined;
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", tryShowSplash);
       window.removeEventListener("pageshow", tryShowSplash);
-      clearInterval(poll);
     };
   }, []);
   const [shared, setShared] = useState(false);
