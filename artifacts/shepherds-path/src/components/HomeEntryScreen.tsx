@@ -23,7 +23,7 @@ const LAST_VISIT_KEY = "sp_last_visit_date";
 const DAILY_OPEN_COUNT_KEY = "sp_daily_open_count";
 const DAILY_OPEN_DATE_KEY = "sp_daily_open_date";
 const DAILY_POOL_IDX_KEY = "sp_daily_pool_idx";
-const MAX_SPLASHES_PER_DAY = 3;
+const MAX_SPLASHES_PER_DAY = 10;
 
 function getOnboardingBurdenLine(): string | null {
   try {
