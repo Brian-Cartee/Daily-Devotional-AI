@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { getBrandSplashCount, shouldShowDailyDoorSplash, BRAND_SPLASH_SEQUENCE_LEN } from "./introState";
+import { getBrandSplashCount, BRAND_SPLASH_SEQUENCE_LEN } from "./introState";
+import { canShowPostOnboardingSplash } from "./dailySplash";
 
 function computeInitialActive(): boolean {
   try {
     if (typeof document === "undefined") return false;
     if (document.documentElement.dataset.spShell !== "native") return false;
     if (getBrandSplashCount() < BRAND_SPLASH_SEQUENCE_LEN) return true;
-    return shouldShowDailyDoorSplash();
+    return canShowPostOnboardingSplash();
   } catch {
     return false;
   }

@@ -5,18 +5,17 @@ import { getSessionId } from "@/lib/session";
 import { ENCOURAGER_VOICE, SHEPHERD_VOICE } from "@/lib/shepherdVoice";
 import { isLateNight } from "@/lib/nightMode";
 import {
+  canShowPostOnboardingSplash,
+  preloadDailySplashImages,
+  resolvePostOnboardingSplash,
+} from "@/lib/dailySplash";
+import {
   getBrandSplashCount,
   incrementBrandSplashCount,
-  markDailyDoorSplashShown,
-  shouldShowDailyDoorSplash,
 } from "@/lib/introState";
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
-const DAILY_OPEN_COUNT_KEY = "sp_daily_open_count";
-const DAILY_OPEN_DATE_KEY = "sp_daily_open_date";
-const DAILY_POOL_IDX_KEY = "sp_daily_pool_idx";
-const MAX_SPLASHES_PER_DAY = 10;
 
 function getOnboardingBurdenLine(): string | null {
   try {
@@ -54,7 +53,7 @@ const HEART_EMOTIONS = [
   { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks",    verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },
 ];
 
-// Opens 0–4: one-time onboarding sequence. After that: door splash once per day (ET).
+// Opens 0–4: one-time onboarding sequence. After that: 2 pool splashes + short door per Eastern day.
 const SPLASH_SEQUENCE = [
   { image: "/splash-door.jpg",            headline: "Step inside.",              subline: null,              cta: "Enter"  },
   { image: "/splash-road-sunset-REV.jpg", headline: "There you are.",            subline: "He never left.",  cta: "I'm here" },
@@ -68,6 +67,7 @@ if (typeof window !== "undefined") {
     const img = new Image();
     img.src = image;
   });
+  preloadDailySplashImages();
 }
 
 const ICEBREAKER_CHARACTERS = [
@@ -98,6 +98,7 @@ type BrandSplashInit = {
   callbackMessage: string | null;
   character: IcebreakerCharacter | null;
   icebreakerDone: boolean;
+  shortSplash: boolean;
 };
 
 function resolveBrandSplashInit(): BrandSplashInit {
@@ -109,12 +110,26 @@ function resolveBrandSplashInit(): BrandSplashInit {
     callbackMessage: null,
     character: null,
     icebreakerDone: true,
+    shortSplash: false,
   } as const;
 
-  // Post-onboarding: daily door welcome — no count bump, no Philip/Barnabas.
+  // Post-onboarding: daily feature → random pool pick → short door (max 3/day ET).
   if (count >= SPLASH_SEQUENCE.length) {
-    markDailyDoorSplashShown();
-    return { openCount: count, splash: doorSplash, ...noIcebreaker };
+    const daily = resolvePostOnboardingSplash();
+    if (!daily) {
+      return { openCount: count, splash: doorSplash, ...noIcebreaker };
+    }
+    return {
+      openCount: count,
+      splash: {
+        image: daily.image,
+        headline: daily.headline,
+        subline: daily.subline,
+        cta: daily.cta,
+      },
+      ...noIcebreaker,
+      shortSplash: daily.isShortDoor,
+    };
   }
 
   incrementBrandSplashCount();
@@ -129,6 +144,7 @@ function resolveBrandSplashInit(): BrandSplashInit {
         callbackMessage: null,
         character: ICEBREAKER_CHARACTERS[0]!,
         icebreakerDone: false,
+        shortSplash: false,
       };
     }
     if (count === 1) {
@@ -142,6 +158,7 @@ function resolveBrandSplashInit(): BrandSplashInit {
           callbackMessage: `Good to see you again, ${existing}.`,
           character: ICEBREAKER_CHARACTERS[1]!,
           icebreakerDone: false,
+          shortSplash: false,
         };
       }
       return {
@@ -152,6 +169,7 @@ function resolveBrandSplashInit(): BrandSplashInit {
         callbackMessage: null,
         character: ICEBREAKER_CHARACTERS[1]!,
         icebreakerDone: false,
+        shortSplash: false,
       };
     }
   } catch {
@@ -169,35 +187,6 @@ function getDayVerse() {
   return DAILY_VERSES[idx];
 }
 
-/** Get/increment today's open count and return the pool entry for this open. */
-function getDailyOpenEntry(): { entry: typeof BRAND_SPLASH_POOL[0]; openIndex: number } {
-  const today = getTodayStr();
-  const lastDate = localStorage.getItem(DAILY_OPEN_DATE_KEY);
-  let count = 0;
-  let poolIdx = 0;
-
-  if (lastDate === today) {
-    count = parseInt(localStorage.getItem(DAILY_OPEN_COUNT_KEY) ?? "0", 10);
-    poolIdx = parseInt(localStorage.getItem(DAILY_POOL_IDX_KEY) ?? "0", 10);
-  } else {
-    // New day — reset, but offset pool index so we don't always start on same image
-    const dayOffset = Math.floor(Date.now() / 86_400_000);
-    poolIdx = dayOffset % BRAND_SPLASH_POOL.length;
-    localStorage.setItem(DAILY_OPEN_DATE_KEY, today);
-    localStorage.setItem(DAILY_POOL_IDX_KEY, String(poolIdx));
-    localStorage.setItem(DAILY_OPEN_COUNT_KEY, "0");
-  }
-
-  const entry = BRAND_SPLASH_POOL[poolIdx % BRAND_SPLASH_POOL.length]!;
-  // Advance for next open
-  const nextIdx = (poolIdx + 1) % BRAND_SPLASH_POOL.length;
-  localStorage.setItem(DAILY_POOL_IDX_KEY, String(nextIdx));
-  localStorage.setItem(DAILY_OPEN_COUNT_KEY, String(count + 1));
-  localStorage.setItem(DAILY_OPEN_DATE_KEY, today);
-
-  return { entry, openIndex: count };
-}
-
 function getEntryType(): EntryType {
   return "brand";
 }
@@ -211,7 +200,7 @@ export function markEntryShown() {
 
 function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const [init] = useState(() => resolveBrandSplashInit());
-  const { splash, character } = init;
+  const { splash, character, shortSplash } = init;
   const [showIcebreaker, setShowIcebreaker] = useState(init.showIcebreaker);
   const [showCallback, setShowCallback] = useState(init.showCallback);
   const [callbackMessage] = useState(init.callbackMessage);
@@ -327,13 +316,14 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
     document.body.style.overflow = "hidden";
     let t2: ReturnType<typeof setTimeout> | undefined;
     if (revealSplashUi && !overlayActive) {
-      t2 = window.setTimeout(() => setAllowDismiss(true), 900);
+      const dwellMs = shortSplash ? 350 : 900;
+      t2 = window.setTimeout(() => setAllowDismiss(true), dwellMs);
     }
     return () => {
       document.body.style.overflow = prev;
       if (t2) window.clearTimeout(t2);
     };
-  }, [revealSplashUi, overlayActive]);
+  }, [revealSplashUi, overlayActive, shortSplash]);
 
   const handleSubmitName = () => {
     try {
@@ -366,9 +356,9 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
       {/* Full-bleed image — visible immediately behind icebreaker */}
       <motion.div
         className="absolute inset-0"
-        initial={{ opacity: 0, scale: 1.04 }}
+        initial={{ opacity: 0, scale: shortSplash ? 1.02 : 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: shortSplash ? 0.55 : 1.1, ease: [0.22, 1, 0.36, 1] }}
       >
         <img
           src={image}
@@ -835,5 +825,5 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
 
 export function shouldShowHomeEntry(_inNativeApp = false): boolean {
   if (getBrandSplashCount() < SPLASH_SEQUENCE.length) return true;
-  return shouldShowDailyDoorSplash();
+  return canShowPostOnboardingSplash();
 }
