@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
@@ -1157,16 +1157,12 @@ export default function GuidancePage() {
 
     const listener = createPatientVoiceListener({
       conversational: true,
-      autoSubmitSilenceMs: VOICE_SILENCE_ENTRY_MS,
+      spokenPatienceBridge: false,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
         setInterimTranscript(interim);
       },
       onPhaseChange: setHeartListenPhase,
-      onTakeYourTime: () => {
-        if (heartTakeYourTimeRef.current) return;
-        heartTakeYourTimeRef.current = speakTakeYourTimeBridge();
-      },
       onAutoSubmit: () => {
         if (heartSubmittingRef.current || processingBridge) return;
         const preview = heartVoiceRef.current?.getPreview() ?? heartInput;
@@ -1214,7 +1210,6 @@ export default function GuidancePage() {
 
     const listener = createPatientVoiceListener({
       conversational: true,
-      autoSubmitSilenceMs: VOICE_SILENCE_PHASE1_MS,
       onTranscript: (final, interim) => {
         if (final) setPhase1UserReply(final);
         setPhase1Interim(interim);
@@ -1581,17 +1576,30 @@ export default function GuidancePage() {
     void (async () => {
       let finalText = trimmed;
       try {
-        const finalizePromise = fromVoice && listener
-          ? listener.finalizeTranscript()
-          : Promise.resolve(trimmed);
-        const [, refined] = await Promise.all([
-          fromVoice ? waitForSubmitBridge("entry") : Promise.resolve(),
-          finalizePromise,
-        ]);
+        const previewWords = trimmed.split(/\s+/).filter(Boolean).length;
+        const fastHandoff = fromVoice && listener && previewWords >= 20;
+
+        if (fastHandoff) {
+          void waitForSubmitBridge("entry");
+          heartVoiceRef.current = null;
+          setHeartListening(false);
+          setHeartListenPhase("listening");
+          beginGuidanceEntry(trimmed);
+          heartSubmittingRef.current = false;
+          setProcessingBridge(false);
+          void listener.finalizeTranscript().finally(() => listener.destroy());
+          return;
+        }
+
+        if (fromVoice) void waitForSubmitBridge("entry");
+        const refined = fromVoice && listener
+          ? await listener.finalizeTranscript()
+          : trimmed;
         if (refined.trim()) finalText = clampGuidanceInput(refined);
       } catch {
         /* use preview text */
       } finally {
+        if (heartSubmittingRef.current === false) return;
         destroyHeartVoice();
         listener?.destroy();
         setProcessingBridge(false);
@@ -1649,14 +1657,11 @@ export default function GuidancePage() {
 
     void (async () => {
       try {
-        const finalizePromise = fromVoice && listener
-          ? listener.finalizeTranscript()
-          : Promise.resolve(reply);
         const bridgeReply = reply;
-        const [, refined] = await Promise.all([
-          fromVoice ? waitForSubmitBridge("phase1Reply", bridgeReply) : Promise.resolve(),
-          finalizePromise,
-        ]);
+        if (fromVoice) void waitForSubmitBridge("phase1Reply", bridgeReply);
+        const refined = fromVoice && listener
+          ? await listener.finalizeTranscript()
+          : reply;
         if (refined.trim()) reply = clampGuidanceInput(refined);
       } catch {
         /* use preview */
@@ -1766,13 +1771,10 @@ export default function GuidancePage() {
     void (async () => {
       try {
         const bridgeText = text;
-        const finalizePromise = fromVoice && listener
-          ? listener.finalizeTranscript()
-          : Promise.resolve(text);
-        const [, refined] = await Promise.all([
-          fromVoice ? waitForSubmitBridge("phase1Reply", bridgeText) : Promise.resolve(),
-          finalizePromise,
-        ]);
+        if (fromVoice) void waitForSubmitBridge("phase1Reply", bridgeText);
+        const refined = fromVoice && listener
+          ? await listener.finalizeTranscript()
+          : text;
         if (refined.trim()) text = clampGuidanceInput(refined);
       } catch {
         /* use preview */

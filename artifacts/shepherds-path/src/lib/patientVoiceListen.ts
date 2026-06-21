@@ -26,16 +26,34 @@ export type PatientVoiceOptions = {
   conversational?: boolean;
   autoSubmitSilenceMs?: number;
   minCharsForAutoSubmit?: number;
+  /** Spoken "Take your time" — off for entry; gated by word count when on */
+  spokenPatienceBridge?: boolean;
   lang?: string;
 };
 
 const DEFAULT_AUTO_SUBMIT_MS = 11_000;
 const DEFAULT_MIN_CHARS = 8;
+/** Only nudge with spoken patience when the user has barely started. */
+const SPOKEN_PATIENCE_MAX_WORDS = 12;
+const AUDIO_ACTIVITY_GRACE_MS = 1200;
 
-function dynamicPauseMs(wordCount: number): number {
-  if (wordCount < 20) return 3500;
-  if (wordCount < 60) return 2500;
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function dynamicPauseMs(words: number): number {
+  if (words < 20) return 3500;
+  if (words < 60) return 2500;
   return 2000;
+}
+
+/** Long shares get a shorter trailing silence before handoff — they are likely done. */
+function resolveConversationalAutoSubmitMs(words: number, override?: number): number {
+  if (override != null) return override;
+  if (words >= 80) return 3500;
+  if (words >= 40) return 4500;
+  if (words >= 20) return 5500;
+  return 10_000;
 }
 
 export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVoiceListener | null {
@@ -66,6 +84,11 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let audioChunks: Blob[] = [];
   let mimeType = pickGuidanceAudioMimeType();
   let recorderStopPromise: Promise<void> | null = null;
+  let lastAudioActivityAt = 0;
+
+  const markAudioActivity = () => {
+    lastAudioActivityAt = Date.now();
+  };
 
   const clearTimers = () => {
     if (thinkingTimer) clearTimeout(thinkingTimer);
@@ -114,23 +137,34 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   const scheduleSilenceTimers = () => {
     clearTimers();
     if (!active) return;
-    const words = previewTranscript.split(/\s+/).filter(Boolean).length;
+    const words = wordCount(previewTranscript);
     const base = dynamicPauseMs(words);
-    const autoMs = opts.autoSubmitSilenceMs ?? DEFAULT_AUTO_SUBMIT_MS;
+    const autoMs = opts.conversational
+      ? resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs)
+      : (opts.autoSubmitSilenceMs ?? DEFAULT_AUTO_SUBMIT_MS);
 
     thinkingTimer = setTimeout(() => {
       if (!active) return;
+      if (Date.now() - lastAudioActivityAt < AUDIO_ACTIVITY_GRACE_MS) return;
       setPhase("thinking");
     }, Math.min(3000, base));
 
-    takeYourTimeTimer = setTimeout(() => {
-      if (!active || takeYourTimeFired) return;
-      takeYourTimeFired = true;
-      opts.onTakeYourTime?.();
-    }, 6000);
+    if (opts.spokenPatienceBridge !== false && opts.onTakeYourTime) {
+      takeYourTimeTimer = setTimeout(() => {
+        if (!active || takeYourTimeFired) return;
+        if (wordCount(previewTranscript) >= SPOKEN_PATIENCE_MAX_WORDS) return;
+        if (Date.now() - lastAudioActivityAt < 5000) return;
+        takeYourTimeFired = true;
+        opts.onTakeYourTime?.();
+      }, 8000);
+    }
 
     readyTimer = setTimeout(() => {
       if (!active || autoSubmitFired) return;
+      if (Date.now() - lastAudioActivityAt < AUDIO_ACTIVITY_GRACE_MS) {
+        scheduleSilenceTimers();
+        return;
+      }
       if (opts.conversational) {
         triggerAutoSubmit();
         return;
@@ -189,6 +223,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (finalChunk) {
         previewTranscript = (previewTranscript ? `${previewTranscript} ${finalChunk}` : finalChunk).trim();
       }
+      if (finalChunk || interim) markAudioActivity();
       takeYourTimeFired = false;
       autoSubmitFired = false;
       setPhase("listening");
@@ -243,7 +278,16 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       mimeType = pickGuidanceAudioMimeType();
       mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunks.push(e.data);
+        if (e.data.size > 0) {
+          audioChunks.push(e.data);
+          if (e.data.size > 80 && active) {
+            markAudioActivity();
+            takeYourTimeFired = false;
+            autoSubmitFired = false;
+            setPhase("listening");
+            scheduleSilenceTimers();
+          }
+        }
       };
       mediaRecorder.start(1000);
     } catch {
@@ -261,6 +305,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioChunks = [];
       recorderStopPromise = null;
       takeYourTimeFired = false;
+      lastAudioActivityAt = Date.now();
       setPhase("listening");
       void startMedia();
       if (canPreview) {
