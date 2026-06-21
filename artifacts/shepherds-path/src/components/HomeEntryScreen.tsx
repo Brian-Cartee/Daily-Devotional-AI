@@ -1,6 +1,6 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getUserName, syncUserNameFromServer } from "@/lib/userName";
+import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
 import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState";
 
@@ -70,6 +70,89 @@ const SPLASH_SEQUENCE = [
   { image: "/splash-shepherd.jpg",        headline: "The path is still here.",   subline: null,              cta: "Enter"  },
 ];
 
+const ICEBREAKER_CHARACTERS = [
+  {
+    name: "Philip",
+    open: 0,
+    greeting: "Philip here — one of the twelve.",
+    question: "What do I call you, friend?",
+    skip: "Just passing through",
+  },
+  {
+    name: "Barnabas",
+    open: 1,
+    greeting: "Barnabas. Philip mentioned you.",
+    question: "Did you give him your name?",
+    skipIfHasName: "Good to know you, [name].",
+    skipIfNoName: "That's alright. Come in.",
+  },
+] as const;
+
+type IcebreakerCharacter = (typeof ICEBREAKER_CHARACTERS)[number];
+
+type BrandSplashInit = {
+  openCount: number;
+  splash: (typeof SPLASH_SEQUENCE)[number];
+  showIcebreaker: boolean;
+  showCallback: boolean;
+  callbackMessage: string | null;
+  character: IcebreakerCharacter | null;
+  icebreakerDone: boolean;
+};
+
+function resolveBrandSplashInit(): BrandSplashInit {
+  const count = getBrandSplashCount();
+  incrementBrandSplashCount();
+  const splash = SPLASH_SEQUENCE[Math.min(count, SPLASH_SEQUENCE.length - 1)]!;
+  try {
+    if (count === 0) {
+      return {
+        openCount: count,
+        splash,
+        showIcebreaker: true,
+        showCallback: false,
+        callbackMessage: null,
+        character: ICEBREAKER_CHARACTERS[0]!,
+        icebreakerDone: false,
+      };
+    }
+    if (count === 1) {
+      const existing = getUserName();
+      if (existing) {
+        return {
+          openCount: count,
+          splash,
+          showIcebreaker: false,
+          showCallback: true,
+          callbackMessage: `Good to see you again, ${existing}.`,
+          character: ICEBREAKER_CHARACTERS[1]!,
+          icebreakerDone: false,
+        };
+      }
+      return {
+        openCount: count,
+        splash,
+        showIcebreaker: true,
+        showCallback: false,
+        callbackMessage: null,
+        character: ICEBREAKER_CHARACTERS[1]!,
+        icebreakerDone: false,
+      };
+    }
+  } catch {
+    /* fall through to normal splash */
+  }
+  return {
+    openCount: count,
+    splash,
+    showIcebreaker: false,
+    showCallback: false,
+    callbackMessage: null,
+    character: null,
+    icebreakerDone: true,
+  };
+}
+
 function getTodayStr() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
@@ -120,30 +203,81 @@ export function markEntryShown() {
 // ─── Brand Splash ────────────────────────────────────────────────────────────
 
 function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
+  const [init] = useState(() => resolveBrandSplashInit());
+  const { splash, character } = init;
+  const [showIcebreaker, setShowIcebreaker] = useState(init.showIcebreaker);
+  const [showCallback, setShowCallback] = useState(init.showCallback);
+  const [callbackMessage] = useState(init.callbackMessage);
+  const [icebreakerDone, setIcebreakerDone] = useState(init.icebreakerDone);
   const [allowDismiss, setAllowDismiss] = useState(false);
-  const [splash] = useState(() => {
-    const count = getBrandSplashCount();
-    incrementBrandSplashCount();
-    return SPLASH_SEQUENCE[Math.min(count, SPLASH_SEQUENCE.length - 1)]!;
-  });
+  const [nameInput, setNameInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { image, headline, subline, cta } = splash;
+  const overlayActive = showIcebreaker || showCallback;
+  const revealSplashUi = icebreakerDone;
+
+  const finishIcebreaker = useCallback(() => {
+    setShowIcebreaker(false);
+    setShowCallback(false);
+    setIcebreakerDone(true);
+    setAllowDismiss(true);
+  }, []);
 
   useLayoutEffect(() => {
-    // Drop native/web boot overlays before first paint — no spinner, straight to splash
     (window as any).__spSignalReady?.();
   }, []);
 
+  useLayoutEffect(() => {
+    if (!showIcebreaker) return;
+    requestAnimationFrame(() => {
+      try {
+        inputRef.current?.focus();
+      } catch {
+        /* WKWebView may block programmatic focus */
+      }
+    });
+  }, [showIcebreaker]);
+
   useEffect(() => {
-    // Hide body scrollbar while splash is covering the screen
+    if (!showCallback) return;
+    const t = window.setTimeout(() => finishIcebreaker(), 1500);
+    return () => window.clearTimeout(t);
+  }, [showCallback, finishIcebreaker]);
+
+  useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const t2 = setTimeout(() => setAllowDismiss(true), 900);
+    let t2: ReturnType<typeof setTimeout> | undefined;
+    if (revealSplashUi && !overlayActive) {
+      t2 = window.setTimeout(() => setAllowDismiss(true), 900);
+    }
     return () => {
       document.body.style.overflow = prev;
-      clearTimeout(t2);
+      if (t2) window.clearTimeout(t2);
     };
-  }, []);
+  }, [revealSplashUi, overlayActive]);
+
+  const handleSubmitName = () => {
+    try {
+      const trimmed = nameInput.trim();
+      if (trimmed) setUserName(trimmed);
+    } catch {
+      /* still dismiss */
+    }
+    finishIcebreaker();
+  };
+
+  const handleSkip = () => {
+    finishIcebreaker();
+  };
+
+  const skipLabel =
+    character?.open === 1 && "skipIfNoName" in character
+      ? character.skipIfNoName
+      : character && "skip" in character
+        ? character.skip
+        : "Skip";
 
   return (
     <div
@@ -152,7 +286,7 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
       style={{ zIndex: 99999, background: "#000" }}
       onClick={() => allowDismiss && onDismiss()}
     >
-      {/* Full-bleed image */}
+      {/* Full-bleed image — visible immediately behind icebreaker */}
       <motion.div
         className="absolute inset-0"
         initial={{ opacity: 0, scale: 1.04 }}
@@ -167,7 +301,6 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         />
       </motion.div>
 
-      {/* Gradient — bottom third */}
       <div
         className="absolute inset-0"
         style={{
@@ -175,10 +308,9 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         }}
       />
 
-      {/* Wordmark — top left */}
       <motion.p
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{ opacity: revealSplashUi ? 1 : 0 }}
         transition={{ duration: 0.6 }}
         className="absolute top-14 left-6 text-white/70 text-[9px] font-semibold tracking-[0.32em] uppercase"
         style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
@@ -186,57 +318,263 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
         Shepherd&rsquo;s Path
       </motion.p>
 
-      {/* Text — lower third */}
-      <motion.div
-        className="absolute left-0 right-0"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 140px)" }}
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <h1
-          className="text-white text-center px-8 leading-tight"
-          style={{
-            fontFamily: "'Georgia', serif",
-            fontSize: "clamp(2rem, 7vw, 2.6rem)",
-            fontWeight: 300,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {headline}
-        </h1>
-        {subline && (
-          <p
-            className="text-white/55 text-center mt-2"
-            style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem", fontWeight: 300 }}
+      <AnimatePresence>
+        {showIcebreaker && character && (
+          <motion.div
+            key="icebreaker"
+            data-testid="splash-icebreaker"
+            className="absolute inset-0 z-20 flex items-center justify-center px-5"
+            style={{ background: "rgba(0,0,0,0.42)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {subline}
-          </p>
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "320px",
+                padding: "28px 24px 22px",
+                borderRadius: "20px",
+                background: "rgba(8, 6, 14, 0.82)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.42)",
+                  marginBottom: "14px",
+                }}
+              >
+                {character.name}
+              </p>
+              <p
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "1.15rem",
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.92)",
+                  lineHeight: 1.45,
+                  marginBottom: "10px",
+                }}
+              >
+                {character.greeting}
+              </p>
+              <p
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "1.05rem",
+                  fontStyle: "italic",
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.72)",
+                  lineHeight: 1.5,
+                  marginBottom: "20px",
+                }}
+              >
+                {character.question}
+              </p>
+              <input
+                ref={inputRef}
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSubmitName();
+                }}
+                placeholder="Your name"
+                autoComplete="given-name"
+                autoCapitalize="words"
+                data-testid="input-splash-name"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "13px 14px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "#fff",
+                  fontSize: "16px",
+                  marginBottom: "12px",
+                  outline: "none",
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleSubmitName}
+                data-testid="button-splash-name-continue"
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  borderRadius: "14px",
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  background: "rgba(255,255,255,0.10)",
+                  color: "#fff",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={handleSkip}
+                data-testid="button-splash-name-skip"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  marginTop: "14px",
+                  padding: "4px",
+                  background: "none",
+                  border: "none",
+                  color: "rgba(255,255,255,0.38)",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  textUnderlineOffset: "3px",
+                }}
+              >
+                {skipLabel}
+              </button>
+            </div>
+          </motion.div>
         )}
-      </motion.div>
 
-      {/* CTA — bottom */}
-      <motion.div
-        className="absolute left-6 right-6"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)" }}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <button
-          onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-          data-testid="button-brand-splash-enter"
-          className="w-full py-4 rounded-2xl text-white font-semibold text-base tracking-wide transition-opacity active:opacity-70"
-          style={{
-            border: "1px solid rgba(255,255,255,0.45)",
-            background: "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-          }}
-        >
-          {cta}
-        </button>
-      </motion.div>
+        {showCallback && callbackMessage && (
+          <motion.div
+            key="callback"
+            data-testid="splash-icebreaker-callback"
+            className="absolute inset-0 z-20 flex items-center justify-center px-5"
+            style={{ background: "rgba(0,0,0,0.42)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              finishIcebreaker();
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "320px",
+                padding: "28px 24px",
+                borderRadius: "20px",
+                background: "rgba(8, 6, 14, 0.82)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                textAlign: "center",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.42)",
+                  marginBottom: "12px",
+                }}
+              >
+                Barnabas
+              </p>
+              <p
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "1.15rem",
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.90)",
+                  lineHeight: 1.5,
+                  marginBottom: "18px",
+                }}
+              >
+                {callbackMessage}
+              </p>
+              <button
+                type="button"
+                onClick={finishIcebreaker}
+                data-testid="button-splash-callback-continue"
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "999px",
+                  border: "1px solid rgba(255,255,255,0.28)",
+                  background: "transparent",
+                  color: "rgba(255,255,255,0.75)",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {revealSplashUi && (
+        <>
+          <motion.div
+            className="absolute left-0 right-0"
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 140px)" }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <h1
+              className="text-white text-center px-8 leading-tight"
+              style={{
+                fontFamily: "'Georgia', serif",
+                fontSize: "clamp(2rem, 7vw, 2.6rem)",
+                fontWeight: 300,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {headline}
+            </h1>
+            {subline && (
+              <p
+                className="text-white/55 text-center mt-2"
+                style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem", fontWeight: 300 }}
+              >
+                {subline}
+              </p>
+            )}
+          </motion.div>
+
+          <motion.div
+            className="absolute left-6 right-6"
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)" }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismiss();
+              }}
+              data-testid="button-brand-splash-enter"
+              className="w-full py-4 rounded-2xl text-white font-semibold text-base tracking-wide transition-opacity active:opacity-70"
+              style={{
+                border: "1px solid rgba(255,255,255,0.45)",
+                background: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+              }}
+            >
+              {cta}
+            </button>
+          </motion.div>
+        </>
+      )}
     </div>
   );
 }
