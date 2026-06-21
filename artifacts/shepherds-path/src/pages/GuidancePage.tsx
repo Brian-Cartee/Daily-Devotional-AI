@@ -98,6 +98,81 @@ function splitGuidanceMovements(raw: string, verse?: VerseResult | null, prayer?
   return { reflection, scripture, prayer: prayerBody };
 }
 
+function SessionFeedbackSection({
+  situation,
+  sessionFeedback,
+  setSessionFeedback,
+}: {
+  situation: string;
+  sessionFeedback: "yes" | "not-quite" | null;
+  setSessionFeedback: (v: "yes" | "not-quite") => void;
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      {sessionFeedback === null ? (
+        <motion.div
+          key="feedback-ask"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ delay: 0.25 }}
+          className="w-full rounded-2xl px-5 py-5 text-center"
+          style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.22)" }}
+          data-testid="card-guidance-session-feedback"
+        >
+          <p className="text-[15px] font-semibold text-foreground/90 mb-1">Did this meet you today?</p>
+          <p className="text-[12px] text-muted-foreground/60 mb-4 leading-relaxed">
+            One tap — helps us stay pastoral, not generic.
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              type="button"
+              data-testid="button-guidance-feedback-yes"
+              onClick={() => {
+                setSessionFeedback("yes");
+                fetch("/api/guidance/feedback", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ sessionId: getSessionId(), feedback: "yes", situation: situation.trim().slice(0, 200) }),
+                }).catch(() => {});
+              }}
+              className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
+              style={{ background: "rgba(139,92,246,0.22)", border: "1px solid rgba(139,92,246,0.40)", color: "rgba(196,181,253,0.98)" }}
+            >
+              Yes, it did
+            </button>
+            <button
+              type="button"
+              data-testid="button-guidance-feedback-not-quite"
+              onClick={() => {
+                setSessionFeedback("not-quite");
+                fetch("/api/guidance/feedback", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ sessionId: getSessionId(), feedback: "not-quite", situation: situation.trim().slice(0, 200) }),
+                }).catch(() => {});
+              }}
+              className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }}
+            >
+              Not quite
+            </button>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.p
+          key="feedback-thanks"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-[13px] text-muted-foreground/55 italic text-center py-2"
+        >
+          {sessionFeedback === "yes" ? "Glad it met you. See you next time." : "Noted — we'll keep listening."}
+        </motion.p>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function GuidanceVpRetry({
   label,
   onRetry,
@@ -2334,69 +2409,11 @@ export default function GuidancePage() {
                 </Link>
               </div>
 
-              {/* Session feedback — one tap */}
-              <AnimatePresence mode="wait">
-                {sessionFeedback === null ? (
-                  <motion.div
-                    key="feedback-ask"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: 0.25 }}
-                    className="w-full rounded-2xl px-5 py-5 text-center"
-                    style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.22)" }}
-                    data-testid="card-guidance-session-feedback"
-                  >
-                    <p className="text-[15px] font-semibold text-foreground/90 mb-1">Did this meet you today?</p>
-                    <p className="text-[12px] text-muted-foreground/60 mb-4 leading-relaxed">
-                      One tap — helps us stay pastoral, not generic.
-                    </p>
-                    <div className="flex justify-center gap-3">
-                      <button
-                        type="button"
-                        data-testid="button-guidance-feedback-yes"
-                        onClick={() => {
-                          setSessionFeedback("yes");
-                          fetch("/api/guidance/feedback", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ sessionId: getSessionId(), feedback: "yes", situation: situation.trim().slice(0, 200) }),
-                          }).catch(() => {});
-                        }}
-                        className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
-                        style={{ background: "rgba(139,92,246,0.22)", border: "1px solid rgba(139,92,246,0.40)", color: "rgba(196,181,253,0.98)" }}
-                      >
-                        Yes, it did
-                      </button>
-                      <button
-                        type="button"
-                        data-testid="button-guidance-feedback-not-quite"
-                        onClick={() => {
-                          setSessionFeedback("not-quite");
-                          fetch("/api/guidance/feedback", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ sessionId: getSessionId(), feedback: "not-quite", situation: situation.trim().slice(0, 200) }),
-                          }).catch(() => {});
-                        }}
-                        className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }}
-                      >
-                        Not quite
-                      </button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.p
-                    key="feedback-thanks"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-[13px] text-muted-foreground/55 italic text-center py-2"
-                  >
-                    {sessionFeedback === "yes" ? "Glad it met you. See you next time." : "Noted — we'll keep listening."}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+              <SessionFeedbackSection
+                situation={situation}
+                sessionFeedback={sessionFeedback}
+                setSessionFeedback={setSessionFeedback}
+              />
 
               {/* Stillness + escape hatch */}
               <button
@@ -2557,6 +2574,13 @@ export default function GuidancePage() {
                 <p className="text-[13px] text-muted-foreground/45 mt-1">
                   You can carry this with you now.
                 </p>
+                <div className="mt-8 max-w-md mx-auto">
+                  <SessionFeedbackSection
+                    situation={situation}
+                    sessionFeedback={sessionFeedback}
+                    setSessionFeedback={setSessionFeedback}
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
