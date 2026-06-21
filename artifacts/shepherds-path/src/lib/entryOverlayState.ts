@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
-import { getBrandSplashCount } from "./introState";
-
-const BRAND_SPLASH_SEQUENCE_LEN = 5;
+import { getBrandSplashCount, shouldShowDailyDoorSplash, BRAND_SPLASH_SEQUENCE_LEN } from "./introState";
 
 function computeInitialActive(): boolean {
   try {
     if (typeof document === "undefined") return false;
     if (document.documentElement.dataset.spShell !== "native") return false;
-    // Hide nav on first paint while brand splash (door / Philip) mounts.
-    return getBrandSplashCount() < BRAND_SPLASH_SEQUENCE_LEN;
+    if (getBrandSplashCount() < BRAND_SPLASH_SEQUENCE_LEN) return true;
+    return shouldShowDailyDoorSplash();
   } catch {
     return false;
   }

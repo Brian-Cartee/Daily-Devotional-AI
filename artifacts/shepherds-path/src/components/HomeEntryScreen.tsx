@@ -2,7 +2,12 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName";
 import { isLateNight } from "@/lib/nightMode";
-import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState";
+import {
+  getBrandSplashCount,
+  incrementBrandSplashCount,
+  markDailyDoorSplashShown,
+  shouldShowDailyDoorSplash,
+} from "@/lib/introState";
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -47,7 +52,7 @@ const HEART_EMOTIONS = [
   { label: "Gratitude", icon: "🌿", color: "#10b981", desc: "I want to give thanks",    verse: { text: "This is the day the Lord has made; let us rejoice and be glad in it.", ref: "Psalm 118:24" } },
 ];
 
-// The 5-splash onboarding journey — shown once each, in order, then never again.
+// Opens 0–4: one-time onboarding sequence. After that: door splash once per day (ET).
 const SPLASH_SEQUENCE = [
   { image: "/splash-door.jpg",            headline: "Step inside.",              subline: null,              cta: "Enter"  },
   { image: "/splash-road-sunset-REV.jpg", headline: "There you are.",            subline: "He never left.",  cta: "I'm here" },
@@ -95,8 +100,23 @@ type BrandSplashInit = {
 
 function resolveBrandSplashInit(): BrandSplashInit {
   const count = getBrandSplashCount();
+  const doorSplash = SPLASH_SEQUENCE[0]!;
+  const noIcebreaker = {
+    showIcebreaker: false,
+    showCallback: false,
+    callbackMessage: null,
+    character: null,
+    icebreakerDone: true,
+  } as const;
+
+  // Post-onboarding: daily door welcome — no count bump, no Philip/Barnabas.
+  if (count >= SPLASH_SEQUENCE.length) {
+    markDailyDoorSplashShown();
+    return { openCount: count, splash: doorSplash, ...noIcebreaker };
+  }
+
   incrementBrandSplashCount();
-  const splash = SPLASH_SEQUENCE[Math.min(count, SPLASH_SEQUENCE.length - 1)]!;
+  const splash = SPLASH_SEQUENCE[count]!;
   try {
     if (count === 0) {
       return {
@@ -135,15 +155,7 @@ function resolveBrandSplashInit(): BrandSplashInit {
   } catch {
     /* fall through to normal splash */
   }
-  return {
-    openCount: count,
-    splash,
-    showIcebreaker: false,
-    showCallback: false,
-    callbackMessage: null,
-    character: null,
-    icebreakerDone: true,
-  };
+  return { openCount: count, splash, ...noIcebreaker };
 }
 
 function getTodayStr() {
@@ -774,5 +786,6 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
 }
 
 export function shouldShowHomeEntry(_inNativeApp = false): boolean {
-  return getBrandSplashCount() < SPLASH_SEQUENCE.length;
+  if (getBrandSplashCount() < SPLASH_SEQUENCE.length) return true;
+  return shouldShowDailyDoorSplash();
 }

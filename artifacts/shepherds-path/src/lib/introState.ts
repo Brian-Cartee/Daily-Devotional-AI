@@ -3,6 +3,8 @@
 export const INTRO_COMPLETE_KEY = "sp_intro_flow_complete";
 export const VISIT_COUNT_KEY = "sp_visit_count";
 export const BRAND_SPLASH_COUNT_KEY = "sp_brand_splash_count";
+export const BRAND_SPLASH_SEQUENCE_LEN = 5;
+const DAILY_DOOR_SPLASH_DATE_KEY = "sp_daily_door_splash_date";
 export const WELCOME_SESSION_KEY = "sp_welcome_shown_this_session";
 export const SPLASH_KEY = "sp_splash_shown";
 export const RETURNING_HOME_KEY = "sp_returning_home";
@@ -152,4 +154,29 @@ export function incrementBrandSplashCount(): number {
     }
   } catch {}
   return next;
+}
+
+function getEasternDateStr(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+}
+
+export function isBrandSplashSequenceComplete(): boolean {
+  return getBrandSplashCount() >= BRAND_SPLASH_SEQUENCE_LEN;
+}
+
+export function hasShownDailyDoorSplashToday(): boolean {
+  try {
+    return storageGet(DAILY_DOOR_SPLASH_DATE_KEY, localStorage) === getEasternDateStr();
+  } catch {
+    return false;
+  }
+}
+
+export function markDailyDoorSplashShown(): void {
+  storageSet(DAILY_DOOR_SPLASH_DATE_KEY, getEasternDateStr(), localStorage);
+}
+
+/** After the 5 onboarding splashes, show the door image once per calendar day. */
+export function shouldShowDailyDoorSplash(): boolean {
+  return isBrandSplashSequenceComplete() && !hasShownDailyDoorSplashToday();
 }

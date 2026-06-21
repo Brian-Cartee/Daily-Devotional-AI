@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
 import { getUserName } from "@/lib/userName";
-import { isIntroFlowComplete, getBrandSplashCount } from "@/lib/introState";
+import { isIntroFlowComplete, getBrandSplashCount, BRAND_SPLASH_SEQUENCE_LEN } from "@/lib/introState";
 import {
   getThresholdNeed,
   getThresholdNeedAcknowledgment,
@@ -90,7 +90,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   //   native, brand splashes done      → show (door→shepherd sequence handles first-run)
   const showPhotoTaglines =
     (daysWithApp < 8 || (!isIntroFlowComplete() && daysWithApp < 14)) ||
-    (isNativeWebViewShell() && getBrandSplashCount() >= 5);
+    (isNativeWebViewShell() && getBrandSplashCount() >= BRAND_SPLASH_SEQUENCE_LEN);
   const chapelWeekFocus = daysWithApp <= 7;
 
   const { data: streakData } = useQuery({
