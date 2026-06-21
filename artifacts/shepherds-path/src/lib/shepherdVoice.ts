@@ -146,6 +146,13 @@ export function speakProcessingBridge(onEnd?: () => void): () => void {
   return speakShepherdLine(PROCESSING_BRIDGE, { onEnd });
 }
 
+/** Resolve after Philip finishes the processing bridge line (or immediately if TTS fails). */
+export function waitForProcessingBridge(): Promise<void> {
+  return new Promise((resolve) => {
+    speakProcessingBridge(resolve);
+  });
+}
+
 export function speakTakeYourTimeBridge(): () => void {
   return speakShepherdLine(TAKE_YOUR_TIME_BRIDGE);
 }

@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakProcessingBridge, speakTakeYourTimeBridge, PROCESSING_BRIDGE } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForProcessingBridge, PROCESSING_BRIDGE } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
@@ -290,8 +290,12 @@ export default function GuidancePage() {
   const greetingTextRef = useRef<string | null>(null);
   const crisisReentryRef = useRef<string | null | undefined>(undefined);
   const phase1SpokenRef = useRef<string | null>(null);
+  const phase2SpokenRef = useRef<string | null>(null);
   const phase1MemorySavedRef = useRef(false);
   const sendOffSpokenRef = useRef<string | null>(null);
+  const [phase1SpeechDone, setPhase1SpeechDone] = useState(false);
+  const [phase2Speaking, setPhase2Speaking] = useState(false);
+  const [phase2SpeechDone, setPhase2SpeechDone] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
@@ -694,6 +698,9 @@ export default function GuidancePage() {
       setPhase1Response(accumulated);
       setPhase1StreamingText("");
       setPhase1Complete(true);
+      if (lastInputWasVoiceRef.current) {
+        void prefetchShepherdTTS(cleanResponse(accumulated));
+      }
       void refreshAiUsage();
       return true;
     } catch {
@@ -830,11 +837,20 @@ export default function GuidancePage() {
     setSessionRecap(null);
     setRecapLoading(false);
     recapFetchedRef.current = false;
+    setPhase1SpeechDone(false);
+    setPhase2SpeechDone(false);
+    setPhase2Speaking(false);
+    phase2SpokenRef.current = null;
+    phase1SpokenRef.current = null;
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
-    await new Promise((r) => setTimeout(r, 2800));
+    setIsReflecting(true);
+    await new Promise((r) => setTimeout(r, 1200));
 
     const phase1Ok = await streamPhase1(flowGen);
+    if (!lastInputWasVoiceRef.current) {
+      setPhase1SpeechDone(true);
+    }
     setIsReflecting(false);
     if (flowGen !== guidanceFlowGenRef.current) return;
     if (!phase1Ok) {
@@ -986,15 +1002,28 @@ export default function GuidancePage() {
       .catch(() => {});
   }, [responseComplete]);
 
-  // Progressive reveal — stage the content in after Phase 2 guidance lands
+  // Progressive reveal — stage the content in after Phase 2 guidance lands (typed path only)
   useEffect(() => {
     if (!showPhase2Content || !responseComplete) return;
+    if (voiceConversation) return;
     setRevealStage(1);
     const t1 = setTimeout(() => setRevealStage(s => Math.max(s, 2)), 3000);
     const t2 = setTimeout(() => setRevealStage(s => Math.max(s, 3)), 6000);
     const t3 = setTimeout(() => setRevealStage(s => Math.max(s, 4)), 10000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [showPhase2Content, responseComplete]);
+  }, [showPhase2Content, responseComplete, voiceConversation]);
+
+  const scheduleVoiceRevealStages = useCallback(() => {
+    setRevealStage(1);
+    const t1 = window.setTimeout(() => setRevealStage(s => Math.max(s, 2)), 2500);
+    const t2 = window.setTimeout(() => setRevealStage(s => Math.max(s, 3)), 5500);
+    const t3 = window.setTimeout(() => setRevealStage(s => Math.max(s, 4)), 9000);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, []);
 
   const guidanceListenReady =
     !!verse &&
@@ -1041,6 +1070,7 @@ export default function GuidancePage() {
 
   useEffect(() => {
     if (!guidanceListenReady || !responseComplete || listenFirstTriggeredRef.current) return;
+    if (voiceConversation) return;
     const voiceTriggered = lastInputWasVoiceRef.current;
     const listenFirstOn = canUseListenFirstAuto() && getListenFirstPreference();
     if (!voiceTriggered && !listenFirstOn) return;
@@ -1166,6 +1196,7 @@ export default function GuidancePage() {
 
     const listener = createPatientVoiceListener({
       conversational: true,
+      autoSubmitSilenceMs: 8000,
       onTranscript: (final, interim) => {
         if (final) setPhase1UserReply(final);
         setPhase1Interim(interim);
@@ -1177,8 +1208,7 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (phase1SubmittingRef.current || phase2Loading || processingBridge || !phase1Response) return;
-        const preview = phase1VoiceRef.current?.getPreview() ?? phase1UserReply;
-        handlePhase1ContinueRef.current(preview);
+        handlePhase1ContinueRef.current(undefined, true);
       },
     });
     if (!listener) return;
@@ -1330,13 +1360,15 @@ export default function GuidancePage() {
       onStart: () => setPhase1Speaking(true),
       onEnd: () => {
         setPhase1Speaking(false);
+        setPhase1SpeechDone(true);
         if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
-        window.setTimeout(() => startPhase1Listening(), 600);
+        window.setTimeout(() => startPhase1Listening(), 800);
       },
       onFail: () => {
         setPhase1Speaking(false);
+        setPhase1SpeechDone(true);
         if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
-        window.setTimeout(() => startPhase1Listening(), 600);
+        window.setTimeout(() => startPhase1Listening(), 800);
       },
     });
     return () => {
@@ -1344,6 +1376,36 @@ export default function GuidancePage() {
       setPhase1Speaking(false);
     };
   }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice]);
+
+  // Phase 2 — Philip speaks "What I'm hearing" for voice sessions before cards appear
+  useEffect(() => {
+    if (!responseComplete || !voiceConversation || showPhase1TypeFallback) return;
+    const text = messages.find(m => m.role === "assistant")?.content?.trim();
+    if (!text) return;
+    const key = text;
+    if (phase2SpokenRef.current === key) return;
+    phase2SpokenRef.current = key;
+    setPhase2SpeechDone(false);
+    let clearRevealTimers: (() => void) | undefined;
+    const cancel = speakShepherdLine(cleanResponse(text), {
+      onStart: () => setPhase2Speaking(true),
+      onEnd: () => {
+        setPhase2Speaking(false);
+        setPhase2SpeechDone(true);
+        clearRevealTimers = scheduleVoiceRevealStages();
+      },
+      onFail: () => {
+        setPhase2Speaking(false);
+        setPhase2SpeechDone(true);
+        clearRevealTimers = scheduleVoiceRevealStages();
+      },
+    });
+    return () => {
+      cancel();
+      clearRevealTimers?.();
+      setPhase2Speaking(false);
+    };
+  }, [responseComplete, voiceConversation, showPhase1TypeFallback, messages, scheduleVoiceRevealStages]);
 
   // Session send-off — spoken closure
   useEffect(() => {
@@ -1398,15 +1460,17 @@ export default function GuidancePage() {
     setProcessingBridge(true);
     setIsReflecting(true);
 
-    speakProcessingBridge();
-
     void (async () => {
       let finalText = trimmed;
       try {
-        if (fromVoice && listener) {
-          const refined = await listener.finalizeTranscript();
-          if (refined.trim()) finalText = clampGuidanceInput(refined);
-        }
+        const finalizePromise = fromVoice && listener
+          ? listener.finalizeTranscript()
+          : Promise.resolve(trimmed);
+        const [, refined] = await Promise.all([
+          waitForProcessingBridge(),
+          finalizePromise,
+        ]);
+        if (refined.trim()) finalText = clampGuidanceInput(refined);
       } catch {
         /* use preview text */
       } finally {
@@ -1423,6 +1487,7 @@ export default function GuidancePage() {
           return;
         }
         beginGuidanceEntry(finalText);
+        heartSubmittingRef.current = false;
       }
     })();
   };
@@ -1442,10 +1507,12 @@ export default function GuidancePage() {
     submitHeartEntry(text, false);
   };
 
-  const handlePhase1Continue = (textOverride?: string) => {
+  const handlePhase1Continue = (textOverride?: string, fromVoiceOverride?: boolean) => {
     if (phase1SubmittingRef.current || phase2Loading || !phase1Response || phase2Started) return;
     const listener = phase1VoiceRef.current;
-    let reply = clampGuidanceInput(textOverride ?? phase1UserReply);
+    let reply = clampGuidanceInput(
+      textOverride ?? phase1UserReply ?? listener?.getPreview() ?? "",
+    );
 
     if (listener?.isActive()) {
       const stopped = listener.stop();
@@ -1456,20 +1523,22 @@ export default function GuidancePage() {
     if (!reply && !(listener?.hasRecordedAudio())) return;
 
     phase1SubmittingRef.current = true;
-    const fromVoice = !showPhase1TypeFallback && !textOverride;
+    const fromVoice = fromVoiceOverride ?? (!showPhase1TypeFallback && textOverride === undefined);
     lastInputWasVoiceRef.current = fromVoice;
     if (fromVoice) setVoiceConversation(true);
     setProcessingBridge(true);
     setIsReflecting(true);
 
-    speakProcessingBridge();
-
     void (async () => {
       try {
-        if (fromVoice && listener) {
-          const refined = await listener.finalizeTranscript();
-          if (refined.trim()) reply = clampGuidanceInput(refined);
-        }
+        const finalizePromise = fromVoice && listener
+          ? listener.finalizeTranscript()
+          : Promise.resolve(reply);
+        const [, refined] = await Promise.all([
+          waitForProcessingBridge(),
+          finalizePromise,
+        ]);
+        if (refined.trim()) reply = clampGuidanceInput(refined);
       } catch {
         /* use preview */
       } finally {
@@ -1491,14 +1560,17 @@ export default function GuidancePage() {
         setPhase1ShowContinue(false);
         setPhase1UserReplySubmitted(reply);
         setConversationPhase(2);
-        setTimeout(() => setIsReflecting(false), 700);
-        startPhase2(reply);
+        setPhase2SpeechDone(false);
+        phase2SpokenRef.current = null;
         const initialUserMsg: Message = { role: "user", content: situation };
+        startPhase2(reply);
         await streamResponse([initialUserMsg], undefined, {
           phase1Response,
           phase1UserReply: reply,
         });
+        setIsReflecting(false);
         setPhase2Loading(false);
+        phase1SubmittingRef.current = false;
       }
     })();
   };
@@ -1968,7 +2040,7 @@ export default function GuidancePage() {
           </AnimatePresence>
 
           {/* Phase 1 — empathy + one question */}
-          {(phase1StreamingText || phase1Response) && (!bridgeQuestion || bridgeSubmitted) && (
+          {(phase1StreamingText || phase1Response || (voiceConversation && !showPhase1TypeFallback && !phase2Started && (isReflecting || phase1Speaking || phase1Complete))) && (!bridgeQuestion || bridgeSubmitted) && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1976,6 +2048,40 @@ export default function GuidancePage() {
               className="mb-6"
               data-testid="text-guidance-phase1"
             >
+              {voiceConversation && !showPhase1TypeFallback && !phase1SpeechDone && (
+                <div className="flex flex-col items-center py-4 mb-2">
+                  <motion.div
+                    role="status"
+                    aria-live="polite"
+                    className="relative flex items-center justify-center w-24 h-24 rounded-full"
+                    animate={(phase1Speaking || isReflecting) ? {
+                      boxShadow: [
+                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
+                        "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.45)",
+                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
+                      ],
+                    } : {
+                      boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
+                    }}
+                    transition={(phase1Speaking || isReflecting) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                    style={{
+                      background: "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)",
+                      border: "2px solid rgba(139,92,246,0.45)",
+                    }}
+                  >
+                    <Mic className="w-9 h-9 relative z-10 text-violet-400" />
+                  </motion.div>
+                  <p className="mt-2.5 text-[13px] text-muted-foreground/75 font-medium">
+                    {phase1Speaking
+                      ? "Philip is speaking…"
+                      : isReflecting
+                        ? "Philip is reflecting…"
+                        : "One moment…"}
+                  </p>
+                </div>
+              )}
+
+              {(!voiceConversation || showPhase1TypeFallback || phase1SpeechDone) && (
               <div className="border-l-2 border-violet-500/45 pl-4">
                 <p
                   className="text-[16px] leading-[1.75] text-foreground/75 italic"
@@ -1987,6 +2093,7 @@ export default function GuidancePage() {
                   )}
                 </p>
               </div>
+              )}
 
               {phase1Complete && !phase2Started && (
                 <div className="mt-5 space-y-3">
@@ -2171,7 +2278,39 @@ export default function GuidancePage() {
             transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            {showPhase2Content && ((streamingText && !isReflecting) || assistantMessages.length > 0) && (
+            {showPhase2Content && voiceConversation && !showPhase1TypeFallback && !phase2SpeechDone && (
+              <div className="flex flex-col items-center py-6 mb-4">
+                <motion.div
+                  role="status"
+                  aria-live="polite"
+                  className="relative flex items-center justify-center w-24 h-24 rounded-full"
+                  animate={(phase2Speaking || phase2Loading || isReflecting) ? {
+                    boxShadow: [
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
+                      "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.45)",
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
+                    ],
+                  } : {
+                    boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
+                  }}
+                  transition={(phase2Speaking || phase2Loading || isReflecting) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                  style={{
+                    background: "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)",
+                    border: "2px solid rgba(139,92,246,0.45)",
+                  }}
+                >
+                  <Mic className="w-9 h-9 relative z-10 text-violet-400" />
+                </motion.div>
+                <p className="mt-2.5 text-[13px] text-muted-foreground/75 font-medium">
+                  {phase2Speaking
+                    ? "Philip is speaking…"
+                    : phase2Loading || isReflecting
+                      ? "Philip is reflecting…"
+                      : "One moment…"}
+                </p>
+              </div>
+            )}
+            {showPhase2Content && ((!voiceConversation || showPhase1TypeFallback || phase2SpeechDone) && ((streamingText && !isReflecting) || assistantMessages.length > 0)) && (
               <>
                 {(() => {
                   const rawText = cleanResponse(isSending
