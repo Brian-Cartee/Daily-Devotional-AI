@@ -81,9 +81,9 @@ export const DevotionalCompletionThreshold = forwardRef<HTMLDivElement, Props>(f
               <BookOpen className="w-5 h-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Go Deeper — Stay with the Word</p>
+              <p className="text-[15px] font-semibold text-foreground">Go Deeper with Philip</p>
               <p className="text-[12px] text-muted-foreground/75 mt-1 leading-snug">
-                Pastor message, guided reflection, and more.
+                Keep exploring today&apos;s verse — ask Philip anything.
               </p>
             </div>
           </div>
@@ -107,9 +107,9 @@ export const DevotionalCompletionThreshold = forwardRef<HTMLDivElement, Props>(f
               <Lock className="w-5 h-5 text-muted-foreground/60" />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Go Deeper — Stay with the Word</p>
+              <p className="text-[15px] font-semibold text-foreground">Go Deeper with Philip</p>
               <p className="text-[12px] text-muted-foreground/75 mt-1 leading-snug">
-                Pastor message, guided reflection, and more. <span className="text-primary font-semibold">Pro</span>
+                Ask Philip anything about today&apos;s Word. <span className="text-primary font-semibold">Pro</span>
               </p>
             </div>
           </div>

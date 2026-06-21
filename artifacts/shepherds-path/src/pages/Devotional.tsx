@@ -66,6 +66,8 @@ import {
 } from "@/lib/pastorVideoTone";
 import { usePastorVideo } from "@/hooks/use-pastor-video";
 import { ScriptureContext } from "@/components/ScriptureContext";
+import { BibleStudyChat } from "@/components/BibleStudyChat";
+import { speakShepherdLine } from "@/lib/shepherdVoice";
 import { SessionStillness } from "@/components/SessionStillness";
 import { getListenFirstPreference } from "@/lib/listenFirst";
 import {
@@ -167,6 +169,7 @@ export default function Devotional() {
   const reflectionAbortRef = useRef<AbortController | null>(null);
   const prayerAbortRef = useRef<AbortController | null>(null);
   const generationStartedRef = useRef(false);
+  const generationRetryVerseRef = useRef<number | null>(null);
   const hydratedVerseIdRef = useRef<number | null>(null);
   const hydratedNameRef = useRef<string | null>(null);
   const continuityIntentRef = useRef<DevotionalContinuityIntent>("fresh");
@@ -204,6 +207,9 @@ export default function Devotional() {
   const [showOptionalGratitude, setShowOptionalGratitude] = useState(false);
   /** After closing gratitude: null = gentle fork; carry = send-off; stay = daily message + optional depth */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
+  const stayOpenerSpokenRef = useRef(false);
+  const DEVOTIONAL_STAY_OPENER =
+    "You stayed. Let's go a little deeper — what's sitting with you from today?";
 
   const devotionalPastorTone =
     mapThresholdNeedToPastorVideoTone(getThresholdNeed()) ??
@@ -229,7 +235,6 @@ export default function Devotional() {
   const [refreshingForName, setRefreshingForName] = useState(false);
   const [personalizePhase, setPersonalizePhase] = useState<"reflection" | "prayer" | null>(null);
   const quickPersonalizeRef = useRef(false);
-  const autoPersonalizeVerseRef = useRef<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const inNativeApp = isNativeWebViewShell();
   const AI_PERSONALIZE_TIMEOUT_MS = 75_000;
@@ -303,12 +308,11 @@ export default function Devotional() {
     setPersonalizePhase("reflection");
     clearDevotionalSession();
     generationStartedRef.current = false;
+    generationRetryVerseRef.current = null;
     hydratedVerseIdRef.current = null;
     hydratedNameRef.current = null;
     reflectionAbortRef.current?.abort();
     prayerAbortRef.current?.abort();
-    setReflectionContent("");
-    setPrayerContent("");
     setReflectionError(false);
     setPrayerError(false);
     resetReflectListenState();
@@ -323,15 +327,22 @@ export default function Devotional() {
       setPersonalizePhase("reflection");
       return;
     }
-    if (reflectionContent && resolvedProfileName && reflectionIncludesName(reflectionContent, resolvedProfileName)) {
-      setRefreshingForName(false);
-      if (prayerLoading) setPersonalizePhase("prayer");
-      else if (!prayerLoading && prayerContent) setPersonalizePhase(null);
-    }
     if (reflectionError || prayerError) {
       setRefreshingForName(false);
       setPersonalizePhase(null);
       quickPersonalizeRef.current = false;
+      return;
+    }
+    if (reflectionContent && resolvedProfileName && reflectionIncludesName(reflectionContent, resolvedProfileName)) {
+      setRefreshingForName(false);
+      if (prayerLoading) setPersonalizePhase("prayer");
+      else if (!prayerLoading && prayerContent) setPersonalizePhase(null);
+      return;
+    }
+    // Personalized regen finished but AI omitted the name — stop blocking UI
+    if (!reflectionLoading && !prayerLoading && reflectionContent.trim() && prayerContent.trim()) {
+      setRefreshingForName(false);
+      setPersonalizePhase(null);
     }
   }, [refreshingForName, reflectionLoading, prayerLoading, reflectionContent, prayerContent, prayerError, reflectionError, resolvedProfileName]);
 
@@ -343,26 +354,6 @@ export default function Devotional() {
       setPersonalizePhase("prayer");
     }
   }, [prayerLoading, reflectionLoading, reflectionContent]);
-
-  // If we know your name but today's cached reflection was generated without it, refresh once
-  useEffect(() => {
-    if (!nameHydrated || !verse?.id || !entryTriggered || !reflectionContent || reflectionLoading || prayerLoading) return;
-    const name = resolvedProfileName;
-    if (!name) return;
-    if (shouldUseCachedDevotional(verse.id, name)) return;
-    if (reflectionIncludesName(reflectionContent, name)) return;
-    if (autoPersonalizeVerseRef.current === verse.id) return;
-    autoPersonalizeVerseRef.current = verse.id;
-    regenerateWithMyName(verse.id);
-  }, [
-    nameHydrated,
-    verse?.id,
-    entryTriggered,
-    reflectionContent,
-    reflectionLoading,
-    prayerLoading,
-    resolvedProfileName,
-  ]);
 
   useEffect(() => {
     if (!prayerContent || prayerLoading || completionPath !== "stay") {
@@ -377,7 +368,22 @@ export default function Devotional() {
     setCompletionPath(null);
     setPrimarySermonChannel(undefined);
     setFriendIntercessionDismissed(false);
+    stayOpenerSpokenRef.current = false;
   }, [verse?.id]);
+
+  useEffect(() => {
+    if (completionPath !== "stay") return;
+    if (stayOpenerSpokenRef.current) return;
+    stayOpenerSpokenRef.current = true;
+    let cancelSpeak: (() => void) | undefined;
+    const t = window.setTimeout(() => {
+      cancelSpeak = speakShepherdLine(DEVOTIONAL_STAY_OPENER);
+    }, 600);
+    return () => {
+      window.clearTimeout(t);
+      cancelSpeak?.();
+    };
+  }, [completionPath]);
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -628,22 +634,78 @@ export default function Devotional() {
     const verseChanged = hydratedVerseIdRef.current !== verse.id;
     hydratedVerseIdRef.current = verse.id;
     hydratedNameRef.current = nameKey;
-    if (verseChanged) generationStartedRef.current = false;
+    if (verseChanged) {
+      generationStartedRef.current = false;
+      generationRetryVerseRef.current = null;
+      setReflectionLoading(false);
+      setPrayerLoading(false);
+    }
 
     const cachedRefl = getCachedReflection(verse.id, userName);
     const cachedPryr = getCachedPrayer(verse.id, userName);
+    if (shouldUseCachedDevotional(verse.id, userName)) {
+      setReflectionContent(cachedRefl);
+      setPrayerContent(cachedPryr);
+      setEntryTriggered(true);
+      generationStartedRef.current = true;
+      return;
+    }
+
     setReflectionContent(cachedRefl);
     setPrayerContent(cachedPryr);
-    if (cachedRefl && shouldUseCachedDevotional(verse.id, userName)) {
-      setEntryTriggered(true);
+    // Name/verse context changed and cache no longer matches — allow generation to retry
+    if (entryTriggered) {
+      generationStartedRef.current = false;
     }
-  }, [verse?.id, nameHydrated]);
+  }, [verse?.id, nameHydrated, resolvedProfileName, entryTriggered]);
 
-  // Effect 2: Generate reflection/prayer once the user begins (after continuity choice when applicable)
+  // Generate reflection/prayer once the user begins (after continuity choice when applicable)
   useEffect(() => {
-    if (!verse || !entryTriggered || !continuityResolved || !nameHydrated || generationStartedRef.current) return;
+    if (!verse?.id || !entryTriggered || !continuityResolved || !nameHydrated) return;
+    if (reflectionLoading || prayerLoading) return;
+
+    const hasFullContent = !!reflectionContent.trim() && !!prayerContent.trim();
+    if (hasFullContent) {
+      generationStartedRef.current = true;
+      return;
+    }
+
+    if (shouldUseCachedDevotional(verse.id, resolvedProfileName ?? null)) {
+      const cachedRefl = getCachedReflection(verse.id, resolvedProfileName);
+      const cachedPryr = getCachedPrayer(verse.id, resolvedProfileName);
+      if (cachedRefl.trim() && cachedPryr.trim()) {
+        setReflectionContent(cachedRefl);
+        setPrayerContent(cachedPryr);
+        generationStartedRef.current = true;
+        return;
+      }
+    }
+
+    if (generationStartedRef.current && (reflectionError || prayerError)) return;
+
+    // Stuck: generation flag set but text never arrived — retry once per verse
+    // Never fire while actively loading — content streaming in is not a stuck state
+    if (generationStartedRef.current && !hasFullContent && !reflectionLoading && !prayerLoading) {
+      if (generationRetryVerseRef.current === verse.id) return;
+      generationRetryVerseRef.current = verse.id;
+      generationStartedRef.current = false;
+    }
+
+    if (generationStartedRef.current) return;
     beginDevotionalGeneration(verse.id, resolvedProfileName ?? undefined);
-  }, [verse, entryTriggered, continuityResolved, nameHydrated, resolvedProfileName]);
+  }, [
+    verse?.id,
+    entryTriggered,
+    continuityResolved,
+    nameHydrated,
+    resolvedProfileName,
+    reflectionContent,
+    prayerContent,
+    reflectionLoading,
+    prayerLoading,
+    reflectionError,
+    prayerError,
+  ]);
 
   useEffect(() => {
     const syncEntryMode = () => setDevotionalEntryMode(getDevotionalEntryMode());
@@ -677,7 +739,7 @@ export default function Devotional() {
     const quick = quickPersonalizeRef.current;
     const timeoutId = window.setTimeout(() => controller.abort(), AI_PERSONALIZE_TIMEOUT_MS);
     setReflectionLoading(true);
-    setReflectionContent("");
+    if (!quick) setReflectionContent("");
     setReflectionError(false);
     try {
       const result = await streamAI("/api/ai/generate", {
@@ -720,8 +782,10 @@ export default function Devotional() {
       }
     } finally {
       window.clearTimeout(timeoutId);
+      if (reflectionAbortRef.current === controller) {
+        setReflectionLoading(false);
+      }
     }
-    if (!controller.signal.aborted) setReflectionLoading(false);
   };
 
   const streamReflectListen = async (input: string): Promise<boolean> => {
@@ -804,7 +868,7 @@ export default function Devotional() {
     const quick = quickPersonalizeRef.current;
     const timeoutId = window.setTimeout(() => controller.abort(), AI_PERSONALIZE_TIMEOUT_MS);
     setPrayerLoading(true);
-    setPrayerContent("");
+    if (!quick) setPrayerContent("");
     setPrayerError(false);
     try {
       const result = await streamAI("/api/ai/generate", {
@@ -842,8 +906,10 @@ export default function Devotional() {
       }
     } finally {
       window.clearTimeout(timeoutId);
+      if (prayerAbortRef.current === controller) {
+        setPrayerLoading(false);
+      }
     }
-    if (!controller.signal.aborted) setPrayerLoading(false);
   };
 
   const saveOptionalReflectionToJournal = async (input: string, reply?: string) => {
@@ -1869,8 +1935,6 @@ export default function Devotional() {
                     const trimmed = nameDraft.trim();
                     if (!trimmed || !verse?.id || savingNameDraft) return;
                     setSavingNameDraft(true);
-                    setReflectionContent("");
-                    setPrayerContent("");
                     setRefreshingForName(true);
                     void setUserNameAsync(trimmed).then((ok) => {
                       setSavingNameDraft(false);
@@ -1884,7 +1948,6 @@ export default function Devotional() {
                         return;
                       }
                       setSavedProfileName(trimmed);
-                      autoPersonalizeVerseRef.current = null;
                       regenerateWithMyName(verse.id, trimmed);
                     });
                   }}
@@ -2454,6 +2517,25 @@ export default function Devotional() {
               >
                 Actually — I have a few more minutes
               </button>
+            </motion.div>
+          )}
+
+          {completionPath === "stay" && reflectionContent && verse && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="px-4"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 text-center mb-3">
+                EXPLORE TODAY&apos;S VERSE
+              </p>
+              <BibleStudyChat
+                verseId={verse.id}
+                verseReference={verse.reference}
+                initialReflection={reflectionContent}
+                prayerContent={prayerContent ?? undefined}
+              />
             </motion.div>
           )}
 

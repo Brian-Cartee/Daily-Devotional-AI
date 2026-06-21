@@ -11,6 +11,9 @@ import { AiPauseModal } from "@/components/AiPauseModal";
 import { getUserName } from "@/lib/userName";
 import { useChatWithVerse } from "@/hooks/use-verses";
 
+const PHILIP_STAY_OPENER =
+  "You stayed. Let's go a little deeper — what's sitting with you from today?";
+
 interface BibleStudyChatProps {
   verseId: number;
   verseReference?: string;
@@ -39,6 +42,7 @@ export function BibleStudyChat({
         content: `[Devotional context note — the following personalized prayer was already generated for this person as part of today's spiritual practice on ${verseReference ?? "this verse"}: "${prayerContent}". When the person asks you to generate or deepen a prayer, build thoughtfully on this one rather than starting from scratch.]`,
       });
     }
+    init.push({ role: "assistant", content: PHILIP_STAY_OPENER });
     return init;
   };
 
@@ -114,7 +118,7 @@ export function BibleStudyChat({
     <div className="flex flex-col gap-4 pt-3">
 
       {/* Warm contextual opener — only shown before any conversation */}
-      {messages.length === hiddenCount && verseReference && (
+      {messages.length === hiddenCount + 1 && verseReference && (
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
