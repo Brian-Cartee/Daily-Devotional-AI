@@ -73,6 +73,7 @@ import {
   isNativeWebViewShell,
   markNativeShellUiPainted,
 } from "@/lib/platform";
+import { useEntryOverlayActive } from "@/lib/entryOverlayState";
 import { syncUserNameFromServer, hasBeenPrompted } from "@/lib/userName";
 import { isThresholdComplete, markThresholdComplete } from "@/lib/thresholdState";
 import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
@@ -149,8 +150,9 @@ function NativeRouteBeacon() {
 
 function Router() {
   const [location] = useLocation();
-  const hideFloater = isSacredPresenceRoute(location);
-  const hideNav = isSacredPresenceRoute(location);
+  const entryOverlayActive = useEntryOverlayActive();
+  const hideFloater = isSacredPresenceRoute(location) || entryOverlayActive;
+  const hideNav = isSacredPresenceRoute(location) || entryOverlayActive;
 
   return (
     <>

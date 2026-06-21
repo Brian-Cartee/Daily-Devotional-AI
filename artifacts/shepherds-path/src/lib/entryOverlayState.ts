@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
+import { getBrandSplashCount } from "./introState";
+
+const BRAND_SPLASH_SEQUENCE_LEN = 5;
 
 function computeInitialActive(): boolean {
-  // Default false — LandingHome sets this when a full-screen overlay is actually visible.
-  // Guessing "splash will show" here hid the top/bottom nav for the whole session.
-  return false;
+  try {
+    if (typeof document === "undefined") return false;
+    if (document.documentElement.dataset.spShell !== "native") return false;
+    // Hide nav on first paint while brand splash (door / Philip) mounts.
+    return getBrandSplashCount() < BRAND_SPLASH_SEQUENCE_LEN;
+  } catch {
+    return false;
+  }
 }
 
 let _active = computeInitialActive();

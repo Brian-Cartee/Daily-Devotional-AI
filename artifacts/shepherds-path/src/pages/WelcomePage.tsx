@@ -71,7 +71,7 @@ export default function WelcomePage() {
         <motion.div
           key="hero-photo"
           initial={FADE_INITIAL} animate={FADE_ANIMATE} exit={FADE_EXIT} transition={FADE_TRANSITION}
-          style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column" }}
+          style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", flexDirection: "column" }}
         >
           {/* Road photo */}
           <img

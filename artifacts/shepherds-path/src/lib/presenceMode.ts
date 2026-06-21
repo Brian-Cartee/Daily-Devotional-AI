@@ -9,6 +9,7 @@ export function isSacredPresenceRoute(pathname: string): boolean {
     pathname === "/surrender" ||
     pathname === "/prayer-closet" ||
     pathname === "/start" ||
+    pathname === "/welcome" ||
     pathname.startsWith("/v/")
   );
 }

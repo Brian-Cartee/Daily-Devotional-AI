@@ -4,14 +4,6 @@ import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName
 import { isLateNight } from "@/lib/nightMode";
 import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState";
 
-// Preload only the first two onboarding splashes — avoid competing with boot.
-if (typeof window !== "undefined") {
-  ["/splash-door.jpg", "/splash-road-sunset-REV.jpg"].forEach((src) => {
-    const img = new Image();
-    img.src = src;
-  });
-}
-
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
 const DAILY_OPEN_COUNT_KEY = "sp_daily_open_count";
@@ -63,6 +55,13 @@ const SPLASH_SEQUENCE = [
   { image: "/splash-mic-REV.jpg",         headline: "Talk it through.",          subline: "He's listening.", cta: "I'm here" },
   { image: "/splash-shepherd.jpg",        headline: "The path is still here.",   subline: null,              cta: "Enter"  },
 ];
+
+if (typeof window !== "undefined") {
+  SPLASH_SEQUENCE.forEach(({ image }) => {
+    const img = new Image();
+    img.src = image;
+  });
+}
 
 const ICEBREAKER_CHARACTERS = [
   {

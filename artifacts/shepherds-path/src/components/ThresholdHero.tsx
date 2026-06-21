@@ -88,7 +88,9 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   //   days 8–13, intro incomplete      → show (!isIntroFlowComplete() && daysWithApp < 14)
   //   day 8+, intro complete           → hide
   //   day 14+                          → hide always
-  const showPhotoTaglines = daysWithApp < 8 || (!isIntroFlowComplete() && daysWithApp < 14);
+  const showPhotoTaglines =
+    !isNativeWebViewShell() &&
+    (daysWithApp < 8 || (!isIntroFlowComplete() && daysWithApp < 14));
   const chapelWeekFocus = daysWithApp <= 7;
 
   const { data: streakData } = useQuery({

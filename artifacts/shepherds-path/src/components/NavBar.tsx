@@ -379,7 +379,7 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
         </nav>
       )}
 
-      {showTop && !compactTopNav && (
+      {showTop && !compactTopNav && !entryOverlayActive && (
         <nav
           className={`fixed top-0 left-0 right-0 z-[100] ${
             overCinematicHero

@@ -825,15 +825,16 @@ function LandingHomeInner() {
     if (_splashShownThisSession) return false;
     try {
       const isNative = document.documentElement.dataset.spShell === "native";
-      if (isNative) {
-        // Native: only show if user has been away 5s+ (covers force-close / real reopens)
-        const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
-        const elapsed = last > 0 ? Date.now() - last : Infinity;
-        if (elapsed < 5_000) return false;
-      }
+      // Brand onboarding splashes (door, road, …) — always show until sequence completes.
       if (shouldShowHomeEntry(isNative)) {
         _splashShownThisSession = true;
         return true;
+      }
+      if (isNative) {
+        // After the 5-splash sequence, only re-show on real reopens (5s+ away).
+        const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
+        const elapsed = last > 0 ? Date.now() - last : Infinity;
+        if (elapsed < 5_000) return false;
       }
     } catch { /* storage unavailable */ }
     return false;
@@ -914,12 +915,12 @@ function LandingHomeInner() {
   const welcomeOverlayEnabled = homeReturnOverlay === "welcome";
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
   const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
+  const blockHomeChrome =
+    showEntryScreen || showBeginWalk || showSplash || showWelcomeOverlay;
   useLayoutEffect(() => {
-    const blockingOverlay =
-      showEntryScreen || showBeginWalk || showSplash || showWelcomeOverlay;
-    setEntryOverlayActive(blockingOverlay);
+    setEntryOverlayActive(blockHomeChrome);
     return () => setEntryOverlayActive(false);
-  }, [showEntryScreen, showBeginWalk, showSplash, showWelcomeOverlay]);
+  }, [blockHomeChrome]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
     if (!showWalkthrough) return;
@@ -1059,7 +1060,7 @@ function LandingHomeInner() {
     <div
       data-testid="landing-home"
       className="relative"
-      style={{ minHeight: "100vh", background: NATIVE_PAGE }}
+      style={{ minHeight: "100vh", background: blockHomeChrome ? "#000" : NATIVE_PAGE }}
     >
       <AnimatePresence>
         {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
@@ -1102,6 +1103,8 @@ function LandingHomeInner() {
         }}
       />
 
+      {!blockHomeChrome && (
+      <>
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
 
       {/* "You stepped inside" message and Gentle Start card removed —
@@ -2046,6 +2049,8 @@ function LandingHomeInner() {
           </div>
         </motion.div>
       </div>
+      </>
+      )}
 
     </div>
   );
@@ -2055,8 +2060,8 @@ export default function LandingHome() {
   if (!isReturningHome()) {
     // Returning user triggering a daily check-in replay → existing threshold flow
     if (isThresholdReplay()) return <Redirect to="/threshold" />;
-    // Brand-new user who has never completed onboarding → new elegant onboarding
-    if (!isThresholdComplete()) return <Redirect to="/welcome" />;
+    // Web-only welcome flow — native uses the brand splash sequence on home instead.
+    if (!isNativeWebViewShell() && !isThresholdComplete()) return <Redirect to="/welcome" />;
   }
   if (shouldRedirectToNightShepherd()) {
     return <Redirect to="/night" />;
