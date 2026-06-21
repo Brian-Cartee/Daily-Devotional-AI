@@ -183,7 +183,7 @@ export function requestNativeSubscriberBootstrap(): Promise<void> {
     } catch {
       resolve();
     }
-    window.setTimeout(() => resolve(), 1500);
+    window.setTimeout(() => resolve(), 400);
   });
 
   return win.__spNativeProfilePromise;

@@ -54,7 +54,6 @@ function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
   if (email?.includes("@")) {
     url += `&se=${encodeURIComponent(email)}`;
   }
-  url += `&_=${Date.now()}`;
   return url;
 }
 
@@ -581,7 +580,7 @@ export default function MainScreen() {
         mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
-        cacheEnabled={false}
+        cacheEnabled
         injectedJavaScriptBeforeContentLoaded={beforeContentJs}
         onLoadEnd={injectProfileSeed}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}

@@ -262,7 +262,10 @@ function App() {
   const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
   // If local storage is already clear (reinstall), wait for server sync before
   // routing — prevents the name screen re-appearing for returning users.
-  const [syncReady, setSyncReady] = useState(() => isThresholdComplete());
+  // Native shell seeds profile before React mounts — never block the router there.
+  const [syncReady, setSyncReady] = useState(
+    () => isNativeWebViewShell() || isThresholdComplete(),
+  );
 
   useEffect(() => {
     applyTheme(theme);
@@ -274,14 +277,27 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (syncReady) return; // already have local answer — no need to wait
+    if (isNativeWebViewShell()) {
+      // Background only — native AsyncStorage seed already restored name/session.
+      void syncUserNameFromServer()
+        .then(() => {
+          if (hasBeenPrompted() && !isThresholdComplete()) {
+            markThresholdComplete();
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+    if (syncReady) return;
     // localStorage was wiped (reinstall). Ask server before routing.
-    syncUserNameFromServer().then(() => {
-      if (hasBeenPrompted() && !isThresholdComplete()) {
-        markThresholdComplete();
-      }
-      setSyncReady(true);
-    }).catch(() => setSyncReady(true)); // on error, proceed anyway
+    syncUserNameFromServer()
+      .then(() => {
+        if (hasBeenPrompted() && !isThresholdComplete()) {
+          markThresholdComplete();
+        }
+        setSyncReady(true);
+      })
+      .catch(() => setSyncReady(true));
   }, [syncReady]);
 
   useEffect(() => {

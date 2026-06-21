@@ -4,17 +4,11 @@ import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName
 import { isLateNight } from "@/lib/nightMode";
 import { getBrandSplashCount, incrementBrandSplashCount } from "@/lib/introState";
 
-// Preload all splash images immediately so they're in browser cache when needed
+// Preload only the first two onboarding splashes — avoid competing with boot.
 if (typeof window !== "undefined") {
-  const ALL_SPLASH_IMAGES = [
-    "/splash-door.jpg", "/splash-road-sunset-REV.jpg", "/splash-bible-glow-REV.jpg",
-    "/splash-shepherd.jpg", "/splash-candle.jpg", "/splash-forest.jpg",
-    "/splash-prayer.jpg", "/splash-well.jpg", "/splash-cobblestone.jpg",
-    "/splash-pew.jpg", "/splash-bible-sun-REV.jpg", "/splash-mic-REV.jpg",
-  ];
-  // Stagger preloads so they don't compete with page load
-  ALL_SPLASH_IMAGES.forEach((src, i) => {
-    setTimeout(() => { const img = new Image(); img.src = src; }, i * 300);
+  ["/splash-door.jpg", "/splash-road-sunset-REV.jpg"].forEach((src) => {
+    const img = new Image();
+    img.src = src;
   });
 }
 

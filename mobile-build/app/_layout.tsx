@@ -51,7 +51,7 @@ async function rescheduleNotifications() {
   } catch {}
 }
 
-const FONT_LOAD_TIMEOUT_MS = 3500;
+const FONT_LOAD_TIMEOUT_MS = 800;
 
 function LoadingScreen() {
   return <View style={styles.loadingScreen} />;

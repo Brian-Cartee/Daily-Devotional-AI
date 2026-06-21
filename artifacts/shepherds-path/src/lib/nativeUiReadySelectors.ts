@@ -1,5 +1,8 @@
 /** Elements that mean the home shell has real UI (native overlay + splash can dismiss). */
 export const NATIVE_UI_READY_SELECTORS = [
+  '[data-testid="sp-splash-active"]',
+  '[data-testid="splash-icebreaker"]',
+  '[data-testid="splash-icebreaker-callback"]',
   '[data-testid="card-devotional"]',
   '[data-testid="bottom-nav-for-you"]',
   '[data-testid="home-threshold-hero"]',

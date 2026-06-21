@@ -192,14 +192,13 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
   heartState: NativeHeartState | null;
 }> {
   const profile = await loadNativeUserProfile();
-  let email = profile.subscriberEmail.trim().toLowerCase();
+  const email = profile.subscriberEmail.trim().toLowerCase();
 
+  // Restore email from server in background — don't block WebView cold start.
   if (!email.includes("@")) {
-    const fromServer = await fetchSubscriberEmailFromServer(profile.sessionId, email);
-    if (fromServer) {
-      await saveNativeSubscriberProfile(fromServer);
-      email = fromServer;
-    }
+    void fetchSubscriberEmailFromServer(profile.sessionId, email).then((fromServer) => {
+      if (fromServer) void saveNativeSubscriberProfile(fromServer);
+    });
   }
 
   return {

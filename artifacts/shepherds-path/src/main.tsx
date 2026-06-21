@@ -136,14 +136,15 @@ async function mountApp() {
     removeNativeBootPlaceholder();
   }
   if (native) {
-    await checkForStaleBuildAndReload();
-    const bootStatus = document.getElementById("sp-boot-splash-status");
-    if (bootStatus) bootStatus.textContent = "Loading…";
+    // Never block first paint on network / IndexedDB — profile is already seeded
+    // by native injectedJavaScriptBeforeContentLoaded before this script runs.
+    void checkForStaleBuildAndReload();
     hydrateSubscriberFromUrlParam();
     hydrateSubscriberStateFromStorage();
-    await requestNativeSubscriberBootstrap();
-    hydrateSubscriberStateFromStorage();
-    await hydrateSubscriberStateFromIndexedDB();
+    void requestNativeSubscriberBootstrap().then(() => {
+      hydrateSubscriberStateFromStorage();
+      void hydrateSubscriberStateFromIndexedDB();
+    });
     nativeDiag("react_render_called");
   }
 
