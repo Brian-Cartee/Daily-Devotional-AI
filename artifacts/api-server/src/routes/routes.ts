@@ -21,6 +21,11 @@ import twilio from "twilio";
 import { getTodayVerseFromSheet, getRawSheetRows, getEasternDateString } from "../googleSheets";
 import { generateImageBuffer } from "../replit_integrations/image/client";
 import { updateMemory, getMemoryContext, buildMemoryPromptNote } from "../lib/userMemory";
+import {
+  parseGuidanceMemoryContent,
+  serializeGuidanceMemory,
+  extractMemoryJsonFromModel,
+} from "../lib/guidanceMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
 import { getUncachableResendClient, buildDailyVerseEmailHtml, buildDailyVerseEmailText, buildWelcomeEmailHtml, buildWelcomeEmailText } from "../resend";
@@ -1471,7 +1476,8 @@ Voice authenticity (internal constraint — never cite these rules in output):
       const allContext = [...memories, ...visible];
       const context = allContext.map(e => {
         const label = e.type === "guidance_memory" ? "Previous conversation" : e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
-        const snippet = e.content.replace(/\n+/g, " ").slice(0, 220);
+        const body = e.type === "guidance_memory" ? parseGuidanceMemoryContent(e.content).summary : e.content;
+        const snippet = body.replace(/\n+/g, " ").slice(0, 220);
         return `[${label}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
       }).join("\n");
       return { context, count: entries.filter(e => e.type !== "guidance_memory").length };
@@ -3525,11 +3531,14 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        max_tokens: 120,
+        max_tokens: 180,
         messages: [
           {
             role: "system",
-            content: `You extract a brief spiritual memory note from a guidance conversation. Return 1-2 plain sentences summarizing what they brought to God in this conversation and what mattered most in the moment. Use careful tense: "they shared…" or "they were sitting with…" — do NOT permanently label them as "in grief" or "in crisis" unless it is clearly ongoing. One conversation about grief is not the same as their whole life season. This note may be read weeks later. Be specific, not generic. No fluff. No quotes.`,
+            content: `Extract a spiritual memory from a Talk It Through session. Return JSON only:
+{"summary":"1-2 sentences for internal context — what they brought and what mattered","carryForward":"ONE sentence in second person for a spoken welcome when they return in a few days — include a specific detail they shared (person, event, fear, hope). Warm, present tense or recent past. No 'I remember'. Example: You were carrying a lot as your mom prepared to start chemo."}
+
+Rules: be specific not generic; do not permanently label their whole life as grief/crisis from one conversation; carryForward must be under 28 words.`,
           },
           {
             role: "user",
@@ -3537,12 +3546,15 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
           },
         ],
       });
-      const summary = completion.choices[0]?.message?.content?.trim();
+      const raw = completion.choices[0]?.message?.content?.trim();
+      const parsed = raw ? extractMemoryJsonFromModel(raw) : null;
+      const summary = parsed?.summary ?? raw;
       if (summary && summary.length > 20) {
+        const payload = parsed ?? { summary };
         const entry = await storage.createJournalEntry({
           sessionId,
           type: "guidance_memory",
-          content: summary,
+          content: serializeGuidanceMemory({ summary: payload.summary, carryForward: payload.carryForward }),
           title: undefined,
         });
         return res.status(200).json({ ok: true, id: String(entry.id) });
@@ -3647,22 +3659,31 @@ Rules:
 
       const created = new Date(latest.createdAt).getTime();
       const ageMs = Date.now() - created;
-      if (ageMs > 7 * 24 * 60 * 60 * 1000) {
+      if (ageMs > 30 * 24 * 60 * 60 * 1000) {
         return res.json({ id: null, letter: null });
       }
       if (ageMs < 2 * 60 * 60 * 1000) {
         return res.json({ id: null, letter: null });
       }
 
+      const memory = parseGuidanceMemoryContent(latest.content);
+      if (memory.carryForward && memory.carryForward.length >= 12 && ageMs <= 7 * 24 * 60 * 60 * 1000) {
+        return res.json({ id: String(latest.id), letter: memory.carryForward });
+      }
+
+      const sourceText = memory.summary.slice(0, 500);
+      const patternMode = ageMs > 7 * 24 * 60 * 60 * 1000;
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         max_tokens: 90,
         messages: [
           {
             role: "system",
-            content: `Write a Witness Letter — 2 sentences only. You are holding what this person shared previously (below). Reflect back what they were carrying — no advice, no Scripture, no questions. Do not say "I remember" or "you wrote." Sound like a trusted companion who was present. Under 45 words total.`,
+            content: patternMode
+              ? `Write 1-2 sentences for a spoken welcome back — softer, pattern-level only (what tends to weigh on them), not specific events. No advice, Scripture, or "I remember". Under 35 words.`
+              : `Write 1-2 sentences for a spoken welcome back — reflect what they were carrying (below). No advice, Scripture, or "I remember". Sound like a trusted companion. Under 45 words.`,
           },
-          { role: "user", content: latest.content.slice(0, 500) },
+          { role: "user", content: sourceText },
         ],
       });
       const letter = completion.choices[0]?.message?.content?.trim();

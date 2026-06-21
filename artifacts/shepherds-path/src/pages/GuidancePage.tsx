@@ -17,6 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
+import { buildShepherdGreeting, speakShepherdLine } from "@/lib/shepherdVoice";
 import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -169,28 +170,6 @@ const BRIDGE_QUESTIONS: Record<string, string> = {
   "I'm exhausted": "What's worn you down — is it today specifically or has it been building?",
 };
 
-/** Philip — default Talk It Through voice (internal; never shown to users). */
-const SHEPHERD_VOICE = "onyx";
-
-function buildShepherdGreeting(
-  name: string | null | undefined,
-  isFirstVisit: boolean,
-  witnessLetter: string | null,
-): string {
-  const hi = name ? `Hi ${name}.` : "Hi.";
-  if (witnessLetter) {
-    return `${hi} It's good to have you back. ${witnessLetter} What's on your heart today?`;
-  }
-  if (isFirstVisit) {
-    return name
-      ? `${hi} I'm glad you're here. Take your time — what's on your heart?`
-      : "I'm glad you're here. Take your time — what's on your heart?";
-  }
-  return name
-    ? `${hi} It's good to have you back. What's on your heart today?`
-    : "It's good to have you back. What's on your heart today?";
-}
-
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -198,11 +177,23 @@ export default function GuidancePage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (new URLSearchParams(search).get("listen") !== "1") return;
+    try {
+      sessionStorage.setItem("sp_guidance_siri_listen", "1");
+    } catch {
+      /* noop */
+    }
+    navigate("/guidance", { replace: true });
+  }, [search, navigate]);
+
   const witnessLetterRef = useRef<string | null>(null);
   const [witnessReady, setWitnessReady] = useState(false);
   const [greetingSpeaking, setGreetingSpeaking] = useState(false);
   const autoMicStartedRef = useRef(false);
-  const greetingAudioRef = useRef<HTMLAudioElement | null>(null);
+  const cancelGreetingSpeakRef = useRef<(() => void) | null>(null);
+  const phase1SpokenRef = useRef<string | null>(null);
+  const sendOffSpokenRef = useRef<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
@@ -280,17 +271,6 @@ export default function GuidancePage() {
   const greetingEngagedRef = useRef(false);
 
   useEffect(() => {
-    if (!heartInput.trim()) return;
-    greetingEngagedRef.current = true;
-    if (greetingAudioRef.current) {
-      greetingAudioRef.current.pause();
-      greetingAudioRef.current = null;
-      setGreetingSpeaking(false);
-    }
-  }, [heartInput]);
-
-  // Fetch witness letter for spoken welcome (not shown as a separate card)
-  useEffect(() => {
     if (situation.trim()) {
       setWitnessReady(true);
       return;
@@ -314,6 +294,14 @@ export default function GuidancePage() {
       cancelled = true;
     };
   }, [situation]);
+
+  useEffect(() => {
+    if (!heartInput.trim()) return;
+    greetingEngagedRef.current = true;
+    cancelGreetingSpeakRef.current?.();
+    cancelGreetingSpeakRef.current = null;
+    setGreetingSpeaking(false);
+  }, [heartInput]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -983,11 +971,9 @@ export default function GuidancePage() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     if (!fromWelcome) greetingEngagedRef.current = true;
-    if (greetingAudioRef.current) {
-      greetingAudioRef.current.pause();
-      greetingAudioRef.current = null;
-      setGreetingSpeaking(false);
-    }
+    cancelGreetingSpeakRef.current?.();
+    cancelGreetingSpeakRef.current = null;
+    setGreetingSpeaking(false);
 
     const rec = new SR();
     heartRecRef.current = rec;
@@ -1037,7 +1023,7 @@ export default function GuidancePage() {
     startHeartListening(false);
   };
 
-  // Spoken shepherd welcome (Philip/onyx) → auto-mic when greeting finishes
+  // Spoken shepherd welcome → auto-mic when greeting finishes
   useEffect(() => {
     if (situation.trim() || !witnessReady) return;
     const sessionKey = "sp_guidance_greeted_this_session";
@@ -1050,10 +1036,13 @@ export default function GuidancePage() {
     const scheduleAutoMic = () => {
       if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current || !hasSpeechSupport) return;
       autoMicStartedRef.current = true;
+      const siriListen = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
       autoMicTimer = window.setTimeout(() => {
         if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
-      }, 900);
+      }, siriListen ? 400 : 900);
     };
+
+    const siriListenPending = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
 
     dwellTimer = window.setTimeout(() => {
       if (cancelled || greetingEngagedRef.current) return;
@@ -1065,57 +1054,75 @@ export default function GuidancePage() {
         witnessLetterRef.current,
       );
 
-      fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: greeting,
-          voice: SHEPHERD_VOICE,
-          scope: "verse",
-          sessionId: getSessionId(),
-        }),
-      })
-        .then((r) => (r.ok ? r.blob() : null))
-        .then((blob) => {
-          if (cancelled || greetingEngagedRef.current) return;
+      cancelGreetingSpeakRef.current = speakShepherdLine(greeting, {
+        onStart: () => {
           sessionStorage.setItem(sessionKey, "1");
-          if (!blob) {
-            scheduleAutoMic();
-            return;
-          }
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          greetingAudioRef.current = audio;
           setGreetingSpeaking(true);
-          audio.play().catch(() => {
-            setGreetingSpeaking(false);
-            greetingAudioRef.current = null;
-            URL.revokeObjectURL(url);
-            scheduleAutoMic();
-          });
-          audio.onended = () => {
-            URL.revokeObjectURL(url);
-            greetingAudioRef.current = null;
-            setGreetingSpeaking(false);
-            scheduleAutoMic();
-          };
-        })
-        .catch(() => {
-          if (!cancelled && !greetingEngagedRef.current) scheduleAutoMic();
-        });
-    }, 1200);
+        },
+        onEnd: () => {
+          setGreetingSpeaking(false);
+          cancelGreetingSpeakRef.current = null;
+          try {
+            sessionStorage.removeItem("sp_guidance_siri_listen");
+          } catch {
+            /* noop */
+          }
+          scheduleAutoMic();
+        },
+      });
+    }, siriListenPending ? 600 : 1200);
 
     return () => {
       cancelled = true;
       if (dwellTimer) window.clearTimeout(dwellTimer);
       if (autoMicTimer) window.clearTimeout(autoMicTimer);
-      if (greetingAudioRef.current) {
-        greetingAudioRef.current.pause();
-        greetingAudioRef.current = null;
-      }
+      cancelGreetingSpeakRef.current?.();
+      cancelGreetingSpeakRef.current = null;
       setGreetingSpeaking(false);
     };
   }, [isFirstVisit, situation, witnessReady, hasSpeechSupport]);
+
+  // Siri — open mic when welcome already played this session
+  useEffect(() => {
+    if (situation.trim() || !witnessReady) return;
+    if (sessionStorage.getItem("sp_guidance_siri_listen") !== "1") return;
+    const sessionKey = "sp_guidance_greeted_this_session";
+    if (!sessionStorage.getItem(sessionKey)) return;
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
+      autoMicStartedRef.current = true;
+      try {
+        sessionStorage.removeItem("sp_guidance_siri_listen");
+      } catch {
+        /* noop */
+      }
+      startHeartListeningRef.current(true);
+    }, 500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [situation, witnessReady]);
+
+  // Phase 1 — speak the first empathic reflection once
+  useEffect(() => {
+    if (!phase1Complete || !phase1Response?.trim()) return;
+    const key = phase1Response.trim();
+    if (phase1SpokenRef.current === key) return;
+    phase1SpokenRef.current = key;
+    const cancel = speakShepherdLine(cleanResponse(phase1Response));
+    return () => cancel();
+  }, [phase1Complete, phase1Response]);
+
+  // Session send-off — spoken closure
+  useEffect(() => {
+    if (!sendOffText?.trim()) return;
+    if (sendOffSpokenRef.current === sendOffText) return;
+    sendOffSpokenRef.current = sendOffText;
+    const cancel = speakShepherdLine(sendOffText);
+    return () => cancel();
+  }, [sendOffText]);
 
   const handleHeartSubmit = () => {
     beginGuidanceEntry(heartInput);
@@ -2327,21 +2334,27 @@ export default function GuidancePage() {
                 </Link>
               </div>
 
-              {/* Session feedback — one tap, fires silently */}
+              {/* Session feedback — one tap */}
               <AnimatePresence mode="wait">
                 {sessionFeedback === null ? (
                   <motion.div
                     key="feedback-ask"
-                    initial={{ opacity: 0, y: 4 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="w-full text-center"
+                    transition={{ delay: 0.25 }}
+                    className="w-full rounded-2xl px-5 py-5 text-center"
+                    style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.22)" }}
+                    data-testid="card-guidance-session-feedback"
                   >
-                    <p className="text-[12px] text-muted-foreground/55 mb-2.5">Did this feel like what you needed today?</p>
+                    <p className="text-[15px] font-semibold text-foreground/90 mb-1">Did this meet you today?</p>
+                    <p className="text-[12px] text-muted-foreground/60 mb-4 leading-relaxed">
+                      One tap — helps us stay pastoral, not generic.
+                    </p>
                     <div className="flex justify-center gap-3">
                       <button
                         type="button"
+                        data-testid="button-guidance-feedback-yes"
                         onClick={() => {
                           setSessionFeedback("yes");
                           fetch("/api/guidance/feedback", {
@@ -2350,13 +2363,14 @@ export default function GuidancePage() {
                             body: JSON.stringify({ sessionId: getSessionId(), feedback: "yes", situation: situation.trim().slice(0, 200) }),
                           }).catch(() => {});
                         }}
-                        className="px-4 py-2 rounded-full text-[13px] font-semibold transition-all active:scale-95"
-                        style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.30)", color: "rgba(167,139,250,0.95)" }}
+                        className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
+                        style={{ background: "rgba(139,92,246,0.22)", border: "1px solid rgba(139,92,246,0.40)", color: "rgba(196,181,253,0.98)" }}
                       >
                         Yes, it did
                       </button>
                       <button
                         type="button"
+                        data-testid="button-guidance-feedback-not-quite"
                         onClick={() => {
                           setSessionFeedback("not-quite");
                           fetch("/api/guidance/feedback", {
@@ -2365,8 +2379,8 @@ export default function GuidancePage() {
                             body: JSON.stringify({ sessionId: getSessionId(), feedback: "not-quite", situation: situation.trim().slice(0, 200) }),
                           }).catch(() => {});
                         }}
-                        className="px-4 py-2 rounded-full text-[13px] font-semibold transition-all active:scale-95"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.45)" }}
+                        className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }}
                       >
                         Not quite
                       </button>
@@ -2377,9 +2391,9 @@ export default function GuidancePage() {
                     key="feedback-thanks"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-[12px] text-muted-foreground/45 italic text-center"
+                    className="text-[13px] text-muted-foreground/55 italic text-center py-2"
                   >
-                    {sessionFeedback === "yes" ? "Glad it helped. See you next time." : "Noted — we'll keep listening."}
+                    {sessionFeedback === "yes" ? "Glad it met you. See you next time." : "Noted — we'll keep listening."}
                   </motion.p>
                 )}
               </AnimatePresence>

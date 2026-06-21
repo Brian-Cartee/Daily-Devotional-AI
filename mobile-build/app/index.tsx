@@ -308,7 +308,7 @@ export default function MainScreen() {
     SpLaunch.getLaunchScreen((screen: string | null) => {
       if (screen === "guidance") {
         webviewRef.current?.injectJavaScript(
-          `(function(){try{window.location.href='/guidance';}catch(e){}true;})();`,
+          `(function(){try{window.location.href='/guidance?listen=1';}catch(e){}true;})();`,
         );
       }
     });

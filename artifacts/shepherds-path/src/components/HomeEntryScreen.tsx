@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
+import { ENCOURAGER_VOICE, SHEPHERD_VOICE } from "@/lib/shepherdVoice";
 import { isLateNight } from "@/lib/nightMode";
 import {
   getBrandSplashCount,
@@ -71,19 +72,17 @@ if (typeof window !== "undefined") {
 
 const ICEBREAKER_CHARACTERS = [
   {
-    name: "Philip",
-    voice: "onyx",
+    voice: SHEPHERD_VOICE,
     open: 0,
-    greeting: "Philip here — one of the twelve.",
+    greeting: "Step inside.",
     question: "What do I call you, friend?",
     skip: "Just passing through",
   },
   {
-    name: "Barnabas",
-    voice: "fable",
+    voice: ENCOURAGER_VOICE,
     open: 1,
-    greeting: "Barnabas. Philip mentioned you.",
-    question: "Did you give him your name?",
+    greeting: "Good to see you.",
+    question: "Did you share your name with me?",
     skipIfHasName: "Good to know you, [name].",
     skipIfNoName: "That's alright. Come in.",
   },
@@ -424,18 +423,6 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
             >
               <p
                 style={{
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.42)",
-                  marginBottom: "14px",
-                }}
-              >
-                {character.name}
-              </p>
-              <p
-                style={{
                   fontFamily: "Georgia, serif",
                   fontSize: "1.15rem",
                   fontWeight: 300,
@@ -551,19 +538,7 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
                 border: "1px solid rgba(255,255,255,0.12)",
                 textAlign: "center",
               }}
-            >
-              <p
-                style={{
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.42)",
-                  marginBottom: "12px",
-                }}
               >
-                Barnabas
-              </p>
               <p
                 style={{
                   fontFamily: "Georgia, serif",
