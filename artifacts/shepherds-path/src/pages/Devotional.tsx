@@ -169,7 +169,6 @@ export default function Devotional() {
   const reflectionAbortRef = useRef<AbortController | null>(null);
   const prayerAbortRef = useRef<AbortController | null>(null);
   const generationStartedRef = useRef(false);
-  const generationRetryVerseRef = useRef<number | null>(null);
   const hydratedVerseIdRef = useRef<number | null>(null);
   const hydratedNameRef = useRef<string | null>(null);
   const continuityIntentRef = useRef<DevotionalContinuityIntent>("fresh");
@@ -208,8 +207,7 @@ export default function Devotional() {
   /** After closing gratitude: null = gentle fork; carry = send-off; stay = daily message + optional depth */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
   const stayOpenerSpokenRef = useRef(false);
-  const DEVOTIONAL_STAY_OPENER =
-    "You stayed. Let's go a little deeper — what's sitting with you from today?";
+  const DEVOTIONAL_STAY_OPENER = "You stayed. Let's go a little deeper — what's sitting with you from today?";
 
   const devotionalPastorTone =
     mapThresholdNeedToPastorVideoTone(getThresholdNeed()) ??
@@ -235,6 +233,7 @@ export default function Devotional() {
   const [refreshingForName, setRefreshingForName] = useState(false);
   const [personalizePhase, setPersonalizePhase] = useState<"reflection" | "prayer" | null>(null);
   const quickPersonalizeRef = useRef(false);
+  const autoPersonalizeVerseRef = useRef<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const inNativeApp = isNativeWebViewShell();
   const AI_PERSONALIZE_TIMEOUT_MS = 75_000;
@@ -308,7 +307,6 @@ export default function Devotional() {
     setPersonalizePhase("reflection");
     clearDevotionalSession();
     generationStartedRef.current = false;
-    generationRetryVerseRef.current = null;
     hydratedVerseIdRef.current = null;
     hydratedNameRef.current = null;
     reflectionAbortRef.current?.abort();
@@ -350,6 +348,26 @@ export default function Devotional() {
     }
   }, [prayerLoading, reflectionLoading, reflectionContent]);
 
+  // If we know your name but today's cached reflection was generated without it, refresh once
+  useEffect(() => {
+    if (!nameHydrated || !verse?.id || !entryTriggered || !reflectionContent || reflectionLoading || prayerLoading) return;
+    const name = resolvedProfileName;
+    if (!name) return;
+    if (shouldUseCachedDevotional(verse.id, name)) return;
+    if (reflectionIncludesName(reflectionContent, name)) return;
+    if (autoPersonalizeVerseRef.current === verse.id) return;
+    autoPersonalizeVerseRef.current = verse.id;
+    regenerateWithMyName(verse.id);
+  }, [
+    nameHydrated,
+    verse?.id,
+    entryTriggered,
+    reflectionContent,
+    reflectionLoading,
+    prayerLoading,
+    resolvedProfileName,
+  ]);
+
   useEffect(() => {
     if (!prayerContent || prayerLoading || completionPath !== "stay") {
       setShowPostCompletionCtas(false);
@@ -379,6 +397,7 @@ export default function Devotional() {
       cancelSpeak?.();
     };
   }, [completionPath]);
+
   const [memoryVerseId, setMemoryVerseId] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -640,7 +659,7 @@ export default function Devotional() {
     }
   }, [verse?.id, nameHydrated]);
 
-  // Generate reflection/prayer once the user begins (after continuity choice when applicable)
+  // Effect 2: Generate reflection/prayer once the user begins (after continuity choice when applicable)
   useEffect(() => {
     if (!verse || !entryTriggered || !continuityResolved || !nameHydrated || generationStartedRef.current) return;
     beginDevotionalGeneration(verse.id, resolvedProfileName ?? undefined);
@@ -1885,6 +1904,7 @@ export default function Devotional() {
                         return;
                       }
                       setSavedProfileName(trimmed);
+                      autoPersonalizeVerseRef.current = null;
                       regenerateWithMyName(verse.id, trimmed);
                     });
                   }}
