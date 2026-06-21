@@ -42,7 +42,6 @@ import { getListenFirstPreference } from "@/lib/listenFirst";
 import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
 import { markReturningHome } from "@/lib/introState";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
-import { SituationPills } from "@/components/SituationPills";
 import { SITUATION_TOPICS } from "@/lib/situationTopics";
 import { PastorVideoCard } from "@/components/PastorVideoCard";
 import { resolveGuidancePastorVideoTone } from "@/lib/pastorVideoTone";
@@ -170,6 +169,28 @@ const BRIDGE_QUESTIONS: Record<string, string> = {
   "I'm exhausted": "What's worn you down — is it today specifically or has it been building?",
 };
 
+/** Philip — default Talk It Through voice (internal; never shown to users). */
+const SHEPHERD_VOICE = "onyx";
+
+function buildShepherdGreeting(
+  name: string | null | undefined,
+  isFirstVisit: boolean,
+  witnessLetter: string | null,
+): string {
+  const hi = name ? `Hi ${name}.` : "Hi.";
+  if (witnessLetter) {
+    return `${hi} It's good to have you back. ${witnessLetter} What's on your heart today?`;
+  }
+  if (isFirstVisit) {
+    return name
+      ? `${hi} I'm glad you're here. Take your time — what's on your heart?`
+      : "I'm glad you're here. Take your time — what's on your heart?";
+  }
+  return name
+    ? `${hi} It's good to have you back. What's on your heart today?`
+    : "It's good to have you back. What's on your heart today?";
+}
+
 export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -177,7 +198,11 @@ export default function GuidancePage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  const [witnessLetter, setWitnessLetter] = useState<string | null>(null);
+  const witnessLetterRef = useRef<string | null>(null);
+  const [witnessReady, setWitnessReady] = useState(false);
+  const [greetingSpeaking, setGreetingSpeaking] = useState(false);
+  const autoMicStartedRef = useRef(false);
+  const greetingAudioRef = useRef<HTMLAudioElement | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
@@ -254,59 +279,41 @@ export default function GuidancePage() {
 
   const greetingEngagedRef = useRef(false);
 
-  // Voice greeting — after 5s dwell on the empty entry screen (cancel if they leave or engage)
   useEffect(() => {
-    if (situation.trim()) return;
-    const sessionKey = "sp_guidance_greeted_this_session";
-    if (sessionStorage.getItem(sessionKey)) return;
-
-    let cancelled = false;
-    const greeting = isFirstVisit
-      ? "I'm here. Take your time — what's on your heart?"
-      : "Welcome back. What are you carrying today?";
-
-    const dwellTimer = window.setTimeout(() => {
-      if (cancelled || greetingEngagedRef.current) return;
-      if (document.visibilityState === "hidden") return;
-
-      const voice = getUserVoice();
-      fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: greeting, voice, scope: "snippet", sessionId: getSessionId() }),
-      })
-        .then((r) => (r.ok ? r.blob() : null))
-        .then((blob) => {
-          if (cancelled || greetingEngagedRef.current || !blob) return;
-          sessionStorage.setItem(sessionKey, "1");
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.play().catch(() => {});
-          audio.onended = () => URL.revokeObjectURL(url);
-        })
-        .catch(() => {});
-    }, 5000);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(dwellTimer);
-    };
-  }, [isFirstVisit, situation]);
-
-  useEffect(() => {
-    if (heartInput.trim()) greetingEngagedRef.current = true;
+    if (!heartInput.trim()) return;
+    greetingEngagedRef.current = true;
+    if (greetingAudioRef.current) {
+      greetingAudioRef.current.pause();
+      greetingAudioRef.current = null;
+      setGreetingSpeaking(false);
+    }
   }, [heartInput]);
 
-  // Fetch witness letter — "last time you were here" continuity line
+  // Fetch witness letter for spoken welcome (not shown as a separate card)
   useEffect(() => {
-    if (situation.trim()) return; // don't show on pre-filled sessions
+    if (situation.trim()) {
+      setWitnessReady(true);
+      return;
+    }
     const sessionId = getSessionId();
-    if (!sessionId) return;
+    if (!sessionId) {
+      setWitnessReady(true);
+      return;
+    }
+    let cancelled = false;
     fetch(`/api/guidance/witness-letter?sessionId=${encodeURIComponent(sessionId)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.letter) setWitnessLetter(d.letter); })
-      .catch(() => {});
-  }, []);
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.letter) witnessLetterRef.current = d.letter;
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setWitnessReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [situation]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -730,6 +737,9 @@ export default function GuidancePage() {
     tryStartGuidanceFromUrl();
   };
 
+  const beginGuidanceEntryRef = useRef(beginGuidanceEntry);
+  beginGuidanceEntryRef.current = beginGuidanceEntry;
+
   useEffect(() => {
     const trimmed = situation.trim();
     if (!trimmed) {
@@ -961,15 +971,24 @@ export default function GuidancePage() {
     rec.start();
   };
 
-  const toggleHeartVoice = () => {
-    if (heartListening) {
-      heartRecRef.current?.stop();
-      setHeartListening(false);
-      setInterimTranscript("");
-      return;
-    }
+  const stopHeartListening = useCallback(() => {
+    heartRecRef.current?.stop();
+    heartRecRef.current = null;
+    setHeartListening(false);
+    setInterimTranscript("");
+  }, []);
+
+  const startHeartListening = useCallback((fromWelcome = false) => {
+    if (heartRecRef.current) return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
+    if (!fromWelcome) greetingEngagedRef.current = true;
+    if (greetingAudioRef.current) {
+      greetingAudioRef.current.pause();
+      greetingAudioRef.current = null;
+      setGreetingSpeaking(false);
+    }
+
     const rec = new SR();
     heartRecRef.current = rec;
     rec.lang = "en-US";
@@ -982,26 +1001,121 @@ export default function GuidancePage() {
         if (e.results[i].isFinal) final += e.results[i][0].transcript;
         else interim += e.results[i][0].transcript;
       }
-      if (final) setHeartInput(prev => (prev ? `${prev} ${final}` : final).trim());
+      if (final) setHeartInput((prev) => (prev ? `${prev} ${final}` : final).trim());
       setInterimTranscript(interim);
     };
     rec.onend = () => {
+      heartRecRef.current = null;
       setHeartListening(false);
       setInterimTranscript("");
-      setHeartInput(prev => {
+      setHeartInput((prev) => {
         const text = prev.trim();
         if (text.length > 8) {
           lastInputWasVoiceRef.current = true;
-          setTimeout(() => beginGuidanceEntry(text), 1200);
+          setTimeout(() => beginGuidanceEntryRef.current(text), 1200);
         }
         return prev;
       });
     };
-    rec.onerror = () => { setHeartListening(false); setInterimTranscript(""); };
-    greetingEngagedRef.current = true;
+    rec.onerror = () => {
+      heartRecRef.current = null;
+      setHeartListening(false);
+      setInterimTranscript("");
+    };
     setHeartListening(true);
     rec.start();
+  }, []);
+
+  const startHeartListeningRef = useRef(startHeartListening);
+  startHeartListeningRef.current = startHeartListening;
+
+  const toggleHeartVoice = () => {
+    if (heartListening) {
+      stopHeartListening();
+      return;
+    }
+    startHeartListening(false);
   };
+
+  // Spoken shepherd welcome (Philip/onyx) → auto-mic when greeting finishes
+  useEffect(() => {
+    if (situation.trim() || !witnessReady) return;
+    const sessionKey = "sp_guidance_greeted_this_session";
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    let cancelled = false;
+    let dwellTimer: number | undefined;
+    let autoMicTimer: number | undefined;
+
+    const scheduleAutoMic = () => {
+      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current || !hasSpeechSupport) return;
+      autoMicStartedRef.current = true;
+      autoMicTimer = window.setTimeout(() => {
+        if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
+      }, 900);
+    };
+
+    dwellTimer = window.setTimeout(() => {
+      if (cancelled || greetingEngagedRef.current) return;
+      if (document.visibilityState === "hidden") return;
+
+      const greeting = buildShepherdGreeting(
+        getUserName(),
+        isFirstVisit,
+        witnessLetterRef.current,
+      );
+
+      fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: greeting,
+          voice: SHEPHERD_VOICE,
+          scope: "verse",
+          sessionId: getSessionId(),
+        }),
+      })
+        .then((r) => (r.ok ? r.blob() : null))
+        .then((blob) => {
+          if (cancelled || greetingEngagedRef.current) return;
+          sessionStorage.setItem(sessionKey, "1");
+          if (!blob) {
+            scheduleAutoMic();
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          greetingAudioRef.current = audio;
+          setGreetingSpeaking(true);
+          audio.play().catch(() => {
+            setGreetingSpeaking(false);
+            greetingAudioRef.current = null;
+            URL.revokeObjectURL(url);
+            scheduleAutoMic();
+          });
+          audio.onended = () => {
+            URL.revokeObjectURL(url);
+            greetingAudioRef.current = null;
+            setGreetingSpeaking(false);
+            scheduleAutoMic();
+          };
+        })
+        .catch(() => {
+          if (!cancelled && !greetingEngagedRef.current) scheduleAutoMic();
+        });
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      if (dwellTimer) window.clearTimeout(dwellTimer);
+      if (autoMicTimer) window.clearTimeout(autoMicTimer);
+      if (greetingAudioRef.current) {
+        greetingAudioRef.current.pause();
+        greetingAudioRef.current = null;
+      }
+      setGreetingSpeaking(false);
+    };
+  }, [isFirstVisit, situation, witnessReady, hasSpeechSupport]);
 
   const handleHeartSubmit = () => {
     beginGuidanceEntry(heartInput);
@@ -1170,9 +1284,6 @@ export default function GuidancePage() {
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]"
               >
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80 select-none mb-4">
-                  Talk It Through
-                </p>
                 <h1
                   className="text-[2rem] sm:text-[2.5rem] leading-[1.18] text-white text-balance"
                   style={{
@@ -1182,12 +1293,6 @@ export default function GuidancePage() {
                 >
                   {getHeroHeading(situation, isFirstVisit)}
                 </h1>
-                <p
-                  className="text-[14px] text-white/75 font-medium mt-3 max-w-[28ch] leading-snug"
-                  style={{ textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}
-                >
-                  The path is already here.
-                </p>
               </motion.div>
             ) : (
               <motion.div
@@ -1229,37 +1334,13 @@ export default function GuidancePage() {
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  {/* Witness letter — continuity from last session */}
-                  {witnessLetter && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.3 }}
-                      className="mb-4 px-4 py-3 rounded-xl"
-                      style={{ background: "rgba(139,92,246,0.10)", border: "1px solid rgba(139,92,246,0.22)" }}
-                    >
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/60 mb-1.5">
-                        Last time you were here
-                      </p>
-                      <p className="text-[14px] text-white/75 leading-relaxed italic" style={{ fontFamily: "var(--font-reading)" }}>
-                        {witnessLetter}
-                      </p>
-                    </motion.div>
-                  )}
-
                   <div
                     className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/25 mb-6 focus-within:ring-2 focus-within:ring-violet-400/35 transition-shadow"
                     data-testid="card-guidance-entry"
                   >
-                    <p className="text-[15px] sm:text-[16px] text-white/80 leading-relaxed mb-4">
-                      {isFirstVisit
-                        ? "Bring what's weighing on you — exactly as it is. Scripture and prayer meet you here."
-                        : "Whatever weighs on your heart, bring it here. You are more seen and more loved than you may feel right now."}
-                    </p>
-
-                    {/* Voice-first entry */}
+                    {/* Voice-first entry — mic opens automatically after spoken welcome */}
                     {hasSpeechSupport && (
-                      <div className="flex flex-col items-center mb-5">
+                      <div className="flex flex-col items-center mb-4">
                         <motion.button
                           type="button"
                           onClick={toggleHeartVoice}
@@ -1271,6 +1352,8 @@ export default function GuidancePage() {
                               "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
                               "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
                             ],
+                          } : greetingSpeaking ? {
+                            boxShadow: "0 0 28px 6px rgba(139,92,246,0.28)",
                           } : {
                             boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
                           }}
@@ -1293,8 +1376,12 @@ export default function GuidancePage() {
                             : <Mic className="w-10 h-10 text-violet-300 relative z-10" />
                           }
                         </motion.button>
-                        <p className="mt-3 text-[13px] font-medium text-white/65">
-                          {heartListening ? "Listening — tap to stop" : "Tap to speak"}
+                        <p className="mt-3 text-[13px] font-medium text-white/65 text-center">
+                          {heartListening
+                            ? "Listening — tap to stop"
+                            : greetingSpeaking
+                              ? "…"
+                              : "Speak when you're ready"}
                         </p>
                         {(heartListening && interimTranscript) && (
                           <p className="mt-2 text-[14px] text-white/50 italic text-center max-w-[260px] leading-snug">
@@ -1304,24 +1391,13 @@ export default function GuidancePage() {
                       </div>
                     )}
 
-                    {/* Divider */}
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-3 mb-3">
                       <div className="flex-1 h-px bg-white/10" />
                       <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.18em]">
-                        {hasSpeechSupport ? "or type below" : "what's on your heart"}
+                        {hasSpeechSupport ? "or type" : "what's on your heart"}
                       </span>
                       <div className="flex-1 h-px bg-white/10" />
                     </div>
-
-                    <SituationPills
-                      variant="dark"
-                      selectedId={situationTopicId}
-                      className="mb-4"
-                      onSelect={(situationText, id) => {
-                        setSituationTopicId(id);
-                        beginGuidanceEntry(situationText);
-                      }}
-                    />
 
                     <label className="sr-only" htmlFor="input-guidance-heart">
                       What&apos;s on your heart
@@ -1347,16 +1423,16 @@ export default function GuidancePage() {
                       data-testid="button-guidance-heart-submit"
                       className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
                     >
-                      Begin with Scripture
+                      Continue
                       <ArrowRight className="w-4 h-4" />
                     </button>
 
-                    <p className="mt-3 text-center text-[12px] text-white/50 leading-relaxed">
-                      Private · grounded in the Bible · no perfect words required
+                    <p className="mt-3 text-center text-[11px] text-white/40 leading-relaxed">
+                      Private · grounded in Scripture
                       {" · "}
                       <Link
                         href="/sigh"
-                        className="text-violet-200/70 underline underline-offset-2 hover:text-violet-100"
+                        className="text-violet-200/60 underline underline-offset-2 hover:text-violet-100"
                         data-testid="link-guidance-sigh-room"
                       >
                         Need a quieter room?

@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName";
+import { getSessionId } from "@/lib/session";
 import { isLateNight } from "@/lib/nightMode";
 import {
   getBrandSplashCount,
@@ -71,6 +72,7 @@ if (typeof window !== "undefined") {
 const ICEBREAKER_CHARACTERS = [
   {
     name: "Philip",
+    voice: "onyx",
     open: 0,
     greeting: "Philip here — one of the twelve.",
     question: "What do I call you, friend?",
@@ -78,6 +80,7 @@ const ICEBREAKER_CHARACTERS = [
   },
   {
     name: "Barnabas",
+    voice: "fable",
     open: 1,
     greeting: "Barnabas. Philip mentioned you.",
     question: "Did you give him your name?",
@@ -217,17 +220,28 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
   const [allowDismiss, setAllowDismiss] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const icebreakerSpeechRef = useRef<HTMLAudioElement | null>(null);
+  const icebreakerEngagedRef = useRef(false);
 
   const { image, headline, subline, cta } = splash;
   const overlayActive = showIcebreaker || showCallback;
   const revealSplashUi = icebreakerDone;
 
+  const stopIcebreakerSpeech = useCallback(() => {
+    icebreakerEngagedRef.current = true;
+    if (icebreakerSpeechRef.current) {
+      icebreakerSpeechRef.current.pause();
+      icebreakerSpeechRef.current = null;
+    }
+  }, []);
+
   const finishIcebreaker = useCallback(() => {
+    stopIcebreakerSpeech();
     setShowIcebreaker(false);
     setShowCallback(false);
     setIcebreakerDone(true);
     setAllowDismiss(true);
-  }, []);
+  }, [stopIcebreakerSpeech]);
 
   useLayoutEffect(() => {
     (window as any).__spSignalReady?.();
@@ -246,9 +260,68 @@ function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
 
   useEffect(() => {
     if (!showCallback) return;
-    const t = window.setTimeout(() => finishIcebreaker(), 1500);
-    return () => window.clearTimeout(t);
+    const fallback = window.setTimeout(() => finishIcebreaker(), 8000);
+    return () => window.clearTimeout(fallback);
   }, [showCallback, finishIcebreaker]);
+
+  useEffect(() => {
+    if (nameInput.trim()) stopIcebreakerSpeech();
+  }, [nameInput, stopIcebreakerSpeech]);
+
+  useEffect(() => {
+    if (!showIcebreaker && !showCallback) return;
+    if (showIcebreaker && !character) return;
+    if (showCallback && !callbackMessage) return;
+
+    icebreakerEngagedRef.current = false;
+    let cancelled = false;
+    const voice = character?.voice ?? "fable";
+    const text = showCallback
+      ? callbackMessage
+      : `${character!.greeting} ${character!.question}`;
+    const advanceAfterSpeech = showCallback;
+
+    const dwellTimer = window.setTimeout(() => {
+      if (cancelled || icebreakerEngagedRef.current) return;
+      if (document.visibilityState === "hidden") return;
+
+      fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          voice,
+          scope: "verse",
+          sessionId: getSessionId(),
+        }),
+      })
+        .then((r) => (r.ok ? r.blob() : null))
+        .then((blob) => {
+          if (cancelled || icebreakerEngagedRef.current || !blob) return;
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          icebreakerSpeechRef.current = audio;
+          audio.onended = () => {
+            URL.revokeObjectURL(url);
+            if (icebreakerSpeechRef.current === audio) icebreakerSpeechRef.current = null;
+            if (advanceAfterSpeech && !cancelled && !icebreakerEngagedRef.current) {
+              window.setTimeout(() => finishIcebreaker(), 350);
+            }
+          };
+          audio.play().catch(() => {});
+        })
+        .catch(() => {});
+    }, 900);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(dwellTimer);
+      if (icebreakerSpeechRef.current) {
+        icebreakerSpeechRef.current.pause();
+        icebreakerSpeechRef.current = null;
+      }
+    };
+  }, [showIcebreaker, showCallback, character, callbackMessage, finishIcebreaker]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
