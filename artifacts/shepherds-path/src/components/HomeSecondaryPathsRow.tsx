@@ -80,6 +80,27 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         </Link>
       )}
 
+      <Link href="/study" className="sp-native-card-link">
+        <div
+          data-testid="home-secondary-walk-deeper"
+          style={rowStyle(
+            "rgba(139,92,246,0.20)",
+            "linear-gradient(to bottom right, rgba(139,92,246,0.10), rgba(109,40,217,0.06))",
+          )}
+        >
+          <ShortcutPathIcon variant="study" size="sm" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: NATIVE_TEXT, lineHeight: 1.25 }}>
+              Walk Deeper
+            </p>
+            <p style={{ fontSize: "12px", color: NATIVE_TEXT_MUTED, lineHeight: 1.375, marginTop: "2px" }}>
+              Ask Philip anything about Scripture
+            </p>
+          </div>
+          <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />
+        </div>
+      </Link>
+
       <Link href="/read" className="sp-native-card-link">
         <div
           data-testid="home-secondary-read"
