@@ -52,6 +52,7 @@ import {
   TALK_IT_THROUGH_FOLLOW_UP,
   buildTalkItThroughVersePrayerPrompt,
   buildTalkItThroughVersePrayerUserContent,
+  TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled } from "../talkItThroughVariants";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
@@ -4000,23 +4001,7 @@ Return only keys needed for requested fields plus rationale.`;
         messages: [
           {
             role: "system",
-            content: `You are a wise Christian pastor. Based on what someone shared and the guidance they just received, give them ONE specific, small, doable action to carry into their day — grounded in what was said to them.
-
-The action must be:
-- One sentence. Not a task list.
-- Concrete and specific to their situation — not generic advice
-- Something they can actually do today, even once
-- The kind of thing a trusted pastor would say as you stand up to leave: "Here's one thing to take with you…"
-- NOT preachy. NOT motivational-poster language.
-
-Examples of the RIGHT tone:
-- "Pause once today before reacting, and breathe the name of Jesus into that space."
-- "Let yourself grieve it — even for five minutes — instead of pushing through."
-- "Say the thing you've been holding back, even if your voice shakes."
-
-Also return the single scripture reference (book chapter:verse) that most directly grounds this action.
-
-Return JSON: { "action": "...", "scripture": "..." }`
+            content: TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
           },
           {
             role: "user",
