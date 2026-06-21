@@ -241,10 +241,10 @@ export default function MainScreen() {
   useEffect(() => {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
         if (cancelled) return;
         setBeforeContentJs(
-          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash)}`,
+          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash, splashProg)}`,
         );
         setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
       },
@@ -256,7 +256,7 @@ export default function MainScreen() {
 
   const injectProfileSeed = useCallback(() => {
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
         const seed = buildNativeProfileSeedJs(
           sessionId,
           name,
@@ -267,6 +267,7 @@ export default function MainScreen() {
           heartLastShown,
           heartState,
           dailySplash,
+          splashProg,
         );
         webviewRef.current?.injectJavaScript(
           `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
@@ -481,9 +482,9 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState }) => {
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
       setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash)}`,
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash, splashProg)}`,
       );
       setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
@@ -635,10 +636,12 @@ export default function MainScreen() {
                   featureIdx: number;
                   secondIdx: number | null;
                 } | null;
+                splashProg?: string | null;
                 heartLastShown?: number;
                 heartState?: { weather: string; topic: string | null; ts: number } | null;
               } = {};
               if (typeof data.splashCount === "number") patch.splashCount = data.splashCount;
+              if (typeof data.splashProg === "string") patch.splashProg = data.splashProg;
               if (data.dailySplash && typeof data.dailySplash === "object" && typeof data.dailySplash.date === "string") {
                 patch.dailySplash = {
                   date: data.dailySplash.date,

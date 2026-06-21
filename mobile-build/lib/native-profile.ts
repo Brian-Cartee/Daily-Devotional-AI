@@ -10,6 +10,7 @@ const EMAIL_SUBSCRIBED_KEY = "sp_email_subscribed";
 const SECURE_SUBSCRIBER_EMAIL_KEY = "sp_secure_subscriber_email";
 const SPLASH_COUNT_KEY = "sp_native_splash_count";
 const DAILY_SPLASH_KEY = "sp_native_daily_splash";
+const SPLASH_PROG_KEY = "sp_native_splash_prog";
 const HEART_LAST_SHOWN_KEY = "sp_native_heart_last_shown";
 const HEART_STATE_KEY = "sp_native_heart_state";
 
@@ -87,6 +88,7 @@ export async function loadNativeUserProfile(): Promise<{
   emailSubscribed: boolean;
   splashCount: number;
   dailySplash: NativeDailySplashState | null;
+  splashProg: string | null;
   heartLastShown: number;
   heartState: NativeHeartState | null;
 }> {
@@ -102,14 +104,16 @@ export async function loadNativeUserProfile(): Promise<{
     !!subscriberEmail.trim();
   const splashCount = parseInt((await AsyncStorage.getItem(SPLASH_COUNT_KEY)) ?? "0", 10) || 0;
   const dailySplash = parseNativeDailySplash(await AsyncStorage.getItem(DAILY_SPLASH_KEY));
+  const splashProg = (await AsyncStorage.getItem(SPLASH_PROG_KEY)) ?? null;
   const heartLastShown = parseInt((await AsyncStorage.getItem(HEART_LAST_SHOWN_KEY)) ?? "0", 10) || 0;
   const heartState = parseNativeHeartState(await AsyncStorage.getItem(HEART_STATE_KEY));
-  return { sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState };
+  return { sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState };
 }
 
 export async function saveNativeUiState(patch: {
   splashCount?: number;
   dailySplash?: NativeDailySplashState | null;
+  splashProg?: string | null;
   heartLastShown?: number;
   heartState?: NativeHeartState | null;
 }): Promise<void> {
@@ -121,6 +125,13 @@ export async function saveNativeUiState(patch: {
       await AsyncStorage.setItem(DAILY_SPLASH_KEY, JSON.stringify(patch.dailySplash));
     } else {
       await AsyncStorage.removeItem(DAILY_SPLASH_KEY);
+    }
+  }
+  if (patch.splashProg !== undefined) {
+    if (patch.splashProg) {
+      await AsyncStorage.setItem(SPLASH_PROG_KEY, patch.splashProg);
+    } else {
+      await AsyncStorage.removeItem(SPLASH_PROG_KEY);
     }
   }
   if (patch.heartLastShown !== undefined) {
@@ -226,6 +237,7 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
   emailSubscribed: boolean;
   splashCount: number;
   dailySplash: NativeDailySplashState | null;
+  splashProg: string | null;
   heartLastShown: number;
   heartState: NativeHeartState | null;
 }> {
@@ -247,6 +259,7 @@ export async function prepareNativeUserProfileForWebView(): Promise<{
     emailSubscribed: profile.emailSubscribed || email.includes("@"),
     splashCount: profile.splashCount,
     dailySplash: profile.dailySplash,
+    splashProg: profile.splashProg,
     heartLastShown: profile.heartLastShown,
     heartState: profile.heartState,
   };
@@ -267,6 +280,7 @@ export function buildNativeProfileSeedJs(
   heartLastShown = 0,
   heartState: NativeHeartState | null = null,
   dailySplash: NativeDailySplashState | null = null,
+  splashProg: string | null = null,
 ): string {
   const sid = jsString(sessionId);
   const nm = jsString(name.trim());
@@ -316,6 +330,18 @@ export function buildNativeProfileSeedJs(
       document.cookie='sp_dsc='+dsc+';path=/;max-age=172800;SameSite=Lax;Secure';
     }else{
       window.__spNativeDailySplash=null;
+    }
+    var sp=${JSON.stringify(splashProg)};
+    if(sp){
+      try{
+        localStorage.setItem('sp_splash_prog',sp);
+        document.cookie='sp_splash_prog='+encodeURIComponent(sp)+dom;
+        var pj=JSON.parse(sp);
+        if(pj&&pj.v===1&&typeof pj.onboarding==='number'){
+          localStorage.setItem('sp_brand_splash_count',String(pj.onboarding));
+          document.cookie='sp_bsc='+pj.onboarding+dom;
+        }
+      }catch(e){}
     }
     window.__spNativeHeartLastShown=${heartLastShown};
     var hs=${JSON.stringify(heartState)};

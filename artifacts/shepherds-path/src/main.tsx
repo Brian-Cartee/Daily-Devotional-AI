@@ -21,6 +21,7 @@ import {
   hydrateSubscriberStateFromStorage,
   requestNativeSubscriberBootstrap,
 } from "@/lib/subscriberState";
+import "@/lib/entrySplashState";
 
 if (isNativeWebViewShell()) {
   nativeDiag("react_entry_started");

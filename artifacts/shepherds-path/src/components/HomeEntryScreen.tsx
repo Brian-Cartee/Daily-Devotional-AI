@@ -5,14 +5,14 @@ import { getSessionId } from "@/lib/session";
 import { ENCOURAGER_VOICE, SHEPHERD_VOICE } from "@/lib/shepherdVoice";
 import { isLateNight } from "@/lib/nightMode";
 import {
-  canShowPostOnboardingSplash,
-  preloadDailySplashImages,
-  resolvePostOnboardingSplash,
-} from "@/lib/dailySplash";
-import {
-  getBrandSplashCount,
-  incrementBrandSplashCount,
-} from "@/lib/introState";
+  advanceEntrySplash,
+  canShowEntrySplash,
+  clearEntrySplashSessionCommit,
+  getOnboardingSplashCount,
+  hasCommittedEntrySplashThisSession,
+  markEntrySplashCommittedThisSession,
+} from "@/lib/entrySplashState";
+import { preloadDailySplashImages } from "@/lib/dailySplash";
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -103,10 +103,8 @@ type BrandSplashInit = {
 
 export type { BrandSplashInit };
 
-let entrySplashCommittedThisPageLoad = false;
-
 function resolveBrandSplashInit(): BrandSplashInit {
-  const count = getBrandSplashCount();
+  const advanced = advanceEntrySplash();
   const doorSplash = SPLASH_SEQUENCE[0]!;
   const noIcebreaker = {
     showIcebreaker: false,
@@ -117,79 +115,76 @@ function resolveBrandSplashInit(): BrandSplashInit {
     shortSplash: false,
   } as const;
 
-  // Post-onboarding: daily feature → random pool pick → short door (max 3/day ET).
-  if (count >= SPLASH_SEQUENCE.length) {
-    const daily = resolvePostOnboardingSplash();
-    if (!daily) {
-      return { openCount: count, splash: doorSplash, ...noIcebreaker };
-    }
-    return {
-      openCount: count,
-      splash: {
-        image: daily.image,
-        headline: daily.headline,
-        subline: daily.subline,
-        cta: daily.cta,
-      },
-      ...noIcebreaker,
-      shortSplash: daily.isShortDoor,
-    };
+  if (!advanced) {
+    return { openCount: getOnboardingSplashCount(), splash: doorSplash, ...noIcebreaker };
   }
 
-  incrementBrandSplashCount();
-  const splash = SPLASH_SEQUENCE[count]!;
-  try {
-    if (count === 0) {
+  const openCount =
+    advanced.slot === "onboarding"
+      ? getOnboardingSplashCount() - 1
+      : getOnboardingSplashCount();
+
+  const splash = {
+    image: advanced.image,
+    headline: advanced.headline,
+    subline: advanced.subline,
+    cta: advanced.cta,
+  };
+
+  if (advanced.slot === "onboarding" && openCount === 0) {
+    return {
+      openCount,
+      splash,
+      showIcebreaker: true,
+      showCallback: false,
+      callbackMessage: null,
+      character: ICEBREAKER_CHARACTERS[0]!,
+      icebreakerDone: false,
+      shortSplash: false,
+    };
+  }
+  if (advanced.slot === "onboarding" && openCount === 1) {
+    const existing = getUserName();
+    if (existing) {
       return {
-        openCount: count,
+        openCount,
         splash,
-        showIcebreaker: true,
-        showCallback: false,
-        callbackMessage: null,
-        character: ICEBREAKER_CHARACTERS[0]!,
-        icebreakerDone: false,
-        shortSplash: false,
-      };
-    }
-    if (count === 1) {
-      const existing = getUserName();
-      if (existing) {
-        return {
-          openCount: count,
-          splash,
-          showIcebreaker: false,
-          showCallback: true,
-          callbackMessage: `Good to see you again, ${existing}.`,
-          character: ICEBREAKER_CHARACTERS[1]!,
-          icebreakerDone: false,
-          shortSplash: false,
-        };
-      }
-      return {
-        openCount: count,
-        splash,
-        showIcebreaker: true,
-        showCallback: false,
-        callbackMessage: null,
+        showIcebreaker: false,
+        showCallback: true,
+        callbackMessage: `Good to see you again, ${existing}.`,
         character: ICEBREAKER_CHARACTERS[1]!,
         icebreakerDone: false,
         shortSplash: false,
       };
     }
-  } catch {
-    /* fall through to normal splash */
+    return {
+      openCount,
+      splash,
+      showIcebreaker: true,
+      showCallback: false,
+      callbackMessage: null,
+      character: ICEBREAKER_CHARACTERS[1]!,
+      icebreakerDone: false,
+      shortSplash: false,
+    };
   }
-  return { openCount: count, splash, ...noIcebreaker };
+
+  return {
+    openCount,
+    splash,
+    ...noIcebreaker,
+    shortSplash: advanced.isShortDoor,
+  };
 }
 
 /** Reserve and return the next entry splash — call once per cold open before mounting UI. */
 export function commitEntrySplash(): BrandSplashInit | null {
-  if (entrySplashCommittedThisPageLoad) return null;
-  const canShow =
-    getBrandSplashCount() < SPLASH_SEQUENCE.length || canShowPostOnboardingSplash();
-  if (!canShow) return null;
-  entrySplashCommittedThisPageLoad = true;
-  return resolveBrandSplashInit();
+  if (hasCommittedEntrySplashThisSession()) return null;
+  if (!canShowEntrySplash()) return null;
+  const init = resolveBrandSplashInit();
+  if (!init) return null;
+  markEntrySplashCommittedThisSession();
+  return init;
 }
 
 function getTodayStr() {
@@ -816,6 +811,7 @@ export function HomeEntryScreen({ splashInit, onDismiss }: HomeEntryScreenProps)
   const [entryType] = useState<EntryType>(() => getEntryType());
 
   const handleDismiss = () => {
+    clearEntrySplashSessionCommit();
     markEntryShown();
     onDismiss();
   };
@@ -838,6 +834,5 @@ export function HomeEntryScreen({ splashInit, onDismiss }: HomeEntryScreenProps)
 }
 
 export function shouldShowHomeEntry(_inNativeApp = false): boolean {
-  if (getBrandSplashCount() < SPLASH_SEQUENCE.length) return true;
-  return canShowPostOnboardingSplash();
+  return canShowEntrySplash();
 }
