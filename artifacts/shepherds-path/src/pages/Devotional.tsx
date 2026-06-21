@@ -329,22 +329,15 @@ export default function Devotional() {
       setPersonalizePhase("reflection");
       return;
     }
-    if (reflectionError || prayerError) {
-      setRefreshingForName(false);
-      setPersonalizePhase(null);
-      quickPersonalizeRef.current = false;
-      return;
-    }
     if (reflectionContent && resolvedProfileName && reflectionIncludesName(reflectionContent, resolvedProfileName)) {
       setRefreshingForName(false);
       if (prayerLoading) setPersonalizePhase("prayer");
       else if (!prayerLoading && prayerContent) setPersonalizePhase(null);
-      return;
     }
-    // Personalized regen finished but AI omitted the name — stop blocking UI
-    if (!reflectionLoading && !prayerLoading && reflectionContent.trim() && prayerContent.trim()) {
+    if (reflectionError || prayerError) {
       setRefreshingForName(false);
       setPersonalizePhase(null);
+      quickPersonalizeRef.current = false;
     }
   }, [refreshingForName, reflectionLoading, prayerLoading, reflectionContent, prayerContent, prayerError, reflectionError, resolvedProfileName]);
 
@@ -1877,6 +1870,8 @@ export default function Devotional() {
                     const trimmed = nameDraft.trim();
                     if (!trimmed || !verse?.id || savingNameDraft) return;
                     setSavingNameDraft(true);
+                    setReflectionContent("");
+                    setPrayerContent("");
                     setRefreshingForName(true);
                     void setUserNameAsync(trimmed).then((ok) => {
                       setSavingNameDraft(false);
