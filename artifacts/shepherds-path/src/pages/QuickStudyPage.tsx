@@ -20,6 +20,7 @@ import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { BiblePassageText } from "@/components/BiblePassageText";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
 import { PastorVideoCard } from "@/components/PastorVideoCard";
+import { GoDeepCard } from "@/components/AdditionalSermonsSection";
 import { usePastorVideo } from "@/hooks/use-pastor-video";
 
 const SUGGESTIONS = [
@@ -523,50 +524,64 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
       <main className="min-h-screen bg-background pt-6 pb-28 sm:pb-16 px-4">
         <div className="max-w-2xl mx-auto">
 
-          {dailyVerse && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-8"
-            >
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 text-center mb-3">
-                TODAY&apos;S VERSE — {dailyVerse.reference}
-              </p>
-              <p className="text-[15px] leading-relaxed text-foreground/80 text-center italic mb-5 px-2" style={{ fontFamily: "'Georgia', serif" }}>
-                &ldquo;{dailyVerse.text}&rdquo;
-              </p>
+          {/* Philip Chat — open-ended, verse used as invisible context only */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 text-center mb-3">
+              TALK WITH PHILIP
+            </p>
+            {dailyVerse ? (
               <BibleStudyChat
                 verseId={dailyVerse.id}
                 verseReference={dailyVerse.reference}
-                initialReflection={`Today's verse is ${dailyVerse.reference}: "${dailyVerse.text}". Walk the user deeper into this Scripture — its meaning, context, and how it speaks to real life today.`}
-                openerMessage={`What's on your heart about ${dailyVerse.reference}? Ask me anything — context, application, a prayer, or whatever's stirring in you.`}
+                initialReflection={`The user is on the Walk Deeper page — a place to go deeper into Scripture, explore teachings, or ask you anything. Today's verse is ${dailyVerse.reference}: "${dailyVerse.text}" — use this as background context if relevant, but don't lead with it. Follow where the person takes the conversation.`}
+                openerMessage="What are you carrying today — a verse, a question, something you heard, or just something stirring in you? I'm here for all of it."
               />
+            ) : (
+              <BibleStudyChat
+                initialReflection="The user is on the Walk Deeper page — a place to go deeper into Scripture, explore any passage, or ask anything on their heart."
+                openerMessage="What are you carrying today — a verse, a question, something you heard, or just something stirring in you? I'm here for all of it."
+              />
+            )}
+          </motion.div>
 
-              {/* Pastor video — Walk Deeper context */}
-              {pastorVideo && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.6 }}
-                >
-                  <PastorVideoCard
-                    pastorName={pastorVideo.pastor_name}
-                    churchName={pastorVideo.church_name}
-                    title={pastorVideo.title}
-                    youtubeUrl={pastorVideo.youtube_url}
-                    sectionLabel="A PASTOR FOR TODAY'S WORD"
-                  />
-                </motion.div>
-              )}
+          {/* Go Deeper — video teachings + podcast search */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
+            className="mb-6"
+          >
+            <GoDeepCard />
+          </motion.div>
 
-              <div className="mt-8 mb-4 flex items-center gap-3 px-2">
-                <div className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/40">Or explore any passage</span>
-                <div className="h-px flex-1 bg-border/40" />
-              </div>
+          {/* Pastor video */}
+          {pastorVideo && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.5 }}
+              className="mb-6"
+            >
+              <PastorVideoCard
+                pastorName={pastorVideo.pastor_name}
+                churchName={pastorVideo.church_name}
+                title={pastorVideo.title}
+                youtubeUrl={pastorVideo.youtube_url}
+                sectionLabel="A PASTOR FOR TODAY'S WORD"
+              />
             </motion.div>
           )}
+
+          <div className="mb-4 flex items-center gap-3 px-2">
+            <div className="h-px flex-1 bg-border/40" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/40">Or explore any passage</span>
+            <div className="h-px flex-1 bg-border/40" />
+          </div>
 
           <AnimatePresence>
             {!resumeDismissed && (() => {

@@ -15,7 +15,7 @@ const PHILIP_STAY_OPENER =
   "You stayed. Let's go a little deeper — what's sitting with you from today?";
 
 interface BibleStudyChatProps {
-  verseId: number;
+  verseId?: number;
   verseReference?: string;
   initialReflection: string;
   prayerContent?: string;
@@ -23,7 +23,7 @@ interface BibleStudyChatProps {
 }
 
 export function BibleStudyChat({
-  verseId,
+  verseId = 0,
   verseReference,
   initialReflection,
   prayerContent,
