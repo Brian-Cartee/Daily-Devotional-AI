@@ -14,6 +14,10 @@ import {
 } from "@/lib/entrySplashState";
 import { preloadDailySplashImages } from "@/lib/dailySplash";
 import { formatVerseForDisplay } from "@/lib/verseText";
+import { prewarmTTS } from "@/hooks/use-tts";
+
+/** First door only — let the image land before the name invitation. */
+const FIRST_DOOR_NAME_DWELL_MS = 4000;
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -175,7 +179,10 @@ export function markEntryShown() {
 
 function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: () => void }) {
   const { splash, character, shortSplash } = init;
-  const [showIcebreaker, setShowIcebreaker] = useState(init.showIcebreaker);
+  const shouldDelayNamePrompt = init.showIcebreaker && !init.showCallback && !shortSplash;
+  const [showIcebreaker, setShowIcebreaker] = useState(
+    init.showIcebreaker && !shouldDelayNamePrompt,
+  );
   const [showCallback, setShowCallback] = useState(init.showCallback);
   const [callbackMessage] = useState(init.callbackMessage);
   const [icebreakerDone, setIcebreakerDone] = useState(init.icebreakerDone);
@@ -208,6 +215,14 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   useLayoutEffect(() => {
     (window as any).__spSignalReady?.();
   }, []);
+
+  useEffect(() => {
+    if (!shouldDelayNamePrompt || !character) return;
+    const text = `${character.greeting} ${character.question}`;
+    prewarmTTS(text, character.voice, "verse");
+    const t = window.setTimeout(() => setShowIcebreaker(true), FIRST_DOOR_NAME_DWELL_MS);
+    return () => window.clearTimeout(t);
+  }, [shouldDelayNamePrompt, character]);
 
   useLayoutEffect(() => {
     if (!showIcebreaker) return;
