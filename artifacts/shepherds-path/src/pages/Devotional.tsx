@@ -313,6 +313,8 @@ export default function Devotional() {
     hydratedNameRef.current = null;
     reflectionAbortRef.current?.abort();
     prayerAbortRef.current?.abort();
+    setReflectionContent("");
+    setPrayerContent("");
     setReflectionError(false);
     setPrayerError(false);
     resetReflectListenState();
