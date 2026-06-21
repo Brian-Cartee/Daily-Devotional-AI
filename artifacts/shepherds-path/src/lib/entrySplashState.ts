@@ -362,22 +362,161 @@ function readLegacyOnboardingCount(): number {
   return Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, max));
 }
 
+type DailyFields = Pick<SplashProgV1, "dailyDate" | "dailyOpens" | "dailyFeature" | "dailySecond">;
+
+function readDscCookieDaily(): DailyFields | null {
+  try {
+    const m = document.cookie.match(/(?:^|; )sp_dsc=([^;]*)/);
+    if (!m) return null;
+    const parts = decodeURIComponent(m[1]!).split("|");
+    if (parts.length < 3) return null;
+    const dailyDate = parts[0]!;
+    const dailyOpens = parseInt(parts[1] ?? "0", 10);
+    const dailyFeature = parseInt(parts[2] ?? "-1", 10);
+    const secondPart = parts[3] ?? "";
+    if (!dailyDate || Number.isNaN(dailyOpens)) return null;
+    const poolLen = DAILY_SPLASH_POOL.length;
+    const feature =
+      dailyFeature >= 0 && dailyFeature < poolLen ? dailyFeature : hashDateStr(dailyDate, poolLen);
+    const parsedSecond = secondPart === "" ? null : parseInt(secondPart, 10);
+    const dailySecond =
+      parsedSecond !== null && !Number.isNaN(parsedSecond) && parsedSecond >= 0 && parsedSecond < poolLen
+        ? parsedSecond
+        : pickSecondIndex(feature, poolLen);
+    return {
+      dailyDate,
+      dailyOpens: Math.max(0, Math.min(MAX_DAILY_POST_ONBOARDING_SPLASHES, dailyOpens)),
+      dailyFeature: feature,
+      dailySecond,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readNativeDailyFields(): DailyFields | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const native = (
+      window as unknown as {
+        __spNativeDailySplash?: {
+          date: string;
+          count: number;
+          featureIdx: number;
+          secondIdx: number | null;
+        };
+      }
+    ).__spNativeDailySplash;
+    if (!native?.date) return null;
+    const poolLen = DAILY_SPLASH_POOL.length;
+    const feature =
+      typeof native.featureIdx === "number" && native.featureIdx >= 0 && native.featureIdx < poolLen
+        ? native.featureIdx
+        : hashDateStr(native.date, poolLen);
+    const parsedSecond = native.secondIdx;
+    const dailySecond =
+      typeof parsedSecond === "number" && !Number.isNaN(parsedSecond) && parsedSecond >= 0 && parsedSecond < poolLen
+        ? parsedSecond
+        : pickSecondIndex(feature, poolLen);
+    return {
+      dailyDate: native.date,
+      dailyOpens: Math.max(
+        0,
+        Math.min(MAX_DAILY_POST_ONBOARDING_SPLASHES, typeof native.count === "number" ? native.count : 0),
+      ),
+      dailyFeature: feature,
+      dailySecond,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readLegacyDailyFieldsFromLs(): DailyFields | null {
+  try {
+    const dailyDate = localStorage.getItem("sp_daily_open_date");
+    if (!dailyDate) return null;
+    const poolLen = DAILY_SPLASH_POOL.length;
+    const dailyOpens = parseInt(localStorage.getItem("sp_daily_open_count") ?? "0", 10) || 0;
+    const storedFeature = parseInt(localStorage.getItem("sp_daily_feature_idx") ?? "-1", 10);
+    const dailyFeature =
+      storedFeature >= 0 && storedFeature < poolLen ? storedFeature : hashDateStr(dailyDate, poolLen);
+    const secondRaw = localStorage.getItem("sp_daily_second_idx");
+    const parsedSecond = secondRaw === null || secondRaw === "" ? null : parseInt(secondRaw, 10);
+    const dailySecond =
+      parsedSecond !== null && !Number.isNaN(parsedSecond) && parsedSecond >= 0 && parsedSecond < poolLen
+        ? parsedSecond
+        : pickSecondIndex(dailyFeature, poolLen);
+    return {
+      dailyDate,
+      dailyOpens: Math.max(0, Math.min(MAX_DAILY_POST_ONBOARDING_SPLASHES, dailyOpens)),
+      dailyFeature,
+      dailySecond,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Best daily progress for today from cookie, native, and legacy keys. */
+function readBestDailyFieldsForToday(today: string): DailyFields | null {
+  const candidates = [readDscCookieDaily(), readNativeDailyFields(), readLegacyDailyFieldsFromLs()].filter(
+    (c): c is DailyFields => !!c && c.dailyDate === today,
+  );
+  if (candidates.length === 0) return null;
+
+  let best = candidates[0]!;
+  for (const c of candidates.slice(1)) {
+    if (c.dailyOpens > best.dailyOpens) best = c;
+    else if (c.dailyOpens === best.dailyOpens && c.dailySecond !== null && best.dailySecond === null) best = c;
+  }
+  return best;
+}
+
+function mergeDailyFieldsIfAhead(prog: SplashProgV1, today: string): SplashProgV1 {
+  const bestDaily = readBestDailyFieldsForToday(today);
+  if (!bestDaily) return prog;
+  if (prog.dailyDate !== today) {
+    return { ...prog, ...bestDaily };
+  }
+  if (
+    bestDaily.dailyOpens > prog.dailyOpens ||
+    (bestDaily.dailyOpens === prog.dailyOpens && prog.dailySecond === null && bestDaily.dailySecond !== null)
+  ) {
+    return { ...prog, ...bestDaily };
+  }
+  return prog;
+}
+
 export function hydrateSplashProg(): void {
   const legacyOnboarding = readLegacyOnboardingCount();
+  const today = easternDate();
   const fromCookie = readCookieJson();
   const fromLs = readLsJson();
 
   if (!fromCookie && !fromLs) {
+    const daily = readBestDailyFieldsForToday(today) ?? freshDailyFields(today);
     if (legacyOnboarding > 0) {
-      const today = easternDate();
-      saveSplashProg({ v: 1, onboarding: legacyOnboarding, lastImage: null, ...freshDailyFields(today) });
+      saveSplashProg({ v: 1, onboarding: legacyOnboarding, lastImage: null, ...daily });
+    } else if (daily.dailyOpens > 0) {
+      saveSplashProg({ v: 1, onboarding: ONBOARDING_SPLASH_LEN, lastImage: null, ...daily });
     }
     return;
   }
 
-  const merged = fromCookie && fromLs ? mergeProg(fromCookie, fromLs) : (fromCookie ?? fromLs!);
+  let merged = fromCookie && fromLs ? mergeProg(fromCookie, fromLs) : (fromCookie ?? fromLs!);
   if (legacyOnboarding > merged.onboarding) {
-    saveSplashProg({ ...merged, onboarding: legacyOnboarding });
+    merged = { ...merged, onboarding: legacyOnboarding };
+  }
+  const withDaily = mergeDailyFieldsIfAhead(merged, today);
+  if (
+    withDaily.onboarding !== merged.onboarding ||
+    withDaily.dailyOpens !== merged.dailyOpens ||
+    withDaily.dailyDate !== merged.dailyDate ||
+    withDaily.dailyFeature !== merged.dailyFeature ||
+    withDaily.dailySecond !== merged.dailySecond
+  ) {
+    saveSplashProg(withDaily);
   }
 }
 
