@@ -31,7 +31,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { ShareVerseImageButton } from "@/components/ShareableVerseImage";
 import { StreakMilestone } from "@/components/StreakMilestone";
 import { useToast } from "@/hooks/use-toast";
-import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
+import { formatVerseForDisplay } from "@/lib/verseText";
 import { getStoredLang } from "@/lib/language";
 import { getUserName, getUserVoice, hydrateUserName, setUserNameAsync } from "@/lib/userName";
 import { getTodayObservance } from "@/lib/observanceDays";
@@ -1514,7 +1514,7 @@ export default function Devotional() {
                     color: "white",
                   }}
                 >
-                  "{verse.text}"
+                  {formatVerseForDisplay(verse.text)}
                 </blockquote>
 
                 {/* Glowing reference line */}

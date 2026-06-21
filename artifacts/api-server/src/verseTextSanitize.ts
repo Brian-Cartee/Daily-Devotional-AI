@@ -8,13 +8,26 @@ const RESTORES_MY_SOUL_FIXES: [RegExp, string][] = [
   [/\brestore my should\b/gi, "restore my soul"],
 ];
 
+const EDGE_QUOTE = /^[\s"'“”‘’«»‹›]+|[\s"'“”‘’«»‹›]+$/;
+
+export function stripWrappingQuotes(text: string): string {
+  if (!text?.trim()) return text?.trim() ?? "";
+  let s = text.trim();
+  let prev = "";
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(EDGE_QUOTE, "");
+  }
+  return s;
+}
+
 export function verseTextHasRestoreSoulTypo(text: string): boolean {
   return /restore\w*\s+my\s+should\b/i.test(text);
 }
 
 export function sanitizeVerseText(text: string, _reference?: string): string {
   if (!text?.trim()) return text;
-  let out = text;
+  let out = stripWrappingQuotes(text);
   for (const [pattern, replacement] of RESTORES_MY_SOUL_FIXES) {
     out = out.replace(pattern, replacement);
   }

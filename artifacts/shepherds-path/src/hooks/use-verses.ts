@@ -2,9 +2,19 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, type GenerateRequestInput, type GenerateResponseResult, type VerseResponse, type ChatRequest } from "@shared/routes";
 import { getSessionId } from "@/lib/session";
 import { getRelationshipAge } from "@/lib/relationship";
+import { stripWrappingQuotes } from "@/lib/verseText";
 
 function getEasternDateKey(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+}
+
+function sanitizeDailyVerse(verse: VerseResponse): VerseResponse {
+  return {
+    ...verse,
+    text: stripWrappingQuotes(verse.text),
+    encouragement: verse.encouragement ? stripWrappingQuotes(verse.encouragement) : verse.encouragement,
+    reflectionPrompt: verse.reflectionPrompt ? stripWrappingQuotes(verse.reflectionPrompt) : verse.reflectionPrompt,
+  };
 }
 
 function parseWithLogging<T>(schema: { parse: (data: unknown) => T }, data: unknown, label: string): T {
@@ -27,7 +37,8 @@ export function useDailyVerse() {
         throw new Error("Failed to fetch daily verse");
       }
       const data = await res.json();
-      return parseWithLogging(api.verses.getDaily.responses[200], data, "verses.getDaily");
+      const verse = parseWithLogging(api.verses.getDaily.responses[200], data, "verses.getDaily");
+      return sanitizeDailyVerse(verse);
     },
     staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,

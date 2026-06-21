@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Image, Loader2 } from "lucide-react";
 import { createStoryShareImage } from "@/lib/shareImage";
 
+import { stripWrappingQuotes } from "@/lib/verseText";
+
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
 const CANVAS_SIZE = CANVAS_W; // keep compat
@@ -31,7 +33,7 @@ function fitVerseLines(
   ctx: CanvasRenderingContext2D,
   text: string,
 ): { lines: string[]; fontSize: number } {
-  const clean = text.trim().replace(/^["'""]+|["'""]+$/g, "");
+  const clean = stripWrappingQuotes(text);
   let fontSize =
     clean.length > 180 ? 44 :
     clean.length > 130 ? 52 :

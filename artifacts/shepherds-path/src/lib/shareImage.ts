@@ -1,6 +1,7 @@
 import { getRelationshipAge } from "./relationship";
 import { BRAND_ICON } from "./brand";
 import { isStoryMomentAchievement, type StoryMomentAchievementId } from "./achievementMoments";
+import { trimVerseForShare } from "./verseText";
 
 // Curated pool of spiritual landscape fallback photos — used when AI art is unavailable.
 // All photos must be nature / light / sky — no people, babies, or pets.
@@ -591,7 +592,7 @@ export async function createTriviaScoreCardImage(opts: {
   ctx.textAlign = "center";
   ctx.shadowColor = "rgba(0,0,0,0.5)";
   ctx.shadowBlur = 12;
-  const verseEndY = wrapText(ctx, `\u201C${opts.verse}\u201D`, S / 2, 664, 870, 58);
+  const verseEndY = wrapText(ctx, trimVerseForShare(opts.verse, 400), S / 2, 664, 870, 58);
   ctx.shadowBlur = 0;
 
   // -- Verse reference
@@ -686,11 +687,7 @@ export async function createShareImage(
   ctx.fillRect(0, 0, S, S);
 
   // ── Measure verse height first so frosted panel fits ──────────────────
-  const maxChars = 230;
-  const short =
-    verseText.length > maxChars
-      ? verseText.substring(0, maxChars - 1) + "\u2026"
-      : verseText;
+  const short = trimVerseForShare(verseText);
 
   const fontSize =
     short.length < 55  ? 60 :
@@ -701,7 +698,7 @@ export async function createShareImage(
 
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
   const lineH = fontSize * 1.52;
-  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 920, lineH);
+  const verseH = measureWrapHeight(ctx, short, 920, lineH);
   // measureWrapHeight returns nLines*lineH; wrapText returns y of the LAST line
   // which is startY + (nLines-1)*lineH — so subtract one lineH to avoid over-estimating
   // verseStartY = baseline of first verse line
@@ -737,7 +734,7 @@ export async function createShareImage(
 
   const rawVerseY = wrapText(
     ctx,
-    `\u201C${short}\u201D`,
+    short,
     S / 2,
     VERSE_START_Y,
     920,
@@ -917,10 +914,7 @@ export async function createPurpleShareImage(
   ctx.restore();
 
   // ── Verse text — measure first for frosted panel ────────────────────────
-  const maxChars = 230;
-  const short = verseText.length > maxChars
-    ? verseText.substring(0, maxChars - 1) + "\u2026"
-    : verseText;
+  const short = trimVerseForShare(verseText);
 
   const fontSize =
     short.length < 55  ? 62 :
@@ -931,7 +925,7 @@ export async function createPurpleShareImage(
 
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
   const lineHP = fontSize * 1.52;
-  const verseHP = measureWrapHeight(ctx, `\u201C${short}\u201D`, 930, lineHP);
+  const verseHP = measureWrapHeight(ctx, short, 930, lineHP);
   const VERSE_START_YP = 232;
   const estimatedFinalYP = Math.min(VERSE_START_YP + verseHP - lineHP, S - 240);
 
@@ -956,7 +950,7 @@ export async function createPurpleShareImage(
   ctx.shadowColor = "rgba(100,0,140,0.65)";
   ctx.shadowBlur = 30;
 
-  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, S / 2, VERSE_START_YP, 930, lineHP);
+  const rawVerseY = wrapText(ctx, short, S / 2, VERSE_START_YP, 930, lineHP);
   ctx.shadowBlur = 0;
 
   const MAX_VERSE_Y = S - 240;
@@ -1104,8 +1098,7 @@ export async function createStoryShareImage(
   bottomVeil.addColorStop(0, "rgba(0,0,0,0)"); bottomVeil.addColorStop(1, "rgba(0,0,0,0.88)");
   ctx.fillStyle = bottomVeil; ctx.fillRect(0, 0, W, H);
 
-  const maxChars = 230;
-  const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
+  const short = trimVerseForShare(verseText);
   const fontSize =
     short.length < 55  ? 72 :
     short.length < 90  ? 64 :
@@ -1114,7 +1107,7 @@ export async function createStoryShareImage(
     42;
   const lineHStory = fontSize * 1.52;
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, lineHStory);
+  const verseH = measureWrapHeight(ctx, short, 940, lineHStory);
   // +24 to top offset vs old 68 → 92 gives ~34px clearance above tallest ascenders (72px font)
   // totalContentH expanded by same 24 to keep panel bottom balanced
   const STORY_TOP_OFFSET = 92;
@@ -1144,7 +1137,7 @@ export async function createStoryShareImage(
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
   ctx.shadowColor = "rgba(0,0,0,0.72)";
   ctx.shadowBlur = 30;
-  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, W / 2, verseStartY, 940, fontSize * 1.52);
+  const rawVerseY = wrapText(ctx, short, W / 2, verseStartY, 940, fontSize * 1.52);
   ctx.shadowBlur = 0;
   const finalVerseY = Math.min(rawVerseY, panelBottom - 155);
 
@@ -1223,8 +1216,7 @@ export async function createPurpleStoryImage(
 
   const accentColor = "rgba(190,130,255,0.75)";
 
-  const maxChars = 230;
-  const short = verseText.length > maxChars ? verseText.substring(0, maxChars - 1) + "\u2026" : verseText;
+  const short = trimVerseForShare(verseText);
   const fontSize =
     short.length < 55  ? 72 :
     short.length < 90  ? 64 :
@@ -1233,7 +1225,7 @@ export async function createPurpleStoryImage(
     42;
   const lineHPStory = fontSize * 1.52;
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
-  const verseH = measureWrapHeight(ctx, `\u201C${short}\u201D`, 940, lineHPStory);
+  const verseH = measureWrapHeight(ctx, short, 940, lineHPStory);
   // +24 to top offset vs old 68 → 92 gives ~34px clearance above tallest ascenders (72px font)
   // totalContentH expanded by same 24 to keep panel bottom balanced
   const STORY_TOP_OFFSET_P = 92;
@@ -1263,7 +1255,7 @@ export async function createPurpleStoryImage(
   ctx.font = `italic ${fontSize}px 'Georgia', serif`;
   ctx.shadowColor = "rgba(100,0,140,0.65)";
   ctx.shadowBlur = 30;
-  const rawVerseY = wrapText(ctx, `\u201C${short}\u201D`, W / 2, verseStartY, 940, fontSize * 1.52);
+  const rawVerseY = wrapText(ctx, short, W / 2, verseStartY, 940, fontSize * 1.52);
   ctx.shadowBlur = 0;
   const finalVerseY = Math.min(rawVerseY, panelBottom - 155);
 

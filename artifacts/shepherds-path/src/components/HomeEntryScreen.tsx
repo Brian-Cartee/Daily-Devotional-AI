@@ -12,7 +12,7 @@ import {
   hasCommittedEntrySplashThisSession,
   markEntrySplashCommittedThisSession,
 } from "@/lib/entrySplashState";
-import { preloadDailySplashImages } from "@/lib/dailySplash";
+import { formatVerseForDisplay } from "@/lib/verseText";
 
 const ENTRY_KEY = "sp_entry_shown_date";
 const LAST_VISIT_KEY = "sp_last_visit_date";
@@ -777,7 +777,7 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
         </p>
         <div className="pl-4 border-l-2 mb-1" style={{ borderColor: "#442f74" }}>
           <p className="text-gray-600 italic leading-relaxed" style={{ fontFamily: "'Georgia', serif", fontSize: "0.9375rem" }}>
-            "{verse.text}"
+            {formatVerseForDisplay(verse.text)}
           </p>
           <p className="text-gray-500 mt-1.5" style={{ fontSize: "0.8125rem" }}>— {verse.ref}</p>
         </div>
