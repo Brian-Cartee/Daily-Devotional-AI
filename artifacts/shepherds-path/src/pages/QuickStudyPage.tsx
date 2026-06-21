@@ -18,6 +18,7 @@ import { getRelationshipAge } from "@/lib/relationship";
 import { ShareButton } from "@/components/ShareButton";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { BiblePassageText } from "@/components/BiblePassageText";
+import { BibleStudyChat } from "@/components/BibleStudyChat";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -343,6 +344,10 @@ function TrackPassageRow({ passage, index, trackId }: { passage: { reference: st
 
 export default function QuickStudyPage() {
   const [, navigate] = useLocation();
+  const sessionId = getSessionId();
+  const { data: dailyVerse } = useQuery<{ id: number; reference: string; text: string }>({
+    queryKey: ["/api/verses/daily"],
+  });
   const [topic, setTopic] = useState("");
   const [study, setStudy] = useState("");
   const [loading, setLoading] = useState(false);
@@ -505,13 +510,39 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
         />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.70) 100%)" }} />
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
-          <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Explore Scripture</h2>
-          <p className="text-white/70 text-[12px] mt-1">Bring a question, a passage, or what's on your mind.</p>
+          <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Walk Deeper</h2>
+          <p className="text-white/70 text-[12px] mt-1">Ask Philip anything about Scripture — today's verse or any passage.</p>
         </div>
       </div>
 
       <main className="min-h-screen bg-background pt-6 pb-28 sm:pb-16 px-4">
         <div className="max-w-2xl mx-auto">
+
+          {dailyVerse && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 text-center mb-3">
+                TODAY&apos;S VERSE — {dailyVerse.reference}
+              </p>
+              <p className="text-[15px] leading-relaxed text-foreground/80 text-center italic mb-5 px-2" style={{ fontFamily: "'Georgia', serif" }}>
+                &ldquo;{dailyVerse.text}&rdquo;
+              </p>
+              <BibleStudyChat
+                verseId={dailyVerse.id}
+                verseReference={dailyVerse.reference}
+                initialReflection={`Today's verse is ${dailyVerse.reference}: "${dailyVerse.text}". Walk the user deeper into this Scripture — its meaning, context, and how it speaks to real life today.`}
+              />
+              <div className="mt-8 mb-4 flex items-center gap-3 px-2">
+                <div className="h-px flex-1 bg-border/40" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/40">Or explore any passage</span>
+                <div className="h-px flex-1 bg-border/40" />
+              </div>
+            </motion.div>
+          )}
 
           <AnimatePresence>
             {!resumeDismissed && (() => {
