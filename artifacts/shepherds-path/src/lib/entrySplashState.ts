@@ -12,6 +12,8 @@ import {
 export const ONBOARDING_SPLASH_LEN = 5;
 const PROG_LS_KEY = "sp_splash_prog";
 const PROG_COOKIE_KEY = "sp_splash_prog";
+const ONBOARDING_COMPLETE_KEY = "sp_onboarding_splashes_done";
+const ONBOARDING_COMPLETE_COOKIE = "sp_osd";
 const SESSION_COMMIT_KEY = "sp_entry_splash_committed";
 
 export type SplashProgV1 = {
@@ -46,6 +48,31 @@ function cookieDomain(): string {
     /* noop */
   }
   return "";
+}
+
+export function isOnboardingSplashesComplete(): boolean {
+  try {
+    if (localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "1") return true;
+    const m = document.cookie.match(/(?:^|; )sp_osd=1(?:;|$)/);
+    return !!m;
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingSplashesComplete(): void {
+  try {
+    localStorage.setItem(ONBOARDING_COMPLETE_KEY, "1");
+    const dom = `${cookieDomain()}; path=/; max-age=63072000; SameSite=Lax; Secure`;
+    document.cookie = `${ONBOARDING_COMPLETE_COOKIE}=1${dom}`;
+  } catch {
+    /* noop */
+  }
+}
+
+function resolveOnboardingCount(legacyCount: number, dailyOpens: number): number {
+  if (isOnboardingSplashesComplete() || dailyOpens > 0) return ONBOARDING_SPLASH_LEN;
+  return Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, legacyCount));
 }
 
 function readCookieJson(): SplashProgV1 | null {
@@ -100,12 +127,15 @@ function freshDailyFields(today: string): Pick<SplashProgV1, "dailyDate" | "dail
 function normalizeProg(partial: Partial<SplashProgV1>): SplashProgV1 {
   const today = easternDate();
   const poolLen = DAILY_SPLASH_POOL.length;
-  const onboarding = Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, partial.onboarding ?? 0));
+  let onboarding = Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, partial.onboarding ?? 0));
   const dailyDate = partial.dailyDate === today ? today : today;
   const dailyOpens =
     partial.dailyDate === today
       ? Math.max(0, Math.min(MAX_DAILY_POST_ONBOARDING_SPLASHES, partial.dailyOpens ?? 0))
       : 0;
+  if (dailyOpens > 0 || isOnboardingSplashesComplete()) {
+    onboarding = ONBOARDING_SPLASH_LEN;
+  }
   const dailyFeature =
     typeof partial.dailyFeature === "number" && partial.dailyFeature >= 0 && partial.dailyFeature < poolLen
       ? partial.dailyFeature
@@ -169,6 +199,9 @@ export function loadSplashProg(): SplashProgV1 {
 
 export function saveSplashProg(prog: SplashProgV1): void {
   const normalized = normalizeProg(prog);
+  if (normalized.onboarding >= ONBOARDING_SPLASH_LEN) {
+    markOnboardingSplashesComplete();
+  }
   const json = JSON.stringify(normalized);
   try {
     localStorage.setItem(PROG_LS_KEY, json);
@@ -256,6 +289,9 @@ export function advanceEntrySplash(): AdvancedSplash | null {
   if (prog.dailyDate !== today) {
     Object.assign(prog, freshDailyFields(today));
   }
+  if (prog.onboarding < ONBOARDING_SPLASH_LEN && isOnboardingSplashesComplete()) {
+    prog.onboarding = ONBOARDING_SPLASH_LEN;
+  }
   if (prog.dailyOpens >= MAX_DAILY_POST_ONBOARDING_SPLASHES) return null;
 
   let slide: SplashSlide;
@@ -263,6 +299,9 @@ export function advanceEntrySplash(): AdvancedSplash | null {
 
   if (prog.dailyOpens === 0) {
     slide = DAILY_SPLASH_POOL[prog.dailyFeature]!;
+    if (prog.dailySecond === null) {
+      prog.dailySecond = pickSecondIndex(prog.dailyFeature, DAILY_SPLASH_POOL.length);
+    }
   } else if (prog.dailyOpens === 1) {
     const secondIdx = prog.dailySecond ?? pickSecondIndex(prog.dailyFeature, DAILY_SPLASH_POOL.length);
     slide = DAILY_SPLASH_POOL[secondIdx]!;
@@ -270,6 +309,8 @@ export function advanceEntrySplash(): AdvancedSplash | null {
       const alt = (secondIdx + 1) % DAILY_SPLASH_POOL.length;
       slide = DAILY_SPLASH_POOL[alt]!;
       prog.dailySecond = alt;
+    } else if (prog.dailySecond === null) {
+      prog.dailySecond = secondIdx;
     }
   } else {
     slide = DAILY_DOOR_SPLASH;
@@ -351,6 +392,7 @@ function readNativeOnboardingCount(): number {
 
 /** Legacy + native fallbacks when the unified JSON blob is missing (WKWebView storage wipe). */
 function readLegacyOnboardingCount(): number {
+  if (isOnboardingSplashesComplete()) return ONBOARDING_SPLASH_LEN;
   let max = readSplashBscCookie();
   max = Math.max(max, readNativeOnboardingCount());
   try {
@@ -496,19 +538,22 @@ export function hydrateSplashProg(): void {
 
   if (!fromCookie && !fromLs) {
     const daily = readBestDailyFieldsForToday(today) ?? freshDailyFields(today);
-    if (legacyOnboarding > 0) {
-      saveSplashProg({ v: 1, onboarding: legacyOnboarding, lastImage: null, ...daily });
-    } else if (daily.dailyOpens > 0) {
-      saveSplashProg({ v: 1, onboarding: ONBOARDING_SPLASH_LEN, lastImage: null, ...daily });
+    const onboarding = resolveOnboardingCount(legacyOnboarding, daily.dailyOpens);
+    if (onboarding > 0 || daily.dailyOpens > 0) {
+      saveSplashProg({ v: 1, onboarding, lastImage: null, ...daily });
     }
     return;
   }
 
   let merged = fromCookie && fromLs ? mergeProg(fromCookie, fromLs) : (fromCookie ?? fromLs!);
-  if (legacyOnboarding > merged.onboarding) {
-    merged = { ...merged, onboarding: legacyOnboarding };
-  }
+  merged = {
+    ...merged,
+    onboarding: Math.max(merged.onboarding, resolveOnboardingCount(legacyOnboarding, merged.dailyOpens)),
+  };
   const withDaily = mergeDailyFieldsIfAhead(merged, today);
+  if (withDaily.onboarding >= ONBOARDING_SPLASH_LEN) {
+    markOnboardingSplashesComplete();
+  }
   if (
     withDaily.onboarding !== merged.onboarding ||
     withDaily.dailyOpens !== merged.dailyOpens ||
@@ -522,4 +567,14 @@ export function hydrateSplashProg(): void {
 
 if (typeof window !== "undefined") {
   hydrateSplashProg();
+  try {
+    const fromCookie = readCookieJson();
+    const fromLs = readLsJson();
+    const prog = fromCookie && fromLs ? mergeProg(fromCookie, fromLs) : fromCookie ?? fromLs;
+    if (prog && prog.onboarding >= ONBOARDING_SPLASH_LEN) {
+      markOnboardingSplashesComplete();
+    }
+  } catch {
+    /* noop */
+  }
 }
