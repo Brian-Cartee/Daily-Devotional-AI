@@ -634,74 +634,22 @@ export default function Devotional() {
     const verseChanged = hydratedVerseIdRef.current !== verse.id;
     hydratedVerseIdRef.current = verse.id;
     hydratedNameRef.current = nameKey;
-    if (verseChanged) {
-      generationStartedRef.current = false;
-      generationRetryVerseRef.current = null;
-      setReflectionLoading(false);
-      setPrayerLoading(false);
-    }
+    if (verseChanged) generationStartedRef.current = false;
 
     const cachedRefl = getCachedReflection(verse.id, userName);
     const cachedPryr = getCachedPrayer(verse.id, userName);
-    if (shouldUseCachedDevotional(verse.id, userName)) {
-      setReflectionContent(cachedRefl);
-      setPrayerContent(cachedPryr);
-      setEntryTriggered(true);
-      generationStartedRef.current = true;
-      return;
-    }
-
     setReflectionContent(cachedRefl);
     setPrayerContent(cachedPryr);
-  }, [verse?.id, nameHydrated, resolvedProfileName]);
+    if (cachedRefl && shouldUseCachedDevotional(verse.id, userName)) {
+      setEntryTriggered(true);
+    }
+  }, [verse?.id, nameHydrated]);
 
   // Generate reflection/prayer once the user begins (after continuity choice when applicable)
   useEffect(() => {
-    if (!verse?.id || !entryTriggered || !continuityResolved || !nameHydrated) return;
-    if (reflectionLoading || prayerLoading) return;
-
-    const hasFullContent = !!reflectionContent.trim() && !!prayerContent.trim();
-    if (hasFullContent) {
-      generationStartedRef.current = true;
-      return;
-    }
-
-    if (shouldUseCachedDevotional(verse.id, resolvedProfileName ?? null)) {
-      const cachedRefl = getCachedReflection(verse.id, resolvedProfileName);
-      const cachedPryr = getCachedPrayer(verse.id, resolvedProfileName);
-      if (cachedRefl.trim() && cachedPryr.trim()) {
-        setReflectionContent(cachedRefl);
-        setPrayerContent(cachedPryr);
-        generationStartedRef.current = true;
-        return;
-      }
-    }
-
-    if (generationStartedRef.current && (reflectionError || prayerError)) return;
-
-    // Stuck: generation flag set but text never arrived — retry once per verse
-    // Never fire while actively loading — content streaming in is not a stuck state
-    if (generationStartedRef.current && !hasFullContent && !reflectionLoading && !prayerLoading) {
-      if (generationRetryVerseRef.current === verse.id) return;
-      generationRetryVerseRef.current = verse.id;
-      generationStartedRef.current = false;
-    }
-
-    if (generationStartedRef.current) return;
+    if (!verse || !entryTriggered || !continuityResolved || !nameHydrated || generationStartedRef.current) return;
     beginDevotionalGeneration(verse.id, resolvedProfileName ?? undefined);
-  }, [
-    verse?.id,
-    entryTriggered,
-    continuityResolved,
-    nameHydrated,
-    resolvedProfileName,
-    reflectionContent,
-    prayerContent,
-    reflectionLoading,
-    prayerLoading,
-    reflectionError,
-    prayerError,
-  ]);
+  }, [verse, entryTriggered, continuityResolved, nameHydrated, resolvedProfileName]);
 
   useEffect(() => {
     const syncEntryMode = () => setDevotionalEntryMode(getDevotionalEntryMode());
@@ -735,7 +683,7 @@ export default function Devotional() {
     const quick = quickPersonalizeRef.current;
     const timeoutId = window.setTimeout(() => controller.abort(), AI_PERSONALIZE_TIMEOUT_MS);
     setReflectionLoading(true);
-    if (!quick) setReflectionContent("");
+    setReflectionContent("");
     setReflectionError(false);
     try {
       const result = await streamAI("/api/ai/generate", {
@@ -778,10 +726,8 @@ export default function Devotional() {
       }
     } finally {
       window.clearTimeout(timeoutId);
-      if (reflectionAbortRef.current === controller) {
-        setReflectionLoading(false);
-      }
     }
+    if (!controller.signal.aborted) setReflectionLoading(false);
   };
 
   const streamReflectListen = async (input: string): Promise<boolean> => {
@@ -864,7 +810,7 @@ export default function Devotional() {
     const quick = quickPersonalizeRef.current;
     const timeoutId = window.setTimeout(() => controller.abort(), AI_PERSONALIZE_TIMEOUT_MS);
     setPrayerLoading(true);
-    if (!quick) setPrayerContent("");
+    setPrayerContent("");
     setPrayerError(false);
     try {
       const result = await streamAI("/api/ai/generate", {
@@ -902,10 +848,8 @@ export default function Devotional() {
       }
     } finally {
       window.clearTimeout(timeoutId);
-      if (prayerAbortRef.current === controller) {
-        setPrayerLoading(false);
-      }
     }
+    if (!controller.signal.aborted) setPrayerLoading(false);
   };
 
   const saveOptionalReflectionToJournal = async (input: string, reply?: string) => {
