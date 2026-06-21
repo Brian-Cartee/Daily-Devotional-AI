@@ -21,7 +21,7 @@ import {
   hydrateSubscriberStateFromStorage,
   requestNativeSubscriberBootstrap,
 } from "@/lib/subscriberState";
-import "@/lib/entrySplashState";
+import { mergeServerSplashProg } from "@/lib/entrySplashState";
 
 if (isNativeWebViewShell()) {
   nativeDiag("react_entry_started");
@@ -133,6 +133,7 @@ async function mountApp() {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
   const native = isNativeWebViewShell();
+  await mergeServerSplashProg();
   if (!native) {
     removeNativeBootPlaceholder();
   }

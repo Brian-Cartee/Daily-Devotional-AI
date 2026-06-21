@@ -558,6 +558,64 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/splash-prog", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) return res.json({ prog: null });
+    try {
+      const { getSplashProgFromServer } = await import("../splashProgState");
+      const prog = await getSplashProgFromServer(sessionId);
+      res.json({ prog });
+    } catch {
+      res.json({ prog: null });
+    }
+  });
+
+  app.post("/api/splash-prog", async (req, res) => {
+    const { sessionId, prog } = req.body as { sessionId?: string; prog?: unknown };
+    if (!sessionId || !prog || typeof prog !== "object") {
+      return res.status(400).json({ message: "sessionId and prog required" });
+    }
+    try {
+      const { setSplashProgOnServer, getSplashProgFromServer } = await import("../splashProgState");
+      const incoming = prog as {
+        v?: number;
+        onboarding?: number;
+        dailyDate?: string;
+        dailyOpens?: number;
+        dailyFeature?: number;
+        dailySecond?: number | null;
+        lastImage?: string | null;
+      };
+      if (incoming.v !== 1 || typeof incoming.onboarding !== "number") {
+        return res.status(400).json({ message: "invalid prog" });
+      }
+      const existing = await getSplashProgFromServer(sessionId);
+      const today = getEasternDateString();
+      let onboarding = Math.max(incoming.onboarding, existing?.onboarding ?? 0);
+      let dailyDate = incoming.dailyDate ?? existing?.dailyDate ?? today;
+      let dailyOpens = incoming.dailyOpens ?? 0;
+      let dailyFeature = incoming.dailyFeature ?? existing?.dailyFeature ?? 0;
+      let dailySecond = incoming.dailySecond ?? existing?.dailySecond ?? null;
+      if (existing && existing.dailyDate === today && incoming.dailyDate === today) {
+        dailyOpens = Math.max(dailyOpens, existing.dailyOpens);
+        onboarding = Math.max(onboarding, existing.onboarding);
+      }
+      const merged = {
+        v: 1 as const,
+        onboarding,
+        dailyDate,
+        dailyOpens,
+        dailyFeature,
+        dailySecond,
+        lastImage: incoming.lastImage ?? existing?.lastImage ?? null,
+      };
+      await setSplashProgOnServer(sessionId, merged);
+      res.json({ ok: true, prog: merged });
+    } catch {
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
   // Get today's verse (reads from DB cache, which was synced from Google Sheet)
   app.get(api.verses.getDaily.path, async (req, res) => {
     try {

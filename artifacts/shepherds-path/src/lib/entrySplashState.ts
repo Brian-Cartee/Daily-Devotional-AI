@@ -8,6 +8,7 @@ import {
   DAILY_SPLASH_POOL,
   MAX_DAILY_POST_ONBOARDING_SPLASHES,
 } from "./dailySplash";
+import { getSessionId } from "./session";
 
 export const ONBOARDING_SPLASH_LEN = 5;
 const PROG_LS_KEY = "sp_splash_prog";
@@ -328,6 +329,63 @@ export function saveSplashProg(prog: SplashProgV1): void {
     }
   } catch {
     /* noop */
+  }
+  syncSplashProgToServer(normalized);
+}
+
+function syncSplashProgToServer(prog: SplashProgV1): void {
+  try {
+    const sessionId = getSessionId();
+    fetch("/api/splash-prog", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, prog }),
+      credentials: "include",
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* noop */
+  }
+}
+
+/** Pull server backup before first splash commit (session survives iOS storage wipes). */
+export async function mergeServerSplashProg(): Promise<void> {
+  try {
+    const sessionId = getSessionId();
+    const res = await fetch(`/api/splash-prog?sessionId=${encodeURIComponent(sessionId)}`, {
+      credentials: "include",
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as { prog: SplashProgV1 | null };
+    if (!data.prog?.v) return;
+
+    const today = easternDate();
+    const server = normalizeProg(data.prog);
+    const local = applyMonotonicProgress(loadSplashProg());
+    const onboarding = Math.max(local.onboarding, server.onboarding);
+    let merged: SplashProgV1 = { ...local, onboarding };
+    if (server.dailyDate === today) {
+      merged = mergeDailyFieldsIfAhead(
+        {
+          ...merged,
+          dailyDate: today,
+          dailyOpens: Math.max(merged.dailyOpens, server.dailyOpens),
+          dailyFeature: server.dailyFeature,
+          dailySecond: server.dailySecond,
+        },
+        today,
+      );
+    }
+    merged = applyMonotonicProgress(merged);
+    if (
+      merged.onboarding !== local.onboarding ||
+      merged.dailyOpens !== local.dailyOpens ||
+      merged.dailyFeature !== local.dailyFeature
+    ) {
+      saveSplashProg(merged);
+    }
+  } catch {
+    /* offline */
   }
 }
 

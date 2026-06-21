@@ -891,12 +891,17 @@ function LandingHomeInner() {
       if (elapsed < REOPEN_THRESHOLD_MS) return;
       recordActive();
       clearReturningHome();
-      const init = commitEntrySplash();
-      if (init) {
-        _splashShownThisSession = true;
-        setEntrySplashInit(init);
-        setShowEntryScreen(true);
-      }
+      void import("@/lib/entrySplashState").then(({ mergeServerSplashProg }) =>
+        mergeServerSplashProg().then(() => {
+          if (_splashShownThisSession) return;
+          const init = commitEntrySplash();
+          if (init) {
+            _splashShownThisSession = true;
+            setEntrySplashInit(init);
+            setShowEntryScreen(true);
+          }
+        }),
+      );
     };
 
     const onVisibility = () => {
