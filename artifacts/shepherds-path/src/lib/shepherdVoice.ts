@@ -134,6 +134,22 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   };
 }
 
+export const PROCESSING_BRIDGE = "Give me just a moment.";
+export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
+export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
+
+export function speakProcessingBridge(onEnd?: () => void): () => void {
+  return speakShepherdLine(PROCESSING_BRIDGE, { onEnd });
+}
+
+export function speakTakeYourTimeBridge(): () => void {
+  return speakShepherdLine(TAKE_YOUR_TIME_BRIDGE);
+}
+
+export function speakReadyPromptBridge(): () => void {
+  return speakShepherdLine(READY_PROMPT_BRIDGE);
+}
+
 export function postGuidanceMemory(
   situation: string,
   response: string | undefined,

@@ -17,7 +17,8 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakProcessingBridge, speakTakeYourTimeBridge, speakReadyPromptBridge } from "@/lib/shepherdVoice";
+import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -293,10 +294,19 @@ export default function GuidancePage() {
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [heartListening, setHeartListening] = useState(false);
-  const heartRecRef = useRef<any>(null);
+  const heartVoiceRef = useRef<PatientVoiceListener | null>(null);
+  const heartTakeYourTimeRef = useRef<(() => void) | null>(null);
+  const [heartListenPhase, setHeartListenPhase] = useState<VoiceListenUiPhase>("listening");
+  const [heartShowContinue, setHeartShowContinue] = useState(false);
+  const [showHeartTypeFallback, setShowHeartTypeFallback] = useState(false);
   const [phase1Listening, setPhase1Listening] = useState(false);
+  const phase1VoiceRef = useRef<PatientVoiceListener | null>(null);
+  const phase1TakeYourTimeRef = useRef<(() => void) | null>(null);
+  const [phase1ListenPhase, setPhase1ListenPhase] = useState<VoiceListenUiPhase>("listening");
+  const [phase1ShowContinue, setPhase1ShowContinue] = useState(false);
+  const [showPhase1TypeFallback, setShowPhase1TypeFallback] = useState(false);
+  const [processingBridge, setProcessingBridge] = useState(false);
   const [phase1Interim, setPhase1Interim] = useState("");
-  const phase1RecRef = useRef<any>(null);
   const [followUp, setFollowUp] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -981,46 +991,135 @@ export default function GuidancePage() {
     }, 80);
   }, [streamingText, isSending, messages]);
 
-  const togglePhase1Voice = () => {
-    if (phase1Listening) {
-      phase1RecRef.current?.stop();
-      setPhase1Listening(false);
-      setPhase1Interim("");
-      return;
-    }
+  const destroyHeartVoice = useCallback(() => {
+    heartTakeYourTimeRef.current?.();
+    heartTakeYourTimeRef.current = null;
+    heartVoiceRef.current?.destroy();
+    heartVoiceRef.current = null;
+    setHeartListening(false);
+    setHeartListenPhase("listening");
+    setInterimTranscript("");
+  }, []);
+
+  const destroyPhase1Voice = useCallback(() => {
+    phase1TakeYourTimeRef.current?.();
+    phase1TakeYourTimeRef.current = null;
+    phase1VoiceRef.current?.destroy();
+    phase1VoiceRef.current = null;
+    setPhase1Listening(false);
+    setPhase1ListenPhase("listening");
+    setPhase1Interim("");
+  }, []);
+
+  const stopHeartListening = useCallback((showContinue = true) => {
+    const text = heartVoiceRef.current?.stop() ?? heartInput.trim();
+    heartVoiceRef.current = null;
+    heartTakeYourTimeRef.current?.();
+    heartTakeYourTimeRef.current = null;
+    setHeartListening(false);
+    setHeartListenPhase("listening");
+    setInterimTranscript("");
+    if (text) setHeartInput(text);
+    if (showContinue && text.trim().length > 0) setHeartShowContinue(true);
+    return text.trim();
+  }, [heartInput]);
+
+  const startHeartListening = useCallback((fromWelcome = false) => {
+    if (heartVoiceRef.current?.isActive()) return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
-    const rec = new SR();
-    phase1RecRef.current = rec;
-    rec.lang = "en-US";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (e: any) => {
-      let interim = "";
-      let final = "";
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      if (final) setPhase1UserReply(prev => (prev ? `${prev} ${final}` : final).trim());
-      setPhase1Interim(interim);
-    };
-    rec.onend = () => {
-      setPhase1Listening(false);
-      setPhase1Interim("");
-      setPhase1UserReply(prev => {
-        const text = prev.trim();
-        if (text.length > 8) {
-          lastInputWasVoiceRef.current = true;
-          setTimeout(() => void handlePhase1Continue(), 1200);
-        }
-        return prev;
-      });
-    };
-    rec.onerror = () => { setPhase1Listening(false); setPhase1Interim(""); };
-    setPhase1Listening(true);
-    rec.start();
+    if (!fromWelcome) greetingEngagedRef.current = true;
+    cancelGreetingSpeakRef.current?.();
+    cancelGreetingSpeakRef.current = null;
+    setGreetingSpeaking(false);
+    setHeartShowContinue(false);
+    setHeartListenPhase("listening");
+
+    const listener = createPatientVoiceListener({
+      onTranscript: (final, interim) => {
+        if (final) setHeartInput(final);
+        setInterimTranscript(interim);
+      },
+      onPhaseChange: setHeartListenPhase,
+      onTakeYourTime: () => {
+        if (heartTakeYourTimeRef.current) return;
+        heartTakeYourTimeRef.current = speakTakeYourTimeBridge();
+      },
+      onReadyPrompt: () => {
+        setHeartShowContinue(true);
+        speakReadyPromptBridge();
+      },
+    });
+    if (!listener) return;
+    heartVoiceRef.current = listener;
+    listener.start();
+    setHeartListening(true);
+  }, []);
+
+  const startHeartListeningRef = useRef(startHeartListening);
+  startHeartListeningRef.current = startHeartListening;
+
+  const toggleHeartVoice = () => {
+    if (heartListening) {
+      stopHeartListening(true);
+      return;
+    }
+    startHeartListening(false);
   };
+
+  const stopPhase1Listening = useCallback((showContinue = true) => {
+    const text = phase1VoiceRef.current?.stop() ?? phase1UserReply.trim();
+    phase1VoiceRef.current = null;
+    phase1TakeYourTimeRef.current?.();
+    phase1TakeYourTimeRef.current = null;
+    setPhase1Listening(false);
+    setPhase1ListenPhase("listening");
+    setPhase1Interim("");
+    if (text) setPhase1UserReply(text);
+    if (showContinue && text.trim().length > 0) setPhase1ShowContinue(true);
+    return text.trim();
+  }, [phase1UserReply]);
+
+  const startPhase1Listening = useCallback(() => {
+    if (phase1VoiceRef.current?.isActive()) return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    setPhase1ShowContinue(false);
+    setPhase1ListenPhase("listening");
+
+    const listener = createPatientVoiceListener({
+      onTranscript: (final, interim) => {
+        if (final) setPhase1UserReply(final);
+        setPhase1Interim(interim);
+      },
+      onPhaseChange: setPhase1ListenPhase,
+      onTakeYourTime: () => {
+        if (phase1TakeYourTimeRef.current) return;
+        phase1TakeYourTimeRef.current = speakTakeYourTimeBridge();
+      },
+      onReadyPrompt: () => {
+        setPhase1ShowContinue(true);
+        speakReadyPromptBridge();
+      },
+    });
+    if (!listener) return;
+    phase1VoiceRef.current = listener;
+    listener.start();
+    setPhase1Listening(true);
+  }, []);
+
+  const togglePhase1Voice = () => {
+    if (phase1Listening) {
+      stopPhase1Listening(true);
+      return;
+    }
+    startPhase1Listening();
+  };
+
+  useEffect(() => () => {
+    destroyHeartVoice();
+    destroyPhase1Voice();
+  }, [destroyHeartVoice, destroyPhase1Voice]);
 
   const toggleFollowUpVoice = () => {
     if (isListening) { setIsListening(false); return; }
@@ -1038,70 +1137,6 @@ export default function GuidancePage() {
     rec.onerror = () => setIsListening(false);
     setIsListening(true);
     rec.start();
-  };
-
-  const stopHeartListening = useCallback(() => {
-    heartRecRef.current?.stop();
-    heartRecRef.current = null;
-    setHeartListening(false);
-    setInterimTranscript("");
-  }, []);
-
-  const startHeartListening = useCallback((fromWelcome = false) => {
-    if (heartRecRef.current) return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    if (!fromWelcome) greetingEngagedRef.current = true;
-    cancelGreetingSpeakRef.current?.();
-    cancelGreetingSpeakRef.current = null;
-    setGreetingSpeaking(false);
-
-    const rec = new SR();
-    heartRecRef.current = rec;
-    rec.lang = "en-US";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (e: any) => {
-      let interim = "";
-      let final = "";
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      if (final) setHeartInput((prev) => (prev ? `${prev} ${final}` : final).trim());
-      setInterimTranscript(interim);
-    };
-    rec.onend = () => {
-      heartRecRef.current = null;
-      setHeartListening(false);
-      setInterimTranscript("");
-      setHeartInput((prev) => {
-        const text = prev.trim();
-        if (text.length > 8) {
-          lastInputWasVoiceRef.current = true;
-          setTimeout(() => beginGuidanceEntryRef.current(text), 1200);
-        }
-        return prev;
-      });
-    };
-    rec.onerror = () => {
-      heartRecRef.current = null;
-      setHeartListening(false);
-      setInterimTranscript("");
-    };
-    setHeartListening(true);
-    rec.start();
-  }, []);
-
-  const startHeartListeningRef = useRef(startHeartListening);
-  startHeartListeningRef.current = startHeartListening;
-
-  const toggleHeartVoice = () => {
-    if (heartListening) {
-      stopHeartListening();
-      return;
-    }
-    startHeartListening(false);
   };
 
   // Prefetch greeting TTS in parallel with witness fetch
@@ -1135,7 +1170,7 @@ export default function GuidancePage() {
       const siriListen = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
       autoMicTimer = window.setTimeout(() => {
         if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
-      }, siriListen ? 300 : 700);
+      }, siriListen ? 300 : 400);
     };
 
     const siriListenPending = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
@@ -1203,16 +1238,21 @@ export default function GuidancePage() {
     };
   }, [situation, witnessReady]);
 
-  // Phase 1 — speak first reflection for voice-input sessions only
+  // Phase 1 — speak first reflection for voice-input sessions; reopen mic after
   useEffect(() => {
     if (!phase1Complete || !phase1Response?.trim()) return;
     if (!lastInputWasVoiceRef.current) return;
     const key = phase1Response.trim();
     if (phase1SpokenRef.current === key) return;
     phase1SpokenRef.current = key;
-    const cancel = speakShepherdLine(cleanResponse(phase1Response));
+    const cancel = speakShepherdLine(cleanResponse(phase1Response), {
+      onEnd: () => {
+        if (!hasSpeechSupport || phase2Started) return;
+        window.setTimeout(() => startPhase1Listening(), 600);
+      },
+    });
     return () => cancel();
-  }, [phase1Complete, phase1Response]);
+  }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, startPhase1Listening]);
 
   // Session send-off — spoken closure
   useEffect(() => {
@@ -1223,8 +1263,26 @@ export default function GuidancePage() {
     return () => cancel();
   }, [sendOffText]);
 
+  const submitHeartEntry = (text: string, fromVoice: boolean) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    destroyHeartVoice();
+    lastInputWasVoiceRef.current = fromVoice;
+    setHeartShowContinue(false);
+    setProcessingBridge(true);
+    setIsReflecting(true);
+    speakProcessingBridge(() => {
+      setProcessingBridge(false);
+      beginGuidanceEntry(trimmed);
+    });
+  };
+
   const handleHeartSubmit = () => {
-    beginGuidanceEntry(heartInput);
+    submitHeartEntry(heartInput, showHeartTypeFallback ? false : hasSpeechSupport);
+  };
+
+  const handleHeartContinue = () => {
+    submitHeartEntry(heartInput, true);
   };
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1247,11 +1305,13 @@ export default function GuidancePage() {
     setPhase2Loading(false);
   };
 
-  const handlePhase1Continue = async () => {
+  const runPhase1Continue = async () => {
     const reply = phase1UserReply.trim();
     if (!reply || phase2Loading || !phase1Response || phase2Started) return;
     setPhase2Loading(true);
     setPhase2Started(true);
+    setPhase1ShowContinue(false);
+    destroyPhase1Voice();
     setPhase1UserReplySubmitted(reply);
     setConversationPhase(2);
     setIsReflecting(true);
@@ -1263,6 +1323,17 @@ export default function GuidancePage() {
       phase1UserReply: reply,
     });
     setPhase2Loading(false);
+  };
+
+  const handlePhase1Continue = () => {
+    const reply = phase1UserReply.trim();
+    if (!reply || phase2Loading || !phase1Response || phase2Started) return;
+    lastInputWasVoiceRef.current = !showPhase1TypeFallback && (phase1Listening || phase1ShowContinue);
+    setProcessingBridge(true);
+    speakProcessingBridge(() => {
+      setProcessingBridge(false);
+      void runPhase1Continue();
+    });
   };
 
   const handlePhase1KeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1499,55 +1570,110 @@ export default function GuidancePage() {
                           }
                         </motion.button>
                         <p className="mt-3 text-[13px] font-medium text-white/65 text-center">
-                          {heartListening
-                            ? "Listening…"
-                            : greetingSpeaking
-                              ? "…"
-                              : "Speak when you're ready"}
+                          {processingBridge
+                            ? "Philip is with you…"
+                            : heartListening
+                              ? heartListenPhase === "ready"
+                                ? "Whenever you're ready."
+                                : heartListenPhase === "thinking"
+                                  ? "…"
+                                  : "Philip is listening…"
+                              : greetingSpeaking
+                                ? "…"
+                                : "Speak when you're ready"}
                         </p>
-                        {(heartListening && interimTranscript) && (
-                          <p className="mt-2 text-[14px] text-white/50 italic text-center max-w-[260px] leading-snug">
-                            {interimTranscript}
+                        {((heartListening && (interimTranscript || heartInput)) || (!heartListening && heartInput && heartShowContinue)) && (
+                          <p className="mt-2 text-[14px] text-white/45 italic text-center max-w-[280px] leading-snug">
+                            {heartListening ? (interimTranscript || heartInput) : heartInput}
                           </p>
                         )}
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="flex-1 h-px bg-white/10" />
-                      <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.18em]">
-                        {hasSpeechSupport ? "or type" : "what's on your heart"}
-                      </span>
-                      <div className="flex-1 h-px bg-white/10" />
-                    </div>
+                    {(heartShowContinue || (showHeartTypeFallback && heartInput.trim())) && (
+                      <button
+                        type="button"
+                        onClick={handleHeartContinue}
+                        disabled={!heartInput.trim() || processingBridge}
+                        data-testid="button-guidance-heart-submit"
+                        className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+                      >
+                        Continue
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
 
-                    <label className="sr-only" htmlFor="input-guidance-heart">
-                      What&apos;s on your heart
-                    </label>
-                    <textarea
-                      id="input-guidance-heart"
-                      value={heartInput}
-                      onChange={e => setHeartInput(e.target.value)}
-                      onKeyDown={handleHeartKeyDown}
-                      spellCheck
-                      autoCapitalize="sentences"
-                      autoCorrect="on"
-                      placeholder={GUIDANCE_PLACEHOLDERS[placeholderIdx]}
-                      rows={2}
-                      data-testid="input-guidance-heart"
-                      className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3 text-[16px] text-white placeholder:text-white/40 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
-                    />
+                    {hasSpeechSupport && !showHeartTypeFallback && (
+                      <button
+                        type="button"
+                        onClick={() => setShowHeartTypeFallback(true)}
+                        className="mb-3 w-full text-center text-[12px] text-white/35 hover:text-white/55 transition-colors"
+                        data-testid="link-guidance-type-instead"
+                      >
+                        Type instead
+                      </button>
+                    )}
 
-                    <button
-                      type="button"
-                      onClick={handleHeartSubmit}
-                      disabled={!heartInput.trim()}
-                      data-testid="button-guidance-heart-submit"
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
-                    >
-                      Continue
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    {showHeartTypeFallback && (
+                      <>
+                        <label className="sr-only" htmlFor="input-guidance-heart">
+                          What&apos;s on your heart
+                        </label>
+                        <textarea
+                          id="input-guidance-heart"
+                          value={heartInput}
+                          onChange={(e) => setHeartInput(e.target.value)}
+                          onKeyDown={handleHeartKeyDown}
+                          spellCheck
+                          autoCapitalize="sentences"
+                          autoCorrect="on"
+                          placeholder={GUIDANCE_PLACEHOLDERS[placeholderIdx]}
+                          rows={3}
+                          data-testid="input-guidance-heart"
+                          className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3 text-[16px] text-white placeholder:text-white/40 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleHeartSubmit}
+                          disabled={!heartInput.trim() || processingBridge}
+                          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+                        >
+                          Continue
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+
+                    {!hasSpeechSupport && (
+                      <>
+                        <label className="sr-only" htmlFor="input-guidance-heart">
+                          What&apos;s on your heart
+                        </label>
+                        <textarea
+                          id="input-guidance-heart"
+                          value={heartInput}
+                          onChange={(e) => setHeartInput(e.target.value)}
+                          onKeyDown={handleHeartKeyDown}
+                          spellCheck
+                          autoCapitalize="sentences"
+                          autoCorrect="on"
+                          placeholder={GUIDANCE_PLACEHOLDERS[placeholderIdx]}
+                          rows={3}
+                          data-testid="input-guidance-heart"
+                          className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3 text-[16px] text-white placeholder:text-white/40 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleHeartSubmit}
+                          disabled={!heartInput.trim() || processingBridge}
+                          data-testid="button-guidance-heart-submit"
+                          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+                        >
+                          Continue
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
 
                     <p className="mt-3 text-center text-[11px] text-white/40 leading-relaxed">
                       Private · grounded in Scripture
@@ -1562,29 +1688,13 @@ export default function GuidancePage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="flex-1 h-px bg-border/55" />
-                    <span className="text-[10px] font-semibold text-muted-foreground/65 uppercase tracking-[0.2em]">or begin with today</span>
-                    <div className="flex-1 h-px bg-border/55" />
-                  </div>
-
-                  {/* Today's framework — secondary option, styled as a real card-button */}
                   <button
-                    onClick={() => beginGuidanceEntry(framework.guidanceHint)}
+                    type="button"
+                    onClick={() => submitHeartEntry(framework.guidanceHint, false)}
                     data-testid="button-framework-guidance-hint"
-                    className="group text-left w-full rounded-2xl border border-primary/25 bg-primary/5 hover:bg-primary/9 hover:border-primary/45 px-5 py-4 transition-all"
+                    className="mt-2 w-full text-center text-[12px] text-muted-foreground/55 hover:text-muted-foreground/80 transition-colors py-2"
                   >
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70 mb-2 flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3" />
-                      {framework.name}
-                    </p>
-                    <p className="text-[14px] text-foreground/75 leading-relaxed group-hover:text-foreground transition-colors italic mb-3">
-                      "{framework.guidanceHint}"
-                    </p>
-                    <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-primary bg-primary/10 group-hover:bg-primary/18 px-3 py-1.5 rounded-lg transition-all">
-                      Begin with this today
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
+                    Begin with today&apos;s theme — {framework.name}
                   </button>
                 </motion.div>
               )}
@@ -1647,7 +1757,7 @@ export default function GuidancePage() {
                 className="py-6 mb-2"
               >
                 <p className="text-[15px] text-foreground/65 italic leading-relaxed">
-                  Sitting with what you shared…
+                  {processingBridge ? "Philip is with you…" : "Sitting with what you shared…"}
                 </p>
               </motion.div>
             )}
@@ -1714,55 +1824,127 @@ export default function GuidancePage() {
                         }
                       </motion.button>
                       <p className="mt-2.5 text-[12px] text-muted-foreground/70 font-medium">
-                        {phase1Listening ? "Listening — tap to stop" : "Tap to speak"}
+                        {processingBridge
+                          ? "Philip is with you…"
+                          : phase1Listening
+                            ? phase1ListenPhase === "ready"
+                              ? "Whenever you're ready."
+                              : phase1ListenPhase === "thinking"
+                                ? "…"
+                                : "Philip is listening…"
+                            : "Tap to speak"}
                       </p>
-                      {phase1Listening && phase1Interim && (
-                        <p className="mt-1.5 text-[13px] text-muted-foreground/55 italic text-center max-w-[260px] leading-snug">
-                          {phase1Interim}
+                      {((phase1Listening && (phase1Interim || phase1UserReply)) || (!phase1Listening && phase1UserReply && phase1ShowContinue)) && (
+                        <p className="mt-1.5 text-[13px] text-muted-foreground/55 italic text-center max-w-[280px] leading-snug">
+                          {phase1Listening ? (phase1Interim || phase1UserReply) : phase1UserReply}
                         </p>
                       )}
                     </div>
                   )}
 
-                  {/* Divider */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-border/50" />
-                    <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.16em]">
-                      {hasSpeechSupport ? "or type below" : "your reply"}
-                    </span>
-                    <div className="flex-1 h-px bg-border/50" />
-                  </div>
+                  {(phase1ShowContinue || (showPhase1TypeFallback && phase1UserReply.trim())) && (
+                    <div className="flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void handlePhase1Skip()}
+                        disabled={phase2Loading}
+                        data-testid="button-guidance-phase1-skip"
+                        className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors disabled:opacity-40"
+                      >
+                        Just walk with me →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handlePhase1Continue()}
+                        disabled={!phase1UserReply.trim() || phase2Loading || processingBridge}
+                        data-testid="button-guidance-phase1-continue"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {phase2Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                      </button>
+                    </div>
+                  )}
 
-                  <textarea
-                    value={phase1UserReply}
-                    onChange={(e) => setPhase1UserReply(e.target.value)}
-                    onKeyDown={handlePhase1KeyDown}
-                    placeholder="Keep going... there's no right answer."
-                    rows={2}
-                    disabled={isSending || phase2Loading}
-                    data-testid="input-guidance-phase1-reply"
-                    className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
-                  />
-                  <div className="flex items-center justify-between">
+                  {hasSpeechSupport && !showPhase1TypeFallback && (
                     <button
                       type="button"
-                      onClick={() => void handlePhase1Skip()}
-                      disabled={phase2Loading}
-                      data-testid="button-guidance-phase1-skip"
-                      className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors disabled:opacity-40"
+                      onClick={() => setShowPhase1TypeFallback(true)}
+                      className="w-full text-center text-[12px] text-muted-foreground/45 hover:text-muted-foreground/65 transition-colors"
+                      data-testid="link-guidance-phase1-type-instead"
                     >
-                      Just walk with me →
+                      Type instead
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => void handlePhase1Continue()}
-                      disabled={!phase1UserReply.trim() || phase2Loading}
-                      data-testid="button-guidance-phase1-continue"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {phase2Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
-                    </button>
-                  </div>
+                  )}
+
+                  {showPhase1TypeFallback && (
+                    <>
+                      <textarea
+                        value={phase1UserReply}
+                        onChange={(e) => setPhase1UserReply(e.target.value)}
+                        onKeyDown={handlePhase1KeyDown}
+                        placeholder="Keep going... there's no right answer."
+                        rows={3}
+                        disabled={isSending || phase2Loading}
+                        data-testid="input-guidance-phase1-reply"
+                        className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
+                      />
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => void handlePhase1Skip()}
+                          disabled={phase2Loading}
+                          data-testid="button-guidance-phase1-skip"
+                          className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors disabled:opacity-40"
+                        >
+                          Just walk with me →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handlePhase1Continue()}
+                          disabled={!phase1UserReply.trim() || phase2Loading || processingBridge}
+                          data-testid="button-guidance-phase1-continue"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {phase2Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {!hasSpeechSupport && (
+                    <>
+                      <textarea
+                        value={phase1UserReply}
+                        onChange={(e) => setPhase1UserReply(e.target.value)}
+                        onKeyDown={handlePhase1KeyDown}
+                        placeholder="Keep going... there's no right answer."
+                        rows={3}
+                        disabled={isSending || phase2Loading}
+                        data-testid="input-guidance-phase1-reply"
+                        className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
+                      />
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => void handlePhase1Skip()}
+                          disabled={phase2Loading}
+                          data-testid="button-guidance-phase1-skip"
+                          className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors disabled:opacity-40"
+                        >
+                          Just walk with me →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handlePhase1Continue()}
+                          disabled={!phase1UserReply.trim() || phase2Loading || processingBridge}
+                          data-testid="button-guidance-phase1-continue"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {phase2Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </motion.div>
