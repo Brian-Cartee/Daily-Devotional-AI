@@ -1181,7 +1181,13 @@ export default function GuidancePage() {
 
   const toggleHeartVoice = () => {
     if (heartListening) {
-      stopHeartListening(true);
+      const preview = heartVoiceRef.current?.getPreview() ?? heartInput;
+      const hasAudio = heartVoiceRef.current?.hasRecordedAudio();
+      if (preview.trim().length >= GUIDANCE_INPUT_MIN || hasAudio) {
+        submitHeartEntryRef.current(preview, true);
+      } else {
+        stopHeartListening(false);
+      }
       return;
     }
     startHeartListening(false);
@@ -1232,7 +1238,13 @@ export default function GuidancePage() {
 
   const togglePhase1Voice = () => {
     if (phase1Listening) {
-      stopPhase1Listening(true);
+      const preview = phase1VoiceRef.current?.getPreview() ?? phase1UserReply;
+      const hasAudio = phase1VoiceRef.current?.hasRecordedAudio();
+      if (preview.trim().length >= GUIDANCE_INPUT_MIN || hasAudio) {
+        handlePhase1ContinueRef.current(preview, true);
+      } else {
+        stopPhase1Listening(false);
+      }
       return;
     }
     startPhase1Listening();
@@ -1300,7 +1312,13 @@ export default function GuidancePage() {
 
   const toggleFollowUpVoice = () => {
     if (followUpListening) {
-      stopFollowUpListening();
+      const preview = followUpVoiceRef.current?.getPreview() ?? followUp;
+      const hasAudio = followUpVoiceRef.current?.hasRecordedAudio();
+      if (preview.trim().length >= GUIDANCE_INPUT_MIN || hasAudio) {
+        submitFollowUpRef.current(true, preview);
+      } else {
+        stopFollowUpListening();
+      }
       return;
     }
     startFollowUpListening();
@@ -2015,7 +2033,7 @@ export default function GuidancePage() {
                         <motion.button
                           type="button"
                           onClick={toggleHeartVoice}
-                          aria-label={heartListening ? "Stop speaking" : "Start speaking to Philip"}
+                          aria-label={heartListening ? "Done speaking — send to Philip" : "Start speaking to Philip"}
                           aria-live="polite"
                           data-testid="button-guidance-heart-voice"
                           className="relative flex items-center justify-center w-28 h-28 rounded-full cursor-pointer touch-manipulation"
@@ -2051,7 +2069,7 @@ export default function GuidancePage() {
                             ? "Philip is with you…"
                             : heartListening
                               ? heartListenPhase === "thinking"
-                                ? "…"
+                                ? "Philip is with what you shared…"
                                 : "Philip is listening…"
                               : greetingSpeaking
                                 ? "…"

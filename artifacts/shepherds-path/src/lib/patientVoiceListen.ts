@@ -35,7 +35,9 @@ const DEFAULT_AUTO_SUBMIT_MS = 11_000;
 const DEFAULT_MIN_CHARS = 8;
 /** Only nudge with spoken patience when the user has barely started. */
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
-const AUDIO_ACTIVITY_GRACE_MS = 1200;
+/** Debounced extension when mic still has speech but SpeechRecognition stalled. */
+const SR_STALL_MS = 2500;
+const STALL_EXTEND_COOLDOWN_MS = 2500;
 
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -84,10 +86,30 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let audioChunks: Blob[] = [];
   let mimeType = pickGuidanceAudioMimeType();
   let recorderStopPromise: Promise<void> | null = null;
-  let lastAudioActivityAt = 0;
+  let lastSpeechAt = 0;
+  let audioBytesAtLastSpeech = 0;
+  let lastStallExtendAt = 0;
 
-  const markAudioActivity = () => {
-    lastAudioActivityAt = Date.now();
+  const totalAudioBytes = () =>
+    audioChunks.reduce((sum, chunk) => sum + chunk.size, 0);
+
+  const markSpeechActivity = () => {
+    lastSpeechAt = Date.now();
+    audioBytesAtLastSpeech = totalAudioBytes();
+  };
+
+  const maybeExtendForSrStall = (chunkSize: number) => {
+    if (!active || chunkSize < 200) return;
+    const now = Date.now();
+    if (now - lastSpeechAt < SR_STALL_MS) return;
+    if (now - lastStallExtendAt < STALL_EXTEND_COOLDOWN_MS) return;
+    const bytes = totalAudioBytes();
+    if (bytes < audioBytesAtLastSpeech + 1500) return;
+    lastStallExtendAt = now;
+    lastSpeechAt = now;
+    takeYourTimeFired = false;
+    setPhase("listening");
+    scheduleSilenceTimers();
   };
 
   const clearTimers = () => {
@@ -145,7 +167,6 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
     thinkingTimer = setTimeout(() => {
       if (!active) return;
-      if (Date.now() - lastAudioActivityAt < AUDIO_ACTIVITY_GRACE_MS) return;
       setPhase("thinking");
     }, Math.min(3000, base));
 
@@ -153,7 +174,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       takeYourTimeTimer = setTimeout(() => {
         if (!active || takeYourTimeFired) return;
         if (wordCount(previewTranscript) >= SPOKEN_PATIENCE_MAX_WORDS) return;
-        if (Date.now() - lastAudioActivityAt < 5000) return;
+        if (Date.now() - lastSpeechAt < 5000) return;
         takeYourTimeFired = true;
         opts.onTakeYourTime?.();
       }, 8000);
@@ -161,10 +182,6 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
     readyTimer = setTimeout(() => {
       if (!active || autoSubmitFired) return;
-      if (Date.now() - lastAudioActivityAt < AUDIO_ACTIVITY_GRACE_MS) {
-        scheduleSilenceTimers();
-        return;
-      }
       if (opts.conversational) {
         triggerAutoSubmit();
         return;
@@ -223,7 +240,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (finalChunk) {
         previewTranscript = (previewTranscript ? `${previewTranscript} ${finalChunk}` : finalChunk).trim();
       }
-      if (finalChunk || interim) markAudioActivity();
+      if (finalChunk || interim) markSpeechActivity();
       takeYourTimeFired = false;
       autoSubmitFired = false;
       setPhase("listening");
@@ -280,13 +297,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunks.push(e.data);
-          if (e.data.size > 80 && active) {
-            markAudioActivity();
-            takeYourTimeFired = false;
-            autoSubmitFired = false;
-            setPhase("listening");
-            scheduleSilenceTimers();
-          }
+          maybeExtendForSrStall(e.data.size);
         }
       };
       mediaRecorder.start(1000);
@@ -305,7 +316,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioChunks = [];
       recorderStopPromise = null;
       takeYourTimeFired = false;
-      lastAudioActivityAt = Date.now();
+      lastSpeechAt = Date.now();
+      audioBytesAtLastSpeech = 0;
+      lastStallExtendAt = 0;
       setPhase("listening");
       void startMedia();
       if (canPreview) {
