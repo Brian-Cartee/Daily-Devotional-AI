@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForProcessingBridge, PROCESSING_BRIDGE } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
@@ -330,12 +330,20 @@ export default function GuidancePage() {
   const [processingBridge, setProcessingBridge] = useState(false);
   const [phase1Interim, setPhase1Interim] = useState("");
   const [followUp, setFollowUp] = useState("");
+  const [followUpListening, setFollowUpListening] = useState(false);
+  const [followUpListenPhase, setFollowUpListenPhase] = useState<VoiceListenUiPhase>("listening");
+  const [followUpSpeaking, setFollowUpSpeaking] = useState(false);
+  const followUpVoiceRef = useRef<PatientVoiceListener | null>(null);
+  const followUpTakeYourTimeRef = useRef<(() => void) | null>(null);
+  const followUpSubmittingRef = useRef(false);
+  const followUpSpokenRef = useRef<string | null>(null);
+  const stayMicStartedRef = useRef(false);
+  const submitFollowUpRef = useRef<(fromVoice: boolean, textOverride?: string) => void>(() => {});
   const [isSending, setIsSending] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showListenUpgrade, setShowListenUpgrade] = useState(false);
   const [showAiPause, setShowAiPause] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
-  const [isListening, setIsListening] = useState(false);
   const hasSpeechSupport = typeof window !== "undefined" && (
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
     || (typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined")
@@ -396,6 +404,7 @@ export default function GuidancePage() {
 
   useEffect(() => {
     void prefetchShepherdTTS(PROCESSING_BRIDGE);
+    void prefetchShepherdTTS(PHASE1_REPLY_BRIDGE);
   }, []);
 
   const greetingEngagedRef = useRef(false);
@@ -595,15 +604,18 @@ export default function GuidancePage() {
     conversationMessages: Message[],
     explicitMode?: GuidanceMode,
     phase1Context?: { phase1Response: string; phase1UserReply: string },
+    opts?: { isFollowUp?: boolean },
   ) => {
     setStreamingText("");
     setResponseComplete(false);
-    setCompletionPath(null);
-    setRevealStage(0);
-    listenFirstTriggeredRef.current = false;
-    setWalkToday(null);
-    setWalkLoading(false);
-    walkFetchedRef.current = false;
+    if (!opts?.isFollowUp) {
+      setCompletionPath(null);
+      setRevealStage(0);
+      listenFirstTriggeredRef.current = false;
+      setWalkToday(null);
+      setWalkLoading(false);
+      walkFetchedRef.current = false;
+    }
     try {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
@@ -845,10 +857,11 @@ export default function GuidancePage() {
     setPhase2Speaking(false);
     phase2SpokenRef.current = null;
     phase1SpokenRef.current = null;
+    followUpSpokenRef.current = null;
+    stayMicStartedRef.current = false;
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     setIsReflecting(true);
-    await new Promise((r) => setTimeout(r, 1200));
 
     const phase1Ok = await streamPhase1(flowGen);
     if (!lastInputWasVoiceRef.current) {
@@ -1034,6 +1047,7 @@ export default function GuidancePage() {
     !vpLoading;
 
   const startGuidanceListen = async () => {
+    if (phase1Speaking || phase2Speaking || followUpSpeaking) return;
     if (ttsChain.playing || ttsChain.loading) {
       ttsChain.stop();
       setChainSection(null);
@@ -1143,6 +1157,7 @@ export default function GuidancePage() {
 
     const listener = createPatientVoiceListener({
       conversational: true,
+      autoSubmitSilenceMs: VOICE_SILENCE_ENTRY_MS,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
         setInterimTranscript(interim);
@@ -1199,7 +1214,7 @@ export default function GuidancePage() {
 
     const listener = createPatientVoiceListener({
       conversational: true,
-      autoSubmitSilenceMs: 8000,
+      autoSubmitSilenceMs: VOICE_SILENCE_PHASE1_MS,
       onTranscript: (final, interim) => {
         if (final) setPhase1UserReply(final);
         setPhase1Interim(interim);
@@ -1228,28 +1243,111 @@ export default function GuidancePage() {
     startPhase1Listening();
   };
 
+  const destroyFollowUpVoice = useCallback(() => {
+    followUpTakeYourTimeRef.current?.();
+    followUpTakeYourTimeRef.current = null;
+    followUpVoiceRef.current?.destroy();
+    followUpVoiceRef.current = null;
+    setFollowUpListening(false);
+    setFollowUpListenPhase("listening");
+  }, []);
+
   useEffect(() => () => {
     destroyHeartVoice();
     destroyPhase1Voice();
-  }, [destroyHeartVoice, destroyPhase1Voice]);
+    destroyFollowUpVoice();
+  }, [destroyHeartVoice, destroyPhase1Voice, destroyFollowUpVoice]);
+
+  const startFollowUpListening = useCallback(() => {
+    if (followUpVoiceRef.current?.isActive()) return;
+    if (followUpSubmittingRef.current || isSending || processingBridge) return;
+    if (followUpVoiceRef.current) {
+      followUpVoiceRef.current.destroy();
+      followUpVoiceRef.current = null;
+    }
+    setFollowUpListenPhase("listening");
+
+    const listener = createPatientVoiceListener({
+      conversational: true,
+      autoSubmitSilenceMs: VOICE_SILENCE_FOLLOWUP_MS,
+      onTranscript: (final, interim) => {
+        const display = (final + (interim ? ` ${interim}` : "")).trim();
+        if (display) setFollowUp(display);
+      },
+      onPhaseChange: setFollowUpListenPhase,
+      onTakeYourTime: () => {
+        if (followUpTakeYourTimeRef.current) return;
+        followUpTakeYourTimeRef.current = speakTakeYourTimeBridge();
+      },
+      onAutoSubmit: () => {
+        if (followUpSubmittingRef.current || isSending || processingBridge) return;
+        submitFollowUpRef.current(true);
+      },
+    });
+    if (!listener) return;
+    followUpVoiceRef.current = listener;
+    listener.start();
+    setFollowUpListening(true);
+  }, [isSending, processingBridge]);
+
+  const startFollowUpListeningRef = useRef(startFollowUpListening);
+  startFollowUpListeningRef.current = startFollowUpListening;
+
+  const stopFollowUpListening = useCallback(() => {
+    const text = followUpVoiceRef.current?.stop() ?? followUp.trim();
+    followUpTakeYourTimeRef.current?.();
+    followUpTakeYourTimeRef.current = null;
+    setFollowUpListening(false);
+    setFollowUpListenPhase("listening");
+    if (text) setFollowUp(text);
+    return text.trim();
+  }, [followUp]);
 
   const toggleFollowUpVoice = () => {
-    if (isListening) { setIsListening(false); return; }
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    const rec = new SR();
-    rec.lang = "en-US";
-    rec.interimResults = false;
-    rec.onresult = (e: any) => {
-      const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join(" ");
-      if (transcript.trim()) lastInputWasVoiceRef.current = true;
-      setFollowUp(prev => (prev ? prev + " " + transcript : transcript));
-    };
-    rec.onend = () => setIsListening(false);
-    rec.onerror = () => setIsListening(false);
-    setIsListening(true);
-    rec.start();
+    if (followUpListening) {
+      stopFollowUpListening();
+      return;
+    }
+    startFollowUpListening();
   };
+
+  // Stay path — auto-open follow-up mic for voice sessions
+  useEffect(() => {
+    if (!voiceConversation || completionPath !== "stay" || !hasSpeechSupport) return;
+    if (stayMicStartedRef.current || followUpListening || followUpSubmittingRef.current) return;
+    if (isSending || processingBridge || followUpSpeaking) return;
+    stayMicStartedRef.current = true;
+    const t = window.setTimeout(() => {
+      startFollowUpListeningRef.current();
+    }, VOICE_MIC_HANDOFF_FOLLOWUP_MS);
+    return () => window.clearTimeout(t);
+  }, [voiceConversation, completionPath, hasSpeechSupport, followUpListening, isSending, processingBridge, followUpSpeaking]);
+
+  // Follow-up turns — Philip speaks; mic reopens for voice sessions
+  useEffect(() => {
+    if (!voiceConversation || !responseComplete || completionPath !== "stay") return;
+    const assistantMsgs = messages.filter((m) => m.role === "assistant");
+    if (assistantMsgs.length <= 1) return;
+    const text = assistantMsgs[assistantMsgs.length - 1]?.content?.trim();
+    if (!text) return;
+    if (followUpSpokenRef.current === text) return;
+    followUpSpokenRef.current = text;
+    destroyFollowUpVoice();
+    stayMicStartedRef.current = false;
+    const cancel = speakShepherdWithMicHandoff(cleanResponse(text), {
+      onStart: () => setFollowUpSpeaking(true),
+      onSpeakingEnd: () => setFollowUpSpeaking(false),
+      handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
+      onHandoff: () => {
+        if (!hasSpeechSupport || isSending || processingBridge) return;
+        startFollowUpListeningRef.current();
+      },
+    });
+    return () => {
+      cancel();
+      setFollowUpSpeaking(false);
+    };
+  }, [messages, responseComplete, voiceConversation, completionPath, hasSpeechSupport, isSending, processingBridge, destroyFollowUpVoice]);
 
   // Prefetch greeting TTS in parallel with witness fetch
   useEffect(() => {
@@ -1379,19 +1477,16 @@ export default function GuidancePage() {
     if (phase1SpokenRef.current === key) return;
     phase1SpokenRef.current = key;
     destroyPhase1Voice();
-    const cancel = speakShepherdLine(cleanResponse(phase1Response), {
+    const spokenText = cleanResponse(phase1Response);
+    const cancel = speakShepherdWithMicHandoff(spokenText, {
       onStart: () => setPhase1Speaking(true),
-      onEnd: () => {
+      onSpeakingEnd: () => {
         setPhase1Speaking(false);
         setPhase1SpeechDone(true);
-        if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
-        window.setTimeout(() => startPhase1Listening(), 800);
       },
-      onFail: () => {
-        setPhase1Speaking(false);
-        setPhase1SpeechDone(true);
+      onHandoff: () => {
         if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
-        window.setTimeout(() => startPhase1Listening(), 800);
+        startPhase1Listening();
       },
     });
     return () => {
@@ -1490,7 +1585,7 @@ export default function GuidancePage() {
           ? listener.finalizeTranscript()
           : Promise.resolve(trimmed);
         const [, refined] = await Promise.all([
-          waitForProcessingBridge(),
+          fromVoice ? waitForSubmitBridge("entry") : Promise.resolve(),
           finalizePromise,
         ]);
         if (refined.trim()) finalText = clampGuidanceInput(refined);
@@ -1557,8 +1652,9 @@ export default function GuidancePage() {
         const finalizePromise = fromVoice && listener
           ? listener.finalizeTranscript()
           : Promise.resolve(reply);
+        const bridgeReply = reply;
         const [, refined] = await Promise.all([
-          waitForProcessingBridge(),
+          fromVoice ? waitForSubmitBridge("phase1Reply", bridgeReply) : Promise.resolve(),
           finalizePromise,
         ]);
         if (refined.trim()) reply = clampGuidanceInput(refined);
@@ -1641,10 +1737,84 @@ export default function GuidancePage() {
     }
   };
 
+  const submitFollowUp = (fromVoice: boolean, textOverride?: string) => {
+    if (followUpSubmittingRef.current || isSending) return;
+    const listener = followUpVoiceRef.current;
+    let text = clampGuidanceInput(textOverride ?? followUp ?? listener?.getPreview() ?? "");
+
+    if (listener?.isActive()) {
+      const stopped = listener.stop();
+      if (stopped) text = clampGuidanceInput(stopped);
+      setFollowUp(stopped || text);
+    }
+
+    if (!text && !(fromVoice && listener?.hasRecordedAudio())) {
+      toast({
+        description: "We didn't catch that — keep talking when the mic opens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    followUpSubmittingRef.current = true;
+    lastInputWasVoiceRef.current = fromVoice;
+    if (fromVoice) setVoiceConversation(true);
+    setFollowUp("");
+    setProcessingBridge(true);
+    setIsReflecting(true);
+
+    void (async () => {
+      try {
+        const bridgeText = text;
+        const finalizePromise = fromVoice && listener
+          ? listener.finalizeTranscript()
+          : Promise.resolve(text);
+        const [, refined] = await Promise.all([
+          fromVoice ? waitForSubmitBridge("phase1Reply", bridgeText) : Promise.resolve(),
+          finalizePromise,
+        ]);
+        if (refined.trim()) text = clampGuidanceInput(refined);
+      } catch {
+        /* use preview */
+      } finally {
+        destroyFollowUpVoice();
+        listener?.destroy();
+        setProcessingBridge(false);
+        if (!text.trim()) {
+          followUpSubmittingRef.current = false;
+          setIsReflecting(false);
+          toast({
+            description: "We couldn't hear enough — keep talking when the mic opens.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (!canUseAi()) {
+          setShowAiPause(true);
+          followUpSubmittingRef.current = false;
+          setIsReflecting(false);
+          return;
+        }
+        setIsSending(true);
+        setRevealStage((s) => Math.max(s, 4));
+        const newUserMsg: Message = { role: "user", content: text };
+        const updated = [...messages, newUserMsg];
+        setMessages(updated);
+        await streamResponse(updated, undefined, undefined, { isFollowUp: true });
+        setIsSending(false);
+        setIsReflecting(false);
+        followUpSubmittingRef.current = false;
+      }
+    })();
+  };
+
+  submitFollowUpRef.current = submitFollowUp;
+
   const handleSend = async () => {
     const text = followUp.trim();
-    if (!text || isSending) return;
+    if (!text || isSending || followUpSubmittingRef.current) return;
     if (!canUseAi()) { setShowAiPause(true); return; }
+    destroyFollowUpVoice();
     setFollowUp("");
     setIsSending(true);
     setIsReflecting(true);
@@ -1653,7 +1823,7 @@ export default function GuidancePage() {
     const newUserMsg: Message = { role: "user", content: text };
     const updated = [...messages, newUserMsg];
     setMessages(updated);
-    await streamResponse(updated);
+    await streamResponse(updated, undefined, undefined, { isFollowUp: true });
     setIsSending(false);
     setTimeout(() => {
       (window.innerWidth < 640 ? floatRef.current : inputRef.current)?.focus();
@@ -2719,7 +2889,7 @@ export default function GuidancePage() {
                     </div>
                     <button
                       onClick={startGuidanceListen}
-                      disabled={!guidanceListenReady && !chainSection && !ttsChain.loading}
+                      disabled={phase2Speaking || followUpSpeaking || phase1Speaking || (!guidanceListenReady && !chainSection && !ttsChain.loading)}
                       data-testid="button-guidance-listen-chain"
                       className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all flex-shrink-0 ${
                         chainSection || ttsChain.loading
@@ -2879,10 +3049,10 @@ export default function GuidancePage() {
                               onClick={toggleFollowUpVoice}
                               data-testid="button-guidance-voice"
                               className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                              style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                              style={{ color: followUpListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
                             >
-                              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
-                              {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                              {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
+                              {followUpListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                             </button>
                           ) : <span />}
                           <button
@@ -3285,10 +3455,10 @@ export default function GuidancePage() {
                     onClick={toggleFollowUpVoice}
                     data-testid="button-guidance-float-voice"
                     className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                    style={{ color: isListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                    style={{ color: followUpListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
                   >
-                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
-                    {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                    {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
+                    {followUpListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                   </button>
                 ) : <span />}
                 <button

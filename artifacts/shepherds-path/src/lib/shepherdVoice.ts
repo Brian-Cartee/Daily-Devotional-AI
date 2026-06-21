@@ -139,8 +139,34 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
 }
 
 export const PROCESSING_BRIDGE = "I'm sitting with what you shared.";
+/** Spoken after Phase 1 reply (or follow-up voice submit) — not the first entry. */
+export const PHASE1_REPLY_BRIDGE = "Give me a moment with that.";
 export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
 export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
+
+/** Conversational auto-submit silence — entry / Phase 1 reply / follow-up. */
+export const VOICE_SILENCE_ENTRY_MS = 10_000;
+export const VOICE_SILENCE_PHASE1_MS = 7000;
+export const VOICE_SILENCE_FOLLOWUP_MS = 6000;
+
+export const VOICE_MIC_HANDOFF_PHASE1_MS = 800;
+export const VOICE_MIC_HANDOFF_FOLLOWUP_MS = 600;
+
+const HEAVY_REPLY_RE =
+  /\b(died|death|funeral|miscarriage|suicid|abuse|rape|murder|killed|overdose|hospital|chemo|cancer|divorc)\b/i;
+
+/** Acute grief / raw one-liners — skip spoken bridge; visual presence only. */
+export function shouldSkipReplyBridge(reply: string): boolean {
+  const t = reply.trim();
+  if (t.length > 0 && t.length < 15) return true;
+  if (HEAVY_REPLY_RE.test(t)) return true;
+  return false;
+}
+
+export function estimateSpeechMs(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(2000, words * 380 + 800);
+}
 
 export function speakProcessingBridge(onEnd?: () => void): () => void {
   return speakShepherdLine(PROCESSING_BRIDGE, { onEnd });
@@ -149,8 +175,64 @@ export function speakProcessingBridge(onEnd?: () => void): () => void {
 /** Resolve after Philip finishes the processing bridge line (or immediately if TTS fails). */
 export function waitForProcessingBridge(): Promise<void> {
   return new Promise((resolve) => {
-    speakProcessingBridge(resolve);
+    speakProcessingBridge(() => resolve());
   });
+}
+
+export type SubmitBridgeKind = "entry" | "phase1Reply";
+
+/** Entry: full processing bridge. Phase 1 reply / follow-up: shorter bridge (skipped when heavy). */
+export function waitForSubmitBridge(kind: SubmitBridgeKind, replyText?: string): Promise<void> {
+  if (kind === "phase1Reply" && replyText && shouldSkipReplyBridge(replyText)) {
+    return Promise.resolve();
+  }
+  const line = kind === "entry" ? PROCESSING_BRIDGE : PHASE1_REPLY_BRIDGE;
+  return new Promise((resolve) => {
+    speakShepherdLine(line, { onEnd: resolve, onFail: resolve });
+  });
+}
+
+/** Speak Philip's line, then hand off to mic — with iOS-safe fallback if onended never fires. */
+export function speakShepherdWithMicHandoff(
+  text: string,
+  opts: {
+    onStart?: () => void;
+    onSpeakingEnd?: () => void;
+    onHandoff: () => void;
+    handoffDelayMs?: number;
+    prefetchedBlob?: Blob | null;
+  },
+): () => void {
+  let handoffScheduled = false;
+  const handoffDelay = opts.handoffDelayMs ?? VOICE_MIC_HANDOFF_PHASE1_MS;
+  const scheduleHandoff = () => {
+    if (handoffScheduled) return;
+    handoffScheduled = true;
+    window.setTimeout(opts.onHandoff, handoffDelay);
+  };
+  const fallbackMs = estimateSpeechMs(text) + 1500;
+  const fallbackTimer = window.setTimeout(() => {
+    opts.onSpeakingEnd?.();
+    scheduleHandoff();
+  }, fallbackMs);
+  const cancelSpeak = speakShepherdLine(text, {
+    prefetchedBlob: opts.prefetchedBlob,
+    onStart: opts.onStart,
+    onEnd: () => {
+      window.clearTimeout(fallbackTimer);
+      opts.onSpeakingEnd?.();
+      scheduleHandoff();
+    },
+    onFail: () => {
+      window.clearTimeout(fallbackTimer);
+      opts.onSpeakingEnd?.();
+      scheduleHandoff();
+    },
+  });
+  return () => {
+    window.clearTimeout(fallbackTimer);
+    cancelSpeak();
+  };
 }
 
 export function speakTakeYourTimeBridge(): () => void {
