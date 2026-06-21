@@ -149,6 +149,7 @@ function mergeProg(a: SplashProgV1, b: SplashProgV1): SplashProgV1 {
 }
 
 export function loadSplashProg(): SplashProgV1 {
+  hydrateSplashProg();
   const today = easternDate();
   const fromCookie = readCookieJson();
   const fromLs = readLsJson();
@@ -236,6 +237,7 @@ export type AdvancedSplash = SplashSlide & { isShortDoor: boolean; slot: "onboar
  * Call once per cold open (guarded by session commit flag).
  */
 export function advanceEntrySplash(): AdvancedSplash | null {
+  hydrateSplashProg();
   const prog = loadSplashProg();
   const today = easternDate();
 
@@ -325,31 +327,60 @@ export const ONBOARDING_SLIDES: SplashSlide[] = [
   { image: "/splash-shepherd.jpg", headline: "The path is still here.", subline: null, cta: "Enter" },
 ];
 
-/** Hydrate prog from legacy keys on first load (migration). */
-export function migrateLegacySplashKeys(): void {
-  if (readCookieJson() || readLsJson()) return;
+function readSplashBscCookie(): number {
   try {
-    const onboarding = parseInt(localStorage.getItem("sp_brand_splash_count") ?? "0", 10) || 0;
-    const today = easternDate();
-    const dailyDate = localStorage.getItem("sp_daily_open_date") ?? today;
-    const dailyOpens = parseInt(localStorage.getItem("sp_daily_open_count") ?? "0", 10) || 0;
-    const dailyFeature = parseInt(localStorage.getItem("sp_daily_feature_idx") ?? "-1", 10);
-    const secondRaw = localStorage.getItem("sp_daily_second_idx");
-    const prog = normalizeProg({
-      v: 1,
-      onboarding,
-      dailyDate,
-      dailyOpens: dailyDate === today ? dailyOpens : 0,
-      dailyFeature: dailyFeature >= 0 ? dailyFeature : undefined,
-      dailySecond: secondRaw ? parseInt(secondRaw, 10) : null,
-      lastImage: null,
-    });
-    saveSplashProg(prog);
+    const m = document.cookie.match(/(?:^|; )sp_bsc=([^;]*)/);
+    if (!m) return 0;
+    const n = parseInt(decodeURIComponent(m[1]!), 10);
+    return Number.isNaN(n) ? 0 : Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, n));
+  } catch {
+    return 0;
+  }
+}
+
+function readNativeOnboardingCount(): number {
+  try {
+    if (typeof window === "undefined") return 0;
+    const n = (window as unknown as { __spNativeSplashCount?: number }).__spNativeSplashCount;
+    if (typeof n !== "number" || Number.isNaN(n)) return 0;
+    return Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, n));
+  } catch {
+    return 0;
+  }
+}
+
+/** Legacy + native fallbacks when the unified JSON blob is missing (WKWebView storage wipe). */
+function readLegacyOnboardingCount(): number {
+  let max = readSplashBscCookie();
+  max = Math.max(max, readNativeOnboardingCount());
+  try {
+    const ls = parseInt(localStorage.getItem("sp_brand_splash_count") ?? "0", 10);
+    if (!Number.isNaN(ls)) max = Math.max(max, ls);
   } catch {
     /* noop */
+  }
+  return Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, max));
+}
+
+export function hydrateSplashProg(): void {
+  const legacyOnboarding = readLegacyOnboardingCount();
+  const fromCookie = readCookieJson();
+  const fromLs = readLsJson();
+
+  if (!fromCookie && !fromLs) {
+    if (legacyOnboarding > 0) {
+      const today = easternDate();
+      saveSplashProg({ v: 1, onboarding: legacyOnboarding, lastImage: null, ...freshDailyFields(today) });
+    }
+    return;
+  }
+
+  const merged = fromCookie && fromLs ? mergeProg(fromCookie, fromLs) : (fromCookie ?? fromLs!);
+  if (legacyOnboarding > merged.onboarding) {
+    saveSplashProg({ ...merged, onboarding: legacyOnboarding });
   }
 }
 
 if (typeof window !== "undefined") {
-  migrateLegacySplashKeys();
+  hydrateSplashProg();
 }

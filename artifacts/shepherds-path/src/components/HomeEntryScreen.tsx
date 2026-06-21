@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getUserName, setUserName, syncUserNameFromServer } from "@/lib/userName";
+import { getUserName, setUserName, syncUserNameFromServer, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { ENCOURAGER_VOICE, SHEPHERD_VOICE } from "@/lib/shepherdVoice";
 import { isLateNight } from "@/lib/nightMode";
@@ -12,6 +12,7 @@ import {
   hasCommittedEntrySplashThisSession,
   markEntrySplashCommittedThisSession,
 } from "@/lib/entrySplashState";
+import { preloadDailySplashImages } from "@/lib/dailySplash";
 import { formatVerseForDisplay } from "@/lib/verseText";
 
 const ENTRY_KEY = "sp_entry_shown_date";
@@ -132,6 +133,9 @@ function resolveBrandSplashInit(): BrandSplashInit {
   };
 
   if (advanced.slot === "onboarding" && openCount === 0) {
+    if (hasBeenPrompted()) {
+      return { openCount, splash, ...noIcebreaker, shortSplash: false };
+    }
     return {
       openCount,
       splash,
@@ -156,6 +160,9 @@ function resolveBrandSplashInit(): BrandSplashInit {
         icebreakerDone: false,
         shortSplash: false,
       };
+    }
+    if (hasBeenPrompted()) {
+      return { openCount, splash, ...noIcebreaker, shortSplash: false };
     }
     return {
       openCount,
@@ -336,14 +343,19 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   const handleSubmitName = () => {
     try {
       const trimmed = nameInput.trim();
-      if (trimmed) setUserName(trimmed);
+      if (trimmed) {
+        setUserName(trimmed);
+      } else {
+        markNamePrompted();
+      }
     } catch {
-      /* still dismiss */
+      markNamePrompted();
     }
     finishIcebreaker();
   };
 
   const handleSkip = () => {
+    markNamePrompted();
     finishIcebreaker();
   };
 

@@ -1,6 +1,6 @@
 /** First-run intro gating — localStorage-first (Safari-safe), not session-only. */
 
-import { canShowPostOnboardingSplash, getOnboardingSplashCount, loadSplashProg, saveSplashProg } from "./entrySplashState";
+import { canShowPostOnboardingSplash, getOnboardingSplashCount, hydrateSplashProg, loadSplashProg, saveSplashProg } from "./entrySplashState";
 
 export const INTRO_COMPLETE_KEY = "sp_intro_flow_complete";
 export const VISIT_COUNT_KEY = "sp_visit_count";
@@ -134,6 +134,7 @@ function writeSplashCookie(n: number): void {
 
 /** Brand splash visit count — reads unified splash progression. */
 export function getBrandSplashCount(): number {
+  hydrateSplashProg();
   const fromProg = getOnboardingSplashCount();
   const fromNative = typeof window !== "undefined" ? (window as any).__spNativeSplashCount : undefined;
   if (typeof fromNative === "number" && !isNaN(fromNative) && fromNative > fromProg) {
