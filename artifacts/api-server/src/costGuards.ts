@@ -58,6 +58,13 @@ const FEATURE_BUDGETS: Record<string, FeatureBudget> = {
     messageFree: "One AI sermon recording per day on free. Pro includes more.",
     messagePro: "Sermon recording limit reached for today.",
   },
+  "guidance-transcribe": {
+    free: 12,
+    pro: 60,
+    windowMs: DAY,
+    messageFree: "Voice transcription limit reached for today. You can type instead.",
+    messagePro: "Voice transcription limit reached for today.",
+  },
   "sermon-chunk": {
     free: 0,
     pro: 48,

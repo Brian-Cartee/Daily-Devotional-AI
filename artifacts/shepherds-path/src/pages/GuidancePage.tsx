@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from "react";
 import { useSearch, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Sparkles, Mic, MicOff, RefreshCw, Lock } from "lucide-react";
+import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, CheckCheck, Mic, MicOff, RefreshCw, Lock } from "lucide-react";
 import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getCurrentHeartState, buildHeartContext } from "@/lib/heartCheck";
@@ -19,6 +19,7 @@ import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakProcessingBridge, speakTakeYourTimeBridge, speakReadyPromptBridge } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
+import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -314,7 +315,10 @@ export default function GuidancePage() {
   const [showAiPause, setShowAiPause] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
   const [isListening, setIsListening] = useState(false);
-  const hasSpeechSupport = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const hasSpeechSupport = typeof window !== "undefined" && (
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
+    || (typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined")
+  );
   const framework = getTodayFramework();
   const queryClient = useQueryClient();
   const { data: dailyVerse } = useDailyVerse();
@@ -526,6 +530,9 @@ export default function GuidancePage() {
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
   const [sendOffText, setSendOffText] = useState<string | null>(null);
   const [sessionFeedback, setSessionFeedback] = useState<"yes" | "not-quite" | null>(null);
+  const [sessionRecap, setSessionRecap] = useState<GuidanceRecap | null>(null);
+  const [recapLoading, setRecapLoading] = useState(false);
+  const recapFetchedRef = useRef(false);
   const latestResponseRef = useRef<HTMLDivElement>(null);
   const hasScrolledInitial = useRef(false);
   const hasScrolledFollowUp = useRef(0);
@@ -773,6 +780,9 @@ export default function GuidancePage() {
     setPhase2Loading(false);
     setResponseComplete(false);
     setStreamingText("");
+    setSessionRecap(null);
+    setRecapLoading(false);
+    recapFetchedRef.current = false;
     const initialUserMsg: Message = { role: "user", content: situation };
     setMessages([initialUserMsg]);
     setTimeout(() => setIsReflecting(false), 2500);
@@ -1013,7 +1023,6 @@ export default function GuidancePage() {
 
   const stopHeartListening = useCallback((showContinue = true) => {
     const text = heartVoiceRef.current?.stop() ?? heartInput.trim();
-    heartVoiceRef.current = null;
     heartTakeYourTimeRef.current?.();
     heartTakeYourTimeRef.current = null;
     setHeartListening(false);
@@ -1026,8 +1035,10 @@ export default function GuidancePage() {
 
   const startHeartListening = useCallback((fromWelcome = false) => {
     if (heartVoiceRef.current?.isActive()) return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
+    if (heartVoiceRef.current) {
+      heartVoiceRef.current.destroy();
+      heartVoiceRef.current = null;
+    }
     if (!fromWelcome) greetingEngagedRef.current = true;
     cancelGreetingSpeakRef.current?.();
     cancelGreetingSpeakRef.current = null;
@@ -1069,7 +1080,6 @@ export default function GuidancePage() {
 
   const stopPhase1Listening = useCallback((showContinue = true) => {
     const text = phase1VoiceRef.current?.stop() ?? phase1UserReply.trim();
-    phase1VoiceRef.current = null;
     phase1TakeYourTimeRef.current?.();
     phase1TakeYourTimeRef.current = null;
     setPhase1Listening(false);
@@ -1082,8 +1092,10 @@ export default function GuidancePage() {
 
   const startPhase1Listening = useCallback(() => {
     if (phase1VoiceRef.current?.isActive()) return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
+    if (phase1VoiceRef.current) {
+      phase1VoiceRef.current.destroy();
+      phase1VoiceRef.current = null;
+    }
     setPhase1ShowContinue(false);
     setPhase1ListenPhase("listening");
 
@@ -1263,17 +1275,46 @@ export default function GuidancePage() {
     return () => cancel();
   }, [sendOffText]);
 
+  useEffect(() => {
+    if (!responseComplete || completionPath !== "carry" || recapFetchedRef.current) return;
+    const reflection = messages.find((m) => m.role === "assistant")?.content?.trim();
+    if (!situation.trim() || !reflection) return;
+    recapFetchedRef.current = true;
+    setRecapLoading(true);
+    void fetchGuidanceRecap({
+      situation,
+      reflection,
+      verseReference: verse?.reference ?? null,
+      prayer: prayer ?? null,
+    })
+      .then((r) => {
+        if (r) setSessionRecap(r);
+      })
+      .finally(() => setRecapLoading(false));
+  }, [responseComplete, completionPath, situation, messages, verse, prayer]);
+
   const submitHeartEntry = (text: string, fromVoice: boolean) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    destroyHeartVoice();
+    let trimmed = text.trim();
+    if (!trimmed && !(fromVoice && heartVoiceRef.current)) return;
+
     lastInputWasVoiceRef.current = fromVoice;
     setHeartShowContinue(false);
     setProcessingBridge(true);
     setIsReflecting(true);
+
     speakProcessingBridge(() => {
-      setProcessingBridge(false);
-      beginGuidanceEntry(trimmed);
+      void (async () => {
+        try {
+          if (fromVoice && heartVoiceRef.current) {
+            const refined = await heartVoiceRef.current.finalizeTranscript();
+            if (refined.trim()) trimmed = refined.trim();
+          }
+        } finally {
+          destroyHeartVoice();
+          setProcessingBridge(false);
+          if (trimmed.trim()) beginGuidanceEntry(trimmed.trim());
+        }
+      })();
     });
   };
 
@@ -1305,34 +1346,41 @@ export default function GuidancePage() {
     setPhase2Loading(false);
   };
 
-  const runPhase1Continue = async () => {
-    const reply = phase1UserReply.trim();
-    if (!reply || phase2Loading || !phase1Response || phase2Started) return;
-    setPhase2Loading(true);
-    setPhase2Started(true);
-    setPhase1ShowContinue(false);
-    destroyPhase1Voice();
-    setPhase1UserReplySubmitted(reply);
-    setConversationPhase(2);
-    setIsReflecting(true);
-    setTimeout(() => setIsReflecting(false), 700);
-    startPhase2(reply);
-    const initialUserMsg: Message = { role: "user", content: situation };
-    await streamResponse([initialUserMsg], undefined, {
-      phase1Response,
-      phase1UserReply: reply,
-    });
-    setPhase2Loading(false);
-  };
-
   const handlePhase1Continue = () => {
-    const reply = phase1UserReply.trim();
+    let reply = phase1UserReply.trim();
     if (!reply || phase2Loading || !phase1Response || phase2Started) return;
-    lastInputWasVoiceRef.current = !showPhase1TypeFallback && (phase1Listening || phase1ShowContinue);
+    const fromVoice = !showPhase1TypeFallback && !!(phase1VoiceRef.current || phase1ShowContinue);
+    lastInputWasVoiceRef.current = fromVoice;
     setProcessingBridge(true);
+
     speakProcessingBridge(() => {
-      setProcessingBridge(false);
-      void runPhase1Continue();
+      void (async () => {
+        try {
+          if (fromVoice && phase1VoiceRef.current) {
+            const refined = await phase1VoiceRef.current.finalizeTranscript();
+            if (refined.trim()) reply = refined.trim();
+          }
+        } finally {
+          destroyPhase1Voice();
+          setPhase1UserReply(reply);
+          setProcessingBridge(false);
+          if (!reply) return;
+          setPhase2Loading(true);
+          setPhase2Started(true);
+          setPhase1ShowContinue(false);
+          setPhase1UserReplySubmitted(reply);
+          setConversationPhase(2);
+          setIsReflecting(true);
+          setTimeout(() => setIsReflecting(false), 700);
+          startPhase2(reply);
+          const initialUserMsg: Message = { role: "user", content: situation };
+          await streamResponse([initialUserMsg], undefined, {
+            phase1Response,
+            phase1UserReply: reply,
+          });
+          setPhase2Loading(false);
+        }
+      })();
     });
   };
 
@@ -2608,6 +2656,34 @@ export default function GuidancePage() {
                   Come back when you need to — this is always here.
                 </p>
               </div>
+
+              {(recapLoading || sessionRecap) && (
+                <div
+                  className="w-full rounded-2xl px-5 py-4 text-left"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  data-testid="card-guidance-recap"
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-2">
+                    {recapLoading ? "Your recap is on the way…" : "Your recap"}
+                  </p>
+                  {sessionRecap?.recap && (
+                    <p
+                      className="text-[15px] leading-relaxed text-foreground/85"
+                      style={{ fontFamily: "var(--font-reading)" }}
+                    >
+                      {sessionRecap.recap}
+                    </p>
+                  )}
+                  {sessionRecap?.detailed && (
+                    <p
+                      className="mt-3 text-[14px] leading-relaxed text-muted-foreground/75 border-t border-border/40 pt-3"
+                      style={{ fontFamily: "var(--font-reading)" }}
+                    >
+                      {sessionRecap.detailed}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Return seed — tomorrow nudge */}
               <div

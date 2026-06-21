@@ -3312,6 +3312,99 @@ Tone: Like a letter from a trusted spiritual director — honest, warm, specific
 
   // ── Guidance Phase 1 — empathy + one question (streaming) ───────────────────
 
+  const guidanceAudioUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+  app.post("/api/guidance/transcribe", guidanceAudioUpload.single("audio"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No audio provided" });
+    const sessionId = (req.body as { sessionId?: string })?.sessionId;
+    const isPro = parseProFlag((req.body as { isPro?: boolean })?.isPro);
+    const guard = checkFeatureBudget(sessionId, "guidance-transcribe", isPro);
+    if (!guard.ok) {
+      return res.status(guard.status).json({ message: guard.message, code: guard.code });
+    }
+    try {
+      const audioFile = new File([req.file.buffer], req.file.originalname || "guidance.m4a", {
+        type: req.file.mimetype || "audio/mp4",
+      });
+      const transcription = await openaiTTS.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+        language: "en",
+      });
+      res.json({ text: transcription.text?.trim() || "" });
+    } catch (err: any) {
+      console.error("Guidance transcribe error:", err);
+      res.status(500).json({ message: "Transcription failed" });
+    }
+  });
+
+  app.post("/api/guidance/recap", async (req, res) => {
+    const { situation, reflection, verseReference, prayer, sessionId, isPro } = req.body as {
+      situation?: string;
+      reflection?: string;
+      verseReference?: string;
+      prayer?: string;
+      sessionId?: string;
+      isPro?: boolean;
+    };
+    if (!situation?.trim() || !reflection?.trim()) {
+      return res.status(400).json({ message: "situation and reflection required" });
+    }
+    const pro = parseProFlag(isPro);
+    const aiGuard = checkAiDailyLimit(sessionId, Number((req.body as any).daysWithApp) || 1, pro);
+    if (!aiGuard.ok) {
+      return res.status(aiGuard.status).json({ message: aiGuard.message });
+    }
+    try {
+      const verseLine = verseReference?.trim() ? `Scripture shared: ${verseReference.trim()}.` : "";
+      const prayerLine = prayer?.trim() ? `Prayer offered: ${prayer.trim().slice(0, 400)}` : "";
+      const context = [situation.trim(), reflection.trim(), verseLine, prayerLine].filter(Boolean).join("\n\n");
+
+      const summaryRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: pro
+              ? "You write pastoral session recaps for a faith app. Warm, human, never clinical. Return JSON only."
+              : "You write very short pastoral recaps (2-3 sentences max). Warm, human. Return JSON only.",
+          },
+          {
+            role: "user",
+            content: pro
+              ? `Write a session recap as JSON with keys:
+- "recap": 2-3 sentence gentle summary for the user
+- "detailed": longer notes (4-6 sentences) with themes heard, Scripture anchor, and one encouragement
+
+Session:
+${context.slice(0, 6000)}`
+              : `Write JSON with one key "recap" — 2-3 sentences summarizing what they shared and what mattered. No bullet points.
+
+Session:
+${context.slice(0, 4000)}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.4,
+        max_tokens: pro ? 500 : 180,
+      });
+      let parsed: { recap?: string; detailed?: string } = {};
+      try {
+        parsed = JSON.parse(summaryRes.choices[0].message.content ?? "{}");
+      } catch {
+        /* noop */
+      }
+      const recap = parsed.recap?.trim();
+      if (!recap) return res.status(500).json({ message: "Recap generation failed" });
+      res.json({
+        recap,
+        detailed: pro ? parsed.detailed?.trim() || null : null,
+      });
+    } catch (err: any) {
+      console.error("Guidance recap error:", err);
+      res.status(500).json({ message: "Recap failed" });
+    }
+  });
+
   app.post("/api/guidance/phase1", async (req, res) => {
     const { situation, sessionId } = req.body as {
       situation?: string;
