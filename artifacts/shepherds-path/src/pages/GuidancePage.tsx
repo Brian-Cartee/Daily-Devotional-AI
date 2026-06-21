@@ -252,35 +252,50 @@ export default function GuidancePage() {
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
-  // Voice greeting — plays once per session on the empty entry screen
+  const greetingEngagedRef = useRef(false);
+
+  // Voice greeting — after 5s dwell on the empty entry screen (cancel if they leave or engage)
   useEffect(() => {
-    if (situation.trim()) return; // already have a situation, skip
+    if (situation.trim()) return;
     const sessionKey = "sp_guidance_greeted_this_session";
     if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, "1");
+
+    let cancelled = false;
     const greeting = isFirstVisit
       ? "I'm here. Take your time — what's on your heart?"
       : "Welcome back. What are you carrying today?";
-    const delay = setTimeout(() => {
-      // Use OpenAI TTS for the greeting so it matches the session voice quality
+
+    const dwellTimer = window.setTimeout(() => {
+      if (cancelled || greetingEngagedRef.current) return;
+      if (document.visibilityState === "hidden") return;
+
       const voice = getUserVoice();
       fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: greeting, voice, scope: "snippet", sessionId: getSessionId() }),
       })
-        .then(r => r.ok ? r.blob() : null)
-        .then(blob => {
-          if (!blob) return;
+        .then((r) => (r.ok ? r.blob() : null))
+        .then((blob) => {
+          if (cancelled || greetingEngagedRef.current || !blob) return;
+          sessionStorage.setItem(sessionKey, "1");
           const url = URL.createObjectURL(blob);
           const audio = new Audio(url);
           audio.play().catch(() => {});
           audio.onended = () => URL.revokeObjectURL(url);
         })
         .catch(() => {});
-    }, 3500);
-    return () => clearTimeout(delay);
-  }, []);
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(dwellTimer);
+    };
+  }, [isFirstVisit, situation]);
+
+  useEffect(() => {
+    if (heartInput.trim()) greetingEngagedRef.current = true;
+  }, [heartInput]);
 
   // Fetch witness letter — "last time you were here" continuity line
   useEffect(() => {
@@ -983,6 +998,7 @@ export default function GuidancePage() {
       });
     };
     rec.onerror = () => { setHeartListening(false); setInterimTranscript(""); };
+    greetingEngagedRef.current = true;
     setHeartListening(true);
     rec.start();
   };
