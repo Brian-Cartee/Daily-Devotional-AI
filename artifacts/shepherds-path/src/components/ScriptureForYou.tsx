@@ -15,12 +15,12 @@ import { getSessionId } from "@/lib/session";
 
 function hasEngagedToday(): boolean {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 
     // Devotional visit (stored as timestamp)
     const devTs = localStorage.getItem("sp_last_devotional_visit");
     if (devTs) {
-      const devDate = new Date(Number(devTs)).toISOString().split("T")[0];
+      const devDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Number(devTs)));
       if (devDate === today) return true;
     }
 

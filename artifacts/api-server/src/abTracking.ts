@@ -41,13 +41,4 @@ export async function logAbInteraction(params: {
   }
 }
 
-export function detectCrisisSignal(text: string): boolean {
-  const lower = text.toLowerCase();
-  const signals = [
-    "kill myself", "end my life", "suicide", "suicidal",
-    "want to die", "self harm", "self-harm", "cutting myself",
-    "hurt myself", "don't want to be here", "not worth living",
-    "end it all", "can't go on",
-  ];
-  return signals.some(s => lower.includes(s));
-}
+export { detectCrisisSignal } from "./guidanceSafety";

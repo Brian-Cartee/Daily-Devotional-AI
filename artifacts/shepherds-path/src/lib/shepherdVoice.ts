@@ -36,23 +36,27 @@ export function buildShepherdGreeting(
   name: string | null | undefined,
   isFirstVisit: boolean,
   witnessLine: string | null,
+  reentryLine?: string | null,
 ): string {
   const hi = name ? `Hi ${name}.` : "Hi.";
+  if (reentryLine?.trim()) {
+    return `${hi} ${reentryLine.trim()}`;
+  }
   if (witnessLine) {
     const trimmed = witnessLine.trim();
     const endsQuestion = trimmed.endsWith("?");
     return endsQuestion
-      ? `${hi} It's good to have you back. ${trimmed}`
-      : `${hi} It's good to have you back. ${trimmed} What's on your heart today?`;
+      ? `${hi} Good to have you back — I'm glad you came. ${trimmed}`
+      : `${hi} Good to have you back — I'm glad you came. ${trimmed} What's on your heart today?`;
   }
   if (isFirstVisit) {
     return name
-      ? `${hi} I'm glad you're here. Take your time — what's on your heart?`
-      : "I'm glad you're here. Take your time — what's on your heart?";
+      ? `${hi} I'm genuinely glad you're here. Take your time — what's on your heart?`
+      : "I'm genuinely glad you're here. Take your time — what's on your heart?";
   }
   return name
-    ? `${hi} It's good to have you back. What's on your heart today?`
-    : "It's good to have you back. What's on your heart today?";
+    ? `${hi} Good to have you back. I'm glad you're here — what's on your heart today?`
+    : "Good to have you back. I'm glad you're here — what's on your heart today?";
 }
 
 export type SpeakShepherdOptions = {
@@ -134,7 +138,7 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   };
 }
 
-export const PROCESSING_BRIDGE = "Give me just a moment.";
+export const PROCESSING_BRIDGE = "I'm sitting with what you shared.";
 export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
 export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
 

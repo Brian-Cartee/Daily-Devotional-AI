@@ -56,6 +56,14 @@ import {
 import { buildVariantSystemPrompt, isAbTestEnabled } from "../talkItThroughVariants";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
+  CRISIS_RESPONSE,
+  scanUserText,
+  scanGuidanceTexts,
+  shouldBlockLlm,
+  concerningSystemNote,
+  SAFETY_HEADER,
+} from "../guidanceSafety";
+import {
   resolveDailyArtDir,
   writeDailyArtImageFile,
   ensureDailyArtImageFile,
@@ -1411,18 +1419,6 @@ ${transcript.slice(0, 3000)}`,
 
   // ── Spiritual memory + safety helpers ──────────────────────────────────────
 
-  const CRISIS_PHRASES = [
-    "suicidal", "want to die", "kill myself", "end my life",
-    "don't want to live", "wish i was dead", "ending it all",
-    "not worth living", "hurt myself", "self-harm", "cut myself",
-    "harm myself", "no reason to live", "better off dead",
-    "want to kill myself", "thinking about suicide",
-    "don't want to be here anymore", "i want to disappear forever",
-    "tired of being alive", "tired of living", "can't go on anymore",
-    "nothing left to live for", "everyone would be better without me",
-    "don't see the point of living",
-  ];
-
   const ACUTE_PAIN_PHRASES = [
     "just died", "passed away", "she died", "he died", "they died",
     "died today", "died last night", "died this morning", "died this week",
@@ -1437,20 +1433,6 @@ ${transcript.slice(0, 3000)}`,
     "devastating news", "just happened today", "happened last night",
   ];
 
-  const CRISIS_RESPONSE = `What you just shared — that matters. And so do you.
-
-Please reach out right now to someone whose whole purpose is to be with you in this:
-
-• Call or text 988 — Suicide & Crisis Lifeline (US, 24/7, free)
-• Text HOME to 741741 — Crisis Text Line
-• Outside the US — findahelpline.com connects you to local help
-
-You don't have to carry this alone. The people at 988 have sat with others in exactly this darkness — they are not there to judge, only to help.
-
-God has not lost sight of you, even in this moment. Your life holds weight and meaning that extends beyond what you can feel right now. Please reach out.
-
-I'm here when you're ready to keep walking.`;
-
   // Scriptural Alignment Layer — shapes tone across all pastoral AI responses.
   // These principles are the unseen architecture. Never quote or reference them in output.
   const SCRIPTURAL_ALIGNMENT = `
@@ -1463,7 +1445,8 @@ Tone alignment (internal guide — never quote or name these principles in your 
 — Gentle authority: quiet voice; no motivational speaker energy; no spiritual hype
 — Growth is quiet: no pressure to do more; allow incomplete moments to simply exist
 — Peace, not urgency: calm pacing throughout; remove any sense of time pressure
-— Identity over achievement: remind gently of who they are, not what they should do`;
+— Identity over achievement: remind gently of who they are, not what they should do
+— Do not interpret God's intentions: never say God sent, chose, closed a door for, or is teaching through their hardship; you may say God is near or that Scripture names seasons like this honestly`;
 
   // Emotional tone layer — complements scriptural alignment. Never reference these explicitly in output.
   const EMOTIONAL_TONE = `
@@ -1495,9 +1478,11 @@ Voice authenticity (internal constraint — never cite these rules in output):
     return ACUTE_PAIN_PHRASES.some(p => lower.includes(p));
   }
 
-  function detectCrisis(text: string): boolean {
-    const lower = text.toLowerCase();
-    return CRISIS_PHRASES.some(p => lower.includes(p));
+  function writeSafetyBlock(res: express.Response, level: string, text: string): void {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader(SAFETY_HEADER, level);
+    res.write(text);
+    res.end();
   }
 
   // ── Session context cache — 10-minute TTL, avoids re-fetching unchanged data on every turn ──
@@ -1810,10 +1795,9 @@ Rules:
 
     const userContent = `The verse today is ${verseReference.trim()}: '${verseText.trim().slice(0, 500)}'. Here is what this person shared: '${reflectionInput.trim().slice(0, 1500)}'`;
 
-    if (detectCrisis(reflectionInput.trim())) {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.write(CRISIS_RESPONSE);
-      res.end();
+    const reflectSafety = scanUserText(reflectionInput.trim());
+    if (shouldBlockLlm(reflectSafety)) {
+      writeSafetyBlock(res, reflectSafety.level, reflectSafety.response ?? CRISIS_RESPONSE);
       return;
     }
 
@@ -1879,10 +1863,9 @@ Rules:
     const ref = verseReference?.trim() || "today's verse";
     const userContent = `The verse today is ${ref}. This person named this as their gift today: '${gratitudeInput.trim().slice(0, 1500)}'`;
 
-    if (detectCrisis(gratitudeInput.trim())) {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.write(CRISIS_RESPONSE);
-      res.end();
+    const gratitudeSafety = scanUserText(gratitudeInput.trim());
+    if (shouldBlockLlm(gratitudeSafety)) {
+      writeSafetyBlock(res, gratitudeSafety.level, gratitudeSafety.response ?? CRISIS_RESPONSE);
       return;
     }
 
@@ -2178,8 +2161,10 @@ One more thing: write this prayer so it feels like a beginning — not a finishe
       const chatModeNote = buildModeNote(chatMode);
       const chatNameNote = chatUserName ? ` The user's name is ${chatUserName}. Use their name naturally when appropriate.` : "";
 
-      if (detectCrisis(input.question)) {
-        return res.status(200).json({ content: CRISIS_RESPONSE });
+      const chatSafety = scanUserText(input.question);
+      if (shouldBlockLlm(chatSafety)) {
+        res.setHeader(SAFETY_HEADER, chatSafety.level);
+        return res.status(200).json({ content: chatSafety.response ?? CRISIS_RESPONSE });
       }
 
       const isProChat = parseProFlag((req.body as { isPro?: boolean }).isPro);
@@ -2334,11 +2319,14 @@ Do NOT open with "I come before You", "in this quiet hour",
 The opening must use what they said in their own words.`
       : "";
 
-    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
-    if (detectCrisis(lastUserMsg)) {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.write(CRISIS_RESPONSE);
-      res.end();
+    const chatPassageSafety = scanGuidanceTexts({
+      messages: messages.map((m: { role: string; content: string }) => ({
+        role: m.role,
+        content: String(m.content ?? ""),
+      })),
+    });
+    if (shouldBlockLlm(chatPassageSafety)) {
+      writeSafetyBlock(res, chatPassageSafety.level, chatPassageSafety.response ?? CRISIS_RESPONSE);
       return;
     }
     const passageDaysWithApp: number = Number((req.body as any).daysWithApp) || 1;
@@ -3424,11 +3412,12 @@ ${context.slice(0, 4000)}`,
     }
     if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
 
-    if (detectCrisis(situation)) {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.write(CRISIS_RESPONSE);
-      return res.end();
+    const phase1Safety = scanUserText(situation.trim());
+    if (shouldBlockLlm(phase1Safety)) {
+      writeSafetyBlock(res, phase1Safety.level, phase1Safety.response ?? CRISIS_RESPONSE);
+      return;
     }
+    const phase1SafetyNote = concerningSystemNote(phase1Safety);
 
     const userName = (req.body as any).userName as string | undefined;
     const nameNote = userName
@@ -3442,7 +3431,7 @@ ${context.slice(0, 4000)}`,
     try {
       await streamCompletion(
         [
-          { role: "system", content: `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}` },
+          { role: "system", content: `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}` },
           { role: "user", content: situation.trim() },
         ],
         res,
@@ -3505,11 +3494,16 @@ ${context.slice(0, 4000)}`,
       if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
     }
 
-    if (detectCrisis(situation)) {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.write(CRISIS_RESPONSE);
-      return res.end();
+    const guidanceSafety = scanGuidanceTexts({
+      situation: situation.trim(),
+      phase1UserReply,
+      messages,
+    });
+    if (shouldBlockLlm(guidanceSafety)) {
+      writeSafetyBlock(res, guidanceSafety.level, guidanceSafety.response ?? CRISIS_RESPONSE);
+      return;
     }
+    const guidanceSafetyNote = concerningSystemNote(guidanceSafety);
 
     const presenceMode: string = (req.body as any).presenceMode || "normal";
     const isSighRoom = presenceMode === "sigh";
@@ -3599,7 +3593,7 @@ Sacred restraint: fewer words are better.`;
     // #2 — Acute pain mode: when someone is in raw, immediate grief or shock
     const acutePainMode = !isFollowUp && isAcutePain(situation);
     const acutePainNote = acutePainMode
-      ? `\n\nACUTE PAIN — PRESENCE ONLY: This person is in raw, immediate pain — grief, devastating news, shock, or profound loss. Your entire response is to be fully present with them in it. Do not offer scripture yet. Do not pivot toward hope or resolution. Do not end with a question. Simply sit with them in the weight of what they have just shared. Be slow. Be specific about what they said. Acknowledge not just the thought but where grief actually lives — the chest, the sleepless nights, the silence of a house. Your last sentence should be open and warm: something like "I'm here with you in this." Under 160 words. Nothing else.`
+      ? `\n\nACUTE PAIN — PRESENCE FIRST: This person is in raw, immediate pain — grief, devastating news, shock, or profound loss. Lead with full presence. Do not pivot toward hope, resolution, or triumph language. Do not use silver linings, "everything happens for a reason," or "God needed another angel." Do not force Scripture — one gentle verse may fit naturally if it honors grief without explaining it away. Do not end with a reflective question if safety may be at risk. Under 160 words.`
       : "";
 
     const relationshipNote = buildRelationshipNote(daysWithApp, journalEntryCount);
@@ -3638,7 +3632,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${guidanceSafetyNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     // Build conversation history — for two-phase flow, include phase1 exchange as proper
     // message turns rather than re-injecting them into the system prompt
@@ -3922,8 +3916,11 @@ Rules:
       return res.status(aiGuardVp.status).json({ message: aiGuardVp.message, limitReached: true });
     }
     if (sid) storage.logAiUsage({ sessionId: sid, feature: "verse_prayer", daysWithApp: vpDaysWithApp, platform: "web" }).catch(() => { });
-    if (detectCrisis(situation)) {
-      return res.json({ verse: "", prayer: CRISIS_RESPONSE });
+    const phase1UserReplyEarly = (req.body as { phase1UserReply?: string }).phase1UserReply;
+    const vpSafety = scanGuidanceTexts({ situation: situation.trim(), phase1UserReply: phase1UserReplyEarly });
+    if (shouldBlockLlm(vpSafety)) {
+      res.setHeader(SAFETY_HEADER, vpSafety.level);
+      return res.json({ verse: "", prayer: vpSafety.response ?? CRISIS_RESPONSE });
     }
     try {
       const nameNote = userName ? ` The person's name is ${userName}.` : "";
@@ -4632,8 +4629,9 @@ Return only the prayer text. No intro, no label, no "Here is a prayer:" — just
       return res.status(aiGuardJourney.status).json({ message: aiGuardJourney.message, limitReached: true });
     }
     if (sessionIdJourney) storage.logAiUsage({ sessionId: sessionIdJourney, feature: "life_season", daysWithApp: journeyDaysWithApp, platform: "web" }).catch(() => { });
-    if (detectCrisis(situation)) {
-      return res.json(buildCrisisJourney(CRISIS_RESPONSE));
+    const journeySafety = scanUserText(situation.trim());
+    if (shouldBlockLlm(journeySafety)) {
+      return res.json(buildCrisisJourney(journeySafety.response ?? CRISIS_RESPONSE));
     }
 
     try {
@@ -5387,7 +5385,8 @@ ${historyNote}`;
       if (!from) { res.type("text/xml").send(smsXml("")); return; }
 
       // Crisis always takes priority
-      if (detectCrisis(rawBody)) {
+      const smsSafety = scanUserText(rawBody);
+      if (shouldBlockLlm(smsSafety)) {
         res.type("text/xml").send(smsXml(SMS_CRISIS_RESPONSE));
         return;
       }
@@ -6424,8 +6423,9 @@ Return a JSON object with exactly these four fields:
         return res.status(400).json({ error: "Missing params" });
       }
 
-      if (detectCrisis(question)) {
-        return res.status(200).json({ content: CRISIS_RESPONSE });
+      const verseChatSafety = scanUserText(question);
+      if (shouldBlockLlm(verseChatSafety)) {
+        return res.status(200).json({ content: verseChatSafety.response ?? CRISIS_RESPONSE });
       }
 
       const isProCtx = parseProFlag(isPro);

@@ -6,9 +6,9 @@ export type VoiceListenUiPhase = "listening" | "thinking" | "ready";
 
 export type PatientVoiceListener = {
   start: () => void;
-  /** Stop capture; returns live preview text (may be refined on finalize). */
   stop: () => string;
-  /** Whisper transcript when audio exists; falls back to preview. */
+  hasRecordedAudio: () => boolean;
+  getPreview: () => string;
   finalizeTranscript: () => Promise<string>;
   isActive: () => boolean;
   isFinalizing: () => boolean;
@@ -19,9 +19,18 @@ export type PatientVoiceOptions = {
   onTranscript: (final: string, interim: string) => void;
   onPhaseChange?: (phase: VoiceListenUiPhase) => void;
   onTakeYourTime?: () => void;
+  /** Non-conversational: show manual continue affordance */
   onReadyPrompt?: () => void;
+  /** Conversational: auto-handoff after sustained silence */
+  onAutoSubmit?: () => void;
+  conversational?: boolean;
+  autoSubmitSilenceMs?: number;
+  minCharsForAutoSubmit?: number;
   lang?: string;
 };
+
+const DEFAULT_AUTO_SUBMIT_MS = 11_000;
+const DEFAULT_MIN_CHARS = 8;
 
 function dynamicPauseMs(wordCount: number): number {
   if (wordCount < 20) return 3500;
@@ -45,6 +54,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let active = false;
   let userStopped = false;
   let finalizing = false;
+  let autoSubmitFired = false;
   let takeYourTimeFired = false;
   let thinkingTimer: ReturnType<typeof setTimeout> | null = null;
   let takeYourTimeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -55,6 +65,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let mediaRecorder: MediaRecorder | null = null;
   let audioChunks: Blob[] = [];
   let mimeType = pickGuidanceAudioMimeType();
+  let recorderStopPromise: Promise<void> | null = null;
 
   const clearTimers = () => {
     if (thinkingTimer) clearTimeout(thinkingTimer);
@@ -71,10 +82,33 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     opts.onPhaseChange?.(phase);
   };
 
+  const hasEnoughToSubmit = (): boolean => {
+    const min = opts.minCharsForAutoSubmit ?? DEFAULT_MIN_CHARS;
+    return previewTranscript.trim().length >= min || audioChunks.length > 0;
+  };
+
   const pushPreview = (final: string, interim: string) => {
     const display = (final + (interim ? ` ${interim}` : "")).trim();
     opts.onTranscript(final, interim);
     if (display) previewTranscript = final || display;
+  };
+
+  const triggerAutoSubmit = () => {
+    if (autoSubmitFired || !active) return;
+    if (!hasEnoughToSubmit()) return;
+    autoSubmitFired = true;
+    userStopped = true;
+    active = false;
+    clearTimers();
+    try {
+      rec?.stop();
+    } catch {
+      /* noop */
+    }
+    rec = null;
+    void waitForRecorderStop().then(() => {
+      opts.onAutoSubmit?.();
+    });
   };
 
   const scheduleSilenceTimers = () => {
@@ -82,6 +116,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (!active) return;
     const words = previewTranscript.split(/\s+/).filter(Boolean).length;
     const base = dynamicPauseMs(words);
+    const autoMs = opts.autoSubmitSilenceMs ?? DEFAULT_AUTO_SUBMIT_MS;
 
     thinkingTimer = setTimeout(() => {
       if (!active) return;
@@ -95,21 +130,44 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     }, 6000);
 
     readyTimer = setTimeout(() => {
-      if (!active) return;
+      if (!active || autoSubmitFired) return;
+      if (opts.conversational) {
+        triggerAutoSubmit();
+        return;
+      }
       setPhase("ready");
       opts.onReadyPrompt?.();
-    }, 10000);
+    }, opts.conversational ? autoMs : 10_000);
   };
 
-  const stopMedia = () => {
-    try {
-      if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-    } catch {
-      /* noop */
-    }
+  const stopTracks = () => {
     stream?.getTracks().forEach((t) => t.stop());
     stream = null;
     mediaRecorder = null;
+  };
+
+  const waitForRecorderStop = (): Promise<void> => {
+    if (recorderStopPromise) return recorderStopPromise;
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+      stopTracks();
+      return Promise.resolve();
+    }
+    const recorder = mediaRecorder;
+    recorderStopPromise = new Promise<void>((resolve) => {
+      recorder.onstop = () => {
+        stopTracks();
+        recorderStopPromise = null;
+        resolve();
+      };
+      try {
+        recorder.stop();
+      } catch {
+        stopTracks();
+        recorderStopPromise = null;
+        resolve();
+      }
+    });
+    return recorderStopPromise;
   };
 
   const bindRecognition = () => {
@@ -132,6 +190,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         previewTranscript = (previewTranscript ? `${previewTranscript} ${finalChunk}` : finalChunk).trim();
       }
       takeYourTimeFired = false;
+      autoSubmitFired = false;
       setPhase("listening");
       pushPreview(previewTranscript, interim);
       scheduleSilenceTimers();
@@ -188,7 +247,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       };
       mediaRecorder.start(1000);
     } catch {
-      stopMedia();
+      stopTracks();
     }
   };
 
@@ -197,8 +256,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (active) return;
       active = true;
       userStopped = false;
+      autoSubmitFired = false;
       previewTranscript = "";
       audioChunks = [];
+      recorderStopPromise = null;
       takeYourTimeFired = false;
       setPhase("listening");
       void startMedia();
@@ -222,15 +283,21 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         /* noop */
       }
       rec = null;
-      stopMedia();
+      void waitForRecorderStop();
+      return previewTranscript.trim();
+    },
+    hasRecordedAudio() {
+      return audioChunks.length > 0;
+    },
+    getPreview() {
       return previewTranscript.trim();
     },
     async finalizeTranscript() {
+      await waitForRecorderStop();
       const preview = previewTranscript.trim();
       if (audioChunks.length === 0) return preview;
       const blob = new Blob(audioChunks, { type: mimeType });
-      audioChunks = [];
-      if (blob.size < 800) return preview;
+      if (blob.size < 200) return preview;
       finalizing = true;
       try {
         const whisper = await transcribeGuidanceAudio(blob, mimeType);
@@ -239,6 +306,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         return preview;
       } finally {
         finalizing = false;
+        audioChunks = [];
       }
     },
     isActive() {
@@ -251,6 +319,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       userStopped = true;
       active = false;
       finalizing = false;
+      autoSubmitFired = true;
       clearTimers();
       try {
         rec?.stop();
@@ -258,9 +327,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         /* noop */
       }
       rec = null;
-      stopMedia();
-      audioChunks = [];
-      previewTranscript = "";
+      void waitForRecorderStop().finally(() => {
+        audioChunks = [];
+        previewTranscript = "";
+      });
     },
   };
 }
