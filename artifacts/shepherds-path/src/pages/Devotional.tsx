@@ -653,11 +653,7 @@ export default function Devotional() {
 
     setReflectionContent(cachedRefl);
     setPrayerContent(cachedPryr);
-    // Name/verse context changed and cache no longer matches — allow generation to retry
-    if (entryTriggered) {
-      generationStartedRef.current = false;
-    }
-  }, [verse?.id, nameHydrated, resolvedProfileName, entryTriggered]);
+  }, [verse?.id, nameHydrated, resolvedProfileName]);
 
   // Generate reflection/prayer once the user begins (after continuity choice when applicable)
   useEffect(() => {
