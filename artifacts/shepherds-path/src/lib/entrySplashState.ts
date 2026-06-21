@@ -14,6 +14,9 @@ const PROG_LS_KEY = "sp_splash_prog";
 const PROG_COOKIE_KEY = "sp_splash_prog";
 const ONBOARDING_COMPLETE_KEY = "sp_onboarding_splashes_done";
 const ONBOARDING_COMPLETE_COOKIE = "sp_osd";
+const ONBOARDING_HW_KEY = "sp_splash_on_hw";
+const ONBOARDING_HW_COOKIE = "sp_obhw";
+const DAILY_HW_COOKIE = "sp_dohw";
 const SESSION_COMMIT_KEY = "sp_entry_splash_committed";
 
 export type SplashProgV1 = {
@@ -68,6 +71,72 @@ function markOnboardingSplashesComplete(): void {
   } catch {
     /* noop */
   }
+}
+
+function readOnboardingHighWater(): number {
+  let max = 0;
+  try {
+    const m = document.cookie.match(/(?:^|; )sp_obhw=(\d+)/);
+    if (m) max = parseInt(m[1]!, 10);
+    const ls = parseInt(localStorage.getItem(ONBOARDING_HW_KEY) ?? "0", 10);
+    if (!Number.isNaN(ls)) max = Math.max(max, ls);
+  } catch {
+    /* noop */
+  }
+  return Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, Number.isNaN(max) ? 0 : max));
+}
+
+function bumpOnboardingHighWater(next: number): void {
+  const hw = Math.max(next, readOnboardingHighWater());
+  if (hw <= 0) return;
+  try {
+    localStorage.setItem(ONBOARDING_HW_KEY, String(hw));
+    const dom = `${cookieDomain()}; path=/; max-age=63072000; SameSite=Lax; Secure`;
+    document.cookie = `${ONBOARDING_HW_COOKIE}=${hw}${dom}`;
+  } catch {
+    /* noop */
+  }
+}
+
+function readDailyOpenHighWater(today: string): number {
+  let max = 0;
+  try {
+    const m = document.cookie.match(/(?:^|; )sp_dohw=([^;]*)/);
+    if (m) {
+      const [date, count] = decodeURIComponent(m[1]!).split("|");
+      if (date === today) max = parseInt(count ?? "0", 10);
+    }
+    const lsKey = `sp_daily_hw_${today}`;
+    const ls = parseInt(localStorage.getItem(lsKey) ?? "0", 10);
+    if (!Number.isNaN(ls)) max = Math.max(max, ls);
+  } catch {
+    /* noop */
+  }
+  return Math.max(0, Math.min(MAX_DAILY_POST_ONBOARDING_SPLASHES, Number.isNaN(max) ? 0 : max));
+}
+
+function bumpDailyOpenHighWater(today: string, next: number): void {
+  const hw = Math.max(next, readDailyOpenHighWater(today));
+  if (hw <= 0) return;
+  try {
+    localStorage.setItem(`sp_daily_hw_${today}`, String(hw));
+    const dom = `${cookieDomain()}; path=/; max-age=63072000; SameSite=Lax; Secure`;
+    document.cookie = `${DAILY_HW_COOKIE}=${encodeURIComponent(`${today}|${hw}`)}${dom}`;
+  } catch {
+    /* noop */
+  }
+}
+
+function applyMonotonicProgress(prog: SplashProgV1): SplashProgV1 {
+  const today = easternDate();
+  let onboarding = Math.max(prog.onboarding, readOnboardingHighWater());
+  if (isOnboardingSplashesComplete()) onboarding = ONBOARDING_SPLASH_LEN;
+  let dailyOpens = prog.dailyOpens;
+  if (prog.dailyDate === today) {
+    dailyOpens = Math.max(dailyOpens, readDailyOpenHighWater(today));
+  }
+  if (dailyOpens > 0) onboarding = ONBOARDING_SPLASH_LEN;
+  return { ...prog, onboarding, dailyOpens };
 }
 
 function resolveOnboardingCount(legacyCount: number, dailyOpens: number): number {
@@ -130,12 +199,13 @@ function normalizeProg(partial: Partial<SplashProgV1>): SplashProgV1 {
   let onboarding = Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, partial.onboarding ?? 0));
   const dailyDate = partial.dailyDate === today ? today : today;
   const dailyOpens =
-    partial.dailyDate === today
+    partial.dailyDate === today || partial.dailyDate === undefined
       ? Math.max(0, Math.min(MAX_DAILY_POST_ONBOARDING_SPLASHES, partial.dailyOpens ?? 0))
       : 0;
   if (dailyOpens > 0 || isOnboardingSplashesComplete()) {
-    onboarding = ONBOARDING_SPLASH_LEN;
+    onboarding = Math.max(onboarding, ONBOARDING_SPLASH_LEN);
   }
+  onboarding = Math.max(onboarding, readOnboardingHighWater());
   const dailyFeature =
     typeof partial.dailyFeature === "number" && partial.dailyFeature >= 0 && partial.dailyFeature < poolLen
       ? partial.dailyFeature
@@ -194,11 +264,16 @@ export function loadSplashProg(): SplashProgV1 {
   if (prog.dailyDate !== today) {
     prog = { ...prog, ...freshDailyFields(today), lastImage: prog.lastImage };
   }
-  return prog;
+  return applyMonotonicProgress(prog);
 }
 
 export function saveSplashProg(prog: SplashProgV1): void {
-  const normalized = normalizeProg(prog);
+  const withMono = applyMonotonicProgress(prog);
+  const normalized = normalizeProg(withMono);
+  bumpOnboardingHighWater(normalized.onboarding);
+  if (normalized.dailyOpens > 0) {
+    bumpDailyOpenHighWater(normalized.dailyDate, normalized.dailyOpens);
+  }
   if (normalized.onboarding >= ONBOARDING_SPLASH_LEN) {
     markOnboardingSplashesComplete();
   }
@@ -271,16 +346,18 @@ export type AdvancedSplash = SplashSlide & { isShortDoor: boolean; slot: "onboar
  */
 export function advanceEntrySplash(): AdvancedSplash | null {
   hydrateSplashProg();
-  const prog = loadSplashProg();
+  const prog = applyMonotonicProgress(loadSplashProg());
   const today = easternDate();
 
   if (prog.onboarding < ONBOARDING_SPLASH_LEN) {
     const idx = prog.onboarding;
     const slide = ONBOARDING_SLIDES[idx];
     if (!slide) return null;
+    const nextOnboarding = idx + 1;
+    bumpOnboardingHighWater(nextOnboarding);
     saveSplashProg({
       ...prog,
-      onboarding: idx + 1,
+      onboarding: nextOnboarding,
       lastImage: slide.image,
     });
     return { ...slide, isShortDoor: false, slot: "onboarding" };
@@ -317,9 +394,11 @@ export function advanceEntrySplash(): AdvancedSplash | null {
     isShortDoor = true;
   }
 
+  const nextDailyOpens = prog.dailyOpens + 1;
+  bumpDailyOpenHighWater(today, nextDailyOpens);
   saveSplashProg({
     ...prog,
-    dailyOpens: prog.dailyOpens + 1,
+    dailyOpens: nextDailyOpens,
     lastImage: slide.image,
   });
 
@@ -379,22 +458,11 @@ function readSplashBscCookie(): number {
   }
 }
 
-function readNativeOnboardingCount(): number {
-  try {
-    if (typeof window === "undefined") return 0;
-    const n = (window as unknown as { __spNativeSplashCount?: number }).__spNativeSplashCount;
-    if (typeof n !== "number" || Number.isNaN(n)) return 0;
-    return Math.max(0, Math.min(ONBOARDING_SPLASH_LEN, n));
-  } catch {
-    return 0;
-  }
-}
-
-/** Legacy + native fallbacks when the unified JSON blob is missing (WKWebView storage wipe). */
+/** Legacy fallbacks — never trust stale native splashCount (old TestFlight seeds 1 on every open). */
 function readLegacyOnboardingCount(): number {
   if (isOnboardingSplashesComplete()) return ONBOARDING_SPLASH_LEN;
-  let max = readSplashBscCookie();
-  max = Math.max(max, readNativeOnboardingCount());
+  let max = readOnboardingHighWater();
+  max = Math.max(max, readSplashBscCookie());
   try {
     const ls = parseInt(localStorage.getItem("sp_brand_splash_count") ?? "0", 10);
     if (!Number.isNaN(ls)) max = Math.max(max, ls);
@@ -502,16 +570,18 @@ function readLegacyDailyFieldsFromLs(): DailyFields | null {
 
 /** Best daily progress for today from cookie, native, and legacy keys. */
 function readBestDailyFieldsForToday(today: string): DailyFields | null {
+  const hw = readDailyOpenHighWater(today);
   const candidates = [readDscCookieDaily(), readNativeDailyFields(), readLegacyDailyFieldsFromLs()].filter(
     (c): c is DailyFields => !!c && c.dailyDate === today,
   );
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0 && hw <= 0) return null;
 
-  let best = candidates[0]!;
+  let best = candidates[0] ?? { ...freshDailyFields(today), dailyOpens: 0 };
   for (const c of candidates.slice(1)) {
     if (c.dailyOpens > best.dailyOpens) best = c;
     else if (c.dailyOpens === best.dailyOpens && c.dailySecond !== null && best.dailySecond === null) best = c;
   }
+  if (hw > best.dailyOpens) best = { ...best, dailyOpens: hw };
   return best;
 }
 
@@ -546,10 +616,10 @@ export function hydrateSplashProg(): void {
   }
 
   let merged = fromCookie && fromLs ? mergeProg(fromCookie, fromLs) : (fromCookie ?? fromLs!);
-  merged = {
+  merged = applyMonotonicProgress({
     ...merged,
     onboarding: Math.max(merged.onboarding, resolveOnboardingCount(legacyOnboarding, merged.dailyOpens)),
-  };
+  });
   const withDaily = mergeDailyFieldsIfAhead(merged, today);
   if (withDaily.onboarding >= ONBOARDING_SPLASH_LEN) {
     markOnboardingSplashesComplete();

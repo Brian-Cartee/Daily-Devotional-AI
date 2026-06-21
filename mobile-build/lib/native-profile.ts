@@ -310,8 +310,10 @@ export function buildNativeProfileSeedJs(
       }catch(e){}
     }
     if(sid){window.__SP_SESSION_BOOT__=sid;}
+    function _readObhw(){try{var m=document.cookie.match(/(?:^|; )sp_obhw=(\\d+)/);var c=m?parseInt(m[1],10):0;var l=parseInt(localStorage.getItem('sp_splash_on_hw')||'0',10)||0;return Math.max(c,l);}catch(e){return 0;}}
     var sp=${JSON.stringify(splashProg)};
     var sc=${splashCount};
+    sc=Math.max(sc,_readObhw());
     if(sp){
       try{
         localStorage.setItem('sp_splash_prog',sp);

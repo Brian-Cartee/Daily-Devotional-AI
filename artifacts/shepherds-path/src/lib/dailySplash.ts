@@ -13,7 +13,7 @@ const DAILY_SECOND_IDX_KEY = "sp_daily_second_idx";
 const DAILY_FEATURE_IDX_KEY = "sp_daily_feature_idx";
 const DAILY_COOKIE_KEY = "sp_dsc";
 
-/** Showcase splashes per Eastern day (excludes door — door is the 3rd anchor). */
+/** Showcase splashes per Eastern day — excludes onboarding art (those are lifetime-only). */
 export const DAILY_SPLASH_POOL: DailySplashEntry[] = [
   { image: "/splash-forest.jpg", headline: "Stillness waits.", subline: null, cta: "Enter" },
   { image: "/splash-well.jpg", headline: "Come as you are.", subline: null, cta: "Enter" },
@@ -22,10 +22,6 @@ export const DAILY_SPLASH_POOL: DailySplashEntry[] = [
   { image: "/splash-prayer.jpg", headline: "He's listening.", subline: null, cta: "Enter" },
   { image: "/splash-cobblestone.jpg", headline: "One step at a time.", subline: null, cta: "Enter" },
   { image: "/splash-bible-sun-REV.jpg", headline: "Morning mercies.", subline: null, cta: "Enter" },
-  { image: "/splash-road-sunset-REV.jpg", headline: "There you are.", subline: "He never left.", cta: "I'm here" },
-  { image: "/splash-bible-glow-REV.jpg", headline: "He's been waiting.", subline: null, cta: "Enter" },
-  { image: "/splash-mic-REV.jpg", headline: "Talk it through.", subline: "He's listening.", cta: "I'm here" },
-  { image: "/splash-shepherd.jpg", headline: "The path is still here.", subline: null, cta: "Enter" },
 ];
 
 export const DAILY_DOOR_SPLASH: DailySplashEntry = {

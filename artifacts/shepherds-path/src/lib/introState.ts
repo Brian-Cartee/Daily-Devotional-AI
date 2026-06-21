@@ -135,13 +135,7 @@ function writeSplashCookie(n: number): void {
 /** Brand splash visit count — reads unified splash progression. */
 export function getBrandSplashCount(): number {
   hydrateSplashProg();
-  const fromProg = getOnboardingSplashCount();
-  const fromNative = typeof window !== "undefined" ? (window as any).__spNativeSplashCount : undefined;
-  if (typeof fromNative === "number" && !isNaN(fromNative) && fromNative > fromProg) {
-    saveSplashProg({ ...loadSplashProg(), onboarding: fromNative });
-    return fromNative;
-  }
-  return fromProg;
+  return getOnboardingSplashCount();
 }
 
 export function incrementBrandSplashCount(): number {
