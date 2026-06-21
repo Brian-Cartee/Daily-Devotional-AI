@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Clock, PenLine, Heart, Lightbulb, GitBranch,
-  Send, Loader2, User, Sparkles, ChevronRight
+  Send, Loader2, User, Sparkles, ChevronRight, Mic, MicOff
 } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import type { ChatMessage } from "@shared/routes";
@@ -19,6 +19,7 @@ interface BibleStudyChatProps {
   verseReference?: string;
   initialReflection: string;
   prayerContent?: string;
+  openerMessage?: string | null;
 }
 
 export function BibleStudyChat({
@@ -26,11 +27,15 @@ export function BibleStudyChat({
   verseReference,
   initialReflection,
   prayerContent,
+  openerMessage,
 }: BibleStudyChatProps) {
   // How many initial messages to hide from UI (they are context for the AI, not visible chat)
   // messages[0] = today's reflection (always hidden)
   // messages[1] = today's prayer context note (hidden, only if prayer exists)
   const hiddenCount = prayerContent ? 2 : 1;
+
+  // openerMessage=null suppresses the opener entirely; undefined uses default PHILIP_STAY_OPENER
+  const resolvedOpener = openerMessage === null ? null : (openerMessage ?? PHILIP_STAY_OPENER);
 
   const buildInitialMessages = (): ChatMessage[] => {
     const init: ChatMessage[] = [
@@ -42,17 +47,21 @@ export function BibleStudyChat({
         content: `[Devotional context note — the following personalized prayer was already generated for this person as part of today's spiritual practice on ${verseReference ?? "this verse"}: "${prayerContent}". When the person asks you to generate or deepen a prayer, build thoughtfully on this one rather than starting from scratch.]`,
       });
     }
-    init.push({ role: "assistant", content: PHILIP_STAY_OPENER });
+    if (resolvedOpener) {
+      init.push({ role: "assistant", content: resolvedOpener });
+    }
     return init;
   };
 
   const [messages, setMessages] = useState<ChatMessage[]>(buildInitialMessages);
   const [inputValue, setInputValue] = useState("");
   const [showAiPause, setShowAiPause] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const chatMutation = useChatWithVerse();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const newMsgRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     if (pendingScrollRef.current) {
@@ -96,6 +105,38 @@ export function BibleStudyChat({
       e.preventDefault();
       sendMessage(inputValue);
     }
+  };
+
+  const toggleVoice = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map(r => r[0].transcript)
+        .join("");
+      setInputValue(transcript);
+      if (event.results[event.results.length - 1].isFinal) {
+        setIsListening(false);
+      }
+    };
+
+    recognition.start();
   };
 
   // Presets: "Deepen today's prayer" when prayer exists, otherwise generic
@@ -153,7 +194,7 @@ export function BibleStudyChat({
         </div>
       </div>
 
-      {/* Input row — amber send button */}
+      {/* Input row — mic + amber send button */}
       <div className="flex gap-2 items-end">
         <div className="flex-1 rounded-xl border-2 border-border/50 hover:border-primary/30 focus-within:border-primary/50 bg-background/80 px-3 py-2.5 transition-colors">
           <textarea
@@ -162,12 +203,27 @@ export function BibleStudyChat({
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything about this verse…"
+            placeholder={isListening ? "Listening…" : "Ask anything about this verse…"}
             rows={2}
             disabled={chatMutation.isPending}
             className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/55 outline-none leading-relaxed disabled:opacity-50"
           />
         </div>
+        <button
+          data-testid="button-voice-input"
+          onClick={toggleVoice}
+          title={isListening ? "Stop listening" : "Speak your question"}
+          className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-md ${
+            isListening
+              ? "bg-red-500 hover:bg-red-400 shadow-red-400/30 animate-pulse"
+              : "bg-muted hover:bg-muted/80 shadow-black/10"
+          }`}
+        >
+          {isListening
+            ? <MicOff className="w-5 h-5 text-white" />
+            : <Mic className="w-5 h-5 text-muted-foreground" />
+          }
+        </button>
         <button
           data-testid="button-ask-verse"
           onClick={() => sendMessage(inputValue)}

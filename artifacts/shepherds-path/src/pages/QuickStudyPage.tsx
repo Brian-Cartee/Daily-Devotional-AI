@@ -19,6 +19,8 @@ import { ShareButton } from "@/components/ShareButton";
 import { InlineSubscribeToggle } from "@/components/EmailSubscribe";
 import { BiblePassageText } from "@/components/BiblePassageText";
 import { BibleStudyChat } from "@/components/BibleStudyChat";
+import { PastorVideoCard } from "@/components/PastorVideoCard";
+import { usePastorVideo } from "@/hooks/use-pastor-video";
 
 const SUGGESTIONS = [
   "anxiety", "forgiveness", "Romans 8", "the cross", "prayer",
@@ -369,6 +371,7 @@ export default function QuickStudyPage() {
   const saveJournal = useJournalSave();
 
   const [resumeDismissed, setResumeDismissed] = useState(false);
+  const pastorVideo = usePastorVideo("scripture study");
 
   useEffect(() => {
     const saved = localStorage.getItem("sp_track") as TrackId | null;
@@ -502,16 +505,18 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
     <>
 
       {/* Hero banner */}
-      <div className="relative w-full overflow-hidden pt-2" style={{ height: 194 }}>
+      <div className="relative w-full overflow-hidden pt-2" style={{ height: 220 }}>
         <img
-          src="/hero-study.webp"
+          src="/splash-forest.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ objectPosition: "center 40%" }}
         />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.70) 100%)" }} />
-        <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 text-center px-6">
-          <h2 className="text-white text-xl font-extrabold tracking-tight leading-tight">Walk Deeper</h2>
-          <p className="text-white/70 text-[12px] mt-1">Ask Philip anything about Scripture — today's verse or any passage.</p>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.10) 30%, rgba(0,0,0,0.75) 100%)" }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-6 text-center px-6">
+          <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mb-1.5">SHEPHERD'S PATH</p>
+          <h2 className="text-white text-2xl font-extrabold tracking-tight leading-tight">Walk Deeper</h2>
+          <p className="text-white/65 text-[12px] mt-1.5 leading-snug">Talk with Philip about Scripture — today's verse or anything on your heart.</p>
         </div>
       </div>
 
@@ -535,7 +540,26 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
                 verseId={dailyVerse.id}
                 verseReference={dailyVerse.reference}
                 initialReflection={`Today's verse is ${dailyVerse.reference}: "${dailyVerse.text}". Walk the user deeper into this Scripture — its meaning, context, and how it speaks to real life today.`}
+                openerMessage={`What's on your heart about ${dailyVerse.reference}? Ask me anything — context, application, a prayer, or whatever's stirring in you.`}
               />
+
+              {/* Pastor video — Walk Deeper context */}
+              {pastorVideo && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                >
+                  <PastorVideoCard
+                    pastorName={pastorVideo.pastor_name}
+                    churchName={pastorVideo.church_name}
+                    title={pastorVideo.title}
+                    youtubeUrl={pastorVideo.youtube_url}
+                    sectionLabel="A PASTOR FOR TODAY'S WORD"
+                  />
+                </motion.div>
+              )}
+
               <div className="mt-8 mb-4 flex items-center gap-3 px-2">
                 <div className="h-px flex-1 bg-border/40" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/40">Or explore any passage</span>

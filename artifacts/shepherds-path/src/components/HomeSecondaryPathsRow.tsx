@@ -84,8 +84,8 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
         <div
           data-testid="home-secondary-walk-deeper"
           style={rowStyle(
-            "rgba(139,92,246,0.20)",
-            "linear-gradient(to bottom right, rgba(139,92,246,0.10), rgba(109,40,217,0.06))",
+            "rgba(34,197,94,0.22)",
+            "linear-gradient(to bottom right, rgba(34,197,94,0.10), rgba(16,185,129,0.06))",
           )}
         >
           <ShortcutPathIcon variant="study" size="sm" />
