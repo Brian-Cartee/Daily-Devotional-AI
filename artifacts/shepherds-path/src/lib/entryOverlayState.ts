@@ -1,33 +1,38 @@
-import { useState, useEffect } from "react";
-import { getBrandSplashCount, BRAND_SPLASH_SEQUENCE_LEN } from "./introState";
+import { useState, useLayoutEffect } from "react";
 import { canShowEntrySplash } from "./entrySplashState";
 
-function computeInitialActive(): boolean {
+let _active = false;
+const _listeners = new Set<() => void>();
+
+/** Sync overlay flag after splash progression is hydrated (call before React render). */
+export function reconcileEntryOverlayIdle(): void {
   try {
-    if (typeof document === "undefined") return false;
-    if (document.documentElement.dataset.spShell !== "native") return false;
-    if (getBrandSplashCount() < BRAND_SPLASH_SEQUENCE_LEN) return true;
-    return canShowEntrySplash();
+    if (typeof document === "undefined") return;
+    if (document.documentElement.dataset.spShell !== "native") {
+      setEntryOverlayActive(false);
+      return;
+    }
+    setEntryOverlayActive(canShowEntrySplash());
   } catch {
-    return false;
+    setEntryOverlayActive(false);
   }
 }
 
-let _active = computeInitialActive();
-const _listeners = new Set<() => void>();
-
-export function setEntryOverlayActive(active: boolean) {
+export function setEntryOverlayActive(active: boolean): void {
   if (_active === active) return;
   _active = active;
   _listeners.forEach((fn) => fn());
 }
 
 export function useEntryOverlayActive(): boolean {
-  const [active, setActive] = useState(_active);
-  useEffect(() => {
+  const [active, setActive] = useState(() => _active);
+  useLayoutEffect(() => {
+    setActive(_active);
     const notify = () => setActive(_active);
     _listeners.add(notify);
-    return () => { _listeners.delete(notify); };
+    return () => {
+      _listeners.delete(notify);
+    };
   }, []);
   return active;
 }

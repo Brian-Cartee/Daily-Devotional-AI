@@ -22,6 +22,7 @@ import {
   requestNativeSubscriberBootstrap,
 } from "@/lib/subscriberState";
 import { mergeServerSplashProg } from "@/lib/entrySplashState";
+import { reconcileEntryOverlayIdle } from "@/lib/entryOverlayState";
 
 if (isNativeWebViewShell()) {
   nativeDiag("react_entry_started");
@@ -134,6 +135,7 @@ async function mountApp() {
   document.getElementById("sp-enter-btn")?.remove();
   const native = isNativeWebViewShell();
   await mergeServerSplashProg();
+  reconcileEntryOverlayIdle();
   if (!native) {
     removeNativeBootPlaceholder();
   }

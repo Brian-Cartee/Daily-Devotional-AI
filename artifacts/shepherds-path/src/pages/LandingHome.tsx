@@ -863,15 +863,13 @@ function LandingHomeInner() {
   }, []);
 
   useEffect(() => {
-    if (!showEntryScreen) {
-      // No splash — signal native after paint so boot cover drops onto home screen
+    if (showEntryScreen || showBeginWalk) return;
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          (window as any).__spSignalReady?.();
-        });
+        (window as any).__spSignalReady?.();
       });
-    }
-  }, []);
+    });
+  }, [showEntryScreen, showBeginWalk]);
 
   // In native WebView (TestFlight), force-close/reopen doesn't reload the page.
   // Track background time and show the entry splash on real reopens (5s+ away).
@@ -899,6 +897,13 @@ function LandingHomeInner() {
             _splashShownThisSession = true;
             setEntrySplashInit(init);
             setShowEntryScreen(true);
+          } else {
+            setEntrySplashInit(null);
+            setShowEntryScreen(false);
+            setEntryOverlayActive(false);
+            requestAnimationFrame(() => {
+              (window as any).__spSignalReady?.();
+            });
           }
         }),
       );
@@ -934,7 +939,6 @@ function LandingHomeInner() {
     showEntryScreen || showBeginWalk || showSplash || showWelcomeOverlay;
   useLayoutEffect(() => {
     setEntryOverlayActive(blockHomeChrome);
-    return () => setEntryOverlayActive(false);
   }, [blockHomeChrome]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
