@@ -101,6 +101,10 @@ type BrandSplashInit = {
   shortSplash: boolean;
 };
 
+export type { BrandSplashInit };
+
+let entrySplashCommittedThisPageLoad = false;
+
 function resolveBrandSplashInit(): BrandSplashInit {
   const count = getBrandSplashCount();
   const doorSplash = SPLASH_SEQUENCE[0]!;
@@ -178,6 +182,16 @@ function resolveBrandSplashInit(): BrandSplashInit {
   return { openCount: count, splash, ...noIcebreaker };
 }
 
+/** Reserve and return the next entry splash — call once per cold open before mounting UI. */
+export function commitEntrySplash(): BrandSplashInit | null {
+  if (entrySplashCommittedThisPageLoad) return null;
+  const canShow =
+    getBrandSplashCount() < SPLASH_SEQUENCE.length || canShowPostOnboardingSplash();
+  if (!canShow) return null;
+  entrySplashCommittedThisPageLoad = true;
+  return resolveBrandSplashInit();
+}
+
 function getTodayStr() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
@@ -198,8 +212,7 @@ export function markEntryShown() {
 
 // ─── Brand Splash ────────────────────────────────────────────────────────────
 
-function BrandSplash({ onDismiss }: { onDismiss: () => void }) {
-  const [init] = useState(() => resolveBrandSplashInit());
+function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: () => void }) {
   const { splash, character, shortSplash } = init;
   const [showIcebreaker, setShowIcebreaker] = useState(init.showIcebreaker);
   const [showCallback, setShowCallback] = useState(init.showCallback);
@@ -795,10 +808,11 @@ function LetterEntry({ onDismiss }: { onDismiss: () => void }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 interface HomeEntryScreenProps {
+  splashInit: BrandSplashInit;
   onDismiss: () => void;
 }
 
-export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
+export function HomeEntryScreen({ splashInit, onDismiss }: HomeEntryScreenProps) {
   const [entryType] = useState<EntryType>(() => getEntryType());
 
   const handleDismiss = () => {
@@ -815,7 +829,7 @@ export function HomeEntryScreen({ onDismiss }: HomeEntryScreenProps) {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.35 }}
       >
-        {entryType === "brand"  && <BrandSplash onDismiss={handleDismiss} />}
+        {entryType === "brand"  && <BrandSplash init={splashInit} onDismiss={handleDismiss} />}
         {entryType === "heart"  && <HeartEntry  onDismiss={handleDismiss} />}
         {entryType === "letter" && <LetterEntry onDismiss={handleDismiss} />}
       </motion.div>

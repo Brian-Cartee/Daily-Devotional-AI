@@ -10,6 +10,8 @@ export type DailySplashEntry = {
 export const DAILY_OPEN_DATE_KEY = "sp_daily_open_date";
 export const DAILY_OPEN_COUNT_KEY = "sp_daily_open_count";
 const DAILY_SECOND_IDX_KEY = "sp_daily_second_idx";
+const DAILY_FEATURE_IDX_KEY = "sp_daily_feature_idx";
+const DAILY_COOKIE_KEY = "sp_dsc";
 
 /** Showcase splashes per Eastern day (excludes door — door is the 3rd anchor). */
 export const DAILY_SPLASH_POOL: DailySplashEntry[] = [
@@ -36,6 +38,13 @@ export const DAILY_DOOR_SPLASH: DailySplashEntry = {
 /** Two pool showcases + one short door per Eastern calendar day. */
 export const MAX_DAILY_POST_ONBOARDING_SPLASHES = 3;
 
+export type NativeDailySplashState = {
+  date: string;
+  count: number;
+  featureIdx: number;
+  secondIdx: number | null;
+};
+
 function getEasternDateStr(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
@@ -54,6 +63,60 @@ function storageSet(key: string, value: string): void {
   } catch {
     /* private mode */
   }
+}
+
+function readCookieValue(name: string): string | null {
+  try {
+    const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return m ? decodeURIComponent(m[1]!) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDailyCookie(state: DailySplashState): void {
+  try {
+    const second = state.secondIdx === null ? "" : String(state.secondIdx);
+    const val = `${state.date}|${state.count}|${state.featureIdx}|${second}`;
+    document.cookie = `${DAILY_COOKIE_KEY}=${encodeURIComponent(val)};path=/;max-age=172800;SameSite=Lax;Secure`;
+  } catch {
+    /* noop */
+  }
+}
+
+function readDailyCookie(): DailySplashState | null {
+  const raw = readCookieValue(DAILY_COOKIE_KEY);
+  if (!raw) return null;
+  const parts = raw.split("|");
+  if (parts.length < 3) return null;
+  const date = parts[0] ?? "";
+  const count = parseInt(parts[1] ?? "0", 10);
+  const featureIdx = parseInt(parts[2] ?? "-1", 10);
+  const secondPart = parts[3] ?? "";
+  if (!date || isNaN(count) || isNaN(featureIdx) || featureIdx < 0) return null;
+  const secondIdx = secondPart === "" ? null : parseInt(secondPart, 10);
+  return {
+    date,
+    count,
+    featureIdx,
+    secondIdx: secondIdx !== null && !isNaN(secondIdx) ? secondIdx : null,
+  };
+}
+
+function readNativeDailySplash(): DailySplashState | null {
+  if (typeof window === "undefined") return null;
+  const native = (window as unknown as { __spNativeDailySplash?: NativeDailySplashState })
+    .__spNativeDailySplash;
+  if (!native?.date) return null;
+  return {
+    date: native.date,
+    count: typeof native.count === "number" ? native.count : 0,
+    featureIdx: typeof native.featureIdx === "number" ? native.featureIdx : 0,
+    secondIdx:
+      typeof native.secondIdx === "number" && !isNaN(native.secondIdx)
+        ? native.secondIdx
+        : null,
+  };
 }
 
 function hashDateStr(date: string, poolLen: number): number {
@@ -78,37 +141,82 @@ type DailySplashState = {
   secondIdx: number | null;
 };
 
+function freshDailyState(today: string, poolLen: number): DailySplashState {
+  return {
+    date: today,
+    count: 0,
+    featureIdx: hashDateStr(today, poolLen),
+    secondIdx: null,
+  };
+}
+
+function mergeDailySources(
+  today: string,
+  poolLen: number,
+  ...sources: Array<DailySplashState | null>
+): DailySplashState {
+  const valid = sources.filter((s): s is DailySplashState => !!s && s.date === today);
+  if (valid.length === 0) return freshDailyState(today, poolLen);
+
+  let best = valid[0]!;
+  for (const s of valid.slice(1)) {
+    if (s.count > best.count) best = s;
+    else if (s.count === best.count && s.secondIdx !== null && best.secondIdx === null) best = s;
+  }
+  return best;
+}
+
 function readDailyState(): DailySplashState {
   const today = getEasternDateStr();
   const poolLen = DAILY_SPLASH_POOL.length;
-  const lastDate = storageGet(DAILY_OPEN_DATE_KEY);
-  if (lastDate !== today) {
-    const featureIdx = hashDateStr(today, poolLen);
-    return { date: today, count: 0, featureIdx, secondIdx: null };
+
+  const fromLocal: DailySplashState | null = (() => {
+    const lastDate = storageGet(DAILY_OPEN_DATE_KEY);
+    if (lastDate !== today) return null;
+    const count = parseInt(storageGet(DAILY_OPEN_COUNT_KEY) ?? "0", 10) || 0;
+    const storedFeature = parseInt(storageGet(DAILY_FEATURE_IDX_KEY) ?? "-1", 10);
+    const featureIdx =
+      storedFeature >= 0 && storedFeature < poolLen
+        ? storedFeature
+        : hashDateStr(today, poolLen);
+    const secondRaw = storageGet(DAILY_SECOND_IDX_KEY);
+    const secondIdx =
+      secondRaw === null || secondRaw === "" ? null : parseInt(secondRaw, 10);
+    return {
+      date: today,
+      count: isNaN(count) ? 0 : count,
+      featureIdx,
+      secondIdx: secondIdx !== null && !isNaN(secondIdx) ? secondIdx : null,
+    };
+  })();
+
+  return mergeDailySources(today, poolLen, fromLocal, readDailyCookie(), readNativeDailySplash());
+}
+
+function syncDailySplashToNative(state: DailySplashState): void {
+  try {
+    if (typeof window !== "undefined" && (window as unknown as { ReactNativeWebView?: { postMessage: (s: string) => void } }).ReactNativeWebView) {
+      (window as unknown as { ReactNativeWebView: { postMessage: (s: string) => void } }).ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: "sp_ui_state",
+          dailySplash: {
+            date: state.date,
+            count: state.count,
+            featureIdx: state.featureIdx,
+            secondIdx: state.secondIdx,
+          },
+        }),
+      );
+    }
+  } catch {
+    /* noop */
   }
-  const count = parseInt(storageGet(DAILY_OPEN_COUNT_KEY) ?? "0", 10) || 0;
-  const storedFeature = parseInt(storageGet("sp_daily_feature_idx") ?? "-1", 10);
-  const featureIdx =
-    storedFeature >= 0 && storedFeature < poolLen
-      ? storedFeature
-      : hashDateStr(today, poolLen);
-  const secondRaw = storageGet(DAILY_SECOND_IDX_KEY);
-  const secondIdx =
-    secondRaw === null || secondRaw === ""
-      ? null
-      : parseInt(secondRaw, 10);
-  return {
-    date: today,
-    count: isNaN(count) ? 0 : count,
-    featureIdx,
-    secondIdx: secondIdx !== null && !isNaN(secondIdx) ? secondIdx : null,
-  };
 }
 
 function writeDailyState(state: DailySplashState): void {
   storageSet(DAILY_OPEN_DATE_KEY, state.date);
   storageSet(DAILY_OPEN_COUNT_KEY, String(state.count));
-  storageSet("sp_daily_feature_idx", String(state.featureIdx));
+  storageSet(DAILY_FEATURE_IDX_KEY, String(state.featureIdx));
   if (state.secondIdx !== null) {
     storageSet(DAILY_SECOND_IDX_KEY, String(state.secondIdx));
   } else {
@@ -118,6 +226,16 @@ function writeDailyState(state: DailySplashState): void {
       /* noop */
     }
   }
+  writeDailyCookie(state);
+  if (typeof window !== "undefined") {
+    (window as unknown as { __spNativeDailySplash?: NativeDailySplashState }).__spNativeDailySplash = {
+      date: state.date,
+      count: state.count,
+      featureIdx: state.featureIdx,
+      secondIdx: state.secondIdx,
+    };
+  }
+  syncDailySplashToNative(state);
 }
 
 function splashForSlot(state: DailySplashState): { entry: DailySplashEntry; isShortDoor: boolean } | null {
@@ -141,7 +259,7 @@ export function canShowPostOnboardingSplash(): boolean {
 
 export type ResolvedDailySplash = DailySplashEntry & { isShortDoor: boolean };
 
-/** Pick today's splash and advance the daily counter (call once when splash mounts). */
+/** Pick today's splash and advance the daily counter (call once per app open). */
 export function resolvePostOnboardingSplash(): ResolvedDailySplash | null {
   const state = readDailyState();
   const picked = splashForSlot(state);
@@ -153,9 +271,6 @@ export function resolvePostOnboardingSplash(): ResolvedDailySplash | null {
   };
   if (state.count === 0) {
     next.secondIdx = pickSecondIndex(state.featureIdx, DAILY_SPLASH_POOL.length);
-  }
-  if (state.count === 1 && next.secondIdx === null && state.secondIdx !== null) {
-    next.secondIdx = state.secondIdx;
   }
   writeDailyState(next);
 

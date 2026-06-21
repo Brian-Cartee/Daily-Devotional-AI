@@ -241,10 +241,10 @@ export default function MainScreen() {
   useEffect(() => {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState }) => {
         if (cancelled) return;
         setBeforeContentJs(
-          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState)}`,
+          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash)}`,
         );
         setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
       },
@@ -256,7 +256,7 @@ export default function MainScreen() {
 
   const injectProfileSeed = useCallback(() => {
     void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState }) => {
+      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState }) => {
         const seed = buildNativeProfileSeedJs(
           sessionId,
           name,
@@ -266,6 +266,7 @@ export default function MainScreen() {
           splashCount,
           heartLastShown,
           heartState,
+          dailySplash,
         );
         webviewRef.current?.injectJavaScript(
           `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
@@ -480,9 +481,9 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, heartLastShown, heartState }) => {
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, dailySplash, heartLastShown, heartState }) => {
       setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState)}`,
+        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash)}`,
       );
       setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
@@ -628,10 +629,27 @@ export default function MainScreen() {
             if (data.type === "sp_ui_state") {
               const patch: {
                 splashCount?: number;
+                dailySplash?: {
+                  date: string;
+                  count: number;
+                  featureIdx: number;
+                  secondIdx: number | null;
+                } | null;
                 heartLastShown?: number;
                 heartState?: { weather: string; topic: string | null; ts: number } | null;
               } = {};
               if (typeof data.splashCount === "number") patch.splashCount = data.splashCount;
+              if (data.dailySplash && typeof data.dailySplash === "object" && typeof data.dailySplash.date === "string") {
+                patch.dailySplash = {
+                  date: data.dailySplash.date,
+                  count: typeof data.dailySplash.count === "number" ? data.dailySplash.count : 0,
+                  featureIdx: typeof data.dailySplash.featureIdx === "number" ? data.dailySplash.featureIdx : 0,
+                  secondIdx:
+                    typeof data.dailySplash.secondIdx === "number" && !Number.isNaN(data.dailySplash.secondIdx)
+                      ? data.dailySplash.secondIdx
+                      : null,
+                };
+              }
               if (typeof data.heartLastShown === "number") patch.heartLastShown = data.heartLastShown;
               if (
                 data.heartState &&

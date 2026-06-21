@@ -55,7 +55,7 @@ import { readCarryToday } from "@/lib/devotionalContinuity";
 import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { NATIVE_CARD, NATIVE_PAGE, NATIVE_TEXT, NATIVE_TEXT_SOFT } from "@/lib/nativeColors";
 import { nativeDiag } from "@/lib/nativeDiag";
-import { HomeEntryScreen, markEntryShown, shouldShowHomeEntry } from "@/components/HomeEntryScreen";
+import { HomeEntryScreen, markEntryShown, shouldShowHomeEntry, commitEntrySplash, type BrandSplashInit } from "@/components/HomeEntryScreen";
 import { BeginTodaysWalk, hasShownBeginWalk, markBeginWalkShown } from "@/components/BeginTodaysWalk";
 import {
   bumpHomeVisitAfterThreshold,
@@ -820,25 +820,33 @@ function LandingHomeInner() {
   const [showBeginWalk, setShowBeginWalk] = useState(() => {
     try { return !!localStorage.getItem("sp_start_burden") && !hasShownBeginWalk(); } catch { return false; }
   });
-  const [showEntryScreen, setShowEntryScreen] = useState(() => {
-    if (homeReturnOverlay === "entry") return true;
-    if (_splashShownThisSession) return false;
+
+  const [entrySplashInit, setEntrySplashInit] = useState<BrandSplashInit | null>(() => {
+    const reserve = (): BrandSplashInit | null => {
+      if (_splashShownThisSession) return null;
+      const init = commitEntrySplash();
+      if (init) {
+        _splashShownThisSession = true;
+        return init;
+      }
+      return null;
+    };
+
+    if (homeReturnOverlay === "entry") return reserve();
+
     try {
       const isNative = document.documentElement.dataset.spShell === "native";
-      // Brand onboarding splashes (door, road, …) — always show until sequence completes.
-      if (shouldShowHomeEntry(isNative)) {
-        _splashShownThisSession = true;
-        return true;
-      }
+      if (shouldShowHomeEntry(isNative)) return reserve();
       if (isNative) {
-        // After the 5-splash sequence, only re-show on real reopens (5s+ away).
         const last = parseInt(localStorage.getItem("sp_last_active_ts") ?? "0", 10);
         const elapsed = last > 0 ? Date.now() - last : Infinity;
-        if (elapsed < 5_000) return false;
+        if (elapsed < 5_000) return null;
       }
     } catch { /* storage unavailable */ }
-    return false;
+    return null;
   });
+
+  const [showEntryScreen, setShowEntryScreen] = useState(() => entrySplashInit !== null);
   const [showHeartCheck, setShowHeartCheck] = useState(false);
 
   useEffect(() => {
@@ -883,8 +891,10 @@ function LandingHomeInner() {
       if (elapsed < REOPEN_THRESHOLD_MS) return;
       recordActive();
       clearReturningHome();
-      if (shouldShowHomeEntry(true)) {
+      const init = commitEntrySplash();
+      if (init) {
         _splashShownThisSession = true;
+        setEntrySplashInit(init);
         setShowEntryScreen(true);
       }
     };
@@ -1078,7 +1088,16 @@ function LandingHomeInner() {
       <AnimatePresence>
         {!showBeginWalk && showWelcomeOverlay && <WelcomeOverlay onDismiss={handleDismissWelcome} />}
       </AnimatePresence>
-      {!showBeginWalk && showEntryScreen && <HomeEntryScreen onDismiss={() => { setShowEntryScreen(false); window.scrollTo({ top: 0, behavior: "instant" }); }} />}
+      {!showBeginWalk && showEntryScreen && entrySplashInit && (
+        <HomeEntryScreen
+          splashInit={entrySplashInit}
+          onDismiss={() => {
+            setShowEntryScreen(false);
+            setEntrySplashInit(null);
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }}
+        />
+      )}
       <AnimatePresence>
         {showHeartCheck && !showEntryScreen && !showBeginWalk && !showWelcomeOverlay && (
           <HeartCheckModal onDismiss={() => { setShowHeartCheck(false); markHeartCheckShown(); }} />

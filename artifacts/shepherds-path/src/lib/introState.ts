@@ -139,6 +139,10 @@ export function getBrandSplashCount(): number {
   const fromCookie = readSplashCookie();
   const webMax = Math.max(isNaN(fromStorage) ? 0 : fromStorage, isNaN(fromCookie) ? 0 : fromCookie);
   if (typeof fromNative === "number" && !isNaN(fromNative)) {
+    if (fromNative > webMax) {
+      storageSet(BRAND_SPLASH_COUNT_KEY, String(fromNative), localStorage);
+      writeSplashCookie(fromNative);
+    }
     return Math.max(fromNative, webMax);
   }
   return webMax;
