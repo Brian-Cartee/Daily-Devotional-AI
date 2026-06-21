@@ -25,6 +25,7 @@ import {
   parseGuidanceMemoryContent,
   serializeGuidanceMemory,
   extractMemoryJsonFromModel,
+  sanitizeCarryForwardForSpeech,
 } from "../lib/guidanceMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
@@ -3522,39 +3523,49 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 
   // ── Guidance: save silent memory from a completed guidance session ──────────
   app.post("/api/guidance/save-memory", async (req, res) => {
-    const { situation, response, sessionId } = req.body as {
-      situation?: string; response?: string; sessionId?: string;
+    const { situation, response, sessionId, stage } = req.body as {
+      situation?: string; response?: string; sessionId?: string; stage?: "pending" | "complete";
     };
-    if (!situation?.trim() || !response?.trim() || !sessionId) {
+    if (!situation?.trim() || !sessionId) {
+      return res.status(400).json({ message: "missing fields" });
+    }
+    const isPending = stage === "pending";
+    if (!isPending && !response?.trim()) {
       return res.status(400).json({ message: "missing fields" });
     }
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        max_tokens: 180,
+        max_tokens: isPending ? 100 : 180,
         messages: [
           {
             role: "system",
-            content: `Extract a spiritual memory from a Talk It Through session. Return JSON only:
-{"summary":"1-2 sentences for internal context — what they brought and what mattered","carryForward":"ONE sentence in second person for a spoken welcome when they return in a few days — include a specific detail they shared (person, event, fear, hope). Warm, present tense or recent past. No 'I remember'. Example: You were carrying a lot as your mom prepared to start chemo."}
+            content: isPending
+              ? `From what this person just shared, return JSON only:
+{"summary":"1 sentence internal note","carryForward":"ONE sentence, second person, ≤25 words — emotional weight they are carrying, NOT proper names or diagnoses. Hold the door open; do not declare facts. Good: You were carrying something heavy about someone you love. Bad: You were dealing with a difficult time."}`
+              : `Extract a spiritual memory from a Talk It Through session. Return JSON only:
+{"summary":"1-2 sentences for internal context","carryForward":"ONE sentence, second person, ≤25 words — emotional register and weight, NOT proper names or medical labels. No 'I remember'. Good: You were carrying a lot as something heavy with health drew near. Bad: You were going through a difficult time."}
 
-Rules: be specific not generic; do not permanently label their whole life as grief/crisis from one conversation; carryForward must be under 28 words.`,
+Rules: specific emotional weight not generic; do not permanently label their whole life as grief/crisis from one conversation.`,
           },
           {
             role: "user",
-            content: `Their situation: "${situation.slice(0, 600)}"\n\nThe guidance they received began: "${response.slice(0, 400)}"`,
+            content: isPending
+              ? `They just shared: "${situation.slice(0, 600)}"`
+              : `Their situation: "${situation.slice(0, 600)}"\n\nThe guidance they received began: "${(response ?? "").slice(0, 400)}"`,
           },
         ],
       });
       const raw = completion.choices[0]?.message?.content?.trim();
       const parsed = raw ? extractMemoryJsonFromModel(raw) : null;
       const summary = parsed?.summary ?? raw;
-      if (summary && summary.length > 20) {
+      if (summary && summary.length > 12) {
         const payload = parsed ?? { summary };
+        const cf = payload.carryForward ? sanitizeCarryForwardForSpeech(payload.carryForward) : undefined;
         const entry = await storage.createJournalEntry({
           sessionId,
           type: "guidance_memory",
-          content: serializeGuidanceMemory({ summary: payload.summary, carryForward: payload.carryForward }),
+          content: serializeGuidanceMemory({ summary: payload.summary, carryForward: cf }),
           title: undefined,
         });
         return res.status(200).json({ ok: true, id: String(entry.id) });
@@ -3628,15 +3639,16 @@ Rules:
 
   // ── Guidance: session feedback (did this help?) ──────────────────────────────
   app.post("/api/guidance/feedback", async (req, res) => {
-    const { sessionId, feedback, situation } = req.body as {
-      sessionId?: string; feedback?: string; situation?: string;
+    const { sessionId, feedback, situation, path: completionPath } = req.body as {
+      sessionId?: string; feedback?: string; situation?: string; path?: string;
     };
     if (!sessionId || !feedback) return res.status(400).json({ message: "missing fields" });
     try {
+      const pathNote = completionPath ? `[${completionPath}] ` : "";
       await storage.createJournalEntry({
         sessionId,
         type: "guidance_feedback",
-        content: feedback,
+        content: `${pathNote}${feedback}`,
         title: situation?.slice(0, 120) ?? undefined,
       });
       res.json({ ok: true });
@@ -3659,16 +3671,25 @@ Rules:
 
       const created = new Date(latest.createdAt).getTime();
       const ageMs = Date.now() - created;
-      if (ageMs > 30 * 24 * 60 * 60 * 1000) {
+      if (ageMs > 60 * 24 * 60 * 60 * 1000) {
         return res.json({ id: null, letter: null });
       }
       if (ageMs < 2 * 60 * 60 * 1000) {
         return res.json({ id: null, letter: null });
       }
+      if (ageMs < 4 * 60 * 60 * 1000) {
+        return res.json({
+          id: String(latest.id),
+          letter: "You were here earlier today. Still carrying it?",
+        });
+      }
 
       const memory = parseGuidanceMemoryContent(latest.content);
       if (memory.carryForward && memory.carryForward.length >= 12 && ageMs <= 7 * 24 * 60 * 60 * 1000) {
-        return res.json({ id: String(latest.id), letter: memory.carryForward });
+        return res.json({
+          id: String(latest.id),
+          letter: sanitizeCarryForwardForSpeech(memory.carryForward),
+        });
       }
 
       const sourceText = memory.summary.slice(0, 500);
@@ -3680,8 +3701,8 @@ Rules:
           {
             role: "system",
             content: patternMode
-              ? `Write 1-2 sentences for a spoken welcome back — softer, pattern-level only (what tends to weigh on them), not specific events. No advice, Scripture, or "I remember". Under 35 words.`
-              : `Write 1-2 sentences for a spoken welcome back — reflect what they were carrying (below). No advice, Scripture, or "I remember". Sound like a trusted companion. Under 45 words.`,
+              ? `Write 1-2 sentences for a spoken welcome back — softer, pattern-level only. End with an open check-in, not a declaration. No "I remember". Under 35 words. Example: Something brought you back — that matters. What's with you today?`
+              : `Write 1-2 sentences for a spoken welcome back — reflect emotional weight (below), not specific names or diagnoses. Open door, don't declare. No advice or Scripture. Under 45 words.`,
           },
           { role: "user", content: sourceText },
         ],

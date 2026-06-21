@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory } from "@/lib/shepherdVoice";
 import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
@@ -102,11 +102,26 @@ function SessionFeedbackSection({
   situation,
   sessionFeedback,
   setSessionFeedback,
+  completionPath,
 }: {
   situation: string;
   sessionFeedback: "yes" | "not-quite" | null;
   setSessionFeedback: (v: "yes" | "not-quite") => void;
+  completionPath?: "carry" | "stay" | null;
 }) {
+  const submitFeedback = (feedback: "yes" | "not-quite") => {
+    setSessionFeedback(feedback);
+    fetch("/api/guidance/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: getSessionId(),
+        feedback,
+        situation: situation.trim().slice(0, 200),
+        path: completionPath ?? undefined,
+      }),
+    }).catch(() => {});
+  };
   return (
     <AnimatePresence mode="wait">
       {sessionFeedback === null ? (
@@ -128,14 +143,7 @@ function SessionFeedbackSection({
             <button
               type="button"
               data-testid="button-guidance-feedback-yes"
-              onClick={() => {
-                setSessionFeedback("yes");
-                fetch("/api/guidance/feedback", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ sessionId: getSessionId(), feedback: "yes", situation: situation.trim().slice(0, 200) }),
-                }).catch(() => {});
-              }}
+              onClick={() => submitFeedback("yes")}
               className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
               style={{ background: "rgba(139,92,246,0.22)", border: "1px solid rgba(139,92,246,0.40)", color: "rgba(196,181,253,0.98)" }}
             >
@@ -144,18 +152,11 @@ function SessionFeedbackSection({
             <button
               type="button"
               data-testid="button-guidance-feedback-not-quite"
-              onClick={() => {
-                setSessionFeedback("not-quite");
-                fetch("/api/guidance/feedback", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ sessionId: getSessionId(), feedback: "not-quite", situation: situation.trim().slice(0, 200) }),
-                }).catch(() => {});
-              }}
+              onClick={() => submitFeedback("not-quite")}
               className="px-5 py-2.5 rounded-full text-[14px] font-semibold transition-all active:scale-95"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }}
             >
-              Not quite
+              Not this time
             </button>
           </div>
         </motion.div>
@@ -265,9 +266,13 @@ export default function GuidancePage() {
   const witnessLetterRef = useRef<string | null>(null);
   const [witnessReady, setWitnessReady] = useState(false);
   const [greetingSpeaking, setGreetingSpeaking] = useState(false);
+  const [greetingFallbackText, setGreetingFallbackText] = useState<string | null>(null);
   const autoMicStartedRef = useRef(false);
   const cancelGreetingSpeakRef = useRef<(() => void) | null>(null);
+  const greetingBlobRef = useRef<Blob | null>(null);
+  const greetingTextRef = useRef<string | null>(null);
   const phase1SpokenRef = useRef<string | null>(null);
+  const phase1MemorySavedRef = useRef(false);
   const sendOffSpokenRef = useRef<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
@@ -784,6 +789,7 @@ export default function GuidancePage() {
     }
 
     guidanceStartedForRef.current = trimmed;
+    postGuidanceMemory(trimmed, undefined, "pending");
     startGuidanceFlow();
   };
 
@@ -836,22 +842,22 @@ export default function GuidancePage() {
     }
   };
 
-  // Save guidance memory silently when first response completes
+  // Save guidance memory when Phase 2 completes (richest payload)
   useEffect(() => {
     if (!responseComplete || !situation.trim() || situation.trim().length < 8) return;
-    const assistantMessages = messages.filter(m => m.role === "assistant");
+    const assistantMessages = messages.filter((m) => m.role === "assistant");
     const firstResponse = assistantMessages[0]?.content;
     if (!firstResponse) return;
-    fetch("/api/guidance/save-memory", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        situation: situation.trim(),
-        response: firstResponse,
-        sessionId: getSessionId(),
-      }),
-    }).catch(() => {});
-  }, [responseComplete]);
+    postGuidanceMemory(situation.trim(), firstResponse, "complete");
+  }, [responseComplete, situation, messages]);
+
+  // Save memory from Phase 1 if user doesn't reach Phase 2
+  useEffect(() => {
+    if (!phase1Complete || !phase1Response?.trim() || phase2Started || phase1MemorySavedRef.current) return;
+    if (!situation.trim() || situation.trim().length < 8) return;
+    phase1MemorySavedRef.current = true;
+    postGuidanceMemory(situation.trim(), phase1Response, "complete");
+  }, [phase1Complete, phase1Response, phase2Started, situation]);
 
 
   // walk-today is now fired in parallel from startPhase2 — see fetchWalkToday below
@@ -1098,11 +1104,26 @@ export default function GuidancePage() {
     startHeartListening(false);
   };
 
+  // Prefetch greeting TTS in parallel with witness fetch
+  useEffect(() => {
+    if (situation.trim() || !witnessReady || !shouldPlayShepherdGreeting()) return;
+    const greeting = buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current);
+    greetingTextRef.current = greeting;
+    setGreetingFallbackText(null);
+    let cancelled = false;
+    prefetchShepherdTTS(greeting).then((blob) => {
+      if (!cancelled) greetingBlobRef.current = blob;
+    });
+    return () => {
+      cancelled = true;
+      greetingBlobRef.current = null;
+    };
+  }, [isFirstVisit, situation, witnessReady]);
+
   // Spoken shepherd welcome → auto-mic when greeting finishes
   useEffect(() => {
     if (situation.trim() || !witnessReady) return;
-    const sessionKey = "sp_guidance_greeted_this_session";
-    if (sessionStorage.getItem(sessionKey)) return;
+    if (!shouldPlayShepherdGreeting()) return;
 
     let cancelled = false;
     let dwellTimer: number | undefined;
@@ -1114,7 +1135,7 @@ export default function GuidancePage() {
       const siriListen = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
       autoMicTimer = window.setTimeout(() => {
         if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
-      }, siriListen ? 400 : 900);
+      }, siriListen ? 300 : 700);
     };
 
     const siriListenPending = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
@@ -1123,16 +1144,19 @@ export default function GuidancePage() {
       if (cancelled || greetingEngagedRef.current) return;
       if (document.visibilityState === "hidden") return;
 
-      const greeting = buildShepherdGreeting(
-        getUserName(),
-        isFirstVisit,
-        witnessLetterRef.current,
-      );
+      const greeting =
+        greetingTextRef.current ??
+        buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current);
 
       cancelGreetingSpeakRef.current = speakShepherdLine(greeting, {
+        prefetchedBlob: greetingBlobRef.current,
         onStart: () => {
-          sessionStorage.setItem(sessionKey, "1");
+          markShepherdGreetingPlayed();
           setGreetingSpeaking(true);
+          setGreetingFallbackText(null);
+        },
+        onFail: () => {
+          setGreetingFallbackText(greeting);
         },
         onEnd: () => {
           setGreetingSpeaking(false);
@@ -1145,7 +1169,7 @@ export default function GuidancePage() {
           scheduleAutoMic();
         },
       });
-    }, siriListenPending ? 600 : 1200);
+    }, siriListenPending ? 250 : 400);
 
     return () => {
       cancelled = true;
@@ -1157,12 +1181,11 @@ export default function GuidancePage() {
     };
   }, [isFirstVisit, situation, witnessReady, hasSpeechSupport]);
 
-  // Siri — open mic when welcome already played this session
+  // Siri — open mic when welcome already played today
   useEffect(() => {
     if (situation.trim() || !witnessReady) return;
     if (sessionStorage.getItem("sp_guidance_siri_listen") !== "1") return;
-    const sessionKey = "sp_guidance_greeted_this_session";
-    if (!sessionStorage.getItem(sessionKey)) return;
+    if (shouldPlayShepherdGreeting()) return;
     let cancelled = false;
     const t = window.setTimeout(() => {
       if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
@@ -1173,16 +1196,17 @@ export default function GuidancePage() {
         /* noop */
       }
       startHeartListeningRef.current(true);
-    }, 500);
+    }, 400);
     return () => {
       cancelled = true;
       window.clearTimeout(t);
     };
   }, [situation, witnessReady]);
 
-  // Phase 1 — speak the first empathic reflection once
+  // Phase 1 — speak first reflection for voice-input sessions only
   useEffect(() => {
     if (!phase1Complete || !phase1Response?.trim()) return;
+    if (!lastInputWasVoiceRef.current) return;
     const key = phase1Response.trim();
     if (phase1SpokenRef.current === key) return;
     phase1SpokenRef.current = key;
@@ -1420,6 +1444,22 @@ export default function GuidancePage() {
                     className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/25 mb-6 focus-within:ring-2 focus-within:ring-violet-400/35 transition-shadow"
                     data-testid="card-guidance-entry"
                   >
+                    {greetingFallbackText && (
+                      <div
+                        className="mb-4 rounded-xl border border-violet-400/25 bg-violet-950/40 px-4 py-3 text-center"
+                        data-testid="text-guidance-greeting-fallback"
+                      >
+                        <p className="text-[13px] text-white/55 leading-relaxed">
+                          Something&apos;s quiet on my end right now — read it here.
+                        </p>
+                        <p
+                          className="mt-2 text-[15px] leading-relaxed text-white/85"
+                          style={{ fontFamily: "'Georgia', serif" }}
+                        >
+                          {greetingFallbackText}
+                        </p>
+                      </div>
+                    )}
                     {/* Voice-first entry — mic opens automatically after spoken welcome */}
                     {hasSpeechSupport && (
                       <div className="flex flex-col items-center mb-4">
@@ -1460,7 +1500,7 @@ export default function GuidancePage() {
                         </motion.button>
                         <p className="mt-3 text-[13px] font-medium text-white/65 text-center">
                           {heartListening
-                            ? "Listening — tap to stop"
+                            ? "Listening…"
                             : greetingSpeaking
                               ? "…"
                               : "Speak when you're ready"}
@@ -2413,6 +2453,7 @@ export default function GuidancePage() {
                 situation={situation}
                 sessionFeedback={sessionFeedback}
                 setSessionFeedback={setSessionFeedback}
+                completionPath="carry"
               />
 
               {/* Stillness + escape hatch */}
@@ -2579,6 +2620,7 @@ export default function GuidancePage() {
                     situation={situation}
                     sessionFeedback={sessionFeedback}
                     setSessionFeedback={setSessionFeedback}
+                    completionPath="stay"
                   />
                 </div>
               </motion.div>
