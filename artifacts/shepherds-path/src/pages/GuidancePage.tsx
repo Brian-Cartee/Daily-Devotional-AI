@@ -408,6 +408,7 @@ export default function GuidancePage() {
     if (!situation.trim()) {
       heartSubmittingRef.current = false;
       phase1SubmittingRef.current = false;
+      autoMicStartedRef.current = false;
     }
   }, [situation]);
 
@@ -587,6 +588,8 @@ export default function GuidancePage() {
   const guidanceStartedForRef = useRef<string | null>(null);
   /** Invalidates in-flight guidance flows when a newer one starts (Strict Mode / remounts). */
   const guidanceFlowGenRef = useRef(0);
+
+  const isReturnEntry = !situation.trim() && witnessReady && !shouldPlayShepherdGreeting();
 
   const streamResponse = async (
     conversationMessages: Message[],
@@ -1348,6 +1351,26 @@ export default function GuidancePage() {
     };
   }, [situation, witnessReady]);
 
+  // Return visit — Philip already greeted today/this session: open the mic without waiting
+  useEffect(() => {
+    if (situation.trim() || !witnessReady || !hasSpeechSupport) return;
+    if (shouldPlayShepherdGreeting()) return;
+    if (greetingEngagedRef.current || autoMicStartedRef.current) return;
+    if (heartListening || heartSubmittingRef.current || processingBridge) return;
+
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
+      autoMicStartedRef.current = true;
+      startHeartListeningRef.current(false);
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [situation, witnessReady, hasSpeechSupport, heartListening, processingBridge]);
+
   // Phase 1 — speak first reflection for voice sessions; mic reopens when Philip finishes
   useEffect(() => {
     if (!phase1Complete || !phase1Response?.trim()) return;
@@ -1817,11 +1840,13 @@ export default function GuidancePage() {
                     {/* Voice-first entry — mic opens automatically after spoken welcome */}
                     {hasSpeechSupport && (
                       <div className="flex flex-col items-center mb-4">
-                        <motion.div
-                          role="status"
+                        <motion.button
+                          type="button"
+                          onClick={toggleHeartVoice}
+                          aria-label={heartListening ? "Stop speaking" : "Start speaking to Philip"}
                           aria-live="polite"
                           data-testid="button-guidance-heart-voice"
-                          className="relative flex items-center justify-center w-28 h-28 rounded-full"
+                          className="relative flex items-center justify-center w-28 h-28 rounded-full cursor-pointer touch-manipulation"
                           animate={heartListening ? {
                             boxShadow: [
                               "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
@@ -1848,7 +1873,7 @@ export default function GuidancePage() {
                               style={{ background: "rgba(239,68,68,0.14)" }} />
                           )}
                           <Mic className={`w-10 h-10 relative z-10 ${heartListening ? "text-red-400" : "text-violet-300"}`} />
-                        </motion.div>
+                        </motion.button>
                         <p className="mt-3 text-[13px] font-medium text-white/65 text-center">
                           {processingBridge
                             ? "Philip is with you…"
@@ -1858,7 +1883,9 @@ export default function GuidancePage() {
                                 : "Philip is listening…"
                               : greetingSpeaking
                                 ? "…"
-                                : "Speak when you're ready"}
+                                : isReturnEntry
+                                  ? "Good to have you back — speak when you're ready"
+                                  : "Speak when you're ready"}
                         </p>
                         {heartListening && (interimTranscript || heartInput) && (
                           <p className="mt-2 text-[14px] text-white/45 italic text-center max-w-[280px] leading-snug">
@@ -2100,11 +2127,14 @@ export default function GuidancePage() {
                   {/* Voice-first reply */}
                   {hasSpeechSupport && !showPhase1TypeFallback && voiceConversation && (
                     <div className="flex flex-col items-center py-2">
-                      <motion.div
-                        role="status"
+                      <motion.button
+                        type="button"
+                        onClick={togglePhase1Voice}
+                        disabled={phase1Speaking || processingBridge || phase2Loading}
+                        aria-label={phase1Listening ? "Stop speaking" : "Reply to Philip"}
                         aria-live="polite"
                         data-testid="button-guidance-phase1-voice"
-                        className="relative flex items-center justify-center w-24 h-24 rounded-full"
+                        className="relative flex items-center justify-center w-24 h-24 rounded-full cursor-pointer touch-manipulation disabled:opacity-60 disabled:cursor-not-allowed"
                         animate={(phase1Listening || phase1Speaking) ? {
                           boxShadow: [
                             "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
@@ -2131,7 +2161,7 @@ export default function GuidancePage() {
                             style={{ background: "rgba(239,68,68,0.12)" }} />
                         )}
                         <Mic className={`w-9 h-9 relative z-10 ${phase1Listening ? "text-red-400" : "text-violet-400"}`} />
-                      </motion.div>
+                      </motion.button>
                       <p className="mt-2.5 text-[12px] text-muted-foreground/70 font-medium">
                         {processingBridge
                           ? "Philip is with you…"
