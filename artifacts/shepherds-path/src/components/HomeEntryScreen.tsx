@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserName, setUserName, syncUserNameFromServer, hasBeenPrompted, markNamePrompted } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { ENCOURAGER_VOICE, SHEPHERD_VOICE } from "@/lib/shepherdVoice";
+import { SHEPHERD_VOICE } from "@/lib/shepherdVoice";
 import { isLateNight } from "@/lib/nightMode";
 import {
   advanceEntrySplash,
@@ -71,25 +71,14 @@ if (typeof window !== "undefined") {
   preloadDailySplashImages();
 }
 
-const ICEBREAKER_CHARACTERS = [
-  {
-    voice: SHEPHERD_VOICE,
-    open: 0,
-    greeting: "Step inside.",
-    question: "What do I call you, friend?",
-    skip: "Just passing through",
-  },
-  {
-    voice: ENCOURAGER_VOICE,
-    open: 1,
-    greeting: "Good to see you.",
-    question: "Did you share your name with me?",
-    skipIfHasName: "Good to know you, [name].",
-    skipIfNoName: "That's alright. Come in.",
-  },
-] as const;
+const NAME_ICEBREAKER = {
+  voice: SHEPHERD_VOICE,
+  greeting: "Step inside.",
+  question: "What do I call you, friend?",
+  skip: "Just passing through",
+} as const;
 
-type IcebreakerCharacter = (typeof ICEBREAKER_CHARACTERS)[number];
+type IcebreakerCharacter = typeof NAME_ICEBREAKER;
 
 type BrandSplashInit = {
   openCount: number;
@@ -132,45 +121,15 @@ function resolveBrandSplashInit(): BrandSplashInit {
     cta: advanced.cta,
   };
 
-  if (advanced.slot === "onboarding" && openCount === 0) {
-    if (hasBeenPrompted()) {
-      return { openCount, splash, ...noIcebreaker, shortSplash: false };
-    }
+  // Name prompt only on the first onboarding splash (door). Opens 2–5 are image-only.
+  if (advanced.slot === "onboarding" && openCount === 0 && !hasBeenPrompted()) {
     return {
       openCount,
       splash,
       showIcebreaker: true,
       showCallback: false,
       callbackMessage: null,
-      character: ICEBREAKER_CHARACTERS[0]!,
-      icebreakerDone: false,
-      shortSplash: false,
-    };
-  }
-  if (advanced.slot === "onboarding" && openCount === 1) {
-    const existing = getUserName();
-    if (existing) {
-      return {
-        openCount,
-        splash,
-        showIcebreaker: false,
-        showCallback: true,
-        callbackMessage: `Good to see you again, ${existing}.`,
-        character: ICEBREAKER_CHARACTERS[1]!,
-        icebreakerDone: false,
-        shortSplash: false,
-      };
-    }
-    if (hasBeenPrompted()) {
-      return { openCount, splash, ...noIcebreaker, shortSplash: false };
-    }
-    return {
-      openCount,
-      splash,
-      showIcebreaker: true,
-      showCallback: false,
-      callbackMessage: null,
-      character: ICEBREAKER_CHARACTERS[1]!,
+      character: NAME_ICEBREAKER,
       icebreakerDone: false,
       shortSplash: false,
     };
@@ -359,12 +318,7 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
     finishIcebreaker();
   };
 
-  const skipLabel =
-    character?.open === 1 && "skipIfNoName" in character
-      ? character.skipIfNoName
-      : character && "skip" in character
-        ? character.skip
-        : "Skip";
+  const skipLabel = character?.skip ?? "Skip";
 
   return (
     <div
