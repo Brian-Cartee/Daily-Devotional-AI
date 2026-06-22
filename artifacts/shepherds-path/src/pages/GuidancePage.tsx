@@ -2060,61 +2060,51 @@ export default function GuidancePage() {
                         </p>
                       </div>
                     )}
-                    {/* Voice-first entry — mic opens automatically after spoken welcome */}
+                    {/* Philip portrait — presence-first voice entry */}
                     {hasSpeechSupport && (
                       <div className="flex flex-col items-center mb-4">
-                        <motion.button
+                        <button
                           type="button"
                           onClick={toggleHeartVoice}
                           aria-label={heartListening ? "Done speaking — send to Philip" : "Start speaking to Philip"}
                           aria-live="polite"
                           data-testid="button-guidance-heart-voice"
-                          className="relative flex items-center justify-center w-28 h-28 rounded-full cursor-pointer touch-manipulation"
-                          animate={heartListening ? {
-                            boxShadow: [
-                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
-                              "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
-                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
-                            ],
-                          } : greetingSpeaking ? {
-                            boxShadow: "0 0 28px 6px rgba(139,92,246,0.28)",
-                          } : {
-                            boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
-                          }}
-                          transition={heartListening ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                          style={{
-                            background: heartListening
-                              ? "radial-gradient(circle, rgba(239,68,68,0.30) 0%, rgba(180,20,20,0.14) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(109,40,217,0.14) 100%)",
-                            border: heartListening
-                              ? "2px solid rgba(239,68,68,0.70)"
-                              : "2px solid rgba(139,92,246,0.50)",
-                          }}
+                          className="relative flex items-center justify-center rounded-full touch-manipulation focus:outline-none"
+                          style={{ width: 120, height: 120 }}
                         >
-                          {heartListening && (
-                            <span className="absolute inset-0 rounded-full animate-ping"
-                              style={{ background: "rgba(239,68,68,0.14)" }} />
-                          )}
-                          <Mic className={`w-10 h-10 relative z-10 ${heartListening ? "text-red-400" : "text-violet-300"}`} />
-                        </motion.button>
-                        <p className="mt-3 text-[13px] font-medium text-white/65 text-center">
-                          {processingBridge
-                            ? "Philip is with you…"
-                            : heartListening
-                              ? heartListenPhase === "thinking"
-                                ? "Philip is with what you shared…"
-                                : "Philip is listening…"
-                              : greetingSpeaking
-                                ? "…"
-                                : isReturnEntry
-                                  ? "Good to have you back — speak when you're ready"
-                                  : "Speak when you're ready"}
-                        </p>
-                        {heartListening && (interimTranscript || heartInput) && (
-                          <p className="mt-2 text-[14px] text-white/45 italic text-center max-w-[280px] leading-snug">
-                            {interimTranscript || heartInput}
-                          </p>
-                        )}
+                          {/* Breathing halo rings */}
+                          <motion.span
+                            className="absolute inset-0 rounded-full"
+                            animate={heartListening ? {
+                              scale: [1, 1.18, 1],
+                              opacity: [0.55, 0.15, 0.55],
+                            } : greetingSpeaking ? {
+                              scale: [1, 1.10, 1],
+                              opacity: [0.40, 0.10, 0.40],
+                            } : {
+                              scale: [1, 1.06, 1],
+                              opacity: [0.25, 0.08, 0.25],
+                            }}
+                            transition={{ duration: heartListening ? 1.4 : 2.8, repeat: Infinity, ease: "easeInOut" }}
+                            style={{
+                              background: heartListening
+                                ? "radial-gradient(circle, rgba(251,191,36,0.5) 0%, rgba(251,191,36,0) 70%)"
+                                : "radial-gradient(circle, rgba(196,181,253,0.4) 0%, rgba(196,181,253,0) 70%)",
+                              boxShadow: heartListening
+                                ? "0 0 0 6px rgba(251,191,36,0.18), 0 0 32px 8px rgba(251,191,36,0.22)"
+                                : greetingSpeaking
+                                  ? "0 0 0 4px rgba(196,181,253,0.22), 0 0 24px 6px rgba(139,92,246,0.28)"
+                                  : "0 0 0 3px rgba(196,181,253,0.12), 0 0 18px 4px rgba(139,92,246,0.16)",
+                            }}
+                          />
+                          {/* Philip portrait */}
+                          <img
+                            src="/philip.jpg"
+                            alt="Philip"
+                            className="relative z-10 rounded-full object-cover object-top"
+                            style={{ width: 112, height: 112, border: heartListening ? "2.5px solid rgba(251,191,36,0.60)" : "2px solid rgba(196,181,253,0.30)" }}
+                          />
+                        </button>
                       </div>
                     )}
 
@@ -2347,60 +2337,50 @@ export default function GuidancePage() {
 
               {phase1Complete && !phase2Started && (
                 <div className="mt-5 space-y-3">
-                  {/* Voice-first reply */}
+                  {/* Philip portrait — phase 1 reply */}
                   {hasSpeechSupport && !showPhase1TypeFallback && voiceConversation && (
                     <div className="flex flex-col items-center py-2">
-                      <motion.button
+                      <button
                         type="button"
                         onClick={togglePhase1Voice}
                         disabled={phase1Speaking || processingBridge || phase2Loading}
                         aria-label={phase1Listening ? "Stop speaking" : "Reply to Philip"}
                         aria-live="polite"
                         data-testid="button-guidance-phase1-voice"
-                        className="relative flex items-center justify-center w-24 h-24 rounded-full cursor-pointer touch-manipulation disabled:opacity-60 disabled:cursor-not-allowed"
-                        animate={(phase1Listening || phase1Speaking) ? {
-                          boxShadow: [
-                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
-                            "0 0 0 16px rgba(239,68,68,0.0), 0 0 42px 14px rgba(239,68,68,0.45)",
-                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
-                          ],
-                        } : {
-                          boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
-                        }}
-                        transition={(phase1Listening || phase1Speaking) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                        style={{
-                          background: phase1Listening
-                            ? "radial-gradient(circle, rgba(239,68,68,0.28) 0%, rgba(180,20,20,0.12) 100%)"
-                            : phase1Speaking
-                              ? "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.08) 100%)",
-                          border: phase1Listening
-                            ? "2px solid rgba(239,68,68,0.65)"
-                            : "2px solid rgba(139,92,246,0.35)",
-                        }}
+                        className="relative flex items-center justify-center rounded-full touch-manipulation focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{ width: 104, height: 104 }}
                       >
-                        {phase1Listening && (
-                          <span className="absolute inset-0 rounded-full animate-ping"
-                            style={{ background: "rgba(239,68,68,0.12)" }} />
-                        )}
-                        <Mic className={`w-9 h-9 relative z-10 ${phase1Listening ? "text-red-400" : "text-violet-400"}`} />
-                      </motion.button>
-                      <p className="mt-2.5 text-[12px] text-muted-foreground/70 font-medium">
-                        {processingBridge
-                          ? "Philip is with you…"
-                          : phase1Speaking
-                            ? "Philip is speaking…"
-                            : phase1Listening
-                              ? phase1ListenPhase === "thinking"
-                                ? "…"
-                                : "Philip is listening…"
-                              : "One moment…"}
-                      </p>
-                      {phase1Listening && (phase1Interim || phase1UserReply) && (
-                        <p className="mt-1.5 text-[13px] text-muted-foreground/55 italic text-center max-w-[280px] leading-snug">
-                          {phase1Interim || phase1UserReply}
-                        </p>
-                      )}
+                        <motion.span
+                          className="absolute inset-0 rounded-full"
+                          animate={phase1Listening ? {
+                            scale: [1, 1.18, 1],
+                            opacity: [0.55, 0.15, 0.55],
+                          } : phase1Speaking ? {
+                            scale: [1, 1.10, 1],
+                            opacity: [0.40, 0.10, 0.40],
+                          } : {
+                            scale: [1, 1.06, 1],
+                            opacity: [0.20, 0.06, 0.20],
+                          }}
+                          transition={{ duration: phase1Listening ? 1.4 : 2.8, repeat: Infinity, ease: "easeInOut" }}
+                          style={{
+                            background: phase1Listening
+                              ? "radial-gradient(circle, rgba(251,191,36,0.5) 0%, rgba(251,191,36,0) 70%)"
+                              : "radial-gradient(circle, rgba(196,181,253,0.35) 0%, rgba(196,181,253,0) 70%)",
+                            boxShadow: phase1Listening
+                              ? "0 0 0 5px rgba(251,191,36,0.18), 0 0 28px 7px rgba(251,191,36,0.20)"
+                              : phase1Speaking
+                                ? "0 0 0 4px rgba(196,181,253,0.20), 0 0 22px 5px rgba(139,92,246,0.25)"
+                                : "0 0 0 2px rgba(196,181,253,0.10), 0 0 14px 3px rgba(139,92,246,0.12)",
+                          }}
+                        />
+                        <img
+                          src="/philip.jpg"
+                          alt="Philip"
+                          className="relative z-10 rounded-full object-cover object-top"
+                          style={{ width: 96, height: 96, border: phase1Listening ? "2.5px solid rgba(251,191,36,0.55)" : "2px solid rgba(196,181,253,0.25)" }}
+                        />
+                      </button>
                     </div>
                   )}
 
@@ -3101,11 +3081,24 @@ export default function GuidancePage() {
                               type="button"
                               onClick={toggleFollowUpVoice}
                               data-testid="button-guidance-voice"
-                              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                              style={{ color: followUpListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                              className="relative flex items-center justify-center rounded-full touch-manipulation focus:outline-none transition-opacity"
+                              style={{ width: 36, height: 36 }}
+                              aria-label={followUpListening ? "Stop speaking" : "Speak your reply"}
                             >
-                              {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
-                              {followUpListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                              {followUpListening && (
+                                <motion.span
+                                  className="absolute inset-0 rounded-full"
+                                  animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
+                                  transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                                  style={{ background: "rgba(251,191,36,0.35)" }}
+                                />
+                              )}
+                              <img
+                                src="/philip.jpg"
+                                alt="Philip"
+                                className="relative z-10 rounded-full object-cover object-top"
+                                style={{ width: 30, height: 30, border: followUpListening ? "2px solid rgba(251,191,36,0.60)" : "1.5px solid rgba(196,181,253,0.25)", opacity: followUpListening ? 1 : 0.65 }}
+                              />
                             </button>
                           ) : <span />}
                           <button
