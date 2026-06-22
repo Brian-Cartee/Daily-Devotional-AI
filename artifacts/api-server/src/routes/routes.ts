@@ -84,6 +84,8 @@ import {
 } from "../costGuards";
 import { checkListenPolicy, getListenAllowance, type ListenScope } from "../listenLimits";
 import { getAiDailyLimits } from "../aiLimits";
+import { checkGuidanceWeeklyLimit, recordGuidanceConversationStart } from "../guidanceWeeklyLimits";
+import { freeTrialGrants } from "../freeTrialConfig";
 import { getTriviaSeed } from "../triviaSeed";
 import type { TriviaQuestion } from "@workspace/db";
 import {
@@ -175,7 +177,7 @@ async function getTTSAudio(text: string, voice: string, scope?: string): Promise
   let buffer: Buffer;
 
   if (scope === "guidance" && process.env.ELEVENLABS_API_KEY) {
-    // Philip's voice — ElevenLabs with OpenAI fallback
+    // Philip's Pro voice — ElevenLabs with OpenAI fallback
     try {
       buffer = await getElevenLabsTTS(input);
     } catch (err) {
@@ -941,8 +943,10 @@ export async function registerRoutes(
     if (!policy.ok) return res.status(policy.status).json({ code: policy.code, message: policy.message });
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const selectedVoice = allowedVoices.includes(voice ?? "") ? voice! : "onyx";
+    // ElevenLabs (Philip's voice) only for Pro users on guidance scope
+    const effectiveScope = (listenScope === "guidance" && isPro === true) ? "guidance" : listenScope === "guidance" ? "guidance-free" : listenScope;
     try {
-      const buffer = await getTTSAudio(text.trim(), selectedVoice, listenScope);
+      const buffer = await getTTSAudio(text.trim(), selectedVoice, effectiveScope);
       res.set("Content-Type", "audio/mpeg");
       res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
@@ -3440,6 +3444,27 @@ ${context.slice(0, 4000)}`,
     }
   });
 
+  // ── Guidance weekly allowance — includes 7-day new-user trial ────────────────
+  app.get("/api/guidance/weekly-allowance", async (req, res) => {
+    const sessionId = (req.query.sessionId as string) || "";
+    const isPro = req.query.isPro === "true";
+    const daysWithApp = Number(req.query.daysWithApp) || 1;
+
+    // Pro users: unlimited
+    if (isPro) return res.json({ unlimited: true, used: 0, limit: null, remaining: null });
+
+    // 7-day new user trial: unlimited Talk It Through for first week
+    if (daysWithApp <= 7) return res.json({ unlimited: true, used: 0, limit: null, remaining: null, trial: true });
+
+    // Check rotating free trial (e.g. "Unlimited Talk It Through" fortnight)
+    if (freeTrialGrants("talk_it_through")) return res.json({ unlimited: true, used: 0, limit: null, remaining: null, trial: true });
+
+    // Standard free: 3 conversations per week
+    const check = checkGuidanceWeeklyLimit(sessionId);
+    const remaining = Math.max(0, check.limit - check.used);
+    return res.json({ unlimited: false, used: check.used, limit: check.limit, remaining });
+  });
+
   app.post("/api/guidance/phase1", async (req, res) => {
     const { situation, sessionId } = req.body as {
       situation?: string;
@@ -3458,6 +3483,10 @@ ${context.slice(0, 4000)}`,
       });
     }
     if (sessionId) storage.logAiUsage({ sessionId, feature: "guidance", daysWithApp, platform: "web" }).catch(() => { });
+    // Track weekly conversation count for free users (trial and pro bypass the limit check)
+    if (sessionId && !isProGuidance && daysWithApp > 7 && !freeTrialGrants("talk_it_through")) {
+      recordGuidanceConversationStart(sessionId);
+    }
 
     const phase1Safety = scanUserText(situation.trim());
     if (shouldBlockLlm(phase1Safety)) {
