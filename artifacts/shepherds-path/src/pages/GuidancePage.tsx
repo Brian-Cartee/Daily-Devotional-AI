@@ -2033,7 +2033,9 @@ export default function GuidancePage() {
                   className="overflow-hidden"
                 >
                   <div
-                    className="w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/25 mb-6 focus-within:ring-2 focus-within:ring-violet-400/35 transition-shadow"
+                    className={hasSpeechSupport && !showHeartTypeFallback
+                      ? "w-full mb-6"
+                      : "w-full rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/90 via-[#1a0a3e]/85 to-black/50 backdrop-blur-md p-4 sm:p-5 shadow-2xl shadow-violet-900/25 mb-6 focus-within:ring-2 focus-within:ring-violet-400/35 transition-shadow"}
                     data-testid="card-guidance-entry"
                   >
                     {showPhilipDisclaimer && (
@@ -2062,7 +2064,7 @@ export default function GuidancePage() {
                     )}
                     {/* Philip portrait — presence-first voice entry */}
                     {hasSpeechSupport && (
-                      <div className="flex flex-col items-center mb-4">
+                      <div className="flex flex-col items-center mb-2 mt-2">
                         <button
                           type="button"
                           onClick={toggleHeartVoice}
@@ -2070,31 +2072,31 @@ export default function GuidancePage() {
                           aria-live="polite"
                           data-testid="button-guidance-heart-voice"
                           className="relative flex items-center justify-center rounded-full touch-manipulation focus:outline-none"
-                          style={{ width: 120, height: 120 }}
+                          style={{ width: 228, height: 228 }}
                         >
-                          {/* Breathing halo rings */}
+                          {/* Breathing halo */}
                           <motion.span
                             className="absolute inset-0 rounded-full"
                             animate={heartListening ? {
-                              scale: [1, 1.18, 1],
-                              opacity: [0.55, 0.15, 0.55],
+                              scale: [1, 1.14, 1],
+                              opacity: [0.60, 0.18, 0.60],
                             } : greetingSpeaking ? {
-                              scale: [1, 1.10, 1],
-                              opacity: [0.40, 0.10, 0.40],
+                              scale: [1, 1.08, 1],
+                              opacity: [0.45, 0.12, 0.45],
                             } : {
-                              scale: [1, 1.06, 1],
-                              opacity: [0.25, 0.08, 0.25],
+                              scale: [1, 1.05, 1],
+                              opacity: [0.28, 0.08, 0.28],
                             }}
-                            transition={{ duration: heartListening ? 1.4 : 2.8, repeat: Infinity, ease: "easeInOut" }}
+                            transition={{ duration: heartListening ? 1.4 : 3.2, repeat: Infinity, ease: "easeInOut" }}
                             style={{
                               background: heartListening
-                                ? "radial-gradient(circle, rgba(251,191,36,0.5) 0%, rgba(251,191,36,0) 70%)"
-                                : "radial-gradient(circle, rgba(196,181,253,0.4) 0%, rgba(196,181,253,0) 70%)",
+                                ? "radial-gradient(circle, rgba(251,191,36,0.45) 0%, rgba(251,191,36,0) 70%)"
+                                : "radial-gradient(circle, rgba(196,181,253,0.35) 0%, rgba(196,181,253,0) 70%)",
                               boxShadow: heartListening
-                                ? "0 0 0 6px rgba(251,191,36,0.18), 0 0 32px 8px rgba(251,191,36,0.22)"
+                                ? "0 0 0 8px rgba(251,191,36,0.16), 0 0 48px 14px rgba(251,191,36,0.20)"
                                 : greetingSpeaking
-                                  ? "0 0 0 4px rgba(196,181,253,0.22), 0 0 24px 6px rgba(139,92,246,0.28)"
-                                  : "0 0 0 3px rgba(196,181,253,0.12), 0 0 18px 4px rgba(139,92,246,0.16)",
+                                  ? "0 0 0 6px rgba(196,181,253,0.20), 0 0 36px 10px rgba(139,92,246,0.26)"
+                                  : "0 0 0 4px rgba(196,181,253,0.10), 0 0 24px 6px rgba(139,92,246,0.14)",
                             }}
                           />
                           {/* Philip portrait */}
@@ -2102,7 +2104,7 @@ export default function GuidancePage() {
                             src="/philip.jpg"
                             alt="Philip"
                             className="relative z-10 rounded-full object-cover object-top"
-                            style={{ width: 112, height: 112, border: heartListening ? "2.5px solid rgba(251,191,36,0.60)" : "2px solid rgba(196,181,253,0.30)" }}
+                            style={{ width: 220, height: 220, border: heartListening ? "3px solid rgba(251,191,36,0.65)" : "2px solid rgba(196,181,253,0.28)" }}
                           />
                         </button>
                       </div>
@@ -2261,20 +2263,31 @@ export default function GuidancePage() {
             </motion.div>
           )}
 
-          {/* Sacred Restraint — a breath of quiet before the response begins */}
+          {/* Sacred Restraint — silent presence while Philip thinks */}
           <AnimatePresence>
-          {isReflecting && situation && (!bridgeQuestion || bridgeSubmitted) && (
+          {isReflecting && situation && (!bridgeQuestion || bridgeSubmitted) && voiceConversation && (
               <motion.div
                 key="presence"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, transition: { duration: 0.6 } }}
                 transition={{ duration: 0.5 }}
-                className="py-6 mb-2"
+                className="flex justify-center py-6 mb-2"
               >
-                <p className="text-[15px] text-foreground/65 italic leading-relaxed">
-                  {processingBridge ? "Philip is reflecting…" : "Sitting with what you shared…"}
-                </p>
+                <div className="relative flex items-center justify-center" style={{ width: 80, height: 80 }}>
+                  <motion.span
+                    className="absolute inset-0 rounded-full"
+                    animate={{ scale: [1, 1.12, 1], opacity: [0.30, 0.06, 0.30] }}
+                    transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ background: "radial-gradient(circle, rgba(196,181,253,0.4) 0%, rgba(196,181,253,0) 70%)" }}
+                  />
+                  <img
+                    src="/philip.jpg"
+                    alt="Philip"
+                    className="relative z-10 rounded-full object-cover object-top"
+                    style={{ width: 72, height: 72, border: "2px solid rgba(196,181,253,0.20)" }}
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -2290,34 +2303,23 @@ export default function GuidancePage() {
             >
               {voiceConversation && !showPhase1TypeFallback && !phase1SpeechDone && (
                 <div className="flex flex-col items-center py-4 mb-2">
-                  <motion.div
-                    role="status"
-                    aria-live="polite"
-                    className="relative flex items-center justify-center w-24 h-24 rounded-full"
-                    animate={(phase1Speaking || isReflecting) ? {
-                      boxShadow: [
-                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
-                        "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.45)",
-                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
-                      ],
-                    } : {
-                      boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
-                    }}
-                    transition={(phase1Speaking || isReflecting) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                    style={{
-                      background: "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)",
-                      border: "2px solid rgba(139,92,246,0.45)",
-                    }}
-                  >
-                    <Mic className="w-9 h-9 relative z-10 text-violet-400" />
-                  </motion.div>
-                  <p className="mt-2.5 text-[13px] text-muted-foreground/75 font-medium">
-                    {phase1Speaking
-                      ? "Philip is speaking…"
-                      : isReflecting
-                        ? "Philip is reflecting…"
-                        : "One moment…"}
-                  </p>
+                  <div className="relative flex items-center justify-center" style={{ width: 104, height: 104 }}>
+                    <motion.span
+                      className="absolute inset-0 rounded-full"
+                      animate={{ scale: [1, 1.10, 1], opacity: [0.35, 0.08, 0.35] }}
+                      transition={{ duration: phase1Speaking ? 1.6 : 2.8, repeat: Infinity, ease: "easeInOut" }}
+                      style={{
+                        background: "radial-gradient(circle, rgba(196,181,253,0.4) 0%, rgba(196,181,253,0) 70%)",
+                        boxShadow: "0 0 0 4px rgba(196,181,253,0.18), 0 0 24px 6px rgba(139,92,246,0.22)",
+                      }}
+                    />
+                    <img
+                      src="/philip.jpg"
+                      alt="Philip"
+                      className="relative z-10 rounded-full object-cover object-top"
+                      style={{ width: 96, height: 96, border: "2px solid rgba(196,181,253,0.25)" }}
+                    />
+                  </div>
                 </div>
               )}
 
