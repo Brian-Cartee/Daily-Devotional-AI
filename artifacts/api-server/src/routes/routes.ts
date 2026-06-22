@@ -3725,8 +3725,8 @@ Rules: specific emotional weight not generic; do not permanently label their who
 
   // ── Guidance: personalized session send-off ──────────────────────────────────
   app.post("/api/guidance/send-off", async (req, res) => {
-    const { situation, userName, sessionId, timezone } = req.body as {
-      situation?: string; userName?: string; sessionId?: string; timezone?: string;
+    const { situation, userName, sessionId, timezone, verseReference } = req.body as {
+      situation?: string; userName?: string; sessionId?: string; timezone?: string; verseReference?: string;
     };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     const nameNote = userName?.trim() ? ` Their name is ${userName.trim()}.` : "";
@@ -3772,6 +3772,7 @@ Rules:
               tokenRow.token,
               timezone ?? "America/New_York",
               situation.trim().slice(0, 60),
+              verseReference,
             );
           }
         }).catch(() => { /* non-critical */ });

@@ -28,11 +28,11 @@ type PendingGuidanceFollowUp = {
 const pendingGuidanceFollowUps: PendingGuidanceFollowUp[] = [];
 
 const GUIDANCE_FOLLOWUP_MESSAGES = [
-  "Yesterday you brought something heavy. A verse is waiting when you're ready.",
-  "What you carried into Talk It Through yesterday — God hasn't forgotten it.",
-  "You were honest yesterday. Come back for a moment whenever you're ready.",
+  "What you carried yesterday — God hasn't forgotten it.",
+  "You were honest yesterday. Come back whenever you're ready.",
   "Yesterday's conversation left something open. The door is still here.",
-  "You didn't come yesterday just to leave it unfinished. A word is waiting.",
+  "You didn't come yesterday just to leave it unfinished.",
+  "Something you brought yesterday is still worth carrying forward.",
 ];
 
 function getMorning8amUTC(timezone: string): Date {
@@ -51,14 +51,20 @@ export function scheduleGuidanceFollowUp(
   token: string,
   timezone: string,
   situationSnippet: string,
+  verseReference?: string,
 ) {
   if (!Expo.isExpoPushToken(token)) return;
   // Remove any existing pending follow-up for this session (deduplicate)
   const idx = pendingGuidanceFollowUps.findIndex(p => p.sessionId === sessionId);
   if (idx !== -1) pendingGuidanceFollowUps.splice(idx, 1);
 
-  const hash = situationSnippet.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const message = GUIDANCE_FOLLOWUP_MESSAGES[hash % GUIDANCE_FOLLOWUP_MESSAGES.length];
+  // If we know the verse Philip chose, lead with it — Evans' anointing working across time
+  const message = verseReference
+    ? `Philip left something for you — ${verseReference}`
+    : GUIDANCE_FOLLOWUP_MESSAGES[
+        situationSnippet.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)
+        % GUIDANCE_FOLLOWUP_MESSAGES.length
+      ];
 
   pendingGuidanceFollowUps.push({
     sessionId,

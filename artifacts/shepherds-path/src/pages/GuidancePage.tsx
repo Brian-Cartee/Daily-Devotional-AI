@@ -1483,7 +1483,12 @@ export default function GuidancePage() {
         startHeartListeningRef.current(false);
         return;
       }
-      const returnLine = buildShepherdReturnLine(getUserName());
+      // Use witness letter if available (user was here 2+ hours ago same day),
+      // otherwise fall back to a randomized return line
+      const witnessLine = witnessLetterRef.current;
+      const returnLine = witnessLine
+        ? buildShepherdGreeting(getUserName(), false, witnessLine, null)
+        : buildShepherdReturnLine(getUserName());
       setGreetingSpeaking(true);
       cancelReturn = speakShepherdLine(returnLine, {
         onEnd: () => {
@@ -3168,6 +3173,7 @@ export default function GuidancePage() {
                     userName: getUserName() ?? undefined,
                     sessionId: getSessionId() ?? undefined,
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    verseReference: verse?.reference ?? undefined,
                   }),
                 })
                   .then(r => r.ok ? r.json() : null)
