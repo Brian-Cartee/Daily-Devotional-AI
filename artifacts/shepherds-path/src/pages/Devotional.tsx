@@ -673,8 +673,13 @@ export default function Devotional() {
 
   // Auto-begin immediately when preference is "auto" (no delayed flash)
   useEffect(() => {
-    if (!verse || entryTriggered || !continuityResolved || !nameHydrated) return;
+    if (!verse || entryTriggered || !nameHydrated) return;
     if (devotionalEntryMode !== "auto") return;
+    // In auto mode, never wait for a continuity choice — start fresh immediately
+    if (!continuityResolved) {
+      resolveContinuity("fresh");
+      return;
+    }
     setEntryTriggered(true);
   }, [verse, entryTriggered, continuityResolved, nameHydrated, devotionalEntryMode]);
 
