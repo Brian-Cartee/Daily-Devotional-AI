@@ -941,7 +941,10 @@ export async function registerRoutes(
       if (!resolvedPro && sessionId) {
         resolvedPro = await storage.isSessionPro(sessionId).catch(() => false);
       }
-      const effectiveScope = resolvedPro ? "guidance" : "guidance-free";
+      // 7-day trial users get ElevenLabs too — it's the sales pitch
+      const daysWithApp = sessionId ? getServerDaysWithApp(sessionId) : 999;
+      const trialEligible = daysWithApp <= 7;
+      const effectiveScope = (resolvedPro || trialEligible) ? "guidance" : "guidance-free";
       try {
         const buffer = await getTTSAudio(text.trim(), "onyx", effectiveScope);
         res.set("Content-Type", "audio/mpeg");
