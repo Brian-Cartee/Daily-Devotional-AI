@@ -137,6 +137,7 @@ export default function Devotional() {
   const [reflectionContent, setReflectionContent] = useState("");
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [reflectionError, setReflectionError] = useState(false);
+  const [reflectionErrorMsg, setReflectionErrorMsg] = useState("");
   const [reflectionInput, setReflectionInput] = useState("");
   const [reflectionInputSubmitted, setReflectionInputSubmitted] = useState<string | null>(null);
   const [reflectListenResponse, setReflectListenResponse] = useState("");
@@ -704,6 +705,7 @@ export default function Devotional() {
     setReflectionLoading(true);
     setReflectionContent("");
     setReflectionError(false);
+    setReflectionErrorMsg("");
     try {
       const result = await streamAI("/api/ai/generate", {
         verseId, type: "reflection", lang, userName,
@@ -744,6 +746,8 @@ export default function Devotional() {
         setReflectionLoading(false);
         return;
       } else {
+        const errMsg = (e instanceof Error) ? `${e.name}: ${e.message}` : String(e);
+        setReflectionErrorMsg(errMsg);
         setReflectionError(true);
       }
     } finally {
@@ -2031,7 +2035,8 @@ export default function Devotional() {
               )}
               {reflectionError && (
                 <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
-                  Could not load encouragement. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
+                  Could not load encouragement. <button onClick={() => { setReflectionErrorMsg(""); generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined); }} className="underline text-primary">Try again</button>
+                  {reflectionErrorMsg ? <span className="block text-xs text-red-400 mt-1">{reflectionErrorMsg}</span> : null}
                 </motion.p>
               )}
             </AnimatePresence>
