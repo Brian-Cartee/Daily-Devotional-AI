@@ -1,4 +1,5 @@
 import { getSessionId } from "@/lib/session";
+import { isProVerifiedLocally } from "@/lib/proStatus";
 
 /** Philip — default Talk It Through voice (internal; never shown to users). */
 export const SHEPHERD_VOICE = "onyx";
@@ -92,6 +93,7 @@ export function prefetchShepherdTTS(text: string): Promise<Blob | null> {
       voice: SHEPHERD_VOICE,
       scope: "guidance",
       sessionId: getSessionId(),
+      isPro: isProVerifiedLocally(),
     }),
   })
     .then((r) => (r.ok ? r.blob() : null))

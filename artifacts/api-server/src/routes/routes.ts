@@ -934,18 +934,19 @@ export async function registerRoutes(
     };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
     const listenScope = scope ?? "snippet";
+    // Compute effective scope before policy check — free users on guidance get guidance-free (OpenAI onyx),
+    // Pro users get guidance (ElevenLabs). Policy runs on effectiveScope so free users aren't blocked.
+    const effectiveScope = (listenScope === "guidance" && isPro === true) ? "guidance" : listenScope === "guidance" ? "guidance-free" : listenScope;
     const policy = checkListenPolicy({
       sessionId,
       isPro: isPro === true,
-      scope: listenScope,
+      scope: effectiveScope,
       chainStart: chainStart === true,
       textLen: text.trim().length,
     });
     if (!policy.ok) return res.status(policy.status).json({ code: policy.code, message: policy.message });
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const selectedVoice = allowedVoices.includes(voice ?? "") ? voice! : "onyx";
-    // ElevenLabs (Philip's voice) only for Pro users on guidance scope
-    const effectiveScope = (listenScope === "guidance" && isPro === true) ? "guidance" : listenScope === "guidance" ? "guidance-free" : listenScope;
     try {
       const buffer = await getTTSAudio(text.trim(), selectedVoice, effectiveScope);
       res.set("Content-Type", "audio/mpeg");
