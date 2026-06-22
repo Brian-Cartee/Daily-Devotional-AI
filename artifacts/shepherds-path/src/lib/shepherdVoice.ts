@@ -90,7 +90,7 @@ export function prefetchShepherdTTS(text: string): Promise<Blob | null> {
     body: JSON.stringify({
       text: input,
       voice: SHEPHERD_VOICE,
-      scope: "verse",
+      scope: "guidance",
       sessionId: getSessionId(),
     }),
   })

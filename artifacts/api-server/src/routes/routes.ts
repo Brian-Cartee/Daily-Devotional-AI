@@ -132,7 +132,7 @@ function writeDiskCache(key: string, buffer: Buffer): void {
 }
 
 const ELEVENLABS_PHILIP_VOICE_ID = "4bt9GD5FhAuJpgPoDNut";
-const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
+const ELEVENLABS_MODEL = "eleven_flash_v2_5";
 
 async function getElevenLabsTTS(text: string): Promise<Buffer> {
   const apiKey = process.env.ELEVENLABS_API_KEY;

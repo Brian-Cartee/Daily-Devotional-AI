@@ -292,6 +292,8 @@ export default function GuidancePage() {
   const crisisReentryRef = useRef<string | null | undefined>(undefined);
   const phase1SpokenRef = useRef<string | null>(null);
   const phase2SpokenRef = useRef<string | null>(null);
+  const phase2TtsBlobRef = useRef<Promise<Blob | null> | null>(null);
+  const followUpTtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const phase1MemorySavedRef = useRef(false);
   const sendOffSpokenRef = useRef<string | null>(null);
   const [phase1SpeechDone, setPhase1SpeechDone] = useState(false);
@@ -669,6 +671,11 @@ export default function GuidancePage() {
         setStreamingText("We can try that again — give it just a moment.");
         setResponseComplete(true);
         return;
+      }
+      // Kick off TTS prefetch immediately — overlaps with React re-render cycle
+      if (lastInputWasVoiceRef.current) {
+        const blobRef = opts?.isFollowUp ? followUpTtsBlobRef : phase2TtsBlobRef;
+        blobRef.current = prefetchShepherdTTS(cleanResponse(accumulated));
       }
       setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
       setStreamingText("");
@@ -1359,17 +1366,32 @@ export default function GuidancePage() {
     followUpSpokenRef.current = text;
     destroyFollowUpVoice();
     stayMicStartedRef.current = false;
-    const cancel = speakShepherdWithMicHandoff(cleanResponse(text), {
-      onStart: () => setFollowUpSpeaking(true),
-      onSpeakingEnd: () => setFollowUpSpeaking(false),
-      handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
-      onHandoff: () => {
-        if (!hasSpeechSupport || isSending || processingBridge) return;
-        startFollowUpListeningRef.current();
-      },
-    });
+
+    let cancelled = false;
+    let cancelSpeak: (() => void) | null = null;
+
+    // Consume prefetched blob — started the moment follow-up streaming ended
+    const blobPromise = followUpTtsBlobRef.current;
+    followUpTtsBlobRef.current = null;
+
+    (async () => {
+      const prefetchedBlob = blobPromise ? await blobPromise : null;
+      if (cancelled) return;
+      cancelSpeak = speakShepherdWithMicHandoff(cleanResponse(text), {
+        prefetchedBlob,
+        onStart: () => setFollowUpSpeaking(true),
+        onSpeakingEnd: () => setFollowUpSpeaking(false),
+        handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
+        onHandoff: () => {
+          if (!hasSpeechSupport || isSending || processingBridge) return;
+          startFollowUpListeningRef.current();
+        },
+      });
+    })();
+
     return () => {
-      cancel();
+      cancelled = true;
+      cancelSpeak?.();
       setFollowUpSpeaking(false);
     };
   }, [messages, responseComplete, voiceConversation, completionPath, hasSpeechSupport, isSending, processingBridge, destroyFollowUpVoice]);
@@ -1562,22 +1584,37 @@ export default function GuidancePage() {
     if (phase2SpokenRef.current === key) return;
     phase2SpokenRef.current = key;
     setPhase2SpeechDone(false);
+
+    let cancelled = false;
+    let cancelSpeak: (() => void) | null = null;
     let clearRevealTimers: (() => void) | undefined;
-    const cancel = speakShepherdLine(cleanResponse(text), {
-      onStart: () => setPhase2Speaking(true),
-      onEnd: () => {
-        setPhase2Speaking(false);
-        setPhase2SpeechDone(true);
-        clearRevealTimers = scheduleVoiceRevealStages();
-      },
-      onFail: () => {
-        setPhase2Speaking(false);
-        setPhase2SpeechDone(true);
-        clearRevealTimers = scheduleVoiceRevealStages();
-      },
-    });
+
+    // Consume prefetched blob — started the moment streaming ended
+    const blobPromise = phase2TtsBlobRef.current;
+    phase2TtsBlobRef.current = null;
+
+    (async () => {
+      const prefetchedBlob = blobPromise ? await blobPromise : null;
+      if (cancelled) return;
+      cancelSpeak = speakShepherdLine(cleanResponse(text), {
+        prefetchedBlob,
+        onStart: () => setPhase2Speaking(true),
+        onEnd: () => {
+          setPhase2Speaking(false);
+          setPhase2SpeechDone(true);
+          clearRevealTimers = scheduleVoiceRevealStages();
+        },
+        onFail: () => {
+          setPhase2Speaking(false);
+          setPhase2SpeechDone(true);
+          clearRevealTimers = scheduleVoiceRevealStages();
+        },
+      });
+    })();
+
     return () => {
-      cancel();
+      cancelled = true;
+      cancelSpeak?.();
       clearRevealTimers?.();
       setPhase2Speaking(false);
     };
