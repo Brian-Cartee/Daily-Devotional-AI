@@ -934,12 +934,17 @@ export async function registerRoutes(
     };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
     const listenScope = scope ?? "snippet";
+    // Verify Pro server-side for guidance scope — don't trust client isPro flag alone
+    let resolvedPro = isPro === true;
+    if (listenScope === "guidance" && !resolvedPro && sessionId) {
+      resolvedPro = await storage.isSessionPro(sessionId).catch(() => false);
+    }
     // Compute effective scope before policy check — free users on guidance get guidance-free (OpenAI onyx),
     // Pro users get guidance (ElevenLabs). Policy runs on effectiveScope so free users aren't blocked.
-    const effectiveScope = (listenScope === "guidance" && isPro === true) ? "guidance" : listenScope === "guidance" ? "guidance-free" : listenScope;
+    const effectiveScope = (listenScope === "guidance" && resolvedPro) ? "guidance" : listenScope === "guidance" ? "guidance-free" : listenScope;
     const policy = checkListenPolicy({
       sessionId,
-      isPro: isPro === true,
+      isPro: resolvedPro,
       scope: effectiveScope,
       chainStart: chainStart === true,
       textLen: text.trim().length,
