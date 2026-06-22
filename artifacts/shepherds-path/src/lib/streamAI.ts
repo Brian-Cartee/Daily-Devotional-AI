@@ -41,7 +41,26 @@ export async function streamAI(
     throw new Error(msg);
   }
 
-  const reader = res.body!.getReader();
+  // iOS WKWebView / older Safari can return a null body or a non-streamable body.
+  // Fall back to reading the full text at once so content always appears.
+  if (!res.body) {
+    const text = await res.text();
+    if (text) onUpdate(text);
+    void refreshAiUsage();
+    return text;
+  }
+
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  try {
+    reader = res.body.getReader();
+  } catch {
+    // ReadableStream not supported — read full response instead
+    const text = await res.clone().text();
+    if (text) onUpdate(text);
+    void refreshAiUsage();
+    return text;
+  }
+
   const decoder = new TextDecoder();
   let text = "";
 

@@ -740,13 +740,16 @@ export default function Devotional() {
             variant: "destructive",
           });
         }
+        // Always clear loading on abort so UI never stays stuck
+        setReflectionLoading(false);
+        return;
       } else {
         setReflectionError(true);
       }
     } finally {
       window.clearTimeout(timeoutId);
+      setReflectionLoading(false);
     }
-    if (!controller.signal.aborted) setReflectionLoading(false);
   };
 
   const streamReflectListen = async (input: string): Promise<boolean> => {
@@ -862,13 +865,15 @@ export default function Devotional() {
             variant: "destructive",
           });
         }
+        setPrayerLoading(false);
+        return;
       } else {
         setPrayerError(true);
       }
     } finally {
       window.clearTimeout(timeoutId);
+      setPrayerLoading(false);
     }
-    if (!controller.signal.aborted) setPrayerLoading(false);
   };
 
   const saveOptionalReflectionToJournal = async (input: string, reply?: string) => {
