@@ -1432,7 +1432,7 @@ export default function GuidancePage() {
           scheduleAutoMic();
         },
       });
-    }, siriListenPending ? 250 : 400);
+    }, siriListenPending ? 600 : 1400);
 
     return () => {
       cancelled = true;
@@ -1476,7 +1476,7 @@ export default function GuidancePage() {
     let cancelled = false;
     let cancelReturn: (() => void) | null = null;
 
-    const t = window.setTimeout(() => {
+    const t = window.setTimeout(() => {  // 1200ms — gives user time to see the screen before Philip speaks
       if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
       autoMicStartedRef.current = true;
       if (document.visibilityState === "hidden") {
@@ -1500,7 +1500,7 @@ export default function GuidancePage() {
           if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(false);
         },
       });
-    }, 500);
+    }, 1200);
 
     return () => {
       cancelled = true;
