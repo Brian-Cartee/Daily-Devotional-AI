@@ -2031,7 +2031,7 @@ export default function Devotional() {
               )}
               {reflectionError && (
                 <motion.p key="ref-error" className="text-sm text-muted-foreground italic">
-                  Could not load reflection. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
+                  Could not load encouragement. <button onClick={() => generateReflection(verse.id, getStoredLang(), getUserName() ?? undefined)} className="underline text-primary">Try again</button>
                 </motion.p>
               )}
             </AnimatePresence>
