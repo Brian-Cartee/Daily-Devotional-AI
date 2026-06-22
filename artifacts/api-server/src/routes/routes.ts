@@ -131,24 +131,72 @@ function writeDiskCache(key: string, buffer: Buffer): void {
   try { fs.writeFileSync(filePath, buffer); } catch (e) { console.warn("TTS disk cache write failed:", e); }
 }
 
-async function getTTSAudio(text: string, voice: string): Promise<Buffer> {
+const ELEVENLABS_PHILIP_VOICE_ID = "4bt9GD5FhAuJpgPoDNut";
+const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
+
+async function getElevenLabsTTS(text: string): Promise<Buffer> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) throw new Error("ELEVENLABS_API_KEY not set");
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_PHILIP_VOICE_ID}`,
+    {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+      },
+      body: JSON.stringify({
+        text: text.slice(0, 5000),
+        model_id: ELEVENLABS_MODEL,
+        voice_settings: {
+          stability: 0.65,
+          similarity_boost: 0.80,
+          style: 0.20,
+          use_speaker_boost: true,
+        },
+      }),
+    }
+  );
+  if (!response.ok) throw new Error(`ElevenLabs TTS failed: ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function getTTSAudio(text: string, voice: string, scope?: string): Promise<Buffer> {
   const input = text.trim();
   if (!input) throw new Error("Empty TTS text");
-  const cacheKey = ttsCacheKey(input, voice);
+  const cacheKey = ttsCacheKey(input, scope === "guidance" ? "elevenlabs-philip" : voice);
   // 1. Memory cache (instant)
   if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey)!;
   // 2. Disk cache (fast, survives restarts)
   const diskHit = readDiskCache(cacheKey);
   if (diskHit) { ttsCache.set(cacheKey, diskHit); return diskHit; }
-  // 3. OpenAI speech API — reads input verbatim (unlike gpt-audio chat)
-  const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
-  const safeVoice = allowedVoices.includes(voice) ? voice : "onyx";
-  const speech = await openaiTTS.audio.speech.create({
-    model: "tts-1",
-    voice: safeVoice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
-    input: input.slice(0, 4096),
-  });
-  const buffer = Buffer.from(await speech.arrayBuffer());
+
+  let buffer: Buffer;
+
+  if (scope === "guidance" && process.env.ELEVENLABS_API_KEY) {
+    // Philip's voice — ElevenLabs with OpenAI fallback
+    try {
+      buffer = await getElevenLabsTTS(input);
+    } catch (err) {
+      console.error("ElevenLabs TTS failed, falling back to OpenAI:", err);
+      const speech = await openaiTTS.audio.speech.create({
+        model: "tts-1", voice: "onyx", input: input.slice(0, 4096),
+      });
+      buffer = Buffer.from(await speech.arrayBuffer());
+    }
+  } else {
+    // All other scopes — OpenAI TTS
+    const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
+    const safeVoice = allowedVoices.includes(voice) ? voice : "onyx";
+    const speech = await openaiTTS.audio.speech.create({
+      model: "tts-1",
+      voice: safeVoice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
+      input: input.slice(0, 4096),
+    });
+    buffer = Buffer.from(await speech.arrayBuffer());
+  }
+
   // Evict oldest entry when cache is full
   if (ttsCache.size >= MAX_TTS_CACHE) {
     const firstKey = ttsCache.keys().next().value;
@@ -894,7 +942,7 @@ export async function registerRoutes(
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const selectedVoice = allowedVoices.includes(voice ?? "") ? voice! : "onyx";
     try {
-      const buffer = await getTTSAudio(text.trim(), selectedVoice);
+      const buffer = await getTTSAudio(text.trim(), selectedVoice, listenScope);
       res.set("Content-Type", "audio/mpeg");
       res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
