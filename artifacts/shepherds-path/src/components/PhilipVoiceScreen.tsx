@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type PhilipVoiceState =
@@ -11,7 +10,7 @@ export type PhilipVoiceState =
 
 export interface PhilipVoiceScreenProps {
   state: PhilipVoiceState;
-  speakingText?: string | null;
+  speakingText?: string | null; // kept for API compatibility, not rendered
   onTap?: () => void;
 }
 
@@ -23,38 +22,7 @@ const HALO: Record<Exclude<PhilipVoiceState, "hidden">, { color: string; pulse: 
   idle:       { color: "rgba(251,191,36,0.35)",  pulse: 3.5 },
 };
 
-function splitSentences(text: string): string[] {
-  return text.split(/(?<=[.!?…])\s+/).map(s => s.trim()).filter(Boolean);
-}
-
-export function PhilipVoiceScreen({ state, speakingText, onTap }: PhilipVoiceScreenProps) {
-  const [visibleSentences, setVisibleSentences] = useState<string[]>([]);
-  const sentenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevText = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (sentenceTimer.current) clearTimeout(sentenceTimer.current);
-    if (!speakingText || state !== "speaking") {
-      setVisibleSentences([]);
-      prevText.current = null;
-      return;
-    }
-    if (speakingText === prevText.current) return;
-    prevText.current = speakingText;
-
-    // Show at most 2 sentences, reveal one at a time
-    const sentences = splitSentences(speakingText).slice(0, 2);
-    setVisibleSentences([]);
-    let i = 0;
-    const reveal = () => {
-      if (i >= sentences.length) return;
-      setVisibleSentences(prev => [...prev, sentences[i]]);
-      i++;
-      sentenceTimer.current = setTimeout(reveal, 3000);
-    };
-    sentenceTimer.current = setTimeout(reveal, 400);
-    return () => { if (sentenceTimer.current) clearTimeout(sentenceTimer.current); };
-  }, [speakingText, state]);
+export function PhilipVoiceScreen({ state, onTap }: PhilipVoiceScreenProps) {
 
   if (state === "hidden") return null;
 
@@ -139,33 +107,6 @@ export function PhilipVoiceScreen({ state, speakingText, onTap }: PhilipVoiceScr
         </AnimatePresence>
       </div>
 
-      {/* Philip's words — max 2 sentences, fade in one at a time, fade out when done speaking */}
-      <div className="px-8 max-w-xs text-center min-h-[6rem]">
-        <AnimatePresence mode="wait">
-          {state === "speaking" && visibleSentences.length > 0 && (
-            <motion.div
-              key={visibleSentences.join("|")}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-3"
-            >
-              {visibleSentences.map((s, i) => (
-                <motion.p
-                  key={i}
-                  className="text-amber-100 text-base leading-relaxed font-light"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: i * 0.2 }}
-                >
-                  {s}
-                </motion.p>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </div>
   );
 }
