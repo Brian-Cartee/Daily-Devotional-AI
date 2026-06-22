@@ -24,5 +24,15 @@ module.exports = {
         PORT: 5000,
       },
     },
+    {
+      name: "turn-service",
+      cwd: "./artifacts/turn-service",
+      script: "uvicorn",
+      args: "turn_service:app --host 0.0.0.0 --port 3002 --workers 1",
+      interpreter: "none",
+      env: {
+        NODE_ENV: "production",
+      },
+    },
   ],
 };

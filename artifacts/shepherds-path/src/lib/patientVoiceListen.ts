@@ -1,4 +1,6 @@
-/** Hybrid voice capture — MediaRecorder + Whisper (truth), SpeechRecognition (live preview). */
+/** Hybrid voice capture — MediaRecorder + Whisper (truth), SpeechRecognition (live preview).
+ *  Turn detection: Smart Turn WebSocket service (primary) → silence timer (fallback).
+ */
 
 import { pickGuidanceAudioMimeType, transcribeGuidanceAudio } from "@/lib/guidanceTranscribe";
 
@@ -31,11 +33,21 @@ export type PatientVoiceOptions = {
   lang?: string;
 };
 
-const DEFAULT_AUTO_SUBMIT_MS = 11_000;
+// ---------------------------------------------------------------------------
+// Turn service WebSocket URL
+// ---------------------------------------------------------------------------
+function turnServiceUrl(): string {
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.host;
+  return `${proto}//${host}/ws/turn`;
+}
+
+// ---------------------------------------------------------------------------
+// Fallback silence constants (used when WebSocket unavailable)
+// ---------------------------------------------------------------------------
+const FALLBACK_AUTO_SUBMIT_MS = 3_000;   // was 10s; short fallback silence
 const DEFAULT_MIN_CHARS = 8;
-/** Only nudge with spoken patience when the user has barely started. */
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
-/** Debounced extension when mic still has speech but SpeechRecognition stalled. */
 const SR_STALL_MS = 2500;
 const STALL_EXTEND_COOLDOWN_MS = 2500;
 
@@ -49,13 +61,12 @@ function dynamicPauseMs(words: number): number {
   return 2000;
 }
 
-/** Long shares get a shorter trailing silence before handoff — they are likely done. */
 function resolveConversationalAutoSubmitMs(words: number, override?: number): number {
   if (override != null) return override;
-  if (words >= 80) return 3500;
-  if (words >= 40) return 4500;
-  if (words >= 20) return 5500;
-  return 10_000;
+  if (words >= 80) return 2500;
+  if (words >= 40) return 3000;
+  if (words >= 20) return 3500;
+  return FALLBACK_AUTO_SUBMIT_MS;
 }
 
 export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVoiceListener | null {
@@ -90,6 +101,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let audioBytesAtLastSpeech = 0;
   let lastStallExtendAt = 0;
 
+  // Smart Turn WebSocket + AudioWorklet state
+  let turnWs: WebSocket | null = null;
+  let audioCtx: AudioContext | null = null;
+  let workletNode: AudioWorkletNode | null = null;
+  let mediaSource: MediaStreamAudioSourceNode | null = null;
+  let turnServiceReady = false;
+
   const totalAudioBytes = () =>
     audioChunks.reduce((sum, chunk) => sum + chunk.size, 0);
 
@@ -109,7 +127,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     lastSpeechAt = now;
     takeYourTimeFired = false;
     setPhase("listening");
-    scheduleSilenceTimers();
+    scheduleFallbackTimers();
   };
 
   const clearTimers = () => {
@@ -145,25 +163,26 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     userStopped = true;
     active = false;
     clearTimers();
-    try {
-      rec?.stop();
-    } catch {
-      /* noop */
-    }
+    teardownTurnService();
+    try { rec?.stop(); } catch { /* noop */ }
     rec = null;
     void waitForRecorderStop().then(() => {
       opts.onAutoSubmit?.();
     });
   };
 
-  const scheduleSilenceTimers = () => {
+  // ---------------------------------------------------------------------------
+  // Fallback timers — used when Smart Turn WS is not available
+  // ---------------------------------------------------------------------------
+  const scheduleFallbackTimers = () => {
+    if (turnServiceReady) return; // Smart Turn is handling it
     clearTimers();
     if (!active) return;
     const words = wordCount(previewTranscript);
     const base = dynamicPauseMs(words);
     const autoMs = opts.conversational
       ? resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs)
-      : (opts.autoSubmitSilenceMs ?? DEFAULT_AUTO_SUBMIT_MS);
+      : (opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS);
 
     thinkingTimer = setTimeout(() => {
       if (!active) return;
@@ -177,7 +196,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         if (Date.now() - lastSpeechAt < 5000) return;
         takeYourTimeFired = true;
         opts.onTakeYourTime?.();
-      }, 8000);
+      }, 6000);
     }
 
     readyTimer = setTimeout(() => {
@@ -191,6 +210,95 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     }, opts.conversational ? autoMs : 10_000);
   };
 
+  // ---------------------------------------------------------------------------
+  // Smart Turn WebSocket
+  // ---------------------------------------------------------------------------
+  const setupTurnService = (micStream: MediaStream) => {
+    if (!opts.conversational) return; // only for conversational mode
+
+    try {
+      const ws = new WebSocket(turnServiceUrl());
+      turnWs = ws;
+
+      ws.onopen = () => { /* wait for "ready" event */ };
+
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data) as { event: string };
+          if (msg.event === "ready") {
+            turnServiceReady = true;
+            clearTimers(); // cancel fallback timers — Smart Turn is live
+            startPCMStream(micStream);
+          } else if (msg.event === "speech_start") {
+            markSpeechActivity();
+            takeYourTimeFired = false;
+            setPhase("listening");
+          } else if (msg.event === "speech_end") {
+            setPhase("thinking");
+          } else if (msg.event === "turn_complete") {
+            if (active && !autoSubmitFired) {
+              triggerAutoSubmit();
+            }
+          }
+        } catch { /* noop */ }
+      };
+
+      ws.onerror = () => {
+        // Smart Turn unavailable — fall through to silence timers
+        turnServiceReady = false;
+        scheduleFallbackTimers();
+      };
+
+      ws.onclose = () => {
+        turnServiceReady = false;
+      };
+
+      // Give the WS 1.5s to connect; if it doesn't, start fallback
+      setTimeout(() => {
+        if (!turnServiceReady && active) {
+          scheduleFallbackTimers();
+        }
+      }, 1500);
+
+    } catch {
+      scheduleFallbackTimers();
+    }
+  };
+
+  const startPCMStream = async (micStream: MediaStream) => {
+    try {
+      audioCtx = new AudioContext({ sampleRate: 16000 });
+      await audioCtx.audioWorklet.addModule("/pcm-processor.js");
+      workletNode = new AudioWorkletNode(audioCtx, "pcm-processor");
+      mediaSource = audioCtx.createMediaStreamSource(micStream);
+      mediaSource.connect(workletNode);
+      workletNode.connect(audioCtx.destination);
+
+      workletNode.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
+        if (turnWs?.readyState === WebSocket.OPEN) {
+          turnWs.send(e.data);
+        }
+      };
+    } catch {
+      // AudioWorklet failed (e.g. Firefox without support) — keep fallback timers
+    }
+  };
+
+  const teardownTurnService = () => {
+    try { workletNode?.disconnect(); } catch { /* noop */ }
+    try { mediaSource?.disconnect(); } catch { /* noop */ }
+    try { audioCtx?.close(); } catch { /* noop */ }
+    try { turnWs?.close(); } catch { /* noop */ }
+    workletNode = null;
+    mediaSource = null;
+    audioCtx = null;
+    turnWs = null;
+    turnServiceReady = false;
+  };
+
+  // ---------------------------------------------------------------------------
+  // MediaRecorder (unchanged — collects webm for Whisper)
+  // ---------------------------------------------------------------------------
   const stopTracks = () => {
     stream?.getTracks().forEach((t) => t.stop());
     stream = null;
@@ -221,6 +329,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     return recorderStopPromise;
   };
 
+  // ---------------------------------------------------------------------------
+  // SpeechRecognition (live transcript preview)
+  // ---------------------------------------------------------------------------
   const bindRecognition = () => {
     if (!canPreview || !SR) return;
     const recognition = new SR();
@@ -245,7 +356,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       autoSubmitFired = false;
       setPhase("listening");
       pushPreview(previewTranscript, interim);
-      scheduleSilenceTimers();
+      // Only reschedule fallback timers; Smart Turn handles conversational submit
+      if (!turnServiceReady) scheduleFallbackTimers();
     };
 
     recognition.onend = () => {
@@ -259,12 +371,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         } catch {
           restartTimer = setTimeout(() => {
             if (!active || userStopped || rec) return;
-            try {
-              bindRecognition();
-              rec?.start();
-            } catch {
-              /* preview unavailable — recording continues */
-            }
+            try { bindRecognition(); rec?.start(); } catch { /* preview unavailable */ }
           }, 400);
         }
       }, 120);
@@ -275,12 +382,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (!active || userStopped) return;
       restartTimer = setTimeout(() => {
         if (!active || userStopped || rec) return;
-        try {
-          bindRecognition();
-          rec?.start();
-        } catch {
-          /* noop */
-        }
+        try { bindRecognition(); rec?.start(); } catch { /* noop */ }
       }, 500);
     };
   };
@@ -301,6 +403,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         }
       };
       mediaRecorder.start(1000);
+
+      // Start Smart Turn service (passes same stream for PCM; MediaRecorder keeps webm)
+      setupTurnService(stream);
     } catch {
       stopTracks();
     }
@@ -323,23 +428,17 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       void startMedia();
       if (canPreview) {
         bindRecognition();
-        try {
-          rec?.start();
-        } catch {
-          /* recording-only fallback */
-        }
+        try { rec?.start(); } catch { /* recording-only fallback */ }
       }
-      scheduleSilenceTimers();
+      // Always start fallback timers immediately; Smart Turn cancels them if it connects
+      scheduleFallbackTimers();
     },
     stop() {
       userStopped = true;
       active = false;
       clearTimers();
-      try {
-        rec?.stop();
-      } catch {
-        /* noop */
-      }
+      teardownTurnService();
+      try { rec?.stop(); } catch { /* noop */ }
       rec = null;
       void waitForRecorderStop();
       return previewTranscript.trim();
@@ -379,11 +478,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       finalizing = false;
       autoSubmitFired = true;
       clearTimers();
-      try {
-        rec?.stop();
-      } catch {
-        /* noop */
-      }
+      teardownTurnService();
+      try { rec?.stop(); } catch { /* noop */ }
       rec = null;
       void waitForRecorderStop().finally(() => {
         audioChunks = [];
