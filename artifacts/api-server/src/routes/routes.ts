@@ -934,18 +934,29 @@ export async function registerRoutes(
     };
     if (!text?.trim()) return res.status(400).json({ message: "text required" });
     const listenScope = scope ?? "snippet";
-    // Verify Pro server-side for guidance scope — don't trust client isPro flag alone
-    let resolvedPro = isPro === true;
-    if (listenScope === "guidance" && !resolvedPro && sessionId) {
-      resolvedPro = await storage.isSessionPro(sessionId).catch(() => false);
+    // Guidance TTS (Philip's voice) is gated by the guidance weekly-limit system, not the listen policy.
+    // Verify Pro server-side to pick ElevenLabs vs OpenAI, then skip listen policy for this scope.
+    if (listenScope === "guidance") {
+      let resolvedPro = isPro === true;
+      if (!resolvedPro && sessionId) {
+        resolvedPro = await storage.isSessionPro(sessionId).catch(() => false);
+      }
+      const effectiveScope = resolvedPro ? "guidance" : "guidance-free";
+      try {
+        const buffer = await getTTSAudio(text.trim(), "onyx", effectiveScope);
+        res.set("Content-Type", "audio/mpeg");
+        res.set("Cache-Control", "public, max-age=604800");
+        return res.send(buffer);
+      } catch (err: any) {
+        const isQuota = err?.code === "insufficient_quota" || err?.status === 429;
+        if (!res.headersSent) res.status(isQuota ? 503 : 500).json({ message: isQuota ? "Audio temporarily unavailable" : "TTS failed" });
+        return;
+      }
     }
-    // Compute effective scope before policy check — free users on guidance get guidance-free (OpenAI onyx),
-    // Pro users get guidance (ElevenLabs). Policy runs on effectiveScope so free users aren't blocked.
-    const effectiveScope = (listenScope === "guidance" && resolvedPro) ? "guidance" : listenScope === "guidance" ? "guidance-free" : listenScope;
     const policy = checkListenPolicy({
       sessionId,
-      isPro: resolvedPro,
-      scope: effectiveScope,
+      isPro: isPro === true,
+      scope: listenScope,
       chainStart: chainStart === true,
       textLen: text.trim().length,
     });
