@@ -80,11 +80,13 @@ export type SpeakShepherdOptions = {
   scope?: "verse" | "snippet";
   voice?: string;
   prefetchedBlob?: Blob | null;
+  isPro?: boolean;
 };
 
-export function prefetchShepherdTTS(text: string): Promise<Blob | null> {
+export function prefetchShepherdTTS(text: string, isPro?: boolean): Promise<Blob | null> {
   const input = text.trim();
   if (!input) return Promise.resolve(null);
+  const proFlag = isPro !== undefined ? isPro : isProVerifiedLocally();
   return fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -93,7 +95,7 @@ export function prefetchShepherdTTS(text: string): Promise<Blob | null> {
       voice: SHEPHERD_VOICE,
       scope: "guidance",
       sessionId: getSessionId(),
-      isPro: isProVerifiedLocally(),
+      isPro: proFlag,
     }),
   })
     .then((r) => (r.ok ? r.blob() : null))
@@ -133,7 +135,7 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   if (opts?.prefetchedBlob) {
     playBlob(opts.prefetchedBlob);
   } else {
-    prefetchShepherdTTS(input).then((blob) => {
+    prefetchShepherdTTS(input, opts?.isPro).then((blob) => {
       if (cancelled) return;
       if (!blob) {
         opts?.onFail?.();

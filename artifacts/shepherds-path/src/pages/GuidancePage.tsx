@@ -1404,7 +1404,7 @@ export default function GuidancePage() {
     greetingTextRef.current = greeting;
     setGreetingFallbackText(null);
     let cancelled = false;
-    prefetchShepherdTTS(greeting).then((blob) => {
+    prefetchShepherdTTS(greeting, isProVerifiedLocally()).then((blob) => {
       if (!cancelled) greetingBlobRef.current = blob;
     });
     return () => {
@@ -1443,6 +1443,7 @@ export default function GuidancePage() {
 
       cancelGreetingSpeakRef.current = speakShepherdLine(greeting, {
         prefetchedBlob: greetingBlobRef.current,
+        isPro: isProVerifiedLocally(),
         onStart: () => {
           setGreetingSpeaking(true);
           setGreetingFallbackText(null);
@@ -1525,6 +1526,7 @@ export default function GuidancePage() {
         : buildShepherdReturnLine(getUserName());
       setGreetingSpeaking(true);
       cancelReturn = speakShepherdLine(returnLine, {
+        isPro: isProVerifiedLocally(),
         onEnd: () => {
           if (cancelled) return;
           setGreetingSpeaking(false);
