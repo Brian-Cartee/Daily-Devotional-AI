@@ -86,6 +86,7 @@ import { checkListenPolicy, getListenAllowance, type ListenScope } from "../list
 import { getAiDailyLimits } from "../aiLimits";
 import { checkGuidanceWeeklyLimit, recordGuidanceConversationStart } from "../guidanceWeeklyLimits";
 import { freeTrialGrants } from "../freeTrialConfig";
+import { getServerDaysWithApp, touchSessionFirstSeen } from "../sessionFirstSeen";
 import { getTriviaSeed } from "../triviaSeed";
 import type { TriviaQuestion } from "@workspace/db";
 import {
@@ -3448,7 +3449,9 @@ ${context.slice(0, 4000)}`,
   app.get("/api/guidance/weekly-allowance", async (req, res) => {
     const sessionId = (req.query.sessionId as string) || "";
     const isPro = req.query.isPro === "true";
-    const daysWithApp = Number(req.query.daysWithApp) || 1;
+
+    // Use server-computed days — never trust the client-sent value
+    const daysWithApp = sessionId ? getServerDaysWithApp(sessionId) : 999;
 
     // Pro users: unlimited
     if (isPro) return res.json({ unlimited: true, used: 0, limit: null, remaining: null });
@@ -3473,7 +3476,9 @@ ${context.slice(0, 4000)}`,
     };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
-    const daysWithApp: number = Number((req.body as any).daysWithApp) || 1;
+    // Touch server-side first-seen so daysWithApp can't be spoofed via the weekly-allowance endpoint
+    if (sessionId) touchSessionFirstSeen(sessionId);
+    const daysWithApp: number = sessionId ? getServerDaysWithApp(sessionId) : (Number((req.body as any).daysWithApp) || 1);
     const isProGuidance = parseProFlag((req.body as any).isPro);
     const aiGuardPhase1 = checkAiDailyLimit(sessionId, daysWithApp, isProGuidance);
     if (!aiGuardPhase1.ok) {
