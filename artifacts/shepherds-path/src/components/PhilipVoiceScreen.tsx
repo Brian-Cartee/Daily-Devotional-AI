@@ -2,194 +2,136 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type PhilipVoiceState =
-  | "greeting"      // Philip speaking welcome
-  | "listening"     // mic open, user speaking
-  | "processing"    // user submitted, Philip thinking
-  | "speaking"      // Philip speaking response
-  | "idle"          // between turns, quiet presence
-  | "hidden";       // not in voice mode
+  | "greeting"
+  | "listening"
+  | "processing"
+  | "speaking"
+  | "idle"
+  | "hidden";
 
 export interface PhilipVoiceScreenProps {
   state: PhilipVoiceState;
-  /** Text Philip is currently speaking — shown sentence by sentence */
   speakingText?: string | null;
-  /** Short status line shown below portrait (optional; keep very brief) */
-  caption?: string | null;
   onTap?: () => void;
 }
 
-const HALO_COLORS: Record<Exclude<PhilipVoiceState, "hidden">, string> = {
-  greeting:   "rgba(251,191,36,0.55)",   // warm gold
-  listening:  "rgba(74,222,128,0.50)",   // soft green
-  processing: "rgba(167,139,250,0.45)",  // gentle violet
-  speaking:   "rgba(251,191,36,0.60)",   // bright gold
-  idle:       "rgba(251,191,36,0.25)",   // dim gold
+const HALO: Record<Exclude<PhilipVoiceState, "hidden">, { color: string; pulse: number }> = {
+  greeting:   { color: "rgba(251,191,36,0.55)",  pulse: 2.2 },
+  listening:  { color: "rgba(74,222,128,0.50)",  pulse: 1.6 },
+  processing: { color: "rgba(167,139,250,0.45)", pulse: 1.0 },
+  speaking:   { color: "rgba(251,191,36,0.60)",  pulse: 2.4 },
+  idle:       { color: "rgba(251,191,36,0.35)",  pulse: 3.5 },
 };
 
-const PULSE_DURATION: Record<Exclude<PhilipVoiceState, "hidden">, number> = {
-  greeting:   2.2,
-  listening:  1.6,
-  processing: 1.0,
-  speaking:   2.4,
-  idle:       3.5,
-};
-
-/** Split text into sentences for reveal animation */
 function splitSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?…])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return text.split(/(?<=[.!?…])\s+/).map(s => s.trim()).filter(Boolean);
 }
 
-export function PhilipVoiceScreen({
-  state,
-  speakingText,
-  caption,
-  onTap,
-}: PhilipVoiceScreenProps) {
+export function PhilipVoiceScreen({ state, speakingText, onTap }: PhilipVoiceScreenProps) {
   const [visibleSentences, setVisibleSentences] = useState<string[]>([]);
-  const sentenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevTextRef = useRef<string | null>(null);
+  const sentenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevText = useRef<string | null>(null);
 
-  // Reveal sentences one by one when speakingText changes
   useEffect(() => {
-    if (!speakingText) {
+    if (sentenceTimer.current) clearTimeout(sentenceTimer.current);
+    if (!speakingText || state !== "speaking") {
       setVisibleSentences([]);
-      prevTextRef.current = null;
+      prevText.current = null;
       return;
     }
-    if (speakingText === prevTextRef.current) return;
-    prevTextRef.current = speakingText;
+    if (speakingText === prevText.current) return;
+    prevText.current = speakingText;
 
-    const sentences = splitSentences(speakingText);
+    // Show at most 2 sentences, reveal one at a time
+    const sentences = splitSentences(speakingText).slice(0, 2);
     setVisibleSentences([]);
-
     let i = 0;
     const reveal = () => {
       if (i >= sentences.length) return;
-      setVisibleSentences((prev) => [...prev, sentences[i]]);
+      setVisibleSentences(prev => [...prev, sentences[i]]);
       i++;
-      sentenceTimerRef.current = setTimeout(reveal, 2800);
+      sentenceTimer.current = setTimeout(reveal, 3000);
     };
-    sentenceTimerRef.current = setTimeout(reveal, 300);
-    return () => {
-      if (sentenceTimerRef.current) clearTimeout(sentenceTimerRef.current);
-    };
-  }, [speakingText]);
+    sentenceTimer.current = setTimeout(reveal, 400);
+    return () => { if (sentenceTimer.current) clearTimeout(sentenceTimer.current); };
+  }, [speakingText, state]);
 
   if (state === "hidden") return null;
 
-  const haloColor = HALO_COLORS[state];
-  const pulseDuration = PULSE_DURATION[state];
+  const { color, pulse } = HALO[state];
 
   return (
-    <motion.div
+    // No opacity transition on the root — prevents iOS black flash on re-render
+    <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-      style={{ background: "radial-gradient(ellipse at 50% 40%, #1a1008 0%, #0d0805 100%)" }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.6 }}
+      style={{
+        background: "#0e0905",
+        // Force GPU compositing layer — prevents iOS Safari blank-frame bug
+        transform: "translateZ(0)",
+        WebkitTransform: "translateZ(0)",
+        willChange: "transform",
+      }}
       onClick={onTap}
     >
-      {/* Breathing halo */}
-      <div className="relative flex items-center justify-center mb-8">
-        {/* Outer glow pulse */}
+      {/* Portrait + halo */}
+      <div className="relative flex items-center justify-center mb-10" style={{ width: 280, height: 280 }}>
+
+        {/* Breathing outer glow */}
         <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 280,
-            height: 280,
-            background: `radial-gradient(circle, ${haloColor} 0%, transparent 70%)`,
-          }}
-          animate={{
-            scale: [1, 1.18, 1],
-            opacity: [0.7, 1, 0.7],
-          }}
-          transition={{
-            duration: pulseDuration,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          className="absolute inset-0 rounded-full"
+          style={{ background: `radial-gradient(circle, ${color} 0%, transparent 68%)` }}
+          animate={{ scale: [1, 1.16, 1], opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: pulse, repeat: Infinity, ease: "easeInOut" }}
         />
 
         {/* Inner ring */}
         <motion.div
           className="absolute rounded-full border-2"
           style={{
-            width: 208,
-            height: 208,
-            borderColor: haloColor.replace(/[\d.]+\)$/, "0.8)"),
+            inset: 36,
+            borderColor: color.replace(/[\d.]+\)$/, "0.8)"),
           }}
-          animate={{
-            scale: [1, 1.04, 1],
-            opacity: [0.6, 1, 0.6],
-          }}
-          transition={{
-            duration: pulseDuration * 0.9,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          animate={{ scale: [1, 1.04, 1], opacity: [0.5, 0.9, 0.5] }}
+          transition={{ duration: pulse * 0.85, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        {/* Philip portrait */}
-        <motion.img
-          src="/philip.jpg"
-          alt="Philip"
-          className="relative rounded-full object-cover shadow-2xl"
-          style={{ width: 192, height: 192, zIndex: 1 }}
-          animate={{
-            scale: state === "speaking" ? [1, 1.015, 1] : 1,
-          }}
-          transition={
-            state === "speaking"
-              ? { duration: pulseDuration, repeat: Infinity, ease: "easeInOut" }
-              : {}
-          }
-        />
-
-        {/* Listening indicator — subtle green ring ripple */}
+        {/* Listening ripple — expands outward once per cycle */}
         <AnimatePresence>
           {state === "listening" && (
             <motion.div
-              key="listen-ring"
-              className="absolute rounded-full border"
-              style={{
-                width: 220,
-                height: 220,
-                borderColor: "rgba(74,222,128,0.6)",
-              }}
-              initial={{ scale: 1, opacity: 0.8 }}
-              animate={{ scale: 1.35, opacity: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+              key="ripple"
+              className="absolute rounded-full border border-green-400"
+              style={{ inset: 30, opacity: 0.7 }}
+              animate={{ scale: [1, 1.6], opacity: [0.7, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
             />
           )}
         </AnimatePresence>
 
-        {/* Processing dots */}
+        {/* Philip portrait — always visible at full opacity */}
+        <img
+          src="/philip.jpg"
+          alt="Philip"
+          className="absolute rounded-full object-cover shadow-2xl"
+          style={{ inset: 44, borderRadius: "50%" }}
+        />
+
+        {/* Processing dots — below portrait */}
         <AnimatePresence>
           {state === "processing" && (
             <motion.div
-              key="proc-dots"
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-6 flex gap-1.5"
+              key="dots"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-8 flex gap-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2].map(i => (
                 <motion.div
                   key={i}
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: "rgba(167,139,250,0.9)" }}
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{
-                    duration: 0.9,
-                    repeat: Infinity,
-                    delay: i * 0.18,
-                    ease: "easeInOut",
-                  }}
+                  className="w-2 h-2 rounded-full bg-violet-400"
+                  animate={{ y: [0, -7, 0] }}
+                  transition={{ duration: 0.85, repeat: Infinity, delay: i * 0.16, ease: "easeInOut" }}
                 />
               ))}
             </motion.div>
@@ -197,47 +139,33 @@ export function PhilipVoiceScreen({
         </AnimatePresence>
       </div>
 
-      {/* Speaking text reveal */}
-      <AnimatePresence mode="wait">
-        {state === "speaking" && visibleSentences.length > 0 && (
-          <motion.div
-            key="speaking-text"
-            className="px-8 max-w-sm text-center space-y-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {visibleSentences.map((sentence, idx) => (
-              <motion.p
-                key={idx}
-                className="text-amber-100 text-lg leading-relaxed font-light"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                {sentence}
-              </motion.p>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Caption (very subtle, bottom) */}
-      <AnimatePresence>
-        {caption && (
-          <motion.p
-            key={caption}
-            className="absolute bottom-12 text-sm tracking-wide"
-            style={{ color: "rgba(251,191,36,0.45)" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            {caption}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {/* Philip's words — max 2 sentences, fade in one at a time, fade out when done speaking */}
+      <div className="px-8 max-w-xs text-center min-h-[6rem]">
+        <AnimatePresence mode="wait">
+          {state === "speaking" && visibleSentences.length > 0 && (
+            <motion.div
+              key={visibleSentences.join("|")}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-3"
+            >
+              {visibleSentences.map((s, i) => (
+                <motion.p
+                  key={i}
+                  className="text-amber-100 text-base leading-relaxed font-light"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: i * 0.2 }}
+                >
+                  {s}
+                </motion.p>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

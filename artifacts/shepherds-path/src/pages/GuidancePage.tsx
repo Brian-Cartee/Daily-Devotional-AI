@@ -1643,7 +1643,6 @@ export default function GuidancePage() {
         const fastHandoff = fromVoice && listener && previewWords >= 20;
 
         if (fastHandoff) {
-          void waitForSubmitBridge("entry");
           heartVoiceRef.current = null;
           setHeartListening(false);
           setHeartListenPhase("listening");
@@ -1654,7 +1653,6 @@ export default function GuidancePage() {
           return;
         }
 
-        if (fromVoice) void waitForSubmitBridge("entry");
         const refined = fromVoice && listener
           ? await listener.finalizeTranscript()
           : trimmed;
@@ -1720,8 +1718,6 @@ export default function GuidancePage() {
 
     void (async () => {
       try {
-        const bridgeReply = reply;
-        if (fromVoice) void waitForSubmitBridge("phase1Reply", bridgeReply);
         const refined = fromVoice && listener
           ? await listener.finalizeTranscript()
           : reply;
@@ -1833,8 +1829,6 @@ export default function GuidancePage() {
 
     void (async () => {
       try {
-        const bridgeText = text;
-        if (fromVoice) void waitForSubmitBridge("phase1Reply", bridgeText);
         const refined = fromVoice && listener
           ? await listener.finalizeTranscript()
           : text;
