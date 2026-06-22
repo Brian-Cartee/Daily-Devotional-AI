@@ -1611,6 +1611,10 @@ export default function GuidancePage() {
     setProcessingBridge(true);
     setIsReflecting(true);
 
+    // Speak audio bridge immediately so there's no dead silence while Whisper + phase1 run.
+    // The blob is prefetched on mount, so this plays in ~200ms.
+    if (fromVoice) speakShepherdLine(PROCESSING_BRIDGE);
+
     void (async () => {
       let finalText = trimmed;
       try {
