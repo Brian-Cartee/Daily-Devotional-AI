@@ -45,27 +45,27 @@ function turnServiceUrl(): string {
 // ---------------------------------------------------------------------------
 // Fallback silence constants (used when WebSocket unavailable)
 // ---------------------------------------------------------------------------
-const FALLBACK_AUTO_SUBMIT_MS = 3_000;   // was 10s; short fallback silence
+const FALLBACK_AUTO_SUBMIT_MS = 2_000;
 const DEFAULT_MIN_CHARS = 8;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
-const SR_STALL_MS = 2500;
-const STALL_EXTEND_COOLDOWN_MS = 2500;
+const SR_STALL_MS = 2000;
+const STALL_EXTEND_COOLDOWN_MS = 2000;
 
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
 function dynamicPauseMs(words: number): number {
-  if (words < 20) return 3500;
-  if (words < 60) return 2500;
-  return 2000;
+  if (words < 20) return 2500;
+  if (words < 60) return 2000;
+  return 1800;
 }
 
 function resolveConversationalAutoSubmitMs(words: number, override?: number): number {
   if (override != null) return override;
-  if (words >= 80) return 2500;
-  if (words >= 40) return 3000;
-  if (words >= 20) return 3500;
+  if (words >= 80) return 1800;
+  if (words >= 40) return 2000;
+  if (words >= 20) return 2500;
   return FALLBACK_AUTO_SUBMIT_MS;
 }
 

@@ -153,10 +153,11 @@ async function getElevenLabsTTS(text: string): Promise<Buffer> {
         text: text.slice(0, 5000),
         model_id: ELEVENLABS_MODEL,
         voice_settings: {
-          stability: 0.65,
+          stability: 0.68,
           similarity_boost: 0.80,
-          style: 0.20,
+          style: 0.15,
           use_speaker_boost: true,
+          speed: 0.92,
         },
       }),
     }
