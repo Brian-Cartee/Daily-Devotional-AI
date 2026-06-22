@@ -41,6 +41,8 @@ import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { isPhilipMode, isSoloMode, incrementSoloSessionCount, shouldShowSoloReintro, markSoloReintroShown, setCompanionMode } from "@/lib/companionMode";
 import { WitnessLetterCard } from "@/components/WitnessLetterCard";
+import { HoldThisWithMeCard } from "@/components/HoldThisWithMeCard";
+import { PatternPhilipCard } from "@/components/PatternPhilipCard";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
@@ -603,6 +605,8 @@ export default function GuidancePage() {
   /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
   const [showWitnessLetter, setShowWitnessLetter] = useState(false);
+  const [showHoldCard, setShowHoldCard] = useState(false);
+  const [showPatternCard, setShowPatternCard] = useState(false);
   const [sendOffText, setSendOffText] = useState<string | null>(null);
   const [sessionFeedback, setSessionFeedback] = useState<"yes" | "not-quite" | null>(null);
   const [sessionRecap, setSessionRecap] = useState<GuidanceRecap | null>(null);
@@ -1023,7 +1027,7 @@ export default function GuidancePage() {
     if (firstResponse) prewarmTTS(firstResponse, getUserVoice());
   }, [responseComplete]);
 
-  // Witness Letter — offer on deep sessions when user chooses a completion path
+  // Witness Letter + Hold + Pattern — surface after completion path chosen on deep sessions
   useEffect(() => {
     if (!completionPath || !responseComplete || !situation.trim()) return;
     if (!isPhilipMode()) return;
@@ -1032,10 +1036,34 @@ export default function GuidancePage() {
     const situationIsDeep = situation.trim().length > 80 || DEPTH_KEYWORDS.test(situation);
     const convoIsDeep = userTurns >= 2 || messages.some(m => DEPTH_KEYWORDS.test(m.content));
     if (situationIsDeep || convoIsDeep) {
-      const t = setTimeout(() => setShowWitnessLetter(true), 800);
-      return () => clearTimeout(t);
+      const t1 = setTimeout(() => setShowWitnessLetter(true), 800);
+      const t2 = setTimeout(() => setShowHoldCard(true), 1200);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [completionPath, responseComplete, situation, messages]);
+
+  // Pattern Philip — surface after 4+ conversations, once per session
+  useEffect(() => {
+    if (!completionPath || !responseComplete || !situation.trim()) return;
+    if (!isPhilipMode()) return;
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+    // Fetch server-side conversation count to gate this
+    fetch(`/api/guidance/weekly-allowance?sessionId=${encodeURIComponent(sessionId)}&isPro=${isProVerifiedLocally()}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(() => {
+        // Use the conversation count endpoint instead
+        fetch(`/api/guidance/opening?sessionId=${encodeURIComponent(sessionId)}&_countOnly=1`)
+          .catch(() => {});
+      })
+      .catch(() => {});
+    // Gate on localStorage-tracked count (incremented at phase1 start server-side, mirrored via opening endpoint convCount)
+    const storedCount = parseInt(sessionStorage.getItem("sp_guidance_conv_count") ?? "0", 10);
+    if (storedCount >= 3) {
+      const t = setTimeout(() => setShowPatternCard(true), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [completionPath, responseComplete, situation]);
 
   // Fetch contextual Unsplash photo once response lands
   useEffect(() => {
@@ -1430,13 +1458,17 @@ export default function GuidancePage() {
     let cancelled = false;
     fetch(url)
       .then((r) => r.ok ? r.json() : null)
-      .then((data: { line: string } | null) => {
+      .then((data: { line: string; convCount?: number } | null) => {
         if (!cancelled && data?.line) {
           dynamicOpeningRef.current = data.line;
           greetingTextRef.current = data.line;
           prefetchShepherdTTS(data.line, isProVerifiedLocally()).then((blob) => {
             if (!cancelled) greetingBlobRef.current = blob;
           });
+        }
+        // Store conversation count for Pattern Philip gate
+        if (data?.convCount != null) {
+          try { sessionStorage.setItem("sp_guidance_conv_count", String(data.convCount)); } catch { /* noop */ }
         }
       })
       .catch(() => {});
@@ -3343,6 +3375,19 @@ export default function GuidancePage() {
                   toast({ title: "Couldn't save to journal", description: "Please try again.", variant: "destructive" });
                 }
               }}
+            />
+          )}
+
+          {/* Hold This With Me */}
+          {showHoldCard && completionPath && (
+            <HoldThisWithMeCard onDismiss={() => setShowHoldCard(false)} />
+          )}
+
+          {/* Pattern Philip Has Been Holding */}
+          {showPatternCard && completionPath && (
+            <PatternPhilipCard
+              situation={situation}
+              onDismiss={() => setShowPatternCard(false)}
             />
           )}
 

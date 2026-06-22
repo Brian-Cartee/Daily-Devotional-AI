@@ -3928,6 +3928,115 @@ Rules: specific emotional weight not generic; do not permanently label their who
     }
   });
 
+  // ── Hold This With Me — Philip receives and returns prayer holds ──────────────
+  app.post("/api/guidance/hold-receive", async (req, res) => {
+    const { holdText, userName } = req.body as { holdText?: string; userName?: string };
+    if (!holdText?.trim()) return res.status(400).json({ message: "holdText required" });
+    const namePart = userName ? `The person's name is ${userName}. ` : "";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "system",
+          content: `You are Philip — a Spirit-filled shepherd in Shepherd's Path. ${namePart}Someone just handed you something to hold before God in prayer. Respond in 1–2 sentences. Receive it warmly. Do not analyze it. Do not offer advice. Do not promise an outcome. Just receive it and commit to returning to it. Your voice: plain, warm, faithful. Never say "God told me." Never claim to know how God will answer. Sound like a shepherd, not a chatbot.`,
+        }, {
+          role: "user",
+          content: `They asked you to hold this in prayer: "${holdText.trim()}"`,
+        }],
+        temperature: 0.8,
+        max_tokens: 80,
+      });
+      const text = completion.choices[0]?.message?.content?.trim() ?? "";
+      return res.json({ text });
+    } catch (err) {
+      console.error("hold-receive error:", err);
+      return res.status(500).json({ message: "failed" });
+    }
+  });
+
+  app.post("/api/guidance/hold-return", async (req, res) => {
+    const { holdText, daysHeld, userName } = req.body as { holdText?: string; daysHeld?: number; userName?: string };
+    if (!holdText?.trim()) return res.status(400).json({ message: "holdText required" });
+    const namePart = userName ? `Their name is ${userName}. ` : "";
+    const daysLine = daysHeld ? `You have been holding this for ${daysHeld} day${daysHeld !== 1 ? "s" : ""}.` : "";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "system",
+          content: `You are Philip — a Spirit-filled shepherd returning to something a person asked you to hold before God. ${namePart}${daysLine} In 1–2 sentences, return to it — not as a reminder, but as a shepherd who has been carrying this alongside them. Ask one gentle, open question about where their heart is now with it. Do not claim to know what God has done. Do not offer outcomes. Sound like someone returning to a real conversation, not triggering a notification.`,
+        }, {
+          role: "user",
+          content: `You have been holding this: "${holdText.trim()}". Return to it now.`,
+        }],
+        temperature: 0.82,
+        max_tokens: 90,
+      });
+      const text = completion.choices[0]?.message?.content?.trim() ?? "";
+      return res.json({ text });
+    } catch (err) {
+      console.error("hold-return error:", err);
+      return res.status(500).json({ message: "failed" });
+    }
+  });
+
+  // ── The Pattern Philip Has Been Holding ───────────────────────────────────────
+  app.post("/api/guidance/pattern", async (req, res) => {
+    const { situation, sessionId, userName } = req.body as {
+      situation?: string; sessionId?: string; userName?: string;
+    };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+
+    const namePart = userName ? `Their name is ${userName}. ` : "";
+    let memNote = "";
+    if (sessionId) {
+      try {
+        const ctx = await getMemoryContext(sessionId);
+        const parts: string[] = [];
+        if (ctx.dominantEmotion) parts.push(`Dominant emotion across conversations: ${ctx.dominantEmotion}`);
+        if (ctx.recentEmotions.length) parts.push(`Recent emotions: ${ctx.recentEmotions.slice(0, 5).join(", ")}`);
+        if (ctx.recentTrend) parts.push(`Trend: ${ctx.recentTrend}`);
+        if (ctx.spiritualState) parts.push(`Spiritual state: ${ctx.spiritualState}`);
+        if (ctx.naturalLanguageHint) parts.push(`Pattern note: ${ctx.naturalLanguageHint}`);
+        memNote = parts.join(". ");
+      } catch { /* noop */ }
+    }
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "system",
+          content: `You are Philip — a Spirit-filled shepherd who has walked with someone through several conversations. ${namePart}
+
+You are writing ONE pattern statement — the thread you have been noticing across their conversations that they have not fully named themselves. This is not diagnosis. Not therapy. Not analytics. It is shepherding.
+
+Rules:
+- 2–4 sentences only
+- Begin with "The pattern I'm noticing is not…" or "What I keep hearing beneath your words is…" or a similar humble, permission-seeking frame
+- Name what is underneath the presenting issue — the fear under the productivity, the grief under the anger, the calling under the exhaustion
+- Never say "God told me" or "I know that" — say "I'm noticing" or "I may be wrong, but…" or "Can I say what I'm hearing?"
+- Never use clinical language: no "trauma," "attachment issues," "behavior patterns"
+- Never claim certainty about God's specific will
+- If memory context is weak, name one honest thing from the current situation rather than inventing a pattern
+- End with one question that invites the person to weigh in: "Does that feel true, or am I off?"
+
+Memory context: ${memNote || "limited — work from the current situation only"}`,
+        }, {
+          role: "user",
+          content: `Current session situation: "${situation.trim().slice(0, 800)}"`,
+        }],
+        temperature: 0.78,
+        max_tokens: 140,
+      });
+      const pattern = completion.choices[0]?.message?.content?.trim() ?? "";
+      return res.json({ pattern });
+    } catch (err) {
+      console.error("pattern error:", err);
+      return res.status(500).json({ message: "failed" });
+    }
+  });
+
   // ── Guidance: Witness Letter ─────────────────────────────────────────────────
   app.post("/api/guidance/witness-letter", async (req, res) => {
     const { situation, messages, phase1Response, userName, sessionId } = req.body as {

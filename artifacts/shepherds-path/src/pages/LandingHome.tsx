@@ -47,6 +47,7 @@ import { PrayForThemCard } from "@/components/PrayForThem";
 import { TheThreadCard } from "@/components/TheThreadCard";
 import { HomeEngagementStack } from "@/components/HomeEngagementStack";
 import { PhilipDailyGreetingCard } from "@/components/PhilipDailyGreetingCard";
+import { PhilipRememberedCard } from "@/components/PhilipRememberedCard";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
 import { shouldShowYourPathCard } from "@/lib/homePathProgress";
@@ -1234,6 +1235,7 @@ function LandingHomeInner() {
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
 
+          <PhilipRememberedCard />
           <PhilipDailyGreetingCard />
           <TalkItThroughCard />
 
