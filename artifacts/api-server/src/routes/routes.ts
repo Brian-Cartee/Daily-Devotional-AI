@@ -633,13 +633,11 @@ export async function registerRoutes(
       if (req.query.refresh === "1") {
         await storage.deleteVerseByDate(requestedDate);
       }
-      if (requestedDate === easternToday) {
-        await syncTodayVerseFromSheet();
-      }
+      // Return from DB immediately — never block the response on Google Sheets
       let verse = await storage.getVerseByDate(requestedDate);
 
-      // If not cached yet, try syncing on-demand
-      if (!verse) {
+      // Only sync if verse is genuinely missing from DB
+      if (!verse && requestedDate === easternToday) {
         await syncTodayVerseFromSheet();
         verse = await storage.getVerseByDate(requestedDate);
       }
@@ -4749,10 +4747,10 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
 
       try {
         const response = await openaiTTS.images.generate({
-          model: "dall-e-3",
+          model: "gpt-image-1",
           prompt,
           n: 1,
-          size: "1792x1024",
+          size: "1536x1024",
           quality: "standard",
         } as any);
         const imageUrl = response.data?.[0]?.url;
