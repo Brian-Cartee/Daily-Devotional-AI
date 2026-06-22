@@ -89,6 +89,7 @@ import {
   shouldOfferDevotionalContinuityChoice,
 } from "@/lib/devotionalContinuity";
 import { isNativeWebViewShell } from "@/lib/platform";
+import { capitalizeDivinePronouns } from "@/lib/divinePronouns";
 
 /** iOS-safe external link opener — anchor click bypasses Safari popup blocker */
 const openLink = (url: string) => {
