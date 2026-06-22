@@ -3466,6 +3466,56 @@ ${context.slice(0, 4000)}`,
     }
   });
 
+  // ── Philip daily home-screen greeting ────────────────────────────────────────
+  app.get("/api/philip/daily-greeting", async (req, res) => {
+    const firstName = (req.query.firstName as string) || "";
+    const timeOfDay = (req.query.timeOfDay as string) || "morning";
+    const sessionId = (req.query.sessionId as string) || "";
+    if (sessionId) touchSessionFirstSeen(sessionId);
+
+    const namePart = firstName ? `The user's first name is ${firstName}. ` : "";
+    const systemPrompt = `You are Philip, the Shepherd's Path spiritual companion — modeled after Philip the Evangelist in Acts 6 and Acts 8: Spirit-filled, direct, courageous, and attentive.
+
+You are not a chatbot. Not a motivational speaker. Not a preacher on a stage.
+You are a Spirit-filled shepherd who tells the truth calmly, personally, and without apology.
+
+Write one short spoken greeting for the user opening the Shepherd's Path home screen right now.
+
+Tone: warm, direct, spiritually confident, calm, human, brief, unashamedly Christian. Never cheesy, never performative, never vague encouragement.
+
+Rules:
+- One sentence only.
+- 12–28 words.
+- Sounds natural when spoken aloud.
+- Do NOT quote Scripture directly.
+- Do NOT say "good morning."
+- Do NOT use clichés like "you've got this," "God's got a plan," "everything happens for a reason."
+- Do NOT push or sell. Invite honesty with God.
+- Make the person feel noticed — not marketed to.
+- Bold without being combative. Direct without being sharp. Confident without debating.
+
+${namePart}Time of day: ${timeOfDay}.
+
+Return only the greeting line.`;
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Generate today's Philip greeting." },
+        ],
+        temperature: 0.9,
+        max_tokens: 60,
+      });
+      const text = completion.choices[0]?.message?.content?.trim() ?? "";
+      return res.json({ text, date: new Date().toISOString().slice(0, 10) });
+    } catch (err) {
+      console.error("philip/daily-greeting error:", err);
+      return res.status(500).json({ message: "greeting failed" });
+    }
+  });
+
   // ── Philip-led conversation opening ──────────────────────────────────────────
   app.get("/api/guidance/opening", async (req, res) => {
     const sessionId = (req.query.sessionId as string) || "";
@@ -3572,6 +3622,8 @@ ${context.slice(0, 4000)}`,
     }
     const phase1SafetyNote = concerningSystemNote(phase1Safety);
 
+    const companionMode = (req.body as any).companionMode as string | undefined;
+    const isSoloMode = companionMode === "solo";
     const userName = (req.body as any).userName as string | undefined;
     const nameNote = userName
       ? `\n\nTheir name is ${userName}. You may use it once, gently, only if it feels natural.`
@@ -3580,11 +3632,12 @@ ${context.slice(0, 4000)}`,
     const phase1HeartNote = phase1HeartCtx
       ? `\n\nHeart check context: ${phase1HeartCtx} Let this quietly shape your tone — don't reference it directly, just meet them where they are.`
       : "";
+    const soloSystemPrompt = `You are providing Christian spiritual guidance inside Shepherd's Path. Do not refer to yourself as Philip. Do not use companion-persona language. Do not say "I'm here with you." Offer calm, biblical, emotionally honest guidance. Be direct, gentle, and grounded in Scripture. One faithful question to go deeper. Under 100 words. No verse, no prayer, no advice yet.`;
 
     try {
       await streamCompletion(
         [
-          { role: "system", content: `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}` },
+          { role: "system", content: isSoloMode ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}` : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}` },
           { role: "user", content: situation.trim() },
         ],
         res,

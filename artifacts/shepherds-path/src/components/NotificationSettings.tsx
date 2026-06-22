@@ -6,6 +6,7 @@ import {
   Bell, BellOff, Mail, Check, Loader2, X, Sun, Moon,
   Clock, AlarmClock, CalendarDays, ChevronDown, ShieldCheck, HelpCircle, ArrowRight,
 } from "lucide-react";
+import { getCompanionMode, setCompanionMode, type CompanionMode } from "@/lib/companionMode";
 import { Button } from "@/components/ui/button";
 import { getSessionId } from "@/lib/session";
 import { fetchVapidPublicKey } from "@/lib/push";
@@ -357,6 +358,75 @@ function StreakCard({ streak }: { streak: StreakData }) {
   );
 }
 
+function CompanionModeSection() {
+  const [mode, setMode] = useState<CompanionMode>(getCompanionMode);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const handleSwitch = (next: CompanionMode) => {
+    setCompanionMode(next);
+    setMode(next);
+    setConfirmed(true);
+    setTimeout(() => setConfirmed(false), 3000);
+  };
+
+  return (
+    <div style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.10)", backgroundColor: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+      <div style={{ padding: "14px 16px" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.30)", margin: "0 0 10px 0" }}>
+          Companion Experience
+        </p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "0 0 14px 0", lineHeight: 1.5 }}>
+          Some days you may want a companion. Other days you may just want space. Both are welcome here.
+        </p>
+
+        {/* Walk With Philip */}
+        <button
+          onClick={() => handleSwitch("philip")}
+          style={{
+            display: "flex", alignItems: "flex-start", gap: 12, width: "100%",
+            padding: "10px 12px", borderRadius: 12, marginBottom: 8,
+            border: mode === "philip" ? "1px solid rgba(167,139,250,0.45)" : "1px solid rgba(255,255,255,0.07)",
+            backgroundColor: mode === "philip" ? "rgba(167,139,250,0.08)" : "transparent",
+            cursor: "pointer", textAlign: "left",
+          }}
+        >
+          <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: mode === "philip" ? "rgba(167,139,250,0.9)" : "rgba(255,255,255,0.15)", marginTop: 5, flexShrink: 0 }} />
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.90)", margin: 0 }}>Walk With Philip</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "2px 0 0 0", lineHeight: 1.4 }}>Voice-guided conversation with Philip</p>
+          </div>
+        </button>
+
+        {/* Solo */}
+        <button
+          onClick={() => handleSwitch("solo")}
+          style={{
+            display: "flex", alignItems: "flex-start", gap: 12, width: "100%",
+            padding: "10px 12px", borderRadius: 12,
+            border: mode === "solo" ? "1px solid rgba(113,113,122,0.55)" : "1px solid rgba(255,255,255,0.07)",
+            backgroundColor: mode === "solo" ? "rgba(113,113,122,0.10)" : "transparent",
+            cursor: "pointer", textAlign: "left",
+          }}
+        >
+          <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: mode === "solo" ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.15)", marginTop: 5, flexShrink: 0 }} />
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.90)", margin: 0 }}>Solo</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "2px 0 0 0", lineHeight: 1.4 }}>Quiet written guidance without Philip's voice or opening</p>
+          </div>
+        </button>
+
+        {confirmed && (
+          <p style={{ fontSize: 12, color: mode === "philip" ? "rgba(167,139,250,0.8)" : "rgba(255,255,255,0.45)", marginTop: 10, textAlign: "center" }}>
+            {mode === "philip"
+              ? "Philip is with you."
+              : "Solo mode is on. You'll still receive thoughtful spiritual guidance."}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function NotificationSettings({ onClose }: { onClose: () => void }) {
   const sessionId = getSessionId();
   const { toast } = useToast();
@@ -656,6 +726,9 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
           {streakData && (streakData.currentStreak >= 1 || streakData.visitDates.length > 0) && (
             <StreakCard streak={streakData} />
           )}
+
+          {/* ── Companion Experience ── */}
+          <CompanionModeSection />
 
           <Link
             href="/how-to-use"

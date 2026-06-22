@@ -39,6 +39,7 @@ import {
 import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
+import { isPhilipMode, isSoloMode, incrementSoloSessionCount, shouldShowSoloReintro, markSoloReintroShown, setCompanionMode } from "@/lib/companionMode";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
@@ -642,6 +643,7 @@ export default function GuidancePage() {
           guidanceMode: explicitMode ?? guidanceMode,
           isLateNight: isLateNight(),
           heartContext: buildHeartContext(getCurrentHeartState()),
+          companionMode: isPhilipMode() ? "philip" : "solo",
           ...(phase1Context ?? {}),
           ...apiSessionExtras(),
         }),
@@ -703,6 +705,7 @@ export default function GuidancePage() {
           situationTopicId: situationTopicId ?? undefined,
           userName: getUserName() ?? undefined,
           heartContext: buildHeartContext(getCurrentHeartState()),
+          companionMode: isPhilipMode() ? "philip" : "solo",
           ...apiSessionExtras(),
         }),
       });
@@ -926,6 +929,7 @@ export default function GuidancePage() {
       setIsReflecting(false);
       return;
     }
+    if (isSoloMode()) incrementSoloSessionCount();
     setHeartInput(trimmed);
     saveLastGuidanceSession();
     stashGuidanceSituation(trimmed);
@@ -1423,9 +1427,25 @@ export default function GuidancePage() {
     return () => { cancelled = true; };
   }, [situation, witnessReady]);
 
+  // Solo mode — open mic silently without Philip
+  useEffect(() => {
+    if (situation.trim() || !witnessReady || !hasSpeechSupport) return;
+    if (!isSoloMode()) return;
+    if (greetingEngagedRef.current || autoMicStartedRef.current) return;
+    if (heartListening || heartSubmittingRef.current) return;
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
+      autoMicStartedRef.current = true;
+      startHeartListeningRef.current(false);
+    }, 800);
+    return () => { cancelled = true; window.clearTimeout(t); };
+  }, [situation, witnessReady, hasSpeechSupport, heartListening]);
+
   // Philip speaks first — dynamic opening → auto-mic
   useEffect(() => {
     if (situation.trim() || !witnessReady) return;
+    if (!isPhilipMode()) return;
     if (greetingEngagedRef.current || autoMicStartedRef.current) return;
     if (heartListening || heartSubmittingRef.current || processingBridge) return;
 
@@ -1612,8 +1632,8 @@ export default function GuidancePage() {
     setIsReflecting(true);
 
     // Speak audio bridge immediately so there's no dead silence while Whisper + phase1 run.
-    // The blob is prefetched on mount, so this plays in ~200ms.
-    if (fromVoice) speakShepherdLine(PROCESSING_BRIDGE);
+    // Solo mode: no Philip voice.
+    if (fromVoice && isPhilipMode()) speakShepherdLine(PROCESSING_BRIDGE);
 
     void (async () => {
       let finalText = trimmed;

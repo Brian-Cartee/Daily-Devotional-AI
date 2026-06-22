@@ -46,6 +46,7 @@ import { ScriptureForYou } from "@/components/ScriptureForYou";
 import { PrayForThemCard } from "@/components/PrayForThem";
 import { TheThreadCard } from "@/components/TheThreadCard";
 import { HomeEngagementStack } from "@/components/HomeEngagementStack";
+import { PhilipDailyGreetingCard } from "@/components/PhilipDailyGreetingCard";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
 import { shouldShowYourPathCard } from "@/lib/homePathProgress";
@@ -1233,6 +1234,7 @@ function LandingHomeInner() {
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
 
+          <PhilipDailyGreetingCard />
           <TalkItThroughCard />
 
           {/* ScriptureForYou removed — clutters home, duplicates Today's Word */}
