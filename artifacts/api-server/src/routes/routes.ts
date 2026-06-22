@@ -3967,7 +3967,7 @@ Return only keys needed for requested fields plus rationale.`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        max_tokens: isSacredVp ? 420 : 520,
+        max_tokens: isSacredVp ? 700 : 800,
         response_format: { type: "json_object" },
         messages: [
           {
@@ -3997,7 +3997,7 @@ Return only keys needed for requested fields plus rationale.`;
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        max_tokens: 120,
+        max_tokens: 250,
         response_format: { type: "json_object" },
         messages: [
           {

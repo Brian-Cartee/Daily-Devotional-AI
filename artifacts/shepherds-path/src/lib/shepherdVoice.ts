@@ -151,9 +151,9 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   };
 }
 
-export const PROCESSING_BRIDGE = "";
+export const PROCESSING_BRIDGE = "I'm sitting with what you shared.";
 /** Spoken after Phase 1 reply (or follow-up voice submit) — not the first entry. */
-export const PHASE1_REPLY_BRIDGE = "";
+export const PHASE1_REPLY_BRIDGE = "Give me a moment with that.";
 export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
 export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
 
