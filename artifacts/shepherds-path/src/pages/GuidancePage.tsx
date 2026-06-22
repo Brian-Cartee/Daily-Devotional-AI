@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, buildShepherdReturnLine, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, buildShepherdReturnLine, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { PhilipVoiceScreen, type PhilipVoiceState } from "@/components/PhilipVoiceScreen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
@@ -1177,6 +1177,7 @@ export default function GuidancePage() {
     const listener = createPatientVoiceListener({
       conversational: true,
       spokenPatienceBridge: false,
+      autoSubmitSilenceMs: VOICE_SILENCE_ENTRY_MS,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
         setInterimTranscript(interim);
@@ -1235,6 +1236,7 @@ export default function GuidancePage() {
 
     const listener = createPatientVoiceListener({
       conversational: true,
+      autoSubmitSilenceMs: VOICE_SILENCE_PHASE1_MS,
       onTranscript: (final, interim) => {
         if (final) setPhase1UserReply(final);
         setPhase1Interim(interim);
