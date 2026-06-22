@@ -32,6 +32,19 @@ export function markShepherdGreetingPlayed(): void {
   }
 }
 
+const RETURN_LINES = [
+  "You're back. I'm here — what's on your heart?",
+  "Good to have you back. What's stirring in you?",
+  "Glad you came back. I'm listening — what's on your heart?",
+  "Welcome back. Take a breath — what do you want to bring?",
+  "You returned. That means something. What's on your heart?",
+];
+
+export function buildShepherdReturnLine(name: string | null | undefined): string {
+  const line = RETURN_LINES[Math.floor(Math.random() * RETURN_LINES.length)];
+  return name ? `${name}. ${line}` : line;
+}
+
 export function buildShepherdGreeting(
   name: string | null | undefined,
   isFirstVisit: boolean,

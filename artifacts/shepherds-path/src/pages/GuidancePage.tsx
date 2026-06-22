@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, buildShepherdReturnLine, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
@@ -1410,14 +1410,18 @@ export default function GuidancePage() {
       cancelGreetingSpeakRef.current = speakShepherdLine(greeting, {
         prefetchedBlob: greetingBlobRef.current,
         onStart: () => {
-          markShepherdGreetingPlayed();
           setGreetingSpeaking(true);
           setGreetingFallbackText(null);
         },
         onFail: () => {
+          // Mark played on failure so the fallback text shows and return visits
+          // don't retry the full greeting — they get a short return line instead
+          markShepherdGreetingPlayed();
           setGreetingFallbackText(greeting);
+          scheduleAutoMic();
         },
         onEnd: () => {
+          markShepherdGreetingPlayed();
           setGreetingSpeaking(false);
           cancelGreetingSpeakRef.current = null;
           try {
@@ -1462,7 +1466,7 @@ export default function GuidancePage() {
     };
   }, [situation, witnessReady]);
 
-  // Return visit — Philip already greeted today/this session: open the mic without waiting
+  // Return visit — Philip already greeted today/this session: speak a short return line then open mic
   useEffect(() => {
     if (situation.trim() || !witnessReady || !hasSpeechSupport) return;
     if (shouldPlayShepherdGreeting()) return;
@@ -1470,15 +1474,39 @@ export default function GuidancePage() {
     if (heartListening || heartSubmittingRef.current || processingBridge) return;
 
     let cancelled = false;
+    let cancelReturn: (() => void) | null = null;
+
     const t = window.setTimeout(() => {
       if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
       autoMicStartedRef.current = true;
-      startHeartListeningRef.current(false);
-    }, 700);
+      if (document.visibilityState === "hidden") {
+        startHeartListeningRef.current(false);
+        return;
+      }
+      const returnLine = buildShepherdReturnLine(getUserName());
+      setGreetingSpeaking(true);
+      cancelReturn = speakShepherdLine(returnLine, {
+        onEnd: () => {
+          if (cancelled) return;
+          setGreetingSpeaking(false);
+          cancelReturn = null;
+          window.setTimeout(() => {
+            if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
+          }, 300);
+        },
+        onFail: () => {
+          setGreetingSpeaking(false);
+          cancelReturn = null;
+          if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(false);
+        },
+      });
+    }, 500);
 
     return () => {
       cancelled = true;
       window.clearTimeout(t);
+      cancelReturn?.();
+      setGreetingSpeaking(false);
     };
   }, [situation, witnessReady, hasSpeechSupport, heartListening, processingBridge]);
 
