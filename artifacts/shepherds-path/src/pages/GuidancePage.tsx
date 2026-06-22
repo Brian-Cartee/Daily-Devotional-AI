@@ -40,6 +40,7 @@ import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { isPhilipMode, isSoloMode, incrementSoloSessionCount, shouldShowSoloReintro, markSoloReintroShown, setCompanionMode } from "@/lib/companionMode";
+import { WitnessLetterCard } from "@/components/WitnessLetterCard";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
 import { useTTS, prewarmTTS } from "@/hooks/use-tts";
 import { apiRequest } from "@/lib/queryClient";
@@ -601,6 +602,7 @@ export default function GuidancePage() {
   );
   /** After prayer reveals: null = fork; carry = send-off; stay = journey + follow-up */
   const [completionPath, setCompletionPath] = useState<null | "carry" | "stay">(null);
+  const [showWitnessLetter, setShowWitnessLetter] = useState(false);
   const [sendOffText, setSendOffText] = useState<string | null>(null);
   const [sessionFeedback, setSessionFeedback] = useState<"yes" | "not-quite" | null>(null);
   const [sessionRecap, setSessionRecap] = useState<GuidanceRecap | null>(null);
@@ -1020,6 +1022,20 @@ export default function GuidancePage() {
     const firstResponse = messages.find(m => m.role === "assistant")?.content;
     if (firstResponse) prewarmTTS(firstResponse, getUserVoice());
   }, [responseComplete]);
+
+  // Witness Letter — offer on deep sessions when user chooses a completion path
+  useEffect(() => {
+    if (!completionPath || !responseComplete || !situation.trim()) return;
+    if (!isPhilipMode()) return;
+    const userTurns = messages.filter(m => m.role === "user").length;
+    const DEPTH_KEYWORDS = /grief|loss|died|death|shame|afraid|fear|doubt|faith|angry|alone|hurt|broken|exhaust|struggling|lost|sin|confess|marriage|divorce|child|son|daughter|prayer|waiting|don.t know/i;
+    const situationIsDeep = situation.trim().length > 80 || DEPTH_KEYWORDS.test(situation);
+    const convoIsDeep = userTurns >= 2 || messages.some(m => DEPTH_KEYWORDS.test(m.content));
+    if (situationIsDeep || convoIsDeep) {
+      const t = setTimeout(() => setShowWitnessLetter(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [completionPath, responseComplete, situation, messages]);
 
   // Fetch contextual Unsplash photo once response lands
   useEffect(() => {
@@ -3305,6 +3321,29 @@ export default function GuidancePage() {
                 Actually — I have a few more minutes
               </button>
             </motion.div>
+          )}
+
+          {/* Witness Letter — offered on deep sessions after completion path is chosen */}
+          {showWitnessLetter && completionPath && (
+            <WitnessLetterCard
+              situation={situation}
+              messages={messages}
+              phase1Response={phase1Response ?? null}
+              onSaveToJournal={async (text) => {
+                try {
+                  await apiRequest("POST", "/api/journal", {
+                    sessionId: getSessionId(),
+                    type: "note",
+                    title: "Philip's Witness",
+                    content: text,
+                  });
+                  queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
+                  toast(journalSavedToast(() => navigate("/journal")));
+                } catch {
+                  toast({ title: "Couldn't save to journal", description: "Please try again.", variant: "destructive" });
+                }
+              }}
+            />
           )}
 
           {/* Bridge text — connects the response to the journey below */}

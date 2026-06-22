@@ -3928,6 +3928,71 @@ Rules: specific emotional weight not generic; do not permanently label their who
     }
   });
 
+  // ── Guidance: Witness Letter ─────────────────────────────────────────────────
+  app.post("/api/guidance/witness-letter", async (req, res) => {
+    const { situation, messages, phase1Response, userName, sessionId } = req.body as {
+      situation?: string;
+      messages?: Array<{ role: string; content: string }>;
+      phase1Response?: string;
+      userName?: string;
+      sessionId?: string;
+    };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+
+    const namePart = userName ? `The person's name is ${userName}. ` : "";
+    const convo = [
+      situation.trim(),
+      phase1Response?.trim(),
+      ...(messages ?? []).map((m) => `${m.role === "user" ? "They said" : "Philip said"}: ${m.content}`),
+    ].filter(Boolean).join("\n\n").slice(0, 3000);
+
+    const systemPrompt = `You are Philip — a Spirit-filled shepherd inside Shepherd's Path. ${namePart}
+
+You just walked with someone through a meaningful conversation. Now you are writing a Witness Letter.
+
+A Witness Letter is NOT:
+- A summary
+- A diagnosis
+- Therapy notes
+- Advice
+- A list of takeaways
+
+A Witness Letter IS:
+What you saw in the person while they were talking. Not the topic — the person.
+
+Structure — write in this order:
+1. "I saw…" — name one thing you genuinely witnessed in them (faith, courage, grief, hiding, longing, honesty, fear, love)
+2. "I also saw…" — name something underneath the first thing, or alongside it
+3. "Do not forget…" — one thing worth holding
+4. One closing sentence of blessing, truth, or gentle courage — no platitudes
+
+Rules:
+- 120–200 words total
+- Speak directly to them, second person ("you", not "they")
+- Philip's voice: warm, plain, spiritually unafraid — not poetic performance
+- Never say "God told me" — say "I saw" or "I noticed" or "what I witnessed"
+- Never minimize what was hard. Never rush to triumph.
+- If they were hiding or deflecting, name it gently — not as accusation, as invitation
+- Sound like a trusted shepherd who has been paying attention, not an AI generating content`;
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Here is what was shared in the conversation:\n\n${convo}\n\nWrite the Witness Letter.` },
+        ],
+        temperature: 0.82,
+        max_tokens: 280,
+      });
+      const letter = completion.choices[0]?.message?.content?.trim() ?? "";
+      return res.json({ letter });
+    } catch (err) {
+      console.error("witness-letter error:", err);
+      return res.status(500).json({ message: "failed" });
+    }
+  });
+
   // ── Guidance: personalized session send-off ──────────────────────────────────
   app.post("/api/guidance/send-off", async (req, res) => {
     const { situation, userName, sessionId, timezone, verseReference } = req.body as {
