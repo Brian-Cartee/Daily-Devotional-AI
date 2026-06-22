@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, buildShepherdReturnLine, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { PhilipVoiceScreen, type PhilipVoiceState } from "@/components/PhilipVoiceScreen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
@@ -411,6 +411,7 @@ export default function GuidancePage() {
   }, []);
 
   const greetingEngagedRef = useRef(false);
+  const dynamicOpeningRef = useRef<string | null>(null);
   const heartSubmittingRef = useRef(false);
   const phase1SubmittingRef = useRef(false);
   const [voiceConversation, setVoiceConversation] = useState(false);
@@ -1398,75 +1399,80 @@ export default function GuidancePage() {
     };
   }, [messages, responseComplete, voiceConversation, completionPath, hasSpeechSupport, isSending, processingBridge, destroyFollowUpVoice]);
 
-  // Prefetch greeting TTS in parallel with witness fetch
-  useEffect(() => {
-    if (situation.trim() || !witnessReady || !shouldPlayShepherdGreeting()) return;
-    const reentryLine = getCrisisReentryLine();
-    const greeting = buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, reentryLine);
-    greetingTextRef.current = greeting;
-    setGreetingFallbackText(null);
-    let cancelled = false;
-    prefetchShepherdTTS(greeting, isProVerifiedLocally()).then((blob) => {
-      if (!cancelled) greetingBlobRef.current = blob;
-    });
-    return () => {
-      cancelled = true;
-      greetingBlobRef.current = null;
-    };
-  }, [isFirstVisit, situation, witnessReady]);
-
-  // Spoken shepherd welcome → auto-mic when greeting finishes
+  // Fetch Philip's dynamic opening line from the server (runs once per entry when no situation yet)
   useEffect(() => {
     if (situation.trim() || !witnessReady) return;
-    if (!shouldPlayShepherdGreeting()) return;
+    dynamicOpeningRef.current = null;
+    greetingBlobRef.current = null;
+    const sessionId = getSessionId();
+    const name = getUserName() ?? "";
+    const url = `/api/guidance/opening?sessionId=${encodeURIComponent(sessionId ?? "")}&userName=${encodeURIComponent(name)}`;
+    let cancelled = false;
+    fetch(url)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { line: string } | null) => {
+        if (!cancelled && data?.line) {
+          dynamicOpeningRef.current = data.line;
+          greetingTextRef.current = data.line;
+          prefetchShepherdTTS(data.line, isProVerifiedLocally()).then((blob) => {
+            if (!cancelled) greetingBlobRef.current = blob;
+          });
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [situation, witnessReady]);
+
+  // Philip speaks first — dynamic opening → auto-mic
+  useEffect(() => {
+    if (situation.trim() || !witnessReady) return;
+    if (greetingEngagedRef.current || autoMicStartedRef.current) return;
+    if (heartListening || heartSubmittingRef.current || processingBridge) return;
 
     let cancelled = false;
     let dwellTimer: number | undefined;
     let autoMicTimer: number | undefined;
 
-    const scheduleAutoMic = () => {
+    const scheduleAutoMic = (withVoice: boolean) => {
       if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current || !hasSpeechSupport) return;
       autoMicStartedRef.current = true;
-      const siriListen = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
       autoMicTimer = window.setTimeout(() => {
-        if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
-      }, siriListen ? 300 : 400);
+        if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(withVoice);
+      }, 400);
     };
 
     const siriListenPending = sessionStorage.getItem("sp_guidance_siri_listen") === "1";
 
     dwellTimer = window.setTimeout(() => {
       if (cancelled || greetingEngagedRef.current) return;
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState === "hidden") {
+        scheduleAutoMic(false);
+        return;
+      }
 
-      const greeting =
-        greetingTextRef.current ??
-        buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, getCrisisReentryLine());
+      const reentryLine = getCrisisReentryLine();
+      const fallback = reentryLine
+        ? reentryLine
+        : buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, null);
+      const line = dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback;
 
-      cancelGreetingSpeakRef.current = speakShepherdLine(greeting, {
+      cancelGreetingSpeakRef.current = speakShepherdLine(line, {
         prefetchedBlob: greetingBlobRef.current,
         isPro: isProVerifiedLocally(),
         onStart: () => {
+          markShepherdGreetingPlayed();
           setGreetingSpeaking(true);
           setGreetingFallbackText(null);
+          try { sessionStorage.removeItem("sp_guidance_siri_listen"); } catch { /* noop */ }
         },
         onFail: () => {
-          // Mark played on failure so the fallback text shows and return visits
-          // don't retry the full greeting — they get a short return line instead
-          markShepherdGreetingPlayed();
-          setGreetingFallbackText(greeting);
-          scheduleAutoMic();
+          setGreetingFallbackText(line);
+          scheduleAutoMic(false);
         },
         onEnd: () => {
-          markShepherdGreetingPlayed();
           setGreetingSpeaking(false);
           cancelGreetingSpeakRef.current = null;
-          try {
-            sessionStorage.removeItem("sp_guidance_siri_listen");
-          } catch {
-            /* noop */
-          }
-          scheduleAutoMic();
+          scheduleAutoMic(true);
         },
       });
     }, siriListenPending ? 600 : 1400);
@@ -1479,79 +1485,7 @@ export default function GuidancePage() {
       cancelGreetingSpeakRef.current = null;
       setGreetingSpeaking(false);
     };
-  }, [isFirstVisit, situation, witnessReady, hasSpeechSupport]);
-
-  // Siri — open mic when welcome already played today
-  useEffect(() => {
-    if (situation.trim() || !witnessReady) return;
-    if (sessionStorage.getItem("sp_guidance_siri_listen") !== "1") return;
-    if (shouldPlayShepherdGreeting()) return;
-    let cancelled = false;
-    const t = window.setTimeout(() => {
-      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
-      autoMicStartedRef.current = true;
-      try {
-        sessionStorage.removeItem("sp_guidance_siri_listen");
-      } catch {
-        /* noop */
-      }
-      startHeartListeningRef.current(true);
-    }, 400);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [situation, witnessReady]);
-
-  // Return visit — Philip already greeted today/this session: speak a short return line then open mic
-  useEffect(() => {
-    if (situation.trim() || !witnessReady || !hasSpeechSupport) return;
-    if (shouldPlayShepherdGreeting()) return;
-    if (greetingEngagedRef.current || autoMicStartedRef.current) return;
-    if (heartListening || heartSubmittingRef.current || processingBridge) return;
-
-    let cancelled = false;
-    let cancelReturn: (() => void) | null = null;
-
-    const t = window.setTimeout(() => {  // 1200ms — gives user time to see the screen before Philip speaks
-      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current) return;
-      autoMicStartedRef.current = true;
-      if (document.visibilityState === "hidden") {
-        startHeartListeningRef.current(false);
-        return;
-      }
-      // Use witness letter if available (user was here 2+ hours ago same day),
-      // otherwise fall back to a randomized return line
-      const witnessLine = witnessLetterRef.current;
-      const returnLine = witnessLine
-        ? buildShepherdGreeting(getUserName(), false, witnessLine, null)
-        : buildShepherdReturnLine(getUserName());
-      setGreetingSpeaking(true);
-      cancelReturn = speakShepherdLine(returnLine, {
-        isPro: isProVerifiedLocally(),
-        onEnd: () => {
-          if (cancelled) return;
-          setGreetingSpeaking(false);
-          cancelReturn = null;
-          window.setTimeout(() => {
-            if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(true);
-          }, 300);
-        },
-        onFail: () => {
-          setGreetingSpeaking(false);
-          cancelReturn = null;
-          if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(false);
-        },
-      });
-    }, 1200);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-      cancelReturn?.();
-      setGreetingSpeaking(false);
-    };
-  }, [situation, witnessReady, hasSpeechSupport, heartListening, processingBridge]);
+  }, [isFirstVisit, situation, witnessReady, hasSpeechSupport, heartListening, processingBridge]);
 
   // Phase 1 — speak first reflection for voice sessions; mic reopens when Philip finishes
   useEffect(() => {

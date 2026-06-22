@@ -1,6 +1,19 @@
 /** Server-side first-seen timestamps keyed by sessionId. */
 const firstSeenStore = new Map<string, number>();
 
+/** Cumulative Talk It Through conversation count per session. */
+const guidanceConvCountStore = new Map<string, number>();
+
+export function getGuidanceConversationCount(sessionId: string): number {
+  return guidanceConvCountStore.get(sessionId) ?? 0;
+}
+
+export function incrementGuidanceConversationCount(sessionId: string): number {
+  const next = (guidanceConvCountStore.get(sessionId) ?? 0) + 1;
+  guidanceConvCountStore.set(sessionId, next);
+  return next;
+}
+
 /**
  * Records first-seen timestamp for a session (no-op if already recorded).
  * Returns the first-seen timestamp in ms.

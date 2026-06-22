@@ -86,7 +86,7 @@ import { checkListenPolicy, getListenAllowance, type ListenScope } from "../list
 import { getAiDailyLimits } from "../aiLimits";
 import { checkGuidanceWeeklyLimit, recordGuidanceConversationStart } from "../guidanceWeeklyLimits";
 import { freeTrialGrants } from "../freeTrialConfig";
-import { getServerDaysWithApp, touchSessionFirstSeen } from "../sessionFirstSeen";
+import { getServerDaysWithApp, touchSessionFirstSeen, getGuidanceConversationCount, incrementGuidanceConversationCount } from "../sessionFirstSeen";
 import { getTriviaSeed } from "../triviaSeed";
 import type { TriviaQuestion } from "@workspace/db";
 import {
@@ -3466,6 +3466,56 @@ ${context.slice(0, 4000)}`,
     }
   });
 
+  // ── Philip-led conversation opening ──────────────────────────────────────────
+  app.get("/api/guidance/opening", async (req, res) => {
+    const sessionId = (req.query.sessionId as string) || "";
+    const userName = (req.query.userName as string) || "";
+    if (sessionId) touchSessionFirstSeen(sessionId);
+
+    const convCount = sessionId ? getGuidanceConversationCount(sessionId) : 0;
+    let memNote = "";
+    if (sessionId) {
+      try {
+        const ctx = await getMemoryContext(sessionId);
+        memNote = buildMemoryPromptNote(ctx);
+      } catch { /* noop */ }
+    }
+
+    const namePart = userName ? `Their name is ${userName}. ` : "";
+    const nameGreet = userName ? `${userName}. ` : "";
+
+    let systemPrompt: string;
+    let userMsg: string;
+
+    if (convCount === 0) {
+      systemPrompt = `You are Philip, a warm, present spiritual companion. ${namePart}This is the very first time this person has come to Talk It Through. Your job is to open the conversation with a single, genuine welcoming question — not "what's on your heart today" (too generic), but something that invites them to share a real piece of their life right now. Keep it to 1–2 sentences. Warm, unhurried, human. No platitudes. No "I'm here for you" openers. Just a real question.`;
+      userMsg = `Open the first-ever Talk It Through conversation. Begin with "${nameGreet}" if a name is given.`;
+    } else if (convCount <= 2) {
+      systemPrompt = `You are Philip, a warm spiritual companion who has walked with this person before. ${namePart}${memNote ? `Memory context: ${memNote}\n\n` : ""}Open this conversation with a brief, personal acknowledgment that you remember them — but keep it short, then ask what they're bringing today. 1–2 sentences max. Natural, not ceremonial.`;
+      userMsg = `Open today's Talk It Through. Begin with "${nameGreet}" if a name is given.`;
+    } else {
+      systemPrompt = `You are Philip, a trusted companion who knows this person well. ${namePart}${memNote ? `Memory context: ${memNote}\n\n` : ""}Open with 1 sentence — brief, warm, and direct — then invite them straight into what's on their heart. You don't need pleasantries; you have history. Skip "good to see you" type openers.`;
+      userMsg = `Open this Talk It Through session. Begin with "${nameGreet}" if a name is given.`;
+    }
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMsg },
+        ],
+        temperature: 0.85,
+        max_tokens: 80,
+      });
+      const line = completion.choices[0]?.message?.content?.trim() ?? "";
+      return res.json({ line, convCount });
+    } catch (err) {
+      console.error("guidance/opening error:", err);
+      return res.status(500).json({ message: "opening failed" });
+    }
+  });
+
   // ── Guidance weekly allowance — includes 7-day new-user trial ────────────────
   app.get("/api/guidance/weekly-allowance", async (req, res) => {
     const sessionId = (req.query.sessionId as string) || "";
@@ -3499,6 +3549,7 @@ ${context.slice(0, 4000)}`,
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
     // Touch server-side first-seen so daysWithApp can't be spoofed via the weekly-allowance endpoint
     if (sessionId) touchSessionFirstSeen(sessionId);
+    if (sessionId) incrementGuidanceConversationCount(sessionId);
     const daysWithApp: number = sessionId ? getServerDaysWithApp(sessionId) : (Number((req.body as any).daysWithApp) || 1);
     const isProGuidance = parseProFlag((req.body as any).isPro);
     const aiGuardPhase1 = checkAiDailyLimit(sessionId, daysWithApp, isProGuidance);
