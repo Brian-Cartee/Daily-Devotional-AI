@@ -320,10 +320,14 @@ async function syncTodayVerseFromSheet(): Promise<void> {
   }
 }
 
+import { registerVoiceStreamWS } from "./voiceStream";
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  registerVoiceStreamWS(httpServer);
+
   await ensureIdentitySchema().catch((err) => {
     console.error("[identity] schema ensure failed:", err);
   });

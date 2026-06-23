@@ -18,6 +18,7 @@ import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { PhilipVoiceScreen, type PhilipVoiceState } from "@/components/PhilipVoiceScreen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
@@ -421,6 +422,8 @@ export default function GuidancePage() {
   const phase1SubmittingRef = useRef(false);
   const [voiceConversation, setVoiceConversation] = useState(false);
   const [phase1Speaking, setPhase1Speaking] = useState(false);
+
+  const philipStream = usePhilipVoiceStream();
 
   // Derived Philip voice UI state
   const philipVoiceState: PhilipVoiceState = !voiceConversation
@@ -1577,33 +1580,63 @@ export default function GuidancePage() {
     phase1SpokenRef.current = key;
     destroyPhase1Voice();
     const spokenText = cleanResponse(phase1Response);
-    // Consume prefetched blob — started mid-stream on first sentence
-    const blobPromise = phase1TtsBlobRef.current;
-    phase1TtsBlobRef.current = null;
     let cancelled = false;
-    let cancelSpeak: (() => void) | null = null;
-    (async () => {
-      const prefetchedBlob = blobPromise ? await blobPromise : null;
-      if (cancelled) return;
-      cancelSpeak = speakShepherdWithMicHandoff(spokenText, {
-        prefetchedBlob,
-        onStart: () => setPhase1Speaking(true),
-        onSpeakingEnd: () => {
+
+    if (isPhilipMode()) {
+      // WebSocket streaming path — audio starts playing before stream ends
+      philipStream.speak(spokenText, {
+        onStart: () => { if (!cancelled) setPhase1Speaking(true); },
+        onEnd: () => {
+          if (cancelled) return;
           setPhase1Speaking(false);
           setPhase1SpeechDone(true);
+          window.setTimeout(() => {
+            if (!cancelled && hasSpeechSupport && !phase2Started && !showPhase1TypeFallback) {
+              startPhase1Listening();
+            }
+          }, 800);
         },
-        onHandoff: () => {
-          if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
-          startPhase1Listening();
+        onError: () => {
+          if (cancelled) return;
+          // Fallback to blob TTS if WebSocket fails
+          const blobPromise = phase1TtsBlobRef.current;
+          phase1TtsBlobRef.current = null;
+          (async () => {
+            const prefetchedBlob = blobPromise ? await blobPromise : null;
+            if (cancelled) return;
+            speakShepherdWithMicHandoff(spokenText, {
+              prefetchedBlob,
+              onStart: () => setPhase1Speaking(true),
+              onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
+              onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+            });
+          })();
         },
       });
-    })();
+    } else {
+      // Solo mode — blob TTS path (no Philip WebSocket)
+      const blobPromise = phase1TtsBlobRef.current;
+      phase1TtsBlobRef.current = null;
+      let cancelSpeak: (() => void) | null = null;
+      (async () => {
+        const prefetchedBlob = blobPromise ? await blobPromise : null;
+        if (cancelled) return;
+        cancelSpeak = speakShepherdWithMicHandoff(spokenText, {
+          prefetchedBlob,
+          onStart: () => setPhase1Speaking(true),
+          onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
+          onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+        });
+      })();
+    }
+
     return () => {
       cancelled = true;
-      cancelSpeak?.();
+      if (isPhilipMode()) philipStream.interrupt();
+      // cancelSpeak handled inside async block for solo path
       setPhase1Speaking(false);
     };
-  }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice]);
+  }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice, philipStream]);
 
   // Phase 2 — Philip speaks "What I'm hearing" for voice sessions before cards appear
   useEffect(() => {
