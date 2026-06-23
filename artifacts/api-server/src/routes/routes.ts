@@ -56,6 +56,7 @@ import {
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled } from "../talkItThroughVariants";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, type ConversationState } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4008,11 +4009,34 @@ Sacred restraint: fewer words are better.`;
       ? `\n\nHeart check context — before this conversation began, this person shared how they're doing: ${heartContext} Let this quietly shape your emotional register and opening — not as something to reference directly ("you mentioned you're feeling heavy"), but as context that informs how you receive and respond to them. Meet them where they actually are.`
       : "";
 
+    // Generate structured conversation state for follow-up exchanges
+    // This gives Philip an explicit map of what's been heard, asked, and explored
+    let conversationStateBlock = "";
+    if (isFollowUp && messages?.length) {
+      try {
+        const state = await generateConversationState(openai, situation.trim(), messages);
+        conversationStateBlock = buildStatePromptBlock(state);
+      } catch {
+        // Non-fatal — continue without state block
+      }
+    } else if (!isFollowUp) {
+      // Check closing intent for two-phase flow too
+      const lastMsg = phase1UserReply?.trim() ?? "";
+      if (detectConversationClosing(lastMsg)) {
+        conversationStateBlock = buildStatePromptBlock({
+          core_issue: situation.slice(0, 80),
+          facts_learned: [], areas_explored: [], areas_unexplored: [],
+          questions_asked: [], metaphors_used: [], user_exact_words: [],
+          conversation_closing: true,
+        });
+      }
+    }
+
     const systemMsg = `${variantPrompt}
 
 ${TALK_IT_THROUGH_RESPONSE_SCOPE}
 
-${isFollowUp ? TALK_IT_THROUGH_FOLLOW_UP : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE}
+${isFollowUp ? TALK_IT_THROUGH_FOLLOW_UP : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE}${conversationStateBlock}
 
 Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone expresses uncertainty about faith, meet them exactly there without assuming belief
@@ -4047,7 +4071,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
           model: "gpt-4o",
           messages: msgs,
           max_tokens: isFollowUp ? 240 : 290,
-          temperature: 0.82,
+          temperature: isFollowUp ? 0.6 : 0.78,
         }, { signal: controller.signal });
         return (completion.choices[0]?.message?.content ?? "").trim();
       } finally {
