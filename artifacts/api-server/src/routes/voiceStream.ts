@@ -163,7 +163,7 @@ export function registerVoiceStreamWS(httpServer: Server): void {
         // Send ElevenLabs init frame
         elevenWs.send(JSON.stringify({
           text: " ",
-          voice_settings: { stability: 0.68, similarity_boost: 0.80, style: 0.15, use_speaker_boost: true, speed: 1.0 },
+          voice_settings: { stability: 0.68, similarity_boost: 0.80, style: 0.15, use_speaker_boost: true },
           xi_api_key: elevenKey,
         }));
 
