@@ -2136,6 +2136,33 @@ export default function GuidancePage() {
                 padding: "max(56px, env(safe-area-inset-top, 56px)) 32px max(48px, calc(40px + env(safe-area-inset-bottom, 0px)))",
               }}
             >
+              {/* Back button — top-left, subtle */}
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                aria-label="Go back"
+                style={{
+                  position: "absolute",
+                  top: "max(18px, env(safe-area-inset-top, 18px))",
+                  left: "20px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "8px",
+                  color: "rgba(255,255,255,0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "13px",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+
               {/* Philip's question — already present, not typing in */}
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
