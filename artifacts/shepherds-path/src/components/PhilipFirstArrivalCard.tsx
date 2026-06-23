@@ -47,6 +47,8 @@ export function PhilipFirstArrivalCard({ onDismiss }: Props) {
     if (!isPhilipMode()) return;
     if (hasShownFirstArrival()) return;
     markFirstArrivalShown();
+    // Signal to sibling cards (ReentryCard) that First Arrival is active this session
+    try { sessionStorage.setItem("sp_philip_first_arrival_active", "1"); } catch {}
     // Prefetch TTS immediately so it's ready when they tap
     blobPromiseRef.current = prefetchShepherdTTS(greeting);
     setVisible(true);

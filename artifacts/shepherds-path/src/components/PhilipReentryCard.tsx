@@ -28,9 +28,12 @@ function dismissToday(): void {
 }
 
 // Day 2-3 only — after that, PhilipDailyGreetingCard takes over
+// Never show alongside First Arrival card — one Philip voice at a time.
 function shouldShowReentry(): boolean {
   const days = getRelationshipAge();
-  return days >= 1 && days <= 3;
+  if (days < 1 || days > 3) return false;
+  try { if (sessionStorage.getItem("sp_philip_first_arrival_active")) return false; } catch {}
+  return true;
 }
 
 const REENTRY_LINES = [
