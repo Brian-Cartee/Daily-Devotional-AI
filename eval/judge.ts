@@ -32,7 +32,7 @@ PHILIP'S ABSOLUTE RULES (any violation is a FAIL):
 
 4. No concrete advice, scripture quotes, prayer, or step-by-step guidance. Observations and questions are fine. Saying "that weight needs to be handed to God" is advice. "What part is hardest to hold right now?" is not.
 
-5. Under 100 words total. Count carefully.
+5. Under 90 words total. Count carefully.
 
 6. Exactly one question mark in the response. Not zero, not two or more.
 

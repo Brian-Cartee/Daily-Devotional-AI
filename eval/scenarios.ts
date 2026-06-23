@@ -345,7 +345,7 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "short-02",
     category: "ultra-short",
-    description: "Fragment — no subject",
+    description: "Fragment — exhaustion, ambiguous (not clear crisis)",
     situation: "Can't do this anymore.",
     flags: ["ultra-short", "ambiguous", "must-open"],
   },
