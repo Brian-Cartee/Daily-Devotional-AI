@@ -1638,42 +1638,51 @@ export default function GuidancePage() {
     destroyPhase1Voice();
     const spokenText = cleanResponse(phase1Response);
     let cancelled = false;
+    let cancelSpeak: (() => void) | null = null;
 
-    if (isPhilipMode()) {
-      // WebSocket streaming path — audio starts playing before stream ends
-      philipStream.speak(spokenText, {
-        onStart: () => { if (!cancelled) setPhase1Speaking(true); },
-        onEnd: () => {
-          if (cancelled) return;
-          setPhase1Speaking(false);
-          setPhase1SpeechDone(true);
-          convo.dispatch({ type: "P1_SPEAK_END" });
-          window.setTimeout(() => {
-            if (!cancelled && hasSpeechSupport && !phase2Started && !showPhase1TypeFallback) {
-              startPhase1Listening();
-            }
-          }, 800);
-        },
-        onError: () => {
-          if (cancelled) return;
-          speakShepherdStreamWithMicHandoff(spokenText, {
-            onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
-            onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
-          });
-        },
-      });
-    } else {
-      // Solo mode — streaming TTS path (no Philip WebSocket)
-      speakShepherdStreamWithMicHandoff(spokenText, {
-        onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
-        onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
-      });
-    }
+    // iOS Safari: the render triggered by phase1Complete plays a transition animation.
+    // Starting ManagedMediaSource during that paint causes sourceopen to fire late and
+    // the first 200-400ms of audio to be clipped. A short settle window avoids the race.
+    const transitionTimer = window.setTimeout(() => {
+      if (cancelled) return;
+
+      if (isPhilipMode()) {
+        // WebSocket streaming path — audio starts playing before stream ends
+        philipStream.speak(spokenText, {
+          onStart: () => { if (!cancelled) setPhase1Speaking(true); },
+          onEnd: () => {
+            if (cancelled) return;
+            setPhase1Speaking(false);
+            setPhase1SpeechDone(true);
+            convo.dispatch({ type: "P1_SPEAK_END" });
+            window.setTimeout(() => {
+              if (!cancelled && hasSpeechSupport && !phase2Started && !showPhase1TypeFallback) {
+                startPhase1Listening();
+              }
+            }, 800);
+          },
+          onError: () => {
+            if (cancelled) return;
+            cancelSpeak = speakShepherdStreamWithMicHandoff(spokenText, {
+              onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
+              onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+            });
+          },
+        });
+      } else {
+        // Solo mode — streaming TTS path (no Philip WebSocket)
+        cancelSpeak = speakShepherdStreamWithMicHandoff(spokenText, {
+          onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
+          onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+        });
+      }
+    }, 450);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(transitionTimer);
+      cancelSpeak?.();
       if (isPhilipMode()) philipStream.interrupt();
-      // cancelSpeak handled inside async block for solo path
       setPhase1Speaking(false);
     };
   }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice, philipStream]);
