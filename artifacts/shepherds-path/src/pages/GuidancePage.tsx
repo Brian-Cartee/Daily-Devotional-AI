@@ -414,6 +414,17 @@ export default function GuidancePage() {
   const [showSlowVerse, setShowSlowVerse] = useState(false);
   const listenFirstTriggeredRef = useRef(false);
   const lastInputWasVoiceRef = useRef(false);
+  // Whisper background finalization — never blocks the UI
+  const whisperUpgradeRef = useRef<Promise<string> | null>(null);
+  const whisperSessionRef = useRef(0); // increment per entry so stale results are discarded
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      whisperSessionRef.current += 1; // ensure any in-flight Whisper result is discarded
+    };
+  }, []);
 
   const getCrisisReentryLine = () => {
     if (crisisReentryRef.current === undefined) {
@@ -738,7 +749,8 @@ export default function GuidancePage() {
     }
   };
 
-  const streamPhase1 = async (flowGen: number): Promise<boolean> => {
+  const streamPhase1 = async (flowGen: number, situationOverride?: string): Promise<boolean> => {
+    const effectiveSituation = situationOverride ?? situation;
     setPhase1StreamingText("");
     setPhase1Response(null);
     setPhase1Complete(false);
@@ -750,7 +762,7 @@ export default function GuidancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          situation,
+          situation: effectiveSituation,
           situationTopicId: situationTopicId ?? undefined,
           userName: getUserName() ?? undefined,
           heartContext: buildHeartContext(getCurrentHeartState()),
@@ -903,7 +915,7 @@ export default function GuidancePage() {
     if (!result.verse) setVpError(true);
   }, [situation, toast]);
 
-  const startGuidanceFlow = async () => {
+  const startGuidanceFlow = async (initialSituationOverride?: string) => {
     const flowGen = ++guidanceFlowGenRef.current;
     setCompletionPath(null);
     setRevealStage(0);
@@ -931,11 +943,38 @@ export default function GuidancePage() {
     phase1SpokenRef.current = null;
     followUpSpokenRef.current = null;
     stayMicStartedRef.current = false;
-    const initialUserMsg: Message = { role: "user", content: situation };
+
+    // Whisper upgrade window — race the background Whisper promise against 400ms.
+    // For short audio (1-2 sentences) Whisper often wins; for longer it times out and
+    // we use the preview. Either way the UI has already transitioned immediately.
+    let situationForFlow = initialSituationOverride ?? situation;
+    const sessionToken = whisperSessionRef.current;
+    if (whisperUpgradeRef.current) {
+      try {
+        const upgraded = await Promise.race([
+          whisperUpgradeRef.current,
+          new Promise<string>((r) => setTimeout(() => r(""), 400)),
+        ]);
+        if (upgraded.trim() && mountedRef.current && whisperSessionRef.current === sessionToken) {
+          const clamped = clampGuidanceInput(upgraded);
+          if (clamped.trim() !== situation.trim()) {
+            situationForFlow = clamped;
+            stashGuidanceSituation(clamped); // keep sessionStorage in sync
+            setHeartInput(clamped);
+          }
+        }
+      } catch { /* use preview */ }
+      whisperUpgradeRef.current = null;
+    }
+
+    const initialUserMsg: Message = { role: "user", content: situationForFlow };
     setMessages([initialUserMsg]);
     setIsReflecting(true);
 
-    const phase1Ok = await streamPhase1(flowGen);
+    const phase1Ok = await streamPhase1(
+      flowGen,
+      situationForFlow !== situation ? situationForFlow : undefined,
+    );
     if (!lastInputWasVoiceRef.current) {
       setPhase1SpeechDone(true);
     }
@@ -967,7 +1006,7 @@ export default function GuidancePage() {
 
     guidanceStartedForRef.current = trimmed;
     postGuidanceMemory(trimmed, undefined, "pending");
-    startGuidanceFlow();
+    startGuidanceFlow(trimmed);
   };
 
   const beginGuidanceEntry = (text: string) => {
@@ -1776,48 +1815,53 @@ export default function GuidancePage() {
     convo.dispatch({ type: "ENTRY_SUBMIT" });
     setIsReflecting(true);
 
+    // Null the ref BEFORE destroyHeartVoice so it doesn't call listener.destroy()
+    // prematurely — we need the listener alive for finalizeTranscript.
+    heartVoiceRef.current = null;
+    destroyHeartVoice(); // clears UI state; no-ops on destroy since ref is null
 
-    void (async () => {
-      let finalText = trimmed;
-      try {
-        const previewWords = trimmed.split(/\s+/).filter(Boolean).length;
-        const fastHandoff = fromVoice && listener && previewWords >= 20;
+    // Fire Whisper in background — never await this in the critical path.
+    const sessionToken = ++whisperSessionRef.current;
+    if (fromVoice && listener) {
+      whisperUpgradeRef.current = listener
+        .finalizeTranscript()
+        .then((final) => final.trim() || trimmed)
+        .catch(() => trimmed)
+        .finally(() => listener.destroy()); // destroy only after transcript captured
+    } else {
+      whisperUpgradeRef.current = null;
+      listener?.destroy();
+    }
 
-        if (fastHandoff) {
-          heartVoiceRef.current = null;
-          setHeartListening(false);
-          setHeartListenPhase("listening");
-          beginGuidanceEntry(trimmed);
-          heartSubmittingRef.current = false;
-          setProcessingBridge(false);
-          void listener.finalizeTranscript().finally(() => listener.destroy());
-          return;
-        }
-
-        const refined = fromVoice && listener
-          ? await listener.finalizeTranscript()
-          : trimmed;
-        if (refined.trim()) finalText = clampGuidanceInput(refined);
-      } catch {
-        /* use preview text */
-      } finally {
-        if (heartSubmittingRef.current === false) return;
-        destroyHeartVoice();
-        listener?.destroy();
-        setProcessingBridge(false);
-        if (!finalText.trim()) {
+    // Edge case: audio recorded but speech recognition produced no preview.
+    // We can't start the flow with an empty situation — wait briefly for Whisper.
+    if (!trimmed.trim()) {
+      void (whisperUpgradeRef.current ?? Promise.resolve("")).then((final) => {
+        if (!mountedRef.current || whisperSessionRef.current !== sessionToken) return;
+        whisperUpgradeRef.current = null;
+        const resolved = clampGuidanceInput(final);
+        if (!resolved.trim()) {
           heartSubmittingRef.current = false;
           setIsReflecting(false);
+          convo.dispatch({ type: "ENTRY_OPEN" });
           toast({
             description: "We couldn't hear enough to respond — please try again.",
             variant: "destructive",
           });
           return;
         }
-        beginGuidanceEntry(finalText);
+        setHeartInput(resolved);
+        beginGuidanceEntry(resolved);
         heartSubmittingRef.current = false;
-      }
-    })();
+      });
+      return;
+    }
+
+    // Happy path: preview text available → start the flow immediately.
+    // Whisper runs in the background and startGuidanceFlow will race it
+    // for up to 400 ms before calling the Phase 1 API.
+    beginGuidanceEntry(trimmed);
+    heartSubmittingRef.current = false;
   };
 
   const submitHeartEntryRef = useRef(submitHeartEntry);
