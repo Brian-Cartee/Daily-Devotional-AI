@@ -6,6 +6,7 @@ import {
   saveHeartCheck,
   markHeartCheckShown,
   getHeartTrend,
+  getHeartAcknowledgment,
 } from "@/lib/heartCheck";
 
 const WEATHER_OPTIONS: { value: HeartWeather; label: string }[] = [
@@ -29,14 +30,6 @@ const TOPIC_OPTIONS: { value: HeartTopic; label: string }[] = [
 
 const HEAVY: HeartWeather[] = ["heavy", "overwhelmed"];
 
-const ACKNOWLEDGMENTS: Record<HeartWeather, string> = {
-  peaceful:    "Carry that peace into today.",
-  hopeful:     "Hope is a gift. Let's tend it.",
-  uncertain:   "That's okay. You can bring that here.",
-  heavy:       "That's okay. You can bring that here.",
-  overwhelmed: "That's okay. You can bring that here.",
-};
-
 interface Props {
   onDismiss: () => void;
 }
@@ -44,6 +37,7 @@ interface Props {
 export function HeartCheckModal({ onDismiss }: Props) {
   const [step, setStep] = useState<"weather" | "topic" | "ack">("weather");
   const [weather, setWeather] = useState<HeartWeather | null>(null);
+  const [topic, setTopic] = useState<HeartTopic | null>(null);
   const [trendMessage, setTrendMessage] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -85,9 +79,10 @@ export function HeartCheckModal({ onDismiss }: Props) {
     setStep("topic");
   };
 
-  const handleTopicSelect = (topic: HeartTopic | null) => {
+  const handleTopicSelect = (selectedTopic: HeartTopic | null) => {
     if (!weather) return;
-    saveHeartCheck(weather, topic);
+    setTopic(selectedTopic);
+    saveHeartCheck(weather, selectedTopic);
     window.dispatchEvent(new CustomEvent("sp-heart-updated"));
     const trend = getHeartTrend(weather);
     setTrendMessage(trend.message);
@@ -215,7 +210,7 @@ export function HeartCheckModal({ onDismiss }: Props) {
                 </p>
               )}
               <p style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem", fontWeight: 300, color: "rgba(255,255,255,0.92)", lineHeight: 1.4, marginBottom: "40px" }}>
-                {ACKNOWLEDGMENTS[weather]}
+                {getHeartAcknowledgment(weather, topic)}
               </p>
               <button
                 onClick={handleClose}

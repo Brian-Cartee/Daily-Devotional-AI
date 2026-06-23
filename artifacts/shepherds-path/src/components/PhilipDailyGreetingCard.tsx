@@ -8,6 +8,7 @@ import {
   type DailyGreeting,
 } from "@/lib/philipDailyGreeting";
 import { isPhilipMode } from "@/lib/companionMode";
+import { getRelationshipAge } from "@/lib/relationship";
 import { useLocation } from "wouter";
 
 export function PhilipDailyGreetingCard() {
@@ -21,6 +22,8 @@ export function PhilipDailyGreetingCard() {
   useEffect(() => {
     if (!isPhilipMode()) return;
     if (hasGreetingBeenDismissedToday()) return;
+    // Day 1-3: reentry card handles Philip's presence. Daily greeting starts day 4.
+    if (getRelationshipAge() < 4) return;
 
     fetchDailyGreeting().then((g) => {
       if (g) {

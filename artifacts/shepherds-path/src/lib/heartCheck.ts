@@ -22,7 +22,8 @@ const KEY_CURRENT  = "sp_heart_current";
 const KEY_HISTORY  = "sp_heart_history";
 const KEY_LAST_SHOWN = "sp_heart_last_shown";
 
-const SHOW_INTERVAL_MS  = 3 * 60 * 60 * 1000;  // 3 hours min between prompts
+// Heart check shows once per day — first open of each new calendar day.
+// Repeating more often turns a sacred threshold into a form.
 const TREND_WINDOW_DAYS = 7;
 const TREND_MIN_ENTRIES = 3;                     // need ≥3 recent entries to surface a trend
 const HISTORY_MAX       = 30;
@@ -136,17 +137,30 @@ function syncHeartStateToNative(state: HeartState): void {
 export function markHeartCheckShown(): void {
   const ts = Date.now();
   safeSet(KEY_LAST_SHOWN, ts);
+  // Also stamp today's date so daily-cadence check works cross-session
+  try { localStorage.setItem("sp_heart_shown_date", todayStr()); } catch {}
   syncHeartLastShownToNative(ts);
 }
 
 export function shouldShowHeartCheck(): boolean {
   try {
-    const fromStorage = safeGet<number>(KEY_LAST_SHOWN, 0);
+    // Daily cadence: show once per calendar day (Eastern time)
+    const shownDate = localStorage.getItem("sp_heart_shown_date");
+    if (shownDate === todayStr()) return false;
+    // Also guard against native-side last-shown within the same day
     const fromNative = getNativeHeartLastShown();
-    const lastShown = Math.max(fromStorage, fromNative);
-    if (Date.now() - lastShown < SHOW_INTERVAL_MS) return false;
     const current = getCurrentHeartState();
-    if (current && Date.now() - current.ts < SHOW_INTERVAL_MS) return false;
+    const lastShown = Math.max(
+      safeGet<number>(KEY_LAST_SHOWN, 0),
+      fromNative,
+      current?.ts ?? 0,
+    );
+    // If last shown was today (within same calendar day) skip
+    if (lastShown > 0) {
+      const lastDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" })
+        .format(new Date(lastShown));
+      if (lastDate === todayStr()) return false;
+    }
     return true;
   } catch { return false; }
 }
@@ -220,6 +234,74 @@ function topicTrendLine(topic: HeartTopic): string {
     gratitude:     "You've been holding gratitude close this week.",
   };
   return lines[topic];
+}
+
+// Weather + topic combination acknowledgments.
+// One sentence only. No sermon. No Scripture. No Philip. Just recognition.
+const COMBO_ACK: Partial<Record<HeartWeather, Partial<Record<HeartTopic, string>>>> = {
+  peaceful: {
+    relationships: "Peace in your relationships is worth noticing — hold onto it.",
+    finances:      "Financial peace is rare. Don't rush past it today.",
+    work:          "A settled day at work is a gift. Carry it well.",
+    health:        "Health and peace together — that's something to be grateful for.",
+    family:        "Peace in the family. That's not nothing.",
+    faith:         "Settled in your faith today. That's a good place to stand.",
+    anxiety:       "A peaceful day despite the anxiety — that's strength.",
+    gratitude:     "Gratitude is a gift worth noticing. Don't rush past it.",
+  },
+  hopeful: {
+    relationships: "Hope in your relationships. Let that breathe.",
+    finances:      "Financial hope is hard-won. Hold it carefully.",
+    work:          "Something about work feels possible today. That matters.",
+    health:        "Hope about your health — that's worth carrying forward.",
+    family:        "Hopeful about family. That's a good place to begin.",
+    faith:         "Hopeful in your faith. There's movement there.",
+    anxiety:       "Hopeful despite the anxiety. That takes courage.",
+    gratitude:     "Gratitude and hope together. That's a strong foundation.",
+  },
+  uncertain: {
+    relationships: "Uncertainty in relationships is one of the hardest things to sit with.",
+    finances:      "Financial uncertainty wears on a person. You don't have to have it figured out today.",
+    work:          "Uncertain about work. That's an honest place to be.",
+    health:        "Health uncertainty is its own kind of weight. You can bring that here.",
+    family:        "Uncertain about family. That's okay. You don't need answers today.",
+    faith:         "Uncertain in your faith. That's not the end — it might be the beginning.",
+    anxiety:       "Uncertain and anxious. That's a heavy combination. You're not alone in it.",
+    gratitude:     "Even uncertain, you found something to be grateful for. That's not small.",
+  },
+  heavy: {
+    relationships: "Relational weight is one of the hardest kinds. You don't have to carry it alone today.",
+    finances:      "Financial pressure is real and exhausting. You can bring that here.",
+    work:          "A heavy day at work. That deserves to be acknowledged.",
+    health:        "Health concerns weigh differently than other things. You can set that down here.",
+    family:        "Family can carry a different kind of weight. You don't have to carry it alone today.",
+    faith:         "A heavy faith season. Those are real, and they matter.",
+    anxiety:       "Anxiety that's heavy — that's worth taking seriously. You can bring that here.",
+    gratitude:     "Heavy, but still finding something to hold onto. That's more than it sounds.",
+  },
+  overwhelmed: {
+    relationships: "Overwhelmed in your relationships. That's a lot to carry. You can set some of it down.",
+    finances:      "Overwhelmed by finances. That's one of the heaviest places to be. You're not alone.",
+    work:          "Overwhelmed at work. One thing at a time is enough.",
+    health:        "Overwhelmed about health. That kind of weight deserves to be seen.",
+    family:        "Overwhelmed by family. That's honest. You don't have to hold all of it right now.",
+    faith:         "Overwhelmed in your faith. Sometimes that's what the journey looks like. Come in anyway.",
+    anxiety:       "Overwhelmed and anxious. You were right to come here.",
+    gratitude:     "Overwhelmed — but still finding gratitude. That's remarkable. Don't overlook it.",
+  },
+};
+
+const WEATHER_ACK_FALLBACK: Record<HeartWeather, string> = {
+  peaceful:    "Carry that peace into today.",
+  hopeful:     "Hope is a gift. Let's tend it.",
+  uncertain:   "That's okay. You can bring that here.",
+  heavy:       "That's okay. You can bring that here.",
+  overwhelmed: "You were right to come here.",
+};
+
+export function getHeartAcknowledgment(weather: HeartWeather, topic: HeartTopic | null): string {
+  if (topic && COMBO_ACK[weather]?.[topic]) return COMBO_ACK[weather]![topic]!;
+  return WEATHER_ACK_FALLBACK[weather];
 }
 
 /** Build a context string to inject into AI prompts */

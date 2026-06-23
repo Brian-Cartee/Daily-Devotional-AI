@@ -23,9 +23,9 @@ function markFirstArrivalShown(): void {
 function buildGreeting(name: string | null): string {
   const first = name?.split(" ")[0] ?? null;
   if (first) {
-    return `${first}, I don't know your story yet. But I know this: your life is not random, and neither is this moment. Jesus has not overlooked you, and neither will I. When you're ready, tell me what's on your heart.`;
+    return `${first}, I don't know your story yet. But I know this: your life is not random, and neither is this moment. Jesus has not overlooked you. That's where I'd like to begin. When you're ready, tell me what's on your heart.`;
   }
-  return `I don't know your story yet. But I know this: your life is not random, and neither is this moment. Jesus has not overlooked you, and neither will I. When you're ready, tell me what's on your heart.`;
+  return `I don't know your story yet. But I know this: your life is not random, and neither is this moment. Jesus has not overlooked you. That's where I'd like to begin. When you're ready, tell me what's on your heart.`;
 }
 
 interface Props {
@@ -58,7 +58,13 @@ export function PhilipFirstArrivalCard({ onDismiss }: Props) {
     blobPromiseRef.current = null;
     speakShepherdLine(greeting, {
       prefetchedBlob: blob,
-      onEnd: () => { setSpeaking(false); setPlayed(true); },
+      onEnd: () => {
+        setSpeaking(false);
+        // The First Silence — Philip speaks, then gets out of the way.
+        // 3 seconds of nothing before "Talk it through" appears.
+        // Most apps speak and immediately ask for something. Philip doesn't.
+        window.setTimeout(() => setPlayed(true), 3000);
+      },
       onFail: () => { setSpeaking(false); },
     });
   };
