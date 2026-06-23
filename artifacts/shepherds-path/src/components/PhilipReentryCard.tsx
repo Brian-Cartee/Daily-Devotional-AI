@@ -10,6 +10,7 @@ import { Volume2 } from "lucide-react";
 import { getUserName } from "@/lib/userName";
 import { isPhilipMode } from "@/lib/companionMode";
 import { prefetchShepherdTTS, speakShepherdLine } from "@/lib/shepherdVoice";
+import { BrandIcon } from "@/components/BrandIcon";
 import { getRelationshipAge } from "@/lib/relationship";
 
 const DISMISSED_KEY = "sp_philip_reentry_dismissed_date";
@@ -88,14 +89,20 @@ export function PhilipReentryCard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
       style={{
+        position: "relative",
         borderRadius: "18px",
         border: "1px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.03)",
         padding: "18px 20px 14px",
         marginBottom: "4px",
+        overflow: "hidden",
       }}
       data-testid="philip-reentry-card"
     >
+      {/* Brand glyph — ambient mark, not a face */}
+      <div style={{ position: "absolute", top: "12px", right: "14px", opacity: 0.08, pointerEvents: "none" }}>
+        <BrandIcon size={28} onDark />
+      </div>
       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)", marginBottom: "10px" }}>
         Philip
       </p>

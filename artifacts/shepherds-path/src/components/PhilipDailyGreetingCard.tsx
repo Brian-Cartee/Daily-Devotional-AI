@@ -9,6 +9,7 @@ import {
 } from "@/lib/philipDailyGreeting";
 import { isPhilipMode } from "@/lib/companionMode";
 import { getRelationshipAge } from "@/lib/relationship";
+import { BrandIcon } from "@/components/BrandIcon";
 import { useLocation } from "wouter";
 
 export function PhilipDailyGreetingCard() {
@@ -63,9 +64,13 @@ export function PhilipDailyGreetingCard() {
 
   return (
     <div
-      className="relative rounded-2xl border border-white/10 bg-zinc-900/50 px-4 py-4 mb-1"
+      className="relative rounded-2xl border border-white/10 bg-zinc-900/50 px-4 py-4 mb-1 overflow-hidden"
       data-testid="philip-daily-greeting-card"
     >
+      {/* Brand glyph — ambient mark, not a face */}
+      <div style={{ position: "absolute", top: "12px", right: "36px", opacity: 0.08, pointerEvents: "none" }}>
+        <BrandIcon size={28} onDark />
+      </div>
       {/* Dismiss */}
       <button
         onClick={handleDismiss}

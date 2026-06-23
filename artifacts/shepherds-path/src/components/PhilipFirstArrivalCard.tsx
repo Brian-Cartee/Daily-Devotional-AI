@@ -8,6 +8,7 @@ import { Volume2 } from "lucide-react";
 import { getUserName } from "@/lib/userName";
 import { isPhilipMode } from "@/lib/companionMode";
 import { prefetchShepherdTTS, speakShepherdLine } from "@/lib/shepherdVoice";
+import { BrandIcon } from "@/components/BrandIcon";
 import { useLocation } from "wouter";
 
 const STORAGE_KEY = "sp_philip_first_arrival_shown";
@@ -82,14 +83,20 @@ export function PhilipFirstArrivalCard({ onDismiss }: Props) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
       style={{
+        position: "relative",
         borderRadius: "18px",
         border: "1px solid rgba(139,92,246,0.18)",
         background: "rgba(26,13,46,0.60)",
         padding: "20px 20px 16px",
         marginBottom: "4px",
+        overflow: "hidden",
       }}
       data-testid="philip-first-arrival-card"
     >
+      {/* Brand glyph — ambient mark, not a face */}
+      <div style={{ position: "absolute", top: "12px", right: "14px", opacity: 0.10, pointerEvents: "none" }}>
+        <BrandIcon size={28} onDark />
+      </div>
       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(167,139,250,0.60)", marginBottom: "12px" }}>
         Philip · A word before you begin
       </p>
