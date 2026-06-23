@@ -1,0 +1,15 @@
+{
+  "name": "philip-eval",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "eval": "npx tsx run-eval.ts",
+    "eval:live": "npx tsx run-eval.ts --target live",
+    "eval:phase1": "npx tsx run-eval.ts --phase phase1",
+    "eval:response": "npx tsx run-eval.ts --phase response"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "tsx": "^4.19.4"
+  }
+}

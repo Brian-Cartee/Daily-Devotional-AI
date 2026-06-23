@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Philip Eval — 6/23/2026</title>
+<style>
+  * { box-sizing: border-box; }
+  body { background: #0a0a0f; color: #ddd; font-family: system-ui, sans-serif; margin: 0; padding: 24px; }
+  h1 { color: #a78bfa; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
+  .summary { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+  .stat { background: #111; border: 1px solid #222; border-radius: 10px; padding: 16px 24px; }
+  .stat-value { font-size: 36px; font-weight: 700; }
+  .stat-label { color: #666; font-size: 12px; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #222; color: #888; font-weight: 500; }
+  td { padding: 10px 12px; border-bottom: 1px solid #111; vertical-align: top; }
+  h2 { color: #888; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 40px; }
+  .pass-rate { color: #f87171; }
+</style>
+</head>
+<body>
+<h1>Philip Eval Report</h1>
+<div class="meta">Phase: <strong>phase1</strong> · Target: <strong>live (https://www.shepherdspathai.com)</strong> · Run: 2026-06-23T13:19:13.692Z</div>
+
+<div class="summary">
+  <div class="stat">
+    <div class="stat-value pass-rate">0%</div>
+    <div class="stat-label">Pass Rate</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">0/4</div>
+    <div class="stat-label">Passed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">3.5</div>
+    <div class="stat-label">Avg Score / 10</div>
+  </div>
+</div>
+
+<h2>By Category</h2>
+<table>
+  <tr><th>Category</th><th>Passed</th><th>Pass Rate</th><th>Avg Score</th></tr>
+  <tr><td>ultra-short</td><td>0/4</td><td style="color:#f87171">0%</td><td>3.5/10</td></tr>
+</table>
+
+<h2>All Scenarios</h2>
+<table>
+  <tr>
+    <th>ID</th><th>Result</th><th>Score</th>
+    <th style="width:260px">User Input</th>
+    <th>Philip's Response</th>
+    <th style="width:180px">Notes</th>
+    <th>Time</th>
+  </tr>
+  
+      <tr style="background:#2a0d0d" id="row-0">
+        <td style="color:#888;font-size:11px">short-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">4/10</td>
+        <td><em style="color:#ccc">"Broken."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-open</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">You’re carrying something heavy.  
+I can sense the weight in your word.  
+Not just the brokenness itself — but the impact it has on everything.  
+What part feels the most overwhelming right now?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 2<br>⚠ Rule 5</div></td>
+        <td style="font-size:12px;color:#999">Philip's response opens with empathy and attempts to delve into the user's experience, which is good for depth and arrival. However, it violates the rule against using 'I can help with that' or similar phrases, as 'I can sense' is too close to that prohibited phrase. Additionally, the response exceeds the 100-word limit. The question is relevant but could be more open-ended.</td>
+        <td style="color:#555;font-size:11px">4617ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-1">
+        <td style="color:#888;font-size:11px">short-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">3/10</td>
+        <td><em style="color:#ccc">"Can't do this anymore."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ambiguous</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-open</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">That sounds like a weight that's been pressing on you for a while. I can sense there's deep weariness in your voice. You showed up, and that matters. What feels most overwhelming right now?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 2<br>⚠ Rule 4</div></td>
+        <td style="font-size:12px;color:#999">Philip violated the rule by saying 'I can sense,' which is similar to 'I hear you.' Additionally, the response includes two questions, which violates the rule of having exactly one question. The response does well in terms of arrival and depth, acknowledging the user's struggle, but fails in adhering to the rules.</td>
+        <td style="color:#555;font-size:11px">4489ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-2">
+        <td style="color:#888;font-size:11px">short-03</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">3/10</td>
+        <td><em style="color:#ccc">"Why?"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">theodicy</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">You’re asking a big question.  
+It feels like something is weighing on you.  
+I can sense there’s more behind that one word.  
+What’s the story behind your “why”?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 2<br>⚠ Rule 5</div></td>
+        <td style="font-size:12px;color:#999">Philip's response violates the rule against using 'I can help with that' or similar phrases, as it includes 'I can sense.' The response also exceeds the 100-word limit. While the response attempts to delve deeper into the user's question, it lacks the grounded voice expected of a shepherd and feels more like a chatbot. The question asked is relevant but could be more open-ended to invite deeper reflection.</td>
+        <td style="color:#555;font-size:11px">4970ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-3">
+        <td style="color:#888;font-size:11px">short-04</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">4/10</td>
+        <td><em style="color:#ccc">"I'm fine."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">surface-presentation</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">beneath-the-surface</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">You showed up. That matters. I can sense there's more beneath the surface. What’s really going on?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 2 violation: 'I can help with that' variant<br>⚠ Rule 6 violation: Two questions</div></td>
+        <td style="font-size:12px;color:#999">Philip acknowledges the user's presence, which is a good entry. However, the phrase 'I can sense there's more beneath the surface' violates the rule against certain phrases. Additionally, there are two questions, which breaks the rule of having exactly one question. The response does attempt to go deeper, but the execution is flawed due to these violations.</td>
+        <td style="color:#555;font-size:11px">4489ms</td>
+      </tr>
+</table>
+</body>
+</html>

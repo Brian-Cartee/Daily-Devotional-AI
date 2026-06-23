@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-06-23T13:19:13.693Z",
+  "phase": "phase1",
+  "target": "live (https://www.shepherdspathai.com)",
+  "passRate": 0,
+  "avgScore": 3.5,
+  "passed": 0,
+  "total": 4,
+  "results": [
+    {
+      "id": "short-01",
+      "category": "ultra-short",
+      "pass": false,
+      "score": 4,
+      "issues": [
+        "Rule 2",
+        "Rule 5"
+      ]
+    },
+    {
+      "id": "short-02",
+      "category": "ultra-short",
+      "pass": false,
+      "score": 3,
+      "issues": [
+        "Rule 2",
+        "Rule 4"
+      ]
+    },
+    {
+      "id": "short-03",
+      "category": "ultra-short",
+      "pass": false,
+      "score": 3,
+      "issues": [
+        "Rule 2",
+        "Rule 5"
+      ]
+    },
+    {
+      "id": "short-04",
+      "category": "ultra-short",
+      "pass": false,
+      "score": 4,
+      "issues": [
+        "Rule 2 violation: 'I can help with that' variant",
+        "Rule 6 violation: Two questions"
+      ]
+    }
+  ]
+}
