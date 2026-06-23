@@ -303,7 +303,8 @@ export function speakShepherdStream(
     };
   }
 
-  // Blob fallback — no MediaSource support (old iOS)
+  // Blob fallback — no MediaSource support (old iOS).
+  // Only called when the MediaSource path above was not entered.
   function useBlobFallback() {
     fetch("/api/tts/stream", {
       method: "POST",
@@ -321,7 +322,10 @@ export function speakShepherdStream(
       })
       .catch(() => { opts?.onFail?.(); opts?.onEnd?.(); });
   }
-  useBlobFallback();
+
+  if (!(MS && MS.isTypeSupported("audio/mpeg"))) {
+    useBlobFallback();
+  }
 
   return () => {
     cancelled = true;

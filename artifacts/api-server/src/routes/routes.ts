@@ -1025,7 +1025,7 @@ export async function registerRoutes(
     const allowedVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const selectedVoice = allowedVoices.includes(voice ?? "") ? voice! : "onyx";
     try {
-      const buffer = await getTTSAudio(text.trim(), selectedVoice, effectiveScope);
+      const buffer = await getTTSAudio(text.trim(), selectedVoice, listenScope);
       res.set("Content-Type", "audio/mpeg");
       res.set("Cache-Control", "public, max-age=604800");
       res.send(buffer);
