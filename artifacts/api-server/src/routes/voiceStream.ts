@@ -21,7 +21,7 @@ import { freeTrialGrants } from "../freeTrialConfig";
 import { recordGuidanceConversationStart } from "../guidanceWeeklyLimits";
 
 const ELEVENLABS_VOICE_ID = "4bt9GD5FhAuJpgPoDNut";
-const ELEVENLABS_MODEL = "eleven_flash_v2_5";
+const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
 const SAMPLE_RATE = 24000;
 const OPENAI_MODEL = "gpt-4o";
 
@@ -163,7 +163,7 @@ export function registerVoiceStreamWS(httpServer: Server): void {
         // Send ElevenLabs init frame
         elevenWs.send(JSON.stringify({
           text: " ",
-          voice_settings: { stability: 0.55, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true },
+          voice_settings: { stability: 0.68, similarity_boost: 0.80, style: 0.15, use_speaker_boost: true, speed: 1.0 },
           xi_api_key: elevenKey,
         }));
 
