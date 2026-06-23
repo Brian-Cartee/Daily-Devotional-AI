@@ -1235,12 +1235,13 @@ function LandingHomeInner() {
             </div>
           )}
 
-          {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
-
+          {/* Philip first — companion before content. Model B: relationship is the home screen. */}
           <PhilipFirstArrivalCard />
           <PhilipReentryCard />
           <PhilipRememberedCard />
           <PhilipDailyGreetingCard />
+
+          {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
           {/* Talk It Through card removed — toolbar mic is the single canonical entry point.
               Static feature cards become wallpaper. The mic becomes muscle memory. */}
 
