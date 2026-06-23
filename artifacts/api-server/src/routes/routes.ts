@@ -49,6 +49,7 @@ import {
   TALK_IT_THROUGH_SYSTEM_PROMPT,
   TALK_IT_THROUGH_RESPONSE_SCOPE,
   TALK_IT_THROUGH_FIRST_RESPONSE,
+  TALK_IT_THROUGH_RESPONSE_EXAMPLES,
   TALK_IT_THROUGH_FOLLOW_UP,
   buildTalkItThroughVersePrayerPrompt,
   buildTalkItThroughVersePrayerUserContent,
@@ -137,6 +138,58 @@ function writeDiskCache(key: string, buffer: Buffer): void {
 const ELEVENLABS_PHILIP_VOICE_ID = "4bt9GD5FhAuJpgPoDNut";
 const ELEVENLABS_MODEL = "eleven_flash_v2_5";
 
+/**
+ * Stream ElevenLabs TTS directly to an Express response.
+ * Audio chunks arrive within ~300ms vs ~4-5s for the full blob.
+ * Caller is responsible for setting Content-Type before calling.
+ */
+async function streamElevenLabsTTSToResponse(
+  text: string,
+  res: import("express").Response,
+): Promise<Buffer> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) throw new Error("ELEVENLABS_API_KEY not set");
+
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_PHILIP_VOICE_ID}/stream`,
+    {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+      },
+      body: JSON.stringify({
+        text: text.slice(0, 5000),
+        model_id: ELEVENLABS_MODEL,
+        voice_settings: {
+          stability: 0.68,
+          similarity_boost: 0.80,
+          style: 0.15,
+          use_speaker_boost: true,
+          speed: 0.82,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) throw new Error(`ElevenLabs stream TTS failed: ${response.status}`);
+  if (!response.body) throw new Error("ElevenLabs stream: no body");
+
+  const chunks: Buffer[] = [];
+  const reader = response.body.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = Buffer.from(value);
+    chunks.push(chunk);
+    if (!res.writableEnded) res.write(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
+
 async function getElevenLabsTTS(text: string): Promise<Buffer> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error("ELEVENLABS_API_KEY not set");
@@ -157,7 +210,7 @@ async function getElevenLabsTTS(text: string): Promise<Buffer> {
           similarity_boost: 0.80,
           style: 0.15,
           use_speaker_boost: true,
-          speed: 0.92,
+          speed: 0.82,
         },
       }),
     }
@@ -979,6 +1032,86 @@ export async function registerRoutes(
     } catch (err: any) {
       const isQuota = err?.code === "insufficient_quota" || err?.code === "billing_hard_limit_reached" || err?.status === 429;
       if (!res.headersSent) res.status(isQuota ? 503 : 500).json({ message: isQuota ? "Audio temporarily unavailable" : "TTS failed" });
+    }
+  });
+
+  // Streaming TTS for Philip's guidance voice — cache-first, then ElevenLabs stream.
+  // TTFB: ~300ms (vs ~4-5s for blob). Client plays audio as chunks arrive via MediaSource.
+  app.post("/api/tts/stream", async (req, res) => {
+    const { text, sessionId, isPro } = req.body as {
+      text: string;
+      sessionId?: string;
+      isPro?: boolean;
+    };
+    if (!text?.trim()) return res.status(400).json({ message: "text required" });
+
+    // Verify Pro/trial eligibility (same rules as blob TTS)
+    let resolvedPro = isPro === true;
+    if (!resolvedPro && sessionId) {
+      resolvedPro = await storage.isSessionPro(sessionId).catch(() => false);
+    }
+    const daysWithApp = sessionId ? getServerDaysWithApp(sessionId) : 999;
+    const trialEligible = daysWithApp <= 7;
+    if (!resolvedPro && !trialEligible) {
+      return res.status(403).json({ message: "Pro required for streaming voice" });
+    }
+
+    const input = text.trim();
+    const cacheKey = ttsCacheKey(input, "elevenlabs-philip");
+
+    // 1. Memory cache — instant
+    const memHit = ttsCache.get(cacheKey);
+    if (memHit) {
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=604800");
+      res.set("X-TTS-Cache", "memory");
+      return res.send(memHit);
+    }
+
+    // 2. Disk cache — fast, survives restarts
+    const diskHit = readDiskCache(cacheKey);
+    if (diskHit) {
+      ttsCache.set(cacheKey, diskHit);
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=604800");
+      res.set("X-TTS-Cache", "disk");
+      return res.send(diskHit);
+    }
+
+    // 3. ElevenLabs stream (or OpenAI blob fallback if ElevenLabs key not set)
+    try {
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "no-store");
+      res.set("X-TTS-Cache", "miss");
+
+      let fullBuffer: Buffer;
+      if (process.env.ELEVENLABS_API_KEY) {
+        fullBuffer = await streamElevenLabsTTSToResponse(input, res);
+      } else {
+        // Fallback — OpenAI blob (no streaming, but avoids silent failure)
+        const speech = await openaiTTS.audio.speech.create({
+          model: "tts-1", voice: "onyx", input: input.slice(0, 4096),
+        });
+        fullBuffer = Buffer.from(await speech.arrayBuffer());
+        if (!res.writableEnded) res.write(fullBuffer);
+      }
+
+      // Save to both caches for future requests (instant replay)
+      if (ttsCache.size >= MAX_TTS_CACHE) {
+        const firstKey = ttsCache.keys().next().value;
+        if (firstKey) ttsCache.delete(firstKey);
+      }
+      ttsCache.set(cacheKey, fullBuffer);
+      writeDiskCache(cacheKey, fullBuffer);
+
+      if (!res.writableEnded) res.end();
+    } catch (err: any) {
+      console.error("TTS stream error:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "TTS stream failed" });
+      } else if (!res.writableEnded) {
+        res.end();
+      }
     }
   });
 
@@ -3879,7 +4012,7 @@ Sacred restraint: fewer words are better.`;
 
 ${TALK_IT_THROUGH_RESPONSE_SCOPE}
 
-${isFollowUp ? TALK_IT_THROUGH_FOLLOW_UP : TALK_IT_THROUGH_FIRST_RESPONSE}
+${isFollowUp ? TALK_IT_THROUGH_FOLLOW_UP : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE}
 
 Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone expresses uncertainty about faith, meet them exactly there without assuming belief

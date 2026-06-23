@@ -17,7 +17,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
@@ -689,11 +689,6 @@ export default function GuidancePage() {
         setResponseComplete(true);
         return;
       }
-      // Kick off TTS prefetch immediately — overlaps with React re-render cycle
-      if (lastInputWasVoiceRef.current) {
-        const blobRef = opts?.isFollowUp ? followUpTtsBlobRef : phase2TtsBlobRef;
-        blobRef.current = prefetchShepherdTTS(cleanResponse(accumulated));
-      }
       setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
       setStreamingText("");
       setResponseComplete(true);
@@ -746,25 +741,12 @@ export default function GuidancePage() {
         const chunk = decoder.decode(value, { stream: true });
         accumulated += chunk;
         setPhase1StreamingText(accumulated);
-        // Fire TTS on the first complete sentence mid-stream so audio is ready the moment streaming ends
-        if (!earlyTtsFired && lastInputWasVoiceRef.current && isPhilipMode()) {
-          const wordCount = accumulated.trim().split(/\s+/).length;
-          const sentenceMatch = wordCount >= 10 ? accumulated.match(/^[\s\S]+?[.!?]/) : null;
-          if (sentenceMatch) {
-            phase1TtsBlobRef.current = prefetchShepherdTTS(cleanResponse(sentenceMatch[0].trim()));
-            earlyTtsFired = true;
-          }
-        }
       }
       if (flowGen !== guidanceFlowGenRef.current) return true;
       if (!accumulated.trim()) return false;
       setPhase1Response(accumulated);
       setPhase1StreamingText("");
       setPhase1Complete(true);
-      // If early TTS didn't fire (very short response), prefetch full text now
-      if (lastInputWasVoiceRef.current && !earlyTtsFired) {
-        phase1TtsBlobRef.current = prefetchShepherdTTS(cleanResponse(accumulated));
-      }
       void refreshAiUsage();
       return true;
     } catch {
@@ -1441,24 +1423,15 @@ export default function GuidancePage() {
     let cancelled = false;
     let cancelSpeak: (() => void) | null = null;
 
-    // Consume prefetched blob — started the moment follow-up streaming ended
-    const blobPromise = followUpTtsBlobRef.current;
-    followUpTtsBlobRef.current = null;
-
-    (async () => {
-      const prefetchedBlob = blobPromise ? await blobPromise : null;
-      if (cancelled) return;
-      cancelSpeak = speakShepherdWithMicHandoff(cleanResponse(text), {
-        prefetchedBlob,
-        onStart: () => setFollowUpSpeaking(true),
-        onSpeakingEnd: () => setFollowUpSpeaking(false),
-        handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
-        onHandoff: () => {
-          if (!hasSpeechSupport || isSending || processingBridge) return;
-          startFollowUpListeningRef.current();
-        },
-      });
-    })();
+    cancelSpeak = speakShepherdStreamWithMicHandoff(cleanResponse(text), {
+      onStart: () => setFollowUpSpeaking(true),
+      onSpeakingEnd: () => setFollowUpSpeaking(false),
+      handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
+      onHandoff: () => {
+        if (!hasSpeechSupport || isSending || processingBridge) return;
+        startFollowUpListeningRef.current();
+      },
+    });
 
     return () => {
       cancelled = true;
@@ -1482,9 +1455,6 @@ export default function GuidancePage() {
         if (!cancelled && data?.line) {
           dynamicOpeningRef.current = data.line;
           greetingTextRef.current = data.line;
-          prefetchShepherdTTS(data.line, isProVerifiedLocally()).then((blob) => {
-            if (!cancelled) greetingBlobRef.current = blob;
-          });
         }
         // Store conversation count for Pattern Philip gate
         if (data?.convCount != null) {
@@ -1544,8 +1514,7 @@ export default function GuidancePage() {
         : buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, null);
       const line = dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback;
 
-      cancelGreetingSpeakRef.current = speakShepherdLine(line, {
-        prefetchedBlob: greetingBlobRef.current,
+      cancelGreetingSpeakRef.current = speakShepherdStream(line, {
         isPro: isProVerifiedLocally(),
         onStart: () => {
           markShepherdGreetingPlayed();
@@ -1602,36 +1571,20 @@ export default function GuidancePage() {
         },
         onError: () => {
           if (cancelled) return;
-          // Fallback to blob TTS if WebSocket fails
-          const blobPromise = phase1TtsBlobRef.current;
-          phase1TtsBlobRef.current = null;
-          (async () => {
-            const prefetchedBlob = blobPromise ? await blobPromise : null;
-            if (cancelled) return;
-            speakShepherdWithMicHandoff(spokenText, {
-              prefetchedBlob,
-              onStart: () => setPhase1Speaking(true),
-              onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
-              onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
-            });
-          })();
+          speakShepherdStreamWithMicHandoff(spokenText, {
+            onStart: () => setPhase1Speaking(true),
+            onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
+            onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+          });
         },
       });
     } else {
-      // Solo mode — blob TTS path (no Philip WebSocket)
-      const blobPromise = phase1TtsBlobRef.current;
-      phase1TtsBlobRef.current = null;
-      let cancelSpeak: (() => void) | null = null;
-      (async () => {
-        const prefetchedBlob = blobPromise ? await blobPromise : null;
-        if (cancelled) return;
-        cancelSpeak = speakShepherdWithMicHandoff(spokenText, {
-          prefetchedBlob,
-          onStart: () => setPhase1Speaking(true),
-          onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
-          onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
-        });
-      })();
+      // Solo mode — streaming TTS path (no Philip WebSocket)
+      speakShepherdStreamWithMicHandoff(spokenText, {
+        onStart: () => setPhase1Speaking(true),
+        onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
+        onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+      });
     }
 
     return () => {
@@ -1656,28 +1609,19 @@ export default function GuidancePage() {
     let cancelSpeak: (() => void) | null = null;
     let clearRevealTimers: (() => void) | undefined;
 
-    // Consume prefetched blob — started the moment streaming ended
-    const blobPromise = phase2TtsBlobRef.current;
-    phase2TtsBlobRef.current = null;
-
-    (async () => {
-      const prefetchedBlob = blobPromise ? await blobPromise : null;
-      if (cancelled) return;
-      cancelSpeak = speakShepherdLine(cleanResponse(text), {
-        prefetchedBlob,
-        onStart: () => setPhase2Speaking(true),
-        onEnd: () => {
-          setPhase2Speaking(false);
-          setPhase2SpeechDone(true);
-          clearRevealTimers = scheduleVoiceRevealStages();
-        },
-        onFail: () => {
-          setPhase2Speaking(false);
-          setPhase2SpeechDone(true);
-          clearRevealTimers = scheduleVoiceRevealStages();
-        },
-      });
-    })();
+    cancelSpeak = speakShepherdStream(cleanResponse(text), {
+      onStart: () => setPhase2Speaking(true),
+      onEnd: () => {
+        setPhase2Speaking(false);
+        setPhase2SpeechDone(true);
+        clearRevealTimers = scheduleVoiceRevealStages();
+      },
+      onFail: () => {
+        setPhase2Speaking(false);
+        setPhase2SpeechDone(true);
+        clearRevealTimers = scheduleVoiceRevealStages();
+      },
+    });
 
     return () => {
       cancelled = true;

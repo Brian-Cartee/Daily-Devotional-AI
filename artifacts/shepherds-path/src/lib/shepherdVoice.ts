@@ -155,6 +155,156 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   };
 }
 
+/**
+ * Stream TTS from /api/tts/stream and play via MediaSource for ~300ms TTFB.
+ * Falls back to blob path on browsers without MediaSource (older iOS Safari).
+ * Returns a cancel function — call it to stop playback mid-stream.
+ */
+export function speakShepherdStream(
+  text: string,
+  opts?: SpeakShepherdOptions,
+): () => void {
+  const input = text.trim();
+  if (!input) {
+    opts?.onFail?.();
+    opts?.onEnd?.();
+    return () => {};
+  }
+
+  let cancelled = false;
+  let audio: HTMLAudioElement | null = null;
+  let sourceBuffer: SourceBuffer | null = null;
+  let mediaSource: MediaSource | null = null;
+
+  const proFlag = opts?.isPro !== undefined ? opts.isPro : isProVerifiedLocally();
+
+  const bodyPayload = JSON.stringify({
+    text: input,
+    sessionId: getSessionId(),
+    isPro: proFlag,
+  });
+
+  // MediaSource path — chunks play as they arrive (~300ms TTFB)
+  if (
+    typeof MediaSource !== "undefined" &&
+    MediaSource.isTypeSupported("audio/mpeg")
+  ) {
+    mediaSource = new MediaSource();
+    const url = URL.createObjectURL(mediaSource);
+    audio = new Audio(url);
+
+    const pendingChunks: ArrayBuffer[] = [];
+    let streamDone = false;
+    let appending = false;
+
+    const tryAppend = () => {
+      if (
+        !sourceBuffer ||
+        appending ||
+        sourceBuffer.updating ||
+        pendingChunks.length === 0
+      )
+        return;
+      appending = true;
+      const chunk = pendingChunks.shift()!;
+      sourceBuffer.appendBuffer(chunk);
+    };
+
+    mediaSource.addEventListener("sourceopen", () => {
+      if (cancelled) return;
+      try {
+        sourceBuffer = mediaSource!.addSourceBuffer("audio/mpeg");
+      } catch {
+        // Browser rejected — fall through to blob path below
+        URL.revokeObjectURL(url);
+        useBlobFallback();
+        return;
+      }
+
+      sourceBuffer.addEventListener("updateend", () => {
+        appending = false;
+        if (pendingChunks.length > 0) {
+          tryAppend();
+        } else if (streamDone) {
+          try {
+            mediaSource!.endOfStream();
+          } catch {}
+        }
+      });
+
+      fetch("/api/tts/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyPayload,
+      })
+        .then(async (r) => {
+          if (!r.ok || !r.body) throw new Error(`TTS stream ${r.status}`);
+          const reader = r.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (cancelled) { reader.cancel(); break; }
+            pendingChunks.push(value.buffer as ArrayBuffer);
+            tryAppend();
+          }
+          streamDone = true;
+          if (!sourceBuffer?.updating && pendingChunks.length === 0) {
+            try { mediaSource!.endOfStream(); } catch {}
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            opts?.onFail?.();
+            opts?.onEnd?.();
+          }
+        });
+    });
+
+    audio.oncanplay = () => {
+      if (cancelled) return;
+      audio!.play().catch(() => {
+        if (!cancelled) { opts?.onFail?.(); opts?.onEnd?.(); }
+      });
+      opts?.onStart?.();
+    };
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      audio = null;
+      if (!cancelled) opts?.onEnd?.();
+    };
+
+    return () => {
+      cancelled = true;
+      if (audio) { audio.pause(); URL.revokeObjectURL(url); audio = null; }
+    };
+  }
+
+  // Blob fallback — no MediaSource support (old iOS)
+  function useBlobFallback() {
+    fetch("/api/tts/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: bodyPayload,
+    })
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((blob) => {
+        if (cancelled || !blob) { opts?.onFail?.(); opts?.onEnd?.(); return; }
+        const url = URL.createObjectURL(blob);
+        audio = new Audio(url);
+        audio.onended = () => { URL.revokeObjectURL(url); if (!cancelled) opts?.onEnd?.(); };
+        audio.play().catch(() => { opts?.onFail?.(); opts?.onEnd?.(); });
+        opts?.onStart?.();
+      })
+      .catch(() => { opts?.onFail?.(); opts?.onEnd?.(); });
+  }
+  useBlobFallback();
+
+  return () => {
+    cancelled = true;
+    if (audio) { audio.pause(); audio = null; }
+  };
+}
+
 export const PROCESSING_BRIDGE = "I'm sitting with what you shared.";
 /** Spoken after Phase 1 reply (or follow-up voice submit) — not the first entry. */
 export const PHASE1_REPLY_BRIDGE = "Give me a moment with that.";
@@ -228,6 +378,49 @@ export function speakShepherdWithMicHandoff(
   }, fallbackMs);
   const cancelSpeak = speakShepherdLine(text, {
     prefetchedBlob: opts.prefetchedBlob,
+    onStart: opts.onStart,
+    onEnd: () => {
+      window.clearTimeout(fallbackTimer);
+      opts.onSpeakingEnd?.();
+      scheduleHandoff();
+    },
+    onFail: () => {
+      window.clearTimeout(fallbackTimer);
+      opts.onSpeakingEnd?.();
+      scheduleHandoff();
+    },
+  });
+  return () => {
+    window.clearTimeout(fallbackTimer);
+    cancelSpeak();
+  };
+}
+
+/** Like speakShepherdWithMicHandoff but uses the streaming TTS path (~300ms TTFB). */
+export function speakShepherdStreamWithMicHandoff(
+  text: string,
+  opts: {
+    onStart?: () => void;
+    onSpeakingEnd?: () => void;
+    onHandoff: () => void;
+    handoffDelayMs?: number;
+    isPro?: boolean;
+  },
+): () => void {
+  let handoffScheduled = false;
+  const handoffDelay = opts.handoffDelayMs ?? VOICE_MIC_HANDOFF_PHASE1_MS;
+  const scheduleHandoff = () => {
+    if (handoffScheduled) return;
+    handoffScheduled = true;
+    window.setTimeout(opts.onHandoff, handoffDelay);
+  };
+  const fallbackMs = estimateSpeechMs(text) + 1500;
+  const fallbackTimer = window.setTimeout(() => {
+    opts.onSpeakingEnd?.();
+    scheduleHandoff();
+  }, fallbackMs);
+  const cancelSpeak = speakShepherdStream(text, {
+    isPro: opts.isPro,
     onStart: opts.onStart,
     onEnd: () => {
       window.clearTimeout(fallbackTimer);

@@ -1,51 +1,474 @@
 {
-  "timestamp": "2026-06-23T13:19:13.693Z",
-  "phase": "phase1",
-  "target": "live (https://www.shepherdspathai.com)",
-  "passRate": 0,
-  "avgScore": 3.5,
-  "passed": 0,
-  "total": 4,
+  "timestamp": "2026-06-23T16:31:08.531Z",
+  "phase": "response",
+  "target": "local (http://localhost:8080)",
+  "passRate": 61,
+  "avgScore": 7.9,
+  "passed": 35,
+  "total": 57,
   "results": [
+    {
+      "id": "grief-01",
+      "category": "grief",
+      "pass": false,
+      "score": 9,
+      "issues": [
+        "Rule 7: Expected exactly 1 question mark, found 2"
+      ]
+    },
+    {
+      "id": "grief-02",
+      "category": "grief",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "8",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "grief-03",
+      "category": "grief",
+      "pass": false,
+      "score": 6,
+      "issues": [
+        "8",
+        "10"
+      ]
+    },
+    {
+      "id": "grief-04",
+      "category": "grief",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "grief-05",
+      "category": "grief",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anxiety-01",
+      "category": "anxiety",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anxiety-02",
+      "category": "anxiety",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anxiety-03",
+      "category": "anxiety",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anxiety-04",
+      "category": "anxiety",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anxiety-05",
+      "category": "anxiety",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "doubt-01",
+      "category": "doubt",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "doubt-02",
+      "category": "doubt",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "doubt-03",
+      "category": "doubt",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "doubt-04",
+      "category": "doubt",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anger-01",
+      "category": "anger",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anger-02",
+      "category": "anger",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "anger-03",
+      "category": "anger",
+      "pass": false,
+      "score": 9,
+      "issues": [
+        "Rule 7: Expected exactly 1 question mark, found 2"
+      ]
+    },
+    {
+      "id": "lonely-01",
+      "category": "loneliness",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "lonely-02",
+      "category": "loneliness",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "lonely-03",
+      "category": "loneliness",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "marriage-01",
+      "category": "marriage",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "marriage-02",
+      "category": "marriage",
+      "pass": false,
+      "score": 6,
+      "issues": [
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "marriage-03",
+      "category": "marriage",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "11"
+      ]
+    },
+    {
+      "id": "depression-01",
+      "category": "depression",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "depression-02",
+      "category": "depression",
+      "pass": false,
+      "score": 6,
+      "issues": [
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "depression-03",
+      "category": "depression",
+      "pass": false,
+      "score": 2,
+      "issues": [
+        "Rule 4: Contains a written prayer — prayer is generated separately",
+        "Rule 5: Contains bullet list or numbered steps",
+        "Rule 7: Expected exactly 1 question mark, found 0",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "identity-01",
+      "category": "identity",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "8",
+        "10"
+      ]
+    },
+    {
+      "id": "identity-02",
+      "category": "identity",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "identity-03",
+      "category": "identity",
+      "pass": false,
+      "score": 6,
+      "issues": [
+        "11"
+      ]
+    },
+    {
+      "id": "forgive-01",
+      "category": "forgiveness",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "8",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "forgive-02",
+      "category": "forgiveness",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "8",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "finance-01",
+      "category": "financial stress",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "finance-02",
+      "category": "financial stress",
+      "pass": false,
+      "score": 9,
+      "issues": [
+        "Rule 7: Expected exactly 1 question mark, found 2"
+      ]
+    },
+    {
+      "id": "prodigal-01",
+      "category": "wandering",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "prodigal-02",
+      "category": "wandering",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "race-01",
+      "category": "racial pain",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "health-01",
+      "category": "health",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "health-02",
+      "category": "health",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "joy-01",
+      "category": "joy",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "joy-02",
+      "category": "joy",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "8",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "wall-01",
+      "category": "complex / wall of text",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "wall-02",
+      "category": "complex / wall of text",
+      "pass": false,
+      "score": 6,
+      "issues": [
+        "11"
+      ]
+    },
     {
       "id": "short-01",
       "category": "ultra-short",
-      "pass": false,
-      "score": 4,
-      "issues": [
-        "Rule 2",
-        "Rule 5"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "short-02",
       "category": "ultra-short",
       "pass": false,
-      "score": 3,
+      "score": 6,
       "issues": [
-        "Rule 2",
-        "Rule 4"
+        "10",
+        "11"
       ]
     },
     {
       "id": "short-03",
       "category": "ultra-short",
-      "pass": false,
-      "score": 3,
-      "issues": [
-        "Rule 2",
-        "Rule 5"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "short-04",
       "category": "ultra-short",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "guard-01",
+      "category": "guarded",
       "pass": false,
-      "score": 4,
+      "score": 5,
       "issues": [
-        "Rule 2 violation: 'I can help with that' variant",
-        "Rule 6 violation: Two questions"
+        "10",
+        "11"
       ]
+    },
+    {
+      "id": "guard-02",
+      "category": "guarded",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "parent-01",
+      "category": "parenting",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "11"
+      ]
+    },
+    {
+      "id": "parent-02",
+      "category": "parenting",
+      "pass": false,
+      "score": 9,
+      "issues": [
+        "Rule 7: Expected exactly 1 question mark, found 2"
+      ]
+    },
+    {
+      "id": "addiction-01",
+      "category": "addiction",
+      "pass": false,
+      "score": 5,
+      "issues": [
+        "8",
+        "10"
+      ]
+    },
+    {
+      "id": "addiction-02",
+      "category": "addiction",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "waiting-01",
+      "category": "waiting",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "waiting-02",
+      "category": "waiting",
+      "pass": false,
+      "score": 9,
+      "issues": [
+        "Rule 7: Expected exactly 1 question mark, found 2"
+      ]
+    },
+    {
+      "id": "edge-01",
+      "category": "edge",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "edge-02",
+      "category": "edge",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "edge-03",
+      "category": "edge",
+      "pass": true,
+      "score": 9,
+      "issues": []
     }
   ]
 }

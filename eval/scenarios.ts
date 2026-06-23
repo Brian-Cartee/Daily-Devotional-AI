@@ -308,7 +308,7 @@ export const SCENARIOS: Scenario[] = [
     category: "joy",
     description: "Unexpected blessing — overwhelmed with gratitude",
     situation: "Something happened today that I've prayed for for 5 years. I don't even know how to hold this much joy. It doesn't feel real.",
-    flags: ["positive", "overwhelm", "gratitude"],
+    flags: ["positive", "overwhelm", "gratitude", "allow-positive-tone"],
   },
   {
     id: "joy-02",
