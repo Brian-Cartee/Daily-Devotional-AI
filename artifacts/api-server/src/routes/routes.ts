@@ -3639,14 +3639,44 @@ Return only the greeting line.`;
     const soloSystemPrompt = `You are providing Christian spiritual guidance inside Shepherd's Path. Do not refer to yourself as Philip. Do not use companion-persona language. Do not say "I'm here with you." Offer calm, biblical, emotionally honest guidance. Be direct, gentle, and grounded in Scripture. One faithful question to go deeper. Under 100 words. No verse, no prayer, no advice yet.`;
 
     try {
-      await streamCompletion(
-        [
-          { role: "system", content: isSoloMode ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}` : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}` },
-          { role: "user", content: situation.trim() },
-        ],
-        res,
-        { temperature: 0.78, maxTokens: 120, req },
-      );
+      const systemPrompt = isSoloMode
+        ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}`
+        : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}`;
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: situation.trim() },
+      ];
+
+      // Phase 1 is short (~80 words). Generate non-streaming so we can enforce
+      // the "never start with I" rule with a retry before sending to the client.
+      const generate = async (msgs: OpenAI.Chat.ChatCompletionMessageParam[]) => {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: msgs,
+          max_tokens: 140,
+          temperature: 0.78,
+        });
+        return (completion.choices[0]?.message?.content ?? "").trim();
+      };
+
+      let phase1Text = await generate(messages);
+
+      // If response starts with "I", retry once with an explicit correction note.
+      if (/^I\s/i.test(phase1Text) || phase1Text.startsWith("I'") || phase1Text.startsWith("I,")) {
+        const retryMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+          ...messages,
+          { role: "assistant", content: phase1Text },
+          { role: "user", content: "[Your response began with 'I'. Rewrite it. First word must NOT be 'I'. Start with the situation, the weight, or what they said.]" },
+        ];
+        const retried = await generate(retryMessages);
+        if (retried.length > 10) phase1Text = retried;
+      }
+
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache");
+      res.write(phase1Text);
+      res.end();
+
       if (sessionId) {
         const { variant: p1Variant } = buildVariantSystemPrompt(sessionId, "phase1");
         const p1MsgCount = incrementMessageCount(sessionId);
