@@ -1202,8 +1202,14 @@ function LandingHomeInner() {
             </p>
           )}
 
-          {/* ══ Today's step first — week one / until first devotional visit ══ */}
+          {/* ══ Philip first — Model B: companion before content ══ */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <PhilipFirstArrivalCard />
+          <PhilipReentryCard />
+          <PhilipRememberedCard />
+          <PhilipDailyGreetingCard />
+
+          {/* "Today's step" label belongs directly above the Devotional card, not above Philip */}
           {homeDevotionalFocus && !hideDevotionalCard && (
             <div
               data-testid="label-todays-step"
@@ -1211,7 +1217,7 @@ function LandingHomeInner() {
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",
-                marginTop: "12px",
+                marginTop: "4px",
                 marginBottom: "4px",
                 paddingLeft: "2px",
                 paddingRight: "2px",
@@ -1234,12 +1240,6 @@ function LandingHomeInner() {
               <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, rgba(196,78,224,0.35))" }} />
             </div>
           )}
-
-          {/* Philip first — companion before content. Model B: relationship is the home screen. */}
-          <PhilipFirstArrivalCard />
-          <PhilipReentryCard />
-          <PhilipRememberedCard />
-          <PhilipDailyGreetingCard />
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
           {/* Talk It Through card removed — toolbar mic is the single canonical entry point.
