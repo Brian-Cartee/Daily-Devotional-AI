@@ -1645,47 +1645,27 @@ export default function GuidancePage() {
     // the first 200-400ms of audio to be clipped. A short settle window avoids the race.
     const transitionTimer = window.setTimeout(() => {
       if (cancelled) return;
-
-      if (isPhilipMode()) {
-        // WebSocket streaming path — audio starts playing before stream ends
-        philipStream.speak(spokenText, {
-          onStart: () => { if (!cancelled) setPhase1Speaking(true); },
-          onEnd: () => {
-            if (cancelled) return;
-            setPhase1Speaking(false);
-            setPhase1SpeechDone(true);
-            convo.dispatch({ type: "P1_SPEAK_END" });
-            window.setTimeout(() => {
-              if (!cancelled && hasSpeechSupport && !phase2Started && !showPhase1TypeFallback) {
-                startPhase1Listening();
-              }
-            }, 800);
-          },
-          onError: () => {
-            if (cancelled) return;
-            cancelSpeak = speakShepherdStreamWithMicHandoff(spokenText, {
-              onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
-              onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
-            });
-          },
-        });
-      } else {
-        // Solo mode — streaming TTS path (no Philip WebSocket)
-        cancelSpeak = speakShepherdStreamWithMicHandoff(spokenText, {
-          onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
-          onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
-        });
-      }
+      // Always use the HTTP streaming path — same voice, settings, and model as the
+      // homepage Philip. The WebSocket path re-invokes GPT on already-generated text
+      // and uses a separate audio pipeline (PCM/Web Audio) that sounds different.
+      cancelSpeak = speakShepherdStreamWithMicHandoff(spokenText, {
+        onSpeakingEnd: () => {
+          if (cancelled) return;
+          setPhase1Speaking(false);
+          setPhase1SpeechDone(true);
+          convo.dispatch({ type: "P1_SPEAK_END" });
+        },
+        onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+      });
     }, 450);
 
     return () => {
       cancelled = true;
       window.clearTimeout(transitionTimer);
       cancelSpeak?.();
-      if (isPhilipMode()) philipStream.interrupt();
       setPhase1Speaking(false);
     };
-  }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice, philipStream]);
+  }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice]);
 
   // Phase 2 — Philip speaks "What I'm hearing" for voice sessions before cards appear
   useEffect(() => {
