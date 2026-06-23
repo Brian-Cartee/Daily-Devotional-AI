@@ -2065,10 +2065,10 @@ export default function GuidancePage() {
           {showThresholdOverlay && (
             <motion.div
               key="threshold-overlay"
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, transition: { duration: 0.5 } }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0 }}
               style={{
                 position: "fixed",
                 inset: 0,
@@ -2167,30 +2167,30 @@ export default function GuidancePage() {
                       />
                     </motion.button>
 
-                    {/* Very quiet "or type" — available but not promoted */}
-                    {!heartListening && (
-                      <motion.button
-                        type="button"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.5, duration: 0.5 }}
-                        onClick={() => {
-                          setShowThresholdOverlay(false);
-                          setShowHeartTypeFallback(true);
-                        }}
-                        style={{
-                          fontSize: "12px",
-                          color: "rgba(255,255,255,0.22)",
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: "4px 0",
-                          letterSpacing: "0.02em",
-                        }}
-                      >
-                        or type
-                      </motion.button>
-                    )}
+                    {/* "or type" — always available, stops mic if running */}
+                    <motion.button
+                      type="button"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: heartListening ? 0 : 1.5, duration: 0.5 }}
+                      onClick={() => {
+                        destroyHeartVoice();
+                        setHeartListening(false);
+                        setShowThresholdOverlay(false);
+                        setShowHeartTypeFallback(true);
+                      }}
+                      style={{
+                        fontSize: "12px",
+                        color: heartListening ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.22)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {heartListening ? "stop and type instead" : "or type"}
+                    </motion.button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2327,7 +2327,7 @@ export default function GuidancePage() {
                       </div>
                     )}
                     {/* Voice-first entry — mic opens automatically after spoken welcome */}
-                    {hasSpeechSupport && (
+                    {hasSpeechSupport && !showHeartTypeFallback && (
                       <div className="flex flex-col items-center mb-4">
                         <motion.button
                           type="button"
@@ -2394,6 +2394,22 @@ export default function GuidancePage() {
 
                     {showHeartTypeFallback && (
                       <>
+                        <motion.p
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                          style={{
+                            fontFamily: "'Georgia', serif",
+                            fontSize: "14px",
+                            fontStyle: "italic",
+                            color: "rgba(255,255,255,0.38)",
+                            textAlign: "center",
+                            lineHeight: 1.6,
+                            marginBottom: "16px",
+                          }}
+                        >
+                          Some souls find their words more clearly with a pen than a voice. What you write here, Philip holds with the same attention.
+                        </motion.p>
                         <label className="sr-only" htmlFor="input-guidance-heart">
                           What&apos;s on your heart
                         </label>
