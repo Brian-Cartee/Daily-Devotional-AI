@@ -94,9 +94,16 @@ export function PhilipFirstArrivalCard({ onDismiss }: Props) {
         Philip · A word before you begin
       </p>
 
-      <p style={{ fontFamily: "'Georgia', serif", fontSize: "15px", lineHeight: 1.7, color: "rgba(255,255,255,0.88)", marginBottom: "16px" }}>
+      <p style={{ fontFamily: "'Georgia', serif", fontSize: "15px", lineHeight: 1.7, color: "rgba(255,255,255,0.88)", marginBottom: "12px" }}>
         {greeting}
       </p>
+
+      {/* Day 1 orientation — shown once, never again. Teaches identity not navigation. */}
+      {!played && (
+        <p style={{ fontSize: "12px", lineHeight: 1.6, color: "rgba(255,255,255,0.32)", marginBottom: "16px" }}>
+          When there's something on your heart, tap the microphone below and speak naturally. Philip will listen, pray with you, and help you walk through it.
+        </p>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         <button

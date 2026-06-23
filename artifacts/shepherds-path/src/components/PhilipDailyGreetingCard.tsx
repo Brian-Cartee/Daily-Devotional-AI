@@ -24,6 +24,8 @@ export function PhilipDailyGreetingCard() {
     if (hasGreetingBeenDismissedToday()) return;
     // Day 1-3: reentry card handles Philip's presence. Daily greeting starts day 4.
     if (getRelationshipAge() < 4) return;
+    // Never show alongside first arrival card — one Philip voice at a time.
+    try { if (!localStorage.getItem("sp_philip_first_arrival_shown")) return; } catch {}
 
     fetchDailyGreeting().then((g) => {
       if (g) {

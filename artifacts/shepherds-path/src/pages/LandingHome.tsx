@@ -1241,7 +1241,8 @@ function LandingHomeInner() {
           <PhilipReentryCard />
           <PhilipRememberedCard />
           <PhilipDailyGreetingCard />
-          <TalkItThroughCard />
+          {/* Talk It Through card removed — toolbar mic is the single canonical entry point.
+              Static feature cards become wallpaper. The mic becomes muscle memory. */}
 
           {/* ScriptureForYou removed — clutters home, duplicates Today's Word */}
 
