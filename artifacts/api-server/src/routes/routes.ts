@@ -3657,7 +3657,7 @@ Return only the greeting line.`;
           const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: msgs,
-            max_tokens: 140,
+            max_tokens: 95,
             temperature: 0.72,
           }, { signal: controller.signal });
           return (completion.choices[0]?.message?.content ?? "").trim();
@@ -3669,14 +3669,22 @@ Return only the greeting line.`;
       let phase1Text = await generate(messages);
 
       // If response starts with "I", retry once with an explicit correction note.
-      if (/^I\s/i.test(phase1Text) || phase1Text.startsWith("I'") || phase1Text.startsWith("I,")) {
+      const startsWithI = (t: string) =>
+        /^I\s/.test(t) || t.startsWith("I'") || t.startsWith("I,") || t.startsWith("I.");
+      if (startsWithI(phase1Text)) {
         const retryMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
           ...messages,
           { role: "assistant", content: phase1Text },
-          { role: "user", content: "[Your response began with 'I'. Rewrite it. First word must NOT be 'I'. Start with the situation, the weight, or what they said.]" },
+          { role: "user", content: "[SYSTEM: Your response began with the word 'I'. This violates a hard rule. Rewrite the entire response from scratch. The FIRST WORD must not be 'I'. Begin with what the person said, the situation, or the emotional weight — never 'I'.]" },
         ];
         const retried = await generate(retryMessages);
-        if (retried.length > 10) phase1Text = retried;
+        if (retried.length > 10 && !startsWithI(retried)) {
+          phase1Text = retried;
+        } else if (retried.length > 10) {
+          // Retry also started with I — capitalize second sentence as opener
+          const withoutLeadI = retried.replace(/^I[\s',.]?\s*/i, "");
+          if (withoutLeadI.length > 20) phase1Text = withoutLeadI.charAt(0).toUpperCase() + withoutLeadI.slice(1);
+        }
       }
 
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -3896,13 +3904,57 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
       conversationHistory = [{ role: "user", content: situation.trim() }];
     }
 
+    // Phase 2 is generated non-streaming so we can enforce exactly-one-question
+    // before sending to the client. Same retry pattern as Phase 1 "I" check.
+    const generatePhase2 = async (msgs: OpenAI.Chat.ChatCompletionMessageParam[]) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 25_000);
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: msgs,
+          max_tokens: isFollowUp ? 240 : 290,
+          temperature: 0.82,
+        }, { signal: controller.signal });
+        return (completion.choices[0]?.message?.content ?? "").trim();
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    const questionMarkCount = (t: string) => (t.match(/\?/g) ?? []).length;
+
     try {
-      await streamCompletion(
-        [{ role: "system", content: systemMsg }, ...conversationHistory],
-        res,
-        // 280 tokens ≈ 200-word ceiling; follow-ups are shorter at 160 tokens
-        { temperature: 0.82, maxTokens: isFollowUp ? 240 : 280, req }
-      );
+      const fullMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemMsg },
+        ...conversationHistory,
+      ];
+
+      let phase2Text = await generatePhase2(fullMessages);
+      const qCount = questionMarkCount(phase2Text);
+
+      if (qCount !== 1) {
+        const retryInstruction = qCount === 0
+          ? "[SYSTEM: Your response contains no question mark. You must end with exactly one genuine question specific to what this person shared. Add it now — do not change anything else.]"
+          : `[SYSTEM: Your response contains ${qCount} question marks. There must be exactly one question in the entire response. Remove all but the single most important question — the one most specific to this person's exact words. Rewrite the response with only that one question.]`;
+
+        const retryMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+          ...fullMessages,
+          { role: "assistant", content: phase2Text },
+          { role: "user", content: retryInstruction },
+        ];
+        const retried = await generatePhase2(retryMessages);
+        if (retried.length > 20 && questionMarkCount(retried) === 1) {
+          phase2Text = retried;
+        }
+        // If retry still wrong, send original — don't block the user
+      }
+
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache");
+      res.write(phase2Text);
+      res.end();
+
       if (sessionId) {
         const responseMsgCount = incrementMessageCount(sessionId);
         void logAbInteraction({ sessionId, variant: responseVariant, phase: "response", messageCount: responseMsgCount });

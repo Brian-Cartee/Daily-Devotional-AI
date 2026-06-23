@@ -14,6 +14,7 @@ import fs from "fs";
 import path from "path";
 import { SCENARIOS, type Scenario } from "./scenarios.js";
 import { judgeResponse, type JudgeResult } from "./judge.js";
+import { judgePhase2Response } from "./judge-phase2.js";
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ const CONCURRENCY = 4;  // parallel calls
 
 const BASE_URL = TARGET_LIVE
   ? "https://www.shepherdspathai.com"
-  : "http://localhost:3001";
+  : "http://localhost:8080";
 
 const EVAL_SESSION_ID = `eval-${Date.now()}`;
 
@@ -72,12 +73,16 @@ async function callPhase1(situation: string): Promise<string> {
   return collectStream(res);
 }
 
+// Standard Phase 2 user reply — emotionally open, affirms Philip's read, invites depth.
+// Consistent across all scenarios so Phase 2 variance is Philip's, not the prompt's.
+const PHASE2_USER_REPLY = "I needed someone to say that. Keep going.";
+
 /** Call /api/guidance/response and return Philip's full response. */
 async function callResponse(situation: string, phase1Text: string): Promise<string> {
   const messages = [
     { role: "user" as const, content: situation },
     { role: "assistant" as const, content: phase1Text },
-    { role: "user" as const, content: "Yes, keep going." },
+    { role: "user" as const, content: PHASE2_USER_REPLY },
   ];
   const res = await fetch(`${BASE_URL}/api/guidance/response`, {
     method: "POST",
@@ -112,13 +117,24 @@ async function runScenario(client: OpenAI, scenario: Scenario): Promise<EvalResu
   const start = Date.now();
   try {
     let philipResponse: string;
+    let judge: JudgeResult;
+
     if (PHASE === "response") {
-      const p1 = await callPhase1(scenario.situation);
-      philipResponse = await callResponse(scenario.situation, p1);
+      const phase1Text = await callPhase1(scenario.situation);
+      philipResponse = await callResponse(scenario.situation, phase1Text);
+      judge = await judgePhase2Response(
+        client,
+        scenario.situation,
+        phase1Text,
+        PHASE2_USER_REPLY,
+        philipResponse,
+        scenario.flags ?? [],
+      );
     } else {
       philipResponse = await callPhase1(scenario.situation);
+      judge = await judgeResponse(client, scenario.situation, philipResponse, scenario.flags ?? []);
     }
-    const judge = await judgeResponse(client, scenario.situation, philipResponse, scenario.flags ?? []);
+
     return { scenario, philipResponse, judge, durationMs: Date.now() - start };
   } catch (err: any) {
     return {
