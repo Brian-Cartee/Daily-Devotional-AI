@@ -4389,6 +4389,49 @@ Rules:
     }
   });
 
+  // ── Guidance: closing prayer (Phase 5) ──────────────────────────────────────
+  app.post("/api/guidance/closing-prayer", async (req, res) => {
+    const { situation, userName, verseReference, phase1Response } = req.body as {
+      situation?: string; userName?: string; verseReference?: string; phase1Response?: string;
+    };
+    if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
+    const nameNote = userName?.trim() ? ` Their name is ${userName.trim()}.` : "";
+    const verseNote = verseReference?.trim() ? ` The verse offered was ${verseReference.trim()}.` : "";
+    const phase1Note = phase1Response?.trim() ? ` Philip's reflection to them: "${phase1Response.trim().slice(0, 300)}"` : "";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 120,
+        temperature: 0.75,
+        messages: [
+          {
+            role: "system",
+            content: `You are Philip — a Spirit-filled shepherd in Shepherd's Path.${nameNote} Write a brief closing prayer for someone who just brought something heavy to God in a Talk It Through session.${verseNote}${phase1Note}
+
+Rules:
+- Pray TO God, not about the person. Address God directly ("Lord", "Father", "God").
+- Use the person's name if you have it, once.
+- Under 65 words. 3-4 sentences maximum.
+- Name what they carried — without quoting their words back exactly. Name the weight and the act of bringing it.
+- Do NOT promise healing, outcomes, or resolution. Do NOT say "work in their life" or "healing journey."
+- End with "Amen."
+- Sound like a shepherd's prayer — plain, honest, specific. Not a polished pulpit prayer.
+- Never use: "journey", "path forward", "healing", "blessed", "pour out", "move in mighty ways".`,
+          },
+          {
+            role: "user",
+            content: situation.trim().slice(0, 600),
+          },
+        ],
+      });
+      const prayer = completion.choices[0]?.message?.content?.trim();
+      if (!prayer) return res.json({ prayer: "Lord, they brought something real to you today. Hold it. Hold them. Amen." });
+      res.json({ prayer });
+    } catch {
+      res.json({ prayer: "Lord, they brought something real to you today. Hold it. Hold them. Amen." });
+    }
+  });
+
   // ── Guidance: session feedback (did this help?) ──────────────────────────────
   app.post("/api/guidance/feedback", async (req, res) => {
     const { sessionId, feedback, situation, path: completionPath } = req.body as {

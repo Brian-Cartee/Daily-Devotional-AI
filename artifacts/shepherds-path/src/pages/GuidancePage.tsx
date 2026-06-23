@@ -18,6 +18,7 @@ import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { useConvoMachine } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
@@ -285,9 +286,29 @@ export default function GuidancePage() {
     navigate("/guidance", { replace: true });
   }, [search, navigate]);
 
+  // ── Conversation state machine ──────────────────────────────────────────────
+  // Single source of truth for the conversation phase. Replaces the ~13
+  // independent boolean flags that previously caused contradictory UI states.
+  const convo = useConvoMachine();
+  const {
+    greetingSpeaking,
+    heartListening,
+    processingBridge,
+    phase1Speaking,
+    phase1SpeechDone,
+    phase1SilenceActive,
+    phase1Listening,
+    phase2Loading,
+    phase2Speaking,
+    phase2SpeechDone,
+    phase2SilenceActive,
+    followUpSpeaking,
+    followUpListening,
+    activeListener,
+  } = convo;
+
   const witnessLetterRef = useRef<string | null>(null);
   const [witnessReady, setWitnessReady] = useState(false);
-  const [greetingSpeaking, setGreetingSpeaking] = useState(false);
   const [greetingFallbackText, setGreetingFallbackText] = useState<string | null>(null);
   const autoMicStartedRef = useRef(false);
   const cancelGreetingSpeakRef = useRef<(() => void) | null>(null);
@@ -301,11 +322,8 @@ export default function GuidancePage() {
   const followUpTtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const phase1MemorySavedRef = useRef(false);
   const sendOffSpokenRef = useRef<string | null>(null);
-  const [phase1SpeechDone, setPhase1SpeechDone] = useState(false);
-  const [phase1SilenceActive, setPhase1SilenceActive] = useState(false);
-  const [phase2Speaking, setPhase2Speaking] = useState(false);
-  const [phase2SpeechDone, setPhase2SpeechDone] = useState(false);
-  const [phase2SilenceActive, setPhase2SilenceActive] = useState(false);
+  // phase1SpeechDone, phase1SilenceActive, phase2Speaking, phase2SpeechDone,
+  // phase2SilenceActive are now derived from convo machine (see above)
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
@@ -315,7 +333,7 @@ export default function GuidancePage() {
   const [phase1Complete, setPhase1Complete] = useState(false);
   const [phase1UserReply, setPhase1UserReply] = useState("");
   const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
-  const [phase2Loading, setPhase2Loading] = useState(false);
+  // phase2Loading is now derived from convo machine
   const [phase2Started, setPhase2Started] = useState(false);
   const [bridgeQuestion, setBridgeQuestion] = useState<string | null>(null);
   const [bridgeAnswer, setBridgeAnswer] = useState("");
@@ -324,25 +342,24 @@ export default function GuidancePage() {
   const [interimTranscript, setInterimTranscript] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [heartListening, setHeartListening] = useState(false);
+  // heartListening is now derived from convo machine
   const heartVoiceRef = useRef<PatientVoiceListener | null>(null);
   const heartTakeYourTimeRef = useRef<(() => void) | null>(null);
   const [heartListenPhase, setHeartListenPhase] = useState<VoiceListenUiPhase>("listening");
   const [heartShowContinue, setHeartShowContinue] = useState(false);
   const [heartHasRecording, setHeartHasRecording] = useState(false);
   const [showHeartTypeFallback, setShowHeartTypeFallback] = useState(false);
-  const [phase1Listening, setPhase1Listening] = useState(false);
+  // phase1Listening is now derived from convo machine
   const phase1VoiceRef = useRef<PatientVoiceListener | null>(null);
   const phase1TakeYourTimeRef = useRef<(() => void) | null>(null);
   const [phase1ListenPhase, setPhase1ListenPhase] = useState<VoiceListenUiPhase>("listening");
   const [phase1ShowContinue, setPhase1ShowContinue] = useState(false);
   const [showPhase1TypeFallback, setShowPhase1TypeFallback] = useState(false);
-  const [processingBridge, setProcessingBridge] = useState(false);
+  // processingBridge is now derived from convo machine
   const [phase1Interim, setPhase1Interim] = useState("");
   const [followUp, setFollowUp] = useState("");
-  const [followUpListening, setFollowUpListening] = useState(false);
+  // followUpListening, followUpSpeaking are now derived from convo machine
   const [followUpListenPhase, setFollowUpListenPhase] = useState<VoiceListenUiPhase>("listening");
-  const [followUpSpeaking, setFollowUpSpeaking] = useState(false);
   const followUpVoiceRef = useRef<PatientVoiceListener | null>(null);
   const followUpTakeYourTimeRef = useRef<(() => void) | null>(null);
   const followUpSubmittingRef = useRef(false);
@@ -435,7 +452,25 @@ export default function GuidancePage() {
   const heartSubmittingRef = useRef(false);
   const phase1SubmittingRef = useRef(false);
   const [voiceConversation, setVoiceConversation] = useState(false);
-  const [phase1Speaking, setPhase1Speaking] = useState(false);
+  // phase1Speaking is now derived from convo machine
+
+  // ── No-op stubs for machine-managed state ─────────────────────────────────
+  // The booleans are now derived from `convo`. These stubs let existing call
+  // sites compile unchanged while we thread machine dispatches through the
+  // key transition points below. Remove stubs once migration is complete.
+  const setGreetingSpeaking = (_v: boolean) => {};
+  const setHeartListening = (_v: boolean) => {};
+  const setPhase1Speaking = (_v: boolean) => {};
+  const setPhase1SpeechDone = (_v: boolean) => {};
+  const setPhase1SilenceActive = (_v: boolean) => {};
+  const setPhase1Listening = (_v: boolean) => {};
+  const setPhase2Loading = (_v: boolean) => {};
+  const setPhase2Speaking = (_v: boolean) => {};
+  const setPhase2SpeechDone = (_v: boolean) => {};
+  const setPhase2SilenceActive = (_v: boolean) => {};
+  const setProcessingBridge = (_v: boolean) => {};
+  const setFollowUpSpeaking = (_v: boolean) => {};
+  const setFollowUpListening = (_v: boolean) => {};
 
   const philipStream = usePhilipVoiceStream();
 
@@ -616,6 +651,11 @@ export default function GuidancePage() {
   const [showHoldCard, setShowHoldCard] = useState(false);
   const [showPatternCard, setShowPatternCard] = useState(false);
   const [sendOffText, setSendOffText] = useState<string | null>(null);
+  const [phase5Requested, setPhase5Requested] = useState(false);
+  const [phase5Prayer, setPhase5Prayer] = useState<string | null>(null);
+  const [phase5Speaking, setPhase5Speaking] = useState(false);
+  const [phase5Done, setPhase5Done] = useState(false);
+  const phase5CancelRef = useRef<(() => void) | null>(null);
   const [sessionFeedback, setSessionFeedback] = useState<"yes" | "not-quite" | null>(null);
   const [sessionRecap, setSessionRecap] = useState<GuidanceRecap | null>(null);
   const [recapLoading, setRecapLoading] = useState(false);
@@ -734,6 +774,7 @@ export default function GuidancePage() {
       let accumulated = "";
       let earlyTtsFired = false;
       phase1TtsBlobRef.current = null;
+      convo.dispatch({ type: "P1_STREAM_START" });
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -747,6 +788,7 @@ export default function GuidancePage() {
       setPhase1Response(accumulated);
       setPhase1StreamingText("");
       setPhase1Complete(true);
+      convo.dispatch({ type: "P1_STREAM_DONE", voice: lastInputWasVoiceRef.current });
       void refreshAiUsage();
       return true;
     } catch {
@@ -883,9 +925,8 @@ export default function GuidancePage() {
     setSessionRecap(null);
     setRecapLoading(false);
     recapFetchedRef.current = false;
-    setPhase1SpeechDone(false);
-    setPhase2SpeechDone(false);
-    setPhase2Speaking(false);
+    convo.dispatch({ type: "RESET" });
+    convo.dispatch({ type: "ENTRY_SUBMIT" }); // drives straight to processing
     phase2SpokenRef.current = null;
     phase1SpokenRef.current = null;
     followUpSpokenRef.current = null;
@@ -1092,6 +1133,7 @@ export default function GuidancePage() {
   useEffect(() => {
     if (!showPhase2Content || !responseComplete) return;
     if (voiceConversation) return;
+    convo.dispatch({ type: "P2_COMPLETE" }); // text sessions skip speaking — advance machine
     setRevealStage(1);
     const t1 = setTimeout(() => setRevealStage(s => Math.max(s, 2)), 3000);
     const t2 = setTimeout(() => setRevealStage(s => Math.max(s, 3)), 6000);
@@ -1244,7 +1286,7 @@ export default function GuidancePage() {
     heartVoiceRef.current = listener;
     listener.start();
     setHeartHasRecording(true);
-    setHeartListening(true);
+    convo.dispatch({ type: "ENTRY_OPEN" });
   }, []);
 
   const startHeartListeningRef = useRef(startHeartListening);
@@ -1306,6 +1348,7 @@ export default function GuidancePage() {
     phase1VoiceRef.current = listener;
     listener.start();
     setPhase1Listening(true);
+    convo.dispatch({ type: "P1_REPLY_OPEN" });
   }, []);
 
   const togglePhase1Voice = () => {
@@ -1367,6 +1410,7 @@ export default function GuidancePage() {
     followUpVoiceRef.current = listener;
     listener.start();
     setFollowUpListening(true);
+    convo.dispatch({ type: "FU_REPLY_OPEN" });
   }, [isSending, processingBridge]);
 
   const startFollowUpListeningRef = useRef(startFollowUpListening);
@@ -1424,8 +1468,8 @@ export default function GuidancePage() {
     let cancelSpeak: (() => void) | null = null;
 
     cancelSpeak = speakShepherdStreamWithMicHandoff(cleanResponse(text), {
-      onStart: () => setFollowUpSpeaking(true),
-      onSpeakingEnd: () => setFollowUpSpeaking(false),
+      onStart: () => { setFollowUpSpeaking(true); convo.dispatch({ type: "FU_SPEAK_START" }); },
+      onSpeakingEnd: () => { setFollowUpSpeaking(false); convo.dispatch({ type: "FU_SPEAK_END" }); },
       handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
       onHandoff: () => {
         if (!hasSpeechSupport || isSending || processingBridge) return;
@@ -1518,16 +1562,17 @@ export default function GuidancePage() {
         isPro: isProVerifiedLocally(),
         onStart: () => {
           markShepherdGreetingPlayed();
-          setGreetingSpeaking(true);
+          convo.dispatch({ type: "GREETING_START" });
           setGreetingFallbackText(null);
           try { sessionStorage.removeItem("sp_guidance_siri_listen"); } catch { /* noop */ }
         },
         onFail: () => {
+          convo.dispatch({ type: "ENTRY_OPEN" });
           setGreetingFallbackText(line);
           scheduleAutoMic(false);
         },
         onEnd: () => {
-          setGreetingSpeaking(false);
+          convo.dispatch({ type: "GREETING_END" });
           cancelGreetingSpeakRef.current = null;
           scheduleAutoMic(true);
         },
@@ -1563,6 +1608,7 @@ export default function GuidancePage() {
           if (cancelled) return;
           setPhase1Speaking(false);
           setPhase1SpeechDone(true);
+          convo.dispatch({ type: "P1_SPEAK_END" });
           window.setTimeout(() => {
             if (!cancelled && hasSpeechSupport && !phase2Started && !showPhase1TypeFallback) {
               startPhase1Listening();
@@ -1572,8 +1618,7 @@ export default function GuidancePage() {
         onError: () => {
           if (cancelled) return;
           speakShepherdStreamWithMicHandoff(spokenText, {
-            onStart: () => setPhase1Speaking(true),
-            onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
+            onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
             onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
           });
         },
@@ -1581,8 +1626,7 @@ export default function GuidancePage() {
     } else {
       // Solo mode — streaming TTS path (no Philip WebSocket)
       speakShepherdStreamWithMicHandoff(spokenText, {
-        onStart: () => setPhase1Speaking(true),
-        onSpeakingEnd: () => { setPhase1Speaking(false); setPhase1SpeechDone(true); },
+        onSpeakingEnd: () => { convo.dispatch({ type: "P1_SPEAK_END" }); },
         onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
       });
     }
@@ -1609,16 +1653,19 @@ export default function GuidancePage() {
     let cancelSpeak: (() => void) | null = null;
     let clearRevealTimers: (() => void) | undefined;
 
+    convo.dispatch({ type: "P2_STREAM_START", voice: true });
     cancelSpeak = speakShepherdStream(cleanResponse(text), {
       onStart: () => setPhase2Speaking(true),
       onEnd: () => {
         setPhase2Speaking(false);
         setPhase2SpeechDone(true);
+        convo.dispatch({ type: "P2_SPEAK_END" });
         clearRevealTimers = scheduleVoiceRevealStages();
       },
       onFail: () => {
         setPhase2Speaking(false);
         setPhase2SpeechDone(true);
+        convo.dispatch({ type: "P2_SPEAK_END" });
         clearRevealTimers = scheduleVoiceRevealStages();
       },
     });
@@ -1640,21 +1687,50 @@ export default function GuidancePage() {
     return () => cancel();
   }, [sendOffText]);
 
+  // Phase 5 — Philip speaks the closing prayer when text arrives
+  useEffect(() => {
+    if (!phase5Prayer?.trim() || phase5Speaking || phase5Done) return;
+    phase5CancelRef.current?.();
+    const cancel = speakShepherdStream(phase5Prayer, {
+      onStart: () => setPhase5Speaking(true),
+      onEnd: () => { setPhase5Speaking(false); setPhase5Done(true); },
+      onFail: () => { setPhase5Speaking(false); setPhase5Done(true); },
+    });
+    phase5CancelRef.current = cancel;
+    return () => cancel();
+  }, [phase5Prayer]);
+
   // The First Silence — 3s after Philip finishes speaking, before reply input appears.
   // Philip has said something. The experience honors it by not immediately offering something else.
   useEffect(() => {
     if (!phase1SpeechDone) return;
     setPhase1SilenceActive(true);
-    const t = window.setTimeout(() => setPhase1SilenceActive(false), 3000);
+    const t = window.setTimeout(() => {
+      setPhase1SilenceActive(false);
+      convo.dispatch({ type: "P1_SILENCE_END" });
+    }, 3000);
     return () => window.clearTimeout(t);
   }, [phase1SpeechDone]);
 
   useEffect(() => {
     if (!phase2SpeechDone) return;
     setPhase2SilenceActive(true);
-    const t = window.setTimeout(() => setPhase2SilenceActive(false), 3000);
+    const t = window.setTimeout(() => {
+      setPhase2SilenceActive(false);
+      convo.dispatch({ type: "P2_SILENCE_END" });
+    }, 3000);
     return () => window.clearTimeout(t);
   }, [phase2SpeechDone]);
+
+  // Enforce single-listener invariant: when entering a listener phase, destroy the others.
+  // Skip when null — we don't pre-emptively destroy outside of listener phases.
+  useEffect(() => {
+    const active = convo.activeListener;
+    if (!active) return;
+    if (active !== "entry") destroyHeartVoice();
+    if (active !== "p1") destroyPhase1Voice();
+    if (active !== "followup") destroyFollowUpVoice();
+  }, [convo.activeListener, destroyHeartVoice, destroyPhase1Voice, destroyFollowUpVoice]);
 
   useEffect(() => {
     if (!responseComplete || completionPath !== "carry" || recapFetchedRef.current) return;
@@ -1697,7 +1773,7 @@ export default function GuidancePage() {
     lastInputWasVoiceRef.current = fromVoice;
     if (fromVoice) setVoiceConversation(true);
     setHeartShowContinue(false);
-    setProcessingBridge(true);
+    convo.dispatch({ type: "ENTRY_SUBMIT" });
     setIsReflecting(true);
 
 
@@ -1780,6 +1856,7 @@ export default function GuidancePage() {
     if (fromVoice) setVoiceConversation(true);
     setProcessingBridge(true);
     setIsReflecting(true);
+    convo.dispatch({ type: "P1_REPLY_SUBMIT" });
 
     void (async () => {
       try {
@@ -1891,6 +1968,7 @@ export default function GuidancePage() {
     setFollowUp("");
     setProcessingBridge(true);
     setIsReflecting(true);
+    convo.dispatch({ type: "FU_REPLY_SUBMIT" });
 
     void (async () => {
       try {
@@ -3437,15 +3515,92 @@ export default function GuidancePage() {
                 completionPath="carry"
               />
 
+              {/* Phase 5 — Closing prayer */}
+              {!phase5Requested && !phase5Done && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  onClick={() => {
+                    setPhase5Requested(true);
+                    fetch("/api/guidance/closing-prayer", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        situation: situation.trim(),
+                        userName: getUserName() ?? undefined,
+                        verseReference: verse?.reference ?? undefined,
+                        phase1Response: phase1Response ?? undefined,
+                      }),
+                    })
+                      .then(r => r.ok ? r.json() : null)
+                      .then(d => { if (d?.prayer) setPhase5Prayer(d.prayer); })
+                      .catch(() => { setPhase5Prayer("Lord, they brought something real to you today. Hold it. Hold them. Amen."); });
+                  }}
+                  className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm transition-colors"
+                >
+                  Pray with me before you go
+                </motion.button>
+              )}
+
+              {phase5Requested && !phase5Prayer && (
+                <div className="w-full flex justify-center py-2">
+                  <p className="text-[13px] text-muted-foreground/50 animate-pulse">Philip is preparing a prayer…</p>
+                </div>
+              )}
+
+              {phase5Prayer && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-full rounded-2xl px-5 py-5 text-center"
+                  style={{ background: "linear-gradient(145deg, rgba(139,92,246,0.08), rgba(109,40,217,0.04))", border: "1px solid rgba(139,92,246,0.15)" }}
+                >
+                  <p
+                    className="text-[16px] leading-relaxed mb-0"
+                    style={{ fontFamily: "'Georgia', serif", color: "hsl(var(--foreground) / 0.88)", fontStyle: "italic" }}
+                  >
+                    {phase5Prayer}
+                  </p>
+                  {phase5Speaking && (
+                    <p className="text-[11px] text-muted-foreground/40 mt-3 animate-pulse">Philip is praying…</p>
+                  )}
+                </motion.div>
+              )}
+
+              {phase5Done && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                  className="w-full flex flex-col items-center gap-3"
+                >
+                  <p className="text-[14px] text-muted-foreground/60 text-center leading-relaxed">
+                    Go with this. You didn't face today alone.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/")}
+                    className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm transition-colors"
+                  >
+                    Return home
+                  </button>
+                </motion.div>
+              )}
+
               {/* Stillness + escape hatch */}
-              <button
-                type="button"
-                onClick={() => setShowStillness(true)}
-                data-testid="btn-guidance-stillness"
-                className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm transition-colors"
-              >
-                Sit in silence
-              </button>
+              {!phase5Requested && (
+                <button
+                  type="button"
+                  onClick={() => setShowStillness(true)}
+                  data-testid="btn-guidance-stillness"
+                  className="w-full max-w-sm py-3.5 rounded-2xl text-[14px] font-bold border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                >
+                  Sit in silence
+                </button>
+              )}
               <button
                 type="button"
                 data-testid="btn-guidance-switch-to-stay"

@@ -117,7 +117,7 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   const playBlob = (blob: Blob) => {
     if (cancelled) return;
     const url = URL.createObjectURL(blob);
-    audio = new Audio(url);
+    audio = makeAudio(url);
     audio.onended = () => {
       URL.revokeObjectURL(url);
       audio = null;
@@ -155,6 +155,14 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
   };
 }
 
+/** Create an Audio element safe for iOS — playsinline prevents earpiece routing after getUserMedia. */
+function makeAudio(src?: string): HTMLAudioElement {
+  const el = src ? new Audio(src) : new Audio();
+  el.setAttribute("playsinline", "");
+  el.setAttribute("webkit-playsinline", "");
+  return el;
+}
+
 /**
  * Stream TTS from /api/tts/stream and play via MediaSource for ~300ms TTFB.
  * Falls back to blob path on browsers without MediaSource (older iOS Safari).
@@ -184,14 +192,21 @@ export function speakShepherdStream(
     isPro: proFlag,
   });
 
-  // MediaSource path — chunks play as they arrive (~300ms TTFB)
-  if (
-    typeof MediaSource !== "undefined" &&
-    MediaSource.isTypeSupported("audio/mpeg")
-  ) {
-    mediaSource = new MediaSource();
+  // MediaSource path — chunks play as they arrive (~300ms TTFB).
+  // iOS 17.1+ uses ManagedMediaSource; desktop Chrome/Firefox use MediaSource.
+  const MS: typeof MediaSource | undefined =
+    (window as unknown as { ManagedMediaSource?: typeof MediaSource }).ManagedMediaSource ??
+    (typeof MediaSource !== "undefined" ? MediaSource : undefined);
+
+  if (MS && MS.isTypeSupported("audio/mpeg")) {
+    mediaSource = new MS() as MediaSource;
     const url = URL.createObjectURL(mediaSource);
-    audio = new Audio(url);
+    audio = makeAudio();
+    // ManagedMediaSource requires the element to be in the DOM; playsinline prevents earpiece routing
+    audio.disableRemotePlayback = true;
+    audio.style.display = "none";
+    document.body.appendChild(audio);
+    audio.src = url;
 
     const pendingChunks: ArrayBuffer[] = [];
     let streamDone = false;
@@ -260,6 +275,16 @@ export function speakShepherdStream(
         });
     });
 
+    const cleanupAudio = () => {
+      if (audio) {
+        audio.pause();
+        audio.src = "";
+        if (audio.parentNode) audio.parentNode.removeChild(audio);
+        URL.revokeObjectURL(url);
+        audio = null;
+      }
+    };
+
     audio.oncanplay = () => {
       if (cancelled) return;
       audio!.play().catch(() => {
@@ -268,14 +293,13 @@ export function speakShepherdStream(
       opts?.onStart?.();
     };
     audio.onended = () => {
-      URL.revokeObjectURL(url);
-      audio = null;
+      cleanupAudio();
       if (!cancelled) opts?.onEnd?.();
     };
 
     return () => {
       cancelled = true;
-      if (audio) { audio.pause(); URL.revokeObjectURL(url); audio = null; }
+      cleanupAudio();
     };
   }
 
@@ -290,7 +314,7 @@ export function speakShepherdStream(
       .then((blob) => {
         if (cancelled || !blob) { opts?.onFail?.(); opts?.onEnd?.(); return; }
         const url = URL.createObjectURL(blob);
-        audio = new Audio(url);
+        audio = makeAudio(url);
         audio.onended = () => { URL.revokeObjectURL(url); if (!cancelled) opts?.onEnd?.(); };
         audio.play().catch(() => { opts?.onFail?.(); opts?.onEnd?.(); });
         opts?.onStart?.();
