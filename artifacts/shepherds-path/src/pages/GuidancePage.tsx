@@ -296,6 +296,7 @@ export default function GuidancePage() {
   const crisisReentryRef = useRef<string | null | undefined>(undefined);
   const phase1SpokenRef = useRef<string | null>(null);
   const phase2SpokenRef = useRef<string | null>(null);
+  const phase1TtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const phase2TtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const followUpTtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const phase1MemorySavedRef = useRef(false);
@@ -729,6 +730,8 @@ export default function GuidancePage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
+      let earlyTtsFired = false;
+      phase1TtsBlobRef.current = null;
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -736,14 +739,24 @@ export default function GuidancePage() {
         const chunk = decoder.decode(value, { stream: true });
         accumulated += chunk;
         setPhase1StreamingText(accumulated);
+        // Fire TTS on the first complete sentence mid-stream so audio is ready the moment streaming ends
+        if (!earlyTtsFired && lastInputWasVoiceRef.current && isPhilipMode()) {
+          const wordCount = accumulated.trim().split(/\s+/).length;
+          const sentenceMatch = wordCount >= 10 ? accumulated.match(/^[\s\S]+?[.!?]/) : null;
+          if (sentenceMatch) {
+            phase1TtsBlobRef.current = prefetchShepherdTTS(cleanResponse(sentenceMatch[0].trim()));
+            earlyTtsFired = true;
+          }
+        }
       }
       if (flowGen !== guidanceFlowGenRef.current) return true;
       if (!accumulated.trim()) return false;
       setPhase1Response(accumulated);
       setPhase1StreamingText("");
       setPhase1Complete(true);
-      if (lastInputWasVoiceRef.current) {
-        void prefetchShepherdTTS(cleanResponse(accumulated));
+      // If early TTS didn't fire (very short response), prefetch full text now
+      if (lastInputWasVoiceRef.current && !earlyTtsFired) {
+        phase1TtsBlobRef.current = prefetchShepherdTTS(cleanResponse(accumulated));
       }
       void refreshAiUsage();
       return true;
@@ -1564,19 +1577,30 @@ export default function GuidancePage() {
     phase1SpokenRef.current = key;
     destroyPhase1Voice();
     const spokenText = cleanResponse(phase1Response);
-    const cancel = speakShepherdWithMicHandoff(spokenText, {
-      onStart: () => setPhase1Speaking(true),
-      onSpeakingEnd: () => {
-        setPhase1Speaking(false);
-        setPhase1SpeechDone(true);
-      },
-      onHandoff: () => {
-        if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
-        startPhase1Listening();
-      },
-    });
+    // Consume prefetched blob — started mid-stream on first sentence
+    const blobPromise = phase1TtsBlobRef.current;
+    phase1TtsBlobRef.current = null;
+    let cancelled = false;
+    let cancelSpeak: (() => void) | null = null;
+    (async () => {
+      const prefetchedBlob = blobPromise ? await blobPromise : null;
+      if (cancelled) return;
+      cancelSpeak = speakShepherdWithMicHandoff(spokenText, {
+        prefetchedBlob,
+        onStart: () => setPhase1Speaking(true),
+        onSpeakingEnd: () => {
+          setPhase1Speaking(false);
+          setPhase1SpeechDone(true);
+        },
+        onHandoff: () => {
+          if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return;
+          startPhase1Listening();
+        },
+      });
+    })();
     return () => {
-      cancel();
+      cancelled = true;
+      cancelSpeak?.();
       setPhase1Speaking(false);
     };
   }, [phase1Complete, phase1Response, hasSpeechSupport, phase2Started, showPhase1TypeFallback, startPhase1Listening, destroyPhase1Voice]);
