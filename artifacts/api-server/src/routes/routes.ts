@@ -136,7 +136,7 @@ function writeDiskCache(key: string, buffer: Buffer): void {
 }
 
 const ELEVENLABS_PHILIP_VOICE_ID = "4bt9GD5FhAuJpgPoDNut";
-const ELEVENLABS_MODEL = "eleven_flash_v2_5";
+const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
 
 /**
  * Stream ElevenLabs TTS directly to an Express response.
@@ -167,7 +167,7 @@ async function streamElevenLabsTTSToResponse(
           similarity_boost: 0.80,
           style: 0.15,
           use_speaker_boost: true,
-          speed: 0.85,
+          speed: 1.0,
         },
       }),
     }
@@ -210,7 +210,7 @@ async function getElevenLabsTTS(text: string): Promise<Buffer> {
           similarity_boost: 0.80,
           style: 0.15,
           use_speaker_boost: true,
-          speed: 0.85,
+          speed: 1.0,
         },
       }),
     }
