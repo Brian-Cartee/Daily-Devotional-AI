@@ -2228,24 +2228,18 @@ export default function GuidancePage() {
                           )}
                           <Mic className={`w-10 h-10 relative z-10 ${heartListening ? "text-red-400" : "text-violet-300"}`} />
                         </motion.button>
-                        <p className="mt-3 text-[13px] font-medium text-white/65 text-center">
-                          {processingBridge
-                            ? "Philip is with you…"
+                        <p className="mt-3 text-[13px] font-medium text-white/50 text-center">
+                          {processingBridge || (heartListening && heartListenPhase === "thinking")
+                            ? "…"
                             : heartListening
-                              ? heartListenPhase === "thinking"
-                                ? "Philip is with what you shared…"
-                                : "Philip is listening…"
+                              ? "…"
                               : greetingSpeaking
                                 ? "…"
                                 : isReturnEntry
                                   ? "Good to have you back — speak when you're ready"
                                   : "Speak when you're ready"}
                         </p>
-                        {heartListening && (interimTranscript || heartInput) && (
-                          <p className="mt-2 text-[14px] text-white/45 italic text-center max-w-[280px] leading-snug">
-                            {interimTranscript || heartInput}
-                          </p>
-                        )}
+                        {/* Interim transcript hidden — watching words appear triggers self-editing */}
                       </div>
                     )}
 
@@ -2413,8 +2407,8 @@ export default function GuidancePage() {
                 transition={{ duration: 0.5 }}
                 className="py-6 mb-2"
               >
-                <p className="text-[15px] text-foreground/65 italic leading-relaxed">
-                  {processingBridge ? "Philip is reflecting…" : "Sitting with what you shared…"}
+                <p className="text-[15px] text-foreground/40 italic leading-relaxed">
+                  …
                 </p>
               </motion.div>
             )}
@@ -2452,12 +2446,8 @@ export default function GuidancePage() {
                   >
                     <Mic className="w-9 h-9 relative z-10 text-violet-400" />
                   </motion.div>
-                  <p className="mt-2.5 text-[13px] text-muted-foreground/75 font-medium">
-                    {phase1Speaking
-                      ? "Philip is speaking…"
-                      : isReflecting
-                        ? "Philip is reflecting…"
-                        : "One moment…"}
+                  <p className="mt-2.5 text-[13px] text-muted-foreground/40 font-medium">
+                    {phase1Speaking ? "…" : isReflecting ? "…" : "…"}
                   </p>
                 </div>
               )}
@@ -2516,22 +2506,8 @@ export default function GuidancePage() {
                         )}
                         <Mic className={`w-9 h-9 relative z-10 ${phase1Listening ? "text-red-400" : "text-violet-400"}`} />
                       </motion.button>
-                      <p className="mt-2.5 text-[12px] text-muted-foreground/70 font-medium">
-                        {processingBridge
-                          ? "Philip is with you…"
-                          : phase1Speaking
-                            ? "Philip is speaking…"
-                            : phase1Listening
-                              ? phase1ListenPhase === "thinking"
-                                ? "…"
-                                : "Philip is listening…"
-                              : "One moment…"}
-                      </p>
-                      {phase1Listening && (phase1Interim || phase1UserReply) && (
-                        <p className="mt-1.5 text-[13px] text-muted-foreground/55 italic text-center max-w-[280px] leading-snug">
-                          {phase1Interim || phase1UserReply}
-                        </p>
-                      )}
+                      <p className="mt-2.5 text-[12px] text-muted-foreground/40 font-medium">…</p>
+                      {/* Interim transcript hidden — watching words appear triggers self-editing */}
                     </div>
                   )}
 
@@ -2548,9 +2524,7 @@ export default function GuidancePage() {
                         data-testid="input-guidance-phase1-reply"
                         className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
                       />
-                      <p className="mt-1 text-[11px] text-muted-foreground/45 text-right">
-                        {phase1UserReply.length}/{GUIDANCE_INPUT_MAX}
-                      </p>
+                      {/* Character counter removed — implies a ceiling on what someone can share */}
                       <div className="flex items-center justify-between">
                         <button
                           type="button"
@@ -2587,9 +2561,7 @@ export default function GuidancePage() {
                         data-testid="input-guidance-phase1-reply"
                         className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
                       />
-                      <p className="mt-1 text-[11px] text-muted-foreground/45 text-right">
-                        {phase1UserReply.length}/{GUIDANCE_INPUT_MAX}
-                      </p>
+                      {/* Character counter removed — implies a ceiling on what someone can share */}
                       <div className="flex items-center justify-between">
                         <button
                           type="button"
@@ -2685,13 +2657,7 @@ export default function GuidancePage() {
                 >
                   <Mic className="w-9 h-9 relative z-10 text-violet-400" />
                 </motion.div>
-                <p className="mt-2.5 text-[13px] text-muted-foreground/75 font-medium">
-                  {phase2Speaking
-                    ? "Philip is speaking…"
-                    : phase2Loading || isReflecting
-                      ? "Philip is reflecting…"
-                      : "One moment…"}
-                </p>
+                <p className="mt-2.5 text-[13px] text-muted-foreground/40 font-medium">…</p>
               </div>
             )}
             {showPhase2Content && ((!voiceConversation || showPhase1TypeFallback || phase2SpeechDone) && ((streamingText && !isReflecting) || assistantMessages.length > 0)) && (
@@ -3000,18 +2966,7 @@ export default function GuidancePage() {
                         <span className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">Pro</span>
                       </button>
                     )}
-                    {verse && verseDisplay && assistantMessages[0]?.content && (
-                      <ShareVerseTrigger
-                        text={verseDisplay.text}
-                        reference={verse.reference}
-                        date={easternVerseDateKey()}
-                        extraLine={`A word that met me today:\n"${cleanResponse(assistantMessages[0].content).replace(/\n+/g, " ").slice(0, 280)}"`}
-                        showFriend={false}
-                        label="Share encouragement"
-                        testId="button-share-guidance"
-                        className="text-[12px]"
-                      />
-                    )}
+                    {/* Share encouragement removed — Philip's words are spoken to a person, not content to extract */}
                   </div>
                 )}
                 {showPhase2Content && responseComplete && (
