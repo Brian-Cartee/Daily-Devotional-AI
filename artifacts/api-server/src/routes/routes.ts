@@ -3649,14 +3649,21 @@ Return only the greeting line.`;
 
       // Phase 1 is short (~80 words). Generate non-streaming so we can enforce
       // the "never start with I" rule with a retry before sending to the client.
+      // 20s timeout per attempt — well under nginx's 60s limit even with retry.
       const generate = async (msgs: OpenAI.Chat.ChatCompletionMessageParam[]) => {
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: msgs,
-          max_tokens: 140,
-          temperature: 0.78,
-        });
-        return (completion.choices[0]?.message?.content ?? "").trim();
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 20_000);
+        try {
+          const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: msgs,
+            max_tokens: 140,
+            temperature: 0.78,
+          }, { signal: controller.signal });
+          return (completion.choices[0]?.message?.content ?? "").trim();
+        } finally {
+          clearTimeout(timer);
+        }
       };
 
       let phase1Text = await generate(messages);
