@@ -8,23 +8,23 @@ import {
   getHeartTrend,
 } from "@/lib/heartCheck";
 
-const WEATHER_OPTIONS: { value: HeartWeather; emoji: string; label: string }[] = [
-  { value: "peaceful",    emoji: "☀️",  label: "Peaceful"    },
-  { value: "hopeful",     emoji: "🌅",  label: "Hopeful"     },
-  { value: "uncertain",   emoji: "⛅",  label: "Uncertain"   },
-  { value: "heavy",       emoji: "🌧️", label: "Heavy"       },
-  { value: "overwhelmed", emoji: "🌩️", label: "Overwhelmed" },
+const WEATHER_OPTIONS: { value: HeartWeather; label: string }[] = [
+  { value: "peaceful",    label: "Peaceful"    },
+  { value: "hopeful",     label: "Hopeful"     },
+  { value: "uncertain",   label: "Uncertain"   },
+  { value: "heavy",       label: "Heavy"       },
+  { value: "overwhelmed", label: "Overwhelmed" },
 ];
 
-const TOPIC_OPTIONS: { value: HeartTopic; emoji: string; label: string }[] = [
-  { value: "relationships", emoji: "❤️",  label: "Relationships" },
-  { value: "finances",      emoji: "💰",  label: "Finances"      },
-  { value: "work",          emoji: "💼",  label: "Work"          },
-  { value: "health",        emoji: "🏥",  label: "Health"        },
-  { value: "family",        emoji: "👨‍👩‍👧", label: "Family"       },
-  { value: "faith",         emoji: "🙏",  label: "Faith"         },
-  { value: "anxiety",       emoji: "😔",  label: "Anxiety"       },
-  { value: "gratitude",     emoji: "😊",  label: "Gratitude"     },
+const TOPIC_OPTIONS: { value: HeartTopic; label: string }[] = [
+  { value: "relationships", label: "Relationships" },
+  { value: "finances",      label: "Finances"      },
+  { value: "work",          label: "Work"          },
+  { value: "health",        label: "Health"        },
+  { value: "family",        label: "Family"        },
+  { value: "faith",         label: "Faith"         },
+  { value: "anxiety",       label: "Anxiety"       },
+  { value: "gratitude",     label: "Gratitude"     },
 ];
 
 const HEAVY: HeartWeather[] = ["heavy", "overwhelmed"];
@@ -99,171 +99,145 @@ export function HeartCheckModal({ onDismiss }: Props) {
     onDismiss();
   };
 
+  // Full-screen sacred threshold — not a modal, not a sheet. A moment.
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-40 flex items-end justify-center"
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
-      onClick={handleClose}
+      transition={{ duration: 0.3 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        background: "linear-gradient(175deg, #1a0d2e 0%, #0d0612 60%, #09031e 100%)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "max(52px, env(safe-area-inset-top, 52px)) 32px max(48px, calc(36px + env(safe-area-inset-bottom, 0px)))",
+      }}
     >
-      <motion.div
-        initial={{ y: 60, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 60, opacity: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: "480px",
-          borderRadius: "24px 24px 0 0",
-          background: "linear-gradient(160deg, #1a0d2e 0%, #0d0612 100%)",
-          border: "1px solid rgba(139,92,246,0.18)",
-          borderBottom: "none",
-          padding: "20px 20px",
-          paddingBottom: "16px",
-          marginBottom: "82px",
-          maxHeight: "88vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
-        // @ts-ignore — motion.div forwards refs
-        ref={sheetRef}
-      >
+      <div style={{ width: "100%", maxWidth: "400px" }}>
         <AnimatePresence mode="wait">
 
           {/* ── Step 1: Weather ── */}
           {step === "weather" && (
-            <motion.div key="weather" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
-              <div className="flex items-center justify-between mb-4">
-                <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(167,139,250,0.65)" }}>
-                  Shepherd's Path
-                </p>
-                <button onClick={handleClose} style={{ fontSize: "12px", color: "rgba(255,255,255,0.30)", padding: "2px 6px" }}>
-                  Skip
-                </button>
-              </div>
-
-              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.4rem", fontWeight: 300, color: "rgba(255,255,255,0.92)", marginBottom: "14px", lineHeight: 1.3 }}>
+            <motion.div key="weather" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.28 }}>
+              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(167,139,250,0.55)", marginBottom: "32px" }}>
+                Before we begin
+              </p>
+              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.6rem", fontWeight: 300, color: "rgba(255,255,255,0.94)", marginBottom: "8px", lineHeight: 1.25 }}>
                 How is your heart today?
               </h2>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {WEATHER_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => handleWeatherSelect(opt.value)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "10px 16px",
-                        borderRadius: "12px",
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        textAlign: "left",
-                        width: "100%",
-                        transition: "background 0.15s",
-                        flexShrink: 0,
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(139,92,246,0.14)")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-                    >
-                      <span style={{ fontSize: "20px", lineHeight: 1 }}>{opt.emoji}</span>
-                      <span style={{ fontSize: "15px", fontWeight: 500, color: "rgba(255,255,255,0.88)" }}>{opt.label}</span>
-                    </button>
-                  ))}
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", marginBottom: "28px", lineHeight: 1.5 }}>
+                A quick check-in helps Shepherd's Path meet you where you are.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {WEATHER_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleWeatherSelect(opt.value)}
+                    style={{
+                      padding: "14px 20px",
+                      borderRadius: "14px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.09)",
+                      textAlign: "left",
+                      width: "100%",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.86)",
+                      transition: "background 0.15s, border-color 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(139,92,246,0.12)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.30)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
+              <button onClick={handleClose} style={{ marginTop: "24px", fontSize: "12px", color: "rgba(255,255,255,0.25)", background: "none", border: "none", width: "100%", textAlign: "center" }}>
+                Skip for now
+              </button>
             </motion.div>
           )}
 
           {/* ── Step 2: Topic ── */}
           {step === "topic" && (
-            <motion.div key="topic" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
+            <motion.div key="topic" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.28 }}>
               {weather && HEAVY.includes(weather) && (
-                <p style={{ fontFamily: "'Georgia', serif", fontSize: "1rem", color: "rgba(255,255,255,0.55)", marginBottom: "16px", fontStyle: "italic" }}>
+                <p style={{ fontFamily: "'Georgia', serif", fontSize: "0.95rem", color: "rgba(255,255,255,0.40)", marginBottom: "20px", fontStyle: "italic", lineHeight: 1.5 }}>
                   That's okay. You can bring that here.
                 </p>
               )}
-              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.3rem", fontWeight: 300, color: "rgba(255,255,255,0.92)", marginBottom: "16px", lineHeight: 1.3 }}>
-                What's most on your heart?
+              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem", fontWeight: 300, color: "rgba(255,255,255,0.94)", marginBottom: "24px", lineHeight: 1.25 }}>
+                What's carrying the most weight?
               </h2>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "14px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
                 {TOPIC_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => handleTopicSelect(opt.value)}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "12px 14px",
+                      padding: "13px 16px",
                       borderRadius: "14px",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.09)",
                       textAlign: "left",
-                      transition: "background 0.15s",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.82)",
+                      transition: "background 0.15s, border-color 0.15s",
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(139,92,246,0.14)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(139,92,246,0.12)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.30)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; }}
                   >
-                    <span style={{ fontSize: "18px", lineHeight: 1 }}>{opt.emoji}</span>
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.82)" }}>{opt.label}</span>
+                    {opt.label}
                   </button>
                 ))}
               </div>
-
               <button
                 onClick={() => handleTopicSelect(null)}
-                style={{ width: "100%", padding: "10px", fontSize: "13px", color: "rgba(255,255,255,0.35)", background: "none", border: "none" }}
+                style={{ width: "100%", padding: "10px", fontSize: "12px", color: "rgba(255,255,255,0.25)", background: "none", border: "none", textAlign: "center" }}
               >
-                Skip
+                Skip for now
               </button>
             </motion.div>
           )}
 
           {/* ── Step 3: Acknowledgment ── */}
           {step === "ack" && weather && (
-            <motion.div key="ack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-              <div style={{ textAlign: "center", padding: "12px 0 20px" }}>
-                <p style={{ fontSize: "36px", marginBottom: "16px" }}>
-                  {WEATHER_OPTIONS.find(o => o.value === weather)?.emoji}
+            <motion.div key="ack" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
+              {trendMessage && (
+                <p style={{ fontFamily: "'Georgia', serif", fontSize: "0.95rem", color: "rgba(167,139,250,0.65)", marginBottom: "16px", fontStyle: "italic", lineHeight: 1.6 }}>
+                  {trendMessage}
                 </p>
-
-                {trendMessage && (
-                  <p style={{ fontFamily: "'Georgia', serif", fontSize: "0.95rem", color: "rgba(167,139,250,0.75)", marginBottom: "10px", fontStyle: "italic" }}>
-                    {trendMessage}
-                  </p>
-                )}
-
-                <p style={{ fontFamily: "'Georgia', serif", fontSize: "1.2rem", fontWeight: 300, color: "rgba(255,255,255,0.90)", lineHeight: 1.4, marginBottom: "28px" }}>
-                  {ACKNOWLEDGMENTS[weather]}
-                </p>
-
-                <button
-                  onClick={handleClose}
-                  style={{
-                    width: "100%",
-                    padding: "15px",
-                    borderRadius: "14px",
-                    background: "linear-gradient(135deg, rgba(139,92,246,0.55), rgba(109,40,217,0.45))",
-                    border: "1px solid rgba(139,92,246,0.40)",
-                    color: "rgba(255,255,255,0.92)",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Enter
-                </button>
-              </div>
+              )}
+              <p style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem", fontWeight: 300, color: "rgba(255,255,255,0.92)", lineHeight: 1.4, marginBottom: "40px" }}>
+                {ACKNOWLEDGMENTS[weather]}
+              </p>
+              <button
+                onClick={handleClose}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  borderRadius: "14px",
+                  background: "rgba(139,92,246,0.18)",
+                  border: "1px solid rgba(139,92,246,0.35)",
+                  color: "rgba(255,255,255,0.92)",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Continue
+              </button>
             </motion.div>
           )}
 
         </AnimatePresence>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
