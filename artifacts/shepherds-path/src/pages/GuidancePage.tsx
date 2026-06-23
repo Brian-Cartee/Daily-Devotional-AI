@@ -408,7 +408,24 @@ export default function GuidancePage() {
 
   const [isFirstVisit] = useState(() => !localStorage.getItem("sp_guidance_visited"));
   const [showPhilipDisclaimer] = useState(() => shouldShowPhilipDisclaimer());
+  // Phase 3: threshold overlay — full-screen entry before first word
+  const [showThresholdOverlay, setShowThresholdOverlay] = useState(true);
+  const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
+
+  // Pulse appears 2s after entering — stillness first, then invitation
+  useEffect(() => {
+    if (!showThresholdOverlay) return;
+    const t = window.setTimeout(() => setOverlayPulseVisible(true), 2000);
+    return () => window.clearTimeout(t);
+  }, [showThresholdOverlay]);
+
+  // Overlay dismisses when user submits (situation set) or processing begins
+  useEffect(() => {
+    if (situation.trim() || isReflecting || processingBridge) {
+      setShowThresholdOverlay(false);
+    }
+  }, [situation, isReflecting, processingBridge]);
   useEffect(() => {
     if (showPhilipDisclaimer) markPhilipDisclaimerShown();
   }, [showPhilipDisclaimer]);
@@ -2081,6 +2098,145 @@ export default function GuidancePage() {
         }}
       />
       <main className="min-h-screen pb-32 bg-background">
+
+        {/* ── Phase 3: Threshold Entry — full-screen sanctuary before first word ── */}
+        <AnimatePresence>
+          {showThresholdOverlay && (
+            <motion.div
+              key="threshold-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.5 } }}
+              transition={{ duration: 0.4 }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 40,
+                background: "linear-gradient(175deg, #0d0520 0%, #09031e 60%, #050210 100%)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "max(56px, env(safe-area-inset-top, 56px)) 32px max(48px, calc(40px + env(safe-area-inset-bottom, 0px)))",
+              }}
+            >
+              {/* Philip's question — already present, not typing in */}
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  fontFamily: "'Georgia', serif",
+                  fontSize: "clamp(1.45rem, 5vw, 1.75rem)",
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.92)",
+                  textAlign: "center",
+                  lineHeight: 1.35,
+                  marginBottom: "0",
+                  maxWidth: "22ch",
+                }}
+              >
+                What's on your heart today?
+              </motion.p>
+
+              {/* Breath pulse — appears after 2s of stillness */}
+              <AnimatePresence>
+                {overlayPulseVisible && (
+                  <motion.div
+                    key="overlay-pulse"
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.85 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ marginTop: "52px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}
+                  >
+                    <motion.button
+                      type="button"
+                      onClick={toggleHeartVoice}
+                      aria-label={heartListening ? "Stop speaking" : "Speak to Philip"}
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        borderRadius: "9999px",
+                        border: heartListening
+                          ? "1.5px solid rgba(239,68,68,0.50)"
+                          : "1.5px solid rgba(139,92,246,0.30)",
+                        background: heartListening
+                          ? "radial-gradient(circle, rgba(239,68,68,0.20) 0%, rgba(180,20,20,0.06) 100%)"
+                          : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.04) 100%)",
+                        cursor: "pointer",
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      animate={heartListening ? {
+                        boxShadow: [
+                          "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.28)",
+                          "0 0 0 18px rgba(239,68,68,0.0), 0 0 44px 14px rgba(239,68,68,0.42)",
+                          "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.28)",
+                        ],
+                        scale: [1, 1.05, 1],
+                      } : {
+                        boxShadow: [
+                          "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.18)",
+                          "0 0 0 14px rgba(139,92,246,0.0), 0 0 36px 12px rgba(139,92,246,0.28)",
+                          "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.18)",
+                        ],
+                        scale: [1, 1.04, 1],
+                      }}
+                      transition={{ duration: heartListening ? 1.6 : 2.4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      {heartListening && (
+                        <span style={{
+                          position: "absolute",
+                          inset: 0,
+                          borderRadius: "9999px",
+                          background: "rgba(239,68,68,0.10)",
+                          animation: "ping 1s cubic-bezier(0,0,0.2,1) infinite",
+                        }} />
+                      )}
+                      <Mic
+                        size={22}
+                        style={{
+                          color: heartListening ? "rgba(239,68,68,0.85)" : "rgba(139,92,246,0.70)",
+                          position: "relative",
+                          zIndex: 1,
+                        }}
+                      />
+                    </motion.button>
+
+                    {/* Very quiet "or type" — available but not promoted */}
+                    {!heartListening && (
+                      <motion.button
+                        type="button"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.5, duration: 0.5 }}
+                        onClick={() => {
+                          setShowThresholdOverlay(false);
+                          setShowHeartTypeFallback(true);
+                        }}
+                        style={{
+                          fontSize: "12px",
+                          color: "rgba(255,255,255,0.22)",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "4px 0",
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        or type
+                      </motion.button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Hero image must start at y=0 (no sp-app-top-clearance on main) — matches For You / ThresholdHero */}
         <div
           className={`transition-all duration-700 ease-in-out ${
