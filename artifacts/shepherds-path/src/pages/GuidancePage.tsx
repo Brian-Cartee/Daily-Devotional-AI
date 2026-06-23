@@ -303,8 +303,10 @@ export default function GuidancePage() {
   const phase1MemorySavedRef = useRef(false);
   const sendOffSpokenRef = useRef<string | null>(null);
   const [phase1SpeechDone, setPhase1SpeechDone] = useState(false);
+  const [phase1SilenceActive, setPhase1SilenceActive] = useState(false);
   const [phase2Speaking, setPhase2Speaking] = useState(false);
   const [phase2SpeechDone, setPhase2SpeechDone] = useState(false);
+  const [phase2SilenceActive, setPhase2SilenceActive] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [responseComplete, setResponseComplete] = useState(false);
@@ -1692,6 +1694,22 @@ export default function GuidancePage() {
     return () => cancel();
   }, [sendOffText]);
 
+  // The First Silence — 3s after Philip finishes speaking, before reply input appears.
+  // Philip has said something. The experience honors it by not immediately offering something else.
+  useEffect(() => {
+    if (!phase1SpeechDone) return;
+    setPhase1SilenceActive(true);
+    const t = window.setTimeout(() => setPhase1SilenceActive(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [phase1SpeechDone]);
+
+  useEffect(() => {
+    if (!phase2SpeechDone) return;
+    setPhase2SilenceActive(true);
+    const t = window.setTimeout(() => setPhase2SilenceActive(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [phase2SpeechDone]);
+
   useEffect(() => {
     if (!responseComplete || completionPath !== "carry" || recapFetchedRef.current) return;
     const reflection = messages.find((m) => m.role === "assistant")?.content?.trim();
@@ -2424,31 +2442,30 @@ export default function GuidancePage() {
               data-testid="text-guidance-phase1"
             >
               {voiceConversation && !showPhase1TypeFallback && !phase1SpeechDone && (
-                <div className="flex flex-col items-center py-4 mb-2">
+                <div className="flex flex-col items-center py-8 mb-2">
+                  {/* Pure breath pulse — no icon. Philip is present, not processing. */}
                   <motion.div
                     role="status"
                     aria-live="polite"
-                    className="relative flex items-center justify-center w-24 h-24 rounded-full"
+                    aria-label="Philip is with you"
+                    className="w-20 h-20 rounded-full"
                     animate={(phase1Speaking || isReflecting) ? {
                       boxShadow: [
-                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
-                        "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.45)",
-                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
+                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 32px 8px rgba(139,92,246,0.25)",
+                        "0 0 0 20px rgba(139,92,246,0.0), 0 0 52px 18px rgba(139,92,246,0.40)",
+                        "0 0 0 0px rgba(139,92,246,0.0), 0 0 32px 8px rgba(139,92,246,0.25)",
                       ],
+                      scale: [1, 1.06, 1],
                     } : {
-                      boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
+                      boxShadow: "0 0 18px 3px rgba(139,92,246,0.12)",
+                      scale: 1,
                     }}
-                    transition={(phase1Speaking || isReflecting) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                    transition={(phase1Speaking || isReflecting) ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" } : { duration: 0.6 }}
                     style={{
-                      background: "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)",
-                      border: "2px solid rgba(139,92,246,0.45)",
+                      background: "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.06) 100%)",
+                      border: "1.5px solid rgba(139,92,246,0.30)",
                     }}
-                  >
-                    <Mic className="w-9 h-9 relative z-10 text-violet-400" />
-                  </motion.div>
-                  <p className="mt-2.5 text-[13px] text-muted-foreground/40 font-medium">
-                    {phase1Speaking ? "…" : isReflecting ? "…" : "…"}
-                  </p>
+                  />
                 </div>
               )}
 
@@ -2466,7 +2483,7 @@ export default function GuidancePage() {
               </div>
               )}
 
-              {phase1Complete && !phase2Started && (
+              {phase1Complete && !phase2Started && !phase1SilenceActive && (
                 <div className="mt-5 space-y-3">
                   {/* Voice-first reply */}
                   {hasSpeechSupport && !showPhase1TypeFallback && voiceConversation && (
@@ -2635,29 +2652,30 @@ export default function GuidancePage() {
             className="mb-8"
           >
             {showPhase2Content && voiceConversation && !showPhase1TypeFallback && !phase2SpeechDone && (
-              <div className="flex flex-col items-center py-6 mb-4">
+              <div className="flex flex-col items-center py-8 mb-4">
+                {/* Pure breath pulse — no icon. Philip is present, not processing. */}
                 <motion.div
                   role="status"
                   aria-live="polite"
-                  className="relative flex items-center justify-center w-24 h-24 rounded-full"
+                  aria-label="Philip is with you"
+                  className="w-20 h-20 rounded-full"
                   animate={(phase2Speaking || phase2Loading || isReflecting) ? {
                     boxShadow: [
-                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
-                      "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.45)",
-                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.30)",
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 32px 8px rgba(139,92,246,0.25)",
+                      "0 0 0 20px rgba(139,92,246,0.0), 0 0 52px 18px rgba(139,92,246,0.40)",
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 32px 8px rgba(139,92,246,0.25)",
                     ],
+                    scale: [1, 1.06, 1],
                   } : {
-                    boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
+                    boxShadow: "0 0 18px 3px rgba(139,92,246,0.12)",
+                    scale: 1,
                   }}
-                  transition={(phase2Speaking || phase2Loading || isReflecting) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                  transition={(phase2Speaking || phase2Loading || isReflecting) ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" } : { duration: 0.6 }}
                   style={{
-                    background: "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)",
-                    border: "2px solid rgba(139,92,246,0.45)",
+                    background: "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.06) 100%)",
+                    border: "1.5px solid rgba(139,92,246,0.30)",
                   }}
-                >
-                  <Mic className="w-9 h-9 relative z-10 text-violet-400" />
-                </motion.div>
-                <p className="mt-2.5 text-[13px] text-muted-foreground/40 font-medium">…</p>
+                />
               </div>
             )}
             {showPhase2Content && ((!voiceConversation || showPhase1TypeFallback || phase2SpeechDone) && ((streamingText && !isReflecting) || assistantMessages.length > 0)) && (
@@ -2670,19 +2688,14 @@ export default function GuidancePage() {
                   if (responseComplete && rawText.trim()) {
                     const movements = splitGuidanceMovements(rawText, verse, prayer);
                     return (
-                      <div className="space-y-5" data-testid="text-guidance-response">
-                        <div className="rounded-2xl border border-border/70 bg-card/40 px-5 py-4">
-                          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70 mb-2">
-                            What I’m hearing
-                          </p>
-                          <div
-                            className="text-[17px] leading-[1.78] text-foreground"
-                            style={{ fontFamily: "var(--font-reading)" }}
-                          >
-                            {movements.reflection.split("\n\n").map((para, i) => (
-                              <p key={i} className="mb-3 last:mb-0">{para}</p>
-                            ))}
-                          </div>
+                      <div data-testid="text-guidance-response">
+                        <div
+                          className="text-[19px] leading-[1.78] text-foreground/90"
+                          style={{ fontFamily: "’Georgia’, serif" }}
+                        >
+                          {movements.reflection.split("\n\n").map((para, i) => (
+                            <p key={i} className="mb-4 last:mb-0">{para}</p>
+                          ))}
                         </div>
                       </div>
                     );
@@ -3598,7 +3611,7 @@ export default function GuidancePage() {
 
       {/* ── Floating input bar — mobile only, docks above NavBar ── */}
       <AnimatePresence>
-        {showPhase2Content && responseComplete && completionPath === "stay" && revealStage >= 3 && canUseAi() && (
+        {showPhase2Content && responseComplete && !phase2SilenceActive && completionPath === "stay" && revealStage >= 3 && canUseAi() && (
           <motion.div
             key="float-bar"
             initial={{ opacity: 0, y: 20 }}
