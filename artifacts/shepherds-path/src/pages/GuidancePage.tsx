@@ -17,10 +17,9 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, PROCESSING_BRIDGE, PHASE1_REPLY_BRIDGE, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
-import { PhilipVoiceScreen, type PhilipVoiceState } from "@/components/PhilipVoiceScreen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
 import {
@@ -430,10 +429,6 @@ export default function GuidancePage() {
     if (showPhilipDisclaimer) markPhilipDisclaimerShown();
   }, [showPhilipDisclaimer]);
 
-  useEffect(() => {
-    void prefetchShepherdTTS(PROCESSING_BRIDGE);
-    void prefetchShepherdTTS(PHASE1_REPLY_BRIDGE);
-  }, []);
 
   const greetingEngagedRef = useRef(false);
   const dynamicOpeningRef = useRef<string | null>(null);
@@ -444,16 +439,6 @@ export default function GuidancePage() {
 
   const philipStream = usePhilipVoiceStream();
 
-  // Derived Philip voice UI state
-  const philipVoiceState: PhilipVoiceState = !voiceConversation
-    ? "hidden"
-    : heartListening || phase1Listening || followUpListening
-    ? "listening"
-    : processingBridge || isReflecting || phase2Loading
-    ? "processing"
-    : phase1Speaking || phase2Speaking || followUpSpeaking
-    ? "speaking"
-    : "idle";
 
   useEffect(() => {
     if (!situation.trim()) {
@@ -1771,9 +1756,6 @@ export default function GuidancePage() {
     setProcessingBridge(true);
     setIsReflecting(true);
 
-    // Speak audio bridge immediately so there's no dead silence while Whisper + phase1 run.
-    // Solo mode: no Philip voice.
-    if (fromVoice && isPhilipMode()) speakShepherdLine(PROCESSING_BRIDGE);
 
     void (async () => {
       let finalText = trimmed;
@@ -2063,27 +2045,6 @@ export default function GuidancePage() {
 
   return (
     <>
-      <AnimatePresence>
-        {voiceConversation && (
-          <PhilipVoiceScreen
-            state={philipVoiceState}
-            speakingText={
-              phase1Speaking
-                ? (phase1Response ?? undefined)
-                : phase2Speaking
-                ? (messages[messages.length - 1]?.content ?? undefined)
-                : undefined
-            }
-            caption={
-              philipVoiceState === "listening"
-                ? undefined
-                : philipVoiceState === "processing"
-                ? undefined
-                : undefined
-            }
-          />
-        )}
-      </AnimatePresence>
       <CoachConsentModal
         open={coachConsentOpen}
         onAccept={() => {

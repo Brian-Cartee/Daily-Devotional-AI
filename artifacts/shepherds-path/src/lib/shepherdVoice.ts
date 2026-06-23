@@ -162,9 +162,9 @@ export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
 export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
 
 /** Conversational auto-submit silence — entry / Phase 1 reply / follow-up. */
-export const VOICE_SILENCE_ENTRY_MS = 4_000;
-export const VOICE_SILENCE_PHASE1_MS = 3000;
-export const VOICE_SILENCE_FOLLOWUP_MS = 2500;
+export const VOICE_SILENCE_ENTRY_MS = 2000;
+export const VOICE_SILENCE_PHASE1_MS = 1800;
+export const VOICE_SILENCE_FOLLOWUP_MS = 1800;
 
 export const VOICE_MIC_HANDOFF_PHASE1_MS = 800;
 export const VOICE_MIC_HANDOFF_FOLLOWUP_MS = 600;
@@ -198,15 +198,9 @@ export function waitForProcessingBridge(): Promise<void> {
 
 export type SubmitBridgeKind = "entry" | "phase1Reply";
 
-/** Entry: full processing bridge. Phase 1 reply / follow-up: shorter bridge (skipped when heavy). */
-export function waitForSubmitBridge(kind: SubmitBridgeKind, replyText?: string): Promise<void> {
-  if (kind === "phase1Reply" && replyText && shouldSkipReplyBridge(replyText)) {
-    return Promise.resolve();
-  }
-  const line = kind === "entry" ? PROCESSING_BRIDGE : PHASE1_REPLY_BRIDGE;
-  return new Promise((resolve) => {
-    speakShepherdLine(line, { onEnd: resolve, onFail: resolve });
-  });
+/** Bridge removed — breath pulse is the visual signal; no audio filler between speech and reply. */
+export function waitForSubmitBridge(_kind: SubmitBridgeKind, _replyText?: string): Promise<void> {
+  return Promise.resolve();
 }
 
 /** Speak Philip's line, then hand off to mic — with iOS-safe fallback if onended never fires. */
