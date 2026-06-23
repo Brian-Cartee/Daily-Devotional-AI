@@ -3655,10 +3655,10 @@ Return only the greeting line.`;
         const timer = setTimeout(() => controller.abort(), 20_000);
         try {
           const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4o",
             messages: msgs,
             max_tokens: 140,
-            temperature: 0.78,
+            temperature: 0.72,
           }, { signal: controller.signal });
           return (completion.choices[0]?.message?.content ?? "").trim();
         } finally {
