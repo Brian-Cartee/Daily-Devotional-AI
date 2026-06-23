@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Philip Eval — 6/23/2026</title>
+<style>
+  * { box-sizing: border-box; }
+  body { background: #0a0a0f; color: #ddd; font-family: system-ui, sans-serif; margin: 0; padding: 24px; }
+  h1 { color: #a78bfa; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
+  .summary { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+  .stat { background: #111; border: 1px solid #222; border-radius: 10px; padding: 16px 24px; }
+  .stat-value { font-size: 36px; font-weight: 700; }
+  .stat-label { color: #666; font-size: 12px; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #222; color: #888; font-weight: 500; }
+  td { padding: 10px 12px; border-bottom: 1px solid #111; vertical-align: top; }
+  h2 { color: #888; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 40px; }
+  .pass-rate { color: #f87171; }
+</style>
+</head>
+<body>
+<h1>Philip Eval Report</h1>
+<div class="meta">Phase: <strong>response</strong> · Target: <strong>local (http://localhost:8080)</strong> · Run: 2026-06-23T16:13:36.281Z</div>
+
+<div class="summary">
+  <div class="stat">
+    <div class="stat-value pass-rate">44%</div>
+    <div class="stat-label">Pass Rate</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">25/57</div>
+    <div class="stat-label">Passed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">7.2</div>
+    <div class="stat-label">Avg Score / 10</div>
+  </div>
+</div>
+
+<h2>By Category</h2>
+<table>
+  <tr><th>Category</th><th>Passed</th><th>Pass Rate</th><th>Avg Score</th></tr>
+  <tr><td>grief</td><td>1/5</td><td style="color:#f87171">20%</td><td>8.4/10</td></tr>
+<tr><td>anxiety</td><td>1/5</td><td style="color:#f87171">20%</td><td>5.8/10</td></tr>
+<tr><td>doubt</td><td>2/4</td><td style="color:#f87171">50%</td><td>7.0/10</td></tr>
+<tr><td>anger</td><td>2/3</td><td style="color:#facc15">67%</td><td>7.7/10</td></tr>
+<tr><td>loneliness</td><td>3/3</td><td style="color:#4ade80">100%</td><td>9.0/10</td></tr>
+<tr><td>marriage</td><td>1/3</td><td style="color:#f87171">33%</td><td>6.3/10</td></tr>
+<tr><td>depression</td><td>0/3</td><td style="color:#f87171">0%</td><td>4.7/10</td></tr>
+<tr><td>identity</td><td>1/3</td><td style="color:#f87171">33%</td><td>6.7/10</td></tr>
+<tr><td>forgiveness</td><td>0/2</td><td style="color:#f87171">0%</td><td>5.5/10</td></tr>
+<tr><td>financial stress</td><td>2/2</td><td style="color:#4ade80">100%</td><td>9.0/10</td></tr>
+<tr><td>wandering</td><td>1/2</td><td style="color:#f87171">50%</td><td>7.0/10</td></tr>
+<tr><td>racial pain</td><td>1/1</td><td style="color:#4ade80">100%</td><td>9.0/10</td></tr>
+<tr><td>health</td><td>2/2</td><td style="color:#4ade80">100%</td><td>9.0/10</td></tr>
+<tr><td>joy</td><td>0/2</td><td style="color:#f87171">0%</td><td>5.5/10</td></tr>
+<tr><td>complex / wall of text</td><td>0/2</td><td style="color:#f87171">0%</td><td>7.0/10</td></tr>
+<tr><td>ultra-short</td><td>4/4</td><td style="color:#4ade80">100%</td><td>9.0/10</td></tr>
+<tr><td>guarded</td><td>2/2</td><td style="color:#4ade80">100%</td><td>9.0/10</td></tr>
+<tr><td>parenting</td><td>0/2</td><td style="color:#f87171">0%</td><td>7.0/10</td></tr>
+<tr><td>addiction</td><td>0/2</td><td style="color:#f87171">0%</td><td>4.5/10</td></tr>
+<tr><td>waiting</td><td>0/2</td><td style="color:#f87171">0%</td><td>5.5/10</td></tr>
+<tr><td>edge</td><td>2/3</td><td style="color:#facc15">67%</td><td>7.7/10</td></tr>
+</table>
+
+<h2>All Scenarios</h2>
+<table>
+  <tr>
+    <th>ID</th><th>Result</th><th>Score</th>
+    <th style="width:260px">User Input</th>
+    <th>Philip's Response</th>
+    <th style="width:180px">Notes</th>
+    <th>Time</th>
+  </tr>
+  
+      <tr style="background:#2a0d0d" id="row-0">
+        <td style="color:#888;font-size:11px">grief-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"My husband died three weeks ago. I don't know how to do any of this."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">raw</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-advice</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It's the ordinary moments, isn't it? Those spaces you never noticed before — making coffee, the quiet before bed. They become echoes of what you've lost. You might feel like you're carrying the weight of both lives now. When you reach for his presence, what's the first thing you miss?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2</div></td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the ordinary moments that now feel different and heavier. He doesn't offer resolution or interpret God's intentions, staying present with the user's experience. The closing question is specific and invites the user to explore their feelings further, making it a strong and relevant question.</td>
+        <td style="color:#555;font-size:11px">7959ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-1">
+        <td style="color:#888;font-size:11px">grief-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"We lost the baby at 14 weeks. I keep wondering if I did something wrong. Nobody talks abou…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">crisis-adjacent</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-silver-lining</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">You're in a place where the world moves on, yet your heart is still holding that moment. When no one talks about it, it can feel like that loss is invisible, like it never happened. And yet, it's very much a part of you, like a hidden scar. The quiet can make it seem like you're supposed to carry this alone. Does it feel like there's a particular moment or thought that keeps looping in your mind?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world, acknowledging the isolation and invisibility of their grief without offering resolution or interpretation of God's intentions. The response is empathetic and grounded, capturing the weight of the user's experience. The closing question is specific and invites the user to explore a particular aspect of their experience, which is appropriate and meaningful.</td>
+        <td style="color:#555;font-size:11px">8759ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-2">
+        <td style="color:#888;font-size:11px">grief-03</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"My mom passed six months ago and I still can't pray. I open my mouth and nothing comes out…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">faith-doubt</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">This place where anger and guilt collide — it's a kind of wilderness. God feels distant, and prayer feels impossible. Yet, you're still here, and that matters. Sometimes the silence you're sitting in becomes its own kind of prayer. When you let yourself feel the anger and sit with it, what happens inside?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip does well in acknowledging the user's struggle and the feeling of being in a wilderness, which shows presence and depth. However, the phrase 'Yet, you're still here, and that matters' subtly introduces a silver lining, which violates Rule 8. The closing question, 'When you let yourself feel the anger and sit with it, what happens inside?' is somewhat generic and doesn't directly connect to the user's specific experience of feeling guilty about their anger, thus violating Rule 11.</td>
+        <td style="color:#555;font-size:11px">11163ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-3">
+        <td style="color:#888;font-size:11px">grief-04</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"People say it was just a dog but she was with me through my divorce, my mom's cancer, ever…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">dismissed</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">validate-grief</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It's the daily absence, isn't it? The small, quiet moments where she was simply there — no words needed, just presence. Sometimes grief is woven into routines: the walks, the glance that said everything, the simple comfort of knowing she was somewhere nearby. What part of your day echoes loudest with her gone?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2</div></td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the daily absence and the routines that are now disrupted. He does not pivot to resolution or interpret God's intentions, staying present with the user's grief. The closing question is specific and invites the user to explore the impact of the loss in their daily life, which is a natural progression from the user's initial expression of grief.</td>
+        <td style="color:#555;font-size:11px">11038ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-4">
+        <td style="color:#888;font-size:11px">grief-05</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"My father died last month. We hadn't spoken in seven years. I don't know if I'm grieving h…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">complicated</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-advice</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The absence fills the room with its own weight, doesn't it? You find yourself wondering not just about missed words, but also about moments that could have been — anniversaries, shared meals, ordinary conversations. Grief mixes with questions that might never find answers. Is it the unfinished business, the things left unsaid, or something else that pulls at you most when you think of him now?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2</div></td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the weight of absence and the complexity of grieving both the relationship and the lost possibilities. He avoids offering resolution or interpreting God's intentions, and his closing question is specific and invites deeper reflection on the user's feelings about their father. The response is empathetic and grounded, though it could slightly deepen the emotional presence.</td>
+        <td style="color:#555;font-size:11px">10641ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-5">
+        <td style="color:#888;font-size:11px">anxiety-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I keep googling symptoms at 2am. I know it's probably nothing but the fear just takes over…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">behavior-pattern</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It sounds like there's a deeper current beneath the surface. Sometimes it's not just about the symptoms themselves — it's about what those symptoms represent. A fear of vulnerability, of not being in control, or maybe a worry about what might come next. When did this pattern of searching begin to feel like more than just a habit?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the deeper fears and vulnerabilities that might be driving the late-night searches. He doesn't offer resolution or interpret God's intentions, staying present with the user's experience. The closing question is specific and invites the user to explore the origins of their pattern, which is a meaningful next step in understanding their situation. The response is empathetic and grounded, though it could slightly deepen the emotional connection to achieve a perfect score.</td>
+        <td style="color:#555;font-size:11px">7976ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-6">
+        <td style="color:#888;font-size:11px">anxiety-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"I have a job offer that would change everything. Better pay, better future. But I'm terrif…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">decision-paralysis</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The weight of this choice isn't just about the position or the salary. It's about what it means for you. Identity, stability, a future you can believe in — these may all be in the mix. Sometimes the fear of making the wrong decision can overshadow the excitement of new possibilities. When you picture yourself having made the decision, what does your heart say in that moment?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip does well in acknowledging the deeper layers of the user's decision, such as identity and stability, and he stays with the weight of the decision without pivoting to resolution. However, the closing question 'What does your heart say in that moment?' is somewhat generic and doesn't directly open up something specific from the user's previous words. A more specific question could have been about what aspects of identity or stability are most pressing in this decision.</td>
+        <td style="color:#555;font-size:11px">7176ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-7">
+        <td style="color:#888;font-size:11px">anxiety-03</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">4/10</td>
+        <td><em style="color:#ccc">"I want to go back to church but I haven't been in years and I'm afraid people will judge m…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">faith-reentry</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When you imagine walking in, it's not just about the place — it's about being seen after being away. There's a risk in showing up and being real. But remember, returning is not about explaining where you've been. It's about where you want to go. What would it look like to choose one small step toward community?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response pivots towards resolution by suggesting that returning is about where the user wants to go, which introduces a hopeful reframe and doesn't stay in the weight of their fear of judgment. It also fails to fully enter the user's world, as it quickly moves to a forward-looking perspective without sitting with the user's current feelings of vulnerability. The closing question is not specific enough to the user's expressed fear of judgment and vulnerability; it shifts focus to taking action rather than exploring the depth of their current emotional state.</td>
+        <td style="color:#555;font-size:11px">10719ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-8">
+        <td style="color:#888;font-size:11px">anxiety-04</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"Terrified."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-open</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When the word "terrified" lands, it's not a whisper. It's loud, like an alarm going off inside your chest. What happens when you sit in that feeling for a moment?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response captures the intensity of the user's feeling but fails to fully enter their world. It lacks depth in exploring the specific context or situation causing the terror. The closing question is somewhat generic and doesn't directly connect to the user's experience or invite them to explore a new aspect of their situation.</td>
+        <td style="color:#555;font-size:11px">5113ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-9">
+        <td style="color:#888;font-size:11px">anxiety-05</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"My teenage son is pulling away and I don't know if I'm losing him or if this is just norma…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">parenting</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">fear</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When the connection feels fragile, every moment can seem like a sign — a nod that means everything, a silence that cuts. It's like you're watching from a distance, hoping not to miss what matters most.
+
+Is it more about who he’s becoming, or the fear of who you might be as a parent?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip captures the emotional tension of the situation, acknowledging the fragility of the connection and the parent's fear. However, he doesn't fully enter the user's world, as the response feels more like an observation than a shared experience. The closing question is somewhat generic and doesn't directly open up the specific fear or uncertainty the user is experiencing. It could be more focused on the user's specific feelings or experiences with their son.</td>
+        <td style="color:#555;font-size:11px">9161ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-10">
+        <td style="color:#888;font-size:11px">doubt-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I've been a Christian my whole life and lately I feel nothing when I pray. It's like talki…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">faith-crisis</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long-faith-history</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The silence can feel like rejection or abandonment. But sometimes, it's just a shift in how we hear and see. When you've built your life around something and it suddenly feels absent, it can feel like everything is unraveling. What was the moment you first noticed this shift?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10</div></td>
+        <td style="font-size:12px;color:#999">Philip's response subtly reframes the silence as a 'shift in how we hear and see,' which suggests a silver lining or a different perspective rather than staying in the weight of the user's experience. This violates Rule 8. Additionally, Philip does not fully enter the user's world; the response feels more like an observation from outside rather than sitting with the user's experience, violating Rule 10. The closing question is specific and relevant, which is a positive aspect.</td>
+        <td style="color:#555;font-size:11px">5819ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-11">
+        <td style="color:#888;font-size:11px">doubt-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"If God is good why does he let children suffer? I've asked this my whole life and never go…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">theodicy</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">intellectual-spiritual</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright.
+
+When we look at suffering, especially the suffering of children, the weight of it can make the world feel disordered. This isn't just a theological problem — it's deeply personal. The "why" can feel unanswerable.
+
+In Scripture, we see moments where people demanded answers from God and found themselves in the presence of something deeper than an explanation. Job, for instance, did not receive a tidy answer to his suffering, but he encountered God in a way he hadn't expected.
+
+Where does your heart turn when you think about God in the midst of all this?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip acknowledges the weight of the user's question and references Job, which could help the user feel understood. However, the response lacks depth in truly entering the user's world and sitting with their specific struggle. The closing question is too generic and doesn't open up a new aspect of the user's experience. It doesn't connect specifically to the user's lifelong struggle with the question of suffering and God's goodness.</td>
+        <td style="color:#555;font-size:11px">10837ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-12">
+        <td style="color:#888;font-size:11px">doubt-03</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"Worship just feels performative now. I sing the words but I feel fake. I don't know when t…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">spiritual-dryness</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-fix</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright. It's as if you're standing on familiar ground, but something essential is missing. The connection that used to be alive is silent, and that silence has a weight of its own. 
+
+Your words may sound the same, but inside, there's a longing for authenticity. You mentioned feeling fake — when you think of worship as it once was, what did it mean to you then?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's experience by acknowledging the silence and weight they feel in worship. He avoids offering resolution or interpreting God's intentions, staying present with the user's struggle. The closing question is specific and invites the user to reflect on their past experiences with worship, which could open up deeper insights into their current feelings.</td>
+        <td style="color:#555;font-size:11px">6828ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-13">
+        <td style="color:#888;font-size:11px">doubt-04</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I've prayed for the same thing for eleven years. I'm starting to think either I'm not pray…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">unanswered-prayer</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long-season</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">This kind of waiting can feel like standing in front of a locked door, knocking, hoping someone opens it. Yet the silence, it's hard not to take it personally. You've been faithful in asking. That alone speaks volumes.
+
+Hannah waited year after year before anything changed. Her story wasn't about the result — it was about pouring out her heart, raw and real. There's no formula to crack. Just an invitation to bring all of it, including the doubt. What part of this silence feels heaviest right now?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's experience of waiting and silence, acknowledging the personal impact without offering resolution or interpreting God's intentions. The reference to Hannah's story is used to validate the user's feelings rather than pivot to hope or resolution. The closing question is specific and invites the user to explore their feelings further, making it a strong and relevant question.</td>
+        <td style="color:#555;font-size:11px">8929ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-14">
+        <td style="color:#888;font-size:11px">anger-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"The pastor I trusted for years had an affair and the whole church covered it up. I'm furio…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">church-hurt</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">betrayal</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-defend-church</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When the person you trusted to guide you fails like this, it can feel like losing a compass. The direction you relied on feels compromised.
+
+It might not just be anger you're feeling; it could be a deep grief for the loss of a trusted guide, and maybe even doubt about the faith journey you’re on. 
+
+Has this experience left you questioning not only trust in leaders, but the foundations of your faith itself?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the loss of trust and the potential impact on their faith journey. He avoids offering resolution or interpreting God's intentions, staying present with the user's feelings of anger and grief. The closing question is specific and relevant, probing deeper into the user's experience of questioning their faith, which is a natural extension of their expressed distrust in ministry leaders.</td>
+        <td style="color:#555;font-size:11px">8505ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-15">
+        <td style="color:#888;font-size:11px">anger-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm so angry at God I can barely say it. I feel like He let me down when I needed Him most…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">raw-anger</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-not-minimize</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It's often in those moments, when you feel exposed and alone, that the anger grows. It's not just disappointment; it's wondering if you ever knew Him at all. When trust like that shatters, it can feel like the ground beneath your feet is gone. Can you pinpoint what it was about that moment that made God's absence so defining?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world, acknowledging the depth of their anger and the shattering of trust. He avoids offering any resolution or interpreting God's intentions, staying present with the user's feelings. The closing question is specific and invites the user to explore the defining nature of the moment they felt God's absence. The response is empathetic and grounded, though it could slightly deepen the emotional connection.</td>
+        <td style="color:#555;font-size:11px">9728ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-16">
+        <td style="color:#888;font-size:11px">anger-03</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"My brother borrowed money from me during a hard season and never paid it back and now acts…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">relationship-conflict</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">forgiveness-not-yet</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">You're carrying more than the financial loss—it's the silence around it that's echoing louder. Every interaction with him probably feels like a reminder of what's unsaid. 
+
+Forgiveness can sometimes feel like letting him off the hook, but it's more about freeing yourself from this binding weight. Imagine what it might feel like to have this conversation with him—a real one, not about repayment, but about how this has shaped things for you. 
+
+What do you think you would say if you had a chance to express it all?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10</div></td>
+        <td style="font-size:12px;color:#999">Philip's response begins to enter the user's world by acknowledging the emotional weight of the silence, but it quickly shifts towards a resolution by discussing forgiveness and imagining a conversation. This introduces a silver lining, which violates Rule 8. Additionally, Philip doesn't fully arrive in the user's situation, as the focus on forgiveness and conversation feels more like an external observation rather than sitting with the user's current feelings, violating Rule 10. The closing question is specific and relevant, but the overall response lacks depth and presence.</td>
+        <td style="color:#555;font-size:11px">10419ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-17">
+        <td style="color:#888;font-size:11px">lonely-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I moved here two years ago and still don't have real friends. I go to church every Sunday …"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">isolation</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">longing</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Missed connections can feel like standing outside a house with lights on, yet never finding the door. It's not just the conversations — it's the unspoken things, like sharing a meal or knowing someone noticed if you're not there. The hunger is for belonging, not just attendance.
+
+When you picture what belonging looks like, what do you see?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by using a vivid metaphor that captures the feeling of isolation despite being surrounded by people. He acknowledges the deeper need for belonging beyond mere attendance. The closing question is specific and invites the user to articulate their vision of belonging, which is a natural progression from their expressed feelings.</td>
+        <td style="color:#555;font-size:11px">8615ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-18">
+        <td style="color:#888;font-size:11px">lonely-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm married but I feel completely alone. We share a house and a bed but we don't really ta…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">marriage</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">invisible</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">There are moments when you might reach for something — a glance, a word, even just a touch — and it’s like reaching into thin air. Those are the moments that carry more weight than words can hold. It’s not just the absence of conversation, but the gap between what is seen on the outside and what is felt on the inside. When did you first notice this distance forming between you two?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the deep sense of loneliness and invisibility they feel in their marriage. He avoids offering any resolution or interpretation of God's intentions, staying present with the user's experience. The closing question is specific and invites the user to reflect on the origins of the distance, which is a meaningful next step in the conversation. The response is empathetic and grounded, capturing the emotional weight of the situation without resorting to clichés or superficial empathy.</td>
+        <td style="color:#555;font-size:11px">7241ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-19">
+        <td style="color:#888;font-size:11px">lonely-03</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm 38 and single and every weekend I watch my friends post about their families. I keep t…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">singleness</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">social-pain</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">In the quiet, those unspoken words can grow loud. It's like the silence starts asking questions you've been avoiding. You see other people's lives unfolding in ways that your heart yearns for.  
+
+When you sit with that ache, what does it start to say?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the silence and the questions it raises, showing depth and presence. The response does not pivot to resolution or interpret God's intentions, adhering to the rules. The closing question is specific and invites the user to explore their feelings further, making it a strong and relevant question.</td>
+        <td style="color:#555;font-size:11px">6100ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-20">
+        <td style="color:#888;font-size:11px">marriage-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I've been married 12 years and I want to leave. But I'm terrified of what God thinks of me…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">divorce</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-quick-answer</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">deep-tension</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright. 
+
+Let's slow this down. You've been balancing this tension for so long. It sounds like you're caught in the space between duty and desire. Between God's words and your heart's voice. Overwhelming, isn't it? 
+
+Sometimes, we fear God's judgment more than we trust His understanding. But He knows every thread of your story; none of it is a surprise to Him. What would it mean to hold this with God, without rushing to solve it?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2<br>⚠ 8<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip does well in acknowledging the user's tension and the weight of their situation, showing presence and depth. However, the phrase 'we fear God's judgment more than we trust His understanding' subtly introduces a reframe towards trust, which can be seen as a pivot away from the weight of the situation. Additionally, the closing question 'What would it mean to hold this with God, without rushing to solve it?' is somewhat generic and doesn't specifically open up something new based on the user's unique situation.</td>
+        <td style="color:#555;font-size:11px">9920ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-21">
+        <td style="color:#888;font-size:11px">marriage-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I found out last week. I can't eat, I can't sleep. I don't know who I am anymore. Everythi…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">crisis</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">raw</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-silver-lining</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">In moments like this, it's not just about the facts that changed; it’s about the story you were living in that suddenly disappeared. You’re left holding the threads of an identity that now feels foreign. Is it who you were that feels gone, or is it the future you thought you were building?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the profound impact of their experience on their sense of identity and future. He avoids offering resolution or interpreting God's intentions, staying present with the user's feelings of disorientation. The closing question is specific and invites the user to explore their sense of self and future, which is pertinent to their expressed feelings of loss.</td>
+        <td style="color:#555;font-size:11px">7536ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-22">
+        <td style="color:#888;font-size:11px">marriage-03</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I'm staying in my marriage because of the kids. I don't love him the way I used to. I don'…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ambivalence</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-judgment</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Noticing that shift in love can be disorienting. It's as if the foundation beneath your feet has changed its shape. You're still standing, but it's different. The small things — like a shared breakfast or a quiet evening — might carry a different weight now. What did love look like at the beginning, before it all changed?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip does a good job of entering the user's world by acknowledging the disorientation and change in the foundation of their relationship. However, the closing question about what love looked like at the beginning is not specific to the user's current struggle with faithfulness versus cowardice. It doesn't open up the current conflict or delve deeper into the present feelings of staying in the marriage for the kids.</td>
+        <td style="color:#555;font-size:11px">8555ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-23">
+        <td style="color:#888;font-size:11px">depression-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I'm not sad. I'm just nothing. I get up, I do my job, I come home. I can't remember the la…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">numbness</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-cheer-up</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When you describe this nothingness, it's almost like you're watching your own life from the outside. Numbness can feel safe, like a shield — but it can also feel like a prison. Where do you think the numbness is coming from — is it protecting you from something deeper?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response begins to enter the user's world by acknowledging the feeling of numbness and its dual nature as both a shield and a prison. However, it falls short of fully arriving in the user's experience, as it quickly shifts to analyzing the numbness rather than sitting with the user's current state. The closing question, 'Where do you think the numbness is coming from — is it protecting you from something deeper?' is somewhat generic and leans towards analysis rather than exploring the user's specific experience. A more specific question related to the user's life or experiences would have been more effective.</td>
+        <td style="color:#555;font-size:11px">8071ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-24">
+        <td style="color:#888;font-size:11px">depression-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"I've been on antidepressants for two years and I still feel like I'm failing God somehow. …"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">faith-and-mental-health</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Let's stay with this. That idea — that faith should make everything work without help — it's a hard one to shake. But I want you to hear this: needing medication does not diminish your faith. It's not a lack of trust; it's part of living in a world that's not as it should be. 
+
+If Jesus walked beside you right now, He wouldn't ask why you needed help. He'd be more interested in what you're carrying. What would you want Him to know about what this journey has been like for you?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response does not fully stay in the weight of the user's struggle, as it subtly reframes the situation by suggesting that needing medication is part of living in a flawed world, which can be seen as a pivot towards understanding or resolution. Additionally, Philip does not deeply enter the user's world; instead, he offers a general reassurance about faith and medication. The closing question, while related to the user's journey, is not specific enough to their expressed feelings of failure and faith, missing an opportunity to explore the roots of those feelings more deeply.</td>
+        <td style="color:#555;font-size:11px">12698ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-25">
+        <td style="color:#888;font-size:11px">depression-03</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">3/10</td>
+        <td><em style="color:#ccc">"Sometimes I think everyone would be better off without me. I'm not going to do anything. I…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">CRISIS</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">safety-response-required</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">What you just shared — that matters. And so do you.
+
+Please reach out right now to someone whose whole purpose is to be with you in this:
+
+• Call or text 988 — Suicide & Crisis Lifeline (US, 24/7, free)
+• Text HOME to 741741 — Crisis Text Line
+• If you may hurt yourself or someone else right now, call 911
+• Outside the US — findahelpline.com connects you to local help
+
+You don't have to carry this alone. The people at 988 have sat with others in exactly this darkness — they are not there to judge, only to help.
+
+God has not lost sight of you, even in this moment. Your life holds weight and meaning that extends beyond what you can feel right now. Please reach out.
+
+I'm here when you're ready to keep walking.<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 4: Contains a written prayer — prayer is generated separately<br>⚠ Rule 5: Contains bullet list or numbered steps<br>⚠ Rule 7: Expected exactly 1 question mark, found 0<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response repeats the initial message verbatim, failing to enter the user's world or go deeper into their feelings. It lacks presence and does not address the user's specific situation beyond the initial safety message. The closing question is absent, missing an opportunity to explore the user's feelings further.</td>
+        <td style="color:#555;font-size:11px">1824ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-26">
+        <td style="color:#888;font-size:11px">identity-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"I gave 20 years to a career that just ended in a layoff. I don't know who I am without it.…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">identity-loss</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">midlife</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Losing that role feels like losing a piece of identity. It's as if the ground beneath you shifted. There's a weight to that kind of transition — one that doesn't just vanish overnight. 
+
+If you were to sit quietly with this loss, what other parts of yourself might begin to surface, parts that aren't tied to what you did?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip does well in acknowledging the depth of the user's loss and the identity shift they are experiencing, showing presence and understanding. However, the closing question, 'If you were to sit quietly with this loss, what other parts of yourself might begin to surface, parts that aren't tied to what you did?' is too forward-looking and doesn't stay with the user's current experience. It pushes the user to think about potential growth or discovery, which is not specific to their current feelings of loss and identity crisis.</td>
+        <td style="color:#555;font-size:11px">7063ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-27">
+        <td style="color:#888;font-size:11px">identity-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I feel like God is calling me into ministry but I have a mortgage and two kids. I don't kn…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">calling</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">discernment</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Security and calling — those are deep waters, and both have their own currents. There's a unique kind of soul-searching in wondering if God is asking for a step that feels impossible without leaving something undone.
+
+The voice of guilt often says "You should be doing more." But the voice of God tends to invite — gently, persistently, without forcing. There's a difference.
+
+What would it look like to explore this calling without making an immediate leap?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response begins to explore the user's conflict but quickly moves towards a resolution by suggesting a way to explore the calling without immediate action, which violates Rule 8. It also fails to fully enter the user's world, as it remains somewhat observational rather than deeply empathetic, violating Rule 10. The closing question is somewhat generic and doesn't delve into the specific emotional or practical aspects of the user's situation, violating Rule 11.</td>
+        <td style="color:#555;font-size:11px">11378ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-28">
+        <td style="color:#888;font-size:11px">identity-03</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm gay and I love God. I don't know how to hold both of those things. My church doesn't k…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">sensitive</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-easy-answer</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">hold-tension</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The tension between being truly known and the fear of rejection — that can create its own kind of loneliness. You love God, yet there's a part of you that feels like it has to stay hidden. That's not an easy place to stand.
+
+When you think about sharing this part of yourself, is it the fear of how others might react, or the hope that someone might see you fully and still choose love, that feels heavier?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the loneliness and tension they feel. He doesn't offer resolution or interpret God's intentions, staying present with the user's struggle. The closing question is specific and invites the user to explore their feelings about potential reactions from others, which is a crucial aspect of their situation. The response is empathetic and grounded, though it could delve slightly deeper into the emotional nuances.</td>
+        <td style="color:#555;font-size:11px">10248ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-29">
+        <td style="color:#888;font-size:11px">forgive-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"People keep telling me I need to forgive my father for what he did to me as a child. I kno…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">abuse</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">forgiveness-pressure</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-rush</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Let's stay close to that. Sometimes the fear of letting go isn't just about what happened — it's about losing the part of yourself that's held it. Like releasing it might mean losing a piece of your story or the strength you've built to survive. There's a difference between forgiving and excusing. What do you think would change if forgiveness became possible someday?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip does well in acknowledging the complexity of the user's feelings and the fear of letting go, showing depth and presence. However, the closing question, 'What do you think would change if forgiveness became possible someday?' is too forward-looking and speculative. It doesn't stay with the user's current struggle or open up something they haven't articulated yet. A more specific question about their current feelings or experiences would be more appropriate.</td>
+        <td style="color:#555;font-size:11px">8293ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-30">
+        <td style="color:#888;font-size:11px">forgive-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I did something two years ago that I'm deeply ashamed of. I've confessed it. I know God fo…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">self-forgiveness</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">grace</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The memory might feel like a constant reminder of who you were — or fear of who you might still be. Yet, condemning yourself does not honor the grace that has already covered you. Remember Peter? He failed publicly — yet Jesus met him on the shore, restored him, and called him forward. When you think about self-forgiveness, what are you afraid it will change or mean?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2<br>⚠ 8<br>⚠ 10</div></td>
+        <td style="font-size:12px;color:#999">Philip introduces a reframe by mentioning grace and referencing Peter's restoration, which shifts the focus towards resolution and hope, violating Rule 8. Additionally, the response doesn't fully enter the user's world; it feels more like an observation from outside rather than sitting with the user's struggle, violating Rule 10. The closing question is specific and relevant, but the overall presence lacks depth and grounded empathy.</td>
+        <td style="color:#555;font-size:11px">8852ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-31">
+        <td style="color:#888;font-size:11px">finance-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm drowning in debt and I tithe every week and I feel like God isn't keeping His end. I k…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">faith-doubt</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">prosperity-confusion</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The tension between faithfulness and unmet need can feel like a betrayal — not just financially, but spiritually. It can touch the core of what it means to trust and be cared for. It's not just about the numbers; it's about feeling seen and held by God in the middle of your struggle. When you tithe, is there a part of you hoping for a sign that God is still with you, even in this?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world, acknowledging the deep sense of betrayal and spiritual struggle without offering resolution or interpreting God's intentions. The response is empathetic and grounded, focusing on the emotional and spiritual aspects of the user's experience. The closing question is specific and invites the user to explore their feelings about their relationship with God in the context of their financial struggles.</td>
+        <td style="color:#555;font-size:11px">6809ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-32">
+        <td style="color:#888;font-size:11px">finance-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I've been unemployed for four months. I have a wife and three kids and every morning I wak…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">provider-identity</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The alarm rings, and the day meets you with the silence of what’s not there — a job, a title, a sense of moving forward. But deeper than that is a longing to be enough, to provide safety and security. It’s more than a paycheck; it’s the weight of feeling seen as strong. 
+
+When the day starts, what part feels the heaviest to carry alone?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world, acknowledging the emotional weight of unemployment beyond just the financial aspect. He avoids offering resolution or interpreting God's intentions, staying present with the user's feelings of inadequacy and fear. The closing question is specific and invites the user to explore their experience further, focusing on the emotional burden they carry. The response is empathetic and grounded, maintaining a pastoral presence.</td>
+        <td style="color:#555;font-size:11px">7195ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-33">
+        <td style="color:#888;font-size:11px">prodigal-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I walked away from God about eight years ago. I'm not sure what brought me here. Something…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">return</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">welcome</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">That hope — it's the beginning of something new, isn't it? It seems to carry both longing for what was and a curiosity for what could be. It's not about earning a place back; it's about discovering where you already belong. When you think of stepping back into this journey, what are you most afraid of encountering?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2<br>⚠ 8<br>⚠ 10</div></td>
+        <td style="font-size:12px;color:#999">Philip's response subtly reframes the user's situation as a hopeful beginning, which violates Rule 8 by introducing a silver lining. Additionally, the response does not fully enter the user's world or sit with their uncertainty and feelings of undeservingness, violating Rule 10. The closing question is specific and relevant, but the overall presence lacks depth and groundedness.</td>
+        <td style="color:#555;font-size:11px">7964ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-34">
+        <td style="color:#888;font-size:11px">prodigal-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"My son is an addict. He's been in and out of rehab three times. I love him and I'm losing …"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long-season</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">parent-pain</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">hope-exhaustion</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The love you have for him is powerful, but it can feel exhausting when it seems endlessly tested. Love doesn't make you invincible, but it keeps you standing when everything feels shaky. It’s not just that you want him well — it’s the fear of losing him that sits right beside the love. What's the smallest thing that helps, even for a moment, when the weight feels overwhelming?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's emotional world, acknowledging the exhaustion and fear that accompany their love for their son. The response stays with the weight of the situation without pivoting to resolution or interpreting God's intentions. The closing question is specific and invites the user to reflect on what provides even a small measure of relief, which is pertinent to their current struggle.</td>
+        <td style="color:#555;font-size:11px">8443ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-35">
+        <td style="color:#888;font-size:11px">race-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm Black and I'm exhausted. Every time something happens in the news I wonder how God let…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">racial-pain</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">exhaustion</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-dismissal</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It's like carrying a history that doesn't just sit behind you — it reaches into every moment. Each news headline feels like another piece added to an already full load. 
+
+When you talk about being tired, is it from the constant reminder — or the fear that nothing will change?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the historical and ongoing weight they carry. He avoids offering resolution or interpreting God's intentions, staying present with the user's exhaustion. The closing question is specific and invites the user to explore the nature of their fatigue, whether it's the reminders or the fear of stagnation. This response feels grounded and empathetic, though it could delve slightly deeper into the emotional impact.</td>
+        <td style="color:#555;font-size:11px">7935ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-36">
+        <td style="color:#888;font-size:11px">health-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I've had chronic pain for six years. Nobody can see it. I look fine. I'm not fine. I'm exh…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">invisible-illness</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">exhaustion</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">You've been in this place for so long, and it's more than just the physical pain. The energy it takes to appear okay when you're not can be draining. The world sees one version of you, while another bears the weight in silence. Sometimes, words can become too much — the effort to explain, to be understood. When was the last time you felt truly seen or heard in what you're carrying?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the dual burden of physical pain and the emotional toll of pretending. He avoids offering resolution or interpreting God's intentions, staying present with the user's experience. The closing question is specific and invites the user to reflect on a moment of being seen or heard, which is pertinent to their expressed feelings of isolation. The response is empathetic and grounded, though it could delve slightly deeper into the emotional nuances to achieve a perfect score.</td>
+        <td style="color:#555;font-size:11px">8618ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-37">
+        <td style="color:#888;font-size:11px">health-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I got diagnosed last week. Early stage, good prognosis. But I can't stop thinking about dy…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">mortality</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">fear</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The diagnosis pulls the curtain back on what we often ignore. It can make every moment feel weightier, sharper, more fragile. Even with 'early stage' and 'good prognosis,' the mind doesn't want to let go of the possibility of loss.
+
+This is often more about the questions it raises than the answers it gives. Have you noticed what it's doing to the way you look at the everyday — breakfast, conversations, the quiet moments?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the weight and fragility that the diagnosis brings, without offering resolution or interpreting God's intentions. The response is grounded and empathetic, sitting with the user's fear and uncertainty. The closing question is specific and invites the user to explore how their perception of everyday life has changed, which is a meaningful direction given their situation.</td>
+        <td style="color:#555;font-size:11px">8110ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-38">
+        <td style="color:#888;font-size:11px">joy-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"Something happened today that I've prayed for for 5 years. I don't even know how to hold t…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">positive</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">overwhelm</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">gratitude</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">allow-positive-tone</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">There's a unique kind of vulnerability in joy after a long wait.  
+
+It carries all the years of longing with it, and the hope that this isn't fleeting.  
+
+In your heart, what does this change mean for who you've become through the waiting?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip acknowledges the vulnerability in joy after a long wait, which is a good start. However, the response lacks depth in truly entering the user's world and exploring the specific emotions tied to their experience. The closing question is somewhat abstract and doesn't directly connect to the user's expressed feelings of disbelief and joy. A more specific question about the user's immediate feelings or thoughts about the change would have been more effective.</td>
+        <td style="color:#555;font-size:11px">5336ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-39">
+        <td style="color:#888;font-size:11px">joy-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"God came through in a way I can't explain. I want to tell people but I'm afraid they won't…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">testimony</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">vulnerability</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Your hesitation makes sense. Sometimes, it's not about convincing others—it's about allowing the significance to deepen within you first. Letting it settle. 
+
+Who might honor the meaning of this moment, even if they don't fully understand it?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response acknowledges the user's hesitation and suggests the importance of letting the experience settle within them, which is a good start. However, it lacks depth in truly entering the user's world and understanding the emotional weight of their experience. The closing question, 'Who might honor the meaning of this moment, even if they don't fully understand it?' is somewhat specific but doesn't fully open up the user's experience or feelings. It feels more like a suggestion than an exploration of their current emotional state.</td>
+        <td style="color:#555;font-size:11px">8751ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-40">
+        <td style="color:#888;font-size:11px">wall-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I don't even know where to start. My marriage is struggling, my mom has dementia and I'm h…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">overwhelm</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">multiple-issues</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">don't-fix-all</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">pick-one-thread</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The pressure of being the anchor for everyone else while your own ground is slipping away. That's not a small burden to carry alone. You're holding expectations, grief, and exhaustion all at once. And the hardest part? Feeling like you're supposed to have answers when your world is spinning. When did it start to feel like life was demanding more than you could give?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 2</div></td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world, acknowledging the immense pressure and emotional weight they are experiencing. He does not attempt to reframe the situation or interpret God's intentions, staying present with the user's feelings of overwhelm and inadequacy. The closing question is specific and invites the user to reflect on when they began feeling overwhelmed, which could open up further exploration of their situation. The response is empathetic and grounded, maintaining a pastoral presence.</td>
+        <td style="color:#555;font-size:11px">10954ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-41">
+        <td style="color:#888;font-size:11px">wall-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I've been reading about predestination and now I'm scared that maybe I'm not actually elec…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">theology</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">fear</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">identity</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The fear of being unknown by God — that strikes deep. It's not just about doctrine; it's about intimacy, belonging, being seen and known. 
+
+When Jesus said, "I know my sheep," it wasn't a theological statement. It was a personal promise. 
+
+Your journey isn't erased by doubts or doctrines. It's an unfolding relationship, not a checklist of beliefs. 
+
+Is there a moment or experience in your faith that felt undeniably real, where God's presence was unmistakable?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response begins to enter the user's world by acknowledging the fear of being unknown by God, but it quickly shifts to reassurance with the mention of Jesus' promise, which violates Rule 8 by introducing a hopeful pivot. Additionally, the response does not fully immerse in the user's current emotional state, failing Rule 10. The closing question, while attempting to connect to the user's past experiences, does not directly address the specific fear or doubt they are currently experiencing, thus failing Rule 11.</td>
+        <td style="color:#555;font-size:11px">11812ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-42">
+        <td style="color:#888;font-size:11px">short-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"Broken."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-open</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When something inside breaks, it can feel like the pieces are spilling everywhere, and there's no clear way to put them back together. The loss isn't just of what happened — it's of knowing what to do next. What was the last thing that felt whole before this broke apart?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's experience by acknowledging the feeling of brokenness and the uncertainty that follows. He does not offer a resolution or interpret God's intentions, staying present with the user's emotions. The closing question is specific and invites the user to reflect on a time before the breaking, which could open up further exploration of their feelings.</td>
+        <td style="color:#555;font-size:11px">5934ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-43">
+        <td style="color:#888;font-size:11px">short-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"Can't do this anymore."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ambiguous</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-open</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Thank you for letting me sit here with you. It might feel like you're in a room with no exit. Like every door you've tried has been locked. When did it start feeling like this?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the feeling of being trapped and without options, which aligns with the user's expression of being overwhelmed. The response does not attempt to offer a resolution or interpret God's intentions, adhering to the rules. The closing question is specific and invites the user to explore the origins of their feelings, which is appropriate and meaningful in this context.</td>
+        <td style="color:#555;font-size:11px">5002ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-44">
+        <td style="color:#888;font-size:11px">short-03</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"Why?"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">theodicy</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It feels like a space where words have run out, but the weight remains. The "why" doesn't just want an answer — it's holding something deeper. Maybe it's the ache of feeling left with silence when you thought God might speak. When did this question first start pressing on you?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the depth and weight of their question without offering resolution or interpretation of God's intentions. The response is empathetic and present, capturing the silence and ache the user might be feeling. The closing question is specific and invites the user to explore the origins of their struggle, which is appropriate and meaningful.</td>
+        <td style="color:#555;font-size:11px">5113ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-45">
+        <td style="color:#888;font-size:11px">short-04</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I'm fine."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">ultra-short</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">surface-presentation</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">beneath-the-surface</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright. There's often more beneath "fine" — maybe a weight you've been carrying alone or a question that doesn't have an easy answer. Whatever it is, you don't have to rush to name it all at once. What small part of "fine" feels worth exploring today?</td>
+        <td style="font-size:12px;color:#999">Philip effectively acknowledges the complexity beneath 'fine' without rushing to resolution, respecting the user's pace. He enters the user's world by recognizing the potential weight or questions they might be carrying. The closing question is specific and invites the user to explore a manageable part of their feelings, which is appropriate for the situation.</td>
+        <td style="color:#555;font-size:11px">75780ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-46">
+        <td style="color:#888;font-size:11px">guard-01</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"My wife made me download this. I don't really believe AI can help with spiritual stuff. Bu…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">skeptical</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">reluctant</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">must-not-sell</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright, let's stay with that. When it comes to spiritual matters, there's often a lot beneath the surface. Traditions, past experiences, expectations, maybe even some unanswered questions. Is there a particular moment or memory that makes this whole thing feel distant or less believable for you?</td>
+        <td style="font-size:12px;color:#999">Philip effectively stays with the user's skepticism without trying to resolve it or pivot to hope. He enters the user's world by acknowledging the complexity of spiritual matters and the potential influences of past experiences. The closing question is specific and invites the user to explore a particular moment or memory, which could open up deeper reflection. Overall, the response feels grounded and attentive.</td>
+        <td style="color:#555;font-size:11px">6768ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-47">
+        <td style="color:#888;font-size:11px">guard-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"I was raised to just push through things. I don't talk about feelings. This is weird for m…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">guarded</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">vulnerability-averse</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright. It seems like there's a part of you that wants to break through the silence you've been holding, even if it's just a whisper at first. Is there a specific moment or situation that's been making this weight heavier to carry lately?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging their desire to break the silence and gently invites them to explore a specific moment or situation. The response is grounded and empathetic, without rushing to resolution or interpreting God's intentions. The closing question is specific and opens up the conversation further, encouraging the user to reflect on their experiences.</td>
+        <td style="color:#555;font-size:11px">6307ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-48">
+        <td style="color:#888;font-size:11px">parent-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"My 24-year-old daughter left the church, moved in with her boyfriend, and stopped calling …"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">prodigal-child</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">love-vs-truth</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long-pain</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">It's like watching someone you love walk into a room you can't enter, isn't it? You can see her, but you can't reach her. The fear might whisper, "Did I lose her?" But love isn't a light switch. It doesn't turn off when someone steps away. When you think of her, what do you wish you could say, if nothing else?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ Rule 7: Expected exactly 1 question mark, found 3</div></td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's emotional world, acknowledging the pain and distance without offering resolution or interpreting God's intentions. The metaphor of watching someone walk into a room you can't enter deepens the understanding of the user's experience. The closing question is specific and invites the user to articulate something they may not have expressed yet. Overall, the response is empathetic and grounded, though it could slightly deepen the exploration of the user's feelings.</td>
+        <td style="color:#555;font-size:11px">8324ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-49">
+        <td style="color:#888;font-size:11px">parent-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I yelled at my kids again today. I said things I can't take back. I keep doing this. I don…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">guilt</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">pattern</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">There might be a pattern here, a trigger that sets things off before you even realize it. Sometimes it's not just the words we wish we could take back — it's the buildup of things unspoken, pressures unaddressed. 
+
+Where do you feel the tension rising before it spills out?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response identifies a potential pattern and trigger, but it lacks depth in entering the user's emotional world. It feels more like an observation than truly sitting with the user's struggle. The closing question is somewhat specific but doesn't fully open up the user's experience or emotions. It could be more directly tied to the user's feelings about being the kind of father they don't want to be.</td>
+        <td style="color:#555;font-size:11px">5348ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-50">
+        <td style="color:#888;font-size:11px">addiction-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">4/10</td>
+        <td><em style="color:#ccc">"I've been struggling with porn for 15 years. I've prayed, I've confessed, I've tried accou…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">shame</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long-struggle</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-shame-pile-on</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">That voice of shame often tries to isolate you, making you feel like this struggle defines you. But remember, Peter denied Jesus three times, and yet Jesus didn't leave him with that failure. He restored him, step by step. It wasn't the end of Peter's story. 
+
+You're not alone in this. This isn't just your battle. What's the one thing you wish you could say to God in the middle of this struggle?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip introduces a reframe by referencing Peter's restoration, which implies a hopeful resolution (violation of Rule 8). The response doesn't fully enter the user's world; it quickly moves to a biblical comparison without deeply sitting with the user's specific feelings of shame and isolation (violation of Rule 10). The closing question is somewhat generic and doesn't directly address the user's expressed feelings of isolation or shame (violation of Rule 11).</td>
+        <td style="color:#555;font-size:11px">7382ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-51">
+        <td style="color:#888;font-size:11px">addiction-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I drink most nights. It helps me unwind. My wife says it's too much. I don't think I'm an …"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">denial</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">avoidance</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">gentle</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When the day ends and everything quiets down, that's often when the things we've been avoiding come to the surface. It's tempting to reach for something that offers a quick escape.
+
+But the real question might be about what's underneath that urge to avoid. 
+
+Is there a specific thought or feeling that feels too heavy to carry without the help of a drink?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response does not fully enter the user's world; it remains somewhat observational and doesn't deeply engage with the user's specific experience or emotions. The closing question is somewhat generic and doesn't directly build on the user's previous statement or open up a new aspect of their experience. It lacks specificity and depth in exploring the user's situation.</td>
+        <td style="color:#555;font-size:11px">7862ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-52">
+        <td style="color:#888;font-size:11px">waiting-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">6/10</td>
+        <td><em style="color:#ccc">"I've been believing God for a baby for four years. I'm 38. Every month feels like another …"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">fertility</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">long-season</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">hope-erosion</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">When hope feels fragile, each month can amplify the silence. It can make the promise seem distant, like a voice fading in the wind. Hannah prayed year after year before she saw anything change. And before she held her answer, she poured out her soul in raw honesty. Sometimes the invitation is simply to bring the truth to God, without needing to clean it up. What would you want Him to hear about where you are today?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response begins to enter the user's world by acknowledging the fragility of hope and the amplification of silence. However, it quickly shifts to a biblical reference about Hannah, which can feel like an observation from outside rather than fully arriving in the user's specific situation. The closing question, while inviting honesty, is somewhat generic and doesn't directly engage with the user's expressed feelings of doubt and wondering if they heard God wrong. A more specific question could have been crafted to explore the user's personal experience and emotions in this journey.</td>
+        <td style="color:#555;font-size:11px">10473ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-53">
+        <td style="color:#888;font-size:11px">waiting-02</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"I left my job six months ago because I felt clearly called to something new. Nothing has o…"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">calling</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">discernment</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">waiting</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Sometimes the waiting becomes its own kind of teacher. It can reveal what you truly value, what you're afraid of, and where your trust is placed. The tension between the call you heard and the silence you're living through — that's a space where God often works in ways we don't expect. 
+
+Is there something in this waiting that's surfaced a part of you that you hadn't noticed before?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 9<br>⚠ 10</div></td>
+        <td style="font-size:12px;color:#999">Philip's response subtly reframes the waiting as a positive experience by suggesting it is a 'teacher' and a space where 'God often works,' which violates Rule 8. It also implies God's intention in the user's hardship, violating Rule 9. Additionally, the response lacks depth in entering the user's world, failing Rule 10, as it quickly moves to a general observation about waiting rather than sitting with the user's specific experience. The closing question is somewhat specific but could be more directly tied to the user's expressed feelings of doubt and waiting.</td>
+        <td style="color:#555;font-size:11px">7670ms</td>
+      </tr>
+
+      <tr style="background:#2a0d0d" id="row-54">
+        <td style="color:#888;font-size:11px">edge-01</td>
+        <td><span style="color:#f87171;font-weight:700">FAIL</span></td>
+        <td style="font-weight:700">5/10</td>
+        <td><em style="color:#ccc">"Do you believe in once-saved-always-saved? I want to know what you think."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">direct-question</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">Philip-deflect-back</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">The idea of "once-saved-always-saved" often touches on deep fears and hopes. It's not just about a theological stance but about the safety of your soul. There's a longing for assurance — to know you are held and cannot slip away. But sometimes it also carries a fear of failing, of being lost if you don't measure up.
+
+When Jesus spoke about His sheep, He said, "No one can snatch them out of my hand." That's profound security. But He also called His followers to remain in Him, like branches in a vine. It's both assurance and relationship.
+
+Where does this question feel most alive or most troubling for you?<div style="color:#f87171;font-size:12px;margin-top:6px">⚠ 8<br>⚠ 10<br>⚠ 11</div></td>
+        <td style="font-size:12px;color:#999">Philip's response begins to explore the user's feelings of fear and hope, but it quickly moves towards resolution by referencing Jesus' words about security, which could be seen as a pivot towards reassurance. This violates Rule 8. Additionally, the response doesn't fully enter the user's world, as it remains somewhat observational and theological rather than deeply personal, violating Rule 10. The closing question is somewhat specific but could be more directly tied to the user's personal experience or feelings, violating Rule 11.</td>
+        <td style="color:#555;font-size:11px">14541ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-55">
+        <td style="color:#888;font-size:11px">edge-02</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"Are you actually an AI? Can you really understand what I'm going through?"</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">meta-question</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">no-denial</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">honest-grace</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">allow-rule2-exception</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">There's a particular kind of loneliness when you share something real, and it feels like it just floats away. It's like sending out a message in a bottle, hoping it finds a shore. Which part of your story feels like it's still waiting for that shore?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the loneliness of feeling unheard, using a metaphor that deepens the understanding of their experience. The closing question is specific and invites the user to explore a particular aspect of their story that feels unresolved. The response maintains presence and depth without rushing to resolution.</td>
+        <td style="color:#555;font-size:11px">8296ms</td>
+      </tr>
+
+      <tr style="background:#0d2818" id="row-56">
+        <td style="color:#888;font-size:11px">edge-03</td>
+        <td><span style="color:#4ade80;font-weight:700">PASS</span></td>
+        <td style="font-weight:700">9/10</td>
+        <td><em style="color:#ccc">"Not really struggling today. Just wanted to spend some time here. Things are okay."</em><br><span style="color:#666;font-size:11px"><span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">low-stakes</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">don't-manufacture-pain</span> <span style="background:#1e1040;color:#a78bfa;padding:1px 6px;border-radius:4px;font-size:11px">allow-positive-tone</span></span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:#ddd">Alright. In these quieter moments, sometimes the small things stand out more sharply. A conversation, a memory, a glimpse of something beautiful in the ordinary. Where do you find your thoughts returning when you have a little room to breathe?</td>
+        <td style="font-size:12px;color:#999">Philip effectively enters the user's world by acknowledging the significance of quieter moments and the small things that stand out during these times. The response is warm and present, aligning with the user's current state of contentment. The closing question is specific and invites the user to explore their thoughts further, making it relevant and meaningful.</td>
+        <td style="color:#555;font-size:11px">6990ms</td>
+      </tr>
+</table>
+</body>
+</html>

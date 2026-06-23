@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Check, X, Zap, RefreshCw, Loader2, ShieldCheck, Smartphone } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { PRO_FEATURE_BULLETS, PRO_MODAL_MOMENTS } from "@/lib/proFeatures";
 import {
-  UPGRADE_MODAL_BADGE_DEFAULT,
   UPGRADE_MODAL_CTA_DEFAULT,
   UPGRADE_MODAL_FOOTER_LINE,
   UPGRADE_MODAL_SUBTITLE_DEFAULT,
@@ -16,11 +15,9 @@ import {
 } from "@/lib/proUpgradeCopy";
 import { markProVerified, activateProCode } from "@/lib/proStatus";
 import { useToast } from "@/hooks/use-toast";
-import { getPaymentPlatform, hasDigitalGoodsAPI } from "@/lib/platform";
+import { getPaymentPlatform } from "@/lib/platform";
 import { openNativeSubscription } from "@/lib/nativeBridge";
 import { getPlayProducts, purchasePlayProduct, verifyPlayPurchase } from "@/lib/playBilling";
-
-const PRO_FEATURES = PRO_FEATURE_BULLETS;
 
 const PLAY_SKUS = {
   monthly: "monthly_pro",
@@ -47,17 +44,6 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
 
   const platform = getPaymentPlatform();
   const [showAllFeatures, setShowAllFeatures] = useState(false);
-
-  const resetTime = (() => {
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setDate(midnight.getDate() + 1);
-    midnight.setHours(0, 0, 0, 0);
-    const hours = Math.floor((midnight.getTime() - now.getTime()) / 3600000);
-    const mins = Math.floor(((midnight.getTime() - now.getTime()) % 3600000) / 60000);
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins} minutes`;
-  })();
 
   useEffect(() => {
     if (platform === "play") {
@@ -164,55 +150,54 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.93, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.93, y: 20 }}
-          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           onClick={e => e.stopPropagation()}
-          className="bg-background border border-border rounded-3xl shadow-2xl max-w-sm w-full overflow-y-auto max-h-[92vh]"
+          className="bg-background rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-sm w-full overflow-y-auto max-h-[96vh] sm:max-h-[92vh]"
         >
-          {/* Header */}
-          <div className="relative bg-gradient-to-br from-primary via-primary/90 to-amber-500/80 px-7 pt-8 pb-12 text-center">
+          {/* Hero image */}
+          <div className="relative h-52 overflow-hidden rounded-t-3xl">
+            <img
+              src="/splash-shepherd.jpg"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              draggable={false}
+            />
+            {/* Gradient overlay — darker at bottom so text is legible */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-black/75" />
+
+            {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/30 transition-all"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white hover:bg-black/55 transition-all"
               data-testid="btn-upgrade-modal-close"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
 
-            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-7 h-7 text-white fill-white/30" />
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest mb-3">
-              <Sparkles className="w-3 h-3" /> {title ? "Shepherd's Path Pro" : UPGRADE_MODAL_BADGE_DEFAULT}
-            </div>
-
-            <h2 className="text-xl font-extrabold text-white tracking-tight">
-              {title ?? UPGRADE_MODAL_TITLE_DEFAULT}
-            </h2>
-            <p className="text-white/80 text-sm mt-2 leading-snug">
-              {subtitle ?? UPGRADE_MODAL_SUBTITLE_DEFAULT}
-            </p>
-
-            {!title && (
-              <div className="flex flex-col items-center gap-1 mt-3 text-white/60 text-xs leading-relaxed max-w-[280px] mx-auto">
-                <div className="flex items-center justify-center gap-1.5">
-                  <RefreshCw className="w-3 h-3 shrink-0" />
-                  <span>Resets in {resetTime}</span>
-                </div>
-                <span className="text-white/50 text-[11px]">{upgradeModalResetLine()}</span>
+            {/* Text over image */}
+            <div className="absolute bottom-0 left-0 right-0 px-6 pb-5 text-center">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold uppercase tracking-widest mb-2.5">
+                <Sparkles className="w-3 h-3 fill-white/40" />
+                {title ? "Shepherd's Path Pro" : "Shepherd's Path Pro"}
               </div>
-            )}
+              <h2 className="text-[22px] font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">
+                {title ?? UPGRADE_MODAL_TITLE_DEFAULT}
+              </h2>
+              <p className="text-white/82 text-[13px] mt-1.5 leading-snug drop-shadow">
+                {subtitle ?? UPGRADE_MODAL_SUBTITLE_DEFAULT}
+              </p>
+            </div>
           </div>
 
           {/* Pull-up card */}
-          <div className="-mt-6 bg-background rounded-t-3xl px-7 pt-7 pb-6 space-y-4">
+          <div className="px-6 pt-6 pb-6 space-y-4">
 
             {/* iOS PWA — subscribe in Safari */}
             {platform === "ios" && (
@@ -240,7 +225,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
               </div>
             )}
 
-            {/* 3 moments — what Pro feels like when you need it */}
+            {/* 3 moments */}
             <div className="space-y-3">
               {PRO_MODAL_MOMENTS.map(({ icon: Icon, moment, what }) => (
                 <div key={moment} className="rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3.5">
@@ -332,13 +317,10 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
                   )}
                 </div>
 
-                {/* Subscription label */}
-                <div className="text-center -mt-1 mb-1">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Shepherd's Path Pro —{" "}
-                    {plan === "annual" ? "Annual Subscription" : "Monthly Subscription"}
-                  </span>
-                </div>
+                {/* Ministry framing */}
+                <p className="text-center text-[12px] text-muted-foreground leading-relaxed px-2 -mt-1">
+                  Pro is how this ministry stays alive. Every subscriber makes it possible for someone who needs this — but can't afford it — to still have a place to bring what they're carrying.
+                </p>
 
                 {/* Checkout button */}
                 <Button
@@ -421,7 +403,7 @@ export function UpgradeModal({ onClose, onProActivated, title, subtitle }: Upgra
               </a>
             </div>
 
-            {/* Already have Pro + Promo code */}
+            {/* Restore + promo code */}
             <div className="border-t border-border pt-3 space-y-2 text-center">
               {platform === "apple-native" ? (
                 <button

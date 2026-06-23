@@ -100,6 +100,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let lastSpeechAt = 0;
   let audioBytesAtLastSpeech = 0;
   let lastStallExtendAt = 0;
+  let hardTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Smart Turn WebSocket + AudioWorklet state
   let turnWs: WebSocket | null = null;
@@ -135,10 +136,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (takeYourTimeTimer) clearTimeout(takeYourTimeTimer);
     if (readyTimer) clearTimeout(readyTimer);
     if (restartTimer) clearTimeout(restartTimer);
+    if (hardTimeoutTimer) clearTimeout(hardTimeoutTimer);
     thinkingTimer = null;
     takeYourTimeTimer = null;
     readyTimer = null;
     restartTimer = null;
+    hardTimeoutTimer = null;
   };
 
   const setPhase = (phase: VoiceListenUiPhase) => {
@@ -156,9 +159,37 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (display) previewTranscript = final || display;
   };
 
+  const forceStop = () => {
+    // Called when silence timer fires but nothing was captured — stop the mic
+    // so it doesn't stay red forever. onAutoSubmit is NOT called (nothing to submit).
+    if (!active) return;
+    userStopped = true;
+    active = false;
+    clearTimers();
+    teardownTurnService();
+    try { rec?.stop(); } catch { /* noop */ }
+    rec = null;
+    void waitForRecorderStop();
+  };
+
   const triggerAutoSubmit = () => {
     if (autoSubmitFired || !active) return;
-    if (!hasEnoughToSubmit()) return;
+    if (!hasEnoughToSubmit()) {
+      // Nothing captured yet — wait one more second then force-stop the mic.
+      // Prevents the red mic from staying stuck when MediaRecorder or SR failed.
+      if (!hardTimeoutTimer) {
+        hardTimeoutTimer = setTimeout(() => {
+          hardTimeoutTimer = null;
+          if (!active) return;
+          if (hasEnoughToSubmit()) {
+            triggerAutoSubmit();
+          } else {
+            forceStop();
+          }
+        }, 1500);
+      }
+      return;
+    }
     autoSubmitFired = true;
     userStopped = true;
     active = false;

@@ -6,9 +6,13 @@
     "eval": "npx tsx run-eval.ts",
     "eval:live": "npx tsx run-eval.ts --target live",
     "eval:phase1": "npx tsx run-eval.ts --phase phase1",
-    "eval:response": "npx tsx run-eval.ts --phase response"
+    "eval:response": "npx tsx run-eval.ts --phase response",
+    "turing": "npx tsx philip-turing-test.ts",
+    "turing:single": "npx tsx philip-turing-test.ts --count 1",
+    "turing:category": "npx tsx philip-turing-test.ts --category"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "openai": "^4.0.0",
     "tsx": "^4.19.4"
   }
