@@ -147,17 +147,33 @@ RULES for how you respond:
 - Do NOT start your replies with "I" more than 2 times in a row.
 - Speak in first person. Speak plainly. No therapy-speak.`;
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 4, delayMs = 30000): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isOverloaded = err?.status === 529 || String(err).includes("overloaded");
+      if (isOverloaded && i < retries - 1) {
+        console.log(`  API overloaded — retrying in ${delayMs / 1000}s (attempt ${i + 2}/${retries})...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
 async function simulateUserReply(
   client: Anthropic,
   scenario: Scenario,
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>,
 ): Promise<string> {
-  // Format history as context in a single user message (API requires messages end with user role)
   const historyText = conversationHistory.map(m =>
     `${m.role === "user" ? "YOU" : "PHILIP"}: ${m.content}`
   ).join("\n\n");
 
-  const response = await client.messages.create({
+  const response = await withRetry(() => client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 200,
     thinking: { type: "adaptive" },
@@ -166,7 +182,7 @@ async function simulateUserReply(
       role: "user",
       content: `Here is the conversation so far:\n\n${historyText}\n\nNow write your next reply to Philip. Stay in character. Under 40 words.`,
     }],
-  });
+  }));
 
   for (const block of response.content) {
     if (block.type === "text") return block.text.trim();
@@ -230,13 +246,13 @@ Score this response:
   "notes": <one sentence on the most important thing Philip did right or wrong>
 }`;
 
-  const response = await client.messages.create({
+  const response = await withRetry(() => client.messages.create({
     model: "claude-opus-4-8",
-    max_tokens: 500,
+    max_tokens: 1024,
     thinking: { type: "adaptive" },
     system: JUDGE_SYSTEM,
     messages: [{ role: "user", content: prompt }],
-  });
+  }));
 
   let raw = "";
   for (const block of response.content) {

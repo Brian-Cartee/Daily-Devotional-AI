@@ -4177,23 +4177,49 @@ Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any 
           }
 
           if (nextQuestion) {
-            // Generate a 1-sentence acknowledgment of the user's last message, then the question.
-            // A bare question with no landing feels robotic even when the question is good.
+            // Generate a landing sentence before the question — but vary the move so it
+            // doesn't become a formula. Later in the conversation, sometimes skip it entirely.
             const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
               .reverse().find(m => m.role === "user")?.content ?? "";
-            const ackSystem = `You are Philip, a pastoral companion. The person just said: "${lastUserMsg.slice(0, 200)}"
+            const exchangeNum = Math.floor(conversationHistory.length / 2);
 
-Write ONE short sentence (under 20 words) that lands on the most specific thing they just said — using their own words where possible. No poetry. No metaphor. No "I hear you." No opener starting with "I." Then stop — the question comes separately.`;
-            try {
-              const ackResponse = await anthropic.messages.create({
-                model: "claude-sonnet-4-6",
-                max_tokens: 60,
-                system: ackSystem,
-                messages: [{ role: "user", content: "Write the acknowledgment sentence only." }],
-              });
-              const ack = ackResponse.content.find(b => b.type === "text")?.text?.trim() ?? "";
-              phase2Text = ack ? `${ack} ${nextQuestion}` : nextQuestion;
-            } catch {
+            // After exchange 6, skip the acknowledgment ~40% of the time — a bare, sharp
+            // question can land better than another preamble in deep conversation.
+            const skipAck = exchangeNum >= 6 && Math.random() < 0.4;
+
+            if (!skipAck) {
+              // Rotate between 4 landing moves so Philip doesn't repeat the same pattern.
+              const move = exchangeNum % 4;
+              const moveInstruction = [
+                // Move 0: name what's underneath their words
+                `Name the thing UNDERNEATH what they said — not the surface feeling, what's driving it. One short sentence. Do not echo their words back. No "I hear you." No opener starting with "I."`,
+                // Move 1: name a specific detail they mentioned
+                `Pick the single most specific detail or word they used and land on it briefly. Don't rephrase it — just note it directly. One short sentence. No opener starting with "I."`,
+                // Move 2: name a contradiction or tension you noticed
+                `Name a tension or contradiction in what they just said — something that pulls in two directions. One short sentence. No poetry. No opener starting with "I."`,
+                // Move 3: short direct observation, no mirroring
+                `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I."`,
+              ][move];
+
+              const ackSystem = `You are Philip, a pastoral companion. The person just said: "${lastUserMsg.slice(0, 200)}"
+
+${moveInstruction}
+
+NEVER: repeat their phrase back with a dash ("X — Y"), use "It sounds like", use "I hear", start with "I", add poetry or metaphor, exceed 20 words.`;
+
+              try {
+                const ackResponse = await anthropic.messages.create({
+                  model: "claude-sonnet-4-6",
+                  max_tokens: 60,
+                  system: ackSystem,
+                  messages: [{ role: "user", content: "Write the landing sentence only." }],
+                });
+                const ack = ackResponse.content.find(b => b.type === "text")?.text?.trim() ?? "";
+                phase2Text = ack ? `${ack} ${nextQuestion}` : nextQuestion;
+              } catch {
+                phase2Text = nextQuestion;
+              }
+            } else {
               phase2Text = nextQuestion;
             }
             usedMechanicalConstruction = true;
