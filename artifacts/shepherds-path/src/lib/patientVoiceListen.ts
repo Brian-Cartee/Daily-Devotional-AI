@@ -206,7 +206,6 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   // Fallback timers — used when Smart Turn WS is not available
   // ---------------------------------------------------------------------------
   const scheduleFallbackTimers = () => {
-    if (turnServiceReady) return; // Smart Turn is handling it
     clearTimers();
     if (!active) return;
     const words = wordCount(previewTranscript);
@@ -396,8 +395,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       autoSubmitFired = false;
       setPhase("listening");
       pushPreview(previewTranscript, interim);
-      // Only reschedule fallback timers; Smart Turn handles conversational submit
-      if (!turnServiceReady) scheduleFallbackTimers();
+      // Always reschedule SR-based silence timer — runs regardless of turn-service state.
+      // This ensures handoff happens even when turn-service never sends speech_end/turn_complete.
+      scheduleFallbackTimers();
     };
 
     recognition.onend = () => {

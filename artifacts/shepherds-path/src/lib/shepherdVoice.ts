@@ -287,10 +287,15 @@ export function speakShepherdStream(
 
     audio.oncanplay = () => {
       if (cancelled) return;
-      audio!.play().catch(() => {
-        if (!cancelled) { opts?.onFail?.(); opts?.onEnd?.(); }
-      });
-      opts?.onStart?.();
+      audio!.play()
+        .then(() => {
+          // Small delay before signaling onStart — gives audio output time to
+          // fully resume so the first syllable isn't swallowed on iOS.
+          setTimeout(() => { if (!cancelled) opts?.onStart?.(); }, 180);
+        })
+        .catch(() => {
+          if (!cancelled) { opts?.onFail?.(); opts?.onEnd?.(); }
+        });
     };
     audio.onended = () => {
       cleanupAudio();
