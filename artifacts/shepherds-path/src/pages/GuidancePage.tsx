@@ -308,6 +308,10 @@ export default function GuidancePage() {
     activeListener,
   } = convo;
 
+  // Stable ref to the convo machine — used in async callbacks to read current phase.
+  const convoRef = useRef(convo);
+  useEffect(() => { convoRef.current = convo; }, [convo]);
+
   const witnessLetterRef = useRef<string | null>(null);
   const [witnessReady, setWitnessReady] = useState(false);
   const [greetingFallbackText, setGreetingFallbackText] = useState<string | null>(null);
@@ -1020,6 +1024,10 @@ export default function GuidancePage() {
         variant: "destructive",
       });
       setVpLoading(true);
+      // Phase 1 failed — machine may be stuck in "p1-streaming" or "processing".
+      // Reset to "processing" so P2_STREAM_START can fire from the fallback TTS path.
+      convo.dispatch({ type: "RESET" });
+      convo.dispatch({ type: "ENTRY_SUBMIT" });
       fallbackToSinglePhase(initialUserMsg);
     }
   };
@@ -2109,6 +2117,17 @@ export default function GuidancePage() {
         setIsSending(false);
         setIsReflecting(false);
         followUpSubmittingRef.current = false;
+        // Safety net: if the API failed, no new TTS fires and FU_SPEAK_START/END
+        // are never dispatched — machine stays stuck in "fu-speaking", mic won't
+        // reopen. After 2.5s (enough time for TTS onStart to have fired if it will),
+        // rescue by dispatching FU_SPEAK_END; the reducer ignores this if the machine
+        // has already moved past "fu-speaking".
+        window.setTimeout(() => {
+          if (!mountedRef.current) return;
+          if (convoRef.current.phase === "fu-speaking") {
+            convoRef.current.dispatch({ type: "FU_SPEAK_END" });
+          }
+        }, 2500);
       }
     })();
   };

@@ -95,7 +95,9 @@ function reducer(phase: ConvoPhase, action: ConvoAction): ConvoPhase {
       return phase === "p1-reply" ? "p2-loading" : phase;
 
     case "P2_STREAM_START":
-      if (phase !== "p2-loading") return phase;
+      // Also allow from "processing" — covers the fallback path where Phase 1 failed
+      // and startGuidanceFlow calls fallbackToSinglePhase without going through p2-loading.
+      if (phase !== "p2-loading" && phase !== "processing") return phase;
       return action.voice ? "p2-speaking" : "p2-silence";
 
     case "P2_SPEAK_END":
