@@ -266,7 +266,16 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
             setPhase("listening");
           } else if (msg.event === "speech_end") {
             setPhase("thinking");
+            // If turn_complete doesn't arrive within 2.5s, submit anyway.
+            // Protects against turn-service crashes or silent failures.
+            if (!hardTimeoutTimer) {
+              hardTimeoutTimer = setTimeout(() => {
+                hardTimeoutTimer = null;
+                if (active && !autoSubmitFired) triggerAutoSubmit();
+              }, 2500);
+            }
           } else if (msg.event === "turn_complete") {
+            if (hardTimeoutTimer) { clearTimeout(hardTimeoutTimer); hardTimeoutTimer = null; }
             if (active && !autoSubmitFired) {
               triggerAutoSubmit();
             }
