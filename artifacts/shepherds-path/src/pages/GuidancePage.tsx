@@ -343,6 +343,10 @@ export default function GuidancePage() {
   const [interimTranscript, setInterimTranscript] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  // Pre-acquired mic stream — obtained within the user's tap activation window on mount
+  // so the auto-mic can open after Philip's greeting without needing a second gesture.
+  const preAcquiredMicRef = useRef<MediaStream | null>(null);
+
   // heartListening is now derived from convo machine
   const heartVoiceRef = useRef<PatientVoiceListener | null>(null);
   const heartTakeYourTimeRef = useRef<(() => void) | null>(null);
@@ -449,6 +453,22 @@ export default function GuidancePage() {
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
+
+  // Acquire the mic stream immediately on mount — we are still within the user's
+  // transient activation window from the Talk It Through tap (~100-300ms into it).
+  // This lets the auto-mic open after Philip's greeting without needing a second gesture.
+  useEffect(() => {
+    if (!isPhilipMode() || !hasSpeechSupport) return;
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    void navigator.mediaDevices.getUserMedia({
+      audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+    }).then(s => { preAcquiredMicRef.current = s; }).catch(() => { /* permission denied */ });
+    return () => {
+      preAcquiredMicRef.current?.getTracks().forEach(t => t.stop());
+      preAcquiredMicRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pulse appears immediately — don't hide mic button behind a timer on iOS
   useEffect(() => {
@@ -1319,10 +1339,16 @@ export default function GuidancePage() {
     setHeartShowContinue(false);
     setHeartListenPhase("listening");
 
+    // Consume pre-acquired stream if available — avoids getUserMedia after greeting
+    // (transient activation has expired by then on iOS Safari).
+    const preStream = preAcquiredMicRef.current;
+    if (preStream) preAcquiredMicRef.current = null;
+
     const listener = createPatientVoiceListener({
       conversational: true,
       spokenPatienceBridge: false,
       autoSubmitSilenceMs: VOICE_SILENCE_ENTRY_MS,
+      preAcquiredStream: preStream ?? undefined,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
         else if (interim) setHeartInput((prev) => prev || interim);

@@ -33,6 +33,8 @@ export type PatientVoiceOptions = {
   /** Spoken "Take your time" — off for entry; gated by word count when on */
   spokenPatienceBridge?: boolean;
   lang?: string;
+  /** Pre-acquired MediaStream — skip getUserMedia; caller owns + cleans up tracks. */
+  preAcquiredStream?: MediaStream;
 };
 
 // ---------------------------------------------------------------------------
@@ -389,7 +391,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   // MediaRecorder (unchanged — collects webm for Whisper)
   // ---------------------------------------------------------------------------
   const stopTracks = () => {
-    stream?.getTracks().forEach((t) => t.stop());
+    // Don't stop pre-acquired tracks — the caller owns and manages that stream's lifetime.
+    if (!opts.preAcquiredStream) {
+      stream?.getTracks().forEach((t) => t.stop());
+    }
     stream = null;
     mediaRecorder = null;
   };
@@ -487,9 +492,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   const startMedia = async () => {
     if (!canRecord) return;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
-      });
+      stream = opts.preAcquiredStream
+        ?? await navigator.mediaDevices.getUserMedia({
+          audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+        });
       audioChunks = [];
       mimeType = pickGuidanceAudioMimeType();
       mediaRecorder = new MediaRecorder(stream, { mimeType });
