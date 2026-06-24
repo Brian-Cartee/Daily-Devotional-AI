@@ -441,11 +441,10 @@ export default function GuidancePage() {
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
-  // Pulse appears 2s after entering — stillness first, then invitation
+  // Pulse appears immediately — don't hide mic button behind a timer on iOS
   useEffect(() => {
     if (!showThresholdOverlay) return;
-    const t = window.setTimeout(() => setOverlayPulseVisible(true), 2000);
-    return () => window.clearTimeout(t);
+    setOverlayPulseVisible(true);
   }, [showThresholdOverlay]);
 
   // Overlay dismisses when user submits (situation set) or processing begins
@@ -2169,10 +2168,7 @@ export default function GuidancePage() {
               </button>
 
               {/* Philip's question — already present, not typing in */}
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              <p
                 style={{
                   fontFamily: "'Georgia', serif",
                   fontSize: "clamp(1.45rem, 5vw, 1.75rem)",
@@ -2185,14 +2181,14 @@ export default function GuidancePage() {
                 }}
               >
                 What's on your heart today?
-              </motion.p>
+              </p>
 
               {/* Breath pulse — appears after 2s of stillness */}
               <AnimatePresence>
                 {overlayPulseVisible && (
                   <motion.div
                     key="overlay-pulse"
-                    initial={{ opacity: 0, scale: 0.85 }}
+                    initial={{ opacity: 1, scale: 1 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.85 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
