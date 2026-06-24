@@ -4108,7 +4108,7 @@ Output the question only.`,
         : "";
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 300,
+        max_tokens: 120,
         system: system + anchorInstruction,
         messages: history,
       });
@@ -4140,19 +4140,26 @@ Output the question only.`,
       let phase2Text: string;
 
       if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
-        // Follow-up exchanges: two-step generation
-        // Step 1: decide the next question explicitly (breaks metaphor-recycling loop)
-        // Step 2: write Philip's response anchored to that question
         const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
-        let nextQuestion = "";
-        if (conversationStateBlock && !conversationStateBlock.includes("CLOSING")) {
-          try {
-            nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
-          } catch {
-            // Non-fatal — fall through to unanchored generation
+        const isClosing = conversationStateBlock.includes("CLOSING");
+
+        if (isClosing) {
+          // User is leaving — one brief warm sentence, no question
+          const closingSystem = `You are Philip, a pastoral companion. The person is ending this conversation.
+Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any question. Do NOT include a "?". Under 30 words.`;
+          phase2Text = await generatePhase2WithClaude(closingSystem, claudeHistory, "");
+        } else {
+          // Two-step generation: decide the best next question first, then write response around it
+          let nextQuestion = "";
+          if (conversationStateBlock) {
+            try {
+              nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
+            } catch {
+              // Non-fatal — fall through to unanchored generation
+            }
           }
+          phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, nextQuestion);
         }
-        phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, nextQuestion);
       } else {
         // First response (two-phase flow): GPT-4o for voice consistency
         const fullMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
