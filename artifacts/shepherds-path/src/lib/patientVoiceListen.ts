@@ -50,6 +50,8 @@ const DEFAULT_MIN_CHARS = 8;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
 const SR_STALL_MS = 2000;
 const STALL_EXTEND_COOLDOWN_MS = 2000;
+const SILENCE_POLL_MS = 350;
+const MAX_SR_STALL_EXTENDS = 3;
 
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -101,6 +103,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let audioBytesAtLastSpeech = 0;
   let lastStallExtendAt = 0;
   let hardTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+  let silencePoll: ReturnType<typeof setInterval> | null = null;
+  let stallExtendCount = 0;
 
   // Smart Turn WebSocket + AudioWorklet state
   let turnWs: WebSocket | null = null;
@@ -120,10 +124,19 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   const maybeExtendForSrStall = (chunkSize: number) => {
     if (!active || chunkSize < 200) return;
     const now = Date.now();
-    if (now - lastSpeechAt < SR_STALL_MS) return;
+    const words = wordCount(previewTranscript);
+    const autoMs = resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs);
+    const silentFor = now - lastSpeechAt;
+    // User has been quiet long enough — let the silence poll submit, don't extend.
+    if (hasEnoughToSubmit() && silentFor >= autoMs) return;
+    // Cap extensions so ambient audio can't block handoff indefinitely.
+    if (stallExtendCount >= MAX_SR_STALL_EXTENDS) return;
+    if (silentFor < SR_STALL_MS) return;
     if (now - lastStallExtendAt < STALL_EXTEND_COOLDOWN_MS) return;
     const bytes = totalAudioBytes();
-    if (bytes < audioBytesAtLastSpeech + 1500) return;
+    // Raise threshold well above room-tone/ambient noise byte rate.
+    if (bytes < audioBytesAtLastSpeech + 6000) return;
+    stallExtendCount += 1;
     lastStallExtendAt = now;
     lastSpeechAt = now;
     takeYourTimeFired = false;
@@ -142,6 +155,26 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     readyTimer = null;
     restartTimer = null;
     hardTimeoutTimer = null;
+  };
+
+  const clearSilencePoll = () => {
+    if (silencePoll) clearInterval(silencePoll);
+    silencePoll = null;
+  };
+
+  const pollSilenceAndSubmit = () => {
+    if (!active || autoSubmitFired || !opts.conversational) return;
+    if (!hasEnoughToSubmit()) return;
+    const words = wordCount(previewTranscript);
+    const autoMs = resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs);
+    if (Date.now() - lastSpeechAt >= autoMs) {
+      triggerAutoSubmit();
+    }
+  };
+
+  const startSilencePoll = () => {
+    clearSilencePoll();
+    silencePoll = setInterval(pollSilenceAndSubmit, SILENCE_POLL_MS);
   };
 
   const setPhase = (phase: VoiceListenUiPhase) => {
@@ -166,6 +199,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     userStopped = true;
     active = false;
     clearTimers();
+    clearSilencePoll();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -194,6 +228,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     userStopped = true;
     active = false;
     clearTimers();
+    clearSilencePoll();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -290,6 +325,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
       ws.onclose = () => {
         turnServiceReady = false;
+        if (active && !autoSubmitFired) scheduleFallbackTimers();
       };
 
       // Give the WS 1.5s to connect; if it doesn't, start fallback
@@ -400,6 +436,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       scheduleFallbackTimers();
     };
 
+    recognition.onspeechend = () => {
+      if (!active || userStopped) return;
+      lastSpeechAt = Date.now();
+      scheduleFallbackTimers();
+    };
+
     recognition.onend = () => {
       rec = null;
       if (!active || userStopped) return;
@@ -464,6 +506,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       lastSpeechAt = Date.now();
       audioBytesAtLastSpeech = 0;
       lastStallExtendAt = 0;
+      stallExtendCount = 0;
       setPhase("listening");
       void startMedia();
       if (canPreview) {
@@ -472,11 +515,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       }
       // Always start fallback timers immediately; Smart Turn cancels them if it connects
       scheduleFallbackTimers();
+      startSilencePoll();
     },
     stop() {
       userStopped = true;
       active = false;
       clearTimers();
+      clearSilencePoll();
       teardownTurnService();
       try { rec?.stop(); } catch { /* noop */ }
       rec = null;
@@ -518,6 +563,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       finalizing = false;
       autoSubmitFired = true;
       clearTimers();
+      clearSilencePoll();
       teardownTurnService();
       try { rec?.stop(); } catch { /* noop */ }
       rec = null;
