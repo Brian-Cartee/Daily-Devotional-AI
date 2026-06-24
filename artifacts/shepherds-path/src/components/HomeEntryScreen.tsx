@@ -219,7 +219,7 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   useEffect(() => {
     if (!shouldDelayNamePrompt || !character) return;
     const text = `${character.greeting} ${character.question}`;
-    prewarmTTS(text, character.voice, "verse");
+    prewarmTTS(text, character.voice, "guidance");
     const t = window.setTimeout(() => setShowIcebreaker(true), FIRST_DOOR_NAME_DWELL_MS);
     return () => window.clearTimeout(t);
   }, [shouldDelayNamePrompt, character]);
@@ -268,7 +268,7 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
         body: JSON.stringify({
           text,
           voice,
-          scope: "verse",
+          scope: "guidance",
           sessionId: getSessionId(),
         }),
       })
