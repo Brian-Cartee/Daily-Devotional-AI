@@ -4139,6 +4139,8 @@ Output the question only.`,
     try {
       let phase2Text: string;
 
+      let nextQuestion = "";
+      let usedMechanicalConstruction = false;
       if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
         const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
         const isClosing = conversationStateBlock.includes("CLOSING");
@@ -4149,8 +4151,7 @@ Output the question only.`,
 Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any question. Do NOT include a "?". Under 30 words.`;
           phase2Text = await generatePhase2WithClaude(closingSystem, claudeHistory, "");
         } else {
-          // Two-step generation: decide the best next question first, then write response around it
-          let nextQuestion = "";
+          // Step 1: choose the best next question explicitly
           if (conversationStateBlock) {
             try {
               nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
@@ -4158,7 +4159,33 @@ Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any 
               // Non-fatal — fall through to unanchored generation
             }
           }
-          phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, nextQuestion);
+
+          if (nextQuestion) {
+            // Mechanical construction: reflection (user's words) + anchor question
+            // This bypasses free-form generation that tends toward lyrical metaphor recycling
+            const lastUserMsg = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
+            const reflectionSystem = `Write ONE sentence (under 20 words) that echoes the person's EXACT words or specific details from their message. No metaphors. No "It's like." No new images. Use their own language. No "I". No "?".`;
+            let reflection = "";
+            try {
+              const r = await anthropic.messages.create({
+                model: "claude-sonnet-4-6",
+                max_tokens: 50,
+                system: reflectionSystem,
+                messages: [{ role: "user", content: lastUserMsg }],
+              });
+              for (const block of r.content) {
+                if (block.type === "text") { reflection = block.text.trim(); break; }
+              }
+            } catch {
+              // Non-fatal
+            }
+            // Strip any stray "?" from reflection so the only question is nextQuestion
+            reflection = reflection.replace(/\?/g, ".");
+            phase2Text = reflection ? `${reflection} ${nextQuestion}` : nextQuestion;
+            usedMechanicalConstruction = true;
+          } else {
+            phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, "");
+          }
         }
       } else {
         // First response (two-phase flow): GPT-4o for voice consistency
@@ -4171,7 +4198,7 @@ Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any 
 
       const qCount = questionMarkCount(phase2Text);
 
-      if (qCount !== 1 && !conversationStateBlock.includes("CLOSING")) {
+      if (qCount !== 1 && !conversationStateBlock.includes("CLOSING") && !usedMechanicalConstruction) {
         // Retry with Claude if it returned the wrong number of question marks
         if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
           const retrySystem = systemMsg + `\n\n[CRITICAL: Your response must contain exactly one question mark. Currently has ${qCount}. ${qCount === 0 ? "End with one specific question." : "Remove all questions except the single most important one."}]`;
