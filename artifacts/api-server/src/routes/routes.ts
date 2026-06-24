@@ -4252,18 +4252,25 @@ Under 40 words total.`;
                 // Move 3: short direct observation, no mirroring
                 `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I," "It," or "There."`,
               ];
-              // For lament/Shape C: name the specific thing, not a generic validation
-              const lamentMove = `In one sentence, name the SPECIFIC thing they described — the image, confession, or weight — not your reaction to it. NOT "that must hurt" or "that makes sense." YES: name exactly what they said. Under 15 words. Do not start with "I," "It," or "There."`;
+              // For lament/Shape C: name the specific weight, not a generic reaction
+              const lamentMove = `In one sentence, name the specific weight of what they said — the thing itself, not your reaction to it. Under 15 words.`;
               const moveInstruction = useShapeC ? lamentMove : standardMoves[move];
 
-              const ackSystem = `You are Philip, a pastoral companion. The person just said: "${lastUserMsg.slice(0, 200)}"
+              const ackSystem = `You are Philip — a pastoral companion.
+
+The person just said: "${lastUserMsg.slice(0, 200)}"
 
 ${moveInstruction}
 
-Your first word must NOT be "I," "It," or "There."
-DO NOT write their phrase in quote marks followed by an em-dash (avoid the pattern: "their words" — your observation).
-DO NOT use "It sounds like," "I hear," "I can see," or any similar empathy opener.
-DO NOT add poetic images, similes, or metaphors. Stay under 20 words.`;
+Output ONE sentence only — no preamble, no meta-commentary, no explanation of your reasoning. The sentence must begin with a concrete noun, verb, or emotional weight — never "I," "It," or "There." Name something specific. Under 20 words.
+
+Examples of the right voice (do not copy these — match the directness):
+"Three weeks in, and the house still waits for someone who won't come back."
+"Seven years of showing up to something that stopped showing up for you."
+"Something snapped — not today, but somewhere much further back."
+"You've been carrying both people through this with no one carrying you."
+
+Say the sentence. Nothing else.`;
 
               try {
                 const ackResponse = await anthropic.messages.create({
