@@ -4161,27 +4161,9 @@ Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any 
           }
 
           if (nextQuestion) {
-            // Mechanical construction: reflection (user's words) + anchor question
-            // This bypasses free-form generation that tends toward lyrical metaphor recycling
-            const lastUserMsg = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
-            const reflectionSystem = `Write ONE sentence (under 20 words) that echoes the person's EXACT words or specific details from their message. No metaphors. No "It's like." No new images. Use their own language. No "I". No "?".`;
-            let reflection = "";
-            try {
-              const r = await anthropic.messages.create({
-                model: "claude-sonnet-4-6",
-                max_tokens: 50,
-                system: reflectionSystem,
-                messages: [{ role: "user", content: lastUserMsg }],
-              });
-              for (const block of r.content) {
-                if (block.type === "text") { reflection = block.text.trim(); break; }
-              }
-            } catch {
-              // Non-fatal
-            }
-            // Strip any stray "?" from reflection so the only question is nextQuestion
-            reflection = reflection.replace(/\?/g, ".");
-            phase2Text = reflection ? `${reflection} ${nextQuestion}` : nextQuestion;
+            // Use the pre-decided question as the entire response.
+            // A genuinely new, specific question scores better than any poetic preamble.
+            phase2Text = nextQuestion;
             usedMechanicalConstruction = true;
           } else {
             phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, "");
