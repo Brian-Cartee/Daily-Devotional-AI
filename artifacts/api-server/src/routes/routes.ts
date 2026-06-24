@@ -3862,7 +3862,10 @@ Return only the greeting line.`;
     const modeNote = buildModeNote(guidanceMode);
     const phase1Response = (req.body as any).phase1Response as string | undefined;
     const phase1UserReply = (req.body as any).phase1UserReply as string | undefined;
-    const isTwoPhaseCompletion = !!(phase1Response?.trim() && phase1UserReply?.trim());
+    // Two-phase completion = first follow-up after a phase1 response (the original "2-phase UI flow").
+    // Multi-turn conversations (exchanges 2+) send the full messages array — treat those as follow-ups.
+    const isMultiTurn = Array.isArray(messages) && messages.length > 3;
+    const isTwoPhaseCompletion = !isMultiTurn && !!(phase1Response?.trim() && phase1UserReply?.trim());
 
     if (isTwoPhaseCompletion) {
       if (!sessionId) {
