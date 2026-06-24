@@ -1623,7 +1623,7 @@ export default function GuidancePage() {
       const fallback = reentryLine
         ? reentryLine
         : buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, null);
-      const line = dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback;
+      const line = `... ${dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback}`;
 
       // Warm the iOS audio pipeline so the first syllable isn't swallowed on cold start.
       try {
@@ -2172,7 +2172,7 @@ export default function GuidancePage() {
                 position: "fixed",
                 inset: 0,
                 zIndex: 40,
-                background: "linear-gradient(175deg, #0d0520 0%, #09031e 60%, #050210 100%)",
+                background: "linear-gradient(180deg, #0a0a0a 0%, #000000 100%)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -2328,7 +2328,7 @@ export default function GuidancePage() {
         <div
           className={`transition-all duration-700 ease-in-out ${
             !situation && !streamingText
-              ? "relative w-full overflow-hidden bg-[#09031e] h-[48vh] min-h-[300px] sm:h-[50vh] sm:min-h-[320px] max-h-[480px]"
+              ? "relative w-full overflow-hidden bg-black h-[48vh] min-h-[300px] sm:h-[50vh] sm:min-h-[320px] max-h-[480px]"
               : "relative sp-app-top-clearance pt-2 sm:pt-3 overflow-hidden"
           }`}
           data-testid="guidance-hero"
