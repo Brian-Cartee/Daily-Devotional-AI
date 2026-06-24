@@ -105,6 +105,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let hardTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
   let silencePoll: ReturnType<typeof setInterval> | null = null;
   let stallExtendCount = 0;
+  let absoluteMaxTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Smart Turn WebSocket + AudioWorklet state
   let turnWs: WebSocket | null = null;
@@ -157,6 +158,11 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     hardTimeoutTimer = null;
   };
 
+  const clearAbsoluteMax = () => {
+    if (absoluteMaxTimer) clearTimeout(absoluteMaxTimer);
+    absoluteMaxTimer = null;
+  };
+
   const clearSilencePoll = () => {
     if (silencePoll) clearInterval(silencePoll);
     silencePoll = null;
@@ -200,6 +206,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     active = false;
     clearTimers();
     clearSilencePoll();
+    clearAbsoluteMax();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -229,6 +236,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     active = false;
     clearTimers();
     clearSilencePoll();
+    clearAbsoluteMax();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -516,12 +524,20 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       // Always start fallback timers immediately; Smart Turn cancels them if it connects
       scheduleFallbackTimers();
       startSilencePoll();
+      // Absolute safety net — mic can never stay open longer than 25s.
+      absoluteMaxTimer = setTimeout(() => {
+        absoluteMaxTimer = null;
+        if (!active || autoSubmitFired) return;
+        if (hasEnoughToSubmit()) triggerAutoSubmit();
+        else forceStop();
+      }, 25_000);
     },
     stop() {
       userStopped = true;
       active = false;
       clearTimers();
       clearSilencePoll();
+      clearAbsoluteMax();
       teardownTurnService();
       try { rec?.stop(); } catch { /* noop */ }
       rec = null;
@@ -564,6 +580,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       autoSubmitFired = true;
       clearTimers();
       clearSilencePoll();
+      clearAbsoluteMax();
       teardownTurnService();
       try { rec?.stop(); } catch { /* noop */ }
       rec = null;
