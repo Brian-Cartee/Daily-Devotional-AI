@@ -4208,14 +4208,27 @@ Under 40 words total.`;
               .reverse().find(m => m.role === "user")?.content ?? "";
             const exchangeNum = Math.floor(conversationHistory.length / 2);
 
-            // After exchange 6, skip the acknowledgment ~40% of the time — a bare, sharp
-            // question can land better than another preamble in deep conversation.
-            const skipAck = exchangeNum >= 6 && Math.random() < 0.4;
+            // Lament detection: raw confession or grief signals → sit with them, skip the question
+            const lamentPatterns = [
+              /\b(i (don'?t|do not) (know|want|understand|care|even)|i just (can'?t|don'?t)|no one|nobody|nothing (helps|matters|works)|what'?s (the )?point|i'?ve (lost|given up|stopped)|i can'?t (even|do|think|anymore))\b/i,
+              /\b(i'?m (done|finished|exhausted|broken|numb|empty)|i give up|doesn'?t matter|why (bother|even|try)|can'?t keep|don'?t want to (be|live|do)|no reason)\b/i,
+            ];
+            const isLament = lamentPatterns.some(p => p.test(lastUserMsg));
+
+            // Shape variety:
+            // Shape C (no question): 80% when lament detected, 20% base rate for structural variety
+            // Shape A (observation then question): all other cases
+            const shapeRoll = Math.random();
+            const useShapeC = isLament ? shapeRoll < 0.80 : shapeRoll < 0.20;
+
+            // After exchange 6, skip the acknowledgment ~30% of the time — a bare question
+            // can land better than another preamble in deep conversation.
+            const skipAck = !useShapeC && exchangeNum >= 6 && Math.random() < 0.3;
 
             if (!skipAck) {
               // Rotate between 4 landing moves so Philip doesn't repeat the same pattern.
               const move = exchangeNum % 4;
-              const moveInstruction = [
+              const standardMoves = [
                 // Move 0: name what's underneath their words
                 `Name the thing UNDERNEATH what they said — not the surface feeling, what's driving it. One short sentence. Do not echo their words back. No "I hear you." No opener starting with "I."`,
                 // Move 1: name a specific detail they mentioned
@@ -4224,13 +4237,18 @@ Under 40 words total.`;
                 `Name a tension or contradiction in what they just said — something that pulls in two directions. One short sentence. No poetry. No opener starting with "I."`,
                 // Move 3: short direct observation, no mirroring
                 `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I."`,
-              ][move];
+              ];
+              // For lament/Shape C: witness their words rather than analyze or question
+              const lamentMove = `Witness what they just said with one plain sentence. No question. No analysis. No metaphors. Under 15 words. No opener starting with "I."`;
+              const moveInstruction = useShapeC ? lamentMove : standardMoves[move];
 
               const ackSystem = `You are Philip, a pastoral companion. The person just said: "${lastUserMsg.slice(0, 200)}"
 
 ${moveInstruction}
 
-NEVER: repeat their phrase back with a dash ("X — Y"), use "It sounds like", use "I hear", start with "I", add poetry or metaphor, exceed 20 words.`;
+DO NOT write their exact phrase in quote marks followed by an em-dash (do not use the pattern: "their words" — your observation).
+DO NOT begin with "It sounds like", "I hear", or "I".
+DO NOT add poetic images, similes, or metaphors. Stay under 20 words.`;
 
               try {
                 const ackResponse = await anthropic.messages.create({
@@ -4240,7 +4258,13 @@ NEVER: repeat their phrase back with a dash ("X — Y"), use "It sounds like", u
                   messages: [{ role: "user", content: "Write the landing sentence only." }],
                 });
                 const ack = ackResponse.content.find(b => b.type === "text")?.text?.trim() ?? "";
-                phase2Text = ack ? `${ack} ${nextQuestion}` : nextQuestion;
+                if (useShapeC) {
+                  // Shape C: statement only, no question — let it land
+                  phase2Text = ack || nextQuestion;
+                } else {
+                  // Shape A: observation then question
+                  phase2Text = ack ? `${ack} ${nextQuestion}` : nextQuestion;
+                }
               } catch {
                 phase2Text = nextQuestion;
               }

@@ -56,6 +56,8 @@ const STATE_SYSTEM = `You track conversation state for a pastoral AI. Given the 
 
 Be precise and minimal. This state is injected into the next AI prompt to prevent repetition.
 
+CRITICAL — PRONOUNS: Track the exact name and pronouns the user uses for any person they mention. If they said "my husband John" — record "John (he/him)" in facts_learned. If they said "my wife Sarah" — record "Sarah (she/her)". If gender is unclear, record only the name. Never assume gender. Record exactly what the user said.
+
 Return ONLY valid JSON, no markdown, no extra text.`;
 
 export async function generateConversationState(
@@ -175,5 +177,7 @@ CONVERSATION STATE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Core issue: ${state.core_issue}${facts}${explored}${unexplored}${questionsBan}${metaphorsBan}${userWords}
 
-Your next response MUST explore something from "NOT YET EXPLORED." It must use a question not in "QUESTIONS ALREADY ASKED." It must use none of the banned metaphors.`;
+DEPTH BEFORE BREADTH: If the user just made a raw confession, disclosed something vulnerable, or asked Philip a direct question — go DEEPER into that before moving to new territory.
+Otherwise: explore something from "NOT YET EXPLORED."
+Your question must not be in "QUESTIONS ALREADY ASKED." Use none of the banned metaphors.`;
 }
