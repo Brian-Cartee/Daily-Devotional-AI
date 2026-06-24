@@ -5,7 +5,7 @@ import { apiSessionExtras } from "@/lib/requestExtras";
 export type GuidanceVerse = { reference: string; text: string };
 
 export type FetchGuidanceVersePrayerResult =
-  | { ok: true; verse: GuidanceVerse | null; prayer: string | null }
+  | { ok: true; verse: GuidanceVerse | null; prayer: string | null; philipNote: string | null }
   | { ok: false; limitReached?: boolean; error: string };
 
 const ATTEMPT_TIMEOUT_MS = 28_000;
@@ -50,6 +50,7 @@ async function fetchOnce(
   let data: {
     verse?: GuidanceVerse | null;
     prayer?: string | null;
+    philipNote?: string | null;
     limitReached?: boolean;
     message?: string;
   } = {};
@@ -72,12 +73,14 @@ async function fetchOnce(
       ? { text: data.verse.text.trim(), reference: data.verse.reference.trim() }
       : null;
   const prayer = typeof data.prayer === "string" && data.prayer.trim() ? data.prayer.trim() : null;
+  const philipNote =
+    typeof data.philipNote === "string" && data.philipNote.trim() ? data.philipNote.trim() : null;
 
   if (!verse && !prayer) {
     return { ok: false, error: "empty verse and prayer" };
   }
 
-  return { ok: true, verse, prayer };
+  return { ok: true, verse, prayer, philipNote };
 }
 
 /** Fetch personalized Scripture + prayer with retries for slow or flaky connections. */

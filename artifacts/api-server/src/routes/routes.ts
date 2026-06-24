@@ -4017,6 +4017,11 @@ Sacred restraint: fewer words are better.`;
       ? `\n\nHeart check context — before this conversation began, this person shared how they're doing: ${heartContext} Let this quietly shape your emotional register and opening — not as something to reference directly ("you mentioned you're feeling heavy"), but as context that informs how you receive and respond to them. Meet them where they actually are.`
       : "";
 
+    const journeyContext = ((req.body as any).journeyContext as string | undefined)?.trim() || "";
+    const journeyNote = journeyContext
+      ? `\n\nJourney context — this person is currently walking through: ${journeyContext} If what they share connects naturally to that journey, Philip may acknowledge it once, gently — not as a topic shift, but as recognition that God may be speaking through the same thread in multiple places.`
+      : "";
+
     // Generate structured conversation state for follow-up exchanges
     // This gives Philip an explicit map of what's been heard, asked, and explored
     let conversationStateBlock = "";
@@ -4052,7 +4057,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${guidanceSafetyNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${journeyNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${guidanceSafetyNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     // Build conversation history — for two-phase flow, include phase1 exchange as proper
     // message turns rather than re-injecting them into the system prompt
@@ -4636,6 +4641,37 @@ Rules:
     }
   });
 
+  // ── User Memory: latest guidance carry-forward for Philip re-entry ───────────
+  app.get("/api/user-memory", async (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      const latest = entries.find((e) => e.type === "guidance_memory");
+      if (!latest?.content) {
+        return res.json({ id: null, carryForward: null, summary: null, createdAt: null });
+      }
+
+      const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+      if (ageMs > 60 * 24 * 60 * 60 * 1000) {
+        return res.json({ id: null, carryForward: null, summary: null, createdAt: null });
+      }
+
+      const memory = parseGuidanceMemoryContent(latest.content);
+      res.json({
+        id: String(latest.id),
+        carryForward: memory.carryForward
+          ? sanitizeCarryForwardForSpeech(memory.carryForward)
+          : null,
+        summary: memory.summary?.trim() || null,
+        createdAt: latest.createdAt,
+      });
+    } catch (err) {
+      console.error("[user-memory]", err);
+      res.status(500).json({ message: "failed" });
+    }
+  });
+
   // ── Witness Letter — quiet continuity from last guidance memory ───────────────
   app.get("/api/guidance/witness-letter", async (req, res) => {
     const sessionId = req.query.sessionId as string | undefined;
@@ -4815,6 +4851,7 @@ Return only keys needed for requested fields plus rationale.`;
         verse: fields === "prayer" && isSacredVp ? null : parsed.verse ?? null,
         prayer: fields === "verse" && isSacredVp ? null : parsed.prayer ?? null,
         rationale: parsed.rationale ?? null,
+        philipNote: typeof parsed.philipNote === "string" ? parsed.philipNote.trim() || null : null,
       });
     } catch (err) {
       console.error("verse-and-prayer error:", err);

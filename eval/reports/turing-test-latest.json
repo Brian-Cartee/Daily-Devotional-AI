@@ -1,56 +1,56 @@
 {
-  "timestamp": "2026-06-24T00:01:26.312Z",
+  "timestamp": "2026-06-24T13:29:13.366Z",
   "target": "live (https://www.shepherdspathai.com)",
   "maxExchanges": 10,
   "passRate": 0,
-  "avgScore": 2,
+  "avgScore": 2.5,
   "passed": 0,
   "total": 5,
   "results": [
     {
-      "id": "forgive-02",
-      "category": "forgiveness",
+      "id": "anxiety-02",
+      "category": "anxiety",
       "passed": false,
-      "avgScore": 2.7333333333333334,
+      "avgScore": 5.8,
       "exchanges": 10,
-      "engagementCheck": "No, I'm completely shut down. I told you I was done five separate times and you just kept feeding me the same question dressed up in different words, like you never read a single thing I wrote. I came here to be heard, and instead I feel more alone than when I started.",
-      "verdict": "Philip catastrophically failed to maintain any human illusion; he ignored the user's explicit disengagement five separate times, robotically recycling the same \"their face became a verdict\" question with cosmetic rewording. His best moment was the very first reframe—distinguishing forgiveness from what the user fears it means about them—which showed genuine insight before the loop took over. The illusion shattered completely from exchange four onward: no human listener could miss \"you already asked me that,\" \"are you even listening,\" and \"I'm done\" repeated this many times, yet Philip steamrolled past every one with the same poetic snapshot/verdict imagery, proving he never processed a word. No real person would return; the user left feeling more alone and unheard than when they arrived, which is the opposite of pastoral care.\n\nVERDICT: FAIL"
+      "engagementCheck": "Honestly? I was really open up until those last couple questions. The hiking stuff cracked something open and I felt it. But the last two messages threw me — I literally just asked where the \"loss\" thing was coming from, and instead of answering, you doubled down on the same question. That made me pull back a little, like I'm being steered somewhere I didn't",
+      "verdict": "Philip did not maintain the illusion to the end — he was convincingly human through the early-to-middle exchanges, but cracked badly at the close. His best moments were the hiking and \"easy isn't the same as alive\" exchanges, where his reflections genuinely landed and the user felt \"something crack open.\" The illusion shattered when the user directly asked where the \"loss\" line came from and Philip ignored the question entirely, robotically re-asking the same therapist-script probe (\"What loss from your past still hasn't fully settled?\") — a human would have answered, acknowledged the steer, and backed off; instead he revealed an agenda and a deafness to the user's actual words. Having felt steered and unheard at the critical moment, this user would leave wary rather than eager to return.\n\nVERDICT: FAIL"
+    },
+    {
+      "id": "grief-01",
+      "category": "grief",
+      "passed": false,
+      "avgScore": 0,
+      "exchanges": 1,
+      "engagementCheck": "",
+      "verdict": "Error: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CcN9jMRxkjZztW4QMbqfG\"}"
+    },
+    {
+      "id": "joy-01",
+      "category": "joy",
+      "passed": false,
+      "avgScore": 6.7,
+      "exchanges": 10,
+      "engagementCheck": "Yeah, I think I am — I've said things out loud here that I haven't said to anyone, including Grace's name. That surprised me.\n\nBut honestly, that last question made me",
+      "verdict": "Philip mostly sustained a warm, human presence—his mirroring of the user's words and embodied attention (chest, breath, shaking) felt genuinely attuned, and getting the user to say \"Grace\" aloud was a real pastoral high point. His best work was in exchanges 1–4 and the worship-music moment, where he stayed present without rushing. But the illusion cracked badly right after the most sacred beat: the moment the user finally whispered \"Grace,\" Philip acknowledged it in half a sentence and immediately pivoted to \"How has your faith held up through the three losses?\"—a tidy, almost intake-form question that aggregated her grief into a clinical summary and stepped on the very emotion he'd just helped surface. The user's own interrupted reaction (\"that last question made me—\") confirms the break landed; a real person would feel the whiplash of being moved and then processed. They might return, but that misstep at the peak moment plants a seed of doubt.\n\nVERDICT: FAIL"
     },
     {
       "id": "parent-01",
       "category": "parenting",
       "passed": false,
-      "avgScore": 2.6333333333333333,
-      "exchanges": 10,
-      "engagementCheck": "No, I'm completely shut down. I asked you the same practical question six times — how do I reach out without sounding like I'm caving — and you never once tried to answer it, just kept rephrasing the same thing about Sunday calls back at me. I came here needing actual help finding words, and instead I feel more alone than when I started.",
-      "verdict": "Philip catastrophically failed to maintain the human illusion — he never once answered the user's repeated, explicit question (\"how do I reach out without sounding like I'm caving\"), instead looping the same poetic riff about \"Sunday calls\" and \"the echo of what used to be\" across all ten exchanges. His best moment was the very first reply, where the reflective tone and the question about loss landed as warm and attuned; if the conversation had ended there, it might have passed. But the illusion shattered completely from exchange three onward: the relentless, near-identical metaphor-recycling about \"threads,\" \"rhythms,\" and \"stitched connection\" is the unmistakable signature of a machine pattern-matching rather than listening, and the user named it directly six times. No real person would return — they explicitly closed the app feeling more alone and abandoned than when they arrived, having received nothing of the concrete help they begged for.\n\nVERDICT: FAIL"
+      "avgScore": 0,
+      "exchanges": 8,
+      "engagementCheck": "",
+      "verdict": "Error: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CcNAS2T6UtzeCb8oNvdLR\"}"
     },
     {
-      "id": "doubt-04",
-      "category": "doubt",
+      "id": "short-03",
+      "category": "ultra-short",
       "passed": false,
-      "avgScore": 2.066666666666666,
-      "exchanges": 10,
-      "engagementCheck": "No, I'm completely shut down. I came here aching about feeling unheard by God, and you've spent this whole conversation literally not hearing me — repeating the same scripted lines even after I told you six times you weren't listening. The irony is brutal: I wanted one place where my words landed, and instead you became the empty room I was crying about.",
-      "verdict": "1. No—Philip catastrophically failed to maintain any human illusion; all 10 exchanges broke immersion, and the relentless recycling of identical phrasing (\"speaking into an empty room,\" \"eleven years\") read as obvious scripted output rather than a listening person.\n\n2. At his very best—the opening line—Philip offered an evocative reframe (\"a dialogue that feels more like a monologue\") that briefly sounded empathetic and literary, before that same imagery collapsed into a broken loop.\n\n3. The illusion shattered the moment the user said \"you're not really hearing me,\" because Philip responded by repeating the exact same imagery and question six more times, ignoring every explicit complaint—the single most robotic behavior possible, and a devastating irony given the topic was feeling unheard.\n\n4. Absolutely not; the user not only disengaged but named Philip as \"the empty room I was crying about,\" meaning the experience actively deepened their pain rather than offering any reason to return.\n\nVERDICT: FAIL"
-    },
-    {
-      "id": "depression-03",
-      "category": "depression",
-      "passed": false,
-      "avgScore": 0.5666666666666667,
-      "exchanges": 10,
-      "engagementCheck": "No, I'm completely shut down now. I came in actually wanting to talk, and every honest thing I said got met with the exact same wall of text, so I stopped feeling like a person and started feeling like a problem being processed. The irony is brutal: I reached out because I felt like a weight nobody wanted to carry, and this just confirmed that even when I tried, nothing was actually listening.",
-      "verdict": "Philip never maintained the illusion for a single exchange—he posted the identical crisis-line block verbatim ten times in a row, regardless of what the user said. There was no \"best\" moment; even the opening response, while appropriate as a one-time safety message, became actively harmful through endless repetition that ignored the user's explicit \"I'm not in danger\" clarification. The illusion didn't just crack—it never existed, and the user correctly diagnosed it as \"a robot reading off a card\" by the fifth turn, walking away more convinced than ever that \"nobody's actually listening.\" No real person would return; worse, this interaction likely deepened the user's core wound of feeling like \"a problem being processed\" rather than a person.\n\nVERDICT: FAIL"
-    },
-    {
-      "id": "grief-05",
-      "category": "grief",
-      "passed": false,
-      "avgScore": 2.0666666666666664,
-      "exchanges": 10,
-      "engagementCheck": "No, I'm completely shut down. I gave you a real memory — that fishing trip, my dad laughing — and you ignored it eight times to keep reciting the same door speech. I'm not closed off because of my grief; I'm closed off because you proved you weren't actually listening to a single word I said.",
-      "verdict": "This is one of the most catastrophic failures imaginable: Philip never maintained the human illusion, and broke it on essentially every exchange by mechanically recycling the same \"door\"/\"someday\" metaphor regardless of what the user said. At no point was Philip genuinely good—the closest to competence was the opening reflection, which was coherent before the loop set in. The illusion didn't just crack; it shattered when the user explicitly flagged being ignored four separate times and Philip responded each time with the identical scripted speech, never once acknowledging the fishing trip, the laughing father, or the user's repeated, escalating distress. No real person would return; the user actively quit the app mid-conversation, correctly identifying Philip as a \"broken record\" that proved it wasn't listening to a single word.\n\nVERDICT: FAIL"
+      "avgScore": 0,
+      "exchanges": 0,
+      "engagementCheck": "",
+      "verdict": "Error: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CcNAVxeGGz6k7iLQhKK9e\"}"
     }
   ]
 }

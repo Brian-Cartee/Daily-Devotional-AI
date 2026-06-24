@@ -5,6 +5,7 @@ import { ArrowRight, Send, Loader2, BookOpen, Volume2, VolumeX, BookMarked, Chec
 import { ListenButton } from "@/components/ListenButton";
 import { getGuidanceMode, saveGuidanceMode, type GuidanceMode } from "@/lib/guidanceMode";
 import { getCurrentHeartState, buildHeartContext } from "@/lib/heartCheck";
+import { buildJourneyContext } from "@/lib/journeyContext";
 import {
   grantCoachConsentThisSession,
   hasCoachConsentThisSession,
@@ -620,6 +621,7 @@ export default function GuidancePage() {
   const [journeyError, setJourneyError] = useState(false);
 
   const [verse, setVerse] = useState<VerseResult | null>(null);
+  const [philipNote, setPhilipNote] = useState<string | null>(null);
   const verseDisplay = verse ? formatGuidanceVerseDisplay(verse.text) : null;
   const [prayer, setPrayer] = useState<string | null>(null);
   const [vpLoading, setVpLoading] = useState(false);
@@ -708,6 +710,7 @@ export default function GuidancePage() {
           guidanceMode: explicitMode ?? guidanceMode,
           isLateNight: isLateNight(),
           heartContext: buildHeartContext(getCurrentHeartState()),
+          journeyContext: buildJourneyContext() || undefined,
           companionMode: isPhilipMode() ? "philip" : "solo",
           ...(phase1Context ?? {}),
           ...apiSessionExtras(),
@@ -912,6 +915,7 @@ export default function GuidancePage() {
 
     if (result.verse) setVerse(result.verse);
     if (result.prayer) setPrayer(result.prayer);
+    setPhilipNote(result.philipNote ?? null);
     if (!result.verse) setVpError(true);
   }, [situation, toast]);
 
@@ -921,6 +925,7 @@ export default function GuidancePage() {
     setRevealStage(0);
     listenFirstTriggeredRef.current = false;
     setVerse(null);
+    setPhilipNote(null);
     setPrayer(null);
     setVpLoading(false);
     setVpError(false);
@@ -2973,6 +2978,7 @@ export default function GuidancePage() {
                           text={verseDisplay.text}
                           reference={verse.reference}
                           label="Scripture for you"
+                          philipNote={philipNote ?? undefined}
                           imageSrc={heroImageSrc || "/hero-guidance.jpg"}
                           onBookmark={carryVerseToday}
                           footer={

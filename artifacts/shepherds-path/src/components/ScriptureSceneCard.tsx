@@ -1,4 +1,5 @@
 import { Bookmark } from "lucide-react";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 
@@ -6,6 +7,7 @@ interface ScriptureSceneCardProps {
   text: string;
   reference: string;
   label?: string;
+  philipNote?: string;
   imageSrc?: string;
   onBookmark?: () => void;
   bookmarked?: boolean;
@@ -18,6 +20,7 @@ export function ScriptureSceneCard({
   text,
   reference,
   label = "Scripture for you",
+  philipNote,
   imageSrc = "/hero-guidance.jpg",
   onBookmark,
   bookmarked,
@@ -25,8 +28,11 @@ export function ScriptureSceneCard({
   testId = "card-scripture-scene",
 }: ScriptureSceneCardProps) {
   return (
-    <div
+    <motion.div
       data-testid={testId}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="relative rounded-2xl overflow-hidden min-h-[200px] border border-white/10 shadow-xl shadow-black/20"
     >
       <img
@@ -71,8 +77,21 @@ export function ScriptureSceneCard({
           &ldquo;{text}&rdquo;
         </p>
         <p className="text-[13px] font-bold text-white/75 tracking-wide">— {reference}</p>
+        {philipNote ? (
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45 mb-1.5">
+              Why this for you today
+            </p>
+            <p
+              className="text-[13px] leading-relaxed italic"
+              style={{ color: "#a89060" }}
+            >
+              {philipNote}
+            </p>
+          </div>
+        ) : null}
         {footer ? <div className="mt-4">{footer}</div> : null}
       </div>
-    </div>
+    </motion.div>
   );
 }

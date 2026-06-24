@@ -4,10 +4,15 @@ import { useLocation } from "wouter";
 import { getHoldsDueForReturn, markHoldFollowedUp, releaseHold, type PrayerHold } from "@/lib/prayerHolds";
 import { getUserName } from "@/lib/userName";
 import { isPhilipMode } from "@/lib/companionMode";
+import { PhilipPortraitBadge } from "@/components/PhilipPortraitBadge";
+import { fetchGuidanceMemory, buildPhilipReturnLine } from "@/lib/guidanceMemory";
+
+const CREAM = "#e8dcc8";
 
 export function PhilipRememberedCard() {
   const [hold, setHold] = useState<PrayerHold | null>(null);
   const [philipReturn, setPhilipReturn] = useState<string | null>(null);
+  const [memoryLine, setMemoryLine] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<"notice" | "philip" | "done">("notice");
   const [, navigate] = useLocation();
@@ -16,6 +21,11 @@ export function PhilipRememberedCard() {
     if (!isPhilipMode()) return;
     const due = getHoldsDueForReturn();
     if (due.length > 0) setHold(due[0]);
+    fetchGuidanceMemory().then((memory) => {
+      if (!memory) return;
+      const line = buildPhilipReturnLine(memory);
+      if (line) setMemoryLine(line);
+    });
   }, []);
 
   if (!hold || stage === "done") return null;
@@ -32,19 +42,26 @@ export function PhilipRememberedCard() {
         body: JSON.stringify({ holdText: hold.text, daysHeld, userName: getUserName() ?? undefined }),
       });
       const data = await r.json() as { text?: string };
-      const returnText = data.text ?? `A while ago you asked me to hold "${hold.text}" with you. How is your heart carrying it today?`;
+      const returnText =
+        memoryLine ??
+        data.text ??
+        `You asked me to hold "${hold.text}" with you. Is it still there?`;
       markHoldFollowedUp(hold.id, returnText);
       setPhilipReturn(returnText);
       setStage("philip");
     } catch {
-      setStage("done");
+      if (memoryLine) {
+        setPhilipReturn(memoryLine);
+        setStage("philip");
+      } else {
+        setStage("done");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleStillPraying = () => {
-    // Re-extend the hold another 3 days silently
     markHoldFollowedUp(hold.id, "Still praying.");
     setStage("done");
   };
@@ -56,64 +73,168 @@ export function PhilipRememberedCard() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl border border-violet-500/20 bg-violet-950/20 px-5 py-4 mb-1"
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        borderRadius: "18px",
+        border: "1px solid rgba(251,191,36,0.12)",
+        background: "#0e0905",
+        padding: "18px 18px 14px",
+        marginBottom: "4px",
+      }}
       data-testid="philip-remembered-card"
     >
-      {stage === "notice" && (
-        <>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-400/80 mb-1">
-            Philip remembered
-          </p>
-          <p className="text-[14px] text-foreground/80 leading-relaxed mb-3">
-            {daysHeld === 1
-              ? `Yesterday you asked Philip to hold "${hold.text}" with you.`
-              : `${daysHeld} days ago you asked Philip to hold "${hold.text}" with you.`}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleTalkAboutIt}
-              disabled={loading}
-              className="text-[13px] font-semibold text-violet-300 hover:text-violet-200 transition-colors disabled:opacity-50"
-            >
-              {loading ? "Philip is returning…" : "Talk about it"}
-            </button>
-            <span className="text-zinc-700">·</span>
-            <button onClick={handleStillPraying} className="text-[12px] text-zinc-500 hover:text-zinc-400 transition-colors">
-              Still praying
-            </button>
-            <span className="text-zinc-700">·</span>
-            <button onClick={handleRelease} className="text-[12px] text-zinc-500 hover:text-zinc-400 transition-colors">
-              Release this
-            </button>
-          </div>
-        </>
-      )}
+      <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+        <PhilipPortraitBadge size={52} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {stage === "notice" && (
+            <>
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "rgba(232,220,200,0.38)",
+                  marginBottom: "10px",
+                }}
+              >
+                Philip remembered
+              </p>
+              <p
+                style={{
+                  fontSize: "15px",
+                  lineHeight: 1.65,
+                  color: CREAM,
+                  marginBottom: "14px",
+                  fontFamily: "'Georgia', serif",
+                }}
+              >
+                {daysHeld === 1
+                  ? `Yesterday you asked me to hold "${hold.text}" with you.`
+                  : `${daysHeld} days ago you asked me to hold "${hold.text}" with you.`}
+              </p>
+              {memoryLine && (
+                <p
+                  style={{
+                    fontSize: "14px",
+                    lineHeight: 1.6,
+                    color: "rgba(232,220,200,0.62)",
+                    fontStyle: "italic",
+                    marginBottom: "14px",
+                  }}
+                >
+                  {memoryLine}
+                </p>
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+                <button
+                  onClick={handleTalkAboutIt}
+                  disabled={loading}
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: loading ? "rgba(251,191,36,0.35)" : "rgba(251,191,36,0.82)",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: loading ? "default" : "pointer",
+                  }}
+                >
+                  {loading ? "Philip is returning…" : "Talk about it"}
+                </button>
+                <span style={{ color: "rgba(232,220,200,0.15)" }}>·</span>
+                <button
+                  onClick={handleStillPraying}
+                  style={{
+                    fontSize: "12px",
+                    color: "rgba(232,220,200,0.32)",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  Still praying
+                </button>
+                <span style={{ color: "rgba(232,220,200,0.15)" }}>·</span>
+                <button
+                  onClick={handleRelease}
+                  style={{
+                    fontSize: "12px",
+                    color: "rgba(232,220,200,0.32)",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  Release this
+                </button>
+              </div>
+            </>
+          )}
 
-      {stage === "philip" && philipReturn && (
-        <>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-400/80 mb-3">
-            Philip · Returning
-          </p>
-          <p className="text-[15px] leading-[1.75] text-foreground/90 mb-4">
-            {philipReturn}
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate("/guidance")}
-              className="text-[13px] font-semibold text-violet-300 hover:text-violet-200 transition-colors"
-            >
-              Talk it through
-            </button>
-            <span className="text-zinc-700">·</span>
-            <button onClick={() => setStage("done")} className="text-[12px] text-zinc-500 hover:text-zinc-400 transition-colors">
-              I'm good
-            </button>
-          </div>
-        </>
-      )}
+          {stage === "philip" && philipReturn && (
+            <>
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "rgba(232,220,200,0.38)",
+                  marginBottom: "10px",
+                }}
+              >
+                Philip
+              </p>
+              <p
+                style={{
+                  fontSize: "16px",
+                  lineHeight: 1.65,
+                  color: CREAM,
+                  marginBottom: "14px",
+                  fontFamily: "'Georgia', serif",
+                }}
+              >
+                {philipReturn}
+              </p>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <button
+                  onClick={() => navigate("/guidance")}
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "rgba(251,191,36,0.82)",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  Talk it through
+                </button>
+                <span style={{ color: "rgba(232,220,200,0.15)" }}>·</span>
+                <button
+                  onClick={() => setStage("done")}
+                  style={{
+                    fontSize: "12px",
+                    color: "rgba(232,220,200,0.32)",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  I&apos;m good
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }

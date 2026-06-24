@@ -90,10 +90,10 @@ export function ScriptureForYou() {
       {!dismissed && (
         <motion.div
           key="scripture-for-you"
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: "relative",
             borderRadius: "16px",
@@ -156,17 +156,30 @@ export function ScriptureForYou() {
 
           {/* Why line */}
           {data.why && (
-            <p
-              style={{
-                fontSize: "13px",
-                lineHeight: 1.5,
-                color: "rgba(255,255,255,0.40)",
-                fontStyle: "italic",
-                marginBottom: "16px",
-              }}
-            >
-              {data.why}
-            </p>
+            <div style={{ marginBottom: "16px" }}>
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.16em",
+                  color: "rgba(255,255,255,0.35)",
+                  marginBottom: "6px",
+                }}
+              >
+                Why this for you today
+              </p>
+              <p
+                style={{
+                  fontSize: "13px",
+                  lineHeight: 1.5,
+                  color: "#a89060",
+                  fontStyle: "italic",
+                }}
+              >
+                {data.why}
+              </p>
+            </div>
           )}
 
           {/* CTAs */}
