@@ -277,13 +277,22 @@ export function scanGuidanceTexts(parts: {
     if (!t?.trim()) return;
     merged = mergeSafetyResults(merged, scanUserText(t));
   };
-  push(parts.situation);
-  push(parts.phase1UserReply);
-  if (parts.messages) {
-    for (const m of parts.messages) {
-      if (m.role === "user") push(m.content);
-    }
+
+  // For block-level signals (high_risk+), only scan the most recent user message.
+  // Scanning all history causes crisis routing to re-trigger on old messages that
+  // were already handled in prior turns, producing false positives late in conversations.
+  if (parts.messages && parts.messages.length > 0) {
+    const lastUserMsg = [...parts.messages].reverse().find(m => m.role === "user");
+    if (lastUserMsg) push(lastUserMsg.content);
+    // Still scan situation and phase1 reply (first turn context)
+    push(parts.situation);
+    push(parts.phase1UserReply);
+  } else {
+    // No history yet — scan everything (first turn)
+    push(parts.situation);
+    push(parts.phase1UserReply);
   }
+
   return merged;
 }
 

@@ -4177,9 +4177,25 @@ Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any 
           }
 
           if (nextQuestion) {
-            // Use the pre-decided question as the entire response.
-            // A genuinely new, specific question scores better than any poetic preamble.
-            phase2Text = nextQuestion;
+            // Generate a 1-sentence acknowledgment of the user's last message, then the question.
+            // A bare question with no landing feels robotic even when the question is good.
+            const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
+              .reverse().find(m => m.role === "user")?.content ?? "";
+            const ackSystem = `You are Philip, a pastoral companion. The person just said: "${lastUserMsg.slice(0, 200)}"
+
+Write ONE short sentence (under 20 words) that lands on the most specific thing they just said — using their own words where possible. No poetry. No metaphor. No "I hear you." No opener starting with "I." Then stop — the question comes separately.`;
+            try {
+              const ackResponse = await anthropic.messages.create({
+                model: "claude-sonnet-4-6",
+                max_tokens: 60,
+                system: ackSystem,
+                messages: [{ role: "user", content: "Write the acknowledgment sentence only." }],
+              });
+              const ack = ackResponse.content.find(b => b.type === "text")?.text?.trim() ?? "";
+              phase2Text = ack ? `${ack} ${nextQuestion}` : nextQuestion;
+            } catch {
+              phase2Text = nextQuestion;
+            }
             usedMechanicalConstruction = true;
           } else {
             phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, "");
