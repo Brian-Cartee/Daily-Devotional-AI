@@ -7,7 +7,20 @@
  * can move forward instead of recycling.
  */
 
-import OpenAI from "openai";
+// OpenAI client is passed in to avoid circular import issues with bundler module resolution
+type OpenAIClient = {
+  chat: {
+    completions: {
+      create(params: {
+        model: string;
+        messages: Array<{ role: string; content: string }>;
+        max_tokens: number;
+        temperature: number;
+        response_format: { type: string };
+      }): Promise<{ choices: Array<{ message: { content: string | null } }> }>;
+    };
+  };
+};
 
 export interface ConversationState {
   core_issue: string;
@@ -46,7 +59,7 @@ Be precise and minimal. This state is injected into the next AI prompt to preven
 Return ONLY valid JSON, no markdown, no extra text.`;
 
 export async function generateConversationState(
-  openai: OpenAI,
+  openai: OpenAIClient,
   situation: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   existingState?: ConversationState,

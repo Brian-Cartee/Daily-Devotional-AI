@@ -14,6 +14,7 @@ import { api, chatRequestSchema, type ChatMessage } from "../sharedRoutes";
 import { insertSubscriberSchema, insertJournalEntrySchema, insertPrayerWallSchema, insertBetaFeedbackSchema, PRAYER_CATEGORIES, PRAYER_ENCOURAGEMENT_ACTIONS, type SmsMessage } from "@workspace/db";
 import { z } from "zod";
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import multer from "multer";
 import Stripe from "stripe";
 import webpush from "web-push";
@@ -267,6 +268,10 @@ async function getTTSAudio(text: string, voice: string, scope?: string): Promise
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 // Separate client for TTS — uses direct OpenAI key (integration proxy doesn't support audio)
@@ -4061,17 +4066,30 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
       conversationHistory = [{ role: "user", content: situation.trim() }];
     }
 
-    // Phase 2 is generated non-streaming so we can enforce exactly-one-question
-    // before sending to the client. Same retry pattern as Phase 1 "I" check.
-    const generatePhase2 = async (msgs: OpenAI.Chat.ChatCompletionMessageParam[]) => {
+    // Phase 2: follow-ups use Claude Sonnet (better at instruction following + avoiding loops)
+    // Phase 2 first response (two-phase flow) uses GPT-4o for consistency with Phase 1 voice
+    const generatePhase2WithClaude = async (system: string, history: Array<{ role: "user" | "assistant"; content: string }>) => {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
+        system,
+        messages: history,
+      });
+      for (const block of response.content) {
+        if (block.type === "text") return block.text.trim();
+      }
+      return "";
+    };
+
+    const generatePhase2WithGPT = async (msgs: OpenAI.Chat.ChatCompletionMessageParam[]) => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 25_000);
       try {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: msgs,
-          max_tokens: isFollowUp ? 240 : 290,
-          temperature: isFollowUp ? 0.6 : 0.78,
+          max_tokens: 290,
+          temperature: 0.78,
         }, { signal: controller.signal });
         return (completion.choices[0]?.message?.content ?? "").trim();
       } finally {
@@ -4082,27 +4100,48 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
     const questionMarkCount = (t: string) => (t.match(/\?/g) ?? []).length;
 
     try {
-      const fullMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: "system", content: systemMsg },
-        ...conversationHistory,
-      ];
+      let phase2Text: string;
 
-      let phase2Text = await generatePhase2(fullMessages);
+      if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
+        // Follow-up exchanges: Claude handles the conversation — better at breaking loops
+        const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
+        phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory);
+      } else {
+        // First response (two-phase flow): GPT-4o for voice consistency
+        const fullMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+          { role: "system", content: systemMsg },
+          ...conversationHistory,
+        ];
+        phase2Text = await generatePhase2WithGPT(fullMessages);
+      }
+
       const qCount = questionMarkCount(phase2Text);
 
-      if (qCount !== 1) {
-        const retryInstruction = qCount === 0
-          ? "[SYSTEM: Your response contains no question mark. You must end with exactly one genuine question specific to what this person shared. Add it now — do not change anything else.]"
-          : `[SYSTEM: Your response contains ${qCount} question marks. There must be exactly one question in the entire response. Remove all but the single most important question — the one most specific to this person's exact words. Rewrite the response with only that one question.]`;
-
-        const retryMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-          ...fullMessages,
-          { role: "assistant", content: phase2Text },
-          { role: "user", content: retryInstruction },
-        ];
-        const retried = await generatePhase2(retryMessages);
-        if (retried.length > 20 && questionMarkCount(retried) === 1) {
-          phase2Text = retried;
+      if (qCount !== 1 && !conversationStateBlock.includes("CLOSING")) {
+        // Retry with Claude if it returned the wrong number of question marks
+        if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
+          const retrySystem = systemMsg + `\n\n[CRITICAL: Your response must contain exactly one question mark. Currently has ${qCount}. ${qCount === 0 ? "End with one specific question." : "Remove all questions except the single most important one."}]`;
+          const retried = await generatePhase2WithClaude(retrySystem, conversationHistory as Array<{ role: "user" | "assistant"; content: string }>);
+          if (retried.length > 20 && questionMarkCount(retried) === 1) {
+            phase2Text = retried;
+          }
+        } else {
+          const retryInstruction = qCount === 0
+            ? "[SYSTEM: Your response contains no question mark. You must end with exactly one genuine question specific to what this person shared. Add it now — do not change anything else.]"
+            : `[SYSTEM: Your response contains ${qCount} question marks. There must be exactly one question in the entire response. Remove all but the single most important question — the one most specific to this person's exact words. Rewrite the response with only that one question.]`;
+          const fullMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+            { role: "system", content: systemMsg },
+            ...conversationHistory,
+          ];
+          const retryMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+            ...fullMessages,
+            { role: "assistant", content: phase2Text },
+            { role: "user", content: retryInstruction },
+          ];
+          const retried = await generatePhase2WithGPT(retryMessages);
+          if (retried.length > 20 && questionMarkCount(retried) === 1) {
+            phase2Text = retried;
+          }
         }
         // If retry still wrong, send original — don't block the user
       }
