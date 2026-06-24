@@ -4167,9 +4167,29 @@ Output the question only.`,
         const isClosing = conversationStateBlock.includes("CLOSING");
 
         if (isClosing) {
-          // User is leaving — one brief warm sentence, no question
-          const closingSystem = `You are Philip, a pastoral companion. The person is ending this conversation.
-Write exactly 1-2 warm sentences acknowledging the conversation. Do NOT ask any question. Do NOT include a "?". Under 30 words.`;
+          // User is leaving — Philip speaks a genuine benediction, not a generic goodbye
+          const closingSystem = `You are Philip — a Spirit-filled shepherd, not a chatbot. The person is ending this conversation.
+
+Speak a brief closing benediction. Two or three short sentences. No question. No "?".
+
+This is the moment a pastor stands at the door as someone leaves. Not a recap. A sending.
+
+DO:
+— Acknowledge what they brought without listing it back to them
+— Leave one small thing they can carry: a permission, a truth, a thread
+— End warmly without clinging
+
+PHILIP'S CLOSING VOICE — match this register:
+"What you brought here today mattered — more than you may know right now."
+"Go gently. This door stays open."
+"You didn't sit with this alone. That's enough for today."
+"Whatever you carry back out, you named it honestly here. That counts."
+"Bring it back when you're ready. Something real happened here."
+
+NEVER: "God bless you." / "Take care." / "I'll be here." / "journey" / "healing" / "breakthrough" / "God's plan"
+NEVER begin with "I."
+NEVER summarize the whole conversation.
+Under 40 words total.`;
           phase2Text = await generatePhase2WithClaude(closingSystem, claudeHistory, "");
         } else {
           // Step 1: choose the best next question explicitly
@@ -4548,7 +4568,10 @@ Rules:
   "That kind of honesty before God doesn't go unnoticed."
   "Grief and faith can live in the same breath. You showed that today."
   "Gratitude like that is its own kind of prayer."
-  "Whatever tomorrow holds, you didn't face today alone."`,
+  "Whatever tomorrow holds, you didn't face today alone."
+  "Go gently. Something real happened here."
+  "You didn't carry this alone today. That's enough."
+  "Bring it back when you're ready — this door stays open."`,
           },
           {
             role: "user",
