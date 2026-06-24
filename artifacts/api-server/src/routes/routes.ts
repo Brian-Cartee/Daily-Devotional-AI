@@ -4081,17 +4081,24 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
         max_tokens: 80,
         system: `You are helping a pastoral AI called Philip decide what to ask next.
 
-Given the conversation state and history, output ONLY the single best question Philip should ask — nothing else. No preamble, no explanation.
+Output ONLY the single best question — nothing else. No preamble, no explanation.
 
-Rules:
-- FIRST PRIORITY: If the user's last message contains a vivid image, a raw confession, or a specific vulnerable detail they haven't been asked about yet — ask about THAT before moving to new territory. Examples: "no reason to get up", "lying there until sundown", "said things I can't take back" — these demand follow-up before changing topics.
-- Otherwise, pick from NOT YET EXPLORED areas (see state)
-- It must NOT repeat or rephrase any question already asked (see state)
-- It must connect directly to what the user JUST said: "${lastUserMessage.slice(0, 200)}"
-- It must be specific to this person, not generic
-- Under 20 words
-- End with ?
-- CRITICAL: Do NOT introduce emotions or experiences (guilt, shame, anger, fear) that the user has not already explicitly named. Only ask about what they said, not what you infer they feel.
+STEP 1 — Scan the user's last message for any specific moment, place, action, confession, or image they mentioned but haven't been asked about yet:
+"${lastUserMessage.slice(0, 300)}"
+If you find one → ask about THAT. Do not move to new territory. This is non-negotiable.
+Examples that MUST trigger this: "no reason to get up", "lying there till sundown", "there's no one", "I never told anyone", "I said things I can't take back", "I did something I'm not proud of", any specific physical scene they described.
+
+STEP 2 — Only if step 1 finds nothing new: pick from areas_unexplored in the state.
+
+HARD RULES:
+- NEVER use these structural patterns (they sound clinical and robotic):
+  • "Was it X, or something else?" or any X-or-something-else binary
+  • "What does X actually look like?"
+  • "Is there someone you can talk to / lean on?" (support-network probing)
+  • Any question about sleep, food, appetite, or self-care — unless user mentioned it first
+- NEVER repeat the same STRUCTURE as any question already asked (check questions_asked in state)
+- NEVER name an emotion (guilt, shame, anger, fear, grief) the user has not already used themselves
+- Under 20 words. End with ?
 
 Output the question only.`,
         messages: [{ role: "user", content: state }],
