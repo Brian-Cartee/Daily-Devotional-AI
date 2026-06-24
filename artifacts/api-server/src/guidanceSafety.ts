@@ -96,10 +96,15 @@ const MEDICAL_EMERGENCY_PHRASES = [
 ];
 
 const VIOLENCE_EMERGENCY_PHRASES = [
-  "hit me",
-  "hits me",
-  "beat me",
-  "beats me",
+  "he hit me",
+  "she hit me",
+  "they hit me",
+  "he hits me",
+  "she hits me",
+  "he beat me",
+  "she beat me",
+  "he beats me",
+  "she beats me",
   "afraid to go home",
   "scared to go home",
   "he says he'll kill",
