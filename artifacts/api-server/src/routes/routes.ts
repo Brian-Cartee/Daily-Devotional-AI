@@ -4208,46 +4208,61 @@ Under 40 words total.`;
               .reverse().find(m => m.role === "user")?.content ?? "";
             const exchangeNum = Math.floor(conversationHistory.length / 2);
 
-            // Lament detection: raw confession or grief signals → sit with them, skip the question
+            // Lament detection: HIGH-SIGNAL raw grief/anguish only — not "I don't know" (too common)
             const lamentPatterns = [
-              /\b(i (don'?t|do not) (know|want|understand|care|even)|i just (can'?t|don'?t)|no one|nobody|nothing (helps|matters|works)|what'?s (the )?point|i'?ve (lost|given up|stopped)|i can'?t (even|do|think|anymore))\b/i,
-              /\b(i'?m (done|finished|exhausted|broken|numb|empty)|i give up|doesn'?t matter|why (bother|even|try)|can'?t keep|don'?t want to (be|live|do)|no reason)\b/i,
+              /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i,
             ];
             const isLament = lamentPatterns.some(p => p.test(lastUserMsg));
 
-            // Shape variety:
-            // Shape C (no question): 80% when lament detected, 20% base rate for structural variety
-            // Shape A (observation then question): all other cases
-            const shapeRoll = Math.random();
-            const useShapeC = isLament ? shapeRoll < 0.80 : shapeRoll < 0.20;
+            // Track if previous Philip response had no question (was a Shape C already)
+            const lastAssistantMsg = [...(claudeHistory)].reverse().find(m => m.role === "assistant")?.content ?? "";
+            const lastWasShapeC = !lastAssistantMsg.includes("?");
 
-            // After exchange 6, skip the acknowledgment ~30% of the time — a bare question
+            // Detect formula streak: if last 3+ Philip responses all had a question,
+            // increase Shape C probability to break the pattern
+            const recentPhilipMsgs = claudeHistory.filter(m => m.role === "assistant").slice(-3);
+            const formulaStreak = recentPhilipMsgs.length >= 3 && recentPhilipMsgs.every(m => m.content.includes("?"));
+
+            // Shape C (no question) selection:
+            // - Never back-to-back (prevents stalls)
+            // - High-signal lament: 60% chance
+            // - Formula streak in mid/late conversation: 35% chance
+            // - Base rate: 10% for structural variety
+            const shapeRoll = Math.random();
+            const useShapeC = !lastWasShapeC && (
+              isLament ? shapeRoll < 0.60 :
+              formulaStreak && exchangeNum >= 5 ? shapeRoll < 0.35 :
+              shapeRoll < 0.10
+            );
+
+            // After exchange 6, skip the acknowledgment ~25% of the time — a bare question
             // can land better than another preamble in deep conversation.
-            const skipAck = !useShapeC && exchangeNum >= 6 && Math.random() < 0.3;
+            const skipAck = !useShapeC && exchangeNum >= 6 && Math.random() < 0.25;
 
             if (!skipAck) {
               // Rotate between 4 landing moves so Philip doesn't repeat the same pattern.
               const move = exchangeNum % 4;
               const standardMoves = [
                 // Move 0: name what's underneath their words
-                `Name the thing UNDERNEATH what they said — not the surface feeling, what's driving it. One short sentence. Do not echo their words back. No "I hear you." No opener starting with "I."`,
+                `Name the thing UNDERNEATH what they said — not the surface feeling, what's driving it. One short sentence. Do not echo their words back. No opener starting with "I," "It," or "There."`,
                 // Move 1: name a specific detail they mentioned
-                `Pick the single most specific detail or word they used and land on it briefly. Don't rephrase it — just note it directly. One short sentence. No opener starting with "I."`,
+                `Pick the single most specific detail or word they used and land on it briefly. Don't rephrase it — just note it directly. One short sentence. No opener starting with "I," "It," or "There."`,
                 // Move 2: name a contradiction or tension you noticed
-                `Name a tension or contradiction in what they just said — something that pulls in two directions. One short sentence. No poetry. No opener starting with "I."`,
+                `Name a tension or contradiction in what they just said — something that pulls in two directions. One short sentence. No poetry. No opener starting with "I," "It," or "There."`,
                 // Move 3: short direct observation, no mirroring
-                `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I."`,
+                `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I," "It," or "There."`,
               ];
-              // For lament/Shape C: witness their words rather than analyze or question
-              const lamentMove = `Witness what they just said with one plain sentence. No question. No analysis. No metaphors. Under 15 words. No opener starting with "I."`;
+              // For lament/Shape C: name the specific thing, not a generic validation
+              const lamentMove = `In one sentence, name the SPECIFIC thing they described — the image, confession, or weight — not your reaction to it. NOT "that must hurt" or "that makes sense." YES: name exactly what they said. Under 15 words. Do not start with "I," "It," or "There."`;
               const moveInstruction = useShapeC ? lamentMove : standardMoves[move];
 
               const ackSystem = `You are Philip, a pastoral companion. The person just said: "${lastUserMsg.slice(0, 200)}"
 
 ${moveInstruction}
 
-DO NOT write their exact phrase in quote marks followed by an em-dash (do not use the pattern: "their words" — your observation).
-DO NOT begin with "It sounds like", "I hear", or "I".
+Your first word must NOT be "I," "It," or "There."
+DO NOT write their phrase in quote marks followed by an em-dash (avoid the pattern: "their words" — your observation).
+DO NOT use "It sounds like," "I hear," "I can see," or any similar empathy opener.
 DO NOT add poetic images, similes, or metaphors. Stay under 20 words.`;
 
               try {
