@@ -355,6 +355,17 @@ export const VOICE_MIC_HANDOFF_FOLLOWUP_MS = 600;
 const HEAVY_REPLY_RE =
   /\b(died|death|funeral|miscarriage|suicid|abuse|rape|murder|killed|overdose|hospital|chemo|cancer|divorc)\b/i;
 
+const MEDIUM_PONDERING_RE =
+  /\b(scared|afraid|anxious|anxiety|depressed|depression|crying|hopeless|alone|lonely|hurt|hurting|struggling|lost|broken|desperate|worried|panic|grief|sad|overwhelmed|grief)\b/i;
+
+/** Sentiment-aware silence before Philip speaks — simulates holding what was shared.
+ *  Heavy: 1800ms  Medium: 900ms  Default: 400ms */
+export function getPonderingPauseMs(userText: string): number {
+  if (HEAVY_REPLY_RE.test(userText)) return 1800;
+  if (MEDIUM_PONDERING_RE.test(userText)) return 900;
+  return 400;
+}
+
 /** Acute grief / raw one-liners — skip spoken bridge; visual presence only. */
 export function shouldSkipReplyBridge(reply: string): boolean {
   const t = reply.trim();

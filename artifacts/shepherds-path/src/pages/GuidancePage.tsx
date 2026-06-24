@@ -18,7 +18,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { useConvoMachine } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
@@ -1656,6 +1656,8 @@ export default function GuidancePage() {
     // iOS Safari: the render triggered by phase1Complete plays a transition animation.
     // Starting ManagedMediaSource during that paint causes sourceopen to fire late and
     // the first 200-400ms of audio to be clipped. A short settle window avoids the race.
+    // Pondering pause: sentiment-aware silence so Philip "holds" what was shared.
+    const settleMs = 450 + getPonderingPauseMs(situation);
     const transitionTimer = window.setTimeout(() => {
       if (cancelled) return;
       // Always use the HTTP streaming path — same voice, settings, and model as the
@@ -1670,7 +1672,7 @@ export default function GuidancePage() {
         },
         onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
       });
-    }, 450);
+    }, settleMs);
 
     return () => {
       cancelled = true;
