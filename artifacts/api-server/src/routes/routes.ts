@@ -4066,13 +4066,50 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
       conversationHistory = [{ role: "user", content: situation.trim() }];
     }
 
-    // Phase 2: follow-ups use Claude Sonnet (better at instruction following + avoiding loops)
-    // Phase 2 first response (two-phase flow) uses GPT-4o for consistency with Phase 1 voice
-    const generatePhase2WithClaude = async (system: string, history: Array<{ role: "user" | "assistant"; content: string }>) => {
+    // Step 1 of two-step generation: pick the best next question before writing anything.
+    // This breaks the metaphor-recycling loop by forcing explicit movement to new territory.
+    const generateNextQuestion = async (
+      state: string,
+      history: Array<{ role: "user" | "assistant"; content: string }>,
+    ): Promise<string> => {
+      const lastUserMessage = [...history].reverse().find(m => m.role === "user")?.content ?? "";
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 80,
+        system: `You are helping a pastoral AI called Philip decide what to ask next.
+
+Given the conversation state and history, output ONLY the single best question Philip should ask — nothing else. No preamble, no explanation.
+
+Rules:
+- The question must explore territory NOT YET covered (see state)
+- It must NOT repeat or rephrase any question already asked (see state)
+- It must connect directly to what the user JUST said: "${lastUserMessage.slice(0, 200)}"
+- It must be specific to this person, not generic
+- Under 20 words
+- End with ?
+
+Output the question only.`,
+        messages: [{ role: "user", content: state }],
+      });
+      for (const block of response.content) {
+        if (block.type === "text") return block.text.trim();
+      }
+      return "";
+    };
+
+    // Step 2: write Philip's response anchored to the pre-chosen question
+    const generatePhase2WithClaude = async (
+      system: string,
+      history: Array<{ role: "user" | "assistant"; content: string }>,
+      anchoredQuestion: string,
+    ) => {
+      const anchorInstruction = anchoredQuestion
+        ? `\n\nYour response MUST end with this exact question (you may adjust wording slightly for flow, but stay faithful to its intent and keep it specific):\n"${anchoredQuestion}"`
+        : "";
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 300,
-        system,
+        system: system + anchorInstruction,
         messages: history,
       });
       for (const block of response.content) {
@@ -4103,9 +4140,19 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
       let phase2Text: string;
 
       if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
-        // Follow-up exchanges: Claude handles the conversation — better at breaking loops
+        // Follow-up exchanges: two-step generation
+        // Step 1: decide the next question explicitly (breaks metaphor-recycling loop)
+        // Step 2: write Philip's response anchored to that question
         const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
-        phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory);
+        let nextQuestion = "";
+        if (conversationStateBlock && !conversationStateBlock.includes("CLOSING")) {
+          try {
+            nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
+          } catch {
+            // Non-fatal — fall through to unanchored generation
+          }
+        }
+        phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, nextQuestion);
       } else {
         // First response (two-phase flow): GPT-4o for voice consistency
         const fullMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -4121,7 +4168,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
         // Retry with Claude if it returned the wrong number of question marks
         if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
           const retrySystem = systemMsg + `\n\n[CRITICAL: Your response must contain exactly one question mark. Currently has ${qCount}. ${qCount === 0 ? "End with one specific question." : "Remove all questions except the single most important one."}]`;
-          const retried = await generatePhase2WithClaude(retrySystem, conversationHistory as Array<{ role: "user" | "assistant"; content: string }>);
+          const retried = await generatePhase2WithClaude(retrySystem, conversationHistory as Array<{ role: "user" | "assistant"; content: string }>, nextQuestion);
           if (retried.length > 20 && questionMarkCount(retried) === 1) {
             phase2Text = retried;
           }

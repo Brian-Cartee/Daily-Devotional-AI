@@ -376,16 +376,15 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       const userReply = await simulateUserReply(client, scenario, messages);
       transcript.push({ role: "user", text: userReply });
 
-      // Store for messages array (needed before Philip responds)
+      // Push user reply — Philip receives the FULL history including this message
       messages.push({ role: "user", content: userReply });
 
-      // Call Philip
-      const phase1UserReply = exchanges[0].userMessage; // original first user message
+      // Call Philip with all messages including the latest user reply
       const philipReply = await callPhilipResponse(
         scenario.situation,
-        messages.slice(0, -1), // messages up to before this user reply
+        messages,
         phase1Response,
-        exchanges[1]?.userMessage ?? "Keep going.",
+        exchanges.length >= 2 ? exchanges[1].userMessage : userReply,
       );
       transcript.push({ role: "philip", text: philipReply });
       messages.push({ role: "assistant", content: philipReply });
