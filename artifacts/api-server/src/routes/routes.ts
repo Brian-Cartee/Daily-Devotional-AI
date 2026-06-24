@@ -5622,7 +5622,7 @@ Under 200 words. Warm, unhurried, real. Write in ${lang === "es" ? "Spanish" : l
           prompt,
           n: 1,
           size: "1536x1024",
-          quality: "standard",
+          quality: "medium",
         } as any);
         const imageUrl = response.data?.[0]?.url;
         if (imageUrl) {

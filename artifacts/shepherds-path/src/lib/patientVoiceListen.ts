@@ -56,16 +56,16 @@ function wordCount(text: string): number {
 }
 
 function dynamicPauseMs(words: number): number {
-  if (words < 20) return 1500;
-  if (words < 60) return 1300;
-  return 1200;
+  if (words < 20) return 1800;
+  if (words < 60) return 1600;
+  return 1500;
 }
 
 function resolveConversationalAutoSubmitMs(words: number, override?: number): number {
   if (override != null) return override;
-  if (words >= 80) return 1200;
-  if (words >= 40) return 1300;
-  if (words >= 20) return 1400;
+  if (words >= 80) return 1500;
+  if (words >= 40) return 1600;
+  if (words >= 20) return 1700;
   return FALLBACK_AUTO_SUBMIT_MS;
 }
 
