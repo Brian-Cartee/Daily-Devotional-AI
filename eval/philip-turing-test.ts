@@ -244,9 +244,17 @@ Score this response:
   }
 
   try {
-    const parsed = JSON.parse(raw.replace(/```json\n?|\n?```/g, "").trim());
+    // Try direct parse first, then extract JSON object from surrounding text
+    const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
+    let jsonStr = cleaned;
+    if (!jsonStr.startsWith("{")) {
+      const match = jsonStr.match(/\{[\s\S]*\}/);
+      if (match) jsonStr = match[0];
+    }
+    const parsed = JSON.parse(jsonStr);
     return parsed as JudgeExchangeResult;
   } catch {
+    console.error(`Parse error on exchange ${exchangeNum}. Raw response:\n${raw}\n`);
     return {
       curiosity: 5, specificity: 5, patternBreak: 5,
       illusionHold: true, pullScore: 5,

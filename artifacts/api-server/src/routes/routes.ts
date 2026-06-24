@@ -4096,8 +4096,12 @@ HARD RULES:
   • "What does X actually look like?"
   • "Is there someone you can talk to / lean on?" (support-network probing)
   • Any question about sleep, food, appetite, or self-care — unless user mentioned it first
+  • "When you..." as the opening of your question — this pattern has been overused. Start with something different.
+  • "What would it mean to..." — too abstract, always fails
+  • "Five years from now..." / future-projection questions — these abandon the present wound
 - NEVER repeat the same STRUCTURE as any question already asked (check questions_asked in state)
 - NEVER name an emotion (guilt, shame, anger, fear, grief) the user has not already used themselves
+- NEVER pivot away from a raw image or confession the user just offered — if they described a specific scene, stay there
 - Under 20 words. End with ?
 
 Output the question only.`,
