@@ -357,6 +357,8 @@ export default function GuidancePage() {
   const [phase1ShowContinue, setPhase1ShowContinue] = useState(false);
   const [showPhase1TypeFallback, setShowPhase1TypeFallback] = useState(false);
   // processingBridge is now derived from convo machine
+  const processingBridgeRef = useRef(processingBridge);
+  useEffect(() => { processingBridgeRef.current = processingBridge; }, [processingBridge]);
   const [phase1Interim, setPhase1Interim] = useState("");
   const [followUp, setFollowUp] = useState("");
   // followUpListening, followUpSpeaking are now derived from convo machine
@@ -439,6 +441,7 @@ export default function GuidancePage() {
   // Phase 3: threshold overlay — full-screen entry before first word
   const [showThresholdOverlay, setShowThresholdOverlay] = useState(true);
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
+  const [entryMicLive, setEntryMicLive] = useState(false);
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
   // Pulse appears immediately — don't hide mic button behind a timer on iOS
@@ -1316,11 +1319,16 @@ export default function GuidancePage() {
       autoSubmitSilenceMs: VOICE_SILENCE_ENTRY_MS,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
+        else if (interim) setHeartInput((prev) => prev || interim);
         setInterimTranscript(interim);
       },
       onPhaseChange: setHeartListenPhase,
+      onListenEnd: () => {
+        setEntryMicLive(false);
+        heartVoiceRef.current = null;
+      },
       onAutoSubmit: () => {
-        if (heartSubmittingRef.current || processingBridge) return;
+        if (heartSubmittingRef.current || processingBridgeRef.current) return;
         const preview = heartVoiceRef.current?.getPreview() ?? heartInput;
         submitHeartEntryRef.current(preview, true);
       },
@@ -1328,6 +1336,7 @@ export default function GuidancePage() {
     if (!listener) return;
     heartVoiceRef.current = listener;
     listener.start();
+    setEntryMicLive(true);
     setHeartHasRecording(true);
     convo.dispatch({ type: "ENTRY_OPEN" });
   }, []);
@@ -2170,22 +2179,22 @@ export default function GuidancePage() {
               {/* Pure voice UI — mic only, no text */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
 
-                {/* Mic button — state-driven color only */}
+                {/* Mic button — state-driven by entryMicLive (real mic state), not convo phase */}
                 <motion.button
                   type="button"
                   onClick={toggleHeartVoice}
-                  aria-label={heartListening ? "Stop speaking" : greetingSpeaking ? "Philip is speaking" : "Speak to Philip"}
+                  aria-label={entryMicLive ? "Stop speaking" : greetingSpeaking ? "Philip is speaking" : "Speak to Philip"}
                   disabled={greetingSpeaking}
                   style={{
                     width: "96px",
                     height: "96px",
                     borderRadius: "9999px",
-                    border: heartListening
+                    border: entryMicLive
                       ? "1.5px solid rgba(239,68,68,0.55)"
                       : greetingSpeaking
                         ? "1.5px solid rgba(255,255,255,0.08)"
                         : "1.5px solid rgba(255,255,255,0.15)",
-                    background: heartListening
+                    background: entryMicLive
                       ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
                       : greetingSpeaking
                         ? "radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)"
@@ -2196,7 +2205,7 @@ export default function GuidancePage() {
                     alignItems: "center",
                     justifyContent: "center",
                   }}
-                  animate={heartListening ? {
+                  animate={entryMicLive ? {
                     boxShadow: [
                       "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
                       "0 0 0 20px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.44)",
@@ -2214,9 +2223,9 @@ export default function GuidancePage() {
                     boxShadow: "0 0 0 0px rgba(255,255,255,0.0)",
                     scale: 1,
                   }}
-                  transition={{ duration: heartListening ? 1.6 : greetingSpeaking ? 2.0 : 0.3, repeat: heartListening || greetingSpeaking ? Infinity : 0, ease: "easeInOut" }}
+                  transition={{ duration: entryMicLive ? 1.6 : greetingSpeaking ? 2.0 : 0.3, repeat: entryMicLive || greetingSpeaking ? Infinity : 0, ease: "easeInOut" }}
                 >
-                  {heartListening && (
+                  {entryMicLive && (
                     <span style={{
                       position: "absolute",
                       inset: 0,
@@ -2228,7 +2237,7 @@ export default function GuidancePage() {
                   <Mic
                     size={24}
                     style={{
-                      color: heartListening
+                      color: entryMicLive
                         ? "rgba(239,68,68,0.90)"
                         : greetingSpeaking
                           ? "rgba(255,255,255,0.20)"
@@ -2245,7 +2254,7 @@ export default function GuidancePage() {
                   fontSize: "11px",
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: heartListening
+                  color: entryMicLive
                     ? "rgba(239,68,68,0.60)"
                     : greetingSpeaking
                       ? "rgba(255,255,255,0.18)"
@@ -2254,7 +2263,7 @@ export default function GuidancePage() {
                   transition: "color 0.3s ease",
                   userSelect: "none",
                 }}>
-                  {heartListening ? "listening" : greetingSpeaking ? "speaking" : "tap to speak"}
+                  {entryMicLive ? "listening" : greetingSpeaking ? "speaking" : "tap to speak"}
                 </p>
 
                 {/* Type fallback — barely visible, always accessible */}

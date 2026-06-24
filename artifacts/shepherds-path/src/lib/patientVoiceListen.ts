@@ -25,6 +25,8 @@ export type PatientVoiceOptions = {
   onReadyPrompt?: () => void;
   /** Conversational: auto-handoff after sustained silence */
   onAutoSubmit?: () => void;
+  /** Listener stopped without submitting (getUserMedia failed, nothing captured, or forceStop) */
+  onListenEnd?: () => void;
   conversational?: boolean;
   autoSubmitSilenceMs?: number;
   minCharsForAutoSubmit?: number;
@@ -84,6 +86,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   let rec: InstanceType<NonNullable<typeof SR>> | null = null;
   let previewTranscript = "";
+  let latestInterim = "";
   let active = false;
   let userStopped = false;
   let finalizing = false;
@@ -187,21 +190,23 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     opts.onPhaseChange?.(phase);
   };
 
+  const effectivePreview = () =>
+    previewTranscript.trim() || latestInterim.trim();
+
   const hasEnoughToSubmit = (): boolean => {
     const min = opts.minCharsForAutoSubmit ?? DEFAULT_MIN_CHARS;
-    return previewTranscript.trim().length >= min || audioChunks.length > 0;
+    return effectivePreview().length >= min || audioChunks.length > 0;
   };
 
   const pushPreview = (final: string, interim: string) => {
     const display = (final + (interim ? ` ${interim}` : "")).trim();
     opts.onTranscript(final, interim);
     if (display) previewTranscript = final || display;
+    latestInterim = interim;
   };
 
-  const forceStop = () => {
-    // Called when silence timer fires but nothing was captured — stop the mic
-    // so it doesn't stay red forever. onAutoSubmit is NOT called (nothing to submit).
-    if (!active) return;
+  // Shared teardown — always notifies GuidancePage so mic UI never stays stuck.
+  const endListening = (notifyListenEnd: boolean) => {
     userStopped = true;
     active = false;
     clearTimers();
@@ -211,38 +216,39 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
     void waitForRecorderStop();
+    if (notifyListenEnd) opts.onListenEnd?.();
+  };
+
+  const forceStop = () => {
+    // Called when nothing was captured — stop mic and notify UI to reset.
+    if (!active) return;
+    endListening(true);
   };
 
   const triggerAutoSubmit = () => {
     if (autoSubmitFired || !active) return;
     if (!hasEnoughToSubmit()) {
-      // Nothing captured yet — wait one more second then force-stop the mic.
-      // Prevents the red mic from staying stuck when MediaRecorder or SR failed.
       if (!hardTimeoutTimer) {
         hardTimeoutTimer = setTimeout(() => {
           hardTimeoutTimer = null;
           if (!active) return;
-          if (hasEnoughToSubmit()) {
-            triggerAutoSubmit();
-          } else {
-            forceStop();
-          }
+          if (hasEnoughToSubmit()) triggerAutoSubmit();
+          else forceStop();
         }, 1500);
       }
       return;
     }
     autoSubmitFired = true;
-    userStopped = true;
-    active = false;
+    // Don't set active=false yet — defer until after waitForRecorderStop so
+    // absoluteMax can't fire a second submit and onAutoSubmit is guaranteed.
     clearTimers();
     clearSilencePoll();
-    clearAbsoluteMax();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
-    void waitForRecorderStop().then(() => {
-      opts.onAutoSubmit?.();
-    });
+    void waitForRecorderStop()
+      .then(() => { endListening(false); opts.onAutoSubmit?.(); })
+      .catch(() => { endListening(false); opts.onAutoSubmit?.(); });
   };
 
   // ---------------------------------------------------------------------------
@@ -446,7 +452,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
     recognition.onspeechend = () => {
       if (!active || userStopped) return;
-      lastSpeechAt = Date.now();
+      // Don't reset lastSpeechAt — iOS spams onspeechend and would push the
+      // silence window forward, preventing handoff. Just reschedule timers.
       scheduleFallbackTimers();
     };
 
@@ -533,22 +540,15 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       }, 25_000);
     },
     stop() {
-      userStopped = true;
-      active = false;
-      clearTimers();
-      clearSilencePoll();
-      clearAbsoluteMax();
-      teardownTurnService();
-      try { rec?.stop(); } catch { /* noop */ }
-      rec = null;
-      void waitForRecorderStop();
-      return previewTranscript.trim();
+      if (!active) return effectivePreview();
+      endListening(false);
+      return effectivePreview();
     },
     hasRecordedAudio() {
       return audioChunks.length > 0;
     },
     getPreview() {
-      return previewTranscript.trim();
+      return effectivePreview();
     },
     async finalizeTranscript() {
       await waitForRecorderStop();
@@ -574,19 +574,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       return finalizing;
     },
     destroy() {
-      userStopped = true;
-      active = false;
       finalizing = false;
       autoSubmitFired = true;
-      clearTimers();
-      clearSilencePoll();
-      clearAbsoluteMax();
-      teardownTurnService();
-      try { rec?.stop(); } catch { /* noop */ }
-      rec = null;
+      if (active) endListening(false);
       void waitForRecorderStop().finally(() => {
         audioChunks = [];
         previewTranscript = "";
+        latestInterim = "";
       });
     },
   };
