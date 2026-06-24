@@ -2167,116 +2167,119 @@ export default function GuidancePage() {
                 Back
               </button>
 
-              {/* Philip's question — already present, not typing in */}
-              <p
-                style={{
-                  fontFamily: "'Georgia', serif",
-                  fontSize: "clamp(1.45rem, 5vw, 1.75rem)",
-                  fontWeight: 300,
-                  color: "rgba(255,255,255,0.92)",
-                  textAlign: "center",
-                  lineHeight: 1.35,
-                  marginBottom: "0",
-                  maxWidth: "22ch",
-                }}
-              >
-                What's on your heart today?
-              </p>
+              {/* Pure voice UI — mic only, no text */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
 
-              {/* Breath pulse — appears after 2s of stillness */}
-              <AnimatePresence>
-                {overlayPulseVisible && (
-                  <motion.div
-                    key="overlay-pulse"
-                    initial={{ opacity: 1, scale: 1 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.85 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ marginTop: "52px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}
-                  >
-                    <motion.button
-                      type="button"
-                      onClick={toggleHeartVoice}
-                      aria-label={heartListening ? "Stop speaking" : "Speak to Philip"}
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        borderRadius: "9999px",
-                        border: heartListening
-                          ? "1.5px solid rgba(239,68,68,0.50)"
-                          : "1.5px solid rgba(139,92,246,0.30)",
-                        background: heartListening
-                          ? "radial-gradient(circle, rgba(239,68,68,0.20) 0%, rgba(180,20,20,0.06) 100%)"
-                          : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.04) 100%)",
-                        cursor: "pointer",
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      animate={heartListening ? {
-                        boxShadow: [
-                          "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.28)",
-                          "0 0 0 18px rgba(239,68,68,0.0), 0 0 44px 14px rgba(239,68,68,0.42)",
-                          "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.28)",
-                        ],
-                        scale: [1, 1.05, 1],
-                      } : {
-                        boxShadow: [
-                          "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.18)",
-                          "0 0 0 14px rgba(139,92,246,0.0), 0 0 36px 12px rgba(139,92,246,0.28)",
-                          "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.18)",
-                        ],
-                        scale: [1, 1.04, 1],
-                      }}
-                      transition={{ duration: heartListening ? 1.6 : 2.4, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      {heartListening && (
-                        <span style={{
-                          position: "absolute",
-                          inset: 0,
-                          borderRadius: "9999px",
-                          background: "rgba(239,68,68,0.10)",
-                          animation: "ping 1s cubic-bezier(0,0,0.2,1) infinite",
-                        }} />
-                      )}
-                      <Mic
-                        size={22}
-                        style={{
-                          color: heartListening ? "rgba(239,68,68,0.85)" : "rgba(139,92,246,0.70)",
-                          position: "relative",
-                          zIndex: 1,
-                        }}
-                      />
-                    </motion.button>
+                {/* Mic button — state-driven color only */}
+                <motion.button
+                  type="button"
+                  onClick={toggleHeartVoice}
+                  aria-label={heartListening ? "Stop speaking" : greetingSpeaking ? "Philip is speaking" : "Speak to Philip"}
+                  disabled={greetingSpeaking}
+                  style={{
+                    width: "96px",
+                    height: "96px",
+                    borderRadius: "9999px",
+                    border: heartListening
+                      ? "1.5px solid rgba(239,68,68,0.55)"
+                      : greetingSpeaking
+                        ? "1.5px solid rgba(255,255,255,0.08)"
+                        : "1.5px solid rgba(255,255,255,0.15)",
+                    background: heartListening
+                      ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
+                      : greetingSpeaking
+                        ? "radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)"
+                        : "radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+                    cursor: greetingSpeaking ? "default" : "pointer",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  animate={heartListening ? {
+                    boxShadow: [
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
+                      "0 0 0 20px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.44)",
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
+                    ],
+                    scale: [1, 1.05, 1],
+                  } : greetingSpeaking ? {
+                    boxShadow: [
+                      "0 0 0 0px rgba(255,255,255,0.0), 0 0 16px 4px rgba(255,255,255,0.06)",
+                      "0 0 0 12px rgba(255,255,255,0.0), 0 0 28px 10px rgba(255,255,255,0.10)",
+                      "0 0 0 0px rgba(255,255,255,0.0), 0 0 16px 4px rgba(255,255,255,0.06)",
+                    ],
+                    scale: [1, 1.03, 1],
+                  } : {
+                    boxShadow: "0 0 0 0px rgba(255,255,255,0.0)",
+                    scale: 1,
+                  }}
+                  transition={{ duration: heartListening ? 1.6 : greetingSpeaking ? 2.0 : 0.3, repeat: heartListening || greetingSpeaking ? Infinity : 0, ease: "easeInOut" }}
+                >
+                  {heartListening && (
+                    <span style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "9999px",
+                      background: "rgba(239,68,68,0.10)",
+                      animation: "ping 1s cubic-bezier(0,0,0.2,1) infinite",
+                    }} />
+                  )}
+                  <Mic
+                    size={24}
+                    style={{
+                      color: heartListening
+                        ? "rgba(239,68,68,0.90)"
+                        : greetingSpeaking
+                          ? "rgba(255,255,255,0.20)"
+                          : "rgba(255,255,255,0.50)",
+                      position: "relative",
+                      zIndex: 1,
+                      transition: "color 0.3s ease",
+                    }}
+                  />
+                </motion.button>
 
-                    {/* "or type" — always available, stops mic if running */}
-                    <motion.button
-                      type="button"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: heartListening ? 0 : 1.5, duration: 0.5 }}
-                      onClick={() => {
-                        destroyHeartVoice();
-                        setHeartListening(false);
-                        setShowThresholdOverlay(false);
-                        setShowHeartTypeFallback(true);
-                      }}
-                      style={{
-                        fontSize: "12px",
-                        color: heartListening ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.22)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "4px 0",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      {heartListening ? "stop and type instead" : "or type"}
-                    </motion.button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                {/* Single state word — only visible cue */}
+                <p style={{
+                  fontSize: "11px",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: heartListening
+                    ? "rgba(239,68,68,0.60)"
+                    : greetingSpeaking
+                      ? "rgba(255,255,255,0.18)"
+                      : "rgba(255,255,255,0.28)",
+                  margin: 0,
+                  transition: "color 0.3s ease",
+                  userSelect: "none",
+                }}>
+                  {heartListening ? "listening" : greetingSpeaking ? "speaking" : "tap to speak"}
+                </p>
+
+                {/* Type fallback — barely visible, always accessible */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    destroyHeartVoice();
+                    setHeartListening(false);
+                    setShowThresholdOverlay(false);
+                    setShowHeartTypeFallback(true);
+                  }}
+                  style={{
+                    fontSize: "11px",
+                    color: "rgba(255,255,255,0.18)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px 0",
+                    letterSpacing: "0.06em",
+                    marginTop: "8px",
+                  }}
+                >
+                  type instead
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
