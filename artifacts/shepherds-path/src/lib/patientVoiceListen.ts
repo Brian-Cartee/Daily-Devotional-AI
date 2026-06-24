@@ -505,6 +505,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       setupTurnService(stream);
     } catch {
       stopTracks();
+      // getUserMedia was blocked (iOS transient activation expired, or permission denied).
+      // Fire onListenEnd so the caller can clean up entryMicLive and heartVoiceRef.
+      endListening(true);
     }
   };
 

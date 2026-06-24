@@ -1352,6 +1352,15 @@ export default function GuidancePage() {
 
   const toggleHeartVoice = () => {
     if (heartListening) {
+      // entryMicLive=false while heartListening=true means the auto-mic attempt
+      // failed (iOS blocked getUserMedia after transient activation expired).
+      // A manual tap IS a user gesture — restart the mic instead of trying to submit.
+      if (!entryMicLive) {
+        heartVoiceRef.current?.destroy();
+        heartVoiceRef.current = null;
+        startHeartListening(false);
+        return;
+      }
       const preview = heartVoiceRef.current?.getPreview() ?? heartInput;
       const hasAudio = heartVoiceRef.current?.hasRecordedAudio();
       if (preview.trim().length >= GUIDANCE_INPUT_MIN || hasAudio) {
@@ -1615,6 +1624,20 @@ export default function GuidancePage() {
         ? reentryLine
         : buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, null);
       const line = dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback;
+
+      // Warm the iOS audio pipeline so the first syllable isn't swallowed on cold start.
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx() as AudioContext;
+          const buf = ctx.createBuffer(1, 1, 22050);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(ctx.destination);
+          src.start(0);
+          void ctx.resume();
+        }
+      } catch { /* noop */ }
 
       cancelGreetingSpeakRef.current = speakShepherdStream(line, {
         isPro: isProVerifiedLocally(),
