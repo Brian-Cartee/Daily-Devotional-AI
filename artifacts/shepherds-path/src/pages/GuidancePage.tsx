@@ -359,6 +359,10 @@ export default function GuidancePage() {
   // processingBridge is now derived from convo machine
   const processingBridgeRef = useRef(processingBridge);
   useEffect(() => { processingBridgeRef.current = processingBridge; }, [processingBridge]);
+  const phase2LoadingRef = useRef(phase2Loading);
+  useEffect(() => { phase2LoadingRef.current = phase2Loading; }, [phase2Loading]);
+  const phase1ResponseRef = useRef(phase1Response);
+  useEffect(() => { phase1ResponseRef.current = phase1Response; }, [phase1Response]);
   const [phase1Interim, setPhase1Interim] = useState("");
   const [followUp, setFollowUp] = useState("");
   // followUpListening, followUpSpeaking are now derived from convo machine
@@ -370,6 +374,8 @@ export default function GuidancePage() {
   const stayMicStartedRef = useRef(false);
   const submitFollowUpRef = useRef<(fromVoice: boolean, textOverride?: string) => void>(() => {});
   const [isSending, setIsSending] = useState(false);
+  const isSendingRef = useRef(isSending);
+  useEffect(() => { isSendingRef.current = isSending; }, [isSending]);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showListenUpgrade, setShowListenUpgrade] = useState(false);
   const [showAiPause, setShowAiPause] = useState(false);
@@ -1392,7 +1398,7 @@ export default function GuidancePage() {
         phase1TakeYourTimeRef.current = speakTakeYourTimeBridge();
       },
       onAutoSubmit: () => {
-        if (phase1SubmittingRef.current || phase2Loading || processingBridge || !phase1Response) return;
+        if (phase1SubmittingRef.current || phase2LoadingRef.current || processingBridgeRef.current || !phase1ResponseRef.current) return;
         handlePhase1ContinueRef.current(undefined, true);
       },
     });
@@ -1454,7 +1460,7 @@ export default function GuidancePage() {
         followUpTakeYourTimeRef.current = speakTakeYourTimeBridge();
       },
       onAutoSubmit: () => {
-        if (followUpSubmittingRef.current || isSending || processingBridge) return;
+        if (followUpSubmittingRef.current || isSendingRef.current || processingBridgeRef.current) return;
         submitFollowUpRef.current(true);
       },
     });

@@ -173,7 +173,7 @@ They respond to the wound beneath the statement.
 
 RHYTHM — short sentence, pause, observation, pause, truth.
 "This has been sitting in you for a while."
-"I can hear it."
+"It comes through."
 "The exhaustion isn't coming from this week."
 "It's coming from months of trying to stay strong."
 

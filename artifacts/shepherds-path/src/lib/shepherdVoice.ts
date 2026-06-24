@@ -183,6 +183,7 @@ export function speakShepherdStream(
   let audio: HTMLAudioElement | null = null;
   let sourceBuffer: SourceBuffer | null = null;
   let mediaSource: MediaSource | null = null;
+  let canplayDeadlineTimer: number | undefined;
 
   const proFlag = opts?.isPro !== undefined ? opts.isPro : isProVerifiedLocally();
 
@@ -236,6 +237,12 @@ export function speakShepherdStream(
         return;
       }
 
+      // If oncanplay never fires (iOS ManagedMediaSource edge case), signal failure
+      // so speakShepherdStreamWithMicHandoff's own fallback timer can open the mic.
+      canplayDeadlineTimer = window.setTimeout(() => {
+        if (!cancelled) { cleanupAudio(); opts?.onFail?.(); opts?.onEnd?.(); }
+      }, 8000);
+
       sourceBuffer.addEventListener("updateend", () => {
         appending = false;
         if (pendingChunks.length > 0) {
@@ -276,6 +283,7 @@ export function speakShepherdStream(
     });
 
     const cleanupAudio = () => {
+      window.clearTimeout(canplayDeadlineTimer);
       if (audio) {
         audio.pause();
         audio.src = "";
@@ -287,6 +295,7 @@ export function speakShepherdStream(
 
     audio.oncanplay = () => {
       if (cancelled) return;
+      window.clearTimeout(canplayDeadlineTimer);
       audio!.play()
         .then(() => {
           // Small delay before signaling onStart — gives audio output time to
