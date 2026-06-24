@@ -4084,12 +4084,14 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 Given the conversation state and history, output ONLY the single best question Philip should ask — nothing else. No preamble, no explanation.
 
 Rules:
-- The question must explore territory NOT YET covered (see state)
+- FIRST PRIORITY: If the user's last message contains a vivid image, a raw confession, or a specific vulnerable detail they haven't been asked about yet — ask about THAT before moving to new territory. Examples: "no reason to get up", "lying there until sundown", "said things I can't take back" — these demand follow-up before changing topics.
+- Otherwise, pick from NOT YET EXPLORED areas (see state)
 - It must NOT repeat or rephrase any question already asked (see state)
 - It must connect directly to what the user JUST said: "${lastUserMessage.slice(0, 200)}"
 - It must be specific to this person, not generic
 - Under 20 words
 - End with ?
+- CRITICAL: Do NOT introduce emotions or experiences (guilt, shame, anger, fear) that the user has not already explicitly named. Only ask about what they said, not what you infer they feel.
 
 Output the question only.`,
         messages: [{ role: "user", content: state }],
