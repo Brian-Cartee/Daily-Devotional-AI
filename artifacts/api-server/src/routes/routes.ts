@@ -52,12 +52,15 @@ import {
   TALK_IT_THROUGH_FIRST_RESPONSE,
   TALK_IT_THROUGH_RESPONSE_EXAMPLES,
   TALK_IT_THROUGH_FOLLOW_UP,
+  PHILIP_MOVE_TEMPLATES,
+  detectGuardedEntry,
+  TALK_IT_THROUGH_PHASE1_GUARDED_SYSTEM_PROMPT,
   buildTalkItThroughVersePrayerPrompt,
   buildTalkItThroughVersePrayerUserContent,
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
-import { buildVariantSystemPrompt, isAbTestEnabled } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, type ConversationState } from "../conversationState";
+import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, type ConversationState } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -3778,9 +3781,12 @@ Return only the greeting line.`;
     const soloSystemPrompt = `You are providing Christian spiritual guidance inside Shepherd's Path. Do not refer to yourself as Philip. Do not use companion-persona language. Do not say "I'm here with you." Offer calm, biblical, emotionally honest guidance. Be direct, gentle, and grounded in Scripture. One faithful question to go deeper. Under 100 words. No verse, no prayer, no advice yet.`;
 
     try {
+      const isGuardedEntry = detectGuardedEntry(situation.trim());
       const systemPrompt = isSoloMode
         ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}`
-        : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}`;
+        : isGuardedEntry
+          ? `${TALK_IT_THROUGH_PHASE1_GUARDED_SYSTEM_PROMPT}${CRISIS_PROTOCOL}${nameNote}${phase1HeartNote}${phase1SafetyNote}`
+          : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}`;
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt },
         { role: "user", content: situation.trim() },
@@ -4114,13 +4120,18 @@ WRONG: "What would it mean to..." (too abstract, abandons the wound)
 WRONG: "Five years from now..." (future projection)
 WRONG: "Is there someone you can talk to?" (support-network probe)
 WRONG: Opening with "When you..." (overused)
+WRONG: "What did X feel like?" / "What does X feel like?" (formula — judge flags every time)
+WRONG: "How did X feel?" / "What was that like for you?" (same formula)
+WRONG: Opening the question by quoting their exact phrase back to them
+WRONG: "That's not X" / diagnosis reframes in any form
 WRONG: Naming an emotion (guilt, shame, anger, fear, grief) they haven't used themselves
 WRONG: Same structure as any question already in questions_asked
 
 These patterns pass:
 RIGHT: "When did [their exact phrase] first start feeling that way?"
 RIGHT: "What happened to [specific person/moment they named] after [event they described]?"
-RIGHT: "What did [their exact word] feel like the first time you noticed it?"
+RIGHT: "Where does that word come from for you?"
+RIGHT: "What did [specific person] do that morning?"
 
 Output only the question — no preamble, no explanation, no meta-commentary.`,
         messages: [{ role: "user", content: state }],
@@ -4172,7 +4183,7 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
     const questionMarkCount = (t: string) => (t.match(/\?/g) ?? []).length;
 
     try {
-      let phase2Text: string;
+      let phase2Text = "";
 
       let nextQuestion = "";
       let usedMechanicalConstruction = false;
@@ -4206,8 +4217,22 @@ NEVER summarize the whole conversation.
 Under 40 words total.`;
           phase2Text = await generatePhase2WithClaude(closingSystem, claudeHistory, "");
         } else {
-          // Step 1: choose the best next question explicitly
-          if (conversationStateBlock) {
+          const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
+            .reverse().find(m => m.role === "user")?.content ?? "";
+          const exchangeNum = Math.floor(conversationHistory.length / 2);
+          const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
+          const lastAssistantMsg = philipMsgs[philipMsgs.length - 1]?.content ?? "";
+          const lastWasSit = !lastAssistantMsg.includes("?");
+          const formulaStreak = getFormulaStreak(philipMsgs);
+          const forceSit = detectPassiveSuicidalIdeation(lastUserMsg);
+          const priorUserMsgs = claudeHistory.filter(m => m.role === "user").slice(0, -1).map(m => m.content);
+          const hasNewDetail = userMessageHasFreshDetail(lastUserMsg, priorUserMsgs);
+          const movesUsed = conversationState?.moves_used ?? [];
+
+          const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
+
+          // Passive SI or forced sit — skip question planner; land weight only
+          if (!forceSit && conversationStateBlock) {
             try {
               nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
             } catch {
@@ -4215,68 +4240,44 @@ Under 40 words total.`;
             }
           }
 
-          if (nextQuestion) {
-            const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
-              .reverse().find(m => m.role === "user")?.content ?? "";
-            const exchangeNum = Math.floor(conversationHistory.length / 2);
+          if (forceSit || nextQuestion) {
+            const selectedMove = forceSit ? "sit" : selectPhilipMove({
+              lastMove: conversationState?.last_move,
+              ackRegister: conversationState?.ack_register ?? null,
+              literaryCooldownRemaining: conversationState?.literary_cooldown_remaining ?? getLiteraryCooldownRemaining(philipMsgs),
+              formulaStreak,
+              isLament,
+              exchangeNum,
+              lastWasSit,
+              movesUsed,
+              hasNewDetail,
+              forceSit,
+            });
 
-            // Lament: high-signal grief/anguish (not generic "I don't know")
-            const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
-
-            // Formula streak detection
-            const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
-            const lastAssistantMsg = philipMsgs[philipMsgs.length - 1]?.content ?? "";
-            const lastWasShapeC = !lastAssistantMsg.includes("?");
-            const formulaStreak3 = philipMsgs.slice(-3).length >= 3 && philipMsgs.slice(-3).every(m => m.content.includes("?"));
-            const formulaStreak4 = philipMsgs.slice(-4).length >= 4 && philipMsgs.slice(-4).every(m => m.content.includes("?"));
-            const formulaStreak5 = philipMsgs.slice(-5).length >= 5 && philipMsgs.slice(-5).every(m => m.content.includes("?"));
-
-            // Shape C selection (no question) — tiered by streak depth
-            // exchangeNum = N-1 at Philip's Nth response; >= 3 means 4th response or later
-            const shapeRoll = Math.random();
-            const useShapeC = !lastWasShapeC && (
-              isLament ? shapeRoll < 0.60 :
-              formulaStreak5 && exchangeNum >= 4 ? shapeRoll < 0.80 :
-              formulaStreak4 && exchangeNum >= 4 ? shapeRoll < 0.65 :
-              formulaStreak3 && exchangeNum >= 3 ? shapeRoll < 0.50 :
-              shapeRoll < 0.10
-            );
-
-            // Bare question — escalating probability as conversation deepens
-            // Judge consistently rewards well-aimed plain questions over aphoristic leads
-            const skipRoll = Math.random();
-            const skipAck = !useShapeC && (
-              exchangeNum >= 7 ? skipRoll < 0.65 :
-              exchangeNum >= 4 ? skipRoll < 0.50 :
-              false
-            );
-
-            if (skipAck) {
-              // Plain question — no ack, no preamble
+            if (selectedMove === "plain_question" && nextQuestion) {
               phase2Text = nextQuestion;
-            } else {
-              // Single utterance: tell the model which of the four FOLLOW_UP shapes to use
-              // so the shape selector aligns with rather than fights the system prompt
-              const move = exchangeNum % 4;
-              const shapeSelectors = [
-                "Use Shape D — name something the conversation reveals that they have not said directly, then the question. No literary reframe.",
-                "Use Shape A — one sentence echoing their EXACT word or phrase (no new images), then the question.",
-                "Use Shape D — name the tension between two specific things they actually said, then ask about it.",
-                "Use Shape B — lead with the question, follow with one brief specific observation grounded in their words.",
-              ];
-              const shapeNote = useShapeC
-                ? `\n\nSHAPE FOR THIS RESPONSE: Use Shape C. One sentence echoing their exact word. One declarative observation. No question mark. No "X became Y" structure.`
-                : `\n\nSHAPE FOR THIS RESPONSE: ${shapeSelectors[move]}`;
-
+            } else if (selectedMove === "skip" && nextQuestion && nextQuestion.split(/\s+/).length <= 10) {
+              phase2Text = nextQuestion;
+            } else if (selectedMove === "sit" || forceSit) {
               phase2Text = await generatePhase2WithClaude(
-                systemMsg + shapeNote,
+                systemMsg + PHILIP_MOVE_TEMPLATES.sit,
                 claudeHistory,
-                useShapeC ? "" : nextQuestion,
-                80,
+                "",
+                60,
+              );
+            } else if (nextQuestion) {
+              const moveNote = PHILIP_MOVE_TEMPLATES[selectedMove] ?? PHILIP_MOVE_TEMPLATES.plain_question;
+              phase2Text = await generatePhase2WithClaude(
+                systemMsg + moveNote,
+                claudeHistory,
+                nextQuestion,
+                selectedMove === "skip" ? 40 : 80,
               );
             }
-            usedMechanicalConstruction = true;
-          } else {
+            usedMechanicalConstruction = !!phase2Text;
+          }
+
+          if (!phase2Text) {
             phase2Text = await generatePhase2WithClaude(systemMsg, claudeHistory, "");
           }
         }

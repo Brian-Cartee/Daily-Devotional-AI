@@ -22,6 +22,16 @@ type OpenAIClient = {
   };
 };
 
+export type PhilipMove =
+  | "plain_question"
+  | "named_fact"
+  | "tension"
+  | "sit"
+  | "reflect_back"
+  | "skip";
+
+export type AckRegister = "plain" | "literary" | null;
+
 export interface ConversationState {
   core_issue: string;
   facts_learned: string[];
@@ -31,6 +41,240 @@ export interface ConversationState {
   metaphors_used: string[];
   user_exact_words: string[];  // vivid phrases the user themselves used
   conversation_closing: boolean;
+  last_move?: string;
+  ack_register?: AckRegister;
+  literary_cooldown_remaining?: number;
+  moves_used?: string[];
+}
+
+const LITERARY_ACK_PATTERNS = [
+  /\b\w+\s+became\s+\w+/i,
+  /\bis its own kind of\b/i,
+  /\bwhere\s+.+\s+used to\b/i,
+  /\blives in the\b/i,
+  /\bkind of violence\b/i,
+  /\bkind of grief\b/i,
+  /\bonly weapon\b/i,
+  /\bdidn't know to save\b/i,
+];
+
+/** Detect whether Philip's last preamble was aphoristic vs grounded in facts. */
+export function detectAckRegister(philipLastResponse: string): AckRegister {
+  const text = philipLastResponse.trim();
+  if (!text) return null;
+
+  const qIndex = text.indexOf("?");
+  const preamble = qIndex >= 0 ? text.slice(0, qIndex).trim() : text;
+  if (!preamble) return "plain";
+
+  if (LITERARY_ACK_PATTERNS.some(p => p.test(preamble))) return "literary";
+
+  // Aphorism structure without naming a specific person, date, or object from the scene
+  const hasProperNoun = /\b[A-Z][a-z]{2,}\b/.test(preamble);
+  const hasNumber = /\b\d+\b/.test(preamble);
+  const hasConcreteObject = /\b(coffee|morning|night|phone|bed|kitchen|hospital|church|work|home)\b/i.test(preamble);
+  if (!hasProperNoun && !hasNumber && !hasConcreteObject && preamble.split(/\s+/).length >= 8) {
+    return "literary";
+  }
+
+  return "plain";
+}
+
+/** Infer move type from Philip's last response when state extraction misses it. */
+export function inferLastMove(philipLastResponse: string): string | undefined {
+  const text = philipLastResponse.trim();
+  if (!text) return undefined;
+
+  if (!text.includes("?")) return "sit";
+
+  const qIndex = text.indexOf("?");
+  const beforeQ = text.slice(0, qIndex).trim();
+  const wordCount = text.split(/\s+/).length;
+
+  if (!beforeQ || beforeQ.length < 4) return wordCount <= 12 ? "skip" : "plain_question";
+  if (wordCount <= 10) return "skip";
+
+  const qStarts = /^\s*[^.!?]*\?/.test(text);
+  if (qStarts && beforeQ.length < 20) return "named_fact";
+
+  // Short preamble mirroring their phrase before the question
+  if (/^["'""]/.test(beforeQ)) return "reflect_back";
+  if (beforeQ.split(/\s+/).length <= 5 && !/\b(weeks?|months?|years?|used to|every|morning|night)\b/i.test(beforeQ)) {
+    return "reflect_back";
+  }
+
+  return "named_fact";
+}
+
+const PASSIVE_SI_PATTERNS = [
+  /\beasier not to wake up\b/i,
+  /\bjust not waking up\b/i,
+  /\bdon'?t want to wake up\b/i,
+  /\bwish i (didn'?t|wouldn'?t) wake\b/i,
+  /\bhope i don'?t wake\b/i,
+  /\bwouldn'?t mind (not )?waking up\b/i,
+  /\bdon'?t care if i wake\b/i,
+  /\bnot sure i want to wake\b/i,
+  /\beasier if i (didn'?t|never) wake\b/i,
+];
+
+/** Passive suicidal ideation — sit with them; do not run quote-then-ask. */
+export function detectPassiveSuicidalIdeation(text: string): boolean {
+  return PASSIVE_SI_PATTERNS.some(p => p.test(text));
+}
+
+/** Build move history from Philip's prior responses. */
+export function getMovesUsed(philipMessages: Array<{ content: string }>): string[] {
+  return philipMessages.map(m => inferLastMove(m.content) ?? "named_fact");
+}
+
+/** True when the latest user message adds a proper noun, number, or fresh detail. */
+export function userMessageHasFreshDetail(
+  lastUserMsg: string,
+  priorUserMsgs: string[],
+): boolean {
+  const prior = priorUserMsgs.join(" ").toLowerCase();
+  const nouns = lastUserMsg.match(/\b[A-Z][a-z]{2,}\b/g) ?? [];
+  if (nouns.some(n => !prior.includes(n.toLowerCase()))) return true;
+  const nums = lastUserMsg.match(/\b\d+\b/g) ?? [];
+  if (nums.some(n => !prior.includes(n))) return true;
+  const freshWords = lastUserMsg
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 5 && !prior.includes(w));
+  return freshWords.length >= 2;
+}
+
+/** How many turns remain in literary-ack cooldown (2 turns after an aphoristic preamble). */
+export function getLiteraryCooldownRemaining(
+  philipMessages: Array<{ content: string }>,
+): number {
+  if (philipMessages.length === 0) return 0;
+  const last = detectAckRegister(philipMessages[philipMessages.length - 1].content);
+  if (last === "literary") return 2;
+  if (philipMessages.length >= 2) {
+    const prev = detectAckRegister(philipMessages[philipMessages.length - 2].content);
+    if (prev === "literary") return 1;
+  }
+  return 0;
+}
+
+export function getFormulaStreak(
+  philipMessages: Array<{ content: string }>,
+): number {
+  let streak = 0;
+  for (let i = philipMessages.length - 1; i >= 0; i--) {
+    if (philipMessages[i].content.includes("?")) streak++;
+    else break;
+  }
+  return streak;
+}
+
+export interface SelectPhilipMoveInput {
+  lastMove?: string;
+  ackRegister?: AckRegister;
+  literaryCooldownRemaining?: number;
+  formulaStreak: number;
+  isLament: boolean;
+  exchangeNum: number;
+  lastWasSit: boolean;
+  movesUsed?: string[];
+  hasNewDetail?: boolean;
+  forceSit?: boolean;
+}
+
+function filterMovePool(
+  candidates: PhilipMove[],
+  lastMove: string | undefined,
+  exchangeNum: number,
+  movesUsed: string[],
+): PhilipMove[] {
+  let pool = candidates.filter(m => m !== lastMove);
+  if (pool.length === 0) pool = [...candidates];
+
+  const reflectCount = movesUsed.filter(m => m === "reflect_back").length;
+  const reflectInLast3 = movesUsed.slice(-3).includes("reflect_back");
+
+  // reflect_back: max 1/conversation, never from exchange 4+ (exchangeNum >= 3)
+  if (reflectCount >= 1 || reflectInLast3 || exchangeNum >= 3) {
+    pool = pool.filter(m => m !== "reflect_back");
+  }
+
+  if (pool.length === 0) return ["plain_question", "sit"];
+  return pool;
+}
+
+/** Deterministic move selection — no random rolls. */
+export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
+  const {
+    lastMove,
+    ackRegister,
+    literaryCooldownRemaining = 0,
+    formulaStreak,
+    isLament,
+    exchangeNum,
+    lastWasSit,
+    movesUsed = [],
+    hasNewDetail = false,
+    forceSit = false,
+  } = input;
+
+  if (forceSit) return "sit";
+
+  const pick = (candidates: PhilipMove[]): PhilipMove => {
+    const pool = filterMovePool(candidates, lastMove, exchangeNum, movesUsed);
+    return pool[exchangeNum % pool.length];
+  };
+
+  // After reflect_back → plain or sit only
+  if (lastMove === "reflect_back") {
+    return pick(["plain_question", "sit"]);
+  }
+
+  // Literary ack or active cooldown → plain or sit only (2-turn cooldown)
+  if (ackRegister === "literary" || literaryCooldownRemaining > 0) {
+    return pick(["plain_question", "sit"]);
+  }
+
+  // Formula streak → break with sit or bare question
+  if (formulaStreak >= 3) {
+    return pick(["sit", "plain_question"]);
+  }
+
+  // Lament → sit unless we just sat
+  if (isLament && !lastWasSit) {
+    return pick(["sit", "plain_question"]);
+  }
+
+  // Deep conversation — plain_question dominates (~80%)
+  if (exchangeNum >= 7) {
+    return pick(["plain_question", "plain_question", "plain_question", "skip", "sit"]);
+  }
+
+  // Mid conversation — plain_question base unless fresh detail warrants named_fact
+  if (exchangeNum >= 3) {
+    if (!hasNewDetail) {
+      return pick(["plain_question", "plain_question", "plain_question", "skip", "sit"]);
+    }
+    return pick(["plain_question", "plain_question", "named_fact", "skip", "sit"]);
+  }
+
+  // Early follow-ups — one reflect_back allowed at exchangeNum 1–2 only
+  if (exchangeNum >= 2) {
+    const reflectAllowed = movesUsed.filter(m => m === "reflect_back").length === 0;
+    return pick(
+      reflectAllowed
+        ? ["plain_question", "named_fact", "reflect_back"]
+        : ["plain_question", "named_fact"],
+    );
+  }
+
+  if (exchangeNum >= 1) {
+    const reflectAllowed = movesUsed.filter(m => m === "reflect_back").length === 0;
+    return pick(reflectAllowed ? ["named_fact", "reflect_back", "plain_question"] : ["named_fact", "plain_question"]);
+  }
+
+  return pick(["named_fact", "plain_question"]);
 }
 
 const CLOSING_PHRASES = [
@@ -57,6 +301,10 @@ const STATE_SYSTEM = `You track conversation state for a pastoral AI. Given the 
 Be precise and minimal. This state is injected into the next AI prompt to prevent repetition.
 
 CRITICAL — PRONOUNS: Track the exact name and pronouns the user uses for any person they mention. If they said "my husband John" — record "John (he/him)" in facts_learned. If they said "my wife Sarah" — record "Sarah (she/her)". If gender is unclear, record only the name. Never assume gender. Record exactly what the user said.
+
+PHILIP MOVE TRACKING: From Philip's most recent response, extract:
+- last_move: one of plain_question, named_fact, tension, sit, reflect_back, skip — the structural move he used
+- ack_register: "literary" if his preamble used aphoristic reframe ("X became Y", "X is its own kind of Y", "X where Y used to be", universal grief poetry without a specific fact) — otherwise "plain". If his response was question-only with no preamble, use "plain".
 
 Return ONLY valid JSON, no markdown, no extra text.`;
 
@@ -91,7 +339,9 @@ Extract the current conversation state:
   "questions_asked": ["the exact question Philip asked in each of his responses"],
   "metaphors_used": ["every metaphor or image Philip introduced — grayscale, the door, replaying it, fog, etc."],
   "user_exact_words": ["vivid or specific phrases the USER chose — not Philip's words, theirs"],
-  "conversation_closing": false
+  "conversation_closing": false,
+  "last_move": "plain_question | named_fact | tension | sit | reflect_back | skip — from Philip's last response",
+  "ack_register": "plain | literary | null — was Philip's last preamble aphoristic or grounded?"
 }
 
 For conversation_closing: set true if the most recent user message indicates they are ending the conversation (goodbye, I'm done, thanks, you're not listening, etc.).`;
@@ -110,6 +360,18 @@ For conversation_closing: set true if the most recent user message indicates the
 
     const raw = completion.choices[0]?.message?.content ?? "{}";
     const parsed = JSON.parse(raw) as ConversationState;
+
+    const philipMessages = messages.filter(m => m.role === "assistant");
+    const lastPhilip = philipMessages[philipMessages.length - 1]?.content ?? "";
+
+    if (lastPhilip) {
+      const detectedRegister = detectAckRegister(lastPhilip);
+      parsed.ack_register = detectedRegister ?? parsed.ack_register ?? "plain";
+      parsed.last_move = parsed.last_move || inferLastMove(lastPhilip);
+    }
+
+    parsed.literary_cooldown_remaining = getLiteraryCooldownRemaining(philipMessages);
+    parsed.moves_used = getMovesUsed(philipMessages);
 
     // Override closing detection with hard logic
     if (detectConversationClosing(lastUserMessage)) {
