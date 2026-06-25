@@ -3865,7 +3865,9 @@ Return only the greeting line.`;
     // Two-phase completion = first follow-up after a phase1 response (the original "2-phase UI flow").
     // Multi-turn conversations (exchanges 2+) send the full messages array — treat those as follow-ups.
     const isMultiTurn = Array.isArray(messages) && messages.length > 3;
-    const isTwoPhaseCompletion = !isMultiTurn && !!(phase1Response?.trim() && phase1UserReply?.trim());
+    // Require messages.length < 3 so exchange 2 (messages=[u1,a1,u2], length=3)
+    // falls through to isFollowUp/mechanical, not GPT-4o two-phase voice.
+    const isTwoPhaseCompletion = messages.length < 3 && !!(phase1Response?.trim() && phase1UserReply?.trim());
 
     if (isTwoPhaseCompletion) {
       if (!sessionId) {
@@ -4133,13 +4135,14 @@ Output the question only.`,
       system: string,
       history: Array<{ role: "user" | "assistant"; content: string }>,
       anchoredQuestion: string,
+      maxTokens = 120,
     ) => {
       const anchorInstruction = anchoredQuestion
         ? `\n\nYour response MUST end with this exact question (you may adjust wording slightly for flow, but stay faithful to its intent and keep it specific):\n"${anchoredQuestion}"`
         : "";
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 120,
+        max_tokens: maxTokens,
         system: system + anchorInstruction,
         messages: history,
       });
@@ -4212,40 +4215,23 @@ Under 40 words total.`;
           }
 
           if (nextQuestion) {
-            // Generate a landing sentence before the question — but vary the move so it
-            // doesn't become a formula. Later in the conversation, sometimes skip it entirely.
             const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
               .reverse().find(m => m.role === "user")?.content ?? "";
             const exchangeNum = Math.floor(conversationHistory.length / 2);
 
-            // Lament detection: HIGH-SIGNAL raw grief/anguish only — not "I don't know" (too common)
-            const lamentPatterns = [
-              /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i,
-            ];
-            const isLament = lamentPatterns.some(p => p.test(lastUserMsg));
+            // Lament: high-signal grief/anguish (not generic "I don't know")
+            const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
 
-            // Track if previous Philip response had no question (was a Shape C already)
-            const lastAssistantMsg = [...(claudeHistory)].reverse().find(m => m.role === "assistant")?.content ?? "";
-            const lastWasShapeC = !lastAssistantMsg.includes("?");
-
-            // Detect formula streak: if last 3, 4, or 5+ Philip responses all had a question,
-            // increase Shape C probability to break the pattern
+            // Formula streak detection
             const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
-            const last3 = philipMsgs.slice(-3);
-            const last4 = philipMsgs.slice(-4);
-            const last5 = philipMsgs.slice(-5);
-            const formulaStreak3 = last3.length >= 3 && last3.every(m => m.content.includes("?"));
-            const formulaStreak4 = last4.length >= 4 && last4.every(m => m.content.includes("?"));
-            const formulaStreak5 = last5.length >= 5 && last5.every(m => m.content.includes("?"));
+            const lastAssistantMsg = philipMsgs[philipMsgs.length - 1]?.content ?? "";
+            const lastWasShapeC = !lastAssistantMsg.includes("?");
+            const formulaStreak3 = philipMsgs.slice(-3).length >= 3 && philipMsgs.slice(-3).every(m => m.content.includes("?"));
+            const formulaStreak4 = philipMsgs.slice(-4).length >= 4 && philipMsgs.slice(-4).every(m => m.content.includes("?"));
+            const formulaStreak5 = philipMsgs.slice(-5).length >= 5 && philipMsgs.slice(-5).every(m => m.content.includes("?"));
 
-            // Shape C (no question) selection — tiered by streak depth:
-            // - Never back-to-back (prevents stalls)
-            // - High-signal lament: 60% chance
-            // - 5+ consecutive questions, exchange 4+: 80% chance (critical — must break)
-            // - 4+ consecutive questions, exchange 4+: 65% chance (deep streak)
-            // - 3 consecutive questions, exchange 3+: 50% chance (moderate streak — fire earlier)
-            // - Base rate: 10% for structural variety
-            // NOTE: exchangeNum at Philip's Nth response = N-1. So >= 3 means "4th response or later".
+            // Shape C selection (no question) — tiered by streak depth
+            // exchangeNum = N-1 at Philip's Nth response; >= 3 means 4th response or later
             const shapeRoll = Math.random();
             const useShapeC = !lastWasShapeC && (
               isLament ? shapeRoll < 0.60 :
@@ -4255,74 +4241,32 @@ Under 40 words total.`;
               shapeRoll < 0.10
             );
 
-            // After exchange 6, skip the acknowledgment ~25% of the time — a bare question
-            // can land better than another preamble in deep conversation.
-            const skipAck = !useShapeC && exchangeNum >= 6 && Math.random() < 0.25;
+            // Bare question 30% of the time mid-conversation — no preamble at all
+            const skipAck = !useShapeC && exchangeNum >= 4 && Math.random() < 0.30;
 
-            if (!skipAck) {
-              // Rotate between 4 landing moves so Philip doesn't repeat the same pattern.
-              const move = exchangeNum % 4;
-              const standardMoves = [
-                // Move 0: name what's underneath their words
-                `Name the thing UNDERNEATH what they said — not the surface feeling, what's driving it. One short sentence. Do not echo their words back. No opener starting with "I," "It," or "There."`,
-                // Move 1: name a specific detail they mentioned
-                `Pick the single most specific detail or word they used and land on it briefly. Don't rephrase it — just note it directly. One short sentence. No opener starting with "I," "It," or "There."`,
-                // Move 2: name a contradiction or tension you noticed
-                `Name a tension or contradiction in what they just said — something that pulls in two directions. One short sentence. No poetry. No opener starting with "I," "It," or "There."`,
-                // Move 3: short direct observation, no mirroring
-                `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I," "It," or "There."`,
-              ];
-              // For lament/Shape C: name the concrete thing, not a generic reaction
-              const lamentMove = `In one sentence, name the SPECIFIC THING they described — the actual person, place, year, action, or fact. Not your reaction to it. Under 15 words.`;
-              const moveInstruction = useShapeC ? lamentMove : standardMoves[move];
-
-              // Pull banned metaphors from state so the ack can't recycle images Philip already used
-              const bannedLine = conversationState?.metaphors_used?.length
-                ? `\nThese images are ALREADY USED in this conversation — do not reference any of them: ${conversationState.metaphors_used.join(", ")}`
-                : "";
-
-              const ackSystem = `You are Philip — a pastoral companion.
-
-The person just said: "${lastUserMsg.slice(0, 200)}"
-
-${moveInstruction}
-
-Output ONE sentence only — no preamble, no meta-commentary, no explanation of your reasoning. The sentence must begin with a concrete noun, verb, or emotional weight — never "I," "It," or "There." Name something specific. Under 20 words. No question marks. No quotation marks around the person's words.${bannedLine}
-
-Avoid these weak openers (they name your reaction, not the thing): "Makes sense", "That must hurt", "Understandably", "Of course", "That's a lot", "Makes complete sense". Name the SPECIFIC THING instead.
-
-WRONG — these are universal aphorisms about grief/loss, not about THIS person:
-"Ordinary moments become sacred only after they're gone forever."
-"Silence where a laugh used to live is its own kind of violence."
-
-RIGHT — these name what THIS person said, specific and grounded:
-"He said good morning first, every day, for forty-one years."
-"She stopped calling six months before anyone named what was happening."
-"Three weeks, and you still reach for the phone to tell him something."
-"He left for work that morning without knowing it was the last time."
-
-Say the sentence. Nothing else.`;
-
-              try {
-                const ackResponse = await anthropic.messages.create({
-                  model: "claude-sonnet-4-6",
-                  max_tokens: 60,
-                  system: ackSystem,
-                  messages: [{ role: "user", content: "Write the landing sentence only." }],
-                });
-                const ack = ackResponse.content.find(b => b.type === "text")?.text?.trim() ?? "";
-                if (useShapeC) {
-                  // Shape C: statement only, no question — let it land
-                  phase2Text = ack || nextQuestion;
-                } else {
-                  // Shape A: observation then question
-                  phase2Text = ack ? `${ack} ${nextQuestion}` : nextQuestion;
-                }
-              } catch {
-                phase2Text = nextQuestion;
-              }
-            } else {
+            if (skipAck) {
+              // Plain question — no ack, no preamble (Cursor: "plain question as base rate")
               phase2Text = nextQuestion;
+            } else {
+              // Single utterance: one Sonnet call writes the full response.
+              // Rotate angle so Philip doesn't always lead the same way.
+              const move = exchangeNum % 4;
+              const moveAngles = [
+                "Lead with one short concrete observation about what's driving this, then the question.",
+                "Name the single most specific detail they just mentioned, then the question.",
+                "Name a tension or contradiction in what they said — two things pulling against each other — then the question.",
+                "Start with the question itself. One brief grounding sentence after if needed.",
+              ];
+              const shapeNote = useShapeC
+                ? `\n\nFOR THIS RESPONSE ONLY — "Sit" move: Write ONE sentence. Name a specific fact, person, or moment from what they said. No question mark. No universal aphorism ("X is its own kind of Y"). Ground it in their actual words. Under 20 words.`
+                : `\n\nFOR THIS RESPONSE ONLY: ${moveAngles[move]} Under 35 words total. No aphorism structure ("X became Y", "X is its own kind of Z"). Specific and grounded.`;
+
+              phase2Text = await generatePhase2WithClaude(
+                systemMsg + shapeNote,
+                claudeHistory,
+                useShapeC ? "" : nextQuestion,
+                80,
+              );
             }
             usedMechanicalConstruction = true;
           } else {

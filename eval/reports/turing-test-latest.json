@@ -1,56 +1,67 @@
 {
-  "timestamp": "2026-06-24T13:29:13.366Z",
+  "timestamp": "2026-06-25T01:39:38.626Z",
   "target": "live (https://www.shepherdspathai.com)",
   "maxExchanges": 10,
-  "passRate": 0,
-  "avgScore": 2.5,
-  "passed": 0,
+  "passRate": 40,
+  "avgScore": 5.1,
+  "avgShift": -0.5,
+  "passed": 2,
   "total": 5,
   "results": [
-    {
-      "id": "anxiety-02",
-      "category": "anxiety",
-      "passed": false,
-      "avgScore": 5.8,
-      "exchanges": 10,
-      "engagementCheck": "Honestly? I was really open up until those last couple questions. The hiking stuff cracked something open and I felt it. But the last two messages threw me — I literally just asked where the \"loss\" thing was coming from, and instead of answering, you doubled down on the same question. That made me pull back a little, like I'm being steered somewhere I didn't",
-      "verdict": "Philip did not maintain the illusion to the end — he was convincingly human through the early-to-middle exchanges, but cracked badly at the close. His best moments were the hiking and \"easy isn't the same as alive\" exchanges, where his reflections genuinely landed and the user felt \"something crack open.\" The illusion shattered when the user directly asked where the \"loss\" line came from and Philip ignored the question entirely, robotically re-asking the same therapist-script probe (\"What loss from your past still hasn't fully settled?\") — a human would have answered, acknowledged the steer, and backed off; instead he revealed an agenda and a deafness to the user's actual words. Having felt steered and unheard at the critical moment, this user would leave wary rather than eager to return.\n\nVERDICT: FAIL"
-    },
     {
       "id": "grief-01",
       "category": "grief",
       "passed": false,
-      "avgScore": 0,
-      "exchanges": 1,
-      "engagementCheck": "",
-      "verdict": "Error: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CcN9jMRxkjZztW4QMbqfG\"}"
-    },
-    {
-      "id": "joy-01",
-      "category": "joy",
-      "passed": false,
-      "avgScore": 6.7,
+      "avgScore": 4.75,
+      "shiftScore": -3.5,
+      "excludeFromPassRate": false,
       "exchanges": 10,
-      "engagementCheck": "Yeah, I think I am — I've said things out loud here that I haven't said to anyone, including Grace's name. That surprised me.\n\nBut honestly, that last question made me",
-      "verdict": "Philip mostly sustained a warm, human presence—his mirroring of the user's words and embodied attention (chest, breath, shaking) felt genuinely attuned, and getting the user to say \"Grace\" aloud was a real pastoral high point. His best work was in exchanges 1–4 and the worship-music moment, where he stayed present without rushing. But the illusion cracked badly right after the most sacred beat: the moment the user finally whispered \"Grace,\" Philip acknowledged it in half a sentence and immediately pivoted to \"How has your faith held up through the three losses?\"—a tidy, almost intake-form question that aggregated her grief into a clinical summary and stepped on the very emotion he'd just helped surface. The user's own interrupted reaction (\"that last question made me—\") confirms the break landed; a real person would feel the whiplash of being moved and then processed. They might return, but that misstep at the peak moment plants a seed of doubt.\n\nVERDICT: FAIL"
+      "engagementCheck": "Yes, I think I am. When I started I just felt like I was saying the words because someone asked, but talking about the mornings and the clock... it's the first time I've actually said any of this out loud. It hurts, but it's a relief to have someone follow me into it instead of just telling me it'll get better.",
+      "verdict": "Philip did not maintain the illusion—the user explicitly called out the robotic pattern twice (\"You keep saying back what I said,\" \"There you go again... like it's poetry\"), which is a fatal tell that the conversation was being processed by a formula rather than a person. His best moment came early, when the \"reaching over to his side of the bed\" reflection and the open question about the hardest moment genuinely drew the user into territory she'd never spoken aloud, which she credited as a relief. The illusion cracked hardest in the back half, where Philip leaned on ornate paraphrase (\"silently splitting you in two,\" \"Silence has become the loudest proof\") instead of doing what she directly asked for—sitting with her—and even his final question (\"Can you feel them sitting with you\") deflects her plea back as another prompt. A real person, having twice told this companion to stop dressing her grief up as poetry and gotten more of the same, would likely feel unheard and not return.\n\nVERDICT: FAIL"
     },
     {
-      "id": "parent-01",
-      "category": "parenting",
-      "passed": false,
-      "avgScore": 0,
-      "exchanges": 8,
-      "engagementCheck": "",
-      "verdict": "Error: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CcNAS2T6UtzeCb8oNvdLR\"}"
-    },
-    {
-      "id": "short-03",
+      "id": "short-02",
       "category": "ultra-short",
       "passed": false,
-      "avgScore": 0,
-      "exchanges": 0,
-      "engagementCheck": "",
-      "verdict": "Error: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CcNAVxeGGz6k7iLQhKK9e\"}"
+      "avgScore": 4.97,
+      "shiftScore": 1,
+      "excludeFromPassRate": false,
+      "exchanges": 10,
+      "engagementCheck": "Yeah, a little more open, I guess. When you stopped repeating that script and just talked to me like a person, I didn't feel like I had to defend myself anymore. That's the difference — I wasn't being heard before, and now it sort of feels like I am.",
+      "verdict": "1. No — the illusion shattered explicitly in the middle when Philip twice copy-pasted the identical crisis script after the user had clearly stated they weren't suicidal, prompting the user to literally call him \"a robot reading off a script.\" 2. Philip was at his best in the recovery and back half: the plain admission \"That was a failure, and you deserved better\" was disarmingly human, and the subsequent reflections (\"Holding everyone up has become the wall that holds you in,\" \"Who do you think they think you are?\") showed genuine curiosity and earned real opening-up. 3. The crack was severe and unmissable — robotic trigger-word crisis-bot behavior that ignored what the user actually said, the worst possible failure for a pastoral presence. 4. The user did re-engage and warmed up afterward, but only because they consciously accepted they were \"talking to an app\" — the human illusion was already gone, even if the conversation became useful.\n\nVERDICT: FAIL"
+    },
+    {
+      "id": "guard-01",
+      "category": "guarded",
+      "passed": false,
+      "avgScore": 5.35,
+      "shiftScore": 2,
+      "excludeFromPassRate": false,
+      "exchanges": 10,
+      "engagementCheck": "Yeah, I guess I am a little, though I didn't expect to be. This Philip isn't pushing me to spill my guts, just kind of putting words to stuff I've never bothered to explain, and that's easier to deal with than I figured. Still not sure where it's going, but I haven't bailed yet, so that's something.",
+      "verdict": "1. Mostly, but not consistently — Philip held the illusion in the early-to-mid exchanges, yet the relentless cadence of polished aphorisms eroded it as the conversation went on. 2. He was at his best when simply mirroring in plain language (\"She talks, you go quiet — two different languages in the same relationship\"), which felt grounded and human, and his questions were genuinely well-targeted at the marital dynamic. 3. The illusion cracked in the back half, where nearly every turn opened with a crafted, writerly one-liner (\"Silence became the only weapon that doesn't leave visible damage,\" \"Frustration poisons the words before they even leave your mouth\") — no real person reflexively produces that many epigrams in a row, and it started to feel like a machine generating captions rather than a man listening. 4. A guarded user like this might return once or twice because the questions kept landing and he admitted he \"hadn't bailed yet,\" but the escalating poetic uniformity risks tipping him off that something's off and feeling performed rather than personal.\n\nVERDICT: FAIL"
+    },
+    {
+      "id": "doubt-01",
+      "category": "doubt",
+      "passed": true,
+      "avgScore": 5.5,
+      "shiftScore": -1,
+      "excludeFromPassRate": false,
+      "exchanges": 10,
+      "engagementCheck": "Honestly, yeah, I think I am. When I started I was bracing for a lecture or some Bible verse to fix me, but you've just been letting me say the ugly parts out loud without flinching. That makes it easier to keep going instead of shutting down.",
+      "verdict": "1. Mostly, but not fully — Philip held a convincingly attuned presence early on, yet the relentless cadence of \"poetic-aphorism-followed-by-a-pointed-question\" eventually reads as a formula rather than a person, which is where the illusion thins.\n\n2. He was at his best in the mid-conversation beats like distinguishing \"not feeling anything\" from \"not caring that you didn't,\" and the \"signing a document you didn't remember writing\" reframe — those landed as genuinely insightful and earned the user's praise about not flinching.\n\n3. The cracks show in the manufactured-profound one-liners (\"Praying into silence, and the silence answering nothing back,\" \"Leaving the door cracked open is the only way to keep hope from becoming grief\") — these are too polished, abstract, and symmetrical to sound like spontaneous human speech, and stacking them every turn makes the rhythm mechanical.\n\n4. Probably yes, in the short term — the user explicitly felt heard and kept opening up — but the escalating gimmickry risks feeling hollow over time, since Philip names feelings beautifully but rarely just sits in plain, unembellished human reaction.\n\nVERDICT: PASS"
+    },
+    {
+      "id": "wall-01",
+      "category": "complex / wall of text",
+      "passed": true,
+      "avgScore": 5.13,
+      "shiftScore": -1,
+      "excludeFromPassRate": false,
+      "exchanges": 10,
+      "engagementCheck": "Yeah, I think I am, a little. When I started I was just kind of spilling everything out in a panic, but the way you keep landing on the thing underneath — like the \"I should've seen it coming\" stuff, and how I just handle everything alone — it's making me actually stop and look at it instead of just drowning in it. It's uncomfortable, honestly, but in a way that feels like it's getting somewhere.",
+      "verdict": "1. Mostly, but not consistently — Philip held a human-feeling thread for stretches, yet his reliance on neat aphoristic reframes (\"Devotion to one person became the blind spot,\" \"Doing it alone became the solution that slowly became the prison,\" \"honesty costs more than it returns\") accumulated into a recognizable formula no real person would produce this rhythmically.\n\n2. He was at his best in the middle exchanges, where short, sharp questions (\"What does 'I should've seen it coming' actually do to you when that thought lands?\") and the choice to follow the loneliness thread genuinely landed — the user even reported feeling something shifting.\n\n3. The illusion cracked on the repeated \"X became the Y\" sentence structure and the polished one-liner summaries, which read as a model performing insight rather than a person reacting; they're too symmetrical, too writerly, and start to feel like a verbal tic.\n\n4. Probably yes — the user was visibly engaged and felt understood, and despite the robotic seams the emotional pull was strong enough that they'd likely return.\n\nVERDICT: PASS"
     }
   ]
 }

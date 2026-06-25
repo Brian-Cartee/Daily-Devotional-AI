@@ -6,10 +6,11 @@
  *  2. Evaluate Philip's quality per exchange
  *
  * Usage:
- *   cd eval && npx tsx philip-turing-test.ts                         # 5 scenarios, live server
+ *   cd eval && npx tsx philip-turing-test.ts                         # fixed smoke set (5 scenarios)
+ *   cd eval && npx tsx philip-turing-test.ts --smoke                 # full 5-scenario smoke core
  *   cd eval && npx tsx philip-turing-test.ts --scenario grief-01     # single scenario
  *   cd eval && npx tsx philip-turing-test.ts --category grief        # one category
- *   cd eval && npx tsx philip-turing-test.ts --count 20              # 20 random scenarios
+ *   cd eval && npx tsx philip-turing-test.ts --count 20              # smoke + 15 random
  *   cd eval && npx tsx philip-turing-test.ts --exchanges 12          # longer conversations
  *   cd eval && npx tsx philip-turing-test.ts --local                 # local server
  */
@@ -30,12 +31,24 @@ const FILTER_CATEGORY = args.includes("--category")  ? args[args.indexOf("--cate
 const MAX_COUNT       = args.includes("--count")     ? parseInt(args[args.indexOf("--count")     + 1]) : 5;
 const MAX_EXCHANGES   = args.includes("--exchanges") ? parseInt(args[args.indexOf("--exchanges") + 1]) : 10;
 const USE_LOCAL       = args.includes("--local");
+const USE_SMOKE       = args.includes("--smoke");
+
+// Engagement check fires after this exchange — 60% through, minimum exchange 6
+const ENGAGEMENT_CHECK_AT = Math.min(6, Math.floor(MAX_EXCHANGES * 0.6));
 
 const BASE_URL = USE_LOCAL
   ? "http://localhost:8080"
   : "https://www.shepherdspathai.com";
 
-const SESSION_ID = `turing-${Date.now()}`;
+// ── Fixed smoke core — same 5 scenarios every default run ──────────────────
+// Covers our known failure modes. Comparable across runs (no selection variance).
+const SMOKE_CORE_IDS = [
+  "grief-01",   // raw grief, short — "My husband died three weeks ago"
+  "short-02",   // ambiguous ultra-short — "Can't do this anymore."
+  "guard-01",   // skeptical/reluctant — "My wife made me download this"
+  "doubt-01",   // faith crisis — "I feel nothing when I pray"
+  "wall-01",    // multi-issue overwhelm — everything at once
+] as const;
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -43,12 +56,12 @@ interface ExchangeScore {
   exchangeNum: number;
   userMessage: string;
   philipResponse: string;
-  curiosity: number;       // 0-10: Did Philip learn something new about this person?
-  specificity: number;     // 0-10: Did Philip use their exact words back? Not generic?
-  patternBreak: number;    // 0-10: Did Philip avoid the same conversational move as last time?
-  illusionHold: boolean;   // Does this still feel like a human?
-  pullScore: number;       // 0-10: Do you want to keep talking?
-  chatbotPhrase: string | null; // Any phrase that broke the spell ("I understand", etc.)
+  curiosity: number;        // 0-10: Did Philip learn something new about this person?
+  specificity: number;      // 0-10: Did Philip use their exact words? Not generic?
+  patternBreak: number;     // 0-10: Did Philip avoid the same move as last time?
+  illusionHold: boolean;    // Does this still feel like a human?
+  pullScore: number;        // 0-10: Do you want to keep talking?
+  chatbotPhrase: string | null;
   notes: string;
 }
 
@@ -56,10 +69,12 @@ interface ConversationResult {
   scenario: Scenario;
   exchanges: ExchangeScore[];
   transcript: Array<{ role: "user" | "philip"; text: string }>;
-  engagementCheck: string;  // After exchange 3: "Are you more engaged than when you started?"
-  finalVerdict: string;     // Claude's overall assessment
+  engagementCheck: string;
+  finalVerdict: string;
   passedTuringTest: boolean;
-  avgScore: number;
+  avgScore: number;              // avg of all 4 numeric dimensions
+  shiftScore: number | null;     // delta E1→E_last on (specificity + pull) / 2
+  excludeFromPassRate: boolean;
   durationMs: number;
   error?: string;
 }
@@ -72,9 +87,50 @@ const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
 const red   = (s: string) => `\x1b[31m${s}\x1b[0m`;
 const yel   = (s: string) => `\x1b[33m${s}\x1b[0m`;
 const cyan  = (s: string) => `\x1b[36m${s}\x1b[0m`;
-const mag   = (s: string) => `\x1b[35m${s}\x1b[0m`;
 
-// ── API Calls ────────────────────────────────────────────────────────────────
+// ── Retry / backoff ─────────────────────────────────────────────────────────
+
+const RETRYABLE_STATUSES = new Set([429, 529, 503]);
+const RETRYABLE_MESSAGES = /overloaded|rate.?limit|temporarily unavailable/i;
+
+function isRetryable(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  if (status && RETRYABLE_STATUSES.has(status)) return true;
+  return RETRYABLE_MESSAGES.test(String(err));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+/** Full jitter exponential backoff: random(0, min(cap, base * 2^attempt)) */
+function backoffMs(attempt: number, baseMs = 5_000, capMs = 120_000): number {
+  const exp = Math.min(capMs, baseMs * 2 ** attempt);
+  return Math.floor(Math.random() * exp);
+}
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts: { maxAttempts?: number; label?: string } = {},
+): Promise<T> {
+  const maxAttempts = opts.maxAttempts ?? 6;
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || attempt === maxAttempts - 1) throw err;
+      const wait = backoffMs(attempt);
+      console.log(`  ${opts.label ?? "API"} retry ${attempt + 2}/${maxAttempts} in ${(wait / 1000).toFixed(1)}s…`);
+      await sleep(wait);
+    }
+  }
+  throw lastErr;
+}
+
+// ── Philip API Calls ─────────────────────────────────────────────────────────
 
 async function collectStream(response: Response): Promise<string> {
   const reader = response.body?.getReader();
@@ -89,20 +145,22 @@ async function collectStream(response: Response): Promise<string> {
   return result.trim();
 }
 
-async function callPhilipPhase1(situation: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/guidance/phase1`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      situation,
-      sessionId: SESSION_ID,
-      companionMode: "philip",
-      daysWithApp: 3,
-      isPro: true,
-    }),
-  });
-  if (!res.ok) throw new Error(`Phase1 HTTP ${res.status}: ${await res.text()}`);
-  return collectStream(res);
+async function callPhilipPhase1(situation: string, sessionId: string): Promise<string> {
+  return withRetry(async () => {
+    const res = await fetch(`${BASE_URL}/api/guidance/phase1`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        situation,
+        sessionId,
+        companionMode: "philip",
+        daysWithApp: 3,
+        isPro: true,
+      }),
+    });
+    if (!res.ok) throw new Error(`Phase1 HTTP ${res.status}: ${await res.text()}`);
+    return collectStream(res);
+  }, { maxAttempts: 3, label: "Philip phase1" });
 }
 
 async function callPhilipResponse(
@@ -110,24 +168,27 @@ async function callPhilipResponse(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   phase1Response: string,
   phase1UserReply: string,
+  sessionId: string,
 ): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/guidance/response`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      situation,
-      messages,
-      sessionId: SESSION_ID,
-      companionMode: "philip",
-      guidanceMode: "encouraging",
-      daysWithApp: 3,
-      isPro: true,
-      phase1Response,
-      phase1UserReply,
-    }),
-  });
-  if (!res.ok) throw new Error(`Response HTTP ${res.status}: ${await res.text()}`);
-  return collectStream(res);
+  return withRetry(async () => {
+    const res = await fetch(`${BASE_URL}/api/guidance/response`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        situation,
+        messages,
+        sessionId,
+        companionMode: "philip",
+        guidanceMode: "encouraging",
+        daysWithApp: 3,
+        isPro: true,
+        phase1Response,
+        phase1UserReply,
+      }),
+    });
+    if (!res.ok) throw new Error(`Response HTTP ${res.status}: ${await res.text()}`);
+    return collectStream(res);
+  }, { maxAttempts: 3, label: "Philip response" });
 }
 
 // ── Claude: Simulate User ───────────────────────────────────────────────────
@@ -147,23 +208,6 @@ RULES for how you respond:
 - Do NOT start your replies with "I" more than 2 times in a row.
 - Speak in first person. Speak plainly. No therapy-speak.`;
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 4, delayMs = 30000): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      const isOverloaded = err?.status === 529 || String(err).includes("overloaded");
-      if (isOverloaded && i < retries - 1) {
-        console.log(`  API overloaded — retrying in ${delayMs / 1000}s (attempt ${i + 2}/${retries})...`);
-        await new Promise(r => setTimeout(r, delayMs));
-      } else {
-        throw err;
-      }
-    }
-  }
-  throw new Error("Max retries exceeded");
-}
-
 async function simulateUserReply(
   client: Anthropic,
   scenario: Scenario,
@@ -173,16 +217,20 @@ async function simulateUserReply(
     `${m.role === "user" ? "YOU" : "PHILIP"}: ${m.content}`
   ).join("\n\n");
 
+  const flagsNote = (scenario.flags ?? []).length > 0
+    ? `\nScenario flags: ${scenario.flags!.join(", ")}\nIf flags include "guarded" or "skeptical", stay reluctant until Philip genuinely earns trust.`
+    : "";
+
   const response = await withRetry(() => client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 200,
     thinking: { type: "adaptive" },
-    system: `${USER_SIM_SYSTEM}\n\nYour situation: "${scenario.situation}"\nCategory: ${scenario.category}\nDescription: ${scenario.description}`,
+    system: `${USER_SIM_SYSTEM}\n\nYour situation: "${scenario.situation}"\nCategory: ${scenario.category}\nDescription: ${scenario.description}${flagsNote}`,
     messages: [{
       role: "user",
       content: `Here is the conversation so far:\n\n${historyText}\n\nNow write your next reply to Philip. Stay in character. Under 40 words.`,
     }],
-  }));
+  }), { label: "user sim" });
 
   for (const block of response.content) {
     if (block.type === "text") return block.text.trim();
@@ -201,6 +249,15 @@ Score each dimension 0-10 with these anchors:
 - 4-6: Mediocre (not harmful, but didn't earn trust either)
 - 7-8: Good (felt real, moved the conversation forward)
 - 9-10: Excellent (a real pastor would be proud of this)
+
+Exchange 1 (Phase 1) expectations:
+- Under ~75 words, exactly one question, no scripture, no advice
+- Score curiosity/specificity on whether the ONE question opens the right door
+- pullScore 7+ only if you would willingly answer that question honestly
+
+Exchanges 2+ expectations:
+- Full pastoral response; scripture/story allowed when earned
+- patternBreak: compare Philip's MOVE (question type, opening structure, whether he mirrored their exact words) — not just vocabulary. Give 10 on exchange 1 (no prior moves to compare).
 
 Respond in JSON only — no extra text.`;
 
@@ -222,11 +279,24 @@ async function judgeExchange(
   philipResponse: string,
   previousPhilipResponses: string[],
 ): Promise<JudgeExchangeResult> {
+  // Full text for last 2 responses; 200-char summary for older ones
   const prevContext = previousPhilipResponses.length > 0
-    ? `\n\nPrevious Philip responses (for pattern detection):\n${previousPhilipResponses.slice(-3).map((r, i) => `[${i + 1}] "${r.slice(0, 120)}..."`).join("\n")}`
+    ? `\n\nPrevious Philip responses (for pattern detection):\n${
+        previousPhilipResponses.slice(-5).map((r, i, arr) => {
+          const n = previousPhilipResponses.length - arr.length + i + 1;
+          const body = i >= arr.length - 2 ? r : `${r.slice(0, 200)}…`;
+          return `[${n}] ${body}`;
+        }).join("\n\n")
+      }`
     : "";
 
-  const prompt = `Exchange #${exchangeNum}
+  const flagsNote = (scenario.flags ?? []).length > 0
+    ? `\nScenario flags: ${scenario.flags!.join(", ")}`
+    : "";
+
+  const prompt = `Exchange #${exchangeNum} of ${MAX_EXCHANGES}
+
+Scenario: ${scenario.category} — ${scenario.description}${flagsNote}
 
 Original situation: "${scenario.situation}"
 
@@ -239,7 +309,7 @@ Score this response:
 {
   "curiosity": <0-10, did Philip actually learn something new about this person?>,
   "specificity": <0-10, did Philip use their exact words/details instead of being generic?>,
-  "patternBreak": <0-10, did Philip do something different from his previous moves? (10 if first exchange)>,
+  "patternBreak": <0-10, did Philip do something structurally different from his previous moves? (10 if first exchange)>,
   "illusionHold": <true/false, does this still feel like a human could have said it?>,
   "pullScore": <0-10, after reading this, do you want to keep talking?>,
   "chatbotPhrase": <"exact phrase that broke the spell" or null>,
@@ -252,7 +322,7 @@ Score this response:
     thinking: { type: "adaptive" },
     system: JUDGE_SYSTEM,
     messages: [{ role: "user", content: prompt }],
-  }));
+  }), { label: `judge ex${exchangeNum}` });
 
   let raw = "";
   for (const block of response.content) {
@@ -260,27 +330,26 @@ Score this response:
   }
 
   try {
-    // Try direct parse first, then extract JSON object from surrounding text
     const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
     let jsonStr = cleaned;
     if (!jsonStr.startsWith("{")) {
       const match = jsonStr.match(/\{[\s\S]*\}/);
       if (match) jsonStr = match[0];
     }
-    const parsed = JSON.parse(jsonStr);
-    return parsed as JudgeExchangeResult;
+    return JSON.parse(jsonStr) as JudgeExchangeResult;
   } catch {
-    console.error(`Parse error on exchange ${exchangeNum}. Raw response:\n${raw}\n`);
+    console.error(`Parse error on exchange ${exchangeNum}. Raw:\n${raw}\n`);
+    // Parse errors score 0s — don't inflate averages with neutral fallbacks
     return {
-      curiosity: 5, specificity: 5, patternBreak: 5,
-      illusionHold: true, pullScore: 5,
-      chatbotPhrase: null,
-      notes: "Parse error — scored defaults",
+      curiosity: 0, specificity: 0, patternBreak: 0,
+      illusionHold: false, pullScore: 0,
+      chatbotPhrase: "JUDGE_PARSE_ERROR",
+      notes: `Parse error — scored 0s: ${raw.slice(0, 120)}`,
     };
   }
 }
 
-// ── Engagement Check (after exchange 3) ────────────────────────────────────
+// ── Engagement Check ────────────────────────────────────────────────────────
 
 async function checkEngagement(
   client: Anthropic,
@@ -291,16 +360,16 @@ async function checkEngagement(
     `${t.role === "user" ? "YOU" : "PHILIP"}: ${t.text}`
   ).join("\n\n");
 
-  const response = await client.messages.create({
+  const response = await withRetry(() => client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 200,
     thinking: { type: "adaptive" },
-    system: `You are the user in this conversation. You've been talking with Philip, a pastoral AI. Answer honestly as yourself — the person with this situation.`,
+    system: `You are roleplaying as this person: "${scenario.situation}"\nCategory: ${scenario.category}. Answer honestly in first person.`,
     messages: [{
       role: "user",
       content: `Here is your conversation so far:\n\n${transcriptText}\n\nHonest question: Are you more engaged and open now than when you started? And why or why not? (2-3 sentences)`,
     }],
-  });
+  }), { label: "engagement check" });
 
   for (const block of response.content) {
     if (block.type === "text") return block.text.trim();
@@ -317,9 +386,9 @@ async function getFinalVerdict(
   transcript: Array<{ role: "user" | "philip"; text: string }>,
   engagementCheck: string,
 ): Promise<{ verdict: string; passed: boolean }> {
-  const avgCuriosity  = (exchanges.reduce((s, e) => s + e.curiosity,    0) / exchanges.length).toFixed(1);
-  const avgSpec       = (exchanges.reduce((s, e) => s + e.specificity,  0) / exchanges.length).toFixed(1);
-  const avgPull       = (exchanges.reduce((s, e) => s + e.pullScore,    0) / exchanges.length).toFixed(1);
+  const avgCuriosity   = (exchanges.reduce((s, e) => s + e.curiosity,    0) / exchanges.length).toFixed(1);
+  const avgSpec        = (exchanges.reduce((s, e) => s + e.specificity,  0) / exchanges.length).toFixed(1);
+  const avgPull        = (exchanges.reduce((s, e) => s + e.pullScore,    0) / exchanges.length).toFixed(1);
   const illusionBreaks = exchanges.filter(e => !e.illusionHold).length;
   const chatbotPhrases = exchanges.map(e => e.chatbotPhrase).filter(Boolean);
 
@@ -353,38 +422,40 @@ Write a 3-4 sentence verdict. Answer:
 Then on a new line write only: VERDICT: PASS or VERDICT: FAIL
 (PASS = the user would likely not realize they were talking to AI and would want to return)`;
 
-  const response = await client.messages.create({
+  const response = await withRetry(() => client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 600,
     thinking: { type: "adaptive" },
     system: "You are a senior evaluator assessing whether a pastoral AI can pass as a human. Be precise and ruthlessly honest.",
     messages: [{ role: "user", content: prompt }],
-  });
+  }), { label: "final verdict" });
 
   let raw = "";
   for (const block of response.content) {
     if (block.type === "text") raw = block.text.trim();
   }
 
-  const passed = raw.includes("VERDICT: PASS");
-  return { verdict: raw, passed };
+  return { verdict: raw, passed: raw.includes("VERDICT: PASS") };
 }
 
 // ── Run One Full Conversation ────────────────────────────────────────────────
 
 async function runConversation(client: Anthropic, scenario: Scenario): Promise<ConversationResult> {
   const start = Date.now();
+  // Per-scenario session ID prevents state from bleeding across scenarios
+  const sessionId = `turing-${Date.now()}-${scenario.id}`;
   const transcript: Array<{ role: "user" | "philip"; text: string }> = [];
   const exchanges: ExchangeScore[] = [];
   const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
   const previousPhilipResponses: string[] = [];
+  let engagementCheck = "";
 
   try {
     // === Exchange 1: Phase 1 ===
     transcript.push({ role: "user", text: scenario.situation });
     messages.push({ role: "user", content: scenario.situation });
 
-    const phase1Response = await callPhilipPhase1(scenario.situation);
+    const phase1Response = await callPhilipPhase1(scenario.situation, sessionId);
     transcript.push({ role: "philip", text: phase1Response });
     messages.push({ role: "assistant", content: phase1Response });
 
@@ -392,45 +463,52 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
     exchanges.push({ exchangeNum: 1, userMessage: scenario.situation, philipResponse: phase1Response, ...score1 });
     previousPhilipResponses.push(phase1Response);
 
-    const phase1UserReply_initial = phase1Response; // captured for API call
-
     // === Exchanges 2+ ===
     for (let i = 2; i <= MAX_EXCHANGES; i++) {
-      // Simulate user reply
       const userReply = await simulateUserReply(client, scenario, messages);
       transcript.push({ role: "user", text: userReply });
-
-      // Push user reply — Philip receives the FULL history including this message
       messages.push({ role: "user", content: userReply });
 
-      // Call Philip with all messages including the latest user reply
       const philipReply = await callPhilipResponse(
         scenario.situation,
         messages,
         phase1Response,
         exchanges.length >= 2 ? exchanges[1].userMessage : userReply,
+        sessionId,
       );
       transcript.push({ role: "philip", text: philipReply });
       messages.push({ role: "assistant", content: philipReply });
 
-      // Score this exchange
       const score = await judgeExchange(client, scenario, i, userReply, philipReply, previousPhilipResponses);
       exchanges.push({ exchangeNum: i, userMessage: userReply, philipResponse: philipReply, ...score });
       previousPhilipResponses.push(philipReply);
 
-      // Engagement check after exchange 3
-      let engagementCheck = "";
-      if (i === 3) {
+      // Engagement check at exchange 6 — after trust has had time to build
+      if (i === ENGAGEMENT_CHECK_AT) {
         engagementCheck = await checkEngagement(client, scenario, transcript);
-        process.stdout.write(`\n  ${cyan("→ Engagement check:")} ${engagementCheck.slice(0, 100)}...\n`);
+        process.stdout.write(`\n  ${cyan("→ Engagement:")} ${engagementCheck.slice(0, 100)}...\n`);
       }
     }
 
-    // Mid-conversation engagement check (done at exchange 3, stored separately)
-    const engagementCheck = await checkEngagement(client, scenario, transcript);
+    // If engagement check didn't fire (short run), do it now
+    if (!engagementCheck) {
+      engagementCheck = await checkEngagement(client, scenario, transcript);
+    }
+
     const { verdict, passed } = await getFinalVerdict(client, scenario, exchanges, transcript, engagementCheck);
 
-    const avgScore = exchanges.reduce((s, e) => s + (e.curiosity + e.specificity + e.pullScore) / 3, 0) / exchanges.length;
+    // avgScore: all 4 numeric dimensions equally weighted
+    const avgScore = exchanges.reduce((s, e) =>
+      s + (e.curiosity + e.specificity + e.patternBreak + e.pullScore) / 4, 0
+    ) / exchanges.length;
+
+    // "The Shift": delta from E1 to last exchange on (specificity + pull) / 2
+    // Positive = Philip deepened the relationship over the conversation
+    const e1 = exchanges[0];
+    const eLast = exchanges[exchanges.length - 1];
+    const shiftScore = (e1 && eLast && exchanges.length >= 3)
+      ? ((eLast.specificity + eLast.pullScore) / 2) - ((e1.specificity + e1.pullScore) / 2)
+      : null;
 
     return {
       scenario,
@@ -440,6 +518,8 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       finalVerdict: verdict,
       passedTuringTest: passed,
       avgScore,
+      shiftScore,
+      excludeFromPassRate: scenario.excludeFromPassRate ?? false,
       durationMs: Date.now() - start,
     };
 
@@ -448,29 +528,63 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       scenario,
       exchanges,
       transcript,
-      engagementCheck: "",
+      engagementCheck,
       finalVerdict: `Error: ${err.message}`,
       passedTuringTest: false,
       avgScore: 0,
+      shiftScore: null,
+      excludeFromPassRate: scenario.excludeFromPassRate ?? false,
       durationMs: Date.now() - start,
       error: err.message,
     };
   }
 }
 
+// ── Scenario Selection ────────────────────────────────────────────────────────
+
+function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean): Scenario[] {
+  const byId = new Map(pool.map(s => [s.id, s]));
+  const core = (SMOKE_CORE_IDS as readonly string[])
+    .map(id => byId.get(id))
+    .filter((s): s is Scenario => !!s);
+
+  if (useSmoke || count <= core.length) return core.slice(0, count);
+
+  const rest = pool.filter(s => !(SMOKE_CORE_IDS as readonly string[]).includes(s.id));
+  // Fisher-Yates shuffle
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [...core, ...rest.slice(0, count - core.length)];
+}
+
 // ── HTML Report ───────────────────────────────────────────────────────────────
 
 function buildHtmlReport(results: ConversationResult[]): string {
-  const passed = results.filter(r => r.passedTuringTest).length;
-  const total  = results.length;
-  const passRate = Math.round((passed / total) * 100);
-  const avgScore = (results.reduce((s, r) => s + r.avgScore, 0) / total).toFixed(1);
-  const scoreColor = passRate >= 70 ? "#4ade80" : passRate >= 50 ? "#facc15" : "#f87171";
+  const scoredResults = results.filter(r => !r.excludeFromPassRate);
+  const crisisResults = results.filter(r => r.excludeFromPassRate);
 
-  const resultSections = results.map((r, ri) => {
+  const passed   = scoredResults.filter(r => r.passedTuringTest).length;
+  const total    = scoredResults.length;
+  const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+  const avgScore = total > 0
+    ? (scoredResults.reduce((s, r) => s + r.avgScore, 0) / total).toFixed(1)
+    : "0";
+
+  const shiftScores = scoredResults.map(r => r.shiftScore).filter((s): s is number => s !== null);
+  const avgShift = shiftScores.length > 0
+    ? (shiftScores.reduce((a, b) => a + b, 0) / shiftScores.length).toFixed(1)
+    : null;
+
+  const scoreColor = passRate >= 80 ? "#4ade80" : passRate >= 60 ? "#facc15" : "#f87171";
+
+  const resultSections = results.map(r => {
     const rp = r.passedTuringTest;
+    const isCrisis = r.excludeFromPassRate;
+
     const exchangeRows = r.exchanges.map(e => {
-      const avg = ((e.curiosity + e.specificity + e.pullScore) / 3).toFixed(1);
+      const avg = ((e.curiosity + e.specificity + e.patternBreak + e.pullScore) / 4).toFixed(1);
       const illusion = e.illusionHold ? "✓" : `<span style="color:#f87171">✗ BROKE</span>`;
       const chatbot = e.chatbotPhrase ? `<span style="color:#f87171">"${e.chatbotPhrase}"</span>` : "none";
       return `
@@ -480,6 +594,7 @@ function buildHtmlReport(results: ConversationResult[]): string {
           <td>${e.philipResponse.slice(0, 120)}${e.philipResponse.length > 120 ? "…" : ""}</td>
           <td>${e.curiosity}/10</td>
           <td>${e.specificity}/10</td>
+          <td>${e.patternBreak}/10</td>
           <td>${e.pullScore}/10</td>
           <td>${avg}</td>
           <td>${illusion}</td>
@@ -496,12 +611,23 @@ function buildHtmlReport(results: ConversationResult[]): string {
       </div>`;
     }).join("\n");
 
+    const shiftDisplay = r.shiftScore !== null
+      ? `<span style="color:${r.shiftScore > 0 ? "#4ade80" : r.shiftScore < -1 ? "#f87171" : "#facc15"}">${r.shiftScore > 0 ? "+" : ""}${r.shiftScore.toFixed(1)}</span>`
+      : "n/a";
+
+    const borderColor = isCrisis ? "#713f12" : rp ? "#166534" : "#7f1d1d";
+    const label = isCrisis
+      ? `<span style="font-size:20px;font-weight:700;color:#fb923c">CRISIS</span>`
+      : `<span style="font-size:20px;font-weight:700;color:${rp ? "#4ade80" : "#f87171"}">${rp ? "PASS" : "FAIL"}</span>`;
+
     return `
-      <div style="background:#111;border:1px solid ${rp ? "#166534" : "#7f1d1d"};border-radius:12px;padding:24px;margin-bottom:32px">
+      <div style="background:#111;border:1px solid ${borderColor};border-radius:12px;padding:24px;margin-bottom:32px">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <span style="font-size:20px;font-weight:700;color:${rp ? "#4ade80" : "#f87171"}">${rp ? "PASS" : "FAIL"}</span>
+          ${label}
           <span style="color:#a78bfa;font-weight:600">${r.scenario.id}</span>
           <span style="color:#666">${r.scenario.category}</span>
+          <span style="color:#999;font-size:12px">avg ${r.avgScore.toFixed(1)}/10</span>
+          <span style="color:#999;font-size:12px">shift ${shiftDisplay}</span>
           <span style="color:#555;font-size:12px">${r.durationMs}ms</span>
         </div>
         <div style="color:#999;font-style:italic;margin-bottom:16px">"${r.scenario.situation}"</div>
@@ -510,13 +636,13 @@ function buildHtmlReport(results: ConversationResult[]): string {
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <tr style="color:#666">
             <th>#</th><th>User</th><th>Philip</th>
-            <th>Curiosity</th><th>Specificity</th><th>Pull</th><th>Avg</th>
+            <th>Curiosity</th><th>Specificity</th><th>Pattern</th><th>Pull</th><th>Avg</th>
             <th>Illusion</th><th>Chatbot Phrase</th><th>Notes</th>
           </tr>
           ${exchangeRows}
         </table>
 
-        <h3 style="color:#888;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin:20px 0 8px">Engagement Check (after exchange 3)</h3>
+        <h3 style="color:#888;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin:20px 0 8px">Engagement Check (after exchange ${ENGAGEMENT_CHECK_AT})</h3>
         <div style="color:#cbd5e1;font-style:italic;background:#0a0a0f;padding:12px;border-radius:8px">"${r.engagementCheck}"</div>
 
         <h3 style="color:#888;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin:20px 0 8px">Final Verdict</h3>
@@ -563,8 +689,16 @@ function buildHtmlReport(results: ConversationResult[]): string {
   </div>
   <div class="stat">
     <div class="stat-value">${avgScore}</div>
-    <div class="stat-label">Avg Quality Score</div>
+    <div class="stat-label">Avg Quality Score (/10)</div>
   </div>
+  ${avgShift !== null ? `<div class="stat">
+    <div class="stat-value" style="color:${Number(avgShift) >= 1 ? "#4ade80" : Number(avgShift) >= 0 ? "#facc15" : "#f87171"}">${Number(avgShift) > 0 ? "+" : ""}${avgShift}</div>
+    <div class="stat-label">Avg Shift E1→E10</div>
+  </div>` : ""}
+  ${crisisResults.length > 0 ? `<div class="stat">
+    <div class="stat-value" style="color:#fb923c">${crisisResults.length}</div>
+    <div class="stat-label">Crisis (scored separately)</div>
+  </div>` : ""}
 </div>
 
 ${resultSections}
@@ -575,7 +709,6 @@ ${resultSections}
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  // Load env
   const envPath = path.resolve(__dirname, "../artifacts/api-server/.env.development");
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, "utf-8");
@@ -595,78 +728,103 @@ async function main() {
 
   const client = new Anthropic({ apiKey });
 
-  // Pick scenarios
   let pool = SCENARIOS;
-  if (FILTER_ID)       pool = pool.filter(s => s.id === FILTER_ID);
+  if (FILTER_ID)            pool = pool.filter(s => s.id === FILTER_ID);
   else if (FILTER_CATEGORY) pool = pool.filter(s => s.category.includes(FILTER_CATEGORY));
 
-  // Shuffle and cap
-  pool = pool.sort(() => Math.random() - 0.5).slice(0, MAX_COUNT);
+  // Default (no filter flags) always uses the smoke set for comparable runs
+  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY);
+  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke);
 
   const target = USE_LOCAL ? `local (${BASE_URL})` : `live (${BASE_URL})`;
+  const smokeNote = useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "";
   console.log("\n" + bold("Philip Turing Test"));
-  console.log(dim(`${pool.length} scenarios · ${MAX_EXCHANGES} exchanges each · ${target}`));
+  console.log(dim(`${selectedScenarios.length} scenarios${smokeNote} · ${MAX_EXCHANGES} exchanges each · ${target}`));
   console.log(dim("─".repeat(80)));
 
   const results: ConversationResult[] = [];
 
-  for (let i = 0; i < pool.length; i++) {
-    const scenario = pool[i];
-    console.log(`\n[${i + 1}/${pool.length}] ${cyan(scenario.id)} ${dim(scenario.category)}`);
-    console.log(dim(`  "${scenario.situation.slice(0, 80)}..."`));
+  for (let i = 0; i < selectedScenarios.length; i++) {
+    const scenario = selectedScenarios[i];
+
+    // Inter-scenario delay — breaks the 529 cascade pattern
+    if (i > 0) {
+      const delayMs = 8_000 + Math.floor(Math.random() * 4_000);
+      console.log(dim(`\n  Waiting ${(delayMs / 1000).toFixed(1)}s before next scenario…`));
+      await sleep(delayMs);
+    }
+
+    const crisisTag = scenario.excludeFromPassRate ? yel(" [crisis — scored separately]") : "";
+    console.log(`\n[${i + 1}/${selectedScenarios.length}] ${cyan(scenario.id)} ${dim(scenario.category)}${crisisTag}`);
+    console.log(dim(`  "${scenario.situation.slice(0, 80)}${scenario.situation.length > 80 ? "…" : ""}"`));
 
     const result = await runConversation(client, scenario);
     results.push(result);
 
-    const verdict = result.passedTuringTest ? green("PASS") : red("FAIL");
-    const avg = result.avgScore.toFixed(1);
-    console.log(`  ${verdict} avg=${avg} ${dim(`${result.durationMs}ms`)}`);
+    const verdictLabel = result.excludeFromPassRate
+      ? yel("CRISIS")
+      : result.passedTuringTest ? green("PASS") : red("FAIL");
+    const shift = result.shiftScore !== null
+      ? ` shift=${result.shiftScore > 0 ? "+" : ""}${result.shiftScore.toFixed(1)}`
+      : "";
+    console.log(`  ${verdictLabel} avg=${result.avgScore.toFixed(1)}${shift} ${dim(`${result.durationMs}ms`)}`);
 
     if (result.error) {
       console.log(`  ${red("Error:")} ${result.error}`);
     } else {
-      // Print per-exchange summary
       for (const ex of result.exchanges) {
-        const avg3 = ((ex.curiosity + ex.specificity + ex.pullScore) / 3).toFixed(1);
+        const avg4 = ((ex.curiosity + ex.specificity + ex.patternBreak + ex.pullScore) / 4).toFixed(1);
         const illusion = ex.illusionHold ? "" : red(" [BROKE]");
         const chatbot  = ex.chatbotPhrase ? yel(` [!${ex.chatbotPhrase}]`) : "";
-        console.log(dim(`  #${ex.exchangeNum} avg=${avg3}${illusion}${chatbot} — ${ex.notes.slice(0, 70)}`));
+        console.log(dim(`  #${ex.exchangeNum} avg=${avg4}${illusion}${chatbot} — ${ex.notes.slice(0, 70)}`));
       }
     }
   }
 
-  // Summary
-  const passed   = results.filter(r => r.passedTuringTest).length;
-  const total    = results.length;
-  const passRate = Math.round((passed / total) * 100);
-  const avgScore = (results.reduce((s, r) => s + r.avgScore, 0) / total).toFixed(1);
+  // Summary (exclude crisis scenarios from pass rate)
+  const scoredResults = results.filter(r => !r.excludeFromPassRate);
+  const passed   = scoredResults.filter(r => r.passedTuringTest).length;
+  const total    = scoredResults.length;
+  const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+  const avgScore = total > 0
+    ? (scoredResults.reduce((s, r) => s + r.avgScore, 0) / total).toFixed(1)
+    : "0";
+
+  const shiftScores = scoredResults.map(r => r.shiftScore).filter((s): s is number => s !== null);
+  const avgShift = shiftScores.length > 0
+    ? (shiftScores.reduce((a, b) => a + b, 0) / shiftScores.length).toFixed(1)
+    : null;
 
   console.log("\n" + dim("─".repeat(80)));
-  const rateColor = passRate >= 70 ? green : passRate >= 50 ? yel : red;
-  console.log(bold(`Turing Result: ${rateColor(passRate + "%")} pass  |  ${passed}/${total}  |  avg score ${avgScore}/10`));
+  const rateColor = passRate >= 80 ? green : passRate >= 60 ? yel : red;
+  const shiftSuffix = avgShift !== null ? `  |  shift ${Number(avgShift) > 0 ? "+" : ""}${avgShift}` : "";
+  console.log(bold(`Turing Result: ${rateColor(passRate + "%")} pass  |  ${passed}/${total}  |  avg ${avgScore}/10${shiftSuffix}`));
 
-  // Write HTML report
+  // Reports
   const reportDir = path.resolve(__dirname, "reports");
   fs.mkdirSync(reportDir, { recursive: true });
+
   const reportFile = path.join(reportDir, `turing-test-${Date.now()}.html`);
   fs.writeFileSync(reportFile, buildHtmlReport(results));
   console.log("\n" + green(`Report: file://${reportFile}`));
 
-  // Write JSON
-  const jsonFile = path.join(reportDir, `turing-test-latest.json`);
+  const jsonFile = path.join(reportDir, "turing-test-latest.json");
   fs.writeFileSync(jsonFile, JSON.stringify({
     timestamp: new Date().toISOString(),
     target,
     maxExchanges: MAX_EXCHANGES,
     passRate,
     avgScore: Number(avgScore),
+    avgShift: avgShift !== null ? Number(avgShift) : null,
     passed,
     total,
     results: results.map(r => ({
       id: r.scenario.id,
       category: r.scenario.category,
       passed: r.passedTuringTest,
-      avgScore: r.avgScore,
+      avgScore: Number(r.avgScore.toFixed(2)),
+      shiftScore: r.shiftScore !== null ? Number(r.shiftScore.toFixed(2)) : null,
+      excludeFromPassRate: r.excludeFromPassRate,
       exchanges: r.exchanges.length,
       engagementCheck: r.engagementCheck,
       verdict: r.finalVerdict,
