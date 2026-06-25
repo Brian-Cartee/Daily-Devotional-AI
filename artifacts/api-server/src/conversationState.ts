@@ -29,6 +29,7 @@ export type PhilipMove =
   | "sit"
   | "reflect_back"
   | "guarded_ack"
+  | "reciprocal_answer"
   | "skip";
 
 export type AckRegister = "plain" | "literary" | null;
@@ -107,6 +108,16 @@ export function inferLastMove(philipLastResponse: string): string | undefined {
 
   const qIndex = text.indexOf("?");
   const beforeQ = text.slice(0, qIndex).trim();
+
+  if (
+    beforeQ.length >= 12
+    && /\b(i|my|me)\b/i.test(beforeQ)
+    && /\b(pray|scripture|friend|psalm|Jesus|God|church|pastor|years)\b/i.test(beforeQ)
+    && !/^(what|who|how|when|where|is there)\b/i.test(beforeQ)
+  ) {
+    return "reciprocal_answer";
+  }
+
   const wordCount = text.split(/\s+/).length;
 
   if (!beforeQ || beforeQ.length < 4) return wordCount <= 12 ? "skip" : "plain_question";
@@ -139,6 +150,75 @@ const PASSIVE_SI_PATTERNS = [
 /** Passive suicidal ideation — sit with them; do not run quote-then-ask. */
 export function detectPassiveSuicidalIdeation(text: string): boolean {
   return PASSIVE_SI_PATTERNS.some(p => p.test(text));
+}
+
+const RECIPROCAL_EXCLUSION_PATTERNS = [
+  /\bwhat do you think i\b/i,
+  /\bdo you think i should\b/i,
+  /\bhow do you think i\b/i,
+  /\bwhat would you (tell|advise|say to) me\b/i,
+  /\bare you saying i\b/i,
+  /\bso you('re| are) saying\b/i,
+  /\bwhat should i\b/i,
+];
+
+const RECIPROCAL_TO_PHILIP_PATTERNS = [
+  /\bwho do you (talk|turn|go|pray|confess|tell)\b/i,
+  /\bwho (listens to|is there for|leans on) you\b/i,
+  /\bwhat about you\b/i,
+  /\bhow about you\b/i,
+  /\b(and |but )?you\?\s*$/i,
+  /\bwhen you('re| are) the one (they|people|everyone)\b/i,
+  /\bwhen you('re| are) the (pastor|leader|guide|one they)\b/i,
+  /\bwhat do you do when you('re| are)\b/i,
+  /\bwhere do you go when\b/i,
+  /\bwhat('s| is) it like for you\b/i,
+  /\btell me about (you|yourself)\b/i,
+  /\bare you (real|an ai|a bot|actually listening)\b/i,
+  /\bdo you (ever|actually|really) (pray|doubt|struggle|get tired|feel)\b/i,
+  /\bhow do you (handle|carry|deal with|hold|manage)\b/i,
+];
+
+function lastClauseAsksPhilip(text: string): boolean {
+  const parts = text.split("?");
+  if (parts.length < 2) return false;
+  const beforeFinalQ = parts[parts.length - 2].trim();
+  const lastClause = beforeFinalQ.split(/[.!]\s+/).pop()?.trim() ?? beforeFinalQ;
+  if (!/\b(you|your|yourself)\b/i.test(lastClause)) return false;
+  if (/\b(i|my|me|myself)\b/i.test(lastClause) && !/\b(you|your)\b/i.test(lastClause.slice(-40))) {
+    return false;
+  }
+  return (
+    /^(who|what|how|when|where|why|do|does|did|are|is|can|have|will|would)\b/i.test(lastClause)
+    || /\b(for|about) you\b/i.test(lastClause)
+  );
+}
+
+/** User asked Philip a direct question about himself — needs a brief answer, not a dodge. */
+export function detectReciprocalQuestion(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text.includes("?")) return false;
+  if (RECIPROCAL_EXCLUSION_PATTERNS.some(p => p.test(text))) return false;
+  if (RECIPROCAL_TO_PHILIP_PATTERNS.some(p => p.test(text))) return true;
+  return lastClauseAsksPhilip(text);
+}
+
+export function conversationHadReciprocalAnswer(
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  return philipMessages.some(m => inferLastMove(m.content) === "reciprocal_answer");
+}
+
+/** True when Philip ignored a reciprocal question and only asked about the user. */
+export function isReciprocalDodge(response: string): boolean {
+  const t = response.trim();
+  if (!t) return true;
+  const beforeQ = t.includes("?") ? t.slice(0, t.indexOf("?")).trim() : t;
+  if (beforeQ.split(/\s+/).length < 6) return true;
+  if (/^(what|who|how|when|where|is there|do you|does)\b/i.test(t) && !/\b(i |my |me )\b/i.test(beforeQ)) {
+    return true;
+  }
+  return false;
 }
 
 /** Build move history from Philip's prior responses. */
@@ -617,7 +697,7 @@ Be precise and minimal. This state is injected into the next AI prompt to preven
 CRITICAL — PRONOUNS: Track the exact name and pronouns the user uses for any person they mention. If they said "my husband John" — record "John (he/him)" in facts_learned. If they said "my wife Sarah" — record "Sarah (she/her)". If gender is unclear, record only the name. Never assume gender. Record exactly what the user said.
 
 PHILIP MOVE TRACKING: From Philip's most recent response, extract:
-  - last_move: one of plain_question, named_fact, tension, sit, reflect_back, guarded_ack, skip — the structural move he used
+  - last_move: one of plain_question, named_fact, tension, sit, reflect_back, guarded_ack, reciprocal_answer, skip — the structural move he used
 - ack_register: "literary" if his preamble used aphoristic reframe ("X became Y", "X is its own kind of Y", "X where Y used to be", universal grief poetry without a specific fact) — otherwise "plain". If his response was question-only with no preamble, use "plain".
 
 Return ONLY valid JSON, no markdown, no extra text.`;
@@ -654,7 +734,7 @@ Extract the current conversation state:
   "metaphors_used": ["every metaphor or image Philip introduced — grayscale, the door, replaying it, fog, etc."],
   "user_exact_words": ["vivid or specific phrases the USER chose — not Philip's words, theirs"],
   "conversation_closing": false,
-  "last_move": "plain_question | named_fact | tension | sit | reflect_back | guarded_ack | skip — from Philip's last response",
+  "last_move": "plain_question | named_fact | tension | sit | reflect_back | guarded_ack | reciprocal_answer | skip — from Philip's last response",
   "ack_register": "plain | literary | null — was Philip's last preamble aphoristic or grounded?"
 }
 

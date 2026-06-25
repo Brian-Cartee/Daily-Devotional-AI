@@ -61,7 +61,7 @@ import {
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4284,8 +4284,28 @@ Under 40 words total.`;
 
           const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
           const isRepetitionPushback = detectRepetitionPushback(lastUserMsg);
+          const isReciprocalQuestion = detectReciprocalQuestion(lastUserMsg);
+          const alreadyAnsweredReciprocal = conversationHadReciprocalAnswer(philipMsgs);
 
-          if (isRepetitionPushback && conversationStateBlock) {
+          if (isReciprocalQuestion && !alreadyAnsweredReciprocal && !forceSit) {
+            phase2Text = await generatePhase2WithClaude(
+              systemMsg + PHILIP_MOVE_TEMPLATES.reciprocal_answer,
+              claudeHistory,
+              "",
+              100,
+            );
+            if (isReciprocalDodge(phase2Text)) {
+              const retried = await generatePhase2WithClaude(
+                systemMsg + PHILIP_MOVE_TEMPLATES.reciprocal_answer
+                  + "\n\n[REJECTED — you dodged their question. Answer about yourself in 1-2 sentences FIRST, then one brief question returning the floor.]",
+                claudeHistory,
+                "",
+                100,
+              );
+              if (retried.trim() && !isReciprocalDodge(retried)) phase2Text = retried;
+            }
+            usedMechanicalConstruction = true;
+          } else if (isRepetitionPushback && conversationStateBlock) {
             const recoveryState = conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg);
             try {
               nextQuestion = await generateNextQuestion(recoveryState, claudeHistory, isGuardedUser);
@@ -4316,7 +4336,7 @@ Under 40 words total.`;
           if (isRepetitionPushback && nextQuestion) {
             phase2Text = `${pickRepetitionAcknowledgment(exchangeNum)} ${nextQuestion}`;
             usedMechanicalConstruction = true;
-          } else if (forceSit || nextQuestion) {
+          } else if (!phase2Text && (forceSit || nextQuestion)) {
             const selectedMove: PhilipMove | "sit" = forceSit ? "sit" : selectPhilipMove({
               lastMove: conversationState?.last_move,
               ackRegister: conversationState?.ack_register ?? null,

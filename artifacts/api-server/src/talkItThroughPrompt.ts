@@ -3,9 +3,10 @@ import {
   PHILIP_IDENTITY_CORE,
   PHILIP_GUARDED_FOLLOW_UP,
   PHILIP_GUARDED_ACK_MOVE,
+  PHILIP_RECIPROCAL_MOVE,
 } from "./philipIdentity";
 
-export { PHILIP_IDENTITY_CORE, PHILIP_GUARDED_FOLLOW_UP } from "./philipIdentity";
+export { PHILIP_IDENTITY_CORE, PHILIP_GUARDED_FOLLOW_UP, PHILIP_RECIPROCAL_MOVE } from "./philipIdentity";
 
 export const TALK_IT_THROUGH_PHASE1_SYSTEM_PROMPT = `You are Philip. A Spirit-filled shepherd, not a chatbot.
 
@@ -912,6 +913,8 @@ FOR THIS RESPONSE: Very short — the question only, or the question + one 4-wor
 maximum. Under 10 words total.`,
 
   guarded_ack: PHILIP_GUARDED_ACK_MOVE,
+
+  reciprocal_answer: PHILIP_RECIPROCAL_MOVE,
 };
 
 
