@@ -43,20 +43,7 @@ export function evaluatePreTurnGates(input: {
   const isSendOff = !isClosing && !alreadySentOff && !needsDependency
     && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser);
 
-  if (isClosing) {
-    gates.push("user_closing");
-    return {
-      gates,
-      lane: "closing",
-      shortCircuitText: null,
-      isClosing: true,
-      alreadySentOff,
-      needsDependency,
-      isSendOff: false,
-      noQuestionMode: true,
-    };
-  }
-
+  // Send-off pushback beats closing detection — "That's enough?" after Philip sent them off is protest, not goodbye.
   if (alreadySentOff) {
     if (detectsSendOffPushback(lastUser)) {
       gates.push("sendoff_pushback");
@@ -79,6 +66,20 @@ export function evaluatePreTurnGates(input: {
       shortCircuitText: buildPostSendOffResponse(exchangeNum, priorTexts),
       isClosing: false,
       alreadySentOff: true,
+      needsDependency,
+      isSendOff: false,
+      noQuestionMode: true,
+    };
+  }
+
+  if (isClosing) {
+    gates.push("user_closing");
+    return {
+      gates,
+      lane: "closing",
+      shortCircuitText: null,
+      isClosing: true,
+      alreadySentOff,
       needsDependency,
       isSendOff: false,
       noQuestionMode: true,

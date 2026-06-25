@@ -530,7 +530,8 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
     const { verdict, passed } = await getFinalVerdict(client, scenario, exchanges, transcript, engagementCheck);
 
     const philipLines = transcript.filter(t => t.role === "philip").map(t => t.text);
-    const sendOffViolation = findPostSendOffViolation(philipLines);
+    const userLines = transcript.filter(t => t.role === "user").map(t => t.text);
+    const sendOffViolation = findPostSendOffViolation(philipLines, userLines);
     const passedTuringTest = passed && !sendOffViolation;
 
     if (sendOffViolation) {

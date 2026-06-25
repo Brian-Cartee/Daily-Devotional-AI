@@ -696,6 +696,10 @@ const CLOSING_PHRASES = [
 
 export function detectConversationClosing(userMessage: string): boolean {
   const lower = userMessage.toLowerCase().trim();
+  // Protest against Philip's send-off — not a real goodbye.
+  if (detectsSendOffPushback(userMessage)) return false;
+  if (/\bwait,?\s/.test(lower) || /\bthat'?s (it|enough)\?/.test(lower)) return false;
+  if (/\b(appreciate|thanks) but\b/.test(lower) && /\bstill\b/.test(lower)) return false;
   return CLOSING_PHRASES.some(phrase => lower.includes(phrase));
 }
 
@@ -705,9 +709,12 @@ export const SESSION_SEND_OFF_THRESHOLD = 8;
 const SESSION_SEND_OFF_MARKERS = [
   /\bthis door stays open\b/i,
   /\benough for (today|now|tonight)\b/i,
+  /\benough to carry for (today|now|tonight)\b/i,
+  /\bcarry for (today|now|tonight)\b/i,
   /\bleave it here for today\b/i,
   /\bwe can leave it here\b/i,
   /\bpick it up again when you're ready\b/i,
+  /\bcome back when you're ready\b/i,
   /\bsomething (real|honest) happened\b/i,
   /\bnamed more than you came\b/i,
   /\bgo gently\b/i,
@@ -715,6 +722,7 @@ const SESSION_SEND_OFF_MARKERS = [
   /\bthat's enough for (today|now|tonight)\b/i,
   /\bdon't have to go deeper\b/i,
   /\brest in what you already named\b/i,
+  /\bmore room here whenever\b/i,
 ];
 
 export function isSessionSendOffLine(text: string): boolean {
@@ -727,8 +735,11 @@ export function conversationHadSessionSendOff(
   return philipMessages.some((m) => isSessionSendOffLine(m.content));
 }
 
-/** After send-off, Philip must not ask another question. Returns violation message or null. */
-export function findPostSendOffViolation(philipResponses: string[]): string | null {
+/** After send-off, Philip must not ask another question — unless the user pushed back. */
+export function findPostSendOffViolation(
+  philipResponses: string[],
+  userResponses: string[] = [],
+): string | null {
   let sendOffIdx = -1;
   for (let i = 0; i < philipResponses.length; i++) {
     if (isSessionSendOffLine(philipResponses[i] ?? "")) {
@@ -739,6 +750,8 @@ export function findPostSendOffViolation(philipResponses: string[]): string | nu
   if (sendOffIdx < 0) return null;
   for (let j = sendOffIdx + 1; j < philipResponses.length; j++) {
     const reply = philipResponses[j] ?? "";
+    const userAfter = userResponses[j]?.trim() ?? "";
+    if (userAfter && detectsSendOffPushback(userAfter)) continue;
     if (reply.includes("?")) {
       return `Exchange ${j + 1} asked a question after send-off at exchange ${sendOffIdx + 1}`;
     }
@@ -805,6 +818,12 @@ export function buildPostSendOffResponse(exchangeNum: number, priorPhilipTexts: 
 /** User pushed back after send-off — reopen without dismissing again. */
 export function buildSendOffPushbackResponse(userMessage: string): string {
   const lower = userMessage.toLowerCase();
+  if (/\bparking lot\b|\bstill sitting\b|\bgetting through today\b/.test(lower)) {
+    return "You're right. That was too tidy. What would getting through today actually look like — not fixed, just through?";
+  }
+  if (/\bwait,? that'?s it\b|\bfinally said\b/.test(lower)) {
+    return "You're right — you finally said the hard thing and I tried to wrap it up. What's still sitting with you from that?";
+  }
   if (/\balone\b/.test(lower)) {
     return "You're right — I moved too fast. I'm still here. What's still sitting with you tonight?";
   }
@@ -819,7 +838,13 @@ const SEND_OFF_PUSHBACK_PATTERNS = [
   /\bi'?m not done\b/i,
   /\bnot (done|ready|finished) (yet|talking|here)?\b/i,
   /\bdon'?t (dismiss|send me off|close|shut me|end this)\b/i,
-  /\bstill (stuck|need to talk|have more|processing)\b/i,
+  /\bstill (stuck|need to talk|have more|processing|sitting|here)\b/i,
+  /\bstill sitting\b/i,
+  /\bparking lot\b/i,
+  /\bwait,? that'?s it\b/i,
+  /\bthat'?s (it|enough)\?/i,
+  /\bfinally said\b/i,
+  /\b(sitting with|been sitting with) me\b/i,
   /\bdon'?t want to be alone\b/i,
   /\bnot asking you to fix\b/i,
   /\bfeels like (the )?silence\b/i,
@@ -828,6 +853,7 @@ const SEND_OFF_PUSHBACK_PATTERNS = [
   /\bhave more to (say|share|tell)\b/i,
   /\bdon'?t (want to )?stop yet\b/i,
   /\byou (just )?sent me (away|off)\b/i,
+  /\btoo (soon|tidy)\b/i,
   /\btoo soon to (stop|end|close)\b/i,
   /\bi'?m still in (it|this)\b/i,
 ];
@@ -836,6 +862,17 @@ export function detectsSendOffPushback(userMessage: string): boolean {
   const text = userMessage.trim();
   if (!text) return false;
   return SEND_OFF_PUSHBACK_PATTERNS.some((p) => p.test(text));
+}
+
+/** Fresh confession — don't send off on the same turn they finally opened up. */
+const FRESH_VULNERABILITY_RE =
+  /\b(potluck|never told|first time i|finally said|for the first time|nobody (noticed|saw|asked|remembered)|invisible|looked through)\b/i;
+
+export function shouldDeferSessionSendOff(userMessage: string): boolean {
+  const t = userMessage.trim();
+  const words = t.split(/\s+/).filter(Boolean).length;
+  if (words < 18) return false;
+  return FRESH_VULNERABILITY_RE.test(t);
 }
 
 /** Long conversation — offer a sending line instead of another question (once). */
@@ -847,6 +884,7 @@ export function shouldOfferSessionSendOff(
   if (exchangeNum < SESSION_SEND_OFF_THRESHOLD) return false;
   if (detectConversationClosing(userMessage)) return false;
   if (detectsSendOffPushback(userMessage)) return false;
+  if (shouldDeferSessionSendOff(userMessage)) return false;
   return !conversationHadSessionSendOff(philipMessages);
 }
 

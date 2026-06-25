@@ -663,6 +663,11 @@ let usedMechanicalConstruction = false;
     metadata.mechanical = true;
   }
 
+  // Closing / post-send-off lanes must never leak a "?" — LLM ignores the prompt sometimes.
+  if (noQuestionMode && lane !== "sendoff_reopen") {
+    phase2Text = sanitizeSendOffText(phase2Text);
+  }
+
   const qCount = questionMarkCount(phase2Text);
 
   if (qCount !== 1 && !noQuestionMode && !usedMechanicalConstruction) {
