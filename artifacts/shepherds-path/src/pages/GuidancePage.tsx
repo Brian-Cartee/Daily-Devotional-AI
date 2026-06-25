@@ -316,6 +316,9 @@ export default function GuidancePage() {
   const [witnessReady, setWitnessReady] = useState(false);
   const [greetingFallbackText, setGreetingFallbackText] = useState<string | null>(null);
   const autoMicStartedRef = useRef(false);
+  const entryMicRetryRef = useRef(0);
+  const phase1MicRetryRef = useRef(0);
+  const followUpMicRetryRef = useRef(0);
   const cancelGreetingSpeakRef = useRef<(() => void) | null>(null);
   const greetingBlobRef = useRef<Blob | null>(null);
   const greetingTextRef = useRef<string | null>(null);
@@ -1446,13 +1449,35 @@ export default function GuidancePage() {
       onPhaseChange: setHeartListenPhase,
       onMicLive: (live) => {
         setEntryMicLive(live);
-        if (live) setMicArming(false);
+        if (live) {
+          setMicArming(false);
+          entryMicRetryRef.current = 0;
+        }
       },
       onListenEnd: () => {
         setEntryMicLive(false);
         setMicArming(false);
         heartVoiceRef.current = null;
-        if (autoMicStartedRef.current && !greetingEngagedRef.current) {
+        if (
+          isPhilipMode()
+          && convoRef.current.phase === "entry"
+          && !heartSubmittingRef.current
+          && !processingBridgeRef.current
+          && entryMicRetryRef.current < 3
+        ) {
+          entryMicRetryRef.current += 1;
+          window.setTimeout(() => {
+            if (
+              !heartSubmittingRef.current
+              && convoRef.current.phase === "entry"
+              && !heartVoiceRef.current?.isActive()
+            ) {
+              startHeartListeningRef.current(true);
+            }
+          }, 500);
+          return;
+        }
+        if (autoMicStartedRef.current && !greetingEngagedRef.current && !isPhilipMode()) {
           toast({
             description: "Tap the mic when you're ready to speak.",
           });
@@ -1481,8 +1506,7 @@ export default function GuidancePage() {
   startHeartListeningRef.current = startHeartListening;
 
   const toggleHeartVoice = () => {
-    // Philip owns the opening — mic is for finishing, not starting.
-    if (isPhilipMode() && convo.phase !== "entry") return;
+    if (isPhilipMode()) return;
     if (heartListening) {
       if (micArming) return;
       // entryMicLive=false while heartListening=true means the auto-mic attempt
@@ -1535,10 +1559,28 @@ export default function GuidancePage() {
         setPhase1Interim(interim);
       },
       onPhaseChange: setPhase1ListenPhase,
-      onMicLive: setPhase1MicLive,
+      onMicLive: (live) => {
+        setPhase1MicLive(live);
+        if (live) phase1MicRetryRef.current = 0;
+      },
       onListenEnd: () => {
         setPhase1MicLive(false);
         phase1VoiceRef.current = null;
+        if (
+          isPhilipMode()
+          && voiceConversation
+          && convoRef.current.phase === "p1-reply"
+          && !phase1SubmittingRef.current
+          && !phase2LoadingRef.current
+          && phase1MicRetryRef.current < 3
+        ) {
+          phase1MicRetryRef.current += 1;
+          window.setTimeout(() => {
+            if (!phase1SubmittingRef.current && !phase1VoiceRef.current?.isActive()) {
+              startPhase1ListeningRef.current?.();
+            }
+          }, 500);
+        }
       },
       onTakeYourTime: () => {
         if (phase1TakeYourTimeRef.current) return;
@@ -1546,7 +1588,9 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (phase1SubmittingRef.current || phase2LoadingRef.current || processingBridgeRef.current || !phase1ResponseRef.current) return;
-        handlePhase1ContinueRef.current(undefined, true);
+        const preview = (phase1VoiceRef.current?.getPreview() ?? phase1UserReply).trim();
+        if (preview.length < GUIDANCE_INPUT_MIN) return;
+        handlePhase1ContinueRef.current(preview, true);
       },
     });
     if (!listener) return;
@@ -1556,7 +1600,11 @@ export default function GuidancePage() {
     convo.dispatch({ type: "P1_REPLY_OPEN" });
   }, []);
 
+  const startPhase1ListeningRef = useRef(startPhase1Listening);
+  startPhase1ListeningRef.current = startPhase1Listening;
+
   const togglePhase1Voice = () => {
+    if (isPhilipMode() && voiceConversation) return;
     if (phase1Listening) {
       if (!phase1MicLive) {
         phase1VoiceRef.current?.destroy();
@@ -1609,10 +1657,28 @@ export default function GuidancePage() {
         if (display) setFollowUp(display);
       },
       onPhaseChange: setFollowUpListenPhase,
-      onMicLive: setFollowUpMicLive,
+      onMicLive: (live) => {
+        setFollowUpMicLive(live);
+        if (live) followUpMicRetryRef.current = 0;
+      },
       onListenEnd: () => {
         setFollowUpMicLive(false);
         followUpVoiceRef.current = null;
+        if (
+          isPhilipMode()
+          && voiceConversation
+          && convoRef.current.phase === "fu-reply"
+          && !followUpSubmittingRef.current
+          && !isSendingRef.current
+          && followUpMicRetryRef.current < 3
+        ) {
+          followUpMicRetryRef.current += 1;
+          window.setTimeout(() => {
+            if (!followUpSubmittingRef.current && !followUpVoiceRef.current?.isActive()) {
+              startFollowUpListeningRef.current();
+            }
+          }, 500);
+        }
       },
       onTakeYourTime: () => {
         if (followUpTakeYourTimeRef.current) return;
@@ -1644,6 +1710,7 @@ export default function GuidancePage() {
   }, [followUp]);
 
   const toggleFollowUpVoice = () => {
+    if (isPhilipMode() && voiceConversation) return;
     if (followUpListening) {
       if (!followUpMicLive) {
         followUpVoiceRef.current?.destroy();
@@ -2330,6 +2397,7 @@ export default function GuidancePage() {
   const philipGreetingActive = isPhilipMode() && convo.phase === "greeting";
   const showThresholdEntryMic = isSoloMode() || convo.phase === "entry";
   const thresholdPresencePulse = philipAwaitingGreeting || philipGreetingActive;
+  const philipHandsFreeVoice = isPhilipMode() && hasSpeechSupport;
 
   const dismissThresholdForTyping = () => {
     greetingEngagedRef.current = true;
@@ -2410,6 +2478,57 @@ export default function GuidancePage() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
 
                 {showThresholdEntryMic ? (
+                philipHandsFreeVoice ? (
+                <motion.div
+                  role="status"
+                  aria-live="polite"
+                  aria-label={entryMicLive ? "Listening" : micArming ? "Opening microphone" : "Ready to listen"}
+                  style={{
+                    width: "96px",
+                    height: "96px",
+                    borderRadius: "9999px",
+                    border: micVisualLive
+                      ? "1.5px solid rgba(239,68,68,0.55)"
+                      : "1.5px solid rgba(139,92,246,0.35)",
+                    background: micVisualLive
+                      ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
+                      : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.06) 100%)",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  animate={entryMicLive ? {
+                    boxShadow: [
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
+                      "0 0 0 20px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.44)",
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
+                    ],
+                    scale: [1, 1.05, 1],
+                  } : micArming ? {
+                    boxShadow: [
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
+                      "0 0 0 10px rgba(239,68,68,0.0), 0 0 28px 8px rgba(239,68,68,0.28)",
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
+                    ],
+                    scale: [1, 1.02, 1],
+                  } : {
+                    boxShadow: "0 0 24px 4px rgba(139,92,246,0.16)",
+                    scale: 1,
+                  }}
+                  transition={{ duration: entryMicLive ? 1.6 : micArming ? 1.2 : 0.3, repeat: micVisualLive ? Infinity : 0, ease: "easeInOut" }}
+                >
+                  <Mic
+                    size={24}
+                    style={{
+                      color: micVisualLive ? "rgba(239,68,68,0.90)" : "rgba(139,92,246,0.65)",
+                      position: "relative",
+                      zIndex: 1,
+                      transition: "color 0.3s ease",
+                    }}
+                  />
+                </motion.div>
+                ) : (
                 <motion.button
                   type="button"
                   onClick={toggleHeartVoice}
@@ -2461,6 +2580,7 @@ export default function GuidancePage() {
                     }}
                   />
                 </motion.button>
+                )
                 ) : thresholdPresencePulse ? (
                 <motion.div
                   role="status"
@@ -2517,8 +2637,8 @@ export default function GuidancePage() {
                         ? "opening mic"
                         : philipGreetingActive
                           ? "speaking"
-                          : showThresholdEntryMic
-                            ? (heartListening ? "when you're ready" : "")
+                        : showThresholdEntryMic
+                            ? (entryMicLive ? "listening" : micArming ? "opening mic" : "")
                             : ""}
                 </p>
 
@@ -2674,6 +2794,34 @@ export default function GuidancePage() {
                     {/* Voice-first entry — mic opens automatically after spoken welcome */}
                     {hasSpeechSupport && !showHeartTypeFallback && showThresholdEntryMic && (
                       <div className="flex flex-col items-center mb-4">
+                        {philipHandsFreeVoice ? (
+                        <motion.div
+                          role="status"
+                          aria-live="polite"
+                          aria-label={entryMicLive ? "Listening" : "Philip is listening"}
+                          className="relative flex items-center justify-center w-28 h-28 rounded-full"
+                          animate={micVisualLive ? {
+                            boxShadow: [
+                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
+                              "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
+                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
+                            ],
+                          } : {
+                            boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
+                          }}
+                          transition={micVisualLive ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                          style={{
+                            background: micVisualLive
+                              ? "radial-gradient(circle, rgba(239,68,68,0.30) 0%, rgba(180,20,20,0.14) 100%)"
+                              : "radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(109,40,217,0.14) 100%)",
+                            border: micVisualLive
+                              ? "2px solid rgba(239,68,68,0.70)"
+                              : "2px solid rgba(139,92,246,0.50)",
+                          }}
+                        >
+                          <Mic className={`w-10 h-10 relative z-10 ${micVisualLive ? "text-red-400" : "text-violet-300"}`} />
+                        </motion.div>
+                        ) : (
                         <motion.button
                           type="button"
                           onClick={toggleHeartVoice}
@@ -2704,14 +2852,17 @@ export default function GuidancePage() {
                         >
                           <Mic className={`w-10 h-10 relative z-10 ${micVisualLive ? "text-red-400" : "text-violet-300"}`} />
                         </motion.button>
+                        )}
                         <p className="mt-3 text-[13px] font-medium text-white/50 text-center">
                           {isReflecting && !situation.trim()
                             ? "…"
                             : processingBridge || (heartListening && heartListenPhase === "thinking")
                               ? "…"
-                              : heartListening
-                                ? "when you're ready"
-                                : ""}
+                              : entryMicLive
+                                ? "listening"
+                                : micArming
+                                  ? "opening mic"
+                                  : ""}
                         </p>
                         {/* Interim transcript hidden — watching words appear triggers self-editing */}
                       </div>
@@ -2960,6 +3111,43 @@ export default function GuidancePage() {
                   {/* Voice-first reply */}
                   {hasSpeechSupport && !showPhase1TypeFallback && voiceConversation && (
                     <div className="flex flex-col items-center py-2">
+                      {philipHandsFreeVoice ? (
+                      <motion.div
+                        role="status"
+                        aria-live="polite"
+                        aria-label={phase1MicVisual ? "Listening" : phase1Speaking ? "Philip is speaking" : "Ready to listen"}
+                        data-testid="indicator-guidance-phase1-voice"
+                        className="relative flex items-center justify-center w-24 h-24 rounded-full"
+                        animate={phase1MicVisual ? {
+                          boxShadow: [
+                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
+                            "0 0 0 16px rgba(239,68,68,0.0), 0 0 42px 14px rgba(239,68,68,0.45)",
+                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
+                          ],
+                        } : phase1Speaking ? {
+                          boxShadow: [
+                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
+                            "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.35)",
+                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
+                          ],
+                        } : {
+                          boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
+                        }}
+                        transition={(phase1MicVisual || phase1Speaking) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                        style={{
+                          background: phase1MicVisual
+                            ? "radial-gradient(circle, rgba(239,68,68,0.28) 0%, rgba(180,20,20,0.12) 100%)"
+                            : phase1Speaking
+                              ? "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)"
+                              : "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.08) 100%)",
+                          border: phase1MicVisual
+                            ? "2px solid rgba(239,68,68,0.65)"
+                            : "2px solid rgba(139,92,246,0.35)",
+                        }}
+                      >
+                        <Mic className={`w-9 h-9 relative z-10 ${phase1MicVisual ? "text-red-400" : "text-violet-400"}`} />
+                      </motion.div>
+                      ) : (
                       <motion.button
                         type="button"
                         onClick={togglePhase1Voice}
@@ -2997,7 +3185,10 @@ export default function GuidancePage() {
                       >
                         <Mic className={`w-9 h-9 relative z-10 ${phase1MicVisual ? "text-red-400" : "text-violet-400"}`} />
                       </motion.button>
-                      <p className="mt-2.5 text-[12px] text-muted-foreground/40 font-medium">…</p>
+                      )}
+                      <p className="mt-2.5 text-[12px] text-muted-foreground/40 font-medium">
+                        {phase1MicVisual ? "listening" : phase1Speaking ? "…" : philipHandsFreeVoice ? "" : "…"}
+                      </p>
                       {/* Interim transcript hidden — watching words appear triggers self-editing */}
                     </div>
                   )}
@@ -3670,7 +3861,7 @@ export default function GuidancePage() {
                           className="w-full resize-none bg-transparent text-[16px] text-foreground placeholder:text-muted-foreground/90 outline-none leading-relaxed disabled:opacity-50"
                         />
                         <div className="flex items-center justify-between">
-                          {hasSpeechSupport ? (
+                          {hasSpeechSupport && !(philipHandsFreeVoice && voiceConversation) ? (
                             <button
                               type="button"
                               onClick={toggleFollowUpVoice}
@@ -3681,6 +3872,8 @@ export default function GuidancePage() {
                               {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
                               {followUpMicVisual && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                             </button>
+                          ) : philipHandsFreeVoice && voiceConversation && followUpListening ? (
+                            <span className="text-[11px] text-muted-foreground/50 pl-1">listening</span>
                           ) : <span />}
                           <button
                             onClick={handleSend}
@@ -4190,7 +4383,7 @@ export default function GuidancePage() {
                 style={{ maxHeight: "96px", overflowY: "auto" }}
               />
               <div className="flex items-center justify-between">
-                {hasSpeechSupport ? (
+                {hasSpeechSupport && !(philipHandsFreeVoice && voiceConversation) ? (
                   <button
                     type="button"
                     onClick={toggleFollowUpVoice}
@@ -4201,6 +4394,8 @@ export default function GuidancePage() {
                     {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
                     {followUpMicVisual && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                   </button>
+                ) : philipHandsFreeVoice && voiceConversation && followUpListening ? (
+                  <span className="text-[11px] text-muted-foreground/50 pl-1">listening</span>
                 ) : <span />}
                 <button
                   onClick={handleSend}
