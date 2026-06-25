@@ -4105,23 +4105,24 @@ WARNING: If the user's message IS their answer to Philip's last question, do not
 
 STEP 3 — Only if steps 1 and 2 find nothing: pick from areas_unexplored in the state.
 
-HARD RULES:
-- NEVER use these structural patterns (they sound clinical and robotic):
-  • "Was it X, or something else?" or any X-or-something-else binary
-  • A list of options for them to pick from ("a moment, a person, or a place?"; "X, Y, or Z?") — ask ONE specific thing
-  • "What does X actually look like?"
-  • "Is there someone you can talk to / lean on?" (support-network probing)
-  • Any question about sleep, food, appetite, or self-care — unless user mentioned it first
-  • "When you..." as the opening of your question — this pattern has been overused. Start with something different.
-  • "What would it mean to..." — too abstract, always fails
-  • "Five years from now..." / future-projection questions — these abandon the present wound
-- NEVER repeat the same STRUCTURE as any question already asked (check questions_asked in state)
-- NEVER name an emotion (guilt, shame, anger, fear, grief) the user has not already used themselves
-- NEVER pivot away from a raw image or confession the user just offered — if they described a specific scene, stay there
-- Do not put the user's exact phrase in quotation marks inside the question itself
-- Under 20 words. End with ?
+QUESTION SHAPE — one specific question, rooted in their actual words. Under 20 words. End with ?
 
-Output the question only.`,
+These patterns always fail — if your question matches one, rewrite it:
+WRONG: "Was it X, or something else?" (binary)
+WRONG: "A moment, a person, or a place?" (triplet menu — ask one thing)
+WRONG: "What would it mean to..." (too abstract, abandons the wound)
+WRONG: "Five years from now..." (future projection)
+WRONG: "Is there someone you can talk to?" (support-network probe)
+WRONG: Opening with "When you..." (overused)
+WRONG: Naming an emotion (guilt, shame, anger, fear, grief) they haven't used themselves
+WRONG: Same structure as any question already in questions_asked
+
+These patterns pass:
+RIGHT: "When did [their exact phrase] first start feeling that way?"
+RIGHT: "What happened to [specific person/moment they named] after [event they described]?"
+RIGHT: "What did [their exact word] feel like the first time you noticed it?"
+
+Output only the question — no preamble, no explanation, no meta-commentary.`,
         messages: [{ role: "user", content: state }],
       });
       for (const block of response.content) {
@@ -4245,21 +4246,21 @@ Under 40 words total.`;
             const skipAck = !useShapeC && exchangeNum >= 4 && Math.random() < 0.30;
 
             if (skipAck) {
-              // Plain question — no ack, no preamble (Cursor: "plain question as base rate")
+              // Plain question — no ack, no preamble
               phase2Text = nextQuestion;
             } else {
-              // Single utterance: one Sonnet call writes the full response.
-              // Rotate angle so Philip doesn't always lead the same way.
+              // Single utterance: tell the model which of the four FOLLOW_UP shapes to use
+              // so the shape selector aligns with rather than fights the system prompt
               const move = exchangeNum % 4;
-              const moveAngles = [
-                "Lead with one short concrete observation about what's driving this, then the question.",
-                "Name the single most specific detail they just mentioned, then the question.",
-                "Name a tension or contradiction in what they said — two things pulling against each other — then the question.",
-                "Start with the question itself. One brief grounding sentence after if needed.",
+              const shapeSelectors = [
+                "Use Shape D — name something the conversation reveals that they have not said directly, then the question. No literary reframe.",
+                "Use Shape A — one sentence echoing their EXACT word or phrase (no new images), then the question.",
+                "Use Shape D — name the tension between two specific things they actually said, then ask about it.",
+                "Use Shape B — lead with the question, follow with one brief specific observation grounded in their words.",
               ];
               const shapeNote = useShapeC
-                ? `\n\nFOR THIS RESPONSE ONLY — "Sit" move: Write ONE sentence. Name a specific fact, person, or moment from what they said. No question mark. No universal aphorism ("X is its own kind of Y"). Ground it in their actual words. Under 20 words.`
-                : `\n\nFOR THIS RESPONSE ONLY: ${moveAngles[move]} Under 35 words total. No aphorism structure ("X became Y", "X is its own kind of Z"). Specific and grounded.`;
+                ? `\n\nSHAPE FOR THIS RESPONSE: Use Shape C. One sentence echoing their exact word. One declarative observation. No question mark. No "X became Y" structure.`
+                : `\n\nSHAPE FOR THIS RESPONSE: ${shapeSelectors[move]}`;
 
               phase2Text = await generatePhase2WithClaude(
                 systemMsg + shapeNote,
