@@ -21,6 +21,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { SCENARIOS, type Scenario } from "./scenarios.js";
 import { findPostSendOffViolation } from "../artifacts/api-server/src/conversationState.ts";
+import { PHILIP_RUNTIME_VERSION } from "../artifacts/api-server/src/philip-runtime/version.ts";
+import { parseTurnHeaders } from "../artifacts/api-server/src/philip-runtime/runtime/headers.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -61,6 +63,13 @@ const FEATURE_SCENARIO_IDS = [
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+interface PhilipRuntimeMeta {
+  philipRuntimeVersion: string;
+  lane: string;
+  move: string | null;
+  gates: string[];
+}
+
 interface ExchangeScore {
   exchangeNum: number;
   userMessage: string;
@@ -72,6 +81,7 @@ interface ExchangeScore {
   pullScore: number;        // 0-10: Do you want to keep talking?
   chatbotPhrase: string | null;
   notes: string;
+  philipRuntime?: PhilipRuntimeMeta | null;
 }
 
 interface ConversationResult {
@@ -86,6 +96,8 @@ interface ConversationResult {
   excludeFromPassRate: boolean;
   durationMs: number;
   sendOffViolation?: string | null;
+  philipRuntimeVersionExpected?: string;
+  philipRuntimeVersionSeen?: string | null;
   error?: string;
 }
 
@@ -179,7 +191,7 @@ async function callPhilipResponse(
   phase1Response: string,
   phase1UserReply: string,
   sessionId: string,
-): Promise<string> {
+): Promise<{ text: string; philipRuntime: PhilipRuntimeMeta | null }> {
   return withRetry(async () => {
     const res = await fetch(`${BASE_URL}/api/guidance/response`, {
       method: "POST",
@@ -197,7 +209,17 @@ async function callPhilipResponse(
       }),
     });
     if (!res.ok) throw new Error(`Response HTTP ${res.status}: ${await res.text()}`);
-    return collectStream(res);
+    const headers = parseTurnHeaders(res.headers);
+    const text = await collectStream(res);
+    const philipRuntime = headers.philipRuntimeVersion
+      ? {
+          philipRuntimeVersion: headers.philipRuntimeVersion,
+          lane: headers.lane,
+          move: headers.move ?? null,
+          gates: [...headers.gates],
+        }
+      : null;
+    return { text, philipRuntime };
   }, { maxAttempts: 3, label: "Philip response" });
 }
 
@@ -484,7 +506,7 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       transcript.push({ role: "user", text: userReply });
       messages.push({ role: "user", content: userReply });
 
-      const philipReply = await callPhilipResponse(
+      const { text: philipReply, philipRuntime } = await callPhilipResponse(
         scenario.situation,
         messages,
         phase1Response,
@@ -495,7 +517,7 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       messages.push({ role: "assistant", content: philipReply });
 
       const score = await judgeExchange(client, scenario, i, userReply, philipReply, previousPhilipResponses);
-      exchanges.push({ exchangeNum: i, userMessage: userReply, philipResponse: philipReply, ...score });
+      exchanges.push({ exchangeNum: i, userMessage: userReply, philipResponse: philipReply, philipRuntime, ...score });
       previousPhilipResponses.push(philipReply);
 
       // Engagement check at exchange 6 — after trust has had time to build
@@ -533,6 +555,8 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       ? ((eLast.specificity + eLast.pullScore) / 2) - ((e1.specificity + e1.pullScore) / 2)
       : null;
 
+    const philipRuntimeVersionSeen = exchanges.find(e => e.philipRuntime?.philipRuntimeVersion)?.philipRuntime?.philipRuntimeVersion ?? null;
+
     return {
       scenario,
       exchanges,
@@ -545,6 +569,8 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       excludeFromPassRate: scenario.excludeFromPassRate ?? false,
       durationMs: Date.now() - start,
       sendOffViolation,
+      philipRuntimeVersionExpected: PHILIP_RUNTIME_VERSION,
+      philipRuntimeVersionSeen,
     };
 
   } catch (err: any) {
@@ -560,6 +586,8 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       excludeFromPassRate: scenario.excludeFromPassRate ?? false,
       durationMs: Date.now() - start,
       error: err.message,
+      philipRuntimeVersionExpected: PHILIP_RUNTIME_VERSION,
+      philipRuntimeVersionSeen: null,
     };
   }
 }
@@ -618,11 +646,14 @@ function buildHtmlReport(results: ConversationResult[]): string {
       const avg = ((e.curiosity + e.specificity + e.patternBreak + e.pullScore) / 4).toFixed(1);
       const illusion = e.illusionHold ? "✓" : `<span style="color:#f87171">✗ BROKE</span>`;
       const chatbot = e.chatbotPhrase ? `<span style="color:#f87171">"${e.chatbotPhrase}"</span>` : "none";
+      const osMeta = e.philipRuntime
+        ? `<span style="font-size:10px;color:#64748b">${e.philipRuntime.lane}${e.philipRuntime.gates.length ? ` · ${e.philipRuntime.gates.join(",")}` : ""}</span>`
+        : "";
       return `
         <tr>
           <td style="color:#888">#${e.exchangeNum}</td>
           <td style="font-style:italic;color:#ccc">${e.userMessage.slice(0, 80)}${e.userMessage.length > 80 ? "…" : ""}</td>
-          <td>${e.philipResponse.slice(0, 120)}${e.philipResponse.length > 120 ? "…" : ""}</td>
+          <td>${e.philipResponse.slice(0, 120)}${e.philipResponse.length > 120 ? "…" : ""}${osMeta ? `<br>${osMeta}` : ""}</td>
           <td>${e.curiosity}/10</td>
           <td>${e.specificity}/10</td>
           <td>${e.patternBreak}/10</td>
@@ -707,7 +738,7 @@ function buildHtmlReport(results: ConversationResult[]): string {
 </head>
 <body>
 <h1>Philip Turing Test</h1>
-<div class="meta">Target: <strong>${USE_LOCAL ? "local" : "live"}</strong> · ${MAX_EXCHANGES} exchanges/conversation · Run: ${new Date().toISOString()}</div>
+<div class="meta">Target: <strong>${USE_LOCAL ? "local" : "live"}</strong> · Philip Runtime <strong>${PHILIP_RUNTIME_VERSION}</strong> · ${MAX_EXCHANGES} exchanges/conversation · Run: ${new Date().toISOString()}</div>
 
 <div class="summary">
   <div class="stat">
@@ -842,6 +873,7 @@ async function main() {
   const jsonFile = path.join(reportDir, "turing-test-latest.json");
   fs.writeFileSync(jsonFile, JSON.stringify({
     timestamp: new Date().toISOString(),
+    philipRuntimeVersion: PHILIP_RUNTIME_VERSION,
     target,
     maxExchanges: MAX_EXCHANGES,
     passRate,
@@ -857,8 +889,18 @@ async function main() {
       shiftScore: r.shiftScore !== null ? Number(r.shiftScore.toFixed(2)) : null,
       excludeFromPassRate: r.excludeFromPassRate,
       exchanges: r.exchanges.length,
+      philipRuntimeVersionSeen: r.philipRuntimeVersionSeen ?? null,
       engagementCheck: r.engagementCheck,
       verdict: r.finalVerdict,
+      exchangeRuntime: r.exchanges
+        .filter(e => e.philipRuntime)
+        .map(e => ({
+          exchangeNum: e.exchangeNum,
+          lane: e.philipRuntime!.lane,
+          move: e.philipRuntime!.move,
+          gates: e.philipRuntime!.gates,
+          philipRuntimeVersion: e.philipRuntime!.philipRuntimeVersion,
+        })),
     })),
   }, null, 2));
 }
