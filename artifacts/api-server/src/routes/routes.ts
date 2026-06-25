@@ -61,7 +61,7 @@ import {
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4177,10 +4177,11 @@ Output only the question — no preamble, no explanation, no meta-commentary.${g
       priorOpeners: string[],
       question: string,
       move: PhilipMove | "sit",
+      metaphorsUsed: string[] = [],
     ): string => {
       if (!text.trim()) return text;
       if (move === "plain_question" || move === "skip") return text;
-      const isEcho = shouldFallbackToPlainQuestion(text, userMsg, priorOpeners)
+      const isEcho = shouldFallbackToPlainQuestion(text, userMsg, priorOpeners, metaphorsUsed)
         || (move === "sit" && isPureEcho(text, userMsg, 0.6));
       if (isEcho && question.trim()) return question;
       return text;
@@ -4278,10 +4279,31 @@ Under 40 words total.`;
           const userMsgs = claudeHistory.filter(m => m.role === "user");
           const echoStreak = getEchoStreak(philipMsgs, userMsgs);
           const priorOpeners = conversationState?.philip_openers_used ?? extractPhilipOpeners(philipMsgs);
+          const bannedMetaphors = conversationState?.metaphors_used ?? [];
 
           const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
+          const isRepetitionPushback = detectRepetitionPushback(lastUserMsg);
 
-          if (!forceSit && conversationStateBlock) {
+          if (isRepetitionPushback && conversationStateBlock) {
+            const recoveryState = conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg);
+            try {
+              nextQuestion = await generateNextQuestion(recoveryState, claudeHistory, isGuardedUser);
+              nextQuestion = await validateAndFixQuestion(nextQuestion, recoveryState, claudeHistory, isGuardedUser);
+              if (conversationState && isPoorRecoveryQuestion(nextQuestion, conversationState)) {
+                const retried = await generateNextQuestion(
+                  recoveryState + "\n\n[REJECTED — repeats prior questions or known facts. Pick unexplored territory only. No 'whose X is it'.]",
+                  claudeHistory,
+                  isGuardedUser,
+                );
+                nextQuestion = await validateAndFixQuestion(retried, recoveryState, claudeHistory, isGuardedUser);
+              }
+            } catch {
+              // Non-fatal — fall through to fallback question
+            }
+            if (conversationState && isPoorRecoveryQuestion(nextQuestion, conversationState)) {
+              nextQuestion = pickRecoveryFallbackQuestion(conversationState);
+            }
+          } else if (!forceSit && conversationStateBlock) {
             try {
               nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory, isGuardedUser);
               nextQuestion = await validateAndFixQuestion(nextQuestion, conversationStateBlock, claudeHistory, isGuardedUser);
@@ -4290,7 +4312,10 @@ Under 40 words total.`;
             }
           }
 
-          if (forceSit || nextQuestion) {
+          if (isRepetitionPushback && nextQuestion) {
+            phase2Text = `${pickRepetitionAcknowledgment(exchangeNum)} ${nextQuestion}`;
+            usedMechanicalConstruction = true;
+          } else if (forceSit || nextQuestion) {
             const selectedMove: PhilipMove | "sit" = forceSit ? "sit" : selectPhilipMove({
               lastMove: conversationState?.last_move,
               ackRegister: conversationState?.ack_register ?? null,
@@ -4317,7 +4342,7 @@ Under 40 words total.`;
                 "",
                 60,
               );
-              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit");
+              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit", bannedMetaphors);
             } else if (nextQuestion) {
               const moveNote = PHILIP_MOVE_TEMPLATES[selectedMove] ?? PHILIP_MOVE_TEMPLATES.plain_question;
               phase2Text = await generatePhase2WithClaude(
@@ -4326,7 +4351,7 @@ Under 40 words total.`;
                 nextQuestion,
                 selectedMove === "skip" ? 40 : 80,
               );
-              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove);
+              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors);
             }
             usedMechanicalConstruction = !!phase2Text;
           }

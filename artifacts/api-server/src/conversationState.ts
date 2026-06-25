@@ -265,16 +265,26 @@ export function recyclesPhilipOpener(
   });
 }
 
+export function reusesBannedMetaphor(philipText: string, metaphorsUsed: string[]): boolean {
+  const lower = philipText.toLowerCase();
+  return metaphorsUsed.some(m => {
+    const fragment = m.toLowerCase().slice(0, Math.min(16, m.length));
+    return fragment.length > 6 && lower.includes(fragment);
+  });
+}
+
 /** True when a generated response should be replaced with a bare question. */
 export function shouldFallbackToPlainQuestion(
   philipText: string,
   userText: string,
   priorOpeners: string[],
+  metaphorsUsed: string[] = [],
 ): boolean {
   return (
     isPureEcho(philipText, userText, 0.65)
     || opensWithQuotedEcho(philipText)
     || recyclesPhilipOpener(philipText, priorOpeners)
+    || reusesBannedMetaphor(philipText, metaphorsUsed)
     || containsMysticalColdRead(philipText)
   );
 }
@@ -458,6 +468,141 @@ const CLOSING_PHRASES = [
 export function detectConversationClosing(userMessage: string): boolean {
   const lower = userMessage.toLowerCase().trim();
   return CLOSING_PHRASES.some(phrase => lower.includes(phrase));
+}
+
+const REPETITION_PUSHBACK_PATTERNS = [
+  /\byou (already )?said that\b/i,
+  /\bsaid that already\b/i,
+  /\bi already said\b/i,
+  /\byou keep (asking|circling|coming back|repeating)\b/i,
+  /\b(asked|asking) (me )?(that|this|the same) (twice|again|before|already)\b/i,
+  /\b(same|those) (thing|words|question|line)\b/i,
+  /\bnot (really )?(hearing|listening)\b/i,
+  /\byou('re| are) (not )?(hearing|listening|tracking)\b/i,
+  /\byou just did it again\b/i,
+  /\bcircling (back|the same)\b/i,
+  /\b(looping|going in circles)\b/i,
+  /\byou skipped\b/i,
+  /\bnew coat of paint\b/i,
+  /\bstarting to wonder if anyone\b/i,
+  /\bjust a script\b/i,
+  /\brepeating yourself\b/i,
+  /\bsaid (that|this) (part )?already\b/i,
+  /\bkind of asked\b/i,
+  /\basked me that\b/i,
+  /\byou('re| are) circling\b/i,
+  /\bdon'?t know what you want me to say\b/i,
+];
+
+/** User caught Philip repeating or not tracking — needs acknowledgment + fresh pivot. */
+export function detectRepetitionPushback(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  return REPETITION_PUSHBACK_PATTERNS.some(p => p.test(text));
+}
+
+/** Jaccard-style overlap between two questions (0–1). */
+export function questionSimilarity(q1: string, q2: string): number {
+  const w1 = new Set(normalizeWords(q1));
+  const w2 = new Set(normalizeWords(q2));
+  if (w1.size === 0 || w2.size === 0) return 0;
+  let match = 0;
+  for (const w of w1) if (w2.has(w)) match++;
+  return match / Math.max(w1.size, w2.size);
+}
+
+export function recyclesPriorQuestion(question: string, asked: string[]): boolean {
+  const q = question.trim();
+  if (!q) return true;
+  return asked.some(prior => questionSimilarity(q, prior) >= 0.55);
+}
+
+/** "Whose coat is it?" when user already said it's her husband's coat. */
+export function isAbsurdRecoveryQuestion(question: string, state: ConversationState): boolean {
+  if (/\bwhose\b/i.test(question)) {
+    const nounMatch = question.match(/\bwhose\s+(\w+)/i);
+    if (nounMatch) {
+      const item = nounMatch[1].toLowerCase();
+      const context = [
+        ...state.facts_learned,
+        ...state.user_exact_words,
+      ].join(" ").toLowerCase();
+      if (context.includes(item) && /\b(husband|wife|his|her|dad|mom|father|mother|son|daughter)\b/.test(context)) {
+        return true;
+      }
+    }
+  }
+  if (state.metaphors_used.some(m => {
+    const fragment = m.toLowerCase().slice(0, Math.min(14, m.length));
+    return fragment.length > 5 && question.toLowerCase().includes(fragment);
+  })) {
+    return true;
+  }
+  return false;
+}
+
+export function isPoorRecoveryQuestion(question: string, state: ConversationState): boolean {
+  if (!question?.trim()) return true;
+  if (isBannedQuestion(question)) return true;
+  if (containsMysticalColdRead(question)) return true;
+  if (recyclesPriorQuestion(question, state.questions_asked)) return true;
+  return isAbsurdRecoveryQuestion(question, state);
+}
+
+export function pickRepetitionAcknowledgment(exchangeNum: number): string {
+  const acks = [
+    "You're right — I circled back.",
+    "Fair — I kept coming back to the same thing.",
+    "I hear you — I wasn't tracking.",
+  ];
+  return acks[exchangeNum % acks.length];
+}
+
+function extractPushbackSubject(userMessage: string): string | null {
+  const coatMatch = userMessage.match(/\b(the )?(\w+),?\s+yeah\b/i);
+  if (coatMatch) return coatMatch[2];
+  const aboutMatch = userMessage.match(/\babout (the )?(\w+)\b/i);
+  if (aboutMatch) return aboutMatch[2];
+  const saidMatch = userMessage.match(/\bsaid that already[.\s—-]*(?:the )?(\w+)/i);
+  if (saidMatch) return saidMatch[1];
+  return null;
+}
+
+export function buildRepetitionRecoveryAddendum(
+  state: ConversationState | null,
+  userMessage: string,
+): string {
+  const explored = state?.areas_explored?.join(", ") ?? "";
+  const recentQuestions = state?.questions_asked?.slice(-5).map(q => `  - ${q}`).join("\n") ?? "";
+  const metaphors = state?.metaphors_used?.join(", ") ?? "";
+  const subject = extractPushbackSubject(userMessage);
+  const subjectBan = subject ? `\nDo NOT ask about "${subject}" — they said they already covered it.` : "";
+
+  return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REPETITION PUSHBACK — USER CAUGHT PHILIP LOOPING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The user just said Philip repeated himself or wasn't tracking.
+Ask ONE plain question on fresh territory from NOT YET EXPLORED.
+NEVER revisit: ${explored || "(see explored list above)"}
+NEVER re-ask or rephrase these recent questions:
+${recentQuestions || "  (none)"}
+NEVER reuse these images: ${metaphors || "(none)"}
+Do NOT ask "whose X is it" about something they already identified.${subjectBan}
+User message: "${userMessage.slice(0, 220)}"`;
+}
+
+export function pickRecoveryFallbackQuestion(state: ConversationState): string {
+  const unexplored = state.areas_unexplored.filter(a => a.trim());
+  if (unexplored.length > 0) {
+    return `What haven't you said yet about ${unexplored[0].toLowerCase()}?`;
+  }
+  const freshWords = state.user_exact_words.filter(w => w.split(/\s+/).length >= 2);
+  if (freshWords.length > 0) {
+    const anchor = freshWords[freshWords.length - 1];
+    return `Say more about ${anchor}?`;
+  }
+  return "What part of this feels hardest to put into words?";
 }
 
 const STATE_SYSTEM = `You track conversation state for a pastoral AI. Given the full conversation so far, extract a JSON state object.
