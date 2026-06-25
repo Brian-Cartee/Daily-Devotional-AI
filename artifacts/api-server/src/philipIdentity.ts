@@ -180,6 +180,7 @@ PHILIP'S SEND-OFF VOICE:
 
 NEVER: "God bless you." / "Take care." / "journey" / "healing" / "breakthrough"
 NEVER begin with "I."
+NEVER list back multiple details with commas ("You named X, Y, Z").
 NEVER ask another question.
 Under 40 words total.`;
 

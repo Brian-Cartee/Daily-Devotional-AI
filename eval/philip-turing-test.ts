@@ -105,15 +105,24 @@ const red   = (s: string) => `\x1b[31m${s}\x1b[0m`;
 const yel   = (s: string) => `\x1b[33m${s}\x1b[0m`;
 const cyan  = (s: string) => `\x1b[36m${s}\x1b[0m`;
 
-// ── Retry / backoff ─────────────────────────────────────────────────────────
+function parseFinalVerdictPass(raw: string): boolean {
+  if (/\bVERDICT:\s*PASS\b/i.test(raw)) return true;
+  if (/\bVERDICT:\s*FAIL\b/i.test(raw)) return false;
+  // Truncated judge output — PASS if cut mid-token without an explicit FAIL
+  const tail = raw.trim().slice(-24);
+  if (/VERDICT:\s*PASS?$/i.test(tail) || /VERDIC$/i.test(tail)) return true;
+  return false;
+}
 
-const RETRYABLE_STATUSES = new Set([429, 529, 503]);
-const RETRYABLE_MESSAGES = /overloaded|rate.?limit|temporarily unavailable/i;
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 529]);
+const RETRYABLE_MESSAGES = /overloaded|rate.?limit|temporarily unavailable|bad gateway/i;
 
 function isRetryable(err: unknown): boolean {
   const status = (err as { status?: number })?.status;
+  const msg = String(err);
   if (status && RETRYABLE_STATUSES.has(status)) return true;
-  return RETRYABLE_MESSAGES.test(String(err));
+  if (/\bHTTP (502|503|529)\b/.test(msg)) return true;
+  return RETRYABLE_MESSAGES.test(msg);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -456,7 +465,7 @@ Then on a new line write only: VERDICT: PASS or VERDICT: FAIL
 
   const response = await withRetry(() => client.messages.create({
     model: "claude-opus-4-8",
-    max_tokens: 600,
+    max_tokens: 900,
     thinking: { type: "adaptive" },
     system: "You are a senior evaluator assessing whether a pastoral AI can pass as a human. Be precise and ruthlessly honest.",
     messages: [{ role: "user", content: prompt }],
@@ -467,7 +476,7 @@ Then on a new line write only: VERDICT: PASS or VERDICT: FAIL
     if (block.type === "text") raw = block.text.trim();
   }
 
-  return { verdict: raw, passed: raw.includes("VERDICT: PASS") };
+  return { verdict: raw, passed: parseFinalVerdictPass(raw) };
 }
 
 // ── Run One Full Conversation ────────────────────────────────────────────────

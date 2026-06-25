@@ -723,6 +723,11 @@ const SESSION_SEND_OFF_MARKERS = [
   /\bdon't have to go deeper\b/i,
   /\brest in what you already named\b/i,
   /\bmore room here whenever\b/i,
+  /\bstays here when you'?re ready\b/i,
+  /\bwhen you'?re ready to pick it up\b/i,
+  /\bpick it up (again )?when you'?re ready\b/i,
+  /\byou don'?t have to carry all of it tonight\b/i,
+  /\bput it down\b/i,
 ];
 
 export function isSessionSendOffLine(text: string): boolean {
@@ -765,6 +770,14 @@ export function sanitizeSendOffText(text: string): string {
   return text.replace(/\?+/g, ".").replace(/\s+/g, " ").trim();
 }
 
+function looksLikeInventorySendOff(text: string): boolean {
+  const t = text.trim();
+  if (!/^you named\b/i.test(t)) return false;
+  const commas = (t.match(/,/g) ?? []).length;
+  if (commas >= 2) return true;
+  return /\bthe \w+, the \w+/i.test(t);
+}
+
 const STOCK_SEND_OFF_SNIPPETS = [
   "this door stays open",
   "go gently",
@@ -785,6 +798,9 @@ const SEND_OFF_ALTERNATES = [
 /** Avoid recycling the same stock send-off Philip already used this session. */
 export function finalizeSendOffText(text: string, priorPhilipTexts: string[]): string {
   let result = sanitizeSendOffText(text);
+  if (looksLikeInventorySendOff(result)) {
+    result = SEND_OFF_ALTERNATES[priorPhilipTexts.length % SEND_OFF_ALTERNATES.length];
+  }
   const prior = priorPhilipTexts.map((t) => t.toLowerCase()).join("\n");
   const resultLower = result.toLowerCase();
 
@@ -868,9 +884,18 @@ export function detectsSendOffPushback(userMessage: string): boolean {
 const FRESH_VULNERABILITY_RE =
   /\b(potluck|never told|first time i|finally said|for the first time|nobody (noticed|saw|asked|remembered)|invisible|looked through)\b/i;
 
+/** User is pulling back or shutting down — don't wrap up on them. */
+const WITHDRAWAL_SIGNAL_RE =
+  /\b(more closed|gotten more closed|closed off|stopped putting|brace myself|slip in late|leave early|nothing stuck|not really.*\bopen)\b/i;
+
+export function userShowsWithdrawal(userMessage: string): boolean {
+  return WITHDRAWAL_SIGNAL_RE.test(userMessage.trim());
+}
+
 export function shouldDeferSessionSendOff(userMessage: string): boolean {
   const t = userMessage.trim();
   const words = t.split(/\s+/).filter(Boolean).length;
+  if (userShowsWithdrawal(t)) return words >= 8;
   if (words < 18) return false;
   return FRESH_VULNERABILITY_RE.test(t);
 }
@@ -885,6 +910,7 @@ export function shouldOfferSessionSendOff(
   if (detectConversationClosing(userMessage)) return false;
   if (detectsSendOffPushback(userMessage)) return false;
   if (shouldDeferSessionSendOff(userMessage)) return false;
+  if (userShowsWithdrawal(userMessage)) return false;
   return !conversationHadSessionSendOff(philipMessages);
 }
 
@@ -894,7 +920,7 @@ export function buildSessionSendOffPromptBlock(): string {
 CONVERSATION MODE: SESSION SEND-OFF
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 You have walked with them through several exchanges. Send them — do not ask another question.
-Two short sentences. No "?". Not a recap. Permission to stop for today with the door left open.
+Two short sentences. No "?". Not a recap. No comma-list of things they named. Permission to stop for today with the door left open.
 Philip's register: "You named more than you came in carrying. We can leave it here for today — this door stays open."
 Never begin with "I." Never use "journey", "healing", "God bless you", "Take care."
 Under 40 words.`;

@@ -70,6 +70,8 @@ import {
   shouldBlockLlm,
   concerningSystemNote,
   SAFETY_HEADER,
+  detectPhilipDependence,
+  DEPENDENCY_SYSTEM_NOTE,
 } from "../guidanceSafety";
 import {
   resolveDailyArtDir,
@@ -3792,6 +3794,9 @@ Write 2–3 sentences to be SPOKEN aloud. Rules:
       return;
     }
     const phase1SafetyNote = concerningSystemNote(phase1Safety);
+    const phase1DependencyNote = detectPhilipDependence(situation.trim())
+      ? DEPENDENCY_SYSTEM_NOTE
+      : "";
 
     const companionMode = (req.body as any).companionMode as string | undefined;
     const isSoloMode = companionMode === "solo";
@@ -3808,10 +3813,10 @@ Write 2–3 sentences to be SPOKEN aloud. Rules:
     try {
       const isGuardedEntry = detectGuardedEntry(situation.trim());
       const systemPrompt = isSoloMode
-        ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}`
+        ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}${phase1DependencyNote}`
         : isGuardedEntry
-          ? `${TALK_IT_THROUGH_PHASE1_GUARDED_SYSTEM_PROMPT}${CRISIS_PROTOCOL}${nameNote}${phase1HeartNote}${phase1SafetyNote}`
-          : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}`;
+          ? `${TALK_IT_THROUGH_PHASE1_GUARDED_SYSTEM_PROMPT}${CRISIS_PROTOCOL}${nameNote}${phase1HeartNote}${phase1SafetyNote}${phase1DependencyNote}`
+          : `${buildVariantSystemPrompt(sessionId ?? "", "phase1").prompt}${nameNote}${phase1HeartNote}${phase1SafetyNote}${phase1DependencyNote}`;
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt },
         { role: "user", content: situation.trim() },

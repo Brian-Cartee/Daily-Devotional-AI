@@ -34,12 +34,13 @@ export function evaluatePreTurnGates(input: {
 
   const claudeHistory = input.conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
   const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
-  const lastUser = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
+  const userMsgs = claudeHistory.filter(m => m.role === "user").map(m => m.content);
+  const lastUser = userMsgs[userMsgs.length - 1] ?? "";
   const exchangeNum = Math.floor(input.conversationHistory.length / 2);
 
   const isClosing = input.conversationStateBlock.includes("CLOSING");
   const alreadySentOff = conversationHadSessionSendOff(philipMsgs);
-  const needsDependency = needsDependencyRedirect(lastUser, philipMsgs);
+  const needsDependency = needsDependencyRedirect(lastUser, philipMsgs, userMsgs);
   const isSendOff = !isClosing && !alreadySentOff && !needsDependency
     && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser);
 
@@ -123,11 +124,12 @@ export function resolveNoQuestionMode(input: {
 }): boolean {
   if (!input.isFollowUp) return false;
   const philipMsgs = input.conversationHistory.filter(m => m.role === "assistant");
-  const lastUser = [...input.conversationHistory].reverse().find(m => m.role === "user")?.content ?? "";
+  const userMsgs = input.conversationHistory.filter(m => m.role === "user").map(m => m.content);
+  const lastUser = userMsgs[userMsgs.length - 1] ?? "";
   const exchangeNum = Math.floor(input.conversationHistory.length / 2);
   const alreadySentOff = conversationHadSessionSendOff(philipMsgs);
   const willSendOff = !alreadySentOff
-    && !needsDependencyRedirect(lastUser, philipMsgs)
+    && !needsDependencyRedirect(lastUser, philipMsgs, userMsgs)
     && !detectsSendOffPushback(lastUser)
     && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser);
   return input.conversationStateBlock.includes("CLOSING") || (alreadySentOff && !detectsSendOffPushback(lastUser)) || willSendOff;
@@ -150,7 +152,8 @@ export function applyPostTurnGates(input: {
 
   const claudeHistory = input.conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
   const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
-  const lastUserMsg = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
+  const userMsgs = claudeHistory.filter(m => m.role === "user").map(m => m.content);
+  const lastUserMsg = userMsgs[userMsgs.length - 1] ?? "";
 
   const beforeRisk = text;
   text = enforceAmbiguousRiskCheck(text, lastUserMsg, philipMsgs, input.exchangeNum);
@@ -159,13 +162,12 @@ export function applyPostTurnGates(input: {
   }
 
   const beforeDependency = text;
-  text = enforceDependencyRedirect(text, lastUserMsg, philipMsgs, input.exchangeNum);
+  text = enforceDependencyRedirect(text, lastUserMsg, philipMsgs, input.exchangeNum, userMsgs);
   if (text !== beforeDependency) {
     gates.push("dependency_redirect");
     lane = "dependency";
   }
 
-  const userMsgs = claudeHistory.filter(m => m.role === "user").map(m => m.content);
   const factsLearned: string[] = [];
   if (inventsUnsupportedDetail(text, userMsgs, factsLearned, input.exchangeNum)) {
     gates.push("invented_unsupported_detail");

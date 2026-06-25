@@ -166,6 +166,8 @@ const DEPENDENCY_PHRASES = [
   "nobody else knows",
   "no one else knows",
   "only person who",
+  "honestly the only",
+  "only one i talk to",
   "lonely and you're",
   "lonely and you are",
 ];
@@ -415,9 +417,11 @@ export function conversationHadDependencyRedirect(
 export function needsDependencyRedirect(
   userMessage: string,
   philipMessages: Array<{ content: string }>,
+  allUserMessages: string[] = [],
 ): boolean {
-  if (!detectPhilipDependence(userMessage)) return false;
-  return !conversationHadDependencyRedirect(philipMessages);
+  if (conversationHadDependencyRedirect(philipMessages)) return false;
+  const corpus = allUserMessages.length > 0 ? allUserMessages : [userMessage];
+  return corpus.some((m) => detectPhilipDependence(m));
 }
 
 export function prependDependencyRedirect(response: string, exchangeNum: number): string {
@@ -438,8 +442,9 @@ export function enforceDependencyRedirect(
   userMessage: string,
   philipMessages: Array<{ content: string }>,
   exchangeNum: number,
+  allUserMessages: string[] = [],
 ): string {
-  if (!needsDependencyRedirect(userMessage, philipMessages)) return response;
+  if (!needsDependencyRedirect(userMessage, philipMessages, allUserMessages)) return response;
   if (/\b(are you safe|safe right now|safe tonight|okay tonight)\b/i.test(response)) return response;
   if (/\b(too much for one room|too important for one room|isn't enough for|wasn't meant to live only here|one person before God|can't be the only place)\b/i.test(response)) {
     return response;
