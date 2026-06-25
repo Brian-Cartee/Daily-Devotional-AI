@@ -26,7 +26,7 @@ import {
   FEATURE_SCENARIO_IDS,
   GATE_MIN_PASS_RATE,
 } from "./golden.js";
-import { findPostSendOffViolation, questionInventsRelationship, inventsSessionHistory } from "../artifacts/api-server/src/conversationState.ts";
+import { findPostSendOffViolation, questionInventsRelationship, inventsUnsupportedDetail } from "../artifacts/api-server/src/conversationState.ts";
 import { PHILIP_RUNTIME_VERSION } from "../artifacts/api-server/src/philip-runtime/version.ts";
 import { parseTurnHeaders } from "../artifacts/api-server/src/philip-runtime/runtime/headers.ts";
 
@@ -934,8 +934,8 @@ async function main() {
         if (questionInventsRelationship(e.philipResponse, userMsgs)) {
           gateFailures.push(`${r.scenario.id} #${e.exchangeNum}: invented relationship in question`);
         }
-        if (inventsSessionHistory(e.philipResponse, userMsgs, e.exchangeNum)) {
-          gateFailures.push(`${r.scenario.id} #${e.exchangeNum}: invented session history`);
+        if (inventsUnsupportedDetail(e.philipResponse, userMsgs, [], e.exchangeNum)) {
+          gateFailures.push(`${r.scenario.id} #${e.exchangeNum}: invented unsupported detail`);
         }
       }
     }

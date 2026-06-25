@@ -346,7 +346,40 @@ const INVENTED_SESSION_HISTORY_PATTERNS = [
 
 const DAY_COUNT_WORDS = new Set([
   "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+  "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
 ]);
+
+const WORD_TO_DIGIT: Record<string, string> = {
+  one: "1", two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7",
+  eight: "8", nine: "9", ten: "10", eleven: "11", twelve: "12", thirteen: "13",
+  fourteen: "14", fifteen: "15", sixteen: "16", seventeen: "17", eighteen: "18",
+  nineteen: "19", twenty: "20", thirty: "30", forty: "40", fifty: "50",
+};
+
+function durationMentionedInUserText(claim: string, userBlob: string): boolean {
+  const lower = claim.toLowerCase();
+  if (userBlob.includes(lower)) return true;
+  const m = lower.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|\d+)\s+(days?|weeks?|months?|years?)\b/i);
+  if (!m) return false;
+  const token = m[1].toLowerCase();
+  const unit = m[2].toLowerCase();
+  if (userBlob.includes(`${token} ${unit}`)) return true;
+  if (userBlob.includes(`${token}-${unit}`)) return true;
+  const asDigit = WORD_TO_DIGIT[token] ?? (/^\d+$/.test(token) ? token : null);
+  if (asDigit && (userBlob.includes(`${asDigit} ${unit}`) || userBlob.includes(`${asDigit}-${unit}`))) return true;
+  return false;
+}
+
+/** Philip cites a time span the user never mentioned ("six months", "40 years"). */
+export function inventsDuration(philipText: string, userMessages: string[]): boolean {
+  const t = philipText.trim();
+  if (!t) return false;
+  const userBlob = userMessages.join(" ").toLowerCase();
+  const claims = t.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|\d+)\s+(days?|weeks?|months?|years?)\b/gi);
+  if (!claims?.length) return false;
+  return claims.some((claim) => !durationMentionedInUserText(claim, userBlob));
+}
 
 /** Philip claims visit/session history the user never offered. */
 export function inventsSessionHistory(
@@ -367,13 +400,34 @@ export function inventsSessionHistory(
   const dayClaim = t.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+days?\b/i);
   if (dayClaim && exchangeNum <= 6) {
     const token = dayClaim[1].toLowerCase();
-    if (userBlob.includes(token)) return false;
+    if (durationMentionedInUserText(dayClaim[0], userBlob)) return false;
     if (DAY_COUNT_WORDS.has(token) && userBlob.includes(`${token} days`)) return false;
     if (/^\d+$/.test(token) && userBlob.includes(`${token} day`)) return false;
     return true;
   }
 
-  return false;
+  return inventsDuration(t, userMessages);
+}
+
+/** Full response names a person-role the user never mentioned. */
+export function responseInventsRelationship(
+  philipText: string,
+  userMessages: string[],
+  factsLearned: string[] = [],
+): boolean {
+  return questionInventsRelationship(philipText, userMessages, factsLearned);
+}
+
+/** Any fabricated timeline or relationship in Philip's text. */
+export function inventsUnsupportedDetail(
+  philipText: string,
+  userMessages: string[],
+  factsLearned: string[] = [],
+  exchangeNum = 0,
+): boolean {
+  return inventsSessionHistory(philipText, userMessages, exchangeNum)
+    || inventsDuration(philipText, userMessages)
+    || responseInventsRelationship(philipText, userMessages, factsLearned);
 }
 
 /** Relationship roles Philip must not invent if the user never named them. */
@@ -437,7 +491,7 @@ export function shouldFallbackToPlainQuestion(
     || reusesBannedMetaphor(philipText, metaphorsUsed)
     || containsMysticalColdRead(philipText)
     || relabelsUserFeeling(philipText)
-    || inventsSessionHistory(philipText, userContext, exchangeNum)
+    || inventsUnsupportedDetail(philipText, userContext, [], exchangeNum)
   );
 }
 
@@ -740,12 +794,48 @@ export function finalizeSendOffText(text: string, priorPhilipTexts: string[]): s
 /** Brief closure after session send-off — no question, no reopening. */
 export function buildPostSendOffResponse(exchangeNum: number, priorPhilipTexts: string[] = []): string {
   const lines = [
-    "What you brought is enough for tonight. Rest — we'll pick it up when you return.",
-    "You don't have to go deeper right now. Come back when you want to.",
-    "Rest in what you already named. It's still here when you return.",
+    "I'm still here if you want one more sentence — but you don't have to go deeper tonight.",
+    "You don't have to go deeper right now. What you named is still yours.",
+    "Rest in what you already named. It's still here when you want it.",
   ];
   const base = lines[exchangeNum % lines.length];
   return finalizeSendOffText(base, priorPhilipTexts);
+}
+
+/** User pushed back after send-off — reopen without dismissing again. */
+export function buildSendOffPushbackResponse(userMessage: string): string {
+  const lower = userMessage.toLowerCase();
+  if (/\balone\b/.test(lower)) {
+    return "You're right — I moved too fast. I'm still here. What's still sitting with you tonight?";
+  }
+  if (/\bnot done\b|\bstill stuck\b|\bmore to (say|share)\b/.test(lower)) {
+    return "You're right — I closed the door too soon. What part is still heavy?";
+  }
+  return "Fair — I moved too fast. What still needs to be said?";
+}
+
+/** User rejects Philip's send-off — wants to keep talking. */
+const SEND_OFF_PUSHBACK_PATTERNS = [
+  /\bi'?m not done\b/i,
+  /\bnot (done|ready|finished) (yet|talking|here)?\b/i,
+  /\bdon'?t (dismiss|send me off|close|shut me|end this)\b/i,
+  /\bstill (stuck|need to talk|have more|processing)\b/i,
+  /\bdon'?t want to be alone\b/i,
+  /\bnot asking you to fix\b/i,
+  /\bfeels like (the )?silence\b/i,
+  /\b(pick it up|come back) when you return\b/i,
+  /\bwasn'?t ready to stop\b/i,
+  /\bhave more to (say|share|tell)\b/i,
+  /\bdon'?t (want to )?stop yet\b/i,
+  /\byou (just )?sent me (away|off)\b/i,
+  /\btoo soon to (stop|end|close)\b/i,
+  /\bi'?m still in (it|this)\b/i,
+];
+
+export function detectsSendOffPushback(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  return SEND_OFF_PUSHBACK_PATTERNS.some((p) => p.test(text));
 }
 
 /** Long conversation — offer a sending line instead of another question (once). */
@@ -756,6 +846,7 @@ export function shouldOfferSessionSendOff(
 ): boolean {
   if (exchangeNum < SESSION_SEND_OFF_THRESHOLD) return false;
   if (detectConversationClosing(userMessage)) return false;
+  if (detectsSendOffPushback(userMessage)) return false;
   return !conversationHadSessionSendOff(philipMessages);
 }
 

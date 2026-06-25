@@ -11,7 +11,8 @@ export type PhilipLane =
   | "reciprocal"
   | "repetition_recovery"
   | "guarded"
-  | "standard";
+  | "standard"
+  | "sendoff_reopen";
 
 export type PhilipGate =
   | "already_sent_off"
@@ -26,7 +27,9 @@ export type PhilipGate =
   | "no_question_mode"
   | "question_count_retry"
   | "mechanical_construction"
-  | "invented_session_history";
+  | "invented_session_history"
+  | "invented_unsupported_detail"
+  | "sendoff_pushback";
 
 export interface PhilipTurnMetadata {
   philipRuntimeVersion: string;

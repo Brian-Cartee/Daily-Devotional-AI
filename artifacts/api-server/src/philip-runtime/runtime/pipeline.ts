@@ -44,7 +44,7 @@ import {
   containsMysticalColdRead,
   finalizeSendOffText,
   questionInventsRelationship,
-  inventsSessionHistory,
+  inventsUnsupportedDetail,
   sanitizeSendOffText,
   type ConversationState,
   type PhilipMove,
@@ -373,7 +373,7 @@ const validateAndFixQuestion = async (
     || isBannedQuestion(q)
     || containsMysticalColdRead(q)
     || questionInventsRelationship(q, userMsgs, factsLearned)
-    || inventsSessionHistory(q, userMsgs, Math.floor(history.length / 2))
+    || inventsUnsupportedDetail(q, userMsgs, factsLearned, Math.floor(history.length / 2))
     || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser);
 
   if (!isInvalid(question)) return question;

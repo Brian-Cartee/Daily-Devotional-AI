@@ -2,13 +2,15 @@ import {
   conversationHadSessionSendOff,
   shouldOfferSessionSendOff,
   buildPostSendOffResponse,
+  buildSendOffPushbackResponse,
+  detectsSendOffPushback,
+  inventsUnsupportedDetail,
 } from "../../conversationState";
 import {
   enforceAmbiguousRiskCheck,
   enforceDependencyRedirect,
   needsDependencyRedirect,
 } from "../../guidanceSafety";
-import { inventsSessionHistory } from "../../conversationState";
 import type { PhilipGate, PhilipLane, PreTurnGateResult } from "./types";
 
 export function evaluatePreTurnGates(input: {
@@ -56,6 +58,19 @@ export function evaluatePreTurnGates(input: {
   }
 
   if (alreadySentOff) {
+    if (detectsSendOffPushback(lastUser)) {
+      gates.push("sendoff_pushback");
+      return {
+        gates,
+        lane: "sendoff_reopen",
+        shortCircuitText: buildSendOffPushbackResponse(lastUser),
+        isClosing: false,
+        alreadySentOff: true,
+        needsDependency,
+        isSendOff: false,
+        noQuestionMode: false,
+      };
+    }
     gates.push("already_sent_off", "post_send_off", "no_question_mode");
     const priorTexts = philipMsgs.map((m) => m.content);
     return {
@@ -112,8 +127,9 @@ export function resolveNoQuestionMode(input: {
   const alreadySentOff = conversationHadSessionSendOff(philipMsgs);
   const willSendOff = !alreadySentOff
     && !needsDependencyRedirect(lastUser, philipMsgs)
+    && !detectsSendOffPushback(lastUser)
     && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser);
-  return input.conversationStateBlock.includes("CLOSING") || alreadySentOff || willSendOff;
+  return input.conversationStateBlock.includes("CLOSING") || (alreadySentOff && !detectsSendOffPushback(lastUser)) || willSendOff;
 }
 
 export function applyPostTurnGates(input: {
@@ -149,10 +165,11 @@ export function applyPostTurnGates(input: {
   }
 
   const userMsgs = claudeHistory.filter(m => m.role === "user").map(m => m.content);
-  if (inventsSessionHistory(text, userMsgs, input.exchangeNum)) {
-    gates.push("invented_session_history");
+  const factsLearned: string[] = [];
+  if (inventsUnsupportedDetail(text, userMsgs, factsLearned, input.exchangeNum)) {
+    gates.push("invented_unsupported_detail");
     const bareQuestion = text.match(/[^.!?\n]*\?/)?.[0]?.trim();
-    if (bareQuestion && bareQuestion.length > 8) {
+    if (bareQuestion && bareQuestion.length > 8 && !inventsUnsupportedDetail(bareQuestion, userMsgs, factsLearned, input.exchangeNum)) {
       text = bareQuestion;
     }
   }
