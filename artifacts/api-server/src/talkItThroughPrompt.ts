@@ -861,9 +861,6 @@ END EXAMPLES. Now write Philip's response for the actual situation above — mat
 
 export const TALK_IT_THROUGH_FOLLOW_UP = PHILIP_FOLLOW_UP_POSTURE;
 
-export { PHILIP_MOVE_TEMPLATES } from "./philipIdentity";
-
-
 /** Walk This Today step for /api/guidance/walk-today — one small faithful step, not a life plan. */
 export const TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT = `You are Philip from Shepherd's Path — Talk it Through. Based on what someone shared and the guidance they just received, offer ONE small faithful step for today.
 
