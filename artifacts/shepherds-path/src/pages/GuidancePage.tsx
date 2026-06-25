@@ -1597,14 +1597,14 @@ export default function GuidancePage() {
         setMicArming(false);
         const listener = heartVoiceRef.current;
         const preview = (listener?.getPreview() ?? heartInput).trim();
-        const hasAudio = listener?.hasRecordedAudio() ?? false;
+        const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
         heartVoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "entry"
           && !heartSubmittingRef.current
           && !processingBridgeRef.current
-          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+          && canSubmit
         ) {
           submitHeartEntryRef.current(preview, true);
           return;
@@ -1614,7 +1614,8 @@ export default function GuidancePage() {
           && convoRef.current.phase === "entry"
           && !heartSubmittingRef.current
           && !processingBridgeRef.current
-          && entryMicRetryRef.current < 3
+          && preview.length < 2
+          && entryMicRetryRef.current < 2
         ) {
           entryMicRetryRef.current += 1;
           window.setTimeout(() => {
@@ -1638,10 +1639,9 @@ export default function GuidancePage() {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
         const listener = heartVoiceRef.current;
         const preview = (listener?.getPreview() ?? heartInput).trim();
-        const hasAudio = listener?.hasRecordedAudio() ?? false;
         setMicArming(false);
         setEntryMicLive(false);
-        if (!preview && !hasAudio) {
+        if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
           listener?.destroy();
           heartVoiceRef.current = null;
           window.setTimeout(() => {
@@ -1740,7 +1740,7 @@ export default function GuidancePage() {
         setPhase1MicArming(false);
         const listener = phase1VoiceRef.current;
         const preview = (listener?.getPreview() ?? phase1UserReply).trim();
-        const hasAudio = listener?.hasRecordedAudio() ?? false;
+        const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
         phase1VoiceRef.current = null;
         if (
           isPhilipMode()
@@ -1749,7 +1749,7 @@ export default function GuidancePage() {
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && phase1ResponseRef.current
-          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+          && canSubmit
         ) {
           handlePhase1ContinueRef.current(preview, true);
           return;
@@ -1760,7 +1760,8 @@ export default function GuidancePage() {
           && convoRef.current.phase === "p1-reply"
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
-          && phase1MicRetryRef.current < 3
+          && preview.length < 2
+          && phase1MicRetryRef.current < 2
         ) {
           phase1MicRetryRef.current += 1;
           window.setTimeout(() => {
@@ -1776,10 +1777,11 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (phase1SubmittingRef.current || phase2LoadingRef.current || processingBridgeRef.current || !phase1ResponseRef.current) return;
+        setPhase1MicLive(false);
+        setPhase1MicArming(false);
         const listener = phase1VoiceRef.current;
         const preview = (listener?.getPreview() ?? phase1UserReply).trim();
-        const hasAudio = listener?.hasRecordedAudio();
-        if (preview.length < GUIDANCE_INPUT_MIN && !hasAudio) {
+        if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
           listener?.destroy();
           phase1VoiceRef.current = null;
           window.setTimeout(() => {
@@ -1875,7 +1877,7 @@ export default function GuidancePage() {
         setFollowUpMicArming(false);
         const listener = followUpVoiceRef.current;
         const preview = (listener?.getPreview() ?? followUp).trim();
-        const hasAudio = listener?.hasRecordedAudio() ?? false;
+        const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
         followUpVoiceRef.current = null;
         if (
           isPhilipMode()
@@ -1883,7 +1885,7 @@ export default function GuidancePage() {
           && convoRef.current.phase === "fu-reply"
           && !followUpSubmittingRef.current
           && !isSendingRef.current
-          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+          && canSubmit
         ) {
           submitFollowUpRef.current(true, preview);
           return;
@@ -1894,7 +1896,8 @@ export default function GuidancePage() {
           && convoRef.current.phase === "fu-reply"
           && !followUpSubmittingRef.current
           && !isSendingRef.current
-          && followUpMicRetryRef.current < 3
+          && preview.length < 2
+          && followUpMicRetryRef.current < 2
         ) {
           followUpMicRetryRef.current += 1;
           window.setTimeout(() => {
@@ -2379,8 +2382,11 @@ export default function GuidancePage() {
       setPhase1UserReply(stopped || reply);
     }
 
-    if (!reply && !(listener?.hasRecordedAudio())) return;
+    if (!reply && !(listener?.canAutoSubmit() ?? listener?.hasRecordedAudio())) return;
 
+    setPhase1MicLive(false);
+    setPhase1MicArming(false);
+    setPhase1Listening(false);
     phase1SubmittingRef.current = true;
     const fromVoice = fromVoiceOverride ?? (!showPhase1TypeFallback && textOverride === undefined);
     lastInputWasVoiceRef.current = fromVoice;

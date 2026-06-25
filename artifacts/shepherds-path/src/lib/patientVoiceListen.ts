@@ -10,6 +10,8 @@ export type PatientVoiceListener = {
   start: () => void;
   stop: () => string;
   hasRecordedAudio: () => boolean;
+  /** Enough preview text or captured audio for conversational handoff */
+  canAutoSubmit: () => boolean;
   getPreview: () => string;
   finalizeTranscript: () => Promise<string>;
   isActive: () => boolean;
@@ -60,6 +62,9 @@ const ANALYSER_POLL_MS = 120;
 const RMS_SPEECH_THRESHOLD = 6;
 /** iOS WebView room tone sits higher — require louder signal before "still speaking". */
 const RMS_SPEECH_THRESHOLD_IOS = 11;
+/** Hysteresis: below this RMS counts as quiet (must be < speech threshold). */
+const RMS_QUIET_THRESHOLD = 4;
+const RMS_QUIET_THRESHOLD_IOS = 7;
 const RMS_QUIET_POLLS_REQUIRED = 3;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
 const SR_STALL_MS = 2000;
@@ -144,9 +149,14 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let analyserBuf: Uint8Array | null = null;
   let consecutiveQuietPolls = 0;
   let quietSince: number | null = null;
+  let analyserInSpeech = false;
+  let conversationalSafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const rmsThreshold = () =>
+  const rmsSpeechThreshold = () =>
     preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD;
+
+  const rmsQuietThreshold = () =>
+    preferLocalSilenceDetection() ? RMS_QUIET_THRESHOLD_IOS : RMS_QUIET_THRESHOLD;
 
   const silenceAnchorMs = (): number => {
     if (quietSince !== null) return quietSince;
@@ -218,16 +228,29 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       analyserPoll = setInterval(() => {
         if (!active || autoSubmitFired) return;
         const rms = rmsFromAnalyser();
-        const threshold = rmsThreshold();
-        if (rms >= threshold) {
-          userSpeechDetected = true;
+        const speechTh = rmsSpeechThreshold();
+        const quietTh = rmsQuietThreshold();
+
+        if (rms >= speechTh) {
           consecutiveQuietPolls = 0;
           quietSince = null;
-          markSpeechActivity(true);
+          if (!analyserInSpeech) {
+            analyserInSpeech = true;
+            userSpeechDetected = true;
+            markSpeechActivity(true);
+          }
           return;
         }
+
         if (!userSpeechDetected) return;
+
+        // Hysteresis band (quietTh ≤ rms < speechTh): hold state — don't reset silence clock.
+        if (rms >= quietTh) return;
+
         consecutiveQuietPolls += 1;
+        if (analyserInSpeech && consecutiveQuietPolls >= RMS_QUIET_POLLS_REQUIRED) {
+          analyserInSpeech = false;
+        }
         if (consecutiveQuietPolls < RMS_QUIET_POLLS_REQUIRED) return;
         if (quietSince === null) quietSince = Date.now();
         tryConversationalSubmit();
@@ -258,6 +281,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     }
     audioBytesAtLastSpeech = totalAudioBytes();
     clearPostSpeechSubmit();
+    if (fromFinal && opts.conversational) scheduleConversationalSafetySubmit();
   };
 
   const clearPostSpeechSubmit = () => {
@@ -265,12 +289,35 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     postSpeechSubmitTimer = null;
   };
 
-  const schedulePostSpeechSubmit = (delayMs = POST_SPEECH_SUBMIT_MS) => {
+  const clearConversationalSafety = () => {
+    if (conversationalSafetyTimer) clearTimeout(conversationalSafetyTimer);
+    conversationalSafetyTimer = null;
+  };
+
+  /** SR-based handoff backup when analyser is fooled by room tone (gym, HVAC). */
+  const scheduleConversationalSafetySubmit = () => {
+    if (!opts.conversational) return;
+    clearConversationalSafety();
+    const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
+    conversationalSafetyTimer = setTimeout(() => {
+      conversationalSafetyTimer = null;
+      if (!active || autoSubmitFired || !userSpeechDetected) return;
+      tryConversationalSubmit();
+      if (!autoSubmitFired && hasEnoughToSubmit()) triggerAutoSubmit();
+    }, pause + 250);
+  };
+
+  const schedulePostSpeechSubmit = (delayMs?: number) => {
     clearPostSpeechSubmit();
+    const delay = delayMs ?? (
+      opts.conversational
+        ? (opts.autoSubmitSilenceMs ?? POST_SPEECH_SUBMIT_MS)
+        : POST_SPEECH_SUBMIT_MS
+    );
     postSpeechSubmitTimer = setTimeout(() => {
       postSpeechSubmitTimer = null;
       if (active && !autoSubmitFired) triggerAutoSubmit();
-    }, delayMs);
+    }, delay);
   };
 
   const maybeExtendForSrStall = (chunkSize: number) => {
@@ -376,6 +423,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearSilencePoll();
     clearAbsoluteMax();
     clearPostSpeechSubmit();
+    clearConversationalSafety();
     teardownAnalyser();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
@@ -413,6 +461,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearPostSpeechSubmit();
+    clearConversationalSafety();
     teardownAnalyser();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
@@ -639,9 +688,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (!active || userStopped) return;
       if (!opts.conversational) {
         scheduleFallbackTimers();
+        return;
       }
-      if (opts.conversational && hasEnoughToSubmit()) {
-        schedulePostSpeechSubmit(POST_SPEECH_SUBMIT_MS);
+      if (userSpeechDetected) {
+        schedulePostSpeechSubmit();
       }
     };
 
@@ -730,6 +780,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       recordingTimersArmed = false;
       consecutiveQuietPolls = 0;
       quietSince = null;
+      analyserInSpeech = false;
+      clearConversationalSafety();
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
@@ -751,6 +803,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     },
     hasRecordedAudio() {
       return audioChunks.length > 0;
+    },
+    canAutoSubmit() {
+      return hasEnoughToSubmit();
     },
     getPreview() {
       return effectivePreview();
