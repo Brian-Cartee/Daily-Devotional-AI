@@ -325,7 +325,7 @@ export default function GuidancePage() {
   const phase1TtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const phase2TtsBlobRef = useRef<Promise<Blob | null> | null>(null);
   const followUpTtsBlobRef = useRef<Promise<Blob | null> | null>(null);
-  const phase1MemorySavedRef = useRef(false);
+  const lastGuidanceMemoryKeyRef = useRef("");
   const sendOffSpokenRef = useRef<string | null>(null);
   // phase1SpeechDone, phase1SilenceActive, phase2Speaking, phase2SpeechDone,
   // phase2SilenceActive are now derived from convo machine (see above)
@@ -1109,22 +1109,39 @@ export default function GuidancePage() {
     }
   };
 
-  // Save guidance memory when Phase 2 completes (richest payload)
+  // Save guidance memory — full transcript when multi-turn or session path chosen
   useEffect(() => {
-    if (!responseComplete || !situation.trim() || situation.trim().length < 8) return;
-    const assistantMessages = messages.filter((m) => m.role === "assistant");
-    const firstResponse = assistantMessages[0]?.content;
-    if (!firstResponse) return;
-    postGuidanceMemory(situation.trim(), firstResponse, "complete");
-  }, [responseComplete, situation, messages]);
-
-  // Save memory from Phase 1 if user doesn't reach Phase 2
-  useEffect(() => {
-    if (!phase1Complete || !phase1Response?.trim() || phase2Started || phase1MemorySavedRef.current) return;
     if (!situation.trim() || situation.trim().length < 8) return;
-    phase1MemorySavedRef.current = true;
-    postGuidanceMemory(situation.trim(), phase1Response, "complete");
-  }, [phase1Complete, phase1Response, phase2Started, situation]);
+
+    const userTurns = messages.filter((m) => m.role === "user").length;
+    const firstResponse =
+      messages.find((m) => m.role === "assistant")?.content?.trim()
+      || phase1Response?.trim();
+    if (!firstResponse) return;
+
+    let shouldSave = false;
+    if (phase1Complete && phase1Response?.trim() && !phase2Started) {
+      shouldSave = true;
+    } else if (responseComplete && (completionPath !== null || userTurns >= 2)) {
+      shouldSave = true;
+    }
+    if (!shouldSave) return;
+
+    const saveKey = `${situation.trim()}:${messages.length}:${completionPath ?? "open"}`;
+    const timer = setTimeout(() => {
+      if (lastGuidanceMemoryKeyRef.current === saveKey) return;
+      lastGuidanceMemoryKeyRef.current = saveKey;
+      postGuidanceMemory(
+        situation.trim(),
+        firstResponse,
+        "complete",
+        messages.length > 0
+          ? messages.map((m) => ({ role: m.role, content: m.content }))
+          : undefined,
+      );
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [responseComplete, completionPath, messages, situation, phase1Complete, phase1Response, phase2Started]);
 
 
   // walk-today is now fired in parallel from startPhase2 — see fetchWalkToday below

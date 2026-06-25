@@ -1,8 +1,19 @@
-/** Parsed guidance_memory journal content (v1 JSON or legacy plain text). */
+/** Parsed guidance_memory journal content (v1/v2 JSON or legacy plain text). */
 export type GuidanceMemoryPayload = {
   v?: number;
   summary: string;
   carryForward?: string;
+  /** Short emotional theme labels — no proper names */
+  themes?: string[];
+  /** Areas already explored in that session — helps avoid re-asking */
+  explored?: string[];
+  savedAt?: string;
+};
+
+export type GuidanceContinuityRecord = {
+  memory: GuidanceMemoryPayload;
+  ageMs: number;
+  createdAt: string;
 };
 
 export function parseGuidanceMemoryContent(content: string): GuidanceMemoryPayload {
@@ -17,6 +28,9 @@ export function parseGuidanceMemoryContent(content: string): GuidanceMemoryPaylo
           v: parsed.v ?? 1,
           summary: parsed.summary.trim(),
           carryForward: parsed.carryForward?.trim() || undefined,
+          themes: parsed.themes?.map(t => t.trim()).filter(Boolean),
+          explored: parsed.explored?.map(t => t.trim()).filter(Boolean),
+          savedAt: parsed.savedAt?.trim() || undefined,
         };
       }
     } catch {
@@ -27,7 +41,14 @@ export function parseGuidanceMemoryContent(content: string): GuidanceMemoryPaylo
 }
 
 export function serializeGuidanceMemory(payload: GuidanceMemoryPayload): string {
-  return JSON.stringify({ v: 1, summary: payload.summary, carryForward: payload.carryForward });
+  return JSON.stringify({
+    v: 2,
+    summary: payload.summary,
+    carryForward: payload.carryForward,
+    themes: payload.themes?.length ? payload.themes.slice(0, 3) : undefined,
+    explored: payload.explored?.length ? payload.explored.slice(0, 4) : undefined,
+    savedAt: payload.savedAt ?? new Date().toISOString(),
+  });
 }
 
 /** Soften carry-forward for spoken welcome — presence, not surveillance. */
@@ -47,10 +68,54 @@ export function extractMemoryJsonFromModel(raw: string): GuidanceMemoryPayload |
     const parsed = JSON.parse(trimmed.slice(start, end + 1)) as Partial<GuidanceMemoryPayload>;
     if (!parsed.summary?.trim()) return null;
     return {
+      v: 2,
       summary: parsed.summary.trim(),
       carryForward: parsed.carryForward?.trim() || undefined,
+      themes: parsed.themes?.map(t => t.trim()).filter(Boolean).slice(0, 3),
+      explored: parsed.explored?.map(t => t.trim()).filter(Boolean).slice(0, 4),
     };
   } catch {
     return null;
   }
 }
+
+export function formatMemoryAge(ageMs: number): string {
+  if (ageMs < 6 * 60 * 60 * 1000) return "earlier today";
+  if (ageMs < 30 * 60 * 60 * 1000) return "yesterday";
+  if (ageMs < 5 * 24 * 60 * 60 * 1000) return "a few days ago";
+  if (ageMs < 21 * 24 * 60 * 60 * 1000) return "a couple weeks ago";
+  if (ageMs < 60 * 24 * 60 * 60 * 1000) return "a while back";
+  return "some time ago";
+}
+
+/** Inject at session open — cross-session continuity with anti-hallucination rules. */
+export function buildGuidanceContinuityPrompt(record: GuidanceContinuityRecord): string {
+  const { memory, ageMs } = record;
+  const weight = memory.carryForward?.trim() || memory.summary?.trim();
+  if (!weight) return "";
+
+  const age = formatMemoryAge(ageMs);
+  const themes = memory.themes?.filter(Boolean).slice(0, 3).join(", ");
+  const explored = memory.explored?.filter(Boolean).slice(0, 4).join("; ");
+
+  return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRIOR TALK IT THROUGH (${age})
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Emotional weight they were carrying: ${weight}${themes ? `\nThemes: ${themes}` : ""}${explored ? `\nAlready explored then: ${explored}` : ""}
+
+MEMORY RULES — non-negotiable:
+— Only reference this if directly relevant to what they share NOW. Soft check ("is that still with you?") — never assume it is unchanged.
+— NEVER invent visit counts, days they've come back, or any session history beyond this note.
+— NEVER quote their past words verbatim. Never say "you always" or "you tend to."
+— If they open something new, follow them. Do not force continuity.
+— This is one prior conversation, not a dossier. Hold it lightly.`;
+}
+
+export const GUIDANCE_MEMORY_EXTRACT_PENDING = `From what this person just shared, return JSON only:
+{"summary":"1 sentence internal note","carryForward":"ONE sentence, second person, ≤25 words — emotional weight they are carrying, NOT proper names or diagnoses. Hold the door open; do not declare facts. Good: You were carrying something heavy about someone you love. Bad: You were dealing with a difficult time."}`;
+
+export const GUIDANCE_MEMORY_EXTRACT_COMPLETE = `Extract a spiritual memory from a Talk It Through session. Return JSON only:
+{"summary":"1-2 sentences for internal context — what mattered emotionally","carryForward":"ONE sentence, second person, ≤25 words — emotional register and weight, NOT proper names or medical labels. No 'I remember'.","themes":["up to 3 short theme labels — grief, marriage, doubt, exhaustion"],"explored":["up to 4 short areas already discussed — no proper names if sensitive"]}
+
+Rules: specific emotional weight not generic; do not permanently label their whole life as grief/crisis from one conversation; themes/explored help avoid re-asking the same ground next time.`;

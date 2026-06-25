@@ -504,6 +504,7 @@ export function postGuidanceMemory(
   situation: string,
   response: string | undefined,
   stage: "pending" | "complete",
+  messages?: Array<{ role: string; content: string }>,
 ): void {
   const sessionId = getSessionId();
   const trimmed = situation.trim();
@@ -516,6 +517,9 @@ export function postGuidanceMemory(
       response: response?.trim() || trimmed,
       sessionId,
       stage,
+      messages: messages?.length
+        ? messages.map((m) => ({ role: m.role, content: m.content }))
+        : undefined,
     }),
   }).catch(() => {});
 }

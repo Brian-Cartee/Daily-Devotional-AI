@@ -27,6 +27,10 @@ import {
   serializeGuidanceMemory,
   extractMemoryJsonFromModel,
   sanitizeCarryForwardForSpeech,
+  buildGuidanceContinuityPrompt,
+  GUIDANCE_MEMORY_EXTRACT_PENDING,
+  GUIDANCE_MEMORY_EXTRACT_COMPLETE,
+  type GuidanceContinuityRecord,
 } from "../lib/guidanceMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
 import { getCulturalMomentNote } from "../culturalMoments";
@@ -1731,18 +1735,33 @@ Voice authenticity (internal constraint — never cite these rules in output):
     return entry;
   }
 
+  async function getLatestGuidanceContinuity(sessionId: string): Promise<GuidanceContinuityRecord | null> {
+    if (!sessionId) return null;
+    try {
+      const entries = await storage.getJournalEntries(sessionId);
+      const latest = entries.find((e) => e.type === "guidance_memory");
+      if (!latest?.content) return null;
+      const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+      if (ageMs > 60 * 24 * 60 * 60 * 1000) return null;
+      return {
+        memory: parseGuidanceMemoryContent(latest.content),
+        ageMs,
+        createdAt: latest.createdAt,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async function getJournalContext(sessionId: string): Promise<{ context: string; count: number }> {
     if (!sessionId) return { context: "", count: 0 };
     try {
       const entries = await storage.getJournalEntries(sessionId);
       if (!entries || entries.length === 0) return { context: "", count: 0 };
-      const memories = entries.filter(e => e.type === "guidance_memory").slice(0, 3);
       const visible = entries.filter(e => e.type !== "guidance_memory").slice(0, 5);
-      const allContext = [...memories, ...visible];
-      const context = allContext.map(e => {
-        const label = e.type === "guidance_memory" ? "Previous conversation" : e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
-        const body = e.type === "guidance_memory" ? parseGuidanceMemoryContent(e.content).summary : e.content;
-        const snippet = body.replace(/\n+/g, " ").slice(0, 220);
+      const context = visible.map(e => {
+        const label = e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
+        const snippet = e.content.replace(/\n+/g, " ").slice(0, 220);
         return `[${label}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
       }).join("\n");
       return { context, count: entries.filter(e => e.type !== "guidance_memory").length };
@@ -3970,6 +3989,12 @@ Sacred restraint: fewer words are better.`;
       userMemCtx,
     } = await getOrFetchSessionContext(sessionId || "");
 
+    let guidanceContinuityNote = "";
+    if (!isFollowUp && sessionId) {
+      const continuity = await getLatestGuidanceContinuity(sessionId);
+      if (continuity) guidanceContinuityNote = buildGuidanceContinuityPrompt(continuity);
+    }
+
     const memoryNote = journalCtx
       ? `\n\nWhat you already know about this person — from past conversations, prayers they've written, or journal entries. Use this to make your response feel like a continuation of a real relationship, not a first meeting. Reference past things only when it flows naturally and adds genuine warmth or depth. Never quote their entries back to them verbatim. Memory rules: only surface something from the past if it is directly relevant to what they just shared, recent enough to feel natural, and adds care rather than precision. When you do reference something, keep it soft and permissive — "This feels similar to something you mentioned before… if that still fits, we can stay with it" — never specific dates, never exact phrasing, never pattern claims like "you always" or "you tend to." Memory should feel like being known, not being recorded:\n${journalCtx}`
       : "";
@@ -4073,7 +4098,7 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${journeyNote}${relationshipNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${guidanceSafetyNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
+— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${journeyNote}${relationshipNote}${guidanceContinuityNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${guidanceSafetyNote}${SCRIPTURAL_ALIGNMENT}${EMOTIONAL_TONE}${VOICE_AUTHENTICITY}`;
 
     // Build conversation history — for two-phase flow, include phase1 exchange as proper
     // message turns rather than re-injecting them into the system prompt
@@ -4448,37 +4473,44 @@ Under 40 words total.`;
 
   // ── Guidance: save silent memory from a completed guidance session ──────────
   app.post("/api/guidance/save-memory", async (req, res) => {
-    const { situation, response, sessionId, stage } = req.body as {
-      situation?: string; response?: string; sessionId?: string; stage?: "pending" | "complete";
+    const { situation, response, sessionId, stage, messages } = req.body as {
+      situation?: string;
+      response?: string;
+      sessionId?: string;
+      stage?: "pending" | "complete";
+      messages?: Array<{ role: string; content: string }>;
     };
     if (!situation?.trim() || !sessionId) {
       return res.status(400).json({ message: "missing fields" });
     }
     const isPending = stage === "pending";
-    if (!isPending && !response?.trim()) {
+    if (!isPending && !response?.trim() && !(messages && messages.length > 0)) {
       return res.status(400).json({ message: "missing fields" });
     }
     try {
+      const transcript = Array.isArray(messages) && messages.length > 0
+        ? messages
+          .slice(-24)
+          .map((m) => `${m.role === "user" ? "USER" : "PHILIP"}: ${m.content}`)
+          .join("\n\n")
+          .slice(0, 4500)
+        : "";
+
+      const userContent = isPending
+        ? `They just shared: "${situation.slice(0, 600)}"`
+        : transcript
+          ? `Their opening situation: "${situation.slice(0, 600)}"\n\nFull conversation:\n${transcript}\n\nExtract memory from the whole conversation — weight what mattered most by the end.`
+          : `Their situation: "${situation.slice(0, 600)}"\n\nThe guidance they received began: "${(response ?? "").slice(0, 400)}"`;
+
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        max_tokens: isPending ? 100 : 180,
+        max_tokens: isPending ? 120 : 220,
         messages: [
           {
             role: "system",
-            content: isPending
-              ? `From what this person just shared, return JSON only:
-{"summary":"1 sentence internal note","carryForward":"ONE sentence, second person, ≤25 words — emotional weight they are carrying, NOT proper names or diagnoses. Hold the door open; do not declare facts. Good: You were carrying something heavy about someone you love. Bad: You were dealing with a difficult time."}`
-              : `Extract a spiritual memory from a Talk It Through session. Return JSON only:
-{"summary":"1-2 sentences for internal context","carryForward":"ONE sentence, second person, ≤25 words — emotional register and weight, NOT proper names or medical labels. No 'I remember'. Good: You were carrying a lot as something heavy with health drew near. Bad: You were going through a difficult time."}
-
-Rules: specific emotional weight not generic; do not permanently label their whole life as grief/crisis from one conversation.`,
+            content: isPending ? GUIDANCE_MEMORY_EXTRACT_PENDING : GUIDANCE_MEMORY_EXTRACT_COMPLETE,
           },
-          {
-            role: "user",
-            content: isPending
-              ? `They just shared: "${situation.slice(0, 600)}"`
-              : `Their situation: "${situation.slice(0, 600)}"\n\nThe guidance they received began: "${(response ?? "").slice(0, 400)}"`,
-          },
+          { role: "user", content: userContent },
         ],
       });
       const raw = completion.choices[0]?.message?.content?.trim();
@@ -4490,9 +4522,15 @@ Rules: specific emotional weight not generic; do not permanently label their who
         const entry = await storage.createJournalEntry({
           sessionId,
           type: "guidance_memory",
-          content: serializeGuidanceMemory({ summary: payload.summary, carryForward: cf }),
+          content: serializeGuidanceMemory({
+            summary: payload.summary,
+            carryForward: cf,
+            themes: payload.themes,
+            explored: payload.explored,
+          }),
           title: undefined,
         });
+        SESSION_CTX_CACHE.delete(sessionId);
         return res.status(200).json({ ok: true, id: String(entry.id) });
       }
       res.status(200).json({ ok: true, id: null });
