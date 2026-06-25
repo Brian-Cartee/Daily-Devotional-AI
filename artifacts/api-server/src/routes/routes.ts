@@ -4088,12 +4088,19 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 
 Output ONLY the single best question — nothing else. No preamble, no explanation.
 
-STEP 1 — Scan the user's last message for any specific moment, place, action, confession, or image they mentioned but haven't been asked about yet:
+The person's most recent message:
 "${lastUserMessage.slice(0, 300)}"
-If you find one → ask about THAT. Do not move to new territory. This is non-negotiable.
-Examples that MUST trigger this: "no reason to get up", "lying there till sundown", "there's no one", "I never told anyone", "I said things I can't take back", "I did something I'm not proud of", any specific physical scene they described.
 
-STEP 2 — Only if step 1 finds nothing new: pick from areas_unexplored in the state.
+STEP 1 — DEPTH CHECK: Did the person just answer Philip's last question, make a vulnerable confession, or reveal something emotionally raw?
+If YES → go DEEPER into what they just said, not sideways to a new topic. Ask a question that follows the thread they opened, not a new thread entirely.
+"She told me he always said good morning first" means Philip should probe that moment, not ask a new detail. Stay in the same emotional space.
+
+STEP 2 — NEW DETAIL CHECK: Only run this if step 1 finds nothing raw or vulnerable.
+Scan for any specific moment, place, action, confession, or image they mentioned that hasn't been explored yet.
+Examples that trigger this: "no reason to get up", "lying there till sundown", "I never told anyone", "I did something I'm not proud of", any specific physical scene.
+WARNING: If the user's message IS their answer to Philip's last question, do not treat the answer's details as "unexplored new territory" — they just addressed it. Move forward, not back.
+
+STEP 3 — Only if steps 1 and 2 find nothing: pick from areas_unexplored in the state.
 
 HARD RULES:
 - NEVER use these structural patterns (they sound clinical and robotic):
@@ -4107,6 +4114,7 @@ HARD RULES:
 - NEVER repeat the same STRUCTURE as any question already asked (check questions_asked in state)
 - NEVER name an emotion (guilt, shame, anger, fear, grief) the user has not already used themselves
 - NEVER pivot away from a raw image or confession the user just offered — if they described a specific scene, stay there
+- Do not put the user's exact phrase in quotation marks inside the question itself
 - Under 20 words. End with ?
 
 Output the question only.`,
@@ -4218,20 +4226,25 @@ Under 40 words total.`;
             const lastAssistantMsg = [...(claudeHistory)].reverse().find(m => m.role === "assistant")?.content ?? "";
             const lastWasShapeC = !lastAssistantMsg.includes("?");
 
-            // Detect formula streak: if last 3+ Philip responses all had a question,
+            // Detect formula streak: if last 3 or 4+ Philip responses all had a question,
             // increase Shape C probability to break the pattern
-            const recentPhilipMsgs = claudeHistory.filter(m => m.role === "assistant").slice(-3);
-            const formulaStreak = recentPhilipMsgs.length >= 3 && recentPhilipMsgs.every(m => m.content.includes("?"));
+            const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
+            const last3 = philipMsgs.slice(-3);
+            const last4 = philipMsgs.slice(-4);
+            const formulaStreak3 = last3.length >= 3 && last3.every(m => m.content.includes("?"));
+            const formulaStreak4 = last4.length >= 4 && last4.every(m => m.content.includes("?"));
 
-            // Shape C (no question) selection:
+            // Shape C (no question) selection — tiered by streak depth:
             // - Never back-to-back (prevents stalls)
             // - High-signal lament: 60% chance
-            // - Formula streak in mid/late conversation: 35% chance
+            // - 4+ consecutive questions, exchange 5+: 55% chance (deep streak — must break)
+            // - 3 consecutive questions, exchange 5+: 40% chance (moderate streak)
             // - Base rate: 10% for structural variety
             const shapeRoll = Math.random();
             const useShapeC = !lastWasShapeC && (
               isLament ? shapeRoll < 0.60 :
-              formulaStreak && exchangeNum >= 5 ? shapeRoll < 0.35 :
+              formulaStreak4 && exchangeNum >= 5 ? shapeRoll < 0.55 :
+              formulaStreak3 && exchangeNum >= 5 ? shapeRoll < 0.40 :
               shapeRoll < 0.10
             );
 
