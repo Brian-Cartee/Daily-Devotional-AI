@@ -19,7 +19,7 @@ import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
-import { useConvoMachine } from "@/lib/useConvoMachine";
+import { useConvoMachine, type ConvoPhase } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
@@ -303,6 +303,9 @@ function resolvePhilipOrbMode(opts: {
   isReflecting: boolean;
   phase1SilenceActive: boolean;
   phase2SilenceActive: boolean;
+  convoPhase: ConvoPhase;
+  phase1MicArming: boolean;
+  followUpMicArming: boolean;
 }): VoiceOrbMode | null {
   if (!opts.philipHandsFreeVoice || opts.showHeartTypeFallback || opts.showPhase1TypeFallback) {
     return null;
@@ -317,12 +320,24 @@ function resolvePhilipOrbMode(opts: {
     || opts.followUpSpeaking
     || opts.phase2Loading;
 
-  // Mic icon only while capture is actually open — not merely because the phase allows input.
+  // Mic icon when capture is open or it is clearly the user's turn to speak.
+  const userMicTurn =
+    !speaking
+    && (
+      (opts.convoPhase === "entry" && !opts.philipGreetingTtsActive)
+      || opts.convoPhase === "p1-reply"
+      || opts.convoPhase === "fu-reply"
+      || (opts.convoPhase === "p1-silence" && (opts.phase1MicLive || opts.phase1MicArming))
+    );
+
   const listening =
     opts.entryMicLive
     || opts.micArming
     || opts.phase1MicLive
-    || opts.followUpMicLive;
+    || opts.phase1MicArming
+    || opts.followUpMicLive
+    || opts.followUpMicArming
+    || userMicTurn;
 
   if (opts.showThresholdOverlay) {
     if (speaking) return "speak";
@@ -332,7 +347,7 @@ function resolvePhilipOrbMode(opts: {
 
   if (!opts.voiceConversation) return null;
   if (opts.responseComplete && opts.completionPath !== "stay") return null;
-  if (opts.phase1SilenceActive || opts.phase2SilenceActive) return null;
+  if ((opts.phase1SilenceActive || opts.phase2SilenceActive) && !listening) return null;
   if ((opts.processingBridge || opts.isReflecting) && !speaking && !listening) return null;
   if (opts.isSending && !speaking && !listening) return null;
 
@@ -535,7 +550,9 @@ export default function GuidancePage() {
   const [entryMicLive, setEntryMicLive] = useState(false);
   const [micArming, setMicArming] = useState(false);
   const [phase1MicLive, setPhase1MicLive] = useState(false);
+  const [phase1MicArming, setPhase1MicArming] = useState(false);
   const [followUpMicLive, setFollowUpMicLive] = useState(false);
+  const [followUpMicArming, setFollowUpMicArming] = useState(false);
   const micVisualLive = entryMicLive || micArming;
   const phase1MicVisual = phase1MicLive;
   const followUpMicVisual = followUpMicLive;
@@ -1514,6 +1531,7 @@ export default function GuidancePage() {
     setPhase1ListenPhase("listening");
     setPhase1Interim("");
     setPhase1MicLive(false);
+    setPhase1MicArming(false);
   }, []);
 
   const stopHeartListening = useCallback((showContinue = true) => {
@@ -1682,6 +1700,8 @@ export default function GuidancePage() {
     }
     setPhase1ShowContinue(false);
     setPhase1ListenPhase("listening");
+    setPhase1MicArming(true);
+    setPhase1MicLive(false);
 
     const listener = createPatientVoiceListener({
       conversational: true,
@@ -1693,10 +1713,14 @@ export default function GuidancePage() {
       onPhaseChange: setPhase1ListenPhase,
       onMicLive: (live) => {
         setPhase1MicLive(live);
-        if (live) phase1MicRetryRef.current = 0;
+        if (live) {
+          setPhase1MicArming(false);
+          phase1MicRetryRef.current = 0;
+        }
       },
       onListenEnd: () => {
         setPhase1MicLive(false);
+        setPhase1MicArming(false);
         phase1VoiceRef.current = null;
         if (
           isPhilipMode()
@@ -1779,6 +1803,7 @@ export default function GuidancePage() {
     setFollowUpListening(false);
     setFollowUpListenPhase("listening");
     setFollowUpMicLive(false);
+    setFollowUpMicArming(false);
   }, []);
 
   useEffect(() => () => {
@@ -1795,6 +1820,8 @@ export default function GuidancePage() {
       followUpVoiceRef.current = null;
     }
     setFollowUpListenPhase("listening");
+    setFollowUpMicArming(true);
+    setFollowUpMicLive(false);
 
     const listener = createPatientVoiceListener({
       conversational: true,
@@ -1806,10 +1833,14 @@ export default function GuidancePage() {
       onPhaseChange: setFollowUpListenPhase,
       onMicLive: (live) => {
         setFollowUpMicLive(live);
-        if (live) followUpMicRetryRef.current = 0;
+        if (live) {
+          setFollowUpMicArming(false);
+          followUpMicRetryRef.current = 0;
+        }
       },
       onListenEnd: () => {
         setFollowUpMicLive(false);
+        setFollowUpMicArming(false);
         followUpVoiceRef.current = null;
         if (
           isPhilipMode()
@@ -1906,7 +1937,7 @@ export default function GuidancePage() {
 
     cancelSpeak = speakShepherdStreamWithMicHandoff(cleanResponse(text), {
       onStart: () => { setFollowUpSpeaking(true); convo.dispatch({ type: "FU_SPEAK_START" }); },
-      onSpeakingEnd: () => { setFollowUpSpeaking(false); convo.dispatch({ type: "FU_SPEAK_END" }); },
+      onSpeakingEnd: () => { setFollowUpSpeaking(false); setFollowUpMicArming(true); convo.dispatch({ type: "FU_SPEAK_END" }); },
       handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
       onHandoff: () => {
         if (!hasSpeechSupport || isSending || processingBridge) return;
@@ -1973,9 +2004,9 @@ export default function GuidancePage() {
     let autoMicTimer: number | undefined;
 
     const scheduleAutoMic = (withVoice: boolean) => {
-      // Post-greeting mic must not be blocked by greetingEngagedRef (set in TTS onStart).
       if (cancelled || autoMicStartedRef.current || !hasSpeechSupport) return;
       autoMicStartedRef.current = true;
+      setMicArming(true);
       autoMicTimer = window.setTimeout(() => {
         if (!cancelled) startHeartListeningRef.current(withVoice);
       }, 400);
@@ -2073,6 +2104,7 @@ export default function GuidancePage() {
           if (cancelled) return;
           setPhase1Speaking(false);
           setPhase1SpeechDone(true);
+          setPhase1MicArming(true);
           convo.dispatch({ type: "P1_SPEAK_END" });
         },
         onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
@@ -2575,6 +2607,9 @@ export default function GuidancePage() {
     isReflecting,
     phase1SilenceActive,
     phase2SilenceActive,
+    convoPhase: convo.phase,
+    phase1MicArming,
+    followUpMicArming,
   });
 
   const dismissThresholdForTyping = () => {
@@ -2655,7 +2690,7 @@ export default function GuidancePage() {
               {/* One orb — speaker when Philip talks, mic when you talk */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
                 {philipHandsFreeVoice ? (
-                  <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark />
+                  <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
                 ) : (
                   <VoiceSessionOrb
                     mode={entryMicLive || micArming ? "listen" : "idle"}
@@ -2714,7 +2749,7 @@ export default function GuidancePage() {
               transform: "translateX(-50%)",
             }}
           >
-            <VoiceSessionOrb mode={philipOrbMode} size={88} />
+            <VoiceSessionOrb mode={philipOrbMode} size={88} key={philipOrbMode} />
             {philipHandsFreeVoice && philipOrbMode === "listen" && (
               <VoiceQuietHint visible={voiceQuietHintVisible} />
             )}

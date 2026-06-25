@@ -24,6 +24,7 @@ export function VoiceSessionOrb({ mode, size = 96, dark = false, onClick, disabl
 
   const shell = (
     <motion.div
+      key={mode}
       role="status"
       aria-live="polite"
       aria-label={isListen ? "Listening" : isSpeak ? "Philip is speaking" : "Philip"}
