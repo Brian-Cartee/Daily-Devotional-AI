@@ -76,6 +76,7 @@ import {
   shouldBlockLlm,
   concerningSystemNote,
   enforceAmbiguousRiskCheck,
+  enforceDependencyRedirect,
   SAFETY_HEADER,
 } from "../guidanceSafety";
 import {
@@ -4444,6 +4445,7 @@ Under 40 words total.`;
         const exchangeNum = Math.floor(conversationHistory.length / 2);
         const beforeRisk = phase2Text;
         phase2Text = enforceAmbiguousRiskCheck(phase2Text, lastUserMsg, philipMsgs, exchangeNum);
+        phase2Text = enforceDependencyRedirect(phase2Text, lastUserMsg, philipMsgs, exchangeNum);
         if (phase2Text !== beforeRisk) usedMechanicalConstruction = true;
       }
 

@@ -137,6 +137,53 @@ Example: "You said some of this goes to places you don't say out loud — are yo
 Do NOT paste 988, crisis hotlines, or emergency resources unless they explicitly mention not wanting to live, self-harm, or a plan.
 One line of care, then continue with one specific pastoral question. No lecture.`;
 
+/** User is treating Philip as their only safe person — point outward once, no hotline dump. */
+const DEPENDENCY_PHRASES = [
+  "you're the only one",
+  "youre the only one",
+  "you are the only one",
+  "only one i can tell",
+  "only person i can tell",
+  "only person i can talk",
+  "only one i can talk",
+  "only one who listens",
+  "only one who understands",
+  "only safe person",
+  "only place i can",
+  "only here i can",
+  "only here that",
+  "nobody else to talk",
+  "no one else to talk",
+  "nobody to talk to",
+  "no one to talk to",
+  "don't have anyone",
+  "dont have anyone",
+  "do not have anyone",
+  "you're all i have",
+  "youre all i have",
+  "only one that",
+  "nowhere else to go",
+  "nobody else knows",
+  "no one else knows",
+  "only person who",
+  "lonely and you're",
+  "lonely and you are",
+];
+
+const DEPENDENCY_EXCLUSION_PATTERNS = [
+  /\bnot the only\b/i,
+  /\byou're not the only\b/i,
+  /\byou are not the only\b/i,
+  /\bnot your only\b/i,
+];
+
+export const DEPENDENCY_SYSTEM_NOTE = `
+
+DEPENDENCY CHECK (internal — do not quote this block):
+The person signaled Philip may be their only safe outlet. Name that gently in ONE line, then point outward — to God and to one real person. Not a hotline dump. Not "as an AI." Not guilt.
+Example: "This is too much for one room — is there one person, or one place before God, you could bring part of this?"
+Then continue with one pastoral question. Once per conversation.`;
+
 const MEDICAL_EMERGENCY_PHRASES = [
   "took a bottle of pills",
   "took pills",
@@ -343,6 +390,61 @@ export function enforceAmbiguousRiskCheck(
   if (!needsAmbiguousRiskAck(userMessage, philipMessages)) return response;
   if (/\b(are you safe|safe right now|safe tonight|okay tonight)\b/i.test(response)) return response;
   return prependAmbiguousRiskAck(response, exchangeNum);
+}
+
+function matchesPhilipDependence(lower: string): boolean {
+  if (DEPENDENCY_EXCLUSION_PATTERNS.some((p) => p.test(lower))) return false;
+  return DEPENDENCY_PHRASES.some((p) => lower.includes(p));
+}
+
+/** User signaled Philip is their only safe outlet — dependency on Philip forming. */
+export function detectPhilipDependence(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  if (!lower) return false;
+  return matchesPhilipDependence(lower);
+}
+
+export function conversationHadDependencyRedirect(
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  return philipMessages.some((m) =>
+    /\b(too much for one room|too important for one room|isn't enough for|wasn't meant to live only here|one person before God|can't be the only place)\b/i.test(m.content),
+  );
+}
+
+export function needsDependencyRedirect(
+  userMessage: string,
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  if (!detectPhilipDependence(userMessage)) return false;
+  return !conversationHadDependencyRedirect(philipMessages);
+}
+
+export function prependDependencyRedirect(response: string, exchangeNum: number): string {
+  const lines = [
+    "This is too much for one room — is there one person, or one place before God, you could bring part of this?",
+    "What you're carrying wasn't meant to live only here — who else might hear even a piece of it?",
+    "Philip isn't enough for weight like this — is there someone in your life, or before God, you could trust with any of it?",
+  ];
+  const line = lines[exchangeNum % lines.length];
+  const trimmed = response.trim();
+  if (!trimmed) return line;
+  return `${line} ${trimmed}`;
+}
+
+/** Prepend a one-line outward redirect when dependence on Philip is forming. */
+export function enforceDependencyRedirect(
+  response: string,
+  userMessage: string,
+  philipMessages: Array<{ content: string }>,
+  exchangeNum: number,
+): string {
+  if (!needsDependencyRedirect(userMessage, philipMessages)) return response;
+  if (/\b(are you safe|safe right now|safe tonight|okay tonight)\b/i.test(response)) return response;
+  if (/\b(too much for one room|too important for one room|isn't enough for|wasn't meant to live only here|one person before God|can't be the only place)\b/i.test(response)) {
+    return response;
+  }
+  return prependDependencyRedirect(response, exchangeNum);
 }
 
 function buildHighRiskResponse(text: string): string {
