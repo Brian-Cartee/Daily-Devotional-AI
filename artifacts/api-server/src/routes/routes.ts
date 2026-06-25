@@ -4025,9 +4025,11 @@ Sacred restraint: fewer words are better.`;
     // Generate structured conversation state for follow-up exchanges
     // This gives Philip an explicit map of what's been heard, asked, and explored
     let conversationStateBlock = "";
+    let conversationState: ConversationState | null = null;
     if (isFollowUp && messages?.length) {
       try {
         const state = await generateConversationState(openai, situation.trim(), messages);
+        conversationState = state;
         conversationStateBlock = buildStatePromptBlock(state);
       } catch {
         // Non-fatal — continue without state block
@@ -4092,8 +4094,7 @@ The person's most recent message:
 "${lastUserMessage.slice(0, 300)}"
 
 STEP 1 — DEPTH CHECK: Did the person just answer Philip's last question, make a vulnerable confession, or reveal something emotionally raw?
-If YES → go DEEPER into what they just said, not sideways to a new topic. Ask a question that follows the thread they opened, not a new thread entirely.
-"She told me he always said good morning first" means Philip should probe that moment, not ask a new detail. Stay in the same emotional space.
+If YES → go DEEPER into what they just said. But first check questions_asked: if 2 or more recent questions already probed this same detail, person, or image — open a DIFFERENT ANGLE on the same emotional thread. Don't ask a third question about the same thing. Stay in the same emotional space, but open a new door.
 
 STEP 2 — NEW DETAIL CHECK: Only run this if step 1 finds nothing raw or vulnerable.
 Scan for any specific moment, place, action, confession, or image they mentioned that hasn't been explored yet.
@@ -4105,6 +4106,7 @@ STEP 3 — Only if steps 1 and 2 find nothing: pick from areas_unexplored in the
 HARD RULES:
 - NEVER use these structural patterns (they sound clinical and robotic):
   • "Was it X, or something else?" or any X-or-something-else binary
+  • A list of options for them to pick from ("a moment, a person, or a place?"; "X, Y, or Z?") — ask ONE specific thing
   • "What does X actually look like?"
   • "Is there someone you can talk to / lean on?" (support-network probing)
   • Any question about sleep, food, appetite, or self-care — unless user mentioned it first
@@ -4226,25 +4228,29 @@ Under 40 words total.`;
             const lastAssistantMsg = [...(claudeHistory)].reverse().find(m => m.role === "assistant")?.content ?? "";
             const lastWasShapeC = !lastAssistantMsg.includes("?");
 
-            // Detect formula streak: if last 3 or 4+ Philip responses all had a question,
+            // Detect formula streak: if last 3, 4, or 5+ Philip responses all had a question,
             // increase Shape C probability to break the pattern
             const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
             const last3 = philipMsgs.slice(-3);
             const last4 = philipMsgs.slice(-4);
+            const last5 = philipMsgs.slice(-5);
             const formulaStreak3 = last3.length >= 3 && last3.every(m => m.content.includes("?"));
             const formulaStreak4 = last4.length >= 4 && last4.every(m => m.content.includes("?"));
+            const formulaStreak5 = last5.length >= 5 && last5.every(m => m.content.includes("?"));
 
             // Shape C (no question) selection — tiered by streak depth:
             // - Never back-to-back (prevents stalls)
             // - High-signal lament: 60% chance
-            // - 4+ consecutive questions, exchange 5+: 55% chance (deep streak — must break)
-            // - 3 consecutive questions, exchange 5+: 40% chance (moderate streak)
+            // - 5+ consecutive questions, exchange 5+: 75% chance (critical — must break)
+            // - 4+ consecutive questions, exchange 5+: 60% chance (deep streak)
+            // - 3 consecutive questions, exchange 5+: 45% chance (moderate streak)
             // - Base rate: 10% for structural variety
             const shapeRoll = Math.random();
             const useShapeC = !lastWasShapeC && (
               isLament ? shapeRoll < 0.60 :
-              formulaStreak4 && exchangeNum >= 5 ? shapeRoll < 0.55 :
-              formulaStreak3 && exchangeNum >= 5 ? shapeRoll < 0.40 :
+              formulaStreak5 && exchangeNum >= 5 ? shapeRoll < 0.75 :
+              formulaStreak4 && exchangeNum >= 5 ? shapeRoll < 0.60 :
+              formulaStreak3 && exchangeNum >= 5 ? shapeRoll < 0.45 :
               shapeRoll < 0.10
             );
 
@@ -4265,9 +4271,14 @@ Under 40 words total.`;
                 // Move 3: short direct observation, no mirroring
                 `Make a short, direct observation about what their words reveal — not what they said, what it shows. Under 15 words. No opener starting with "I," "It," or "There."`,
               ];
-              // For lament/Shape C: name the specific weight, not a generic reaction
-              const lamentMove = `In one sentence, name the specific weight of what they said — the thing itself, not your reaction to it. Under 15 words.`;
+              // For lament/Shape C: name the concrete thing, not a generic reaction
+              const lamentMove = `In one sentence, name the SPECIFIC THING they described — the actual person, place, year, action, or fact. Not your reaction to it. Under 15 words.`;
               const moveInstruction = useShapeC ? lamentMove : standardMoves[move];
+
+              // Pull banned metaphors from state so the ack can't recycle images Philip already used
+              const bannedLine = conversationState?.metaphors_used?.length
+                ? `\nThese images are ALREADY USED in this conversation — do not reference any of them: ${conversationState.metaphors_used.join(", ")}`
+                : "";
 
               const ackSystem = `You are Philip — a pastoral companion.
 
@@ -4275,7 +4286,9 @@ The person just said: "${lastUserMsg.slice(0, 200)}"
 
 ${moveInstruction}
 
-Output ONE sentence only — no preamble, no meta-commentary, no explanation of your reasoning. The sentence must begin with a concrete noun, verb, or emotional weight — never "I," "It," or "There." Name something specific. Under 20 words.
+Output ONE sentence only — no preamble, no meta-commentary, no explanation of your reasoning. The sentence must begin with a concrete noun, verb, or emotional weight — never "I," "It," or "There." Name something specific. Under 20 words. No question marks. No quotation marks around the person's words.${bannedLine}
+
+Avoid these weak openers (they name your reaction, not the thing): "Makes sense", "That must hurt", "Understandably", "Of course", "That's a lot", "Makes complete sense". Name the SPECIFIC THING instead.
 
 Examples of the right voice (do not copy these — match the directness):
 "Three weeks in, and the house still waits for someone who won't come back."
