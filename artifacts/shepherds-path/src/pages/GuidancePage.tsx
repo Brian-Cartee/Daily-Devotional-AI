@@ -42,7 +42,7 @@ import { saveCarryToday } from "@/lib/devotionalContinuity";
 import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { isPhilipMode, isSoloMode, incrementSoloSessionCount, shouldShowSoloReintro, markSoloReintroShown, setCompanionMode } from "@/lib/companionMode";
-import { WitnessLetterCard } from "@/components/WitnessLetterCard";
+import { VoiceSessionOrb, type VoiceOrbMode } from "@/components/VoiceSessionOrb";
 import { HoldThisWithMeCard } from "@/components/HoldThisWithMeCard";
 import { PatternPhilipCard } from "@/components/PatternPhilipCard";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
@@ -269,6 +269,71 @@ const BRIDGE_QUESTIONS: Record<string, string> = {
   "I'm grieving": "Who or what are you carrying tonight?",
   "I'm exhausted": "What's worn you down — is it today specifically or has it been building?",
 };
+
+function resolvePhilipOrbMode(opts: {
+  philipHandsFreeVoice: boolean;
+  showHeartTypeFallback: boolean;
+  showPhase1TypeFallback: boolean;
+  showThresholdOverlay: boolean;
+  voiceConversation: boolean;
+  completionPath: "carry" | "stay" | null;
+  responseComplete: boolean;
+  philipGreetingActive: boolean;
+  greetingSpeaking: boolean;
+  phase1Speaking: boolean;
+  phase2Speaking: boolean;
+  followUpSpeaking: boolean;
+  entryMicLive: boolean;
+  micArming: boolean;
+  heartListening: boolean;
+  phase1MicLive: boolean;
+  phase1Listening: boolean;
+  followUpMicLive: boolean;
+  followUpListening: boolean;
+  processingBridge: boolean;
+  phase2Loading: boolean;
+  isSending: boolean;
+  isReflecting: boolean;
+  phase1SilenceActive: boolean;
+  phase2SilenceActive: boolean;
+}): VoiceOrbMode | null {
+  if (!opts.philipHandsFreeVoice || opts.showHeartTypeFallback || opts.showPhase1TypeFallback) {
+    return null;
+  }
+
+  const speaking =
+    opts.philipGreetingActive
+    || opts.greetingSpeaking
+    || opts.phase1Speaking
+    || opts.phase2Speaking
+    || opts.followUpSpeaking
+    || opts.phase2Loading;
+
+  const listening =
+    opts.entryMicLive
+    || opts.micArming
+    || opts.heartListening
+    || opts.phase1MicLive
+    || opts.phase1Listening
+    || opts.followUpMicLive
+    || opts.followUpListening;
+
+  if (opts.showThresholdOverlay) {
+    if (speaking) return "speak";
+    if (listening) return "listen";
+    return "idle";
+  }
+
+  if (!opts.voiceConversation) return null;
+  if (opts.responseComplete && opts.completionPath !== "stay") return null;
+  if (opts.phase1SilenceActive || opts.phase2SilenceActive) return null;
+  if ((opts.processingBridge || opts.isReflecting) && !speaking && !listening) return null;
+  if (opts.isSending && !speaking && !listening) return null;
+
+  if (speaking) return "speak";
+  if (listening) return "listen";
+  return null;
+}
 
 export default function GuidancePage() {
   const search = useSearch();
@@ -2393,11 +2458,36 @@ export default function GuidancePage() {
   const conversationThread = messages.slice(2);
 
   // Philip-first threshold: presence pulse until greeting ends, then mic opens on its own.
-  const philipAwaitingGreeting = isPhilipMode() && convo.phase === "idle";
   const philipGreetingActive = isPhilipMode() && convo.phase === "greeting";
-  const showThresholdEntryMic = isSoloMode() || convo.phase === "entry";
-  const thresholdPresencePulse = philipAwaitingGreeting || philipGreetingActive;
   const philipHandsFreeVoice = isPhilipMode() && hasSpeechSupport;
+
+  const philipOrbMode = resolvePhilipOrbMode({
+    philipHandsFreeVoice,
+    showHeartTypeFallback,
+    showPhase1TypeFallback,
+    showThresholdOverlay,
+    voiceConversation,
+    completionPath,
+    responseComplete,
+    philipGreetingActive,
+    greetingSpeaking,
+    phase1Speaking,
+    phase2Speaking,
+    followUpSpeaking,
+    entryMicLive,
+    micArming,
+    heartListening,
+    phase1MicLive,
+    phase1Listening,
+    followUpMicLive,
+    followUpListening,
+    processingBridge,
+    phase2Loading,
+    isSending,
+    isReflecting,
+    phase1SilenceActive,
+    phase2SilenceActive,
+  });
 
   const dismissThresholdForTyping = () => {
     greetingEngagedRef.current = true;
@@ -2474,173 +2564,18 @@ export default function GuidancePage() {
                 Back
               </button>
 
-              {/* Philip speaks first — mic appears only after his opening line */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-
-                {showThresholdEntryMic ? (
-                philipHandsFreeVoice ? (
-                <motion.div
-                  role="status"
-                  aria-live="polite"
-                  aria-label={entryMicLive ? "Listening" : micArming ? "Opening microphone" : "Ready to listen"}
-                  style={{
-                    width: "96px",
-                    height: "96px",
-                    borderRadius: "9999px",
-                    border: micVisualLive
-                      ? "1.5px solid rgba(239,68,68,0.55)"
-                      : "1.5px solid rgba(139,92,246,0.35)",
-                    background: micVisualLive
-                      ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
-                      : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.06) 100%)",
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  animate={entryMicLive ? {
-                    boxShadow: [
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
-                      "0 0 0 20px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.44)",
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
-                    ],
-                    scale: [1, 1.05, 1],
-                  } : micArming ? {
-                    boxShadow: [
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
-                      "0 0 0 10px rgba(239,68,68,0.0), 0 0 28px 8px rgba(239,68,68,0.28)",
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
-                    ],
-                    scale: [1, 1.02, 1],
-                  } : {
-                    boxShadow: "0 0 24px 4px rgba(139,92,246,0.16)",
-                    scale: 1,
-                  }}
-                  transition={{ duration: entryMicLive ? 1.6 : micArming ? 1.2 : 0.3, repeat: micVisualLive ? Infinity : 0, ease: "easeInOut" }}
-                >
-                  <Mic
-                    size={24}
-                    style={{
-                      color: micVisualLive ? "rgba(239,68,68,0.90)" : "rgba(139,92,246,0.65)",
-                      position: "relative",
-                      zIndex: 1,
-                      transition: "color 0.3s ease",
-                    }}
-                  />
-                </motion.div>
+              {/* One orb — speaker when Philip talks, mic when you talk */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                {philipOrbMode ? (
+                  <VoiceSessionOrb mode={philipOrbMode} dark />
                 ) : (
-                <motion.button
-                  type="button"
-                  onClick={toggleHeartVoice}
-                  aria-label={entryMicLive ? "Done speaking — send to Philip" : micArming ? "Opening microphone" : "Speak to Philip"}
-                  disabled={micArming}
-                  style={{
-                    width: "96px",
-                    height: "96px",
-                    borderRadius: "9999px",
-                    border: micVisualLive
-                      ? "1.5px solid rgba(239,68,68,0.55)"
-                      : "1.5px solid rgba(139,92,246,0.35)",
-                    background: micVisualLive
-                      ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
-                      : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.06) 100%)",
-                    cursor: micArming ? "default" : "pointer",
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  animate={entryMicLive ? {
-                    boxShadow: [
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
-                      "0 0 0 20px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.44)",
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
-                    ],
-                    scale: [1, 1.05, 1],
-                  } : micArming ? {
-                    boxShadow: [
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
-                      "0 0 0 10px rgba(239,68,68,0.0), 0 0 28px 8px rgba(239,68,68,0.28)",
-                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
-                    ],
-                    scale: [1, 1.02, 1],
-                  } : {
-                    boxShadow: "0 0 24px 4px rgba(139,92,246,0.16)",
-                    scale: 1,
-                  }}
-                  transition={{ duration: entryMicLive ? 1.6 : micArming ? 1.2 : 0.3, repeat: micVisualLive ? Infinity : 0, ease: "easeInOut" }}
-                >
-                  <Mic
-                    size={24}
-                    style={{
-                      color: micVisualLive ? "rgba(239,68,68,0.90)" : "rgba(139,92,246,0.65)",
-                      position: "relative",
-                      zIndex: 1,
-                      transition: "color 0.3s ease",
-                    }}
+                  <VoiceSessionOrb
+                    mode={entryMicLive || micArming ? "listen" : "idle"}
+                    dark
+                    onClick={toggleHeartVoice}
+                    disabled={micArming}
                   />
-                </motion.button>
-                )
-                ) : thresholdPresencePulse ? (
-                <motion.div
-                  role="status"
-                  aria-live="polite"
-                  aria-label={philipGreetingActive ? "Philip is speaking" : "Philip is with you"}
-                  style={{
-                    width: "96px",
-                    height: "96px",
-                    borderRadius: "9999px",
-                    border: philipGreetingActive
-                      ? "1.5px solid rgba(139,92,246,0.35)"
-                      : "1.5px solid rgba(139,92,246,0.20)",
-                    background: "radial-gradient(circle, rgba(139,92,246,0.16) 0%, rgba(109,40,217,0.05) 100%)",
-                  }}
-                  animate={{
-                    boxShadow: philipGreetingActive ? [
-                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 8px rgba(139,92,246,0.28)",
-                      "0 0 0 16px rgba(139,92,246,0.0), 0 0 44px 14px rgba(139,92,246,0.38)",
-                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 8px rgba(139,92,246,0.28)",
-                    ] : [
-                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.14)",
-                      "0 0 0 10px rgba(139,92,246,0.0), 0 0 32px 10px rgba(139,92,246,0.22)",
-                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.14)",
-                    ],
-                    scale: philipGreetingActive ? [1, 1.04, 1] : [1, 1.02, 1],
-                  }}
-                  transition={{ duration: philipGreetingActive ? 2.0 : 2.8, repeat: Infinity, ease: "easeInOut" }}
-                />
-                ) : null}
-
-                <p style={{
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: entryMicLive
-                    ? "rgba(239,68,68,0.60)"
-                    : philipGreetingActive
-                      ? "rgba(139,92,246,0.45)"
-                      : micArming
-                        ? "rgba(239,68,68,0.45)"
-                        : philipAwaitingGreeting
-                          ? "rgba(139,92,246,0.28)"
-                          : "rgba(255,255,255,0.28)",
-                  margin: 0,
-                  transition: "color 0.3s ease",
-                  userSelect: "none",
-                  minHeight: "14px",
-                }}>
-                  {entryMicLive
-                    ? "listening"
-                    : isReflecting && !situation.trim()
-                      ? "one moment"
-                      : micArming
-                        ? "opening mic"
-                        : philipGreetingActive
-                          ? "speaking"
-                        : showThresholdEntryMic
-                            ? (entryMicLive ? "listening" : micArming ? "opening mic" : "")
-                            : ""}
-                </p>
+                )}
 
                 <button
                   type="button"
@@ -2662,6 +2597,19 @@ export default function GuidancePage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Single voice orb — follows the conversation after threshold */}
+        {philipOrbMode && !showThresholdOverlay && (
+          <div
+            className="fixed left-1/2 z-30 pointer-events-none"
+            style={{
+              bottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
+              transform: "translateX(-50%)",
+            }}
+          >
+            <VoiceSessionOrb mode={philipOrbMode} size={88} />
+          </div>
+        )}
 
         {/* Hero image must start at y=0 (no sp-app-top-clearance on main) — matches For You / ThresholdHero */}
         <div
@@ -2791,84 +2739,18 @@ export default function GuidancePage() {
                         </p>
                       </div>
                     )}
-                    {/* Voice-first entry — mic opens automatically after spoken welcome */}
-                    {hasSpeechSupport && !showHeartTypeFallback && showThresholdEntryMic && (
+                    {hasSpeechSupport && !showHeartTypeFallback && !philipHandsFreeVoice && (
                       <div className="flex flex-col items-center mb-4">
-                        {philipHandsFreeVoice ? (
-                        <motion.div
-                          role="status"
-                          aria-live="polite"
-                          aria-label={entryMicLive ? "Listening" : "Philip is listening"}
-                          className="relative flex items-center justify-center w-28 h-28 rounded-full"
-                          animate={micVisualLive ? {
-                            boxShadow: [
-                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
-                              "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
-                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
-                            ],
-                          } : {
-                            boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
-                          }}
-                          transition={micVisualLive ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                          style={{
-                            background: micVisualLive
-                              ? "radial-gradient(circle, rgba(239,68,68,0.30) 0%, rgba(180,20,20,0.14) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(109,40,217,0.14) 100%)",
-                            border: micVisualLive
-                              ? "2px solid rgba(239,68,68,0.70)"
-                              : "2px solid rgba(139,92,246,0.50)",
-                          }}
-                        >
-                          <Mic className={`w-10 h-10 relative z-10 ${micVisualLive ? "text-red-400" : "text-violet-300"}`} />
-                        </motion.div>
-                        ) : (
-                        <motion.button
-                          type="button"
+                        <VoiceSessionOrb
+                          mode={entryMicLive || micArming ? "listen" : greetingSpeaking ? "speak" : "idle"}
+                          size={112}
                           onClick={toggleHeartVoice}
-                          aria-label={heartListening ? "Done speaking — send to Philip" : "Speak to Philip"}
-                          aria-live="polite"
-                          data-testid="button-guidance-heart-voice"
-                          className="relative flex items-center justify-center w-28 h-28 rounded-full cursor-pointer touch-manipulation"
-                          animate={micVisualLive ? {
-                            boxShadow: [
-                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
-                              "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
-                              "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
-                            ],
-                          } : greetingSpeaking ? {
-                            boxShadow: "0 0 28px 6px rgba(139,92,246,0.28)",
-                          } : {
-                            boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
-                          }}
-                          transition={micVisualLive ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                          style={{
-                            background: micVisualLive
-                              ? "radial-gradient(circle, rgba(239,68,68,0.30) 0%, rgba(180,20,20,0.14) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(109,40,217,0.14) 100%)",
-                            border: micVisualLive
-                              ? "2px solid rgba(239,68,68,0.70)"
-                              : "2px solid rgba(139,92,246,0.50)",
-                          }}
-                        >
-                          <Mic className={`w-10 h-10 relative z-10 ${micVisualLive ? "text-red-400" : "text-violet-300"}`} />
-                        </motion.button>
-                        )}
-                        <p className="mt-3 text-[13px] font-medium text-white/50 text-center">
-                          {isReflecting && !situation.trim()
-                            ? "…"
-                            : processingBridge || (heartListening && heartListenPhase === "thinking")
-                              ? "…"
-                              : entryMicLive
-                                ? "listening"
-                                : micArming
-                                  ? "opening mic"
-                                  : ""}
-                        </p>
-                        {/* Interim transcript hidden — watching words appear triggers self-editing */}
+                          disabled={micArming}
+                        />
                       </div>
                     )}
 
-                    {hasSpeechSupport && !showHeartTypeFallback && (
+                    {hasSpeechSupport && !showHeartTypeFallback && !philipHandsFreeVoice && (
                       <button
                         type="button"
                         onClick={() => {
@@ -3039,7 +2921,7 @@ export default function GuidancePage() {
 
           {/* Sacred Restraint — a breath of quiet before the response begins */}
           <AnimatePresence>
-          {isReflecting && situation && (!bridgeQuestion || bridgeSubmitted) && (
+          {isReflecting && situation && (!bridgeQuestion || bridgeSubmitted) && !philipHandsFreeVoice && (
               <motion.div
                 key="presence"
                 initial={{ opacity: 0, y: 4 }}
@@ -3064,9 +2946,8 @@ export default function GuidancePage() {
               className="mb-6"
               data-testid="text-guidance-phase1"
             >
-              {voiceConversation && !showPhase1TypeFallback && !phase1SpeechDone && (
+              {voiceConversation && !showPhase1TypeFallback && !phase1SpeechDone && !philipHandsFreeVoice && (
                 <div className="flex flex-col items-center py-8 mb-2">
-                  {/* Pure breath pulse — no icon. Philip is present, not processing. */}
                   <motion.div
                     role="status"
                     aria-live="polite"
@@ -3106,90 +2987,17 @@ export default function GuidancePage() {
               </div>
               )}
 
-              {phase1Complete && !phase2Started && !phase1SilenceActive && (
+              {phase1Complete && !phase2Started && !phase1SilenceActive && !philipHandsFreeVoice && (
                 <div className="mt-5 space-y-3">
-                  {/* Voice-first reply */}
+                  {/* Voice-first reply — solo / tap mode only; Philip uses fixed orb */}
                   {hasSpeechSupport && !showPhase1TypeFallback && voiceConversation && (
                     <div className="flex flex-col items-center py-2">
-                      {philipHandsFreeVoice ? (
-                      <motion.div
-                        role="status"
-                        aria-live="polite"
-                        aria-label={phase1MicVisual ? "Listening" : phase1Speaking ? "Philip is speaking" : "Ready to listen"}
-                        data-testid="indicator-guidance-phase1-voice"
-                        className="relative flex items-center justify-center w-24 h-24 rounded-full"
-                        animate={phase1MicVisual ? {
-                          boxShadow: [
-                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
-                            "0 0 0 16px rgba(239,68,68,0.0), 0 0 42px 14px rgba(239,68,68,0.45)",
-                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
-                          ],
-                        } : phase1Speaking ? {
-                          boxShadow: [
-                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
-                            "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.35)",
-                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
-                          ],
-                        } : {
-                          boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
-                        }}
-                        transition={(phase1MicVisual || phase1Speaking) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                        style={{
-                          background: phase1MicVisual
-                            ? "radial-gradient(circle, rgba(239,68,68,0.28) 0%, rgba(180,20,20,0.12) 100%)"
-                            : phase1Speaking
-                              ? "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.08) 100%)",
-                          border: phase1MicVisual
-                            ? "2px solid rgba(239,68,68,0.65)"
-                            : "2px solid rgba(139,92,246,0.35)",
-                        }}
-                      >
-                        <Mic className={`w-9 h-9 relative z-10 ${phase1MicVisual ? "text-red-400" : "text-violet-400"}`} />
-                      </motion.div>
-                      ) : (
-                      <motion.button
-                        type="button"
+                      <VoiceSessionOrb
+                        mode={phase1MicVisual ? "listen" : phase1Speaking ? "speak" : "idle"}
+                        size={96}
                         onClick={togglePhase1Voice}
                         disabled={phase1Speaking || processingBridge || phase2Loading}
-                        aria-label={phase1Listening ? "Stop speaking" : "Reply to Philip"}
-                        aria-live="polite"
-                        data-testid="button-guidance-phase1-voice"
-                        className="relative flex items-center justify-center w-24 h-24 rounded-full cursor-pointer touch-manipulation disabled:opacity-60 disabled:cursor-not-allowed"
-                        animate={phase1MicVisual ? {
-                          boxShadow: [
-                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
-                            "0 0 0 16px rgba(239,68,68,0.0), 0 0 42px 14px rgba(239,68,68,0.45)",
-                            "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
-                          ],
-                        } : phase1Speaking ? {
-                          boxShadow: [
-                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
-                            "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.35)",
-                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
-                          ],
-                        } : {
-                          boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
-                        }}
-                        transition={(phase1MicVisual || phase1Speaking) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-                        style={{
-                          background: phase1MicVisual
-                            ? "radial-gradient(circle, rgba(239,68,68,0.28) 0%, rgba(180,20,20,0.12) 100%)"
-                            : phase1Speaking
-                              ? "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)"
-                              : "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.08) 100%)",
-                          border: phase1MicVisual
-                            ? "2px solid rgba(239,68,68,0.65)"
-                            : "2px solid rgba(139,92,246,0.35)",
-                        }}
-                      >
-                        <Mic className={`w-9 h-9 relative z-10 ${phase1MicVisual ? "text-red-400" : "text-violet-400"}`} />
-                      </motion.button>
-                      )}
-                      <p className="mt-2.5 text-[12px] text-muted-foreground/40 font-medium">
-                        {phase1MicVisual ? "listening" : phase1Speaking ? "…" : philipHandsFreeVoice ? "" : "…"}
-                      </p>
-                      {/* Interim transcript hidden — watching words appear triggers self-editing */}
+                      />
                     </div>
                   )}
 
@@ -3316,7 +3124,7 @@ export default function GuidancePage() {
             transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            {showPhase2Content && voiceConversation && !showPhase1TypeFallback && !phase2SpeechDone && (
+            {showPhase2Content && voiceConversation && !showPhase1TypeFallback && !phase2SpeechDone && !philipHandsFreeVoice && (
               <div className="flex flex-col items-center py-8 mb-4">
                 {/* Pure breath pulse — no icon. Philip is present, not processing. */}
                 <motion.div
@@ -3872,8 +3680,6 @@ export default function GuidancePage() {
                               {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
                               {followUpMicVisual && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                             </button>
-                          ) : philipHandsFreeVoice && voiceConversation && followUpListening ? (
-                            <span className="text-[11px] text-muted-foreground/50 pl-1">listening</span>
                           ) : <span />}
                           <button
                             onClick={handleSend}
@@ -4394,8 +4200,6 @@ export default function GuidancePage() {
                     {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
                     {followUpMicVisual && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                   </button>
-                ) : philipHandsFreeVoice && voiceConversation && followUpListening ? (
-                  <span className="text-[11px] text-muted-foreground/50 pl-1">listening</span>
                 ) : <span />}
                 <button
                   onClick={handleSend}
