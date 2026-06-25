@@ -306,6 +306,7 @@ function resolvePhilipOrbMode(opts: {
   convoPhase: ConvoPhase;
   phase1MicArming: boolean;
   followUpMicArming: boolean;
+  voiceHandoffPending: boolean;
 }): VoiceOrbMode | null {
   if (!opts.philipHandsFreeVoice || opts.showHeartTypeFallback || opts.showPhase1TypeFallback) {
     return null;
@@ -318,7 +319,8 @@ function resolvePhilipOrbMode(opts: {
     || opts.phase1Speaking
     || opts.phase2Speaking
     || opts.followUpSpeaking
-    || opts.phase2Loading;
+    || opts.phase2Loading
+    || opts.voiceHandoffPending;
 
   // Mic icon when capture is open or it is clearly the user's turn to speak.
   const userMicTurn =
@@ -555,6 +557,7 @@ export default function GuidancePage() {
   const [phase1MicArming, setPhase1MicArming] = useState(false);
   const [followUpMicLive, setFollowUpMicLive] = useState(false);
   const [followUpMicArming, setFollowUpMicArming] = useState(false);
+  const [voiceHandoffPending, setVoiceHandoffPending] = useState(false);
   const micVisualLive = entryMicLive || micArming;
   const phase1MicVisual = phase1MicLive;
   const followUpMicVisual = followUpMicLive;
@@ -667,6 +670,12 @@ export default function GuidancePage() {
 
   const philipStream = usePhilipVoiceStream();
 
+
+  useEffect(() => {
+    if (phase1Speaking || phase2Speaking || followUpSpeaking) {
+      setVoiceHandoffPending(false);
+    }
+  }, [phase1Speaking, phase2Speaking, followUpSpeaking]);
 
   useEffect(() => {
     if (!situation.trim()) {
@@ -1655,6 +1664,7 @@ export default function GuidancePage() {
           }, 400);
           return;
         }
+        setVoiceHandoffPending(true);
         submitHeartEntryRef.current(preview, true);
       },
     });
@@ -1795,6 +1805,7 @@ export default function GuidancePage() {
           }, 400);
           return;
         }
+        setVoiceHandoffPending(true);
         handlePhase1ContinueRef.current(preview, true);
       },
     });
@@ -2300,7 +2311,10 @@ export default function GuidancePage() {
 
     heartSubmittingRef.current = true;
     lastInputWasVoiceRef.current = fromVoice;
-    if (fromVoice) setVoiceConversation(true);
+    if (fromVoice) {
+      setVoiceConversation(true);
+      setVoiceHandoffPending(true);
+    }
     setHeartShowContinue(false);
     convo.dispatch({ type: "ENTRY_SUBMIT" });
     setIsReflecting(true);
@@ -2387,6 +2401,7 @@ export default function GuidancePage() {
     setPhase1MicLive(false);
     setPhase1MicArming(false);
     setPhase1Listening(false);
+    setVoiceHandoffPending(true);
     phase1SubmittingRef.current = true;
     const fromVoice = fromVoiceOverride ?? (!showPhase1TypeFallback && textOverride === undefined);
     lastInputWasVoiceRef.current = fromVoice;
@@ -2662,6 +2677,7 @@ export default function GuidancePage() {
     convoPhase: convo.phase,
     phase1MicArming,
     followUpMicArming,
+    voiceHandoffPending,
   });
 
   const dismissThresholdForTyping = () => {

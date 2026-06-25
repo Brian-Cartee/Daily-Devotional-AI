@@ -150,13 +150,37 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let consecutiveQuietPolls = 0;
   let quietSince: number | null = null;
   let analyserInSpeech = false;
-  let conversationalSafetyTimer: ReturnType<typeof setTimeout> | null = null;
+  let utteranceEndTimer: ReturnType<typeof setTimeout> | null = null;
+  let utteranceEndArmed = false;
 
   const rmsSpeechThreshold = () =>
     preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD;
 
   const rmsQuietThreshold = () =>
     preferLocalSilenceDetection() ? RMS_QUIET_THRESHOLD_IOS : RMS_QUIET_THRESHOLD;
+
+  const clearUtteranceEndHandoff = () => {
+    if (utteranceEndTimer) clearTimeout(utteranceEndTimer);
+    utteranceEndTimer = null;
+    utteranceEndArmed = false;
+  };
+
+  /** One-shot handoff after end-of-utterance — not reset by iOS SR dribble or room tone. */
+  const armUtteranceEndHandoff = () => {
+    if (!opts.conversational || !active || autoSubmitFired || !userSpeechDetected) return;
+    if (utteranceEndArmed) return;
+    utteranceEndArmed = true;
+    const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
+    utteranceEndTimer = setTimeout(() => {
+      utteranceEndTimer = null;
+      utteranceEndArmed = false;
+      if (active && !autoSubmitFired) triggerAutoSubmit();
+    }, pause);
+  };
+
+  const onNewSpeechBurst = () => {
+    clearUtteranceEndHandoff();
+  };
 
   const silenceAnchorMs = (): number => {
     if (quietSince !== null) return quietSince;
@@ -237,6 +261,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
           if (!analyserInSpeech) {
             analyserInSpeech = true;
             userSpeechDetected = true;
+            onNewSpeechBurst();
             markSpeechActivity(true);
           }
           return;
@@ -248,11 +273,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         if (rms >= quietTh) return;
 
         consecutiveQuietPolls += 1;
-        if (analyserInSpeech && consecutiveQuietPolls >= RMS_QUIET_POLLS_REQUIRED) {
-          analyserInSpeech = false;
-        }
         if (consecutiveQuietPolls < RMS_QUIET_POLLS_REQUIRED) return;
         if (quietSince === null) quietSince = Date.now();
+        if (analyserInSpeech) {
+          analyserInSpeech = false;
+          armUtteranceEndHandoff();
+        }
         tryConversationalSubmit();
       }, ANALYSER_POLL_MS);
     } catch {
@@ -280,8 +306,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       lastSpeechAt = now;
     }
     audioBytesAtLastSpeech = totalAudioBytes();
-    clearPostSpeechSubmit();
-    if (fromFinal && opts.conversational) scheduleConversationalSafetySubmit();
+    // Conversational handoff uses armUtteranceEndHandoff — do not cancel it on SR dribble.
+    if (!opts.conversational) clearPostSpeechSubmit();
   };
 
   const clearPostSpeechSubmit = () => {
@@ -289,31 +315,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     postSpeechSubmitTimer = null;
   };
 
-  const clearConversationalSafety = () => {
-    if (conversationalSafetyTimer) clearTimeout(conversationalSafetyTimer);
-    conversationalSafetyTimer = null;
-  };
-
-  /** SR-based handoff backup when analyser is fooled by room tone (gym, HVAC). */
-  const scheduleConversationalSafetySubmit = () => {
-    if (!opts.conversational) return;
-    clearConversationalSafety();
-    const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
-    conversationalSafetyTimer = setTimeout(() => {
-      conversationalSafetyTimer = null;
-      if (!active || autoSubmitFired || !userSpeechDetected) return;
-      tryConversationalSubmit();
-      if (!autoSubmitFired && hasEnoughToSubmit()) triggerAutoSubmit();
-    }, pause + 250);
-  };
-
   const schedulePostSpeechSubmit = (delayMs?: number) => {
+    if (opts.conversational) {
+      armUtteranceEndHandoff();
+      return;
+    }
     clearPostSpeechSubmit();
-    const delay = delayMs ?? (
-      opts.conversational
-        ? (opts.autoSubmitSilenceMs ?? POST_SPEECH_SUBMIT_MS)
-        : POST_SPEECH_SUBMIT_MS
-    );
+    const delay = delayMs ?? POST_SPEECH_SUBMIT_MS;
     postSpeechSubmitTimer = setTimeout(() => {
       postSpeechSubmitTimer = null;
       if (active && !autoSubmitFired) triggerAutoSubmit();
@@ -423,7 +431,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearSilencePoll();
     clearAbsoluteMax();
     clearPostSpeechSubmit();
-    clearConversationalSafety();
+    clearUtteranceEndHandoff();
     teardownAnalyser();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
@@ -461,7 +469,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearPostSpeechSubmit();
-    clearConversationalSafety();
+    clearUtteranceEndHandoff();
     teardownAnalyser();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
@@ -676,7 +684,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         }
       } else if (interim.trim().length >= 4) {
         userSpeechDetected = true;
-        if (!opts.conversational) {
+        if (opts.conversational) {
+          onNewSpeechBurst();
+        } else {
           markSpeechActivity(false);
         }
         setPhase("listening");
@@ -781,7 +791,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       consecutiveQuietPolls = 0;
       quietSince = null;
       analyserInSpeech = false;
-      clearConversationalSafety();
+      clearUtteranceEndHandoff();
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
