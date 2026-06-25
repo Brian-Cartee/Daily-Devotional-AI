@@ -43,6 +43,12 @@ import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { isPhilipMode, isSoloMode, incrementSoloSessionCount, shouldShowSoloReintro, markSoloReintroShown, setCompanionMode } from "@/lib/companionMode";
 import { VoiceSessionOrb, type VoiceOrbMode } from "@/components/VoiceSessionOrb";
+import { VoiceQuietHint } from "@/components/VoiceQuietHint";
+import {
+  VOICE_QUIET_CAPTURE_FAIL,
+  VOICE_QUIET_HANDOFF_FAIL,
+  VOICE_QUIET_THRESHOLD_LINE,
+} from "@/lib/voiceQuietHint";
 import { HoldThisWithMeCard } from "@/components/HoldThisWithMeCard";
 import { PatternPhilipCard } from "@/components/PatternPhilipCard";
 import { suggestPathwayForSituation } from "@/lib/journeyCatalog";
@@ -524,6 +530,8 @@ export default function GuidancePage() {
   const [showThresholdOverlay, setShowThresholdOverlay] = useState(true);
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
   const [philipGreetingTtsActive, setPhilipGreetingTtsActive] = useState(false);
+  const [voiceQuietHintVisible, setVoiceQuietHintVisible] = useState(false);
+  const voiceQuietHintShownRef = useRef(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
   const [micArming, setMicArming] = useState(false);
   const [phase1MicLive, setPhase1MicLive] = useState(false);
@@ -533,7 +541,51 @@ export default function GuidancePage() {
   const followUpMicVisual = followUpMicLive;
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
-  // Acquire the mic stream immediately on mount — we are still within the user's
+  const VOICE_QUIET_HINT_MS = 5000;
+
+  useEffect(() => {
+    if (!situation.trim()) voiceQuietHintShownRef.current = false;
+  }, [situation]);
+
+  useEffect(() => {
+    if (!isPhilipMode() || !hasSpeechSupport || showHeartTypeFallback || showPhase1TypeFallback) return;
+    const micOpen = entryMicLive || phase1MicLive || followUpMicLive;
+    if (!micOpen || voiceQuietHintShownRef.current) return;
+    voiceQuietHintShownRef.current = true;
+    setVoiceQuietHintVisible(true);
+    const t = window.setTimeout(() => setVoiceQuietHintVisible(false), VOICE_QUIET_HINT_MS);
+    return () => window.clearTimeout(t);
+  }, [
+    entryMicLive,
+    phase1MicLive,
+    followUpMicLive,
+    showHeartTypeFallback,
+    showPhase1TypeFallback,
+    hasSpeechSupport,
+  ]);
+
+  useEffect(() => {
+    if (!voiceQuietHintVisible) return;
+    const heard =
+      interimTranscript.trim().length > 0
+      || phase1Interim.trim().length > 0
+      || (entryMicLive && heartInput.trim().length > 8)
+      || (phase1MicLive && phase1UserReply.trim().length > 8)
+      || (followUpMicLive && followUp.trim().length > 8);
+    if (heard) setVoiceQuietHintVisible(false);
+  }, [
+    voiceQuietHintVisible,
+    interimTranscript,
+    phase1Interim,
+    entryMicLive,
+    heartInput,
+    phase1MicLive,
+    phase1UserReply,
+    followUpMicLive,
+    followUp,
+  ]);
+
+  // Acquire the mic stream immediately on mount — still within the user's
   // transient activation window from the Talk It Through tap (~100-300ms into it).
   // This lets the auto-mic open after Philip's greeting without needing a second gesture.
   useEffect(() => {
@@ -2159,7 +2211,7 @@ export default function GuidancePage() {
 
     if (!trimmed && !(fromVoice && listener?.hasRecordedAudio())) {
       toast({
-        description: "We didn't catch that — keep talking when the mic opens.",
+        description: VOICE_QUIET_CAPTURE_FAIL,
         variant: "destructive",
       });
       return;
@@ -2202,7 +2254,7 @@ export default function GuidancePage() {
           setIsReflecting(false);
           convo.dispatch({ type: "ENTRY_OPEN" });
           toast({
-            description: "We couldn't hear enough to respond — please try again.",
+            description: VOICE_QUIET_HANDOFF_FAIL,
             variant: "destructive",
           });
           return;
@@ -2278,7 +2330,7 @@ export default function GuidancePage() {
           setPhase2Loading(false);
           convo.dispatch({ type: "P1_REPLY_OPEN" });
           toast({
-            description: "We couldn't hear enough — keep talking when the mic opens.",
+            description: VOICE_QUIET_CAPTURE_FAIL,
             variant: "destructive",
           });
           return;
@@ -2365,7 +2417,7 @@ export default function GuidancePage() {
 
     if (!text && !(fromVoice && listener?.hasRecordedAudio())) {
       toast({
-        description: "We didn't catch that — keep talking when the mic opens.",
+        description: VOICE_QUIET_CAPTURE_FAIL,
         variant: "destructive",
       });
       return;
@@ -2395,7 +2447,7 @@ export default function GuidancePage() {
           followUpSubmittingRef.current = false;
           setIsReflecting(false);
           toast({
-            description: "We couldn't hear enough — keep talking when the mic opens.",
+            description: VOICE_QUIET_CAPTURE_FAIL,
             variant: "destructive",
           });
           return;
@@ -2612,6 +2664,25 @@ export default function GuidancePage() {
                     disabled={micArming}
                   />
                 )}
+                {philipHandsFreeVoice && (
+                  <VoiceQuietHint visible={voiceQuietHintVisible} dark />
+                )}
+                {philipHandsFreeVoice && (
+                  <p
+                    data-testid="voice-quiet-threshold-line"
+                    style={{
+                      margin: 0,
+                      maxWidth: "240px",
+                      textAlign: "center",
+                      fontSize: "11px",
+                      lineHeight: 1.45,
+                      letterSpacing: "0.05em",
+                      color: "rgba(255,255,255,0.20)",
+                    }}
+                  >
+                    {VOICE_QUIET_THRESHOLD_LINE}
+                  </p>
+                )}
 
                 <button
                   type="button"
@@ -2637,13 +2708,16 @@ export default function GuidancePage() {
         {/* Single voice orb — follows the conversation after threshold */}
         {philipOrbMode && !showThresholdOverlay && (
           <div
-            className="fixed left-1/2 z-30 pointer-events-none"
+            className="fixed left-1/2 z-30 pointer-events-none flex flex-col items-center gap-2"
             style={{
               bottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
               transform: "translateX(-50%)",
             }}
           >
             <VoiceSessionOrb mode={philipOrbMode} size={88} />
+            {philipHandsFreeVoice && philipOrbMode === "listen" && (
+              <VoiceQuietHint visible={voiceQuietHintVisible} />
+            )}
           </div>
         )}
 
