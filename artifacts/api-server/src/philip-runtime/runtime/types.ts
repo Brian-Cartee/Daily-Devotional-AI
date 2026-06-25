@@ -25,7 +25,8 @@ export type PhilipGate =
   | "force_sit"
   | "no_question_mode"
   | "question_count_retry"
-  | "mechanical_construction";
+  | "mechanical_construction"
+  | "invented_session_history";
 
 export interface PhilipTurnMetadata {
   philipRuntimeVersion: string;

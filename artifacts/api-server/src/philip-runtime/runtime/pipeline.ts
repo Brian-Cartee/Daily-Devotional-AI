@@ -44,6 +44,7 @@ import {
   containsMysticalColdRead,
   finalizeSendOffText,
   questionInventsRelationship,
+  inventsSessionHistory,
   sanitizeSendOffText,
   type ConversationState,
   type PhilipMove,
@@ -372,6 +373,7 @@ const validateAndFixQuestion = async (
     || isBannedQuestion(q)
     || containsMysticalColdRead(q)
     || questionInventsRelationship(q, userMsgs, factsLearned)
+    || inventsSessionHistory(q, userMsgs, Math.floor(history.length / 2))
     || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser);
 
   if (!isInvalid(question)) return question;
@@ -407,10 +409,13 @@ const enforceAntiEcho = (
   question: string,
   move: PhilipMove | "sit",
   metaphorsUsed: string[] = [],
+  exchangeNum = 0,
+  allUserMsgs: string[] = [],
 ): string => {
   if (!text.trim()) return text;
   if (move === "plain_question" || move === "skip") return text;
-  const isEcho = shouldFallbackToPlainQuestion(text, userMsg, priorOpeners, metaphorsUsed)
+  const userContext = allUserMsgs.length > 0 ? allUserMsgs : [userMsg];
+  const isEcho = shouldFallbackToPlainQuestion(text, userMsg, priorOpeners, metaphorsUsed, exchangeNum, userContext)
     || (move === "sit" && isPureEcho(text, userMsg, 0.6));
   if (isEcho && question.trim()) return question;
   return text;
@@ -509,6 +514,7 @@ let usedMechanicalConstruction = false;
       const hasNewDetail = userMessageHasFreshDetail(lastUserMsg, priorUserMsgs);
       const movesUsed = conversationState?.moves_used ?? [];
       const userMsgs = claudeHistory.filter(m => m.role === "user");
+      const allUserMsgTexts = userMsgs.map(m => m.content);
       const echoStreak = getEchoStreak(philipMsgs, userMsgs);
       const priorOpeners = conversationState?.philip_openers_used ?? extractPhilipOpeners(philipMsgs);
       const bannedMetaphors = conversationState?.metaphors_used ?? [];
@@ -603,7 +609,7 @@ let usedMechanicalConstruction = false;
             "",
             60,
           );
-          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit", bannedMetaphors);
+          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit", bannedMetaphors, exchangeNum, allUserMsgTexts);
         } else if (nextQuestion) {
           const moveNote = PHILIP_MOVE_TEMPLATES[selectedMove] ?? PHILIP_MOVE_TEMPLATES.plain_question;
           phase2Text = await generatePhase2WithClaude(
@@ -612,7 +618,7 @@ let usedMechanicalConstruction = false;
             nextQuestion,
             selectedMove === "skip" ? 40 : 80,
           );
-          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors);
+          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors, exchangeNum, allUserMsgTexts);
         }
         usedMechanicalConstruction = !!phase2Text;
       }

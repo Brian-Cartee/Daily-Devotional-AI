@@ -8,6 +8,7 @@ import {
   enforceDependencyRedirect,
   needsDependencyRedirect,
 } from "../../guidanceSafety";
+import { inventsSessionHistory } from "../../conversationState";
 import type { PhilipGate, PhilipLane, PreTurnGateResult } from "./types";
 
 export function evaluatePreTurnGates(input: {
@@ -145,6 +146,15 @@ export function applyPostTurnGates(input: {
   if (text !== beforeDependency) {
     gates.push("dependency_redirect");
     lane = "dependency";
+  }
+
+  const userMsgs = claudeHistory.filter(m => m.role === "user").map(m => m.content);
+  if (inventsSessionHistory(text, userMsgs, input.exchangeNum)) {
+    gates.push("invented_session_history");
+    const bareQuestion = text.match(/[^.!?\n]*\?/)?.[0]?.trim();
+    if (bareQuestion && bareQuestion.length > 8) {
+      text = bareQuestion;
+    }
   }
 
   return { text, gates, lane };

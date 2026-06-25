@@ -334,6 +334,48 @@ export function isBannedQuestion(question: string): boolean {
   return BANNED_QUESTION_PATTERNS.some(p => p.test(question));
 }
 
+const INVENTED_SESSION_HISTORY_PATTERNS = [
+  /\bkept\s+coming\s+back\b/i,
+  /\bcome\s+back\s+here\b/i,
+  /\bdays?\s+you('ve| have)\s+(come|been|kept|returned)\b/i,
+  /\b(you('ve| have)|you)\s+(kept\s+)?coming\s+back\b/i,
+  /\bback\s+again\s+(today|tonight|here)\b/i,
+  /\bthis\s+is\s+(your\s+)?(second|third|fourth|fifth)\s+(time|visit)\b/i,
+  /\bvisited\s+(here\s+)?(three|four|five|\d+)\s+times?\b/i,
+];
+
+const DAY_COUNT_WORDS = new Set([
+  "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+]);
+
+/** Philip claims visit/session history the user never offered. */
+export function inventsSessionHistory(
+  philipText: string,
+  userMessages: string[],
+  exchangeNum = 0,
+): boolean {
+  const t = philipText.trim();
+  if (!t) return false;
+  const userBlob = userMessages.join(" ").toLowerCase();
+
+  for (const pattern of INVENTED_SESSION_HISTORY_PATTERNS) {
+    if (!pattern.test(t)) continue;
+    if (pattern.test(userBlob)) continue;
+    return true;
+  }
+
+  const dayClaim = t.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+days?\b/i);
+  if (dayClaim && exchangeNum <= 6) {
+    const token = dayClaim[1].toLowerCase();
+    if (userBlob.includes(token)) return false;
+    if (DAY_COUNT_WORDS.has(token) && userBlob.includes(`${token} days`)) return false;
+    if (/^\d+$/.test(token) && userBlob.includes(`${token} day`)) return false;
+    return true;
+  }
+
+  return false;
+}
+
 /** Relationship roles Philip must not invent if the user never named them. */
 const INVENTABLE_RELATIONSHIP_TERMS = [
   "wife", "husband", "spouse", "partner", "girlfriend", "boyfriend",
@@ -384,7 +426,10 @@ export function shouldFallbackToPlainQuestion(
   userText: string,
   priorOpeners: string[],
   metaphorsUsed: string[] = [],
+  exchangeNum = 0,
+  allUserMessages: string[] = [],
 ): boolean {
+  const userContext = allUserMessages.length > 0 ? allUserMessages : [userText];
   return (
     isPureEcho(philipText, userText, 0.65)
     || opensWithQuotedEcho(philipText)
@@ -392,6 +437,7 @@ export function shouldFallbackToPlainQuestion(
     || reusesBannedMetaphor(philipText, metaphorsUsed)
     || containsMysticalColdRead(philipText)
     || relabelsUserFeeling(philipText)
+    || inventsSessionHistory(philipText, userContext, exchangeNum)
   );
 }
 
@@ -451,6 +497,7 @@ function filterMovePool(
   movesUsed: string[],
   echoStreak: number,
   hasNewDetail: boolean,
+  formulaStreak = 0,
 ): PhilipMove[] {
   let pool = candidates.filter(m => m !== lastMove);
   if (pool.length === 0) pool = [...candidates];
@@ -466,6 +513,11 @@ function filterMovePool(
   // named_fact echoes easily — only when fresh detail and no recent echo
   if (echoStreak >= 1 || namedFactCount >= 2 || (exchangeNum >= 2 && !hasNewDetail)) {
     pool = pool.filter(m => m !== "named_fact");
+  }
+
+  // tension relabels easily — cap once echo or formula streak builds
+  if (echoStreak >= 1 || formulaStreak >= 2 || exchangeNum >= 3) {
+    pool = pool.filter(m => m !== "tension");
   }
 
   if (echoStreak >= 2) {
@@ -496,7 +548,7 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
   if (forceSit) return "sit";
 
   const pick = (candidates: PhilipMove[]): PhilipMove => {
-    const pool = filterMovePool(candidates, lastMove, exchangeNum, movesUsed, echoStreak, hasNewDetail);
+    const pool = filterMovePool(candidates, lastMove, exchangeNum, movesUsed, echoStreak, hasNewDetail, formulaStreak);
     return pool[exchangeNum % pool.length];
   };
 

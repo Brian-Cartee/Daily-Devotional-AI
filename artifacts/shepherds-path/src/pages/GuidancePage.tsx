@@ -739,7 +739,22 @@ export default function GuidancePage() {
     explicitMode?: GuidanceMode,
     phase1Context?: { phase1Response: string; phase1UserReply: string },
     opts?: { isFollowUp?: boolean },
-  ) => {
+  ): Promise<boolean> => {
+    const recoverFromStreamFailure = () => {
+      if (opts?.isFollowUp) {
+        convo.dispatch({ type: "FU_REPLY_OPEN" });
+        return;
+      }
+      if (phase1Context) {
+        setPhase2Loading(false);
+        setPhase2Started(false);
+        setPhase2SpeechDone(false);
+        convo.dispatch({ type: "P1_REPLY_OPEN" });
+        return;
+      }
+      convo.dispatch({ type: "FLOW_RECOVER_ENTRY" });
+    };
+
     setStreamingText("");
     setResponseComplete(false);
     if (!opts?.isFollowUp) {
@@ -772,12 +787,18 @@ export default function GuidancePage() {
         setStreamingText("");
         setResponseComplete(false);
         void refreshAiUsage();
-        return;
+        recoverFromStreamFailure();
+        toast({
+          description: "You've reached today's limit — try again tomorrow or upgrade.",
+          variant: "destructive",
+        });
+        return false;
       }
       if (!res.ok || !res.body) {
         setStreamingText("Having trouble connecting right now. It's worth trying once more — we're here.");
         setResponseComplete(true);
-        return;
+        recoverFromStreamFailure();
+        return false;
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -792,14 +813,18 @@ export default function GuidancePage() {
       if (!accumulated.trim()) {
         setStreamingText("We can try that again — give it just a moment.");
         setResponseComplete(true);
-        return;
+        recoverFromStreamFailure();
+        return false;
       }
       setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
       setStreamingText("");
       setResponseComplete(true);
+      return true;
     } catch {
       setStreamingText("Trouble connecting — check your signal and we can try again.");
       setResponseComplete(true);
+      recoverFromStreamFailure();
+      return false;
     }
   };
 
@@ -2094,10 +2119,16 @@ export default function GuidancePage() {
         phase2SpokenRef.current = null;
         const initialUserMsg: Message = { role: "user", content: situation };
         startPhase2(reply);
-        await streamResponse([initialUserMsg], undefined, {
+        const ok = await streamResponse([initialUserMsg], undefined, {
           phase1Response,
           phase1UserReply: reply,
         });
+        if (!ok) {
+          toast({
+            description: "Philip couldn't respond just now — tap Continue to try again.",
+            variant: "destructive",
+          });
+        }
         setIsReflecting(false);
         setPhase2Loading(false);
         phase1SubmittingRef.current = false;
@@ -2207,10 +2238,17 @@ export default function GuidancePage() {
         const newUserMsg: Message = { role: "user", content: text };
         const updated = [...messages, newUserMsg];
         setMessages(updated);
-        await streamResponse(updated, undefined, undefined, { isFollowUp: true });
+        const ok = await streamResponse(updated, undefined, undefined, { isFollowUp: true });
         setIsSending(false);
         setIsReflecting(false);
         followUpSubmittingRef.current = false;
+        if (!ok) {
+          toast({
+            description: "Philip couldn't respond just now — try again when you're ready.",
+            variant: "destructive",
+          });
+          return;
+        }
         // Safety net: if the API failed, no new TTS fires and FU_SPEAK_START/END
         // are never dispatched — machine stays stuck in "fu-speaking", mic won't
         // reopen. After 2.5s (enough time for TTS onStart to have fired if it will),
