@@ -14,6 +14,8 @@ export type PatientVoiceListener = {
   canAutoSubmit: () => boolean;
   /** User done speaking — submit now (orb tap / escape hatch) */
   forceSubmit: () => void;
+  /** Orb tap — stop mic and hand off immediately if any audio captured */
+  finishSpeaking: () => void;
   getPreview: () => string;
   finalizeTranscript: () => Promise<string>;
   isActive: () => boolean;
@@ -156,11 +158,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let utteranceEndTimer: ReturnType<typeof setTimeout> | null = null;
   let utteranceEndArmed = false;
   let lastSrActivityAt = 0;
+  let lastAudioGrowthAt = 0;
   let srHandoffPoll: ReturnType<typeof setInterval> | null = null;
   let baselineRmsSamples: number[] = [];
   let baselineCalibrated = false;
   let dynamicSpeechTh: number | null = null;
   let dynamicQuietTh: number | null = null;
+  let hysteresisBandSince: number | null = null;
 
   const rmsSpeechThreshold = () =>
     dynamicSpeechTh ?? (preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD);
@@ -173,6 +177,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const touchSrActivity = () => {
     lastSrActivityAt = Date.now();
+    lastAudioGrowthAt = Date.now();
     onNewSpeechBurst();
   };
 
@@ -186,15 +191,18 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (!opts.conversational || !preferLocalSilenceDetection()) return;
     clearSrHandoffPoll();
     srHandoffPoll = setInterval(() => {
-      if (!active || autoSubmitFired || !userSpeechDetected || lastSrActivityAt <= 0) return;
+      if (!active || autoSubmitFired || !userSpeechDetected) return;
       const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
-      const silentMs = Date.now() - lastSrActivityAt;
+      const anchor = lastSrActivityAt > 0
+        ? lastSrActivityAt
+        : (quietSince ?? (lastAudioGrowthAt > 0 ? lastAudioGrowthAt : 0));
+      if (anchor <= 0) return;
+      const silentMs = Date.now() - anchor;
       if (silentMs < pause) return;
       if (hasEnoughToSubmit()) {
         triggerAutoSubmit();
         return;
       }
-      // SR quiet but audio captured — Whisper can recover the words.
       if (silentMs >= pause + 400 && totalAudioBytes() >= minAudioBytesForHandoff()) {
         triggerAutoSubmit();
       }
@@ -316,6 +324,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
           if (!analyserInSpeech) {
             analyserInSpeech = true;
             userSpeechDetected = true;
+            lastAudioGrowthAt = Date.now();
             onNewSpeechBurst();
             markSpeechActivity(true);
           }
@@ -324,8 +333,20 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
         if (!userSpeechDetected) return;
 
-        // Hysteresis band (quietTh ≤ rms < speechTh): hold state — don't reset silence clock.
-        if (rms >= quietTh) return;
+        // Hysteresis band (quietTh ≤ rms < speechTh): AC can sit here indefinitely on iOS.
+        if (rms >= quietTh) {
+          if (hysteresisBandSince === null) hysteresisBandSince = Date.now();
+          const bandMs = Date.now() - hysteresisBandSince;
+          const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
+          if (bandMs >= pause + 400) {
+            if (quietSince === null) quietSince = Date.now();
+            if (hasEnoughToSubmit() || totalAudioBytes() >= minAudioBytesForHandoff()) {
+              triggerAutoSubmit();
+            }
+          }
+          return;
+        }
+        hysteresisBandSince = null;
 
         consecutiveQuietPolls += 1;
         if (consecutiveQuietPolls < RMS_QUIET_POLLS_REQUIRED) return;
@@ -504,6 +525,33 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       return;
     }
     endListening(true);
+  };
+
+  const submitNow = (manual = false) => {
+    if (autoSubmitFired) return;
+    if (!active && !manual) return;
+    userSpeechDetected = true;
+    const hasAudio = manual
+      ? audioChunks.length > 0
+      : totalAudioBytes() >= minAudioBytesForHandoff();
+    const hasText = effectivePreview().trim().length > 0;
+    if (!hasEnoughToSubmit() && !(manual && (hasAudio || hasText))) {
+      if (!manual) triggerAutoSubmit();
+      return;
+    }
+    autoSubmitFired = true;
+    clearTimers();
+    clearSilencePoll();
+    clearSrHandoffPoll();
+    clearPostSpeechSubmit();
+    clearUtteranceEndHandoff();
+    teardownAnalyser();
+    teardownTurnService();
+    try { rec?.stop(); } catch { /* noop */ }
+    rec = null;
+    void waitForRecorderStop()
+      .then(() => { endListening(false); opts.onAutoSubmit?.(); })
+      .catch(() => { endListening(false); opts.onAutoSubmit?.(); });
   };
 
   const triggerAutoSubmit = () => {
@@ -813,7 +861,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunks.push(e.data);
-          if (opts.conversational && e.data.size > 500) {
+          // Room tone still fills chunks — only treat as speech when VAD/SR agree.
+          if (
+            opts.conversational
+            && e.data.size > 500
+            && (analyserInSpeech || Date.now() - lastSrActivityAt < 800)
+          ) {
             userSpeechDetected = true;
           }
           maybeExtendForSrStall(e.data.size);
@@ -857,10 +910,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       analyserInSpeech = false;
       clearUtteranceEndHandoff();
       lastSrActivityAt = 0;
+      lastAudioGrowthAt = 0;
       baselineRmsSamples = [];
       baselineCalibrated = false;
       dynamicSpeechTh = null;
       dynamicQuietTh = null;
+      hysteresisBandSince = null;
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
@@ -887,9 +942,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       return hasEnoughToSubmit();
     },
     forceSubmit() {
-      if (!active || autoSubmitFired) return;
-      userSpeechDetected = true;
-      triggerAutoSubmit();
+      submitNow(true);
+    },
+    finishSpeaking() {
+      submitNow(true);
     },
     getPreview() {
       return effectivePreview();

@@ -22,6 +22,7 @@ import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShe
 import { useConvoMachine, type ConvoPhase } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
+import { nativeDiag } from "@/lib/nativeDiag";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
 import {
@@ -430,13 +431,19 @@ export default function GuidancePage() {
   const [phase1StreamingText, setPhase1StreamingText] = useState("");
   const [phase1Complete, setPhase1Complete] = useState(false);
   const [phase1UserReply, setPhase1UserReply] = useState("");
+  const phase1UserReplyRef = useRef(phase1UserReply);
+  useEffect(() => { phase1UserReplyRef.current = phase1UserReply; }, [phase1UserReply]);
   const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
   // phase2Loading is now derived from convo machine
   const [phase2Started, setPhase2Started] = useState(false);
+  const phase2StartedRef = useRef(phase2Started);
+  useEffect(() => { phase2StartedRef.current = phase2Started; }, [phase2Started]);
   const [bridgeQuestion, setBridgeQuestion] = useState<string | null>(null);
   const [bridgeAnswer, setBridgeAnswer] = useState("");
   const [bridgeSubmitted, setBridgeSubmitted] = useState(false);
   const [heartInput, setHeartInput] = useState("");
+  const heartInputRef = useRef(heartInput);
+  useEffect(() => { heartInputRef.current = heartInput; }, [heartInput]);
   const [interimTranscript, setInterimTranscript] = useState("");
   const [situationTopicId, setSituationTopicId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -1607,9 +1614,8 @@ export default function GuidancePage() {
         setEntryMicLive(false);
         setMicArming(false);
         const listener = heartVoiceRef.current;
-        const preview = (listener?.getPreview() ?? heartInput).trim();
+        const preview = (listener?.getPreview() ?? heartInputRef.current).trim();
         const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
-        heartVoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "entry"
@@ -1617,9 +1623,11 @@ export default function GuidancePage() {
           && !processingBridgeRef.current
           && canSubmit
         ) {
+          setVoiceHandoffPending(true);
           submitHeartEntryRef.current(preview, true);
           return;
         }
+        heartVoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "entry"
@@ -1649,27 +1657,24 @@ export default function GuidancePage() {
       onAutoSubmit: () => {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
         const listener = heartVoiceRef.current;
-        const preview = (listener?.getPreview() ?? heartInput).trim();
+        const preview = (listener?.getPreview() ?? heartInputRef.current).trim();
         setMicArming(false);
         setEntryMicLive(false);
         if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
-          if (listener?.hasRecordedAudio()) {
-            setVoiceHandoffPending(true);
-            listener.forceSubmit();
+          if (!listener?.hasRecordedAudio()) {
+            listener?.destroy();
+            heartVoiceRef.current = null;
+            window.setTimeout(() => {
+              if (
+                convoRef.current.phase === "entry"
+                && !heartSubmittingRef.current
+                && !heartVoiceRef.current?.isActive()
+              ) {
+                startHeartListeningRef.current(true);
+              }
+            }, 400);
             return;
           }
-          listener?.destroy();
-          heartVoiceRef.current = null;
-          window.setTimeout(() => {
-            if (
-              convoRef.current.phase === "entry"
-              && !heartSubmittingRef.current
-              && !heartVoiceRef.current?.isActive()
-            ) {
-              startHeartListeningRef.current(true);
-            }
-          }, 400);
-          return;
         }
         setVoiceHandoffPending(true);
         submitHeartEntryRef.current(preview, true);
@@ -1756,9 +1761,8 @@ export default function GuidancePage() {
         setPhase1MicLive(false);
         setPhase1MicArming(false);
         const listener = phase1VoiceRef.current;
-        const preview = (listener?.getPreview() ?? phase1UserReply).trim();
+        const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
         const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
-        phase1VoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "p1-reply"
@@ -1771,6 +1775,7 @@ export default function GuidancePage() {
           handlePhase1ContinueRef.current(preview, true);
           return;
         }
+        phase1VoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "p1-reply"
@@ -1793,28 +1798,26 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (phase1SubmittingRef.current || phase2LoadingRef.current || processingBridgeRef.current || !phase1ResponseRef.current) return;
+        nativeDiag("p1_auto_submit");
         setPhase1MicLive(false);
         setPhase1MicArming(false);
         const listener = phase1VoiceRef.current;
-        const preview = (listener?.getPreview() ?? phase1UserReply).trim();
+        const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
         if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
-          if (listener?.hasRecordedAudio()) {
-            setVoiceHandoffPending(true);
-            listener.forceSubmit();
+          if (!listener?.hasRecordedAudio()) {
+            listener?.destroy();
+            phase1VoiceRef.current = null;
+            window.setTimeout(() => {
+              if (
+                convoRef.current.phase === "p1-reply"
+                && !phase1SubmittingRef.current
+                && !phase1VoiceRef.current?.isActive()
+              ) {
+                startPhase1ListeningRef.current?.();
+              }
+            }, 400);
             return;
           }
-          listener?.destroy();
-          phase1VoiceRef.current = null;
-          window.setTimeout(() => {
-            if (
-              convoRef.current.phase === "p1-reply"
-              && !phase1SubmittingRef.current
-              && !phase1VoiceRef.current?.isActive()
-            ) {
-              startPhase1ListeningRef.current?.();
-            }
-          }, 400);
-          return;
         }
         setVoiceHandoffPending(true);
         handlePhase1ContinueRef.current(preview, true);
@@ -1900,7 +1903,6 @@ export default function GuidancePage() {
         const listener = followUpVoiceRef.current;
         const preview = (listener?.getPreview() ?? followUp).trim();
         const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
-        followUpVoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "fu-reply"
@@ -1911,6 +1913,7 @@ export default function GuidancePage() {
           submitFollowUpRef.current(true, preview);
           return;
         }
+        followUpVoiceRef.current = null;
         if (
           isPhilipMode()
           && convoRef.current.phase === "fu-reply"
@@ -2176,7 +2179,10 @@ export default function GuidancePage() {
           setPhase1MicArming(true);
           convo.dispatch({ type: "P1_SPEAK_END" });
         },
-        onHandoff: () => { if (!hasSpeechSupport || phase2Started || showPhase1TypeFallback) return; startPhase1Listening(); },
+        onHandoff: () => {
+          if (!hasSpeechSupport || phase2StartedRef.current || showPhase1TypeFallback) return;
+          startPhase1Listening();
+        },
       });
     }, settleMs);
 
@@ -2393,10 +2399,10 @@ export default function GuidancePage() {
   };
 
   const handlePhase1Continue = (textOverride?: string, fromVoiceOverride?: boolean) => {
-    if (phase1SubmittingRef.current || phase2Loading || !phase1Response || phase2Started) return;
+    if (phase1SubmittingRef.current || phase2LoadingRef.current || phase2StartedRef.current || !phase1ResponseRef.current) return;
     const listener = phase1VoiceRef.current;
     let reply = clampGuidanceInput(
-      textOverride ?? phase1UserReply ?? listener?.getPreview() ?? "",
+      textOverride ?? phase1UserReplyRef.current ?? listener?.getPreview() ?? "",
     );
 
     if (listener?.isActive()) {
@@ -2405,7 +2411,8 @@ export default function GuidancePage() {
       setPhase1UserReply(stopped || reply);
     }
 
-    if (!reply && !(listener?.canAutoSubmit() ?? listener?.hasRecordedAudio())) return;
+    const hasVoiceCapture = fromVoiceOverride && (listener?.hasRecordedAudio() || listener?.canAutoSubmit());
+    if (!reply.trim() && !hasVoiceCapture) return;
 
     setPhase1MicLive(false);
     setPhase1MicArming(false);
@@ -2475,39 +2482,49 @@ export default function GuidancePage() {
   const handlePhilipOrbTap = useCallback(() => {
     if (!isPhilipMode() || !hasSpeechSupport) return;
     const phase = convoRef.current.phase;
+    nativeDiag("orb_tap", phase);
+
+    const finishPhase1 = () => {
+      const listener = phase1VoiceRef.current;
+      if (!listener) {
+        nativeDiag("orb_tap_no_listener", "p1");
+        return;
+      }
+      setVoiceHandoffPending(true);
+      setPhase1MicLive(false);
+      setPhase1MicArming(false);
+      if (listener.isActive()) {
+        listener.finishSpeaking();
+        return;
+      }
+      const preview = (listener.getPreview() ?? phase1UserReplyRef.current).trim();
+      handlePhase1ContinueRef.current(preview, true);
+    };
+
     if (phase === "entry") {
       const listener = heartVoiceRef.current;
-      if (listener?.isActive()) {
-        setVoiceHandoffPending(true);
-        listener.forceSubmit();
+      if (!listener) return;
+      setVoiceHandoffPending(true);
+      setMicArming(false);
+      setEntryMicLive(false);
+      if (listener.isActive()) {
+        listener.finishSpeaking();
         return;
       }
-      const preview = (listener?.getPreview() ?? heartInput).trim();
-      if (preview.length >= GUIDANCE_INPUT_MIN || listener?.canAutoSubmit()) {
-        setVoiceHandoffPending(true);
-        submitHeartEntryRef.current(preview, true);
-      }
-    } else if (phase === "p1-reply") {
-      const listener = phase1VoiceRef.current;
-      if (listener?.isActive()) {
-        setVoiceHandoffPending(true);
-        listener.forceSubmit();
-        return;
-      }
-      const preview = (listener?.getPreview() ?? phase1UserReply).trim();
-      if (preview.length >= GUIDANCE_INPUT_MIN || listener?.canAutoSubmit()) {
-        setVoiceHandoffPending(true);
-        handlePhase1ContinueRef.current(preview, true);
-      }
+      submitHeartEntryRef.current((listener.getPreview() ?? heartInputRef.current).trim(), true);
+    } else if (
+      phase === "p1-reply"
+      || phase === "p1-silence"
+      || phase1VoiceRef.current?.isActive()
+    ) {
+      finishPhase1();
     } else if (phase === "fu-reply") {
       const listener = followUpVoiceRef.current;
-      if (listener?.isActive()) {
-        listener.forceSubmit();
-        return;
-      }
-      submitFollowUpRef.current(true, followUp);
+      if (!listener) return;
+      if (listener.isActive()) listener.finishSpeaking();
+      else submitFollowUpRef.current(true, followUp);
     }
-  }, [hasSpeechSupport, heartInput, phase1UserReply, followUp]);
+  }, [hasSpeechSupport, followUp]);
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -2857,7 +2874,7 @@ export default function GuidancePage() {
         {/* Single voice orb — follows the conversation after threshold */}
         {philipOrbMode && !showThresholdOverlay && (
           <div
-            className={`fixed left-1/2 z-30 flex flex-col items-center gap-2 ${
+            className={`fixed left-1/2 z-[60] flex flex-col items-center gap-2 ${
               philipHandsFreeVoice && philipOrbMode === "listen" ? "pointer-events-auto" : "pointer-events-none"
             }`}
             style={{

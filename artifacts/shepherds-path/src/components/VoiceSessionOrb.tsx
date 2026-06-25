@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Mic, Volume2 } from "lucide-react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
 export type VoiceOrbMode = "speak" | "listen" | "idle";
 
@@ -104,12 +105,29 @@ export function VoiceSessionOrb({ mode, size = 96, dark = false, onClick, disabl
   );
 
   if (onClick) {
+    let fired = false;
+    const fire = () => {
+      if (disabled || fired) return;
+      fired = true;
+      window.setTimeout(() => { fired = false; }, 400);
+      onClick();
+    };
+    const handlePress = (e: ReactPointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fire();
+    };
     return (
       <button
         type="button"
-        onClick={onClick}
+        onPointerUp={handlePress}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          fire();
+        }}
         disabled={disabled}
         className="border-0 bg-transparent p-0 cursor-pointer touch-manipulation disabled:opacity-60 disabled:cursor-default"
+        style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
       >
         {shell}
       </button>
