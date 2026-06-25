@@ -69,7 +69,7 @@ import {
 } from "../talkItThroughPrompt";
 import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM } from "../philipIdentity";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, shouldRejectPriorExploredQuestion, pickFreshTerritoryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, shouldOfferSessionSendOff, type ConversationState, type PhilipMove } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, shouldRejectPriorExploredQuestion, pickFreshTerritoryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, shouldOfferSessionSendOff, conversationHadSessionSendOff, buildPostSendOffResponse, sanitizeSendOffText, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -79,6 +79,7 @@ import {
   concerningSystemNote,
   enforceAmbiguousRiskCheck,
   enforceDependencyRedirect,
+  needsDependencyRedirect,
   SAFETY_HEADER,
 } from "../guidanceSafety";
 import {
@@ -4289,12 +4290,20 @@ Output only the question — no preamble, no explanation, no meta-commentary.${g
         const philipMsgsEarly = claudeHistory.filter(m => m.role === "assistant");
         const lastUserEarly = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
         const exchangeNumEarly = Math.floor(conversationHistory.length / 2);
-        const isSendOff = !isClosing && shouldOfferSessionSendOff(exchangeNumEarly, philipMsgsEarly, lastUserEarly);
+        const alreadySentOff = conversationHadSessionSendOff(philipMsgsEarly);
+        const needsDependency = needsDependencyRedirect(lastUserEarly, philipMsgsEarly);
+        const isSendOff = !isClosing && !alreadySentOff && !needsDependency
+          && shouldOfferSessionSendOff(exchangeNumEarly, philipMsgsEarly, lastUserEarly);
 
         if (isClosing) {
           phase2Text = await generatePhase2WithClaude(PHILIP_CLOSING_SYSTEM, claudeHistory, "");
+        } else if (alreadySentOff) {
+          phase2Text = buildPostSendOffResponse(exchangeNumEarly);
+          usedMechanicalConstruction = true;
         } else if (isSendOff) {
-          phase2Text = await generatePhase2WithClaude(PHILIP_SESSION_SEND_OFF_SYSTEM, claudeHistory, "", 100);
+          phase2Text = sanitizeSendOffText(
+            await generatePhase2WithClaude(PHILIP_SESSION_SEND_OFF_SYSTEM, claudeHistory, "", 100),
+          );
           usedMechanicalConstruction = true;
         } else {
           const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
@@ -4424,12 +4433,21 @@ Output only the question — no preamble, no explanation, no meta-commentary.${g
         phase2Text = await generatePhase2WithGPT(fullMessages);
       }
 
+      const philipMsgsForMode = isFollowUp
+        ? (conversationHistory as Array<{ role: string; content: string }>).filter(m => m.role === "assistant")
+        : [];
+      const lastUserForMode = isFollowUp
+        ? [...(conversationHistory as Array<{ role: string; content: string }>)].reverse().find(m => m.role === "user")?.content ?? ""
+        : "";
+      const exchangeForMode = Math.floor(conversationHistory.length / 2);
+      const alreadySentOffMode = conversationHadSessionSendOff(philipMsgsForMode);
+      const willSendOff = isFollowUp && !alreadySentOffMode
+        && !needsDependencyRedirect(lastUserForMode, philipMsgsForMode)
+        && shouldOfferSessionSendOff(exchangeForMode, philipMsgsForMode, lastUserForMode);
+
       const noQuestionMode = conversationStateBlock.includes("CLOSING")
-        || (isFollowUp && shouldOfferSessionSendOff(
-          Math.floor(conversationHistory.length / 2),
-          (conversationHistory as Array<{ role: string; content: string }>).filter(m => m.role === "assistant"),
-          [...(conversationHistory as Array<{ role: string; content: string }>)].reverse().find(m => m.role === "user")?.content ?? "",
-        ));
+        || alreadySentOffMode
+        || willSendOff;
 
       if (isFollowUp && !noQuestionMode) {
         const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;

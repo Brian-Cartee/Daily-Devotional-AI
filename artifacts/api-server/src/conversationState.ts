@@ -560,17 +560,62 @@ export const SESSION_SEND_OFF_THRESHOLD = 8;
 
 const SESSION_SEND_OFF_MARKERS = [
   /\bthis door stays open\b/i,
-  /\benough for (today|now)\b/i,
+  /\benough for (today|now|tonight)\b/i,
   /\bleave it here for today\b/i,
   /\bwe can leave it here\b/i,
   /\bpick it up again when you're ready\b/i,
   /\bsomething (real|honest) happened\b/i,
+  /\bnamed more than you came\b/i,
+  /\bgo gently\b/i,
+  /\bset it down (here |tonight|for now)?\b/i,
+  /\bthat's enough for (today|now|tonight)\b/i,
+  /\bdon't have to go deeper\b/i,
+  /\brest in what you already named\b/i,
 ];
+
+export function isSessionSendOffLine(text: string): boolean {
+  return SESSION_SEND_OFF_MARKERS.some((p) => p.test(text));
+}
 
 export function conversationHadSessionSendOff(
   philipMessages: Array<{ content: string }>,
 ): boolean {
-  return philipMessages.some((m) => SESSION_SEND_OFF_MARKERS.some((p) => p.test(m.content)));
+  return philipMessages.some((m) => isSessionSendOffLine(m.content));
+}
+
+/** After send-off, Philip must not ask another question. Returns violation message or null. */
+export function findPostSendOffViolation(philipResponses: string[]): string | null {
+  let sendOffIdx = -1;
+  for (let i = 0; i < philipResponses.length; i++) {
+    if (isSessionSendOffLine(philipResponses[i] ?? "")) {
+      sendOffIdx = i;
+      break;
+    }
+  }
+  if (sendOffIdx < 0) return null;
+  for (let j = sendOffIdx + 1; j < philipResponses.length; j++) {
+    const reply = philipResponses[j] ?? "";
+    if (reply.includes("?")) {
+      return `Exchange ${j + 1} asked a question after send-off at exchange ${sendOffIdx + 1}`;
+    }
+  }
+  return null;
+}
+
+/** Strip accidental questions from send-off lines. */
+export function sanitizeSendOffText(text: string): string {
+  if (!text.trim()) return text;
+  return text.replace(/\?+/g, ".").replace(/\s+/g, " ").trim();
+}
+
+/** Brief closure after session send-off — no question, no reopening. */
+export function buildPostSendOffResponse(exchangeNum: number): string {
+  const lines = [
+    "What you brought is enough for tonight. This door stays open when you're ready.",
+    "You don't have to go deeper right now. Come back when you want to.",
+    "Rest in what you already named. It's still here when you return.",
+  ];
+  return lines[exchangeNum % lines.length];
 }
 
 /** Long conversation — offer a sending line instead of another question (once). */

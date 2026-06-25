@@ -20,6 +20,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { SCENARIOS, type Scenario } from "./scenarios.js";
+import { findPostSendOffViolation } from "../artifacts/api-server/src/conversationState.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -84,6 +85,7 @@ interface ConversationResult {
   shiftScore: number | null;     // delta E1→E_last on (specificity + pull) / 2
   excludeFromPassRate: boolean;
   durationMs: number;
+  sendOffViolation?: string | null;
   error?: string;
 }
 
@@ -510,6 +512,14 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
 
     const { verdict, passed } = await getFinalVerdict(client, scenario, exchanges, transcript, engagementCheck);
 
+    const philipLines = transcript.filter(t => t.role === "philip").map(t => t.text);
+    const sendOffViolation = findPostSendOffViolation(philipLines);
+    const passedTuringTest = passed && !sendOffViolation;
+
+    if (sendOffViolation) {
+      process.stdout.write(`\n  ${red("✗ Send-off rule:")} ${sendOffViolation}\n`);
+    }
+
     // avgScore: all 4 numeric dimensions equally weighted
     const avgScore = exchanges.reduce((s, e) =>
       s + (e.curiosity + e.specificity + e.patternBreak + e.pullScore) / 4, 0
@@ -529,11 +539,12 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       transcript,
       engagementCheck,
       finalVerdict: verdict,
-      passedTuringTest: passed,
+      passedTuringTest,
       avgScore,
       shiftScore,
       excludeFromPassRate: scenario.excludeFromPassRate ?? false,
       durationMs: Date.now() - start,
+      sendOffViolation,
     };
 
   } catch (err: any) {
