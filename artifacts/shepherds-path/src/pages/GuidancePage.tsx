@@ -457,7 +457,11 @@ export default function GuidancePage() {
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
   const [micArming, setMicArming] = useState(false);
+  const [phase1MicLive, setPhase1MicLive] = useState(false);
+  const [followUpMicLive, setFollowUpMicLive] = useState(false);
   const micVisualLive = entryMicLive || micArming;
+  const phase1MicVisual = phase1MicLive;
+  const followUpMicVisual = followUpMicLive;
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
   // Acquire the mic stream immediately on mount — we are still within the user's
@@ -632,7 +636,16 @@ export default function GuidancePage() {
       const flowGen = ++guidanceFlowGenRef.current;
       void streamPhase1(flowGen).then((ok) => {
         if (flowGen !== guidanceFlowGenRef.current) return;
-        if (!ok) fallbackToSinglePhase(initialUserMsg, mode);
+        if (!ok) {
+          if (phase1RateLimitedRef.current) {
+            phase1RateLimitedRef.current = false;
+            convo.dispatch({ type: "FLOW_RECOVER_ENTRY" });
+            return;
+          }
+          convo.dispatch({ type: "RESET" });
+          convo.dispatch({ type: "ENTRY_SUBMIT" });
+          fallbackToSinglePhase(initialUserMsg, mode);
+        }
       });
     } else if (regenerate && responseComplete && situation.trim() && userMessages.length <= 1) {
       const initialUserMsg: Message = { role: "user", content: situation };
@@ -717,6 +730,7 @@ export default function GuidancePage() {
   const guidanceStartedForRef = useRef<string | null>(null);
   /** Invalidates in-flight guidance flows when a newer one starts (Strict Mode / remounts). */
   const guidanceFlowGenRef = useRef(0);
+  const phase1RateLimitedRef = useRef(false);
 
   const isReturnEntry = !situation.trim() && witnessReady && !shouldPlayShepherdGreeting();
 
@@ -812,7 +826,9 @@ export default function GuidancePage() {
       });
       if (flowGen !== guidanceFlowGenRef.current) return true;
       if (res.status === 429) {
+        phase1RateLimitedRef.current = true;
         setShowAiPause(true);
+        convo.dispatch({ type: "FLOW_RECOVER_ENTRY" });
         void refreshAiUsage();
         return false;
       }
@@ -1024,13 +1040,20 @@ export default function GuidancePage() {
     if (flowGen !== guidanceFlowGenRef.current) return;
     if (!phase1Ok) {
       setIsReflecting(false);
+      if (phase1RateLimitedRef.current) {
+        phase1RateLimitedRef.current = false;
+        toast({
+          description: "You've reached today's limit — try again tomorrow or upgrade.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         description: "Philip couldn't respond just now — tap Continue to try again.",
         variant: "destructive",
       });
       setVpLoading(true);
       // Phase 1 failed — machine may be stuck in "p1-streaming" or "processing".
-      // Reset to "processing" so P2_STREAM_START can fire from the fallback TTS path.
       convo.dispatch({ type: "RESET" });
       convo.dispatch({ type: "ENTRY_SUBMIT" });
       fallbackToSinglePhase(initialUserMsg);
@@ -1344,6 +1367,7 @@ export default function GuidancePage() {
     setPhase1Listening(false);
     setPhase1ListenPhase("listening");
     setPhase1Interim("");
+    setPhase1MicLive(false);
   }, []);
 
   const stopHeartListening = useCallback((showContinue = true) => {
@@ -1481,6 +1505,11 @@ export default function GuidancePage() {
         setPhase1Interim(interim);
       },
       onPhaseChange: setPhase1ListenPhase,
+      onMicLive: setPhase1MicLive,
+      onListenEnd: () => {
+        setPhase1MicLive(false);
+        phase1VoiceRef.current = null;
+      },
       onTakeYourTime: () => {
         if (phase1TakeYourTimeRef.current) return;
         phase1TakeYourTimeRef.current = speakTakeYourTimeBridge();
@@ -1499,6 +1528,12 @@ export default function GuidancePage() {
 
   const togglePhase1Voice = () => {
     if (phase1Listening) {
+      if (!phase1MicLive) {
+        phase1VoiceRef.current?.destroy();
+        phase1VoiceRef.current = null;
+        startPhase1Listening();
+        return;
+      }
       const preview = phase1VoiceRef.current?.getPreview() ?? phase1UserReply;
       const hasAudio = phase1VoiceRef.current?.hasRecordedAudio();
       if (preview.trim().length >= GUIDANCE_INPUT_MIN || hasAudio) {
@@ -1518,6 +1553,7 @@ export default function GuidancePage() {
     followUpVoiceRef.current = null;
     setFollowUpListening(false);
     setFollowUpListenPhase("listening");
+    setFollowUpMicLive(false);
   }, []);
 
   useEffect(() => () => {
@@ -1543,6 +1579,11 @@ export default function GuidancePage() {
         if (display) setFollowUp(display);
       },
       onPhaseChange: setFollowUpListenPhase,
+      onMicLive: setFollowUpMicLive,
+      onListenEnd: () => {
+        setFollowUpMicLive(false);
+        followUpVoiceRef.current = null;
+      },
       onTakeYourTime: () => {
         if (followUpTakeYourTimeRef.current) return;
         followUpTakeYourTimeRef.current = speakTakeYourTimeBridge();
@@ -1574,6 +1615,12 @@ export default function GuidancePage() {
 
   const toggleFollowUpVoice = () => {
     if (followUpListening) {
+      if (!followUpMicLive) {
+        followUpVoiceRef.current?.destroy();
+        followUpVoiceRef.current = null;
+        startFollowUpListening();
+        return;
+      }
       const preview = followUpVoiceRef.current?.getPreview() ?? followUp;
       const hasAudio = followUpVoiceRef.current?.hasRecordedAudio();
       if (preview.trim().length >= GUIDANCE_INPUT_MIN || hasAudio) {
@@ -2030,6 +2077,8 @@ export default function GuidancePage() {
         if (!reply.trim()) {
           phase1SubmittingRef.current = false;
           setIsReflecting(false);
+          setPhase2Loading(false);
+          convo.dispatch({ type: "P1_REPLY_OPEN" });
           toast({
             description: "We couldn't hear enough — keep talking when the mic opens.",
             variant: "destructive",
@@ -2550,7 +2599,7 @@ export default function GuidancePage() {
                           aria-live="polite"
                           data-testid="button-guidance-heart-voice"
                           className="relative flex items-center justify-center w-28 h-28 rounded-full cursor-pointer touch-manipulation"
-                          animate={heartListening ? {
+                          animate={micVisualLive ? {
                             boxShadow: [
                               "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.35)",
                               "0 0 0 18px rgba(239,68,68,0.0), 0 0 48px 16px rgba(239,68,68,0.5)",
@@ -2561,21 +2610,17 @@ export default function GuidancePage() {
                           } : {
                             boxShadow: "0 0 24px 4px rgba(139,92,246,0.18)",
                           }}
-                          transition={heartListening ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                          transition={micVisualLive ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
                           style={{
-                            background: heartListening
+                            background: micVisualLive
                               ? "radial-gradient(circle, rgba(239,68,68,0.30) 0%, rgba(180,20,20,0.14) 100%)"
                               : "radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(109,40,217,0.14) 100%)",
-                            border: heartListening
+                            border: micVisualLive
                               ? "2px solid rgba(239,68,68,0.70)"
                               : "2px solid rgba(139,92,246,0.50)",
                           }}
                         >
-                          {heartListening && (
-                            <span className="absolute inset-0 rounded-full animate-ping"
-                              style={{ background: "rgba(239,68,68,0.14)" }} />
-                          )}
-                          <Mic className={`w-10 h-10 relative z-10 ${heartListening ? "text-red-400" : "text-violet-300"}`} />
+                          <Mic className={`w-10 h-10 relative z-10 ${micVisualLive ? "text-red-400" : "text-violet-300"}`} />
                         </motion.button>
                         <p className="mt-3 text-[13px] font-medium text-white/50 text-center">
                           {processingBridge || (heartListening && heartListenPhase === "thinking")
@@ -2843,32 +2888,34 @@ export default function GuidancePage() {
                         aria-live="polite"
                         data-testid="button-guidance-phase1-voice"
                         className="relative flex items-center justify-center w-24 h-24 rounded-full cursor-pointer touch-manipulation disabled:opacity-60 disabled:cursor-not-allowed"
-                        animate={(phase1Listening || phase1Speaking) ? {
+                        animate={phase1MicVisual ? {
                           boxShadow: [
                             "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
                             "0 0 0 16px rgba(239,68,68,0.0), 0 0 42px 14px rgba(239,68,68,0.45)",
                             "0 0 0 0px rgba(239,68,68,0.0), 0 0 28px 6px rgba(239,68,68,0.30)",
                           ],
+                        } : phase1Speaking ? {
+                          boxShadow: [
+                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
+                            "0 0 0 16px rgba(139,92,246,0.0), 0 0 42px 14px rgba(139,92,246,0.35)",
+                            "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 6px rgba(139,92,246,0.25)",
+                          ],
                         } : {
                           boxShadow: "0 0 20px 3px rgba(139,92,246,0.14)",
                         }}
-                        transition={(phase1Listening || phase1Speaking) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                        transition={(phase1MicVisual || phase1Speaking) ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
                         style={{
-                          background: phase1Listening
+                          background: phase1MicVisual
                             ? "radial-gradient(circle, rgba(239,68,68,0.28) 0%, rgba(180,20,20,0.12) 100%)"
                             : phase1Speaking
                               ? "radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.10) 100%)"
                               : "radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.08) 100%)",
-                          border: phase1Listening
+                          border: phase1MicVisual
                             ? "2px solid rgba(239,68,68,0.65)"
                             : "2px solid rgba(139,92,246,0.35)",
                         }}
                       >
-                        {phase1Listening && (
-                          <span className="absolute inset-0 rounded-full animate-ping"
-                            style={{ background: "rgba(239,68,68,0.12)" }} />
-                        )}
-                        <Mic className={`w-9 h-9 relative z-10 ${phase1Listening ? "text-red-400" : "text-violet-400"}`} />
+                        <Mic className={`w-9 h-9 relative z-10 ${phase1MicVisual ? "text-red-400" : "text-violet-400"}`} />
                       </motion.button>
                       <p className="mt-2.5 text-[12px] text-muted-foreground/40 font-medium">…</p>
                       {/* Interim transcript hidden — watching words appear triggers self-editing */}
@@ -3549,10 +3596,10 @@ export default function GuidancePage() {
                               onClick={toggleFollowUpVoice}
                               data-testid="button-guidance-voice"
                               className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                              style={{ color: followUpListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                              style={{ color: followUpMicVisual ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
                             >
                               {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
-                              {followUpListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                              {followUpMicVisual && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                             </button>
                           ) : <span />}
                           <button
@@ -4069,10 +4116,10 @@ export default function GuidancePage() {
                     onClick={toggleFollowUpVoice}
                     data-testid="button-guidance-float-voice"
                     className="w-8 h-8 flex items-center justify-center rounded-lg transition-all relative"
-                    style={{ color: followUpListening ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                    style={{ color: followUpMicVisual ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
                   >
                     {followUpListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 opacity-60 hover:opacity-90" />}
-                    {followUpListening && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
+                    {followUpMicVisual && <span className="absolute inset-0 rounded-lg animate-ping bg-red-400/20" />}
                   </button>
                 ) : <span />}
                 <button

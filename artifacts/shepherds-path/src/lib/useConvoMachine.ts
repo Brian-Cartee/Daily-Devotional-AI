@@ -54,7 +54,8 @@ export type ConvoAction =
   | { type: "FU_REPLY_OPEN" }
   | { type: "FU_REPLY_SUBMIT" }
   | { type: "SENDOFF" }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "FLOW_RECOVER_ENTRY" }; // unstuck from failed API / empty capture → entry mic
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reducer
@@ -129,6 +130,11 @@ function reducer(phase: ConvoPhase, action: ConvoAction): ConvoPhase {
 
     case "RESET":
       return "idle";
+
+    case "FLOW_RECOVER_ENTRY":
+      return (phase === "processing" || phase === "p1-streaming" || phase === "p2-loading" || phase === "p1-reply")
+        ? "entry"
+        : phase;
 
     default:
       return phase;

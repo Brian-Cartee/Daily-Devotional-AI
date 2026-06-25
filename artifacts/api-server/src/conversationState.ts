@@ -391,7 +391,17 @@ export function shouldFallbackToPlainQuestion(
     || recyclesPhilipOpener(philipText, priorOpeners)
     || reusesBannedMetaphor(philipText, metaphorsUsed)
     || containsMysticalColdRead(philipText)
+    || relabelsUserFeeling(philipText)
   );
+}
+
+/** Philip reframing their feeling — "That's not X talking. That's Y." */
+export function relabelsUserFeeling(philipText: string): boolean {
+  const t = philipText.trim();
+  if (!t) return false;
+  if (/that['']s not .+\b(talking|saying)\b/i.test(t)) return true;
+  if (/that['']s not .+\.\s*that['']s\b/i.test(t)) return true;
+  return false;
 }
 
 /** How many turns remain in literary-ack cooldown (2 turns after an aphoristic preamble). */

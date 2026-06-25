@@ -117,8 +117,20 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let silencePoll: ReturnType<typeof setInterval> | null = null;
   let stallExtendCount = 0;
   let absoluteMaxTimer: ReturnType<typeof setTimeout> | null = null;
+  let recordingTimersArmed = false;
 
-  // Smart Turn WebSocket + AudioWorklet state
+  const armRecordingTimers = () => {
+    if (recordingTimersArmed || !active) return;
+    recordingTimersArmed = true;
+    scheduleFallbackTimers();
+    startSilencePoll();
+    absoluteMaxTimer = setTimeout(() => {
+      absoluteMaxTimer = null;
+      if (!active || autoSubmitFired) return;
+      if (hasEnoughToSubmit()) triggerAutoSubmit();
+      else forceStop();
+    }, 25_000);
+  };
   let turnWs: WebSocket | null = null;
   let audioCtx: AudioContext | null = null;
   let workletNode: AudioWorkletNode | null = null;
@@ -217,6 +229,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   const endListening = (notifyListenEnd: boolean) => {
     userStopped = true;
     active = false;
+    recordingTimersArmed = false;
     clearTimers();
     clearSilencePoll();
     clearAbsoluteMax();
@@ -518,6 +531,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       };
       mediaRecorder.start(1000);
       opts.onMicLive?.(true);
+      armRecordingTimers();
 
       // Start Smart Turn service (passes same stream for PCM; MediaRecorder keeps webm)
       setupTurnService(stream);
@@ -543,22 +557,20 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioBytesAtLastSpeech = 0;
       lastStallExtendAt = 0;
       stallExtendCount = 0;
+      recordingTimersArmed = false;
       setPhase("listening");
+      if (!canRecord) {
+        if (!canPreview) {
+          endListening(true);
+          return;
+        }
+        armRecordingTimers();
+      }
       void startMedia();
       if (canPreview) {
         bindRecognition();
         try { rec?.start(); } catch { /* recording-only fallback */ }
       }
-      // Always start fallback timers immediately; Smart Turn cancels them if it connects
-      scheduleFallbackTimers();
-      startSilencePoll();
-      // Absolute safety net — mic can never stay open longer than 25s.
-      absoluteMaxTimer = setTimeout(() => {
-        absoluteMaxTimer = null;
-        if (!active || autoSubmitFired) return;
-        if (hasEnoughToSubmit()) triggerAutoSubmit();
-        else forceStop();
-      }, 25_000);
     },
     stop() {
       if (!active) return effectivePreview();
