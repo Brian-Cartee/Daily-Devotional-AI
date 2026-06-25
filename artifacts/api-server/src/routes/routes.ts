@@ -4124,6 +4124,8 @@ WRONG: "What did X feel like?" / "What does X feel like?" (formula — judge fla
 WRONG: "How did X feel?" / "What was that like for you?" (same formula)
 WRONG: Opening the question by quoting their exact phrase back to them
 WRONG: "That's not X" / diagnosis reframes in any form
+WRONG: "Five months since January" / "X weeks ago" — repeating the same date anchor
+WRONG: "Three days you've come back" / any invented visit or session history
 WRONG: Naming an emotion (guilt, shame, anger, fear, grief) they haven't used themselves
 WRONG: Same structure as any question already in questions_asked
 
@@ -4150,7 +4152,7 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
       if (!question || !isBannedQuestion(question)) return question;
       try {
         const retried = await generateNextQuestion(
-          state + "\n\n[REJECTED QUESTION — used banned feel-like or echo pattern. Pick a completely different question. No 'feel like'. No quoting their words. Ask about a specific moment, person, or action.]",
+          state + "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor repeat, or invented session history). Pick a completely different question. No dates like 'five months since'. No 'days you've come back'. Ask about a specific moment, person, or action.]",
           history,
         );
         if (retried && !isBannedQuestion(retried)) return retried;
@@ -4184,8 +4186,8 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
         ? `\n\nYour response MUST end with this exact question (you may adjust wording slightly for flow, but stay faithful to its intent and keep it specific):\n"${anchoredQuestion}"`
         : "";
       const antiEchoNote = anchoredQuestion
-        ? `\n\nCRITICAL: Do NOT open by quoting the user's words back. Do NOT put their sentence in quotation marks. If you add a preamble, it must name a NEW fact Philip has not said yet — never a mirror of their last message.`
-        : `\n\nCRITICAL: Do NOT parrot the user's last sentence. Name a specific fact or moment in your own words — never a verbatim echo.`;
+        ? `\n\nCRITICAL: Do NOT open by quoting the user's words back. Do NOT put their sentence in quotation marks. Do NOT invent session history ("days you've come back," "kept coming back"). If you add a preamble, it must name a NEW fact Philip has not said yet — never a mirror of their last message.`
+        : `\n\nCRITICAL: Do NOT parrot the user's last sentence. Do NOT invent how many days they've visited. Name a specific fact or moment in your own words — never a verbatim echo.`;
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: maxTokens,

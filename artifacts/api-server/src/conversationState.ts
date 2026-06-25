@@ -225,6 +225,11 @@ const BANNED_QUESTION_PATTERNS = [
   /what was that like for you/i,
   /isn'?t it\b/i,
   /that'?s the part that cuts deepest/i,
+  /\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(months?|weeks?|days?)\s+(since|ago)\b/i,
+  /\b(since|ago)\s+(january|february|march|april|may|june|july|august|september|october|november|december)\b/i,
+  /\b(come|came)\s+back\s+here\b/i,
+  /\bdays?\s+you('ve| have)\s+(come|been|kept)\b/i,
+  /worth sitting with\b/i,
 ];
 
 export function isBannedQuestion(question: string): boolean {
@@ -581,6 +586,7 @@ CONVERSATION STATE
 Core issue: ${state.core_issue}${facts}${explored}${unexplored}${questionsBan}${metaphorsBan}${userWords}${openersBan}
 
 NEVER open by quoting the user's last sentence back verbatim. Add something new or ask the question alone.
+NEVER reference how many days they've visited, "coming back here," or prior sessions — you only know this single conversation.
 
 DEPTH BEFORE BREADTH: If the user just made a raw confession, disclosed something vulnerable, or asked Philip a direct question — go DEEPER into that before moving to new territory.
 Otherwise: explore something from "NOT YET EXPLORED."

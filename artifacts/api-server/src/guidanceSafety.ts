@@ -83,6 +83,24 @@ const CONCERNING_PHRASES = [
   "panic attack",
 ];
 
+/** Burnout/exhaustion — not suicidal crisis. Lighter pastoral note, no hotline dump. */
+const EXHAUSTION_PHRASES = [
+  "can't do this anymore",
+  "i can't do this anymore",
+  "i'm done",
+  "im done",
+  "can't keep going",
+  "don't want to keep going",
+  "i'm tired of fighting",
+  "tired of fighting",
+];
+
+export const EXHAUSTION_SYSTEM_NOTE = `
+
+SAFETY CHECK (internal — do not quote this block):
+The person sounds burned out or overwhelmed — not necessarily suicidal. Do NOT paste 988, crisis hotlines, or emergency resources unless they explicitly mention not wanting to live, self-harm, or suicide.
+Acknowledge the weight of exhaustion in one brief line, then ask one specific pastoral question. Never invent how many days they've visited or "come back here."`;
+
 const MEDICAL_EMERGENCY_PHRASES = [
   "took a bottle of pills",
   "took pills",
@@ -214,6 +232,29 @@ function matchesAny(lower: string, phrases: string[]): boolean {
   return phrases.some((p) => lower.includes(p));
 }
 
+/** "I'm not gonna hurt myself" must not trigger high_risk on the substring "hurt myself". */
+function isNegatedRiskPhrase(lower: string, phrase: string): boolean {
+  const idx = lower.indexOf(phrase);
+  if (idx < 0) return false;
+  const window = lower.slice(Math.max(0, idx - 35), idx);
+  return /\b(not|no|never|isn't|isnt|aren't|arent|won't|wont|wouldn't|wouldnt|don't|dont|didn't|didnt|not gonna|not going to|without)\b/.test(window);
+}
+
+function matchesHighRisk(lower: string, phrase: string): boolean {
+  if (!lower.includes(phrase)) return false;
+  return !isNegatedRiskPhrase(lower, phrase);
+}
+
+function matchesHighRiskAny(lower: string, phrases: string[]): boolean {
+  return phrases.some((p) => matchesHighRisk(lower, p));
+}
+
+function isExhaustionOnly(lower: string): boolean {
+  const hasExhaustion = matchesAny(lower, EXHAUSTION_PHRASES);
+  if (!hasExhaustion) return false;
+  return !matchesHighRiskAny(lower, HIGH_RISK_PHRASES);
+}
+
 function buildHighRiskResponse(text: string): string {
   const lower = text.toLowerCase();
   if (matchesAny(lower, IMMINENT_PHRASES)) {
@@ -238,8 +279,11 @@ function classifySingleText(text: string): SafetyScanResult {
   if (matchesAny(lower, VIOLENCE_EMERGENCY_PHRASES)) {
     return { level: "emergency_violence", response: VIOLENCE_EMERGENCY_RESPONSE };
   }
-  if (matchesAny(lower, HIGH_RISK_PHRASES)) {
+  if (matchesHighRiskAny(lower, HIGH_RISK_PHRASES)) {
     return { level: "high_risk", response: buildHighRiskResponse(text) };
+  }
+  if (isExhaustionOnly(lower)) {
+    return { level: "concerning", systemNote: EXHAUSTION_SYSTEM_NOTE };
   }
   if (matchesAny(lower, CONCERNING_PHRASES)) {
     return { level: "concerning", systemNote: CONCERNING_SYSTEM_NOTE };
@@ -283,17 +327,13 @@ export function scanGuidanceTexts(parts: {
     merged = mergeSafetyResults(merged, scanUserText(t));
   };
 
-  // For block-level signals (high_risk+), only scan the most recent user message.
-  // Scanning all history causes crisis routing to re-trigger on old messages that
-  // were already handled in prior turns, producing false positives late in conversations.
+  // Multi-turn: only scan the latest user message for safety level.
+  // Re-scanning the opening situation every turn re-triggers concerning/crisis notes
+  // on phrases like "can't do this anymore" long after they've been contextualized.
   if (parts.messages && parts.messages.length > 0) {
     const lastUserMsg = [...parts.messages].reverse().find(m => m.role === "user");
     if (lastUserMsg) push(lastUserMsg.content);
-    // Still scan situation and phase1 reply (first turn context)
-    push(parts.situation);
-    push(parts.phase1UserReply);
   } else {
-    // No history yet — scan everything (first turn)
     push(parts.situation);
     push(parts.phase1UserReply);
   }
