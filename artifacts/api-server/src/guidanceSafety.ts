@@ -139,8 +139,12 @@ const THREAT_EMERGENCY_PHRASES = [
   "going to shoot",
   "threatened to shoot",
   "they're outside",
-  "breaking in",
-  "broke into",
+  "they're breaking in",
+  "someone is breaking in",
+  "broke into my home",
+  "broke into my house",
+  "broke into my apartment",
+  "broke into my car",
 ];
 
 export const CRISIS_RESPONSE = `What you just shared — that matters. And so do you.

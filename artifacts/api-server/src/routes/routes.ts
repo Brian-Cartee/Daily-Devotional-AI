@@ -4290,11 +4290,11 @@ Output ONE sentence only — no preamble, no meta-commentary, no explanation of 
 
 Avoid these weak openers (they name your reaction, not the thing): "Makes sense", "That must hurt", "Understandably", "Of course", "That's a lot", "Makes complete sense". Name the SPECIFIC THING instead.
 
-Examples of the right voice (do not copy these — match the directness):
-"Three weeks in, and the house still waits for someone who won't come back."
-"Seven years of showing up to something that stopped showing up for you."
-"Something snapped — not today, but somewhere much further back."
-"You've been carrying both people through this with no one carrying you."
+The voice RANGE — match what the move calls for, not always the lyrical end:
+Direct/factual: "Three weeks. The house still has two coffee cups in the cabinet."
+Terse observation: "He stopped calling the same week she started to."
+Lyrical: "Seven years of showing up to something that stopped showing up for you."
+Stark: "You've been carrying both people through this with no one carrying you."
 
 Say the sentence. Nothing else.`;
 
