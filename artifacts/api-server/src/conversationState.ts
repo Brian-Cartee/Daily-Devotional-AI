@@ -28,6 +28,7 @@ export type PhilipMove =
   | "tension"
   | "sit"
   | "reflect_back"
+  | "guarded_ack"
   | "skip";
 
 export type AckRegister = "plain" | "literary" | null;
@@ -246,6 +247,7 @@ const BANNED_QUESTION_PATTERNS = [
   /\b(come|came)\s+back\s+here\b/i,
   /\bdays?\s+you('ve| have)\s+(come|been|kept)\b/i,
   /worth sitting with\b/i,
+  /\bworth sitting with for a moment\b/i,
 ];
 
 export function isBannedQuestion(question: string): boolean {
@@ -385,12 +387,15 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
     return pool[exchangeNum % pool.length];
   };
 
-  // Guarded/skeptical users — earn trust with plain questions, not performance
+  // Guarded/skeptical users — earn trust with plain questions; break interrogation with guarded_ack
   if (isGuardedUser) {
-    if (formulaStreak >= 2 || echoStreak >= 1 || ackRegister === "literary" || literaryCooldownRemaining > 0) {
-      return pick(["plain_question", "plain_question", "skip"]);
+    if (formulaStreak >= 3) {
+      return pick(["guarded_ack", "guarded_ack", "sit"]);
     }
-    return pick(["plain_question", "plain_question", "plain_question", "plain_question", "skip"]);
+    if (formulaStreak >= 2 || echoStreak >= 1 || ackRegister === "literary" || literaryCooldownRemaining > 0) {
+      return pick(["plain_question", "guarded_ack", "skip"]);
+    }
+    return pick(["plain_question", "plain_question", "plain_question", "skip", "guarded_ack"]);
   }
 
   // Echo streak → bare questions only
@@ -612,7 +617,7 @@ Be precise and minimal. This state is injected into the next AI prompt to preven
 CRITICAL — PRONOUNS: Track the exact name and pronouns the user uses for any person they mention. If they said "my husband John" — record "John (he/him)" in facts_learned. If they said "my wife Sarah" — record "Sarah (she/her)". If gender is unclear, record only the name. Never assume gender. Record exactly what the user said.
 
 PHILIP MOVE TRACKING: From Philip's most recent response, extract:
-- last_move: one of plain_question, named_fact, tension, sit, reflect_back, skip — the structural move he used
+  - last_move: one of plain_question, named_fact, tension, sit, reflect_back, guarded_ack, skip — the structural move he used
 - ack_register: "literary" if his preamble used aphoristic reframe ("X became Y", "X is its own kind of Y", "X where Y used to be", universal grief poetry without a specific fact) — otherwise "plain". If his response was question-only with no preamble, use "plain".
 
 Return ONLY valid JSON, no markdown, no extra text.`;
@@ -649,7 +654,7 @@ Extract the current conversation state:
   "metaphors_used": ["every metaphor or image Philip introduced — grayscale, the door, replaying it, fog, etc."],
   "user_exact_words": ["vivid or specific phrases the USER chose — not Philip's words, theirs"],
   "conversation_closing": false,
-  "last_move": "plain_question | named_fact | tension | sit | reflect_back | skip — from Philip's last response",
+  "last_move": "plain_question | named_fact | tension | sit | reflect_back | guarded_ack | skip — from Philip's last response",
   "ack_register": "plain | literary | null — was Philip's last preamble aphoristic or grounded?"
 }
 
