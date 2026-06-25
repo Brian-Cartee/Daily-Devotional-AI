@@ -1625,12 +1625,12 @@ export default function GuidancePage() {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
         const listener = heartVoiceRef.current;
         const preview = (listener?.getPreview() ?? heartInput).trim();
-        const hasAudio = listener?.hasRecordedAudio();
-        if (preview.length < GUIDANCE_INPUT_MIN && !hasAudio) {
+        const hasAudio = listener?.hasRecordedAudio() ?? false;
+        setMicArming(false);
+        setEntryMicLive(false);
+        if (!preview && !hasAudio) {
           listener?.destroy();
           heartVoiceRef.current = null;
-          setMicArming(false);
-          setEntryMicLive(false);
           window.setTimeout(() => {
             if (
               convoRef.current.phase === "entry"

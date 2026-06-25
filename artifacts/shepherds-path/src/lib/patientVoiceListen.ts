@@ -53,8 +53,11 @@ function turnServiceUrl(): string {
 // ---------------------------------------------------------------------------
 const FALLBACK_AUTO_SUBMIT_MS = 1_200;
 const DEFAULT_MIN_CHARS = 8;
-const MIN_AUDIO_BYTES_FOR_HANDOFF = 4_000;
+const MIN_AUDIO_BYTES_FOR_HANDOFF = 2_500;
 const POST_SPEECH_SUBMIT_MS = 850;
+const ANALYSER_POLL_MS = 120;
+/** Time-domain RMS above this ≈ user speaking (0–100 scale). */
+const RMS_SPEECH_THRESHOLD = 6;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
 const SR_STALL_MS = 2000;
 const STALL_EXTEND_COOLDOWN_MS = 2000;
@@ -77,6 +80,13 @@ function resolveConversationalAutoSubmitMs(words: number, override?: number): nu
   if (words >= 40) return 1600;
   if (words >= 20) return 1700;
   return FALLBACK_AUTO_SUBMIT_MS;
+}
+
+function preferLocalSilenceDetection(): boolean {
+  if (typeof navigator === "undefined") return true;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/i.test(ua)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 export function isLiveMediaStream(stream: MediaStream | null | undefined): boolean {
@@ -123,6 +133,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let previewCharsAtLastExtend = 0;
   let lastFinalSpeechAt = 0;
   let postSpeechSubmitTimer: ReturnType<typeof setTimeout> | null = null;
+  let userSpeechDetected = false;
+  let analyserCtx: AudioContext | null = null;
+  let analyserNode: AnalyserNode | null = null;
+  let analyserSource: MediaStreamAudioSourceNode | null = null;
+  let analyserPoll: ReturnType<typeof setInterval> | null = null;
+  let analyserBuf: Uint8Array | null = null;
 
   const armRecordingTimers = () => {
     if (recordingTimersArmed || !active) return;
@@ -144,6 +160,67 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const totalAudioBytes = () =>
     audioChunks.reduce((sum, chunk) => sum + chunk.size, 0);
+
+  const hasCapturedUserSpeech = (): boolean =>
+    userSpeechDetected
+    || lastFinalSpeechAt > 0
+    || wordCount(previewTranscript) > 0
+    || latestInterim.trim().length >= 4;
+
+  const rmsFromAnalyser = (): number => {
+    if (!analyserNode || !analyserBuf) return 0;
+    analyserNode.getByteTimeDomainData(analyserBuf);
+    let sum = 0;
+    for (let i = 0; i < analyserBuf.length; i++) {
+      const v = (analyserBuf[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.sqrt(sum / analyserBuf.length) * 100;
+  };
+
+  const startAnalyserSilence = (micStream: MediaStream) => {
+    if (!opts.conversational) return;
+    try {
+      analyserCtx = new AudioContext();
+      void analyserCtx.resume();
+      analyserSource = analyserCtx.createMediaStreamSource(micStream);
+      analyserNode = analyserCtx.createAnalyser();
+      analyserNode.fftSize = 512;
+      analyserSource.connect(analyserNode);
+      analyserBuf = new Uint8Array(analyserNode.fftSize);
+
+      analyserPoll = setInterval(() => {
+        if (!active || autoSubmitFired) return;
+        const rms = rmsFromAnalyser();
+        if (rms >= RMS_SPEECH_THRESHOLD) {
+          userSpeechDetected = true;
+          markSpeechActivity(true);
+          return;
+        }
+        if (!userSpeechDetected || !hasEnoughToSubmit()) return;
+        const words = wordCount(previewTranscript);
+        const autoMs = resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs);
+        const anchor = lastFinalSpeechAt > 0 ? lastFinalSpeechAt : lastSpeechAt;
+        if (Date.now() - anchor >= autoMs) {
+          triggerAutoSubmit();
+        }
+      }, ANALYSER_POLL_MS);
+    } catch {
+      /* analyser unavailable — silence poll + SR fallback */
+    }
+  };
+
+  const teardownAnalyser = () => {
+    if (analyserPoll) clearInterval(analyserPoll);
+    analyserPoll = null;
+    analyserBuf = null;
+    try { analyserSource?.disconnect(); } catch { /* noop */ }
+    try { analyserNode?.disconnect(); } catch { /* noop */ }
+    try { analyserCtx?.close(); } catch { /* noop */ }
+    analyserSource = null;
+    analyserNode = null;
+    analyserCtx = null;
+  };
 
   const markSpeechActivity = (fromFinal = true) => {
     const now = Date.now();
@@ -235,7 +312,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (!hasEnoughToSubmit()) return;
     const words = wordCount(previewTranscript);
     const autoMs = resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs);
-    if (Date.now() - lastSpeechAt >= autoMs) {
+    const anchor = lastFinalSpeechAt > 0 ? lastFinalSpeechAt : lastSpeechAt;
+    if (Date.now() - anchor >= autoMs) {
       triggerAutoSubmit();
     }
   };
@@ -253,6 +331,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     previewTranscript.trim() || latestInterim.trim();
 
   const hasEnoughToSubmit = (): boolean => {
+    if (!hasCapturedUserSpeech()) return false;
     const min = opts.minCharsForAutoSubmit ?? DEFAULT_MIN_CHARS;
     const preview = effectivePreview();
     if (preview.length >= min) return true;
@@ -276,6 +355,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearSilencePoll();
     clearAbsoluteMax();
     clearPostSpeechSubmit();
+    teardownAnalyser();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -309,6 +389,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearPostSpeechSubmit();
+    teardownAnalyser();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -359,7 +440,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   // Smart Turn WebSocket
   // ---------------------------------------------------------------------------
   const setupTurnService = (micStream: MediaStream) => {
-    if (!opts.conversational) return; // only for conversational mode
+    // iOS WebView: remote VAD false-positives block handoff — use local analyser instead.
+    if (!opts.conversational || preferLocalSilenceDetection()) return;
 
     try {
       const ws = new WebSocket(turnServiceUrl());
@@ -513,14 +595,18 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       }
       if (finalChunk) {
         previewTranscript = (previewTranscript ? `${previewTranscript} ${finalChunk}` : finalChunk).trim();
+        userSpeechDetected = true;
         markSpeechActivity(true);
+        takeYourTimeFired = false;
+        setPhase("listening");
+        pushPreview(previewTranscript, interim);
+        scheduleFallbackTimers();
       } else if (interim.trim().length >= 4) {
+        userSpeechDetected = true;
         markSpeechActivity(false);
+        setPhase("listening");
+        pushPreview(previewTranscript, interim);
       }
-      takeYourTimeFired = false;
-      setPhase("listening");
-      pushPreview(previewTranscript, interim);
-      scheduleFallbackTimers();
     };
 
     recognition.onspeechend = () => {
@@ -575,14 +661,18 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunks.push(e.data);
+          if (opts.conversational && e.data.size > 500) {
+            userSpeechDetected = true;
+          }
           maybeExtendForSrStall(e.data.size);
         }
       };
       mediaRecorder.start(1000);
       opts.onMicLive?.(true);
       armRecordingTimers();
+      startAnalyserSilence(stream);
 
-      // Start Smart Turn service (passes same stream for PCM; MediaRecorder keeps webm)
+      // Desktop fallback: remote VAD when not on iOS
       setupTurnService(stream);
     } catch {
       stopTracks();
@@ -606,6 +696,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioBytesAtLastSpeech = 0;
       lastStallExtendAt = 0;
       stallExtendCount = 0;
+      userSpeechDetected = false;
       lastFinalSpeechAt = 0;
       previewCharsAtLastExtend = 0;
       recordingTimersArmed = false;
