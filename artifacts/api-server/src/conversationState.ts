@@ -895,6 +895,12 @@ export function buildSendOffPushbackResponse(userMessage: string): string {
   if (/\b(waiting for|sell me|fix me|the pitch|sales funnel)\b/.test(lower)) {
     return "Fair — no pitch. I'm still here if you want to keep going. What's still on your mind?";
   }
+  if (/\b(wasn'?t|was not) my fault\b|\bnobody can tell me\b/i.test(lower)) {
+    return "That guilt is heavy — and loss puts it in cruel places. I'm not going to hand you a neat answer from here. I'm staying in it with you.";
+  }
+  if (/\b(my fault|blame myself|did (i|we) do something wrong|wondering if i did)\b/i.test(lower)) {
+    return "The blame you're carrying is real — and it doesn't have to sit on you alone. I'm still here with you in it.";
+  }
   return "Fair — I moved too fast. What still needs to be said?";
 }
 
@@ -925,6 +931,12 @@ const SEND_OFF_PUSHBACK_PATTERNS = [
   /\bsell me something\b/i,
   /\btry to fix me\b/i,
   /\bfigured you'?d try\b/i,
+  // Grief guilt — user circling the wound after send-off (miscarriage, loss, self-blame).
+  /\b(wasn'?t|was not) my fault\b/i,
+  /\bnobody can tell me\b/i,
+  /\bnobody (can |)(say|tell)( me)? it wasn'?t\b/i,
+  /\bblame myself\b/i,
+  /\bdid (i|we) do something wrong\b/i,
 ];
 
 export function detectsSendOffPushback(userMessage: string): boolean {
@@ -961,6 +973,21 @@ export function shouldDeferSessionSendOff(userMessage: string): boolean {
   return FRESH_VULNERABILITY_RE.test(t);
 }
 
+/** Self-blame after loss — don't wrap up before Philip has stayed in it. */
+const GRIEF_GUILT_THEME_RE =
+  /\b((wasn'?t|was not) my fault|my fault|did (i|we) do something wrong|wondering if i did|blame myself|something (i|we) did wrong)\b/i;
+
+const PHILIP_ADDRESSED_GUILT_RE =
+  /\b(not your fault|wasn'?t your fault|didn'?t cause|blame (that )?isn'?t yours|nothing you did|fault (that )?isn'?t yours|didn'?t do anything wrong|wasn'?t something you did)\b/i;
+
+export function conversationHasUnresolvedGriefGuilt(
+  userMessages: string[],
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  if (!userMessages.some((m) => GRIEF_GUILT_THEME_RE.test(m))) return false;
+  return !philipMessages.some((m) => PHILIP_ADDRESSED_GUILT_RE.test(m.content));
+}
+
 /** Long conversation — offer a sending line instead of another question (once). */
 export function shouldOfferSessionSendOff(
   exchangeNum: number,
@@ -972,6 +999,11 @@ export function shouldOfferSessionSendOff(
   const openedGuarded = options.openedGuarded
     ?? (options.allUserMessages?.[0] ? conversationOpenedGuarded(options.allUserMessages[0]) : false);
   if (openedGuarded && exchangeNum < 10) return false;
+  if (options.allUserMessages?.length
+    && conversationHasUnresolvedGriefGuilt(options.allUserMessages, philipMessages)
+    && exchangeNum < 10) {
+    return false;
+  }
   if (detectConversationClosing(userMessage)) return false;
   if (detectsSendOffPushback(userMessage)) return false;
   if (shouldDeferSessionSendOff(userMessage)) return false;
