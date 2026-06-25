@@ -57,7 +57,23 @@ const LITERARY_ACK_PATTERNS = [
   /\bkind of grief\b/i,
   /\bonly weapon\b/i,
   /\bdidn't know to save\b/i,
+  /\bcarrying something\b/i,
+  /\bhaven'?t fully named\b/i,
+  /\bdoesn'?t let go\b/i,
+  /\bworth sitting with\b/i,
+  /\bsomething (you |they )?haven'?t\b/i,
+  /\bbeneath (the |your )?words\b/i,
+  /\bthe one that doesn'?t\b/i,
+  /\bdoesn'?t just live in the mind\b/i,
+  /\bsettles in the body\b/i,
+  /\bdon'?t go away on their own\b/i,
+  /\bquestions don'?t go away\b/i,
 ];
+
+/** Cold-reading / mystical reframe — performs wisdom instead of listening. */
+export function containsMysticalColdRead(text: string): boolean {
+  return LITERARY_ACK_PATTERNS.some(p => p.test(text));
+}
 
 /** Detect whether Philip's last preamble was aphoristic vs grounded in facts. */
 export function detectAckRegister(philipLastResponse: string): AckRegister {
@@ -259,6 +275,7 @@ export function shouldFallbackToPlainQuestion(
     isPureEcho(philipText, userText, 0.65)
     || opensWithQuotedEcho(philipText)
     || recyclesPhilipOpener(philipText, priorOpeners)
+    || containsMysticalColdRead(philipText)
   );
 }
 
@@ -299,6 +316,7 @@ export interface SelectPhilipMoveInput {
   hasNewDetail?: boolean;
   forceSit?: boolean;
   echoStreak?: number;
+  isGuardedUser?: boolean;
 }
 
 function filterMovePool(
@@ -347,6 +365,7 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
     hasNewDetail = false,
     forceSit = false,
     echoStreak = 0,
+    isGuardedUser = false,
   } = input;
 
   if (forceSit) return "sit";
@@ -355,6 +374,14 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
     const pool = filterMovePool(candidates, lastMove, exchangeNum, movesUsed, echoStreak, hasNewDetail);
     return pool[exchangeNum % pool.length];
   };
+
+  // Guarded/skeptical users — earn trust with plain questions, not performance
+  if (isGuardedUser) {
+    if (formulaStreak >= 2 || echoStreak >= 1 || ackRegister === "literary" || literaryCooldownRemaining > 0) {
+      return pick(["plain_question", "plain_question", "skip"]);
+    }
+    return pick(["plain_question", "plain_question", "plain_question", "plain_question", "skip"]);
+  }
 
   // Echo streak → bare questions only
   if (echoStreak >= 2) {

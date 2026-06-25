@@ -55,12 +55,13 @@ import {
   PHILIP_MOVE_TEMPLATES,
   detectGuardedEntry,
   TALK_IT_THROUGH_PHASE1_GUARDED_SYSTEM_PROMPT,
+  TALK_IT_THROUGH_GUARDED_FOLLOW_UP,
   buildTalkItThroughVersePrayerPrompt,
   buildTalkItThroughVersePrayerUserContent,
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, type ConversationState, type PhilipMove } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4055,11 +4056,15 @@ Sacred restraint: fewer words are better.`;
       }
     }
 
+    const isGuardedUser = detectGuardedEntry(situation.trim());
+
     const systemMsg = `${variantPrompt}
 
 ${TALK_IT_THROUGH_RESPONSE_SCOPE}
 
-${isFollowUp ? TALK_IT_THROUGH_FOLLOW_UP : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE}${conversationStateBlock}
+${isFollowUp
+  ? `${TALK_IT_THROUGH_FOLLOW_UP}${isGuardedUser ? "\n\n" + TALK_IT_THROUGH_GUARDED_FOLLOW_UP : ""}`
+  : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE}${conversationStateBlock}
 
 Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone expresses uncertainty about faith, meet them exactly there without assuming belief
@@ -4089,8 +4094,12 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
     const generateNextQuestion = async (
       state: string,
       history: Array<{ role: "user" | "assistant"; content: string }>,
+      guarded = false,
     ): Promise<string> => {
       const lastUserMessage = [...history].reverse().find(m => m.role === "user")?.content ?? "";
+      const guardedNote = guarded
+        ? `\n\nGUARDED USER: Ask one plain, concrete question. No mystical framing. No "carrying something." No "beneath your words." No tag questions ending in "isn't it?"`
+        : "";
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 80,
@@ -4135,7 +4144,7 @@ RIGHT: "What happened to [specific person/moment they named] after [event they d
 RIGHT: "Where does that word come from for you?"
 RIGHT: "What did [specific person] do that morning?"
 
-Output only the question — no preamble, no explanation, no meta-commentary.`,
+Output only the question — no preamble, no explanation, no meta-commentary.${guardedNote}`,
         messages: [{ role: "user", content: state }],
       });
       for (const block of response.content) {
@@ -4148,14 +4157,16 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
       question: string,
       state: string,
       history: Array<{ role: "user" | "assistant"; content: string }>,
+      guarded = false,
     ): Promise<string> => {
-      if (!question || !isBannedQuestion(question)) return question;
+      if (!question || (!isBannedQuestion(question) && !containsMysticalColdRead(question))) return question;
       try {
         const retried = await generateNextQuestion(
-          state + "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor repeat, or invented session history). Pick a completely different question. No dates like 'five months since'. No 'days you've come back'. Ask about a specific moment, person, or action.]",
+          state + "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']",
           history,
+          guarded,
         );
-        if (retried && !isBannedQuestion(retried)) return retried;
+        if (retried && !isBannedQuestion(retried) && !containsMysticalColdRead(retried)) return retried;
       } catch { /* keep original */ }
       return question;
     };
@@ -4272,8 +4283,8 @@ Under 40 words total.`;
 
           if (!forceSit && conversationStateBlock) {
             try {
-              nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
-              nextQuestion = await validateAndFixQuestion(nextQuestion, conversationStateBlock, claudeHistory);
+              nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory, isGuardedUser);
+              nextQuestion = await validateAndFixQuestion(nextQuestion, conversationStateBlock, claudeHistory, isGuardedUser);
             } catch {
               // Non-fatal — fall through to unanchored generation
             }
@@ -4292,6 +4303,7 @@ Under 40 words total.`;
               hasNewDetail,
               forceSit,
               echoStreak,
+              isGuardedUser,
             });
 
             if (selectedMove === "plain_question" && nextQuestion) {
