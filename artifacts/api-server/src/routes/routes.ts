@@ -67,7 +67,7 @@ import {
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, shouldRejectPriorExploredQuestion, pickFreshTerritoryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4183,15 +4183,36 @@ Output only the question — no preamble, no explanation, no meta-commentary.${g
       history: Array<{ role: "user" | "assistant"; content: string }>,
       guarded = false,
     ): Promise<string> => {
-      if (!question || (!isBannedQuestion(question) && !containsMysticalColdRead(question))) return question;
+      const lastUser = [...history].reverse().find(m => m.role === "user")?.content ?? "";
+      const priorExplored = priorSessionContinuity?.memory.explored?.filter(Boolean) ?? [];
+
+      const isInvalid = (q: string) =>
+        !q?.trim()
+        || isBannedQuestion(q)
+        || containsMysticalColdRead(q)
+        || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser);
+
+      if (!isInvalid(question)) return question;
+
+      const revisitsPrior = shouldRejectPriorExploredQuestion(question, priorExplored, lastUser);
+      const rejectionNote = revisitsPrior
+        ? `\n\n[REJECTED — revisits prior session explored area (${priorExplored.join("; ")}). Pick fresh territory not listed under PRIOR SESSION — DO NOT RE-ASK.]`
+        : "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']";
+
       try {
         const retried = await generateNextQuestion(
-          augmentPlannerState(state + "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']"),
+          augmentPlannerState(state + rejectionNote),
           history,
           guarded,
         );
-        if (retried && !isBannedQuestion(retried) && !containsMysticalColdRead(retried)) return retried;
+        if (retried && !isInvalid(retried)) return retried;
       } catch { /* keep original */ }
+
+      if (revisitsPrior) {
+        const fallback = pickFreshTerritoryQuestion(conversationState, priorExplored);
+        if (!isInvalid(fallback)) return fallback;
+      }
+
       return question;
     };
 

@@ -602,6 +602,70 @@ export function recyclesPriorQuestion(question: string, asked: string[]): boolea
   return asked.some(prior => questionSimilarity(q, prior) >= 0.55);
 }
 
+/** True when a question revisits a prior-session explored area. */
+export function questionOverlapsExploredArea(
+  question: string,
+  exploredAreas: string[],
+  threshold = 0.5,
+): boolean {
+  if (!question?.trim() || exploredAreas.length === 0) return false;
+  const qLower = question.toLowerCase();
+  return exploredAreas.some((area) => {
+    const areaLower = area.toLowerCase().trim();
+    if (!areaLower) return false;
+    if (questionSimilarity(question, area) >= threshold) return true;
+    if (qLower.includes(areaLower) || areaLower.includes(qLower.slice(0, Math.min(36, qLower.length)))) {
+      return true;
+    }
+    const areaWords = normalizeWords(area).filter((w) => w.length > 4);
+    if (areaWords.length === 0) return false;
+    const qWords = new Set(normalizeWords(question));
+    const matches = areaWords.filter((w) => qWords.has(w)).length;
+    if (matches >= 2) return true;
+    return areaWords.length === 1 && matches === 1 && areaWords[0].length > 6;
+  });
+}
+
+/** User explicitly returned to a prior-session thread — allow revisiting. */
+export function userReopenedExploredArea(
+  userMessage: string,
+  exploredAreas: string[],
+): boolean {
+  const uLower = userMessage.toLowerCase();
+  return exploredAreas.some((area) => {
+    const areaWords = normalizeWords(area).filter((w) => w.length > 4);
+    if (areaWords.length >= 2) {
+      const hits = areaWords.filter((w) => uLower.includes(w)).length;
+      return hits >= Math.min(2, areaWords.length);
+    }
+    const fragment = area.toLowerCase().trim().slice(0, 14);
+    return fragment.length > 5 && uLower.includes(fragment);
+  });
+}
+
+export function shouldRejectPriorExploredQuestion(
+  question: string,
+  exploredAreas: string[],
+  lastUserMessage: string,
+): boolean {
+  if (exploredAreas.length === 0) return false;
+  if (userReopenedExploredArea(lastUserMessage, exploredAreas)) return false;
+  return questionOverlapsExploredArea(question, exploredAreas);
+}
+
+export function pickFreshTerritoryQuestion(
+  state: ConversationState | null,
+  priorExplored: string[],
+): string {
+  const unexplored = (state?.areas_unexplored ?? []).filter((area) =>
+    !priorExplored.some((e) => questionSimilarity(area, e) >= 0.5),
+  );
+  if (unexplored.length > 0) {
+    return `What haven't you said yet about ${unexplored[0].toLowerCase()}?`;
+  }
+  return "What's one part of this you haven't put into words yet?";
+}
+
 /** "Whose coat is it?" when user already said it's her husband's coat. */
 export function isAbsurdRecoveryQuestion(question: string, state: ConversationState): boolean {
   if (/\bwhose\b/i.test(question)) {
