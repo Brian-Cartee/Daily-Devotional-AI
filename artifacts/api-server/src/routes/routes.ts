@@ -4167,14 +4167,9 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
     ): string => {
       if (!text.trim()) return text;
       if (move === "plain_question" || move === "skip") return text;
-      if (shouldFallbackToPlainQuestion(text, userMsg, priorOpeners)) {
-        if (question.trim()) return question;
-      }
-      if (move === "sit" && isPureEcho(text, userMsg, 0.6)) {
-        // Sit that parrots — use a minimal grounded line without echo
-        const words = userMsg.split(/\s+/).filter(w => /^\d+$/.test(w) || /^[A-Z]/.test(w));
-        if (words[0]) return `${words[0]} — that part is still right here.`;
-      }
+      const isEcho = shouldFallbackToPlainQuestion(text, userMsg, priorOpeners)
+        || (move === "sit" && isPureEcho(text, userMsg, 0.6));
+      if (isEcho && question.trim()) return question;
       return text;
     };
 
