@@ -30,6 +30,8 @@ import {
   buildGuidanceContinuityPrompt,
   GUIDANCE_MEMORY_EXTRACT_PENDING,
   GUIDANCE_MEMORY_EXTRACT_COMPLETE,
+  pickPriorSessionContinuity,
+  appendPriorSessionToPlannerState,
   type GuidanceContinuityRecord,
 } from "../lib/guidanceMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
@@ -1735,19 +1737,11 @@ Voice authenticity (internal constraint — never cite these rules in output):
     return entry;
   }
 
-  async function getLatestGuidanceContinuity(sessionId: string): Promise<GuidanceContinuityRecord | null> {
+  async function getPriorSessionContinuity(sessionId: string): Promise<GuidanceContinuityRecord | null> {
     if (!sessionId) return null;
     try {
       const entries = await storage.getJournalEntries(sessionId);
-      const latest = entries.find((e) => e.type === "guidance_memory");
-      if (!latest?.content) return null;
-      const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-      if (ageMs > 60 * 24 * 60 * 60 * 1000) return null;
-      return {
-        memory: parseGuidanceMemoryContent(latest.content),
-        ageMs,
-        createdAt: latest.createdAt,
-      };
+      return pickPriorSessionContinuity(entries);
     } catch {
       return null;
     }
@@ -3990,10 +3984,13 @@ Sacred restraint: fewer words are better.`;
     } = await getOrFetchSessionContext(sessionId || "");
 
     let guidanceContinuityNote = "";
-    if (!isFollowUp && sessionId) {
-      const continuity = await getLatestGuidanceContinuity(sessionId);
-      if (continuity) guidanceContinuityNote = buildGuidanceContinuityPrompt(continuity);
+    const priorSessionContinuity = sessionId ? await getPriorSessionContinuity(sessionId) : null;
+    if (!isFollowUp && priorSessionContinuity) {
+      guidanceContinuityNote = buildGuidanceContinuityPrompt(priorSessionContinuity);
     }
+
+    const augmentPlannerState = (state: string) =>
+      appendPriorSessionToPlannerState(state, priorSessionContinuity);
 
     const memoryNote = journalCtx
       ? `\n\nWhat you already know about this person — from past conversations, prayers they've written, or journal entries. Use this to make your response feel like a continuation of a real relationship, not a first meeting. Reference past things only when it flows naturally and adds genuine warmth or depth. Never quote their entries back to them verbatim. Memory rules: only surface something from the past if it is directly relevant to what they just shared, recent enough to feel natural, and adds care rather than precision. When you do reference something, keep it soft and permissive — "This feels similar to something you mentioned before… if that still fits, we can stay with it" — never specific dates, never exact phrasing, never pattern claims like "you always" or "you tend to." Memory should feel like being known, not being recorded:\n${journalCtx}`
@@ -4145,6 +4142,7 @@ Examples that trigger this: "no reason to get up", "lying there till sundown", "
 WARNING: If the user's message IS their answer to Philip's last question, do not treat the answer's details as "unexplored new territory" — they just addressed it. Move forward, not back.
 
 STEP 3 — Only if steps 1 and 2 find nothing: pick from areas_unexplored in the state.
+If PRIOR SESSION — DO NOT RE-ASK is present: avoid those explored areas unless the user explicitly returned to one.
 
 QUESTION SHAPE — one specific question, rooted in their actual words. Under 20 words. End with ?
 
@@ -4188,7 +4186,7 @@ Output only the question — no preamble, no explanation, no meta-commentary.${g
       if (!question || (!isBannedQuestion(question) && !containsMysticalColdRead(question))) return question;
       try {
         const retried = await generateNextQuestion(
-          state + "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']",
+          augmentPlannerState(state + "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']"),
           history,
           guarded,
         );
@@ -4331,7 +4329,9 @@ Under 40 words total.`;
             }
             usedMechanicalConstruction = true;
           } else if (isRepetitionPushback && conversationStateBlock) {
-            const recoveryState = conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg);
+            const recoveryState = augmentPlannerState(
+              conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg),
+            );
             try {
               nextQuestion = await generateNextQuestion(recoveryState, claudeHistory, isGuardedUser);
               nextQuestion = await validateAndFixQuestion(nextQuestion, recoveryState, claudeHistory, isGuardedUser);
@@ -4351,8 +4351,9 @@ Under 40 words total.`;
             }
           } else if (!forceSit && conversationStateBlock) {
             try {
-              nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory, isGuardedUser);
-              nextQuestion = await validateAndFixQuestion(nextQuestion, conversationStateBlock, claudeHistory, isGuardedUser);
+              const plannerState = augmentPlannerState(conversationStateBlock);
+              nextQuestion = await generateNextQuestion(plannerState, claudeHistory, isGuardedUser);
+              nextQuestion = await validateAndFixQuestion(nextQuestion, plannerState, claudeHistory, isGuardedUser);
             } catch {
               // Non-fatal — fall through to unanchored generation
             }

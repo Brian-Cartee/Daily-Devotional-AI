@@ -88,6 +88,64 @@ export function formatMemoryAge(ageMs: number): string {
   return "some time ago";
 }
 
+const PRIOR_SESSION_MAX_AGE_MS = 60 * 24 * 60 * 60 * 1000;
+
+/** Pick the most recent completed prior-session memory — skip in-flight pending scratch entries. */
+export function pickPriorSessionContinuity(
+  entries: Array<{ type: string; content: string; createdAt: string | Date }>,
+): GuidanceContinuityRecord | null {
+  for (const entry of entries) {
+    if (entry.type !== "guidance_memory") continue;
+    const ageMs = Date.now() - new Date(entry.createdAt).getTime();
+    if (ageMs > PRIOR_SESSION_MAX_AGE_MS) continue;
+
+    const memory = parseGuidanceMemoryContent(entry.content);
+    const hasStructure = (memory.explored?.length ?? 0) > 0 || (memory.themes?.length ?? 0) > 0;
+    // Pending opening save — summary only, no explored/themes yet
+    if (ageMs < 4 * 60 * 60 * 1000 && !hasStructure) continue;
+
+    return {
+      memory,
+      ageMs,
+      createdAt: new Date(entry.createdAt).toISOString(),
+    };
+  }
+  return null;
+}
+
+/** Inject prior-session explored areas into the question planner state block. */
+export function buildPriorSessionPlannerAddendum(record: GuidanceContinuityRecord | null): string {
+  if (!record) return "";
+  const explored = record.memory.explored?.filter(Boolean) ?? [];
+  const themes = record.memory.themes?.filter(Boolean) ?? [];
+  if (explored.length === 0 && themes.length === 0) return "";
+
+  const age = formatMemoryAge(record.ageMs);
+  let block = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRIOR SESSION (${age}) — DO NOT RE-ASK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  if (explored.length > 0) {
+    block += `\nAlready explored in their last Talk it Through:\n${explored.map((e) => `  - ${e}`).join("\n")}`;
+  }
+  if (themes.length > 0) {
+    block += `\nThemes from then: ${themes.join(", ")}`;
+  }
+  block += `
+Ask about fresh territory unless they explicitly reopen one of these threads.
+Do not rephrase the same question about an explored area.`;
+  return block;
+}
+
+export function appendPriorSessionToPlannerState(
+  stateBlock: string,
+  prior: GuidanceContinuityRecord | null,
+): string {
+  const addendum = buildPriorSessionPlannerAddendum(prior);
+  if (!addendum) return stateBlock;
+  return stateBlock + addendum;
+}
+
 /** Inject at session open — cross-session continuity with anti-hallucination rules. */
 export function buildGuidanceContinuityPrompt(record: GuidanceContinuityRecord): string {
   const { memory, ageMs } = record;
