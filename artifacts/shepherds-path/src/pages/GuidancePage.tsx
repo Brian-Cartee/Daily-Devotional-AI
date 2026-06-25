@@ -1595,7 +1595,20 @@ export default function GuidancePage() {
       onListenEnd: () => {
         setEntryMicLive(false);
         setMicArming(false);
+        const listener = heartVoiceRef.current;
+        const preview = (listener?.getPreview() ?? heartInput).trim();
+        const hasAudio = listener?.hasRecordedAudio() ?? false;
         heartVoiceRef.current = null;
+        if (
+          isPhilipMode()
+          && convoRef.current.phase === "entry"
+          && !heartSubmittingRef.current
+          && !processingBridgeRef.current
+          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+        ) {
+          submitHeartEntryRef.current(preview, true);
+          return;
+        }
         if (
           isPhilipMode()
           && convoRef.current.phase === "entry"
@@ -1725,7 +1738,22 @@ export default function GuidancePage() {
       onListenEnd: () => {
         setPhase1MicLive(false);
         setPhase1MicArming(false);
+        const listener = phase1VoiceRef.current;
+        const preview = (listener?.getPreview() ?? phase1UserReply).trim();
+        const hasAudio = listener?.hasRecordedAudio() ?? false;
         phase1VoiceRef.current = null;
+        if (
+          isPhilipMode()
+          && voiceConversation
+          && convoRef.current.phase === "p1-reply"
+          && !phase1SubmittingRef.current
+          && !phase2LoadingRef.current
+          && phase1ResponseRef.current
+          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+        ) {
+          handlePhase1ContinueRef.current(preview, true);
+          return;
+        }
         if (
           isPhilipMode()
           && voiceConversation
@@ -1845,7 +1873,21 @@ export default function GuidancePage() {
       onListenEnd: () => {
         setFollowUpMicLive(false);
         setFollowUpMicArming(false);
+        const listener = followUpVoiceRef.current;
+        const preview = (listener?.getPreview() ?? followUp).trim();
+        const hasAudio = listener?.hasRecordedAudio() ?? false;
         followUpVoiceRef.current = null;
+        if (
+          isPhilipMode()
+          && voiceConversation
+          && convoRef.current.phase === "fu-reply"
+          && !followUpSubmittingRef.current
+          && !isSendingRef.current
+          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+        ) {
+          submitFollowUpRef.current(true, preview);
+          return;
+        }
         if (
           isPhilipMode()
           && voiceConversation

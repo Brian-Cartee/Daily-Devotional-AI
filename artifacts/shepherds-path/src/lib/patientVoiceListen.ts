@@ -58,6 +58,9 @@ const POST_SPEECH_SUBMIT_MS = 850;
 const ANALYSER_POLL_MS = 120;
 /** Time-domain RMS above this ≈ user speaking (0–100 scale). */
 const RMS_SPEECH_THRESHOLD = 6;
+/** iOS WebView room tone sits higher — require louder signal before "still speaking". */
+const RMS_SPEECH_THRESHOLD_IOS = 11;
+const RMS_QUIET_POLLS_REQUIRED = 3;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
 const SR_STALL_MS = 2000;
 const STALL_EXTEND_COOLDOWN_MS = 2000;
@@ -139,6 +142,29 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let analyserSource: MediaStreamAudioSourceNode | null = null;
   let analyserPoll: ReturnType<typeof setInterval> | null = null;
   let analyserBuf: Uint8Array | null = null;
+  let consecutiveQuietPolls = 0;
+  let quietSince: number | null = null;
+
+  const rmsThreshold = () =>
+    preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD;
+
+  const silenceAnchorMs = (): number => {
+    if (quietSince !== null) return quietSince;
+    if (lastFinalSpeechAt > 0) return lastFinalSpeechAt;
+    return lastSpeechAt;
+  };
+
+  const tryConversationalSubmit = () => {
+    if (!active || autoSubmitFired || !opts.conversational) return;
+    if (!hasEnoughToSubmit()) return;
+    const autoMs = resolveConversationalAutoSubmitMs(
+      wordCount(previewTranscript),
+      opts.autoSubmitSilenceMs,
+    );
+    if (Date.now() - silenceAnchorMs() >= autoMs) {
+      triggerAutoSubmit();
+    }
+  };
 
   const armRecordingTimers = () => {
     if (recordingTimersArmed || !active) return;
@@ -192,18 +218,19 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       analyserPoll = setInterval(() => {
         if (!active || autoSubmitFired) return;
         const rms = rmsFromAnalyser();
-        if (rms >= RMS_SPEECH_THRESHOLD) {
+        const threshold = rmsThreshold();
+        if (rms >= threshold) {
           userSpeechDetected = true;
+          consecutiveQuietPolls = 0;
+          quietSince = null;
           markSpeechActivity(true);
           return;
         }
-        if (!userSpeechDetected || !hasEnoughToSubmit()) return;
-        const words = wordCount(previewTranscript);
-        const autoMs = resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs);
-        const anchor = lastFinalSpeechAt > 0 ? lastFinalSpeechAt : lastSpeechAt;
-        if (Date.now() - anchor >= autoMs) {
-          triggerAutoSubmit();
-        }
+        if (!userSpeechDetected) return;
+        consecutiveQuietPolls += 1;
+        if (consecutiveQuietPolls < RMS_QUIET_POLLS_REQUIRED) return;
+        if (quietSince === null) quietSince = Date.now();
+        tryConversationalSubmit();
       }, ANALYSER_POLL_MS);
     } catch {
       /* analyser unavailable — silence poll + SR fallback */
@@ -309,13 +336,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const pollSilenceAndSubmit = () => {
     if (!active || autoSubmitFired || !opts.conversational) return;
-    if (!hasEnoughToSubmit()) return;
-    const words = wordCount(previewTranscript);
-    const autoMs = resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs);
-    const anchor = lastFinalSpeechAt > 0 ? lastFinalSpeechAt : lastSpeechAt;
-    if (Date.now() - anchor >= autoMs) {
-      triggerAutoSubmit();
-    }
+    tryConversationalSubmit();
   };
 
   const startSilencePoll = () => {
@@ -365,8 +386,11 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   };
 
   const forceStop = () => {
-    // Called when nothing was captured — stop mic and notify UI to reset.
     if (!active) return;
+    if (opts.conversational && hasEnoughToSubmit()) {
+      triggerAutoSubmit();
+      return;
+    }
     endListening(true);
   };
 
@@ -406,14 +430,16 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (!active) return;
     const words = wordCount(previewTranscript);
     const base = dynamicPauseMs(words);
-    const autoMs = opts.conversational
-      ? resolveConversationalAutoSubmitMs(words, opts.autoSubmitSilenceMs)
-      : (opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS);
 
     thinkingTimer = setTimeout(() => {
       if (!active) return;
       setPhase("thinking");
     }, Math.min(3000, base));
+
+    // Conversational handoff: analyser quietSince + onspeechend — not SR-reset timers.
+    if (opts.conversational) return;
+
+    const autoMs = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
 
     if (opts.spokenPatienceBridge !== false && opts.onTakeYourTime) {
       takeYourTimeTimer = setTimeout(() => {
@@ -427,13 +453,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
     readyTimer = setTimeout(() => {
       if (!active || autoSubmitFired) return;
-      if (opts.conversational) {
-        triggerAutoSubmit();
-        return;
-      }
       setPhase("ready");
       opts.onReadyPrompt?.();
-    }, opts.conversational ? autoMs : 10_000);
+    }, 10_000);
   };
 
   // ---------------------------------------------------------------------------
@@ -600,10 +622,14 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         takeYourTimeFired = false;
         setPhase("listening");
         pushPreview(previewTranscript, interim);
-        scheduleFallbackTimers();
+        if (!opts.conversational) {
+          scheduleFallbackTimers();
+        }
       } else if (interim.trim().length >= 4) {
         userSpeechDetected = true;
-        markSpeechActivity(false);
+        if (!opts.conversational) {
+          markSpeechActivity(false);
+        }
         setPhase("listening");
         pushPreview(previewTranscript, interim);
       }
@@ -611,7 +637,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
     recognition.onspeechend = () => {
       if (!active || userStopped) return;
-      scheduleFallbackTimers();
+      if (!opts.conversational) {
+        scheduleFallbackTimers();
+      }
       if (opts.conversational && hasEnoughToSubmit()) {
         schedulePostSpeechSubmit(POST_SPEECH_SUBMIT_MS);
       }
@@ -700,6 +728,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       lastFinalSpeechAt = 0;
       previewCharsAtLastExtend = 0;
       recordingTimersArmed = false;
+      consecutiveQuietPolls = 0;
+      quietSince = null;
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
