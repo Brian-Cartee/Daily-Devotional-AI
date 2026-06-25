@@ -29,7 +29,8 @@ export type PhilipGate =
   | "mechanical_construction"
   | "invented_session_history"
   | "invented_unsupported_detail"
-  | "sendoff_pushback";
+  | "sendoff_pushback"
+  | "guarded_reask_block";
 
 export interface PhilipTurnMetadata {
   philipRuntimeVersion: string;

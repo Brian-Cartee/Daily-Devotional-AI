@@ -9,7 +9,7 @@ import {
   detectGuardedEntry,
   TALK_IT_THROUGH_GUARDED_FOLLOW_UP,
 } from "../../talkItThroughPrompt";
-import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM } from "../../philipIdentity";
+import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM, PHILIP_GUARDED_SESSION_SEND_OFF } from "../../philipIdentity";
 import { buildMemoryPromptNote } from "../../lib/userMemory";
 import {
   buildGuidanceContinuityPrompt,
@@ -43,6 +43,8 @@ import {
   isPureEcho,
   containsMysticalColdRead,
   finalizeSendOffText,
+  opensWithEchoThenReasks,
+  reasksWhatUserJustStated,
   questionInventsRelationship,
   inventsUnsupportedDetail,
   sanitizeSendOffText,
@@ -374,7 +376,8 @@ const validateAndFixQuestion = async (
     || containsMysticalColdRead(q)
     || questionInventsRelationship(q, userMsgs, factsLearned)
     || inventsUnsupportedDetail(q, userMsgs, factsLearned, Math.floor(history.length / 2))
-    || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser);
+    || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser)
+    || reasksWhatUserJustStated(lastUser, q);
 
   if (!isInvalid(question)) return question;
 
@@ -416,8 +419,9 @@ const enforceAntiEcho = (
   if (move === "plain_question" || move === "skip") return text;
   const userContext = allUserMsgs.length > 0 ? allUserMsgs : [userMsg];
   const isEcho = shouldFallbackToPlainQuestion(text, userMsg, priorOpeners, metaphorsUsed, exchangeNum, userContext)
-    || (move === "sit" && isPureEcho(text, userMsg, 0.6));
-  if (isEcho && question.trim()) return question;
+    || (move === "sit" && isPureEcho(text, userMsg, 0.6))
+    || opensWithEchoThenReasks(userMsg, text);
+  if (isEcho && question.trim() && !reasksWhatUserJustStated(userMsg, question)) return question;
   return text;
 };
 
@@ -495,9 +499,11 @@ let usedMechanicalConstruction = false;
       lane = "session_send_off";
       engine = "claude";
       const priorTexts = claudeHistory.filter(m => m.role === "assistant").map(m => m.content);
+      const sendOffSystem = isGuardedUser ? PHILIP_GUARDED_SESSION_SEND_OFF : PHILIP_SESSION_SEND_OFF_SYSTEM;
       phase2Text = finalizeSendOffText(
-        await generatePhase2WithClaude(PHILIP_SESSION_SEND_OFF_SYSTEM, claudeHistory, "", 100),
+        await generatePhase2WithClaude(sendOffSystem, claudeHistory, "", 100),
         priorTexts,
+        isGuardedUser,
       );
       usedMechanicalConstruction = true;
       metadata.mechanical = true;
@@ -621,6 +627,22 @@ let usedMechanicalConstruction = false;
           phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors, exchangeNum, allUserMsgTexts);
         }
         usedMechanicalConstruction = !!phase2Text;
+      }
+
+      if (phase2Text && lastUserMsg && opensWithEchoThenReasks(lastUserMsg, phase2Text)) {
+        recordGate(gates, "guarded_reask_block");
+        if (isGuardedUser) {
+          phase2Text = await generatePhase2WithClaude(
+            systemMsg + PHILIP_MOVE_TEMPLATES.sit,
+            claudeHistory,
+            "",
+            60,
+          );
+          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit", bannedMetaphors, exchangeNum, allUserMsgTexts);
+        } else if (nextQuestion && !reasksWhatUserJustStated(lastUserMsg, nextQuestion)) {
+          phase2Text = nextQuestion;
+        }
+        usedMechanicalConstruction = true;
       }
 
       if (!phase2Text) {

@@ -70,6 +70,8 @@ const LITERARY_ACK_PATTERNS = [
   /\bsettles in the body\b/i,
   /\bdon'?t go away on their own\b/i,
   /\bquestions don'?t go away\b/i,
+  /\bquestion underneath\b/i,
+  /\bsomething real landed\b/i,
 ];
 
 /** Cold-reading / mystical reframe — performs wisdom instead of listening. */
@@ -263,7 +265,29 @@ export function echoOverlapRatio(philipText: string, userText: string): number {
   return match / Math.min(uWords.length, pWords.size);
 }
 
-/** True when Philip mostly mirrors the user without adding observation. */
+/** Philip asked again what the user just said was unknowable or already answered. */
+export function reasksWhatUserJustStated(userMessage: string, philipText: string): boolean {
+  const qMatch = philipText.match(/[^.!?\n]+\?/);
+  if (!qMatch) return false;
+  const q = qMatch[0];
+  const userLower = userMessage.toLowerCase();
+  const userClosedTopic = /\b(never (said|talked|mentioned|let on)|no idea|don'?t know|wasn'?t the type|he never|she never|didn'?t talk|not the type to)\b/i.test(userLower);
+  if (!userClosedTopic) return false;
+  const qLower = q.toLowerCase();
+  const reaskProbe = /\b(did (he|she|they)|whether (he|she|it)|if it meant|let on|ever (say|tell|talk)|mean something)\b/i.test(qLower);
+  if (!reaskProbe) return false;
+  return questionSimilarity(q, userMessage) >= 0.22 || echoOverlapRatio(q, userMessage) >= 0.18;
+}
+
+/** Echo preamble immediately followed by a question — guarded-lane failure mode. */
+export function opensWithEchoThenReasks(userMessage: string, philipText: string): boolean {
+  const qIdx = philipText.indexOf("?");
+  if (qIdx < 0) return false;
+  const preamble = philipText.slice(0, qIdx).trim();
+  if (preamble && isPureEcho(preamble, userMessage, 0.42)) return true;
+  return reasksWhatUserJustStated(userMessage, philipText);
+}
+
 export function isPureEcho(philipText: string, userText: string, threshold = 0.65): boolean {
   if (!philipText.trim() || !userText.trim()) return false;
 
@@ -492,6 +516,8 @@ export function shouldFallbackToPlainQuestion(
     || containsMysticalColdRead(philipText)
     || relabelsUserFeeling(philipText)
     || inventsUnsupportedDetail(philipText, userContext, [], exchangeNum)
+    || opensWithEchoThenReasks(userText, philipText)
+    || reasksWhatUserJustStated(userText, philipText)
   );
 }
 
@@ -608,6 +634,9 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
 
   // Guarded/skeptical users — earn trust with plain questions; break interrogation with guarded_ack
   if (isGuardedUser) {
+    if (exchangeNum >= 7) {
+      return pick(["sit", "sit", "guarded_ack", "skip"]);
+    }
     if (formulaStreak >= 3) {
       return pick(["guarded_ack", "guarded_ack", "sit"]);
     }
@@ -778,6 +807,12 @@ function looksLikeInventorySendOff(text: string): boolean {
   return /\bthe \w+, the \w+/i.test(t);
 }
 
+function looksLikeTherapyBrochureSendOff(text: string): boolean {
+  return containsMysticalColdRead(text)
+    || /\bwhat was ever actually yours\b/i.test(text)
+    || /\bsomething real landed here\b/i.test(text);
+}
+
 const STOCK_SEND_OFF_SNIPPETS = [
   "this door stays open",
   "go gently",
@@ -795,11 +830,22 @@ const SEND_OFF_ALTERNATES = [
   "You don't have to go deeper right now. Come back when you want to.",
 ];
 
+const GUARDED_SEND_OFF_ALTERNATES = [
+  "You said more than you came in planning to. That's enough for today — this door stays open.",
+  "No pitch here. Put it down for now. Come back when you want to.",
+  "Something honest got said. You don't have to trust all of this to leave it here for today.",
+];
+
 /** Avoid recycling the same stock send-off Philip already used this session. */
-export function finalizeSendOffText(text: string, priorPhilipTexts: string[]): string {
+export function finalizeSendOffText(
+  text: string,
+  priorPhilipTexts: string[],
+  guarded = false,
+): string {
   let result = sanitizeSendOffText(text);
-  if (looksLikeInventorySendOff(result)) {
-    result = SEND_OFF_ALTERNATES[priorPhilipTexts.length % SEND_OFF_ALTERNATES.length];
+  if (looksLikeInventorySendOff(result) || looksLikeTherapyBrochureSendOff(result)) {
+    const pool = guarded ? GUARDED_SEND_OFF_ALTERNATES : SEND_OFF_ALTERNATES;
+    result = pool[priorPhilipTexts.length % pool.length];
   }
   const prior = priorPhilipTexts.map((t) => t.toLowerCase()).join("\n");
   const resultLower = result.toLowerCase();
@@ -846,6 +892,9 @@ export function buildSendOffPushbackResponse(userMessage: string): string {
   if (/\bnot done\b|\bstill stuck\b|\bmore to (say|share)\b/.test(lower)) {
     return "You're right — I closed the door too soon. What part is still heavy?";
   }
+  if (/\b(waiting for|sell me|fix me|the pitch|sales funnel)\b/.test(lower)) {
+    return "Fair — no pitch. I'm still here if you want to keep going. What's still on your mind?";
+  }
   return "Fair — I moved too fast. What still needs to be said?";
 }
 
@@ -872,6 +921,10 @@ const SEND_OFF_PUSHBACK_PATTERNS = [
   /\btoo (soon|tidy)\b/i,
   /\btoo soon to (stop|end|close)\b/i,
   /\bi'?m still in (it|this)\b/i,
+  /\bwaiting for the pitch\b/i,
+  /\bsell me something\b/i,
+  /\btry to fix me\b/i,
+  /\bfigured you'?d try\b/i,
 ];
 
 export function detectsSendOffPushback(userMessage: string): boolean {
@@ -888,8 +941,16 @@ const FRESH_VULNERABILITY_RE =
 const WITHDRAWAL_SIGNAL_RE =
   /\b(more closed|gotten more closed|closed off|stopped putting|brace myself|slip in late|leave early|nothing stuck|not really.*\bopen)\b/i;
 
+/** Skeptic still testing whether this is a sales funnel — don't wrap up on them. */
+const SKEPTIC_SIGNAL_RE =
+  /\b(not sure it goes|doesn'?t go anywhere|waiting for the pitch|sell me something|try to fix me|figured you'?d try)\b/i;
+
 export function userShowsWithdrawal(userMessage: string): boolean {
   return WITHDRAWAL_SIGNAL_RE.test(userMessage.trim());
+}
+
+export function userStillSkeptical(userMessage: string): boolean {
+  return SKEPTIC_SIGNAL_RE.test(userMessage.trim());
 }
 
 export function shouldDeferSessionSendOff(userMessage: string): boolean {
@@ -905,13 +966,34 @@ export function shouldOfferSessionSendOff(
   exchangeNum: number,
   philipMessages: Array<{ content: string }>,
   userMessage: string,
+  options: { openedGuarded?: boolean; allUserMessages?: string[] } = {},
 ): boolean {
   if (exchangeNum < SESSION_SEND_OFF_THRESHOLD) return false;
+  const openedGuarded = options.openedGuarded
+    ?? (options.allUserMessages?.[0] ? conversationOpenedGuarded(options.allUserMessages[0]) : false);
+  if (openedGuarded && exchangeNum < 10) return false;
   if (detectConversationClosing(userMessage)) return false;
   if (detectsSendOffPushback(userMessage)) return false;
   if (shouldDeferSessionSendOff(userMessage)) return false;
   if (userShowsWithdrawal(userMessage)) return false;
+  if (userStillSkeptical(userMessage)) return false;
   return !conversationHadSessionSendOff(philipMessages);
+}
+
+/** Skeptical / reluctant opening — wife made them download, don't believe AI, etc. */
+const GUARDED_OPENING_PATTERNS = [
+  /don'?t (really )?believe/,
+  /made me download/,
+  /(wife|husband|partner) (made|told|signed|wanted) me/,
+  /don'?t trust (this|ai|an? ai)/,
+  /not sure (this|ai|about this)/,
+  /\bskeptic/,
+  /don'?t think (ai|this|an? ai)/,
+];
+
+export function conversationOpenedGuarded(openingUserMessage: string): boolean {
+  const s = openingUserMessage.toLowerCase();
+  return GUARDED_OPENING_PATTERNS.some((p) => p.test(s));
 }
 
 export function buildSessionSendOffPromptBlock(): string {

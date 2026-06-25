@@ -42,7 +42,7 @@ export function evaluatePreTurnGates(input: {
   const alreadySentOff = conversationHadSessionSendOff(philipMsgs);
   const needsDependency = needsDependencyRedirect(lastUser, philipMsgs, userMsgs);
   const isSendOff = !isClosing && !alreadySentOff && !needsDependency
-    && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser);
+    && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser, { allUserMessages: userMsgs });
 
   // Send-off pushback beats closing detection — "That's enough?" after Philip sent them off is protest, not goodbye.
   if (alreadySentOff) {
@@ -131,7 +131,7 @@ export function resolveNoQuestionMode(input: {
   const willSendOff = !alreadySentOff
     && !needsDependencyRedirect(lastUser, philipMsgs, userMsgs)
     && !detectsSendOffPushback(lastUser)
-    && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser);
+    && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser, { allUserMessages: userMsgs });
   return input.conversationStateBlock.includes("CLOSING") || (alreadySentOff && !detectsSendOffPushback(lastUser)) || willSendOff;
 }
 
