@@ -186,7 +186,6 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   const [showCallback, setShowCallback] = useState(init.showCallback);
   const [callbackMessage] = useState(init.callbackMessage);
   const [icebreakerDone, setIcebreakerDone] = useState(init.icebreakerDone);
-  const [allowDismiss, setAllowDismiss] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const icebreakerSpeechRef = useRef<HTMLAudioElement | null>(null);
@@ -209,11 +208,26 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
     setShowIcebreaker(false);
     setShowCallback(false);
     setIcebreakerDone(true);
-    setAllowDismiss(true);
   }, [stopIcebreakerSpeech]);
 
   useLayoutEffect(() => {
     (window as any).__spSignalReady?.();
+  }, []);
+
+  // Native shell injects a black fg-cover on resume — peel it while splash is still showing.
+  useEffect(() => {
+    const peelForegroundCover = () => {
+      if (document.visibilityState !== "visible") return;
+      (window as any).__spSignalReady?.();
+    };
+    document.addEventListener("visibilitychange", peelForegroundCover);
+    window.addEventListener("focus", peelForegroundCover);
+    window.addEventListener("pageshow", peelForegroundCover);
+    return () => {
+      document.removeEventListener("visibilitychange", peelForegroundCover);
+      window.removeEventListener("focus", peelForegroundCover);
+      window.removeEventListener("pageshow", peelForegroundCover);
+    };
   }, []);
 
   useEffect(() => {
@@ -303,16 +317,10 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    let t2: ReturnType<typeof setTimeout> | undefined;
-    if (revealSplashUi && !overlayActive) {
-      const dwellMs = shortSplash ? 350 : 900;
-      t2 = window.setTimeout(() => setAllowDismiss(true), dwellMs);
-    }
     return () => {
       document.body.style.overflow = prev;
-      if (t2) window.clearTimeout(t2);
     };
-  }, [revealSplashUi, overlayActive, shortSplash]);
+  }, []);
 
   const handleSubmitName = () => {
     try {
@@ -340,7 +348,6 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
       data-testid="sp-splash-active"
       className="fixed inset-0 overflow-hidden"
       style={{ zIndex: 99999, background: "#000" }}
-      onClick={() => allowDismiss && onDismiss()}
     >
       {/* Full-bleed image — visible immediately behind icebreaker */}
       <motion.div

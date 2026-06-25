@@ -27,6 +27,7 @@ export interface IStorage {
   markOnboardingEmailSent(id: number, step: string): Promise<void>;
   getJournalEntries(sessionId: string): Promise<JournalEntry[]>;
   createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry>;
+  updateJournalEntry(id: number, sessionId: string, patch: Pick<InsertJournalEntry, "content">): Promise<JournalEntry | undefined>;
   deleteJournalEntry(id: number, sessionId: string): Promise<void>;
   recordStreak(
     sessionId: string,
@@ -246,6 +247,19 @@ export class DatabaseStorage implements IStorage {
 
   async createJournalEntry(entry: InsertJournalEntry): Promise<JournalEntry> {
     const [result] = await db.insert(journalEntries).values(entry).returning();
+    return result;
+  }
+
+  async updateJournalEntry(
+    id: number,
+    sessionId: string,
+    patch: Pick<InsertJournalEntry, "content">,
+  ): Promise<JournalEntry | undefined> {
+    const [result] = await db
+      .update(journalEntries)
+      .set(patch)
+      .where(and(eq(journalEntries.id, id), eq(journalEntries.sessionId, sessionId)))
+      .returning();
     return result;
   }
 

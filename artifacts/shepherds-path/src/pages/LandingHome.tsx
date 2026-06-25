@@ -1105,9 +1105,15 @@ function LandingHomeInner() {
         <HomeEntryScreen
           splashInit={entrySplashInit}
           onDismiss={() => {
+            setEntryOverlayActive(false);
             setShowEntryScreen(false);
             setEntrySplashInit(null);
             window.scrollTo({ top: 0, behavior: "instant" });
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                (window as any).__spSignalReady?.();
+              });
+            });
           }}
         />
       )}

@@ -1709,7 +1709,7 @@ export default function GuidancePage() {
           scheduleAutoMic(true);
         },
       });
-    }, siriListenPending ? 600 : 1400);
+    }, siriListenPending ? 800 : VOICE_SILENCE_ENTRY_MS);
 
     return () => {
       cancelled = true;

@@ -354,7 +354,7 @@ export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
 export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
 
 /** Conversational auto-submit silence — entry / Phase 1 reply / follow-up. */
-export const VOICE_SILENCE_ENTRY_MS = 1400;
+export const VOICE_SILENCE_ENTRY_MS = 2800;
 export const VOICE_SILENCE_PHASE1_MS = 1200;
 export const VOICE_SILENCE_FOLLOWUP_MS = 1200;
 

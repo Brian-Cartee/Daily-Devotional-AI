@@ -555,6 +555,47 @@ export function detectConversationClosing(userMessage: string): boolean {
   return CLOSING_PHRASES.some(phrase => lower.includes(phrase));
 }
 
+/** After this many user turns, Philip may proactively send the person off. */
+export const SESSION_SEND_OFF_THRESHOLD = 8;
+
+const SESSION_SEND_OFF_MARKERS = [
+  /\bthis door stays open\b/i,
+  /\benough for (today|now)\b/i,
+  /\bleave it here for today\b/i,
+  /\bwe can leave it here\b/i,
+  /\bpick it up again when you're ready\b/i,
+  /\bsomething (real|honest) happened\b/i,
+];
+
+export function conversationHadSessionSendOff(
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  return philipMessages.some((m) => SESSION_SEND_OFF_MARKERS.some((p) => p.test(m.content)));
+}
+
+/** Long conversation — offer a sending line instead of another question (once). */
+export function shouldOfferSessionSendOff(
+  exchangeNum: number,
+  philipMessages: Array<{ content: string }>,
+  userMessage: string,
+): boolean {
+  if (exchangeNum < SESSION_SEND_OFF_THRESHOLD) return false;
+  if (detectConversationClosing(userMessage)) return false;
+  return !conversationHadSessionSendOff(philipMessages);
+}
+
+export function buildSessionSendOffPromptBlock(): string {
+  return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONVERSATION MODE: SESSION SEND-OFF
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You have walked with them through several exchanges. Send them — do not ask another question.
+Two short sentences. No "?". Not a recap. Permission to stop for today with the door left open.
+Philip's register: "You named more than you came in carrying. We can leave it here for today — this door stays open."
+Never begin with "I." Never use "journey", "healing", "God bless you", "Take care."
+Under 40 words.`;
+}
+
 const REPETITION_PUSHBACK_PATTERNS = [
   /\byou (already )?said that\b/i,
   /\bsaid that already\b/i,

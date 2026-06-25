@@ -32,6 +32,7 @@ import {
   GUIDANCE_MEMORY_EXTRACT_COMPLETE,
   pickPriorSessionContinuity,
   appendPriorSessionToPlannerState,
+  shouldUpsertGuidanceMemory,
   type GuidanceContinuityRecord,
 } from "../lib/guidanceMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../lib/voiceProfile";
@@ -66,8 +67,9 @@ import {
   buildTalkItThroughVersePrayerUserContent,
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
+import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM } from "../philipIdentity";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, shouldRejectPriorExploredQuestion, pickFreshTerritoryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, type ConversationState, type PhilipMove } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, detectRepetitionPushback, buildRepetitionRecoveryAddendum, pickRepetitionAcknowledgment, pickRecoveryFallbackQuestion, isPoorRecoveryQuestion, shouldRejectPriorExploredQuestion, pickFreshTerritoryQuestion, detectReciprocalQuestion, conversationHadReciprocalAnswer, isReciprocalDodge, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, containsMysticalColdRead, shouldOfferSessionSendOff, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4284,32 +4286,16 @@ Output only the question — no preamble, no explanation, no meta-commentary.${g
       if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
         const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
         const isClosing = conversationStateBlock.includes("CLOSING");
+        const philipMsgsEarly = claudeHistory.filter(m => m.role === "assistant");
+        const lastUserEarly = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
+        const exchangeNumEarly = Math.floor(conversationHistory.length / 2);
+        const isSendOff = !isClosing && shouldOfferSessionSendOff(exchangeNumEarly, philipMsgsEarly, lastUserEarly);
 
         if (isClosing) {
-          // User is leaving — Philip speaks a genuine benediction, not a generic goodbye
-          const closingSystem = `You are Philip — a Spirit-filled shepherd, not a chatbot. The person is ending this conversation.
-
-Speak a brief closing benediction. Two or three short sentences. No question. No "?".
-
-This is the moment a pastor stands at the door as someone leaves. Not a recap. A sending.
-
-DO:
-— Acknowledge what they brought without listing it back to them
-— Leave one small thing they can carry: a permission, a truth, a thread
-— End warmly without clinging
-
-PHILIP'S CLOSING VOICE — match this register:
-"What you brought here today mattered — more than you may know right now."
-"Go gently. This door stays open."
-"You didn't sit with this alone. That's enough for today."
-"Whatever you carry back out, you named it honestly here. That counts."
-"Bring it back when you're ready. Something real happened here."
-
-NEVER: "God bless you." / "Take care." / "I'll be here." / "journey" / "healing" / "breakthrough" / "God's plan"
-NEVER begin with "I."
-NEVER summarize the whole conversation.
-Under 40 words total.`;
-          phase2Text = await generatePhase2WithClaude(closingSystem, claudeHistory, "");
+          phase2Text = await generatePhase2WithClaude(PHILIP_CLOSING_SYSTEM, claudeHistory, "");
+        } else if (isSendOff) {
+          phase2Text = await generatePhase2WithClaude(PHILIP_SESSION_SEND_OFF_SYSTEM, claudeHistory, "", 100);
+          usedMechanicalConstruction = true;
         } else {
           const lastUserMsg = [...(conversationHistory as Array<{ role: string; content: string }>)]
             .reverse().find(m => m.role === "user")?.content ?? "";
@@ -4438,7 +4424,14 @@ Under 40 words total.`;
         phase2Text = await generatePhase2WithGPT(fullMessages);
       }
 
-      if (isFollowUp && !conversationStateBlock.includes("CLOSING")) {
+      const noQuestionMode = conversationStateBlock.includes("CLOSING")
+        || (isFollowUp && shouldOfferSessionSendOff(
+          Math.floor(conversationHistory.length / 2),
+          (conversationHistory as Array<{ role: string; content: string }>).filter(m => m.role === "assistant"),
+          [...(conversationHistory as Array<{ role: string; content: string }>)].reverse().find(m => m.role === "user")?.content ?? "",
+        ));
+
+      if (isFollowUp && !noQuestionMode) {
         const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
         const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
         const lastUserMsg = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
@@ -4451,7 +4444,7 @@ Under 40 words total.`;
 
       const qCount = questionMarkCount(phase2Text);
 
-      if (qCount !== 1 && !conversationStateBlock.includes("CLOSING") && !usedMechanicalConstruction) {
+      if (qCount !== 1 && !noQuestionMode && !usedMechanicalConstruction) {
         // Retry with Claude if it returned the wrong number of question marks
         if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
           const retrySystem = systemMsg + `\n\n[CRITICAL: Your response must contain exactly one question mark. Currently has ${qCount}. ${qCount === 0 ? "End with one specific question." : "Remove all questions except the single most important one."}]`;
@@ -4543,15 +4536,23 @@ Under 40 words total.`;
       if (summary && summary.length > 12) {
         const payload = parsed ?? { summary };
         const cf = payload.carryForward ? sanitizeCarryForwardForSpeech(payload.carryForward) : undefined;
+        const serialized = serializeGuidanceMemory({
+          summary: payload.summary,
+          carryForward: cf,
+          themes: payload.themes,
+          explored: payload.explored,
+        });
+        const existing = await storage.getJournalEntries(sessionId);
+        const latestMemory = existing.find((e) => e.type === "guidance_memory");
+        if (latestMemory && shouldUpsertGuidanceMemory(latestMemory, isPending)) {
+          const updated = await storage.updateJournalEntry(latestMemory.id, sessionId, { content: serialized });
+          SESSION_CTX_CACHE.delete(sessionId);
+          return res.status(200).json({ ok: true, id: String(updated?.id ?? latestMemory.id), updated: true });
+        }
         const entry = await storage.createJournalEntry({
           sessionId,
           type: "guidance_memory",
-          content: serializeGuidanceMemory({
-            summary: payload.summary,
-            carryForward: cf,
-            themes: payload.themes,
-            explored: payload.explored,
-          }),
+          content: serialized,
           title: undefined,
         });
         SESSION_CTX_CACHE.delete(sessionId);

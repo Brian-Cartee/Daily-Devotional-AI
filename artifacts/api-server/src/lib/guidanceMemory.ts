@@ -173,6 +173,31 @@ MEMORY RULES — non-negotiable:
 export const GUIDANCE_MEMORY_EXTRACT_PENDING = `From what this person just shared, return JSON only:
 {"summary":"1 sentence internal note","carryForward":"ONE sentence, second person, ≤25 words — emotional weight they are carrying, NOT proper names or diagnoses. Hold the door open; do not declare facts. Good: You were carrying something heavy about someone you love. Bad: You were dealing with a difficult time."}`;
 
+/** True when a guidance_memory row is an in-flight opening scratch (pending upgrade target). */
+export function isPendingGuidanceMemoryEntry(
+  entry: { content: string; createdAt: string | Date },
+): boolean {
+  const ageMs = Date.now() - new Date(entry.createdAt).getTime();
+  if (ageMs >= 4 * 60 * 60 * 1000) return false;
+  const memory = parseGuidanceMemoryContent(entry.content);
+  return !((memory.explored?.length ?? 0) > 0 || (memory.themes?.length ?? 0) > 0);
+}
+
+/** Whether to update the latest guidance_memory row instead of inserting another. */
+export function shouldUpsertGuidanceMemory(
+  latest: { content: string; createdAt: string | Date } | undefined,
+  isPendingSave: boolean,
+): boolean {
+  if (!latest) return false;
+  if (isPendingSave) return isPendingGuidanceMemoryEntry(latest);
+  if (isPendingGuidanceMemoryEntry(latest)) return true;
+
+  const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+  const latestDay = new Date(latest.createdAt).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  return latestDay === today && ageMs < 24 * 60 * 60 * 1000;
+}
+
 export const GUIDANCE_MEMORY_EXTRACT_COMPLETE = `Extract a spiritual memory from a Talk It Through session. Return JSON only:
 {"summary":"1-2 sentences for internal context — what mattered emotionally","carryForward":"ONE sentence, second person, ≤25 words — emotional register and weight, NOT proper names or medical labels. No 'I remember'.","themes":["up to 3 short theme labels — grief, marriage, doubt, exhaustion"],"explored":["up to 4 short areas already discussed — no proper names if sensitive"]}
 

@@ -286,6 +286,11 @@ export default function MainScreen() {
       if (prev.match(/inactive|background/) && nextState === "active") {
         // Black cover until __spSignalReady removes it (splash or home painted).
         webviewRef.current?.injectJavaScript(`(function(){
+          if(document.querySelector('[data-testid="sp-splash-active"]')){
+            try{window.__spSignalReady?.();}catch(e){}
+            try{window.__onAppForeground?.();}catch(e){}
+            return true;
+          }
           var existing=document.getElementById('sp-fg-cover');
           if(existing)existing.remove();
           var c=document.createElement('div');
@@ -763,6 +768,10 @@ export default function MainScreen() {
           // Black cover hides any flash of home screen before splash renders.
           // Injected here (not just on AppState) so it also fires after refresh.
           webviewRef.current?.injectJavaScript(`(function(){
+            if(document.querySelector('[data-testid="sp-splash-active"]')){
+              try{window.__spSignalReady?.();}catch(e){}
+              return true;
+            }
             var existing=document.getElementById('sp-fg-cover');
             if(existing)existing.remove();
             var c=document.createElement('div');

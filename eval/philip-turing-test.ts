@@ -12,7 +12,7 @@
  *   cd eval && npx tsx philip-turing-test.ts --category grief        # one category
  *   cd eval && npx tsx philip-turing-test.ts --count 20              # smoke + 15 random
  *   cd eval && npx tsx philip-turing-test.ts --exchanges 12          # longer conversations
- *   cd eval && npx tsx philip-turing-test.ts --local                 # local server
+ *   cd eval && npx tsx philip-turing-test.ts --features            # dependency, send-off, memory lanes
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -32,6 +32,7 @@ const MAX_COUNT       = args.includes("--count")     ? parseInt(args[args.indexO
 const MAX_EXCHANGES   = args.includes("--exchanges") ? parseInt(args[args.indexOf("--exchanges") + 1]) : 10;
 const USE_LOCAL       = args.includes("--local");
 const USE_SMOKE       = args.includes("--smoke");
+const USE_FEATURES    = args.includes("--features");
 
 // Engagement check fires after this exchange — 60% through, minimum exchange 6
 const ENGAGEMENT_CHECK_AT = Math.min(6, Math.floor(MAX_EXCHANGES * 0.6));
@@ -48,6 +49,13 @@ const SMOKE_CORE_IDS = [
   "guard-01",   // skeptical/reluctant — "My wife made me download this"
   "doubt-01",   // faith crisis — "I feel nothing when I pray"
   "wall-01",    // multi-issue overwhelm — everything at once
+] as const;
+
+/** Targeted lanes — run with --features before full smoke. */
+const FEATURE_SCENARIO_IDS = [
+  "dependency-01",
+  "sendoff-01",
+  "continuity-01",
 ] as const;
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -258,6 +266,11 @@ Exchange 1 (Phase 1) expectations:
 Exchanges 2+ expectations:
 - Full pastoral response; scripture/story allowed when earned
 - patternBreak: compare Philip's MOVE (question type, opening structure, whether he mirrored their exact words) — not just vocabulary. Give 10 on exchange 1 (no prior moves to compare).
+
+Feature lane expectations (when scenario flags include them):
+- dependency / expect-outward-point: Philip should gently point outward (God, a real person) — not deeper into the app. Once is enough. No hotline dump. No "as an AI."
+- send-off-at-8: By exchange 8+, Philip should offer a sending line (permission to stop) with NO question — not another probe.
+- memory-continuity / no-invented-history: Philip must NOT invent visit counts, days they've come back, or prior sessions beyond what the user said.
 
 Respond in JSON only — no extra text.`;
 
@@ -542,8 +555,15 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
 
 // ── Scenario Selection ────────────────────────────────────────────────────────
 
-function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean): Scenario[] {
+function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean): Scenario[] {
   const byId = new Map(pool.map(s => [s.id, s]));
+
+  if (useFeatures) {
+    return (FEATURE_SCENARIO_IDS as readonly string[])
+      .map(id => byId.get(id))
+      .filter((s): s is Scenario => !!s);
+  }
+
   const core = (SMOKE_CORE_IDS as readonly string[])
     .map(id => byId.get(id))
     .filter((s): s is Scenario => !!s);
@@ -733,13 +753,13 @@ async function main() {
   else if (FILTER_CATEGORY) pool = pool.filter(s => s.category.includes(FILTER_CATEGORY));
 
   // Default (no filter flags) always uses the smoke set for comparable runs
-  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY);
-  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke);
+  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES);
+  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES);
 
   const target = USE_LOCAL ? `local (${BASE_URL})` : `live (${BASE_URL})`;
-  const smokeNote = useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "";
+  const modeNote = USE_FEATURES ? " [feature lanes]" : (useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "");
   console.log("\n" + bold("Philip Turing Test"));
-  console.log(dim(`${selectedScenarios.length} scenarios${smokeNote} · ${MAX_EXCHANGES} exchanges each · ${target}`));
+  console.log(dim(`${selectedScenarios.length} scenarios${modeNote} · ${MAX_EXCHANGES} exchanges each · ${target}`));
   console.log(dim("─".repeat(80)));
 
   const results: ConversationResult[] = [];
