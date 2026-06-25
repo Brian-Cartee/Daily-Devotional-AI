@@ -279,6 +279,7 @@ function resolvePhilipOrbMode(opts: {
   completionPath: "carry" | "stay" | null;
   responseComplete: boolean;
   philipGreetingActive: boolean;
+  philipGreetingTtsActive: boolean;
   greetingSpeaking: boolean;
   phase1Speaking: boolean;
   phase2Speaking: boolean;
@@ -302,7 +303,8 @@ function resolvePhilipOrbMode(opts: {
   }
 
   const speaking =
-    opts.philipGreetingActive
+    opts.philipGreetingTtsActive
+    || opts.philipGreetingActive
     || opts.greetingSpeaking
     || opts.phase1Speaking
     || opts.phase2Speaking
@@ -521,6 +523,7 @@ export default function GuidancePage() {
   // Phase 3: threshold overlay — full-screen entry before first word
   const [showThresholdOverlay, setShowThresholdOverlay] = useState(true);
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
+  const [philipGreetingTtsActive, setPhilipGreetingTtsActive] = useState(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
   const [micArming, setMicArming] = useState(false);
   const [phase1MicLive, setPhase1MicLive] = useState(false);
@@ -1918,10 +1921,11 @@ export default function GuidancePage() {
     let autoMicTimer: number | undefined;
 
     const scheduleAutoMic = (withVoice: boolean) => {
-      if (cancelled || greetingEngagedRef.current || autoMicStartedRef.current || !hasSpeechSupport) return;
+      // Post-greeting mic must not be blocked by greetingEngagedRef (set in TTS onStart).
+      if (cancelled || autoMicStartedRef.current || !hasSpeechSupport) return;
       autoMicStartedRef.current = true;
       autoMicTimer = window.setTimeout(() => {
-        if (!cancelled && !greetingEngagedRef.current) startHeartListeningRef.current(withVoice);
+        if (!cancelled) startHeartListeningRef.current(withVoice);
       }, 400);
     };
 
@@ -1954,6 +1958,7 @@ export default function GuidancePage() {
         }
       } catch { /* noop */ }
 
+      setPhilipGreetingTtsActive(true);
       cancelGreetingSpeakRef.current = speakShepherdStream(line, {
         isPro: isProVerifiedLocally(),
         onStart: () => {
@@ -1964,11 +1969,13 @@ export default function GuidancePage() {
           try { sessionStorage.removeItem("sp_guidance_siri_listen"); } catch { /* noop */ }
         },
         onFail: () => {
+          setPhilipGreetingTtsActive(false);
           convo.dispatch({ type: "ENTRY_OPEN" });
           setGreetingFallbackText(line);
           scheduleAutoMic(false);
         },
         onEnd: () => {
+          setPhilipGreetingTtsActive(false);
           convo.dispatch({ type: "GREETING_END" });
           cancelGreetingSpeakRef.current = null;
           scheduleAutoMic(true);
@@ -1982,6 +1989,7 @@ export default function GuidancePage() {
       if (autoMicTimer) window.clearTimeout(autoMicTimer);
       cancelGreetingSpeakRef.current?.();
       cancelGreetingSpeakRef.current = null;
+      setPhilipGreetingTtsActive(false);
       setGreetingSpeaking(false);
     };
   }, [isFirstVisit, situation, witnessReady, hasSpeechSupport, heartListening, processingBridge]);
@@ -2497,6 +2505,7 @@ export default function GuidancePage() {
     completionPath,
     responseComplete,
     philipGreetingActive,
+    philipGreetingTtsActive,
     greetingSpeaking,
     phase1Speaking,
     phase2Speaking,
@@ -2593,8 +2602,8 @@ export default function GuidancePage() {
 
               {/* One orb — speaker when Philip talks, mic when you talk */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-                {philipOrbMode ? (
-                  <VoiceSessionOrb mode={philipOrbMode} dark />
+                {philipHandsFreeVoice ? (
+                  <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark />
                 ) : (
                   <VoiceSessionOrb
                     mode={entryMicLive || micArming ? "listen" : "idle"}
