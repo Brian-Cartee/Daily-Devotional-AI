@@ -61,16 +61,16 @@ export function buildShepherdGreeting(
     const endsQuestion = trimmed.endsWith("?");
     return endsQuestion
       ? `${hi} Good to have you back — I'm glad you came. ${trimmed}`
-      : `${hi} Good to have you back — I'm glad you came. ${trimmed} What's on your heart today?`;
+      : `${hi} Good to have you back — I'm glad you came. ${trimmed} Take your time.`;
   }
   if (isFirstVisit) {
     return name
-      ? `${hi} I'm genuinely glad you're here. Take your time — what's on your heart?`
-      : "I'm genuinely glad you're here. Take your time — what's on your heart?";
+      ? `${hi} You didn't have to open this — but you did. I'm glad you're here. Take your time. Nothing you say has to be polished.`
+      : "You didn't have to open this — but you did. I'm glad you're here. Take your time. Nothing you say has to be polished.";
   }
   return name
-    ? `${hi} Good to have you back. I'm glad you're here — what's on your heart today?`
-    : "Good to have you back. I'm glad you're here — what's on your heart today?";
+    ? `${hi} Good to see you. Whatever brought you here — you don't have to have it figured out before you speak.`
+    : "Good to see you. Whatever brought you here — you don't have to have it figured out before you speak.";
 }
 
 export type SpeakShepherdOptions = {
@@ -353,6 +353,8 @@ export const PHASE1_REPLY_BRIDGE = "Give me a moment with that.";
 export const TAKE_YOUR_TIME_BRIDGE = "Take your time.";
 export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
 
+/** Brief sacred pause on the threshold screen before Philip's opening line. */
+export const VOICE_GREETING_DWELL_MS = 1600;
 /** Conversational auto-submit silence — entry / Phase 1 reply / follow-up. */
 export const VOICE_SILENCE_ENTRY_MS = 2800;
 export const VOICE_SILENCE_PHASE1_MS = 1200;

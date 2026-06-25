@@ -18,7 +18,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { useConvoMachine } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
@@ -489,12 +489,12 @@ export default function GuidancePage() {
     setOverlayPulseVisible(true);
   }, [showThresholdOverlay]);
 
-  // Overlay dismisses when user submits (situation set) or processing begins
+  // Overlay dismisses only once we have something real to respond to — not on processing flicker.
   useEffect(() => {
-    if (situation.trim() || isReflecting || processingBridge) {
+    if (situation.trim()) {
       setShowThresholdOverlay(false);
     }
-  }, [situation, isReflecting, processingBridge]);
+  }, [situation]);
   useEffect(() => {
     if (showPhilipDisclaimer) markPhilipDisclaimerShown();
   }, [showPhilipDisclaimer]);
@@ -1408,6 +1408,7 @@ export default function GuidancePage() {
   }, [heartInput]);
 
   const startHeartListening = useCallback((fromWelcome = false) => {
+    if (isPhilipMode() && !fromWelcome && convo.phase !== "entry") return;
     if (heartVoiceRef.current?.isActive()) return;
     if (heartVoiceRef.current) {
       heartVoiceRef.current.destroy();
@@ -1459,7 +1460,9 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
-        const preview = heartVoiceRef.current?.getPreview() ?? heartInput;
+        const preview = (heartVoiceRef.current?.getPreview() ?? heartInput).trim();
+        // Silence without real speech must not start a session (ambient audio alone is not enough).
+        if (preview.length < GUIDANCE_INPUT_MIN) return;
         submitHeartEntryRef.current(preview, true);
       },
     });
@@ -1472,12 +1475,14 @@ export default function GuidancePage() {
     setHeartHasRecording(true);
     if (convo.phase === "greeting") convo.dispatch({ type: "GREETING_END" });
     convo.dispatch({ type: "ENTRY_OPEN" });
-  }, [convo]);
+  }, [convo, convo.phase]);
 
   const startHeartListeningRef = useRef(startHeartListening);
   startHeartListeningRef.current = startHeartListening;
 
   const toggleHeartVoice = () => {
+    // Philip owns the opening — mic is for finishing, not starting.
+    if (isPhilipMode() && convo.phase !== "entry") return;
     if (heartListening) {
       if (micArming) return;
       // entryMicLive=false while heartListening=true means the auto-mic attempt
@@ -1774,7 +1779,7 @@ export default function GuidancePage() {
       const fallback = reentryLine
         ? reentryLine
         : buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, null);
-      const line = `... ${dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback}`;
+      const line = dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback;
 
       // Warm the iOS audio pipeline so the first syllable isn't swallowed on cold start.
       try {
@@ -1793,6 +1798,7 @@ export default function GuidancePage() {
       cancelGreetingSpeakRef.current = speakShepherdStream(line, {
         isPro: isProVerifiedLocally(),
         onStart: () => {
+          greetingEngagedRef.current = true;
           markShepherdGreetingPlayed();
           convo.dispatch({ type: "GREETING_START" });
           setGreetingFallbackText(null);
@@ -1809,7 +1815,7 @@ export default function GuidancePage() {
           scheduleAutoMic(true);
         },
       });
-    }, siriListenPending ? 800 : VOICE_SILENCE_ENTRY_MS);
+    }, siriListenPending ? 800 : VOICE_GREETING_DWELL_MS);
 
     return () => {
       cancelled = true;
@@ -2319,6 +2325,22 @@ export default function GuidancePage() {
   // Skip initial user message AND first AI response — only follow-up exchanges go here
   const conversationThread = messages.slice(2);
 
+  // Philip-first threshold: presence pulse until greeting ends, then mic opens on its own.
+  const philipAwaitingGreeting = isPhilipMode() && convo.phase === "idle";
+  const philipGreetingActive = isPhilipMode() && convo.phase === "greeting";
+  const showThresholdEntryMic = isSoloMode() || convo.phase === "entry";
+  const thresholdPresencePulse = philipAwaitingGreeting || philipGreetingActive;
+
+  const dismissThresholdForTyping = () => {
+    greetingEngagedRef.current = true;
+    cancelGreetingSpeakRef.current?.();
+    cancelGreetingSpeakRef.current = null;
+    destroyHeartVoice();
+    if (convo.phase === "greeting") convo.dispatch({ type: "GREETING_END" });
+    setShowThresholdOverlay(false);
+    setShowHeartTypeFallback(true);
+  };
+
   return (
     <>
       <CoachConsentModal
@@ -2384,30 +2406,26 @@ export default function GuidancePage() {
                 Back
               </button>
 
-              {/* Pure voice UI — mic only, no text */}
+              {/* Philip speaks first — mic appears only after his opening line */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
 
-                {/* Mic button — red pulse only after MediaRecorder is live (or while arming) */}
+                {showThresholdEntryMic ? (
                 <motion.button
                   type="button"
                   onClick={toggleHeartVoice}
-                  aria-label={entryMicLive ? "Stop speaking" : micArming ? "Opening microphone" : greetingSpeaking ? "Philip is speaking" : "Speak to Philip"}
-                  disabled={greetingSpeaking || micArming}
+                  aria-label={entryMicLive ? "Done speaking — send to Philip" : micArming ? "Opening microphone" : "Speak to Philip"}
+                  disabled={micArming}
                   style={{
                     width: "96px",
                     height: "96px",
                     borderRadius: "9999px",
                     border: micVisualLive
                       ? "1.5px solid rgba(239,68,68,0.55)"
-                      : greetingSpeaking
-                        ? "1.5px solid rgba(255,255,255,0.08)"
-                        : "1.5px solid rgba(255,255,255,0.15)",
+                      : "1.5px solid rgba(139,92,246,0.35)",
                     background: micVisualLive
                       ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
-                      : greetingSpeaking
-                        ? "radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)"
-                        : "radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
-                    cursor: greetingSpeaking || micArming ? "default" : "pointer",
+                      : "radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.06) 100%)",
+                    cursor: micArming ? "default" : "pointer",
                     position: "relative",
                     display: "flex",
                     alignItems: "center",
@@ -2427,60 +2445,86 @@ export default function GuidancePage() {
                       "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
                     ],
                     scale: [1, 1.02, 1],
-                  } : greetingSpeaking ? {
-                    boxShadow: [
-                      "0 0 0 0px rgba(255,255,255,0.0), 0 0 16px 4px rgba(255,255,255,0.06)",
-                      "0 0 0 12px rgba(255,255,255,0.0), 0 0 28px 10px rgba(255,255,255,0.10)",
-                      "0 0 0 0px rgba(255,255,255,0.0), 0 0 16px 4px rgba(255,255,255,0.06)",
-                    ],
-                    scale: [1, 1.03, 1],
                   } : {
-                    boxShadow: "0 0 0 0px rgba(255,255,255,0.0)",
+                    boxShadow: "0 0 24px 4px rgba(139,92,246,0.16)",
                     scale: 1,
                   }}
-                  transition={{ duration: entryMicLive ? 1.6 : micArming ? 1.2 : greetingSpeaking ? 2.0 : 0.3, repeat: micVisualLive || greetingSpeaking ? Infinity : 0, ease: "easeInOut" }}
+                  transition={{ duration: entryMicLive ? 1.6 : micArming ? 1.2 : 0.3, repeat: micVisualLive ? Infinity : 0, ease: "easeInOut" }}
                 >
                   <Mic
                     size={24}
                     style={{
-                      color: micVisualLive
-                        ? "rgba(239,68,68,0.90)"
-                        : greetingSpeaking
-                          ? "rgba(255,255,255,0.20)"
-                          : "rgba(255,255,255,0.50)",
+                      color: micVisualLive ? "rgba(239,68,68,0.90)" : "rgba(139,92,246,0.65)",
                       position: "relative",
                       zIndex: 1,
                       transition: "color 0.3s ease",
                     }}
                   />
                 </motion.button>
+                ) : thresholdPresencePulse ? (
+                <motion.div
+                  role="status"
+                  aria-live="polite"
+                  aria-label={philipGreetingActive ? "Philip is speaking" : "Philip is with you"}
+                  style={{
+                    width: "96px",
+                    height: "96px",
+                    borderRadius: "9999px",
+                    border: philipGreetingActive
+                      ? "1.5px solid rgba(139,92,246,0.35)"
+                      : "1.5px solid rgba(139,92,246,0.20)",
+                    background: "radial-gradient(circle, rgba(139,92,246,0.16) 0%, rgba(109,40,217,0.05) 100%)",
+                  }}
+                  animate={{
+                    boxShadow: philipGreetingActive ? [
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 8px rgba(139,92,246,0.28)",
+                      "0 0 0 16px rgba(139,92,246,0.0), 0 0 44px 14px rgba(139,92,246,0.38)",
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 28px 8px rgba(139,92,246,0.28)",
+                    ] : [
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.14)",
+                      "0 0 0 10px rgba(139,92,246,0.0), 0 0 32px 10px rgba(139,92,246,0.22)",
+                      "0 0 0 0px rgba(139,92,246,0.0), 0 0 20px 4px rgba(139,92,246,0.14)",
+                    ],
+                    scale: philipGreetingActive ? [1, 1.04, 1] : [1, 1.02, 1],
+                  }}
+                  transition={{ duration: philipGreetingActive ? 2.0 : 2.8, repeat: Infinity, ease: "easeInOut" }}
+                />
+                ) : null}
 
-                {/* Single state word — only visible cue */}
                 <p style={{
                   fontSize: "11px",
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: micVisualLive
+                  color: entryMicLive
                     ? "rgba(239,68,68,0.60)"
-                    : greetingSpeaking
-                      ? "rgba(255,255,255,0.18)"
-                      : "rgba(255,255,255,0.28)",
+                    : philipGreetingActive
+                      ? "rgba(139,92,246,0.45)"
+                      : micArming
+                        ? "rgba(239,68,68,0.45)"
+                        : philipAwaitingGreeting
+                          ? "rgba(139,92,246,0.28)"
+                          : "rgba(255,255,255,0.28)",
                   margin: 0,
                   transition: "color 0.3s ease",
                   userSelect: "none",
+                  minHeight: "14px",
                 }}>
-                  {entryMicLive ? "listening" : micArming ? "opening mic" : greetingSpeaking ? "speaking" : "tap to speak"}
+                  {entryMicLive
+                    ? "listening"
+                    : isReflecting && !situation.trim()
+                      ? "one moment"
+                      : micArming
+                        ? "opening mic"
+                        : philipGreetingActive
+                          ? "speaking"
+                          : showThresholdEntryMic
+                            ? (heartListening ? "when you're ready" : "")
+                            : ""}
                 </p>
 
-                {/* Type fallback — barely visible, always accessible */}
                 <button
                   type="button"
-                  onClick={() => {
-                    destroyHeartVoice();
-                    setHeartListening(false);
-                    setShowThresholdOverlay(false);
-                    setShowHeartTypeFallback(true);
-                  }}
+                  onClick={dismissThresholdForTyping}
                   style={{
                     fontSize: "11px",
                     color: "rgba(255,255,255,0.18)",
@@ -2628,12 +2672,12 @@ export default function GuidancePage() {
                       </div>
                     )}
                     {/* Voice-first entry — mic opens automatically after spoken welcome */}
-                    {hasSpeechSupport && !showHeartTypeFallback && (
+                    {hasSpeechSupport && !showHeartTypeFallback && showThresholdEntryMic && (
                       <div className="flex flex-col items-center mb-4">
                         <motion.button
                           type="button"
                           onClick={toggleHeartVoice}
-                          aria-label={heartListening ? "Done speaking — send to Philip" : "Start speaking to Philip"}
+                          aria-label={heartListening ? "Done speaking — send to Philip" : "Speak to Philip"}
                           aria-live="polite"
                           data-testid="button-guidance-heart-voice"
                           className="relative flex items-center justify-center w-28 h-28 rounded-full cursor-pointer touch-manipulation"
@@ -2661,15 +2705,13 @@ export default function GuidancePage() {
                           <Mic className={`w-10 h-10 relative z-10 ${micVisualLive ? "text-red-400" : "text-violet-300"}`} />
                         </motion.button>
                         <p className="mt-3 text-[13px] font-medium text-white/50 text-center">
-                          {processingBridge || (heartListening && heartListenPhase === "thinking")
+                          {isReflecting && !situation.trim()
                             ? "…"
-                            : heartListening
+                            : processingBridge || (heartListening && heartListenPhase === "thinking")
                               ? "…"
-                              : greetingSpeaking
-                                ? "…"
-                                : isReturnEntry
-                                  ? "Good to have you back — speak when you're ready"
-                                  : "Speak when you're ready"}
+                              : heartListening
+                                ? "when you're ready"
+                                : ""}
                         </p>
                         {/* Interim transcript hidden — watching words appear triggers self-editing */}
                       </div>
