@@ -324,10 +324,12 @@ function resolvePhilipOrbMode(opts: {
   const userMicTurn =
     !speaking
     && (
-      (opts.convoPhase === "entry" && !opts.philipGreetingTtsActive)
-      || opts.convoPhase === "p1-reply"
-      || opts.convoPhase === "fu-reply"
-      || (opts.convoPhase === "p1-silence" && (opts.phase1MicLive || opts.phase1MicArming))
+      (opts.convoPhase === "entry" && !opts.philipGreetingTtsActive
+        && (opts.micArming || opts.entryMicLive))
+      || ((opts.convoPhase === "p1-reply" || opts.convoPhase === "p1-silence")
+        && (opts.phase1MicArming || opts.phase1MicLive))
+      || (opts.convoPhase === "fu-reply"
+        && (opts.followUpMicArming || opts.followUpMicLive))
     );
 
   const listening =
@@ -1627,6 +1629,8 @@ export default function GuidancePage() {
         if (preview.length < GUIDANCE_INPUT_MIN && !hasAudio) {
           listener?.destroy();
           heartVoiceRef.current = null;
+          setMicArming(false);
+          setEntryMicLive(false);
           window.setTimeout(() => {
             if (
               convoRef.current.phase === "entry"

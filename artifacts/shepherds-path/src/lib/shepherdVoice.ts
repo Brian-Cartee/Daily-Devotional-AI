@@ -356,7 +356,7 @@ export const READY_PROMPT_BRIDGE = "Whenever you're ready, I'm here.";
 /** Brief sacred pause on the threshold screen before Philip's opening line. */
 export const VOICE_GREETING_DWELL_MS = 1600;
 /** Conversational auto-submit silence — entry / Phase 1 reply / follow-up. */
-export const VOICE_SILENCE_ENTRY_MS = 2800;
+export const VOICE_SILENCE_ENTRY_MS = 1_500;
 export const VOICE_SILENCE_PHASE1_MS = 1200;
 export const VOICE_SILENCE_FOLLOWUP_MS = 1200;
 

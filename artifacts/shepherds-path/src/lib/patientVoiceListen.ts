@@ -53,7 +53,8 @@ function turnServiceUrl(): string {
 // ---------------------------------------------------------------------------
 const FALLBACK_AUTO_SUBMIT_MS = 1_200;
 const DEFAULT_MIN_CHARS = 8;
-const MIN_AUDIO_BYTES_FOR_HANDOFF = 6_000;
+const MIN_AUDIO_BYTES_FOR_HANDOFF = 4_000;
+const POST_SPEECH_SUBMIT_MS = 850;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
 const SR_STALL_MS = 2000;
 const STALL_EXTEND_COOLDOWN_MS = 2000;
@@ -120,6 +121,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let absoluteMaxTimer: ReturnType<typeof setTimeout> | null = null;
   let recordingTimersArmed = false;
   let previewCharsAtLastExtend = 0;
+  let lastFinalSpeechAt = 0;
+  let postSpeechSubmitTimer: ReturnType<typeof setTimeout> | null = null;
 
   const armRecordingTimers = () => {
     if (recordingTimersArmed || !active) return;
@@ -142,12 +145,33 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   const totalAudioBytes = () =>
     audioChunks.reduce((sum, chunk) => sum + chunk.size, 0);
 
-  const markSpeechActivity = () => {
-    lastSpeechAt = Date.now();
+  const markSpeechActivity = (fromFinal = true) => {
+    const now = Date.now();
+    if (fromFinal) lastFinalSpeechAt = now;
+    // Interim-only updates must not block handoff after the user stops (iOS room tone).
+    if (fromFinal || now - lastFinalSpeechAt < 2_500) {
+      lastSpeechAt = now;
+    }
     audioBytesAtLastSpeech = totalAudioBytes();
+    clearPostSpeechSubmit();
+  };
+
+  const clearPostSpeechSubmit = () => {
+    if (postSpeechSubmitTimer) clearTimeout(postSpeechSubmitTimer);
+    postSpeechSubmitTimer = null;
+  };
+
+  const schedulePostSpeechSubmit = (delayMs = POST_SPEECH_SUBMIT_MS) => {
+    clearPostSpeechSubmit();
+    postSpeechSubmitTimer = setTimeout(() => {
+      postSpeechSubmitTimer = null;
+      if (active && !autoSubmitFired) triggerAutoSubmit();
+    }, delayMs);
   };
 
   const maybeExtendForSrStall = (chunkSize: number) => {
+    // Conversational handoff uses silence/VAD — ambient MediaRecorder growth must not extend.
+    if (opts.conversational) return;
     if (!active || chunkSize < 200) return;
     const now = Date.now();
     const words = wordCount(previewTranscript);
@@ -251,6 +275,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearAbsoluteMax();
+    clearPostSpeechSubmit();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -283,6 +308,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     // absoluteMax can't fire a second submit and onAutoSubmit is guaranteed.
     clearTimers();
     clearSilencePoll();
+    clearPostSpeechSubmit();
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
@@ -353,18 +379,17 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
             // Keep browser silence timers as backup — Smart Turn can miss on some devices.
             scheduleFallbackTimers();
           } else if (msg.event === "speech_start") {
-            markSpeechActivity();
+            markSpeechActivity(true);
             takeYourTimeFired = false;
             setPhase("listening");
           } else if (msg.event === "speech_end") {
             setPhase("thinking");
-            // If turn_complete doesn't arrive within 2.5s, submit anyway.
-            // Protects against turn-service crashes or silent failures.
+            schedulePostSpeechSubmit(POST_SPEECH_SUBMIT_MS);
             if (!hardTimeoutTimer) {
               hardTimeoutTimer = setTimeout(() => {
                 hardTimeoutTimer = null;
                 if (active && !autoSubmitFired) triggerAutoSubmit();
-              }, 2500);
+              }, 1_800);
             }
           } else if (msg.event === "turn_complete") {
             if (hardTimeoutTimer) { clearTimeout(hardTimeoutTimer); hardTimeoutTimer = null; }
@@ -488,22 +513,22 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       }
       if (finalChunk) {
         previewTranscript = (previewTranscript ? `${previewTranscript} ${finalChunk}` : finalChunk).trim();
+        markSpeechActivity(true);
+      } else if (interim.trim().length >= 4) {
+        markSpeechActivity(false);
       }
-      if (finalChunk || interim) markSpeechActivity();
       takeYourTimeFired = false;
-      autoSubmitFired = false;
       setPhase("listening");
       pushPreview(previewTranscript, interim);
-      // Always reschedule SR-based silence timer — runs regardless of turn-service state.
-      // This ensures handoff happens even when turn-service never sends speech_end/turn_complete.
       scheduleFallbackTimers();
     };
 
     recognition.onspeechend = () => {
       if (!active || userStopped) return;
-      // Don't reset lastSpeechAt — iOS spams onspeechend and would push the
-      // silence window forward, preventing handoff. Just reschedule timers.
       scheduleFallbackTimers();
+      if (opts.conversational && hasEnoughToSubmit()) {
+        schedulePostSpeechSubmit(POST_SPEECH_SUBMIT_MS);
+      }
     };
 
     recognition.onend = () => {
@@ -581,6 +606,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioBytesAtLastSpeech = 0;
       lastStallExtendAt = 0;
       stallExtendCount = 0;
+      lastFinalSpeechAt = 0;
       previewCharsAtLastExtend = 0;
       recordingTimersArmed = false;
       setPhase("listening");
