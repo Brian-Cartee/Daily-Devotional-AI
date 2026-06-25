@@ -4242,8 +4242,14 @@ Under 40 words total.`;
               shapeRoll < 0.10
             );
 
-            // Bare question 30% of the time mid-conversation — no preamble at all
-            const skipAck = !useShapeC && exchangeNum >= 4 && Math.random() < 0.30;
+            // Bare question — escalating probability as conversation deepens
+            // Judge consistently rewards well-aimed plain questions over aphoristic leads
+            const skipRoll = Math.random();
+            const skipAck = !useShapeC && (
+              exchangeNum >= 7 ? skipRoll < 0.65 :
+              exchangeNum >= 4 ? skipRoll < 0.50 :
+              false
+            );
 
             if (skipAck) {
               // Plain question — no ack, no preamble
