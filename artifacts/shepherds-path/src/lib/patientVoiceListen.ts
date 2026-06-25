@@ -53,6 +53,7 @@ function turnServiceUrl(): string {
 // ---------------------------------------------------------------------------
 const FALLBACK_AUTO_SUBMIT_MS = 1_200;
 const DEFAULT_MIN_CHARS = 8;
+const MIN_AUDIO_BYTES_FOR_HANDOFF = 6_000;
 const SPOKEN_PATIENCE_MAX_WORDS = 12;
 const SR_STALL_MS = 2000;
 const STALL_EXTEND_COOLDOWN_MS = 2000;
@@ -118,6 +119,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let stallExtendCount = 0;
   let absoluteMaxTimer: ReturnType<typeof setTimeout> | null = null;
   let recordingTimersArmed = false;
+  let previewCharsAtLastExtend = 0;
 
   const armRecordingTimers = () => {
     if (recordingTimersArmed || !active) return;
@@ -160,8 +162,14 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     const bytes = totalAudioBytes();
     // Raise threshold well above room-tone/ambient noise byte rate.
     if (bytes < audioBytesAtLastSpeech + 6000) return;
+    // Conversational: don't extend on room tone if the live preview hasn't grown.
+    const previewLen = effectivePreview().length;
+    if (opts.conversational && previewLen <= previewCharsAtLastExtend && previewLen < (opts.minCharsForAutoSubmit ?? DEFAULT_MIN_CHARS)) {
+      return;
+    }
     stallExtendCount += 1;
     lastStallExtendAt = now;
+    previewCharsAtLastExtend = previewLen;
     lastSpeechAt = now;
     takeYourTimeFired = false;
     setPhase("listening");
@@ -179,6 +187,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     readyTimer = null;
     restartTimer = null;
     hardTimeoutTimer = null;
+  };
+
+  const clearUiTimers = () => {
+    if (thinkingTimer) clearTimeout(thinkingTimer);
+    if (takeYourTimeTimer) clearTimeout(takeYourTimeTimer);
+    thinkingTimer = null;
+    takeYourTimeTimer = null;
   };
 
   const clearAbsoluteMax = () => {
@@ -215,7 +230,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const hasEnoughToSubmit = (): boolean => {
     const min = opts.minCharsForAutoSubmit ?? DEFAULT_MIN_CHARS;
-    return effectivePreview().length >= min || audioChunks.length > 0;
+    const preview = effectivePreview();
+    if (preview.length >= min) return true;
+    if (opts.conversational && totalAudioBytes() >= MIN_AUDIO_BYTES_FOR_HANDOFF) return true;
+    return false;
   };
 
   const pushPreview = (final: string, interim: string) => {
@@ -328,8 +346,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
           const msg = JSON.parse(e.data) as { event: string };
           if (msg.event === "ready") {
             turnServiceReady = true;
-            clearTimers(); // cancel fallback timers — Smart Turn is live
-            startPCMStream(micStream);
+            clearUiTimers();
+            void startPCMStream(micStream).then((ok) => {
+              if (!ok && active && !autoSubmitFired) scheduleFallbackTimers();
+            });
+            // Keep browser silence timers as backup — Smart Turn can miss on some devices.
+            scheduleFallbackTimers();
           } else if (msg.event === "speech_start") {
             markSpeechActivity();
             takeYourTimeFired = false;
@@ -376,7 +398,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     }
   };
 
-  const startPCMStream = async (micStream: MediaStream) => {
+  const startPCMStream = async (micStream: MediaStream): Promise<boolean> => {
     try {
       audioCtx = new AudioContext({ sampleRate: 16000 });
       await audioCtx.audioWorklet.addModule("/pcm-processor.js");
@@ -390,8 +412,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
           turnWs.send(e.data);
         }
       };
+      return true;
     } catch {
       // AudioWorklet failed (e.g. Firefox without support) — keep fallback timers
+      return false;
     }
   };
 
@@ -557,6 +581,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioBytesAtLastSpeech = 0;
       lastStallExtendAt = 0;
       stallExtendCount = 0;
+      previewCharsAtLastExtend = 0;
       recordingTimersArmed = false;
       setPhase("listening");
       if (!canRecord) {

@@ -52,7 +52,7 @@ SAMPLE_RATE = 16_000
 VAD_WINDOW = 512          # samples per Silero VAD call (~32ms at 16kHz)
 VAD_THRESHOLD = 0.45      # speech probability threshold
 MIN_SPEECH_MS = 400       # ignore noise bursts shorter than this
-SILENCE_AFTER_SPEECH_MS = 900   # silence needed after speech to fire turn_complete
+SILENCE_AFTER_SPEECH_MS = 750   # silence needed after speech to fire turn_complete
 WATCHDOG_MS = 25_000      # fire turn_complete even if VAD never sees silence
 
 
@@ -116,6 +116,7 @@ async def turn_detection(websocket: WebSocket):
             buf = np.concatenate([buf, chunk])
 
             # Process in VAD_WINDOW-sized windows
+            window_ms = int(VAD_WINDOW / SAMPLE_RATE * 1000)
             while len(buf) >= VAD_WINDOW:
                 window = buf[:VAD_WINDOW]
                 buf = buf[VAD_WINDOW:]
@@ -123,9 +124,13 @@ async def turn_detection(websocket: WebSocket):
 
                 speech_dict = vad_iter(tensor, return_seconds=False)
 
+                if speech_active and not speech_dict:
+                    speech_ms_accumulated += window_ms
+
                 if speech_dict:
                     if "start" in speech_dict:
                         speech_active = True
+                        speech_ms_accumulated = 0
                         cancel_silence()
                         # Start watchdog on first speech
                         if watchdog_task is None:
@@ -137,8 +142,6 @@ async def turn_detection(websocket: WebSocket):
 
                     elif "end" in speech_dict and speech_active:
                         speech_active = False
-                        # Only act if we've accumulated enough speech
-                        speech_ms_accumulated += int(VAD_WINDOW / SAMPLE_RATE * 1000)
                         if speech_ms_accumulated >= MIN_SPEECH_MS:
                             try:
                                 await websocket.send_text(json.dumps({"event": "speech_end"}))
@@ -146,6 +149,7 @@ async def turn_detection(websocket: WebSocket):
                                 pass
                             cancel_silence()
                             silence_task = asyncio.create_task(silence_countdown())
+                        speech_ms_accumulated = 0
 
     except WebSocketDisconnect:
         log.info("Client disconnected")

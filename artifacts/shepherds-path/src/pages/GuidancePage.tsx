@@ -309,14 +309,12 @@ function resolvePhilipOrbMode(opts: {
     || opts.followUpSpeaking
     || opts.phase2Loading;
 
+  // Mic icon only while capture is actually open — not merely because the phase allows input.
   const listening =
     opts.entryMicLive
     || opts.micArming
-    || opts.heartListening
     || opts.phase1MicLive
-    || opts.phase1Listening
-    || opts.followUpMicLive
-    || opts.followUpListening;
+    || opts.followUpMicLive;
 
   if (opts.showThresholdOverlay) {
     if (speaking) return "speak";
@@ -1550,9 +1548,23 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
-        const preview = (heartVoiceRef.current?.getPreview() ?? heartInput).trim();
-        // Silence without real speech must not start a session (ambient audio alone is not enough).
-        if (preview.length < GUIDANCE_INPUT_MIN) return;
+        const listener = heartVoiceRef.current;
+        const preview = (listener?.getPreview() ?? heartInput).trim();
+        const hasAudio = listener?.hasRecordedAudio();
+        if (preview.length < GUIDANCE_INPUT_MIN && !hasAudio) {
+          listener?.destroy();
+          heartVoiceRef.current = null;
+          window.setTimeout(() => {
+            if (
+              convoRef.current.phase === "entry"
+              && !heartSubmittingRef.current
+              && !heartVoiceRef.current?.isActive()
+            ) {
+              startHeartListeningRef.current(true);
+            }
+          }, 400);
+          return;
+        }
         submitHeartEntryRef.current(preview, true);
       },
     });
@@ -1653,8 +1665,23 @@ export default function GuidancePage() {
       },
       onAutoSubmit: () => {
         if (phase1SubmittingRef.current || phase2LoadingRef.current || processingBridgeRef.current || !phase1ResponseRef.current) return;
-        const preview = (phase1VoiceRef.current?.getPreview() ?? phase1UserReply).trim();
-        if (preview.length < GUIDANCE_INPUT_MIN) return;
+        const listener = phase1VoiceRef.current;
+        const preview = (listener?.getPreview() ?? phase1UserReply).trim();
+        const hasAudio = listener?.hasRecordedAudio();
+        if (preview.length < GUIDANCE_INPUT_MIN && !hasAudio) {
+          listener?.destroy();
+          phase1VoiceRef.current = null;
+          window.setTimeout(() => {
+            if (
+              convoRef.current.phase === "p1-reply"
+              && !phase1SubmittingRef.current
+              && !phase1VoiceRef.current?.isActive()
+            ) {
+              startPhase1ListeningRef.current?.();
+            }
+          }, 400);
+          return;
+        }
         handlePhase1ContinueRef.current(preview, true);
       },
     });
