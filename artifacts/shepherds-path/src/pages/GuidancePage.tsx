@@ -648,6 +648,8 @@ export default function GuidancePage() {
   const heartSubmittingRef = useRef(false);
   const phase1SubmittingRef = useRef(false);
   const [voiceConversation, setVoiceConversation] = useState(false);
+  const voiceConversationRef = useRef(voiceConversation);
+  useEffect(() => { voiceConversationRef.current = voiceConversation; }, [voiceConversation]);
   // phase1Speaking is now derived from convo machine
 
   // ── No-op stubs for machine-managed state ─────────────────────────────────
@@ -1651,6 +1653,11 @@ export default function GuidancePage() {
         setMicArming(false);
         setEntryMicLive(false);
         if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
+          if (listener?.hasRecordedAudio()) {
+            setVoiceHandoffPending(true);
+            listener.forceSubmit();
+            return;
+          }
           listener?.destroy();
           heartVoiceRef.current = null;
           window.setTimeout(() => {
@@ -1754,24 +1761,23 @@ export default function GuidancePage() {
         phase1VoiceRef.current = null;
         if (
           isPhilipMode()
-          && voiceConversation
           && convoRef.current.phase === "p1-reply"
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && phase1ResponseRef.current
           && canSubmit
         ) {
+          setVoiceHandoffPending(true);
           handlePhase1ContinueRef.current(preview, true);
           return;
         }
         if (
           isPhilipMode()
-          && voiceConversation
           && convoRef.current.phase === "p1-reply"
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && preview.length < 2
-          && phase1MicRetryRef.current < 2
+          && phase1MicRetryRef.current < 1
         ) {
           phase1MicRetryRef.current += 1;
           window.setTimeout(() => {
@@ -1792,6 +1798,11 @@ export default function GuidancePage() {
         const listener = phase1VoiceRef.current;
         const preview = (listener?.getPreview() ?? phase1UserReply).trim();
         if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
+          if (listener?.hasRecordedAudio()) {
+            setVoiceHandoffPending(true);
+            listener.forceSubmit();
+            return;
+          }
           listener?.destroy();
           phase1VoiceRef.current = null;
           window.setTimeout(() => {
@@ -1892,7 +1903,6 @@ export default function GuidancePage() {
         followUpVoiceRef.current = null;
         if (
           isPhilipMode()
-          && voiceConversation
           && convoRef.current.phase === "fu-reply"
           && !followUpSubmittingRef.current
           && !isSendingRef.current
@@ -1903,12 +1913,11 @@ export default function GuidancePage() {
         }
         if (
           isPhilipMode()
-          && voiceConversation
           && convoRef.current.phase === "fu-reply"
           && !followUpSubmittingRef.current
           && !isSendingRef.current
           && preview.length < 2
-          && followUpMicRetryRef.current < 2
+          && followUpMicRetryRef.current < 1
         ) {
           followUpMicRetryRef.current += 1;
           window.setTimeout(() => {
@@ -2463,6 +2472,43 @@ export default function GuidancePage() {
   const handlePhase1ContinueRef = useRef(handlePhase1Continue);
   handlePhase1ContinueRef.current = handlePhase1Continue;
 
+  const handlePhilipOrbTap = useCallback(() => {
+    if (!isPhilipMode() || !hasSpeechSupport) return;
+    const phase = convoRef.current.phase;
+    if (phase === "entry") {
+      const listener = heartVoiceRef.current;
+      if (listener?.isActive()) {
+        setVoiceHandoffPending(true);
+        listener.forceSubmit();
+        return;
+      }
+      const preview = (listener?.getPreview() ?? heartInput).trim();
+      if (preview.length >= GUIDANCE_INPUT_MIN || listener?.canAutoSubmit()) {
+        setVoiceHandoffPending(true);
+        submitHeartEntryRef.current(preview, true);
+      }
+    } else if (phase === "p1-reply") {
+      const listener = phase1VoiceRef.current;
+      if (listener?.isActive()) {
+        setVoiceHandoffPending(true);
+        listener.forceSubmit();
+        return;
+      }
+      const preview = (listener?.getPreview() ?? phase1UserReply).trim();
+      if (preview.length >= GUIDANCE_INPUT_MIN || listener?.canAutoSubmit()) {
+        setVoiceHandoffPending(true);
+        handlePhase1ContinueRef.current(preview, true);
+      }
+    } else if (phase === "fu-reply") {
+      const listener = followUpVoiceRef.current;
+      if (listener?.isActive()) {
+        listener.forceSubmit();
+        return;
+      }
+      submitFollowUpRef.current(true, followUp);
+    }
+  }, [hasSpeechSupport, heartInput, phase1UserReply, followUp]);
+
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -2811,13 +2857,20 @@ export default function GuidancePage() {
         {/* Single voice orb — follows the conversation after threshold */}
         {philipOrbMode && !showThresholdOverlay && (
           <div
-            className="fixed left-1/2 z-30 pointer-events-none flex flex-col items-center gap-2"
+            className={`fixed left-1/2 z-30 flex flex-col items-center gap-2 ${
+              philipHandsFreeVoice && philipOrbMode === "listen" ? "pointer-events-auto" : "pointer-events-none"
+            }`}
             style={{
               bottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
               transform: "translateX(-50%)",
             }}
           >
-            <VoiceSessionOrb mode={philipOrbMode} size={88} key={philipOrbMode} />
+            <VoiceSessionOrb
+              mode={philipOrbMode}
+              size={88}
+              key={philipOrbMode}
+              onClick={philipHandsFreeVoice && philipOrbMode === "listen" ? handlePhilipOrbTap : undefined}
+            />
             {philipHandsFreeVoice && philipOrbMode === "listen" && (
               <VoiceQuietHint visible={voiceQuietHintVisible} />
             )}

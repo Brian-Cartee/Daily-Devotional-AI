@@ -12,6 +12,8 @@ export type PatientVoiceListener = {
   hasRecordedAudio: () => boolean;
   /** Enough preview text or captured audio for conversational handoff */
   canAutoSubmit: () => boolean;
+  /** User done speaking — submit now (orb tap / escape hatch) */
+  forceSubmit: () => void;
   getPreview: () => string;
   finalizeTranscript: () => Promise<string>;
   isActive: () => boolean;
@@ -56,6 +58,7 @@ function turnServiceUrl(): string {
 const FALLBACK_AUTO_SUBMIT_MS = 1_200;
 const DEFAULT_MIN_CHARS = 8;
 const MIN_AUDIO_BYTES_FOR_HANDOFF = 2_500;
+const MIN_AUDIO_BYTES_FOR_HANDOFF_IOS = 1_000;
 const POST_SPEECH_SUBMIT_MS = 850;
 const ANALYSER_POLL_MS = 120;
 /** Time-domain RMS above this ≈ user speaking (0–100 scale). */
@@ -152,12 +155,62 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let analyserInSpeech = false;
   let utteranceEndTimer: ReturnType<typeof setTimeout> | null = null;
   let utteranceEndArmed = false;
+  let lastSrActivityAt = 0;
+  let srHandoffPoll: ReturnType<typeof setInterval> | null = null;
+  let baselineRmsSamples: number[] = [];
+  let baselineCalibrated = false;
+  let dynamicSpeechTh: number | null = null;
+  let dynamicQuietTh: number | null = null;
 
   const rmsSpeechThreshold = () =>
-    preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD;
+    dynamicSpeechTh ?? (preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD);
 
   const rmsQuietThreshold = () =>
-    preferLocalSilenceDetection() ? RMS_QUIET_THRESHOLD_IOS : RMS_QUIET_THRESHOLD;
+    dynamicQuietTh ?? (preferLocalSilenceDetection() ? RMS_QUIET_THRESHOLD_IOS : RMS_QUIET_THRESHOLD);
+
+  const minAudioBytesForHandoff = () =>
+    preferLocalSilenceDetection() ? MIN_AUDIO_BYTES_FOR_HANDOFF_IOS : MIN_AUDIO_BYTES_FOR_HANDOFF;
+
+  const touchSrActivity = () => {
+    lastSrActivityAt = Date.now();
+    onNewSpeechBurst();
+  };
+
+  const clearSrHandoffPoll = () => {
+    if (srHandoffPoll) clearInterval(srHandoffPoll);
+    srHandoffPoll = null;
+  };
+
+  /** Primary iOS handoff — silence since last SR preview, immune to AC in the RMS dead band. */
+  const startSrHandoffPoll = () => {
+    if (!opts.conversational || !preferLocalSilenceDetection()) return;
+    clearSrHandoffPoll();
+    srHandoffPoll = setInterval(() => {
+      if (!active || autoSubmitFired || !userSpeechDetected || lastSrActivityAt <= 0) return;
+      const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
+      const silentMs = Date.now() - lastSrActivityAt;
+      if (silentMs < pause) return;
+      if (hasEnoughToSubmit()) {
+        triggerAutoSubmit();
+        return;
+      }
+      // SR quiet but audio captured — Whisper can recover the words.
+      if (silentMs >= pause + 400 && totalAudioBytes() >= minAudioBytesForHandoff()) {
+        triggerAutoSubmit();
+      }
+    }, 200);
+  };
+
+  const calibrateRmsBaseline = (rms: number) => {
+    if (baselineCalibrated || !opts.conversational || !preferLocalSilenceDetection()) return;
+    baselineRmsSamples.push(rms);
+    if (baselineRmsSamples.length < 12) return;
+    const sorted = [...baselineRmsSamples].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    dynamicQuietTh = Math.max(RMS_QUIET_THRESHOLD, median + 1.5);
+    dynamicSpeechTh = Math.max(RMS_SPEECH_THRESHOLD, median + 5);
+    baselineCalibrated = true;
+  };
 
   const clearUtteranceEndHandoff = () => {
     if (utteranceEndTimer) clearTimeout(utteranceEndTimer);
@@ -205,6 +258,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     recordingTimersArmed = true;
     scheduleFallbackTimers();
     startSilencePoll();
+    startSrHandoffPoll();
     absoluteMaxTimer = setTimeout(() => {
       absoluteMaxTimer = null;
       if (!active || autoSubmitFired) return;
@@ -252,6 +306,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       analyserPoll = setInterval(() => {
         if (!active || autoSubmitFired) return;
         const rms = rmsFromAnalyser();
+        calibrateRmsBaseline(rms);
         const speechTh = rmsSpeechThreshold();
         const quietTh = rmsQuietThreshold();
 
@@ -411,7 +466,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     const min = opts.minCharsForAutoSubmit ?? DEFAULT_MIN_CHARS;
     const preview = effectivePreview();
     if (preview.length >= min) return true;
-    if (opts.conversational && totalAudioBytes() >= MIN_AUDIO_BYTES_FOR_HANDOFF) return true;
+    if (opts.conversational && totalAudioBytes() >= minAudioBytesForHandoff()) return true;
     return false;
   };
 
@@ -429,6 +484,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     recordingTimersArmed = false;
     clearTimers();
     clearSilencePoll();
+    clearSrHandoffPoll();
     clearAbsoluteMax();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
@@ -468,6 +524,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     // absoluteMax can't fire a second submit and onAutoSubmit is guaranteed.
     clearTimers();
     clearSilencePoll();
+    clearSrHandoffPoll();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
     teardownAnalyser();
@@ -676,16 +733,17 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         previewTranscript = (previewTranscript ? `${previewTranscript} ${finalChunk}` : finalChunk).trim();
         userSpeechDetected = true;
         markSpeechActivity(true);
+        if (opts.conversational) touchSrActivity();
         takeYourTimeFired = false;
         setPhase("listening");
         pushPreview(previewTranscript, interim);
         if (!opts.conversational) {
           scheduleFallbackTimers();
         }
-      } else if (interim.trim().length >= 4) {
+      } else if (interim.trim().length >= 2) {
         userSpeechDetected = true;
         if (opts.conversational) {
-          onNewSpeechBurst();
+          touchSrActivity();
         } else {
           markSpeechActivity(false);
         }
@@ -701,7 +759,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         return;
       }
       if (userSpeechDetected) {
-        schedulePostSpeechSubmit();
+        armUtteranceEndHandoff();
+      }
+    };
+
+    recognition.onstart = () => {
+      if (opts.conversational && lastSrActivityAt <= 0) {
+        lastSrActivityAt = Date.now();
       }
     };
 
@@ -792,6 +856,11 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       quietSince = null;
       analyserInSpeech = false;
       clearUtteranceEndHandoff();
+      lastSrActivityAt = 0;
+      baselineRmsSamples = [];
+      baselineCalibrated = false;
+      dynamicSpeechTh = null;
+      dynamicQuietTh = null;
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
@@ -816,6 +885,11 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     },
     canAutoSubmit() {
       return hasEnoughToSubmit();
+    },
+    forceSubmit() {
+      if (!active || autoSubmitFired) return;
+      userSpeechDetected = true;
+      triggerAutoSubmit();
     },
     getPreview() {
       return effectivePreview();
