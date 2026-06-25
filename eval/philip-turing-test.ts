@@ -20,7 +20,13 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { SCENARIOS, type Scenario } from "./scenarios.js";
-import { findPostSendOffViolation } from "../artifacts/api-server/src/conversationState.ts";
+import {
+  GOLDEN_15_IDS,
+  SMOKE_CORE_IDS,
+  FEATURE_SCENARIO_IDS,
+  GATE_MIN_PASS_RATE,
+} from "./golden.js";
+import { findPostSendOffViolation, questionInventsRelationship } from "../artifacts/api-server/src/conversationState.ts";
 import { PHILIP_RUNTIME_VERSION } from "../artifacts/api-server/src/philip-runtime/version.ts";
 import { parseTurnHeaders } from "../artifacts/api-server/src/philip-runtime/runtime/headers.ts";
 
@@ -36,6 +42,8 @@ const MAX_EXCHANGES   = args.includes("--exchanges") ? parseInt(args[args.indexO
 const USE_LOCAL       = args.includes("--local");
 const USE_SMOKE       = args.includes("--smoke");
 const USE_FEATURES    = args.includes("--features");
+const USE_GOLDEN      = args.includes("--golden");
+const USE_GATE        = args.includes("--gate");
 
 // Engagement check fires after this exchange — 60% through, minimum exchange 6
 const ENGAGEMENT_CHECK_AT = Math.min(6, Math.floor(MAX_EXCHANGES * 0.6));
@@ -44,22 +52,9 @@ const BASE_URL = USE_LOCAL
   ? "http://localhost:8080"
   : "https://www.shepherdspathai.com";
 
-// ── Fixed smoke core — same 5 scenarios every default run ──────────────────
-// Covers our known failure modes. Comparable across runs (no selection variance).
-const SMOKE_CORE_IDS = [
-  "grief-01",   // raw grief, short — "My husband died three weeks ago"
-  "short-02",   // ambiguous ultra-short — "Can't do this anymore."
-  "guard-01",   // skeptical/reluctant — "My wife made me download this"
-  "doubt-01",   // faith crisis — "I feel nothing when I pray"
-  "wall-01",    // multi-issue overwhelm — everything at once
-] as const;
+// ── Fixed smoke core — imported from golden.ts ─────────────────────────────
 
 /** Targeted lanes — run with --features before full smoke. */
-const FEATURE_SCENARIO_IDS = [
-  "dependency-01",
-  "sendoff-01",
-  "continuity-01",
-] as const;
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -594,8 +589,14 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
 
 // ── Scenario Selection ────────────────────────────────────────────────────────
 
-function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean): Scenario[] {
+function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean, useGolden: boolean): Scenario[] {
   const byId = new Map(pool.map(s => [s.id, s]));
+
+  if (useGolden) {
+    return (GOLDEN_15_IDS as readonly string[])
+      .map(id => byId.get(id))
+      .filter((s): s is Scenario => !!s);
+  }
 
   if (useFeatures) {
     return (FEATURE_SCENARIO_IDS as readonly string[])
@@ -795,11 +796,15 @@ async function main() {
   else if (FILTER_CATEGORY) pool = pool.filter(s => s.category.includes(FILTER_CATEGORY));
 
   // Default (no filter flags) always uses the smoke set for comparable runs
-  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES);
-  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES);
+  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES && !USE_GOLDEN);
+  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES, USE_GOLDEN);
 
   const target = USE_LOCAL ? `local (${BASE_URL})` : `live (${BASE_URL})`;
-  const modeNote = USE_FEATURES ? " [feature lanes]" : (useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "");
+  const modeNote = USE_GOLDEN
+    ? " [golden 15]"
+    : USE_FEATURES
+      ? " [feature lanes]"
+      : (useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "");
   console.log("\n" + bold("Philip Turing Test"));
   console.log(dim(`${selectedScenarios.length} scenarios${modeNote} · ${MAX_EXCHANGES} exchanges each · ${target}`));
   console.log(dim("─".repeat(80)));
@@ -903,6 +908,41 @@ async function main() {
         })),
     })),
   }, null, 2));
+
+  if (USE_GATE) {
+    const gateFailures: string[] = [];
+    if (passRate < GATE_MIN_PASS_RATE) {
+      gateFailures.push(`pass rate ${passRate}% < ${GATE_MIN_PASS_RATE}%`);
+    }
+    for (const r of scoredResults) {
+      if (r.sendOffViolation) {
+        gateFailures.push(`${r.scenario.id}: ${r.sendOffViolation}`);
+      }
+      const seen = r.philipRuntimeVersionSeen;
+      if (seen && seen !== PHILIP_RUNTIME_VERSION) {
+        gateFailures.push(`${r.scenario.id}: runtime ${seen} != expected ${PHILIP_RUNTIME_VERSION}`);
+      }
+      const hasRuntimeMeta = r.exchanges.some(e => e.exchangeNum >= 2 && e.philipRuntime?.philipRuntimeVersion);
+      if (!hasRuntimeMeta && !r.error) {
+        gateFailures.push(`${r.scenario.id}: missing Philip Runtime headers on follow-up`);
+      }
+      for (const e of r.exchanges) {
+        if (e.exchangeNum < 2 || !e.philipResponse.includes("?")) continue;
+        const userMsgs = r.exchanges
+          .filter(x => x.exchangeNum <= e.exchangeNum)
+          .map(x => x.userMessage);
+        if (questionInventsRelationship(e.philipResponse, userMsgs)) {
+          gateFailures.push(`${r.scenario.id} #${e.exchangeNum}: invented relationship in question`);
+        }
+      }
+    }
+    if (gateFailures.length > 0) {
+      console.log("\n" + red(bold("GATE FAILED")));
+      for (const f of gateFailures) console.log(red(`  • ${f}`));
+      process.exit(1);
+    }
+    console.log("\n" + green(bold(`GATE PASSED — ${passRate}% pass, Philip Runtime ${PHILIP_RUNTIME_VERSION} confirmed`)));
+  }
 }
 
 main().catch(err => {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# THE correct deploy command. Always run this from your Mac.
+# Optional pre-deploy quality gate (~25 min live): cd eval && npm run turing:gate
+# Skip with: SKIP_TURING_GATE=1 bash scripts/deploy.sh
 # Usage: bash scripts/deploy.sh
 #
 # What it does:
@@ -17,6 +18,12 @@ APP_ORIGIN="https://www.shepherdspathai.com"
 if [[ ! -f "$LIGHTSAIL_KEY" ]]; then
   echo "ERROR: SSH key not found at $LIGHTSAIL_KEY"
   exit 1
+fi
+
+if [[ "${SKIP_TURING_GATE:-}" != "1" ]] && [[ "${RUN_TURING_GATE:-}" == "1" ]]; then
+  echo "==> Running Philip Turing gate (golden 15)..."
+  (cd eval && npm run turing:gate) || exit 1
+  echo "    Gate passed."
 fi
 
 # ── 1. Push to GitHub ──────────────────────────────────────────────────────────

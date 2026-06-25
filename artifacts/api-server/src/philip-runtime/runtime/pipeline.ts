@@ -42,6 +42,8 @@ import {
   isBannedQuestion,
   isPureEcho,
   containsMysticalColdRead,
+  finalizeSendOffText,
+  questionInventsRelationship,
   sanitizeSendOffText,
   type ConversationState,
   type PhilipMove,
@@ -361,12 +363,15 @@ const validateAndFixQuestion = async (
   guarded = false,
 ): Promise<string> => {
   const lastUser = [...history].reverse().find(m => m.role === "user")?.content ?? "";
+  const userMsgs = history.filter(m => m.role === "user").map(m => m.content);
+  const factsLearned = conversationState?.facts_learned ?? [];
   const priorExplored = priorSessionContinuity?.memory.explored?.filter(Boolean) ?? [];
 
   const isInvalid = (q: string) =>
     !q?.trim()
     || isBannedQuestion(q)
     || containsMysticalColdRead(q)
+    || questionInventsRelationship(q, userMsgs, factsLearned)
     || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser);
 
   if (!isInvalid(question)) return question;
@@ -374,7 +379,9 @@ const validateAndFixQuestion = async (
   const revisitsPrior = shouldRejectPriorExploredQuestion(question, priorExplored, lastUser);
   const rejectionNote = revisitsPrior
     ? `\n\n[REJECTED — revisits prior session explored area (${priorExplored.join("; ")}). Pick fresh territory not listed under PRIOR SESSION — DO NOT RE-ASK.]`
-    : "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']";
+    : questionInventsRelationship(question, userMsgs, factsLearned)
+      ? "\n\n[REJECTED — names a person or relationship the user never mentioned. Ask only about what they actually named.]"
+      : "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']";
 
   try {
     const retried = await generateNextQuestion(
@@ -482,8 +489,10 @@ let usedMechanicalConstruction = false;
     } else if (isSendOff) {
       lane = "session_send_off";
       engine = "claude";
-      phase2Text = sanitizeSendOffText(
+      const priorTexts = claudeHistory.filter(m => m.role === "assistant").map(m => m.content);
+      phase2Text = finalizeSendOffText(
         await generatePhase2WithClaude(PHILIP_SESSION_SEND_OFF_SYSTEM, claudeHistory, "", 100),
+        priorTexts,
       );
       usedMechanicalConstruction = true;
       metadata.mechanical = true;

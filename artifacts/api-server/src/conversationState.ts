@@ -334,6 +334,29 @@ export function isBannedQuestion(question: string): boolean {
   return BANNED_QUESTION_PATTERNS.some(p => p.test(question));
 }
 
+/** Relationship roles Philip must not invent if the user never named them. */
+const INVENTABLE_RELATIONSHIP_TERMS = [
+  "wife", "husband", "spouse", "partner", "girlfriend", "boyfriend",
+  "mom", "mother", "dad", "father", "son", "daughter", "brother", "sister",
+  "pastor", "boss", "coworker", "therapist", "counselor",
+];
+
+/** True when a question names a person-role the user never mentioned. */
+export function questionInventsRelationship(
+  question: string,
+  userMessages: string[],
+  factsLearned: string[] = [],
+): boolean {
+  const context = [...userMessages, ...factsLearned].join(" ").toLowerCase();
+  const q = question.toLowerCase();
+  for (const term of INVENTABLE_RELATIONSHIP_TERMS) {
+    const re = new RegExp(`\\b${term}\\b`, "i");
+    if (re.test(q) && !re.test(context)) return true;
+  }
+  return false;
+}
+
+
 /** True if Philip recycled an opener he already used this conversation. */
 export function recyclesPhilipOpener(
   philipText: string,
@@ -506,6 +529,11 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
     return pick(["sit", "plain_question"]);
   }
 
+  // Mid conversation (5+) — break echo/formula loops early
+  if (exchangeNum >= 5 && (echoStreak >= 1 || formulaStreak >= 2)) {
+    return pick(["plain_question", "plain_question", "skip", "sit"]);
+  }
+
   // Deep conversation — plain_question dominates (~80%)
   if (exchangeNum >= 7) {
     return pick(["plain_question", "plain_question", "plain_question", "skip", "sit"]);
@@ -608,14 +636,54 @@ export function sanitizeSendOffText(text: string): string {
   return text.replace(/\?+/g, ".").replace(/\s+/g, " ").trim();
 }
 
+const STOCK_SEND_OFF_SNIPPETS = [
+  "this door stays open",
+  "go gently",
+  "enough for tonight",
+  "enough for today",
+  "enough for now",
+  "when you're ready",
+];
+
+const SEND_OFF_ALTERNATES = [
+  "You named enough for one day. Put it down — it will still be here.",
+  "What you brought is real. You don't have to carry all of it tonight.",
+  "Something honest happened in this room. That's enough for now.",
+  "Rest in what you already named. It's still here when you return.",
+  "You don't have to go deeper right now. Come back when you want to.",
+];
+
+/** Avoid recycling the same stock send-off Philip already used this session. */
+export function finalizeSendOffText(text: string, priorPhilipTexts: string[]): string {
+  let result = sanitizeSendOffText(text);
+  const prior = priorPhilipTexts.map((t) => t.toLowerCase()).join("\n");
+  const resultLower = result.toLowerCase();
+
+  const repeatsStock = STOCK_SEND_OFF_SNIPPETS.some(
+    (snippet) => resultLower.includes(snippet) && prior.includes(snippet),
+  );
+  if (!repeatsStock) return result;
+
+  for (let i = 0; i < SEND_OFF_ALTERNATES.length; i++) {
+    const alt = SEND_OFF_ALTERNATES[i];
+    const altLower = alt.toLowerCase();
+    const altRepeats = STOCK_SEND_OFF_SNIPPETS.some(
+      (snippet) => altLower.includes(snippet) && prior.includes(snippet),
+    );
+    if (!altRepeats) return alt;
+  }
+  return SEND_OFF_ALTERNATES[priorPhilipTexts.length % SEND_OFF_ALTERNATES.length];
+}
+
 /** Brief closure after session send-off — no question, no reopening. */
-export function buildPostSendOffResponse(exchangeNum: number): string {
+export function buildPostSendOffResponse(exchangeNum: number, priorPhilipTexts: string[] = []): string {
   const lines = [
-    "What you brought is enough for tonight. This door stays open when you're ready.",
+    "What you brought is enough for tonight. Rest — we'll pick it up when you return.",
     "You don't have to go deeper right now. Come back when you want to.",
     "Rest in what you already named. It's still here when you return.",
   ];
-  return lines[exchangeNum % lines.length];
+  const base = lines[exchangeNum % lines.length];
+  return finalizeSendOffText(base, priorPhilipTexts);
 }
 
 /** Long conversation — offer a sending line instead of another question (once). */

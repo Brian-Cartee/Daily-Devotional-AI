@@ -56,10 +56,11 @@ export function evaluatePreTurnGates(input: {
 
   if (alreadySentOff) {
     gates.push("already_sent_off", "post_send_off", "no_question_mode");
+    const priorTexts = philipMsgs.map((m) => m.content);
     return {
       gates,
       lane: "post_send_off",
-      shortCircuitText: buildPostSendOffResponse(exchangeNum),
+      shortCircuitText: buildPostSendOffResponse(exchangeNum, priorTexts),
       isClosing: false,
       alreadySentOff: true,
       needsDependency,
