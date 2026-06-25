@@ -95,11 +95,47 @@ const EXHAUSTION_PHRASES = [
   "tired of fighting",
 ];
 
+/** Hints at serious unsaid thoughts — not explicit SI. One quiet safety line, no hotline dump. */
+const AMBIGUOUS_RISK_PHRASES = [
+  "dark places",
+  "dark place",
+  "dark thoughts",
+  "goes to dark",
+  "go to dark",
+  "going to dark",
+  "wouldn't say out loud",
+  "wouldnt say out loud",
+  "won't say out loud",
+  "wont say out loud",
+  "can't say out loud",
+  "cant say out loud",
+  "don't say out loud",
+  "dont say out loud",
+  "never say out loud",
+  "stuff i wouldn't",
+  "things i wouldn't tell",
+  "things i won't tell",
+  "scared of what i might",
+  "afraid of what i might",
+  "thoughts i shouldn't",
+  "dark headspace",
+  "in a dark headspace",
+];
+
 export const EXHAUSTION_SYSTEM_NOTE = `
 
 SAFETY CHECK (internal — do not quote this block):
 The person sounds burned out or overwhelmed — not necessarily suicidal. Do NOT paste 988, crisis hotlines, or emergency resources unless they explicitly mention not wanting to live, self-harm, or suicide.
 Acknowledge the weight of exhaustion in one brief line, then ask one specific pastoral question. Never invent how many days they've visited or "come back here."`;
+
+export const AMBIGUOUS_RISK_SYSTEM_NOTE = `
+
+SAFETY CHECK (internal — do not quote this block):
+The person hinted at serious dark or unsaid thoughts without stating explicit self-harm or suicide.
+Include ONE brief line naming what you heard and asking if they are safe right now.
+Example: "You said some of this goes to places you don't say out loud — are you safe right now?"
+Do NOT paste 988, crisis hotlines, or emergency resources unless they explicitly mention not wanting to live, self-harm, or a plan.
+One line of care, then continue with one specific pastoral question. No lecture.`;
 
 const MEDICAL_EMERGENCY_PHRASES = [
   "took a bottle of pills",
@@ -255,6 +291,60 @@ function isExhaustionOnly(lower: string): boolean {
   return !matchesHighRiskAny(lower, HIGH_RISK_PHRASES);
 }
 
+function matchesAmbiguousRisk(lower: string): boolean {
+  if (matchesHighRiskAny(lower, HIGH_RISK_PHRASES)) return false;
+  return AMBIGUOUS_RISK_PHRASES.some((p) => {
+    if (!lower.includes(p)) return false;
+    return !isNegatedRiskPhrase(lower, p);
+  });
+}
+
+/** User hinted at dark/unsaid thoughts without explicit self-harm language. */
+export function detectAmbiguousRisk(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  if (!lower) return false;
+  return matchesAmbiguousRisk(lower);
+}
+
+export function conversationHadAmbiguousRiskCheck(
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  return philipMessages.some(m =>
+    /\b(are you safe|safe right now|safe tonight|okay tonight)\b/i.test(m.content),
+  );
+}
+
+export function needsAmbiguousRiskAck(
+  userMessage: string,
+  philipMessages: Array<{ content: string }>,
+): boolean {
+  if (!detectAmbiguousRisk(userMessage)) return false;
+  return !conversationHadAmbiguousRiskCheck(philipMessages);
+}
+
+export function prependAmbiguousRiskAck(response: string, exchangeNum: number): string {
+  const acks = [
+    "You said some of this goes to places you don't say out loud — are you safe right now?",
+    "Some of what you're carrying sounds heavier than exhaustion — are you okay tonight?",
+  ];
+  const ack = acks[exchangeNum % acks.length];
+  const trimmed = response.trim();
+  if (!trimmed) return ack;
+  return `${ack} ${trimmed}`;
+}
+
+/** Prepend a one-line safety check when user hints at dark/unsaid thoughts. */
+export function enforceAmbiguousRiskCheck(
+  response: string,
+  userMessage: string,
+  philipMessages: Array<{ content: string }>,
+  exchangeNum: number,
+): string {
+  if (!needsAmbiguousRiskAck(userMessage, philipMessages)) return response;
+  if (/\b(are you safe|safe right now|safe tonight|okay tonight)\b/i.test(response)) return response;
+  return prependAmbiguousRiskAck(response, exchangeNum);
+}
+
 function buildHighRiskResponse(text: string): string {
   const lower = text.toLowerCase();
   if (matchesAny(lower, IMMINENT_PHRASES)) {
@@ -281,6 +371,9 @@ function classifySingleText(text: string): SafetyScanResult {
   }
   if (matchesHighRiskAny(lower, HIGH_RISK_PHRASES)) {
     return { level: "high_risk", response: buildHighRiskResponse(text) };
+  }
+  if (matchesAmbiguousRisk(lower)) {
+    return { level: "concerning", systemNote: AMBIGUOUS_RISK_SYSTEM_NOTE };
   }
   if (isExhaustionOnly(lower)) {
     return { level: "concerning", systemNote: EXHAUSTION_SYSTEM_NOTE };

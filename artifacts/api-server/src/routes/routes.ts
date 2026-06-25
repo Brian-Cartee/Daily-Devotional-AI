@@ -69,6 +69,7 @@ import {
   scanGuidanceTexts,
   shouldBlockLlm,
   concerningSystemNote,
+  enforceAmbiguousRiskCheck,
   SAFETY_HEADER,
 } from "../guidanceSafety";
 import {
@@ -4367,6 +4368,16 @@ Under 40 words total.`;
           ...conversationHistory,
         ];
         phase2Text = await generatePhase2WithGPT(fullMessages);
+      }
+
+      if (isFollowUp && !conversationStateBlock.includes("CLOSING")) {
+        const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
+        const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
+        const lastUserMsg = [...claudeHistory].reverse().find(m => m.role === "user")?.content ?? "";
+        const exchangeNum = Math.floor(conversationHistory.length / 2);
+        const beforeRisk = phase2Text;
+        phase2Text = enforceAmbiguousRiskCheck(phase2Text, lastUserMsg, philipMsgs, exchangeNum);
+        if (phase2Text !== beforeRisk) usedMechanicalConstruction = true;
       }
 
       const qCount = questionMarkCount(phase2Text);
