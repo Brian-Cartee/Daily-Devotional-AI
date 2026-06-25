@@ -27,6 +27,8 @@ export type PatientVoiceOptions = {
   onAutoSubmit?: () => void;
   /** Listener stopped without submitting (getUserMedia failed, nothing captured, or forceStop) */
   onListenEnd?: () => void;
+  /** MediaRecorder actually started or stopped — drives live mic UI */
+  onMicLive?: (live: boolean) => void;
   conversational?: boolean;
   autoSubmitSilenceMs?: number;
   minCharsForAutoSubmit?: number;
@@ -73,6 +75,10 @@ function resolveConversationalAutoSubmitMs(words: number, override?: number): nu
   if (words >= 40) return 1600;
   if (words >= 20) return 1700;
   return FALLBACK_AUTO_SUBMIT_MS;
+}
+
+export function isLiveMediaStream(stream: MediaStream | null | undefined): boolean {
+  return !!stream?.getTracks().some((t) => t.readyState === "live" && t.enabled);
 }
 
 export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVoiceListener | null {
@@ -217,6 +223,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     teardownTurnService();
     try { rec?.stop(); } catch { /* noop */ }
     rec = null;
+    opts.onMicLive?.(false);
     void waitForRecorderStop();
     if (notifyListenEnd) opts.onListenEnd?.();
   };
@@ -490,10 +497,14 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   };
 
   const startMedia = async () => {
-    if (!canRecord) return;
+    if (!canRecord) {
+      endListening(true);
+      return;
+    }
     try {
-      stream = opts.preAcquiredStream
-        ?? await navigator.mediaDevices.getUserMedia({
+      stream = opts.preAcquiredStream && isLiveMediaStream(opts.preAcquiredStream)
+        ? opts.preAcquiredStream
+        : await navigator.mediaDevices.getUserMedia({
           audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
         });
       audioChunks = [];
@@ -506,6 +517,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         }
       };
       mediaRecorder.start(1000);
+      opts.onMicLive?.(true);
 
       // Start Smart Turn service (passes same stream for PCM; MediaRecorder keeps webm)
       setupTurnService(stream);

@@ -21,7 +21,7 @@ import { getSessionId } from "@/lib/session";
 import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { useConvoMachine } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
-import { createPatientVoiceListener, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
+import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
 import {
@@ -456,6 +456,8 @@ export default function GuidancePage() {
   const [showThresholdOverlay, setShowThresholdOverlay] = useState(true);
   const [overlayPulseVisible, setOverlayPulseVisible] = useState(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
+  const [micArming, setMicArming] = useState(false);
+  const micVisualLive = entryMicLive || micArming;
   useEffect(() => { localStorage.setItem("sp_guidance_visited", "1"); }, []);
 
   // Acquire the mic stream immediately on mount — we are still within the user's
@@ -466,7 +468,10 @@ export default function GuidancePage() {
     if (!navigator.mediaDevices?.getUserMedia) return;
     void navigator.mediaDevices.getUserMedia({
       audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
-    }).then(s => { preAcquiredMicRef.current = s; }).catch(() => { /* permission denied */ });
+    }).then(s => {
+      if (isLiveMediaStream(s)) preAcquiredMicRef.current = s;
+      else s.getTracks().forEach(t => t.stop());
+    }).catch(() => { /* permission denied */ });
     return () => {
       preAcquiredMicRef.current?.getTracks().forEach(t => t.stop());
       preAcquiredMicRef.current = null;
@@ -1327,6 +1332,8 @@ export default function GuidancePage() {
     setHeartListening(false);
     setHeartListenPhase("listening");
     setInterimTranscript("");
+    setEntryMicLive(false);
+    setMicArming(false);
   }, []);
 
   const destroyPhase1Voice = useCallback(() => {
@@ -1363,11 +1370,18 @@ export default function GuidancePage() {
     setGreetingSpeaking(false);
     setHeartShowContinue(false);
     setHeartListenPhase("listening");
+    setMicArming(true);
+    setEntryMicLive(false);
 
-    // Consume pre-acquired stream if available — avoids getUserMedia after greeting
-    // (transient activation has expired by then on iOS Safari).
-    const preStream = preAcquiredMicRef.current;
-    if (preStream) preAcquiredMicRef.current = null;
+    // Consume pre-acquired stream if still live — iOS may end tracks during Philip's TTS.
+    let preStream = preAcquiredMicRef.current;
+    if (preStream && !isLiveMediaStream(preStream)) {
+      preStream.getTracks().forEach(t => t.stop());
+      preStream = null;
+      preAcquiredMicRef.current = null;
+    } else if (preStream) {
+      preAcquiredMicRef.current = null;
+    }
 
     const listener = createPatientVoiceListener({
       conversational: true,
@@ -1380,9 +1394,19 @@ export default function GuidancePage() {
         setInterimTranscript(interim);
       },
       onPhaseChange: setHeartListenPhase,
+      onMicLive: (live) => {
+        setEntryMicLive(live);
+        if (live) setMicArming(false);
+      },
       onListenEnd: () => {
         setEntryMicLive(false);
+        setMicArming(false);
         heartVoiceRef.current = null;
+        if (autoMicStartedRef.current && !greetingEngagedRef.current) {
+          toast({
+            description: "Tap the mic when you're ready to speak.",
+          });
+        }
       },
       onAutoSubmit: () => {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
@@ -1390,19 +1414,23 @@ export default function GuidancePage() {
         submitHeartEntryRef.current(preview, true);
       },
     });
-    if (!listener) return;
+    if (!listener) {
+      setMicArming(false);
+      return;
+    }
     heartVoiceRef.current = listener;
     listener.start();
-    setEntryMicLive(true);
     setHeartHasRecording(true);
+    if (convo.phase === "greeting") convo.dispatch({ type: "GREETING_END" });
     convo.dispatch({ type: "ENTRY_OPEN" });
-  }, []);
+  }, [convo]);
 
   const startHeartListeningRef = useRef(startHeartListening);
   startHeartListeningRef.current = startHeartListening;
 
   const toggleHeartVoice = () => {
     if (heartListening) {
+      if (micArming) return;
       // entryMicLive=false while heartListening=true means the auto-mic attempt
       // failed (iOS blocked getUserMedia after transient activation expired).
       // A manual tap IS a user gesture — restart the mic instead of trying to submit.
@@ -2272,27 +2300,27 @@ export default function GuidancePage() {
               {/* Pure voice UI — mic only, no text */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
 
-                {/* Mic button — state-driven by entryMicLive (real mic state), not convo phase */}
+                {/* Mic button — red pulse only after MediaRecorder is live (or while arming) */}
                 <motion.button
                   type="button"
                   onClick={toggleHeartVoice}
-                  aria-label={entryMicLive ? "Stop speaking" : greetingSpeaking ? "Philip is speaking" : "Speak to Philip"}
-                  disabled={greetingSpeaking}
+                  aria-label={entryMicLive ? "Stop speaking" : micArming ? "Opening microphone" : greetingSpeaking ? "Philip is speaking" : "Speak to Philip"}
+                  disabled={greetingSpeaking || micArming}
                   style={{
                     width: "96px",
                     height: "96px",
                     borderRadius: "9999px",
-                    border: entryMicLive
+                    border: micVisualLive
                       ? "1.5px solid rgba(239,68,68,0.55)"
                       : greetingSpeaking
                         ? "1.5px solid rgba(255,255,255,0.08)"
                         : "1.5px solid rgba(255,255,255,0.15)",
-                    background: entryMicLive
+                    background: micVisualLive
                       ? "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(180,20,20,0.06) 100%)"
                       : greetingSpeaking
                         ? "radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)"
                         : "radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
-                    cursor: greetingSpeaking ? "default" : "pointer",
+                    cursor: greetingSpeaking || micArming ? "default" : "pointer",
                     position: "relative",
                     display: "flex",
                     alignItems: "center",
@@ -2305,6 +2333,13 @@ export default function GuidancePage() {
                       "0 0 0 0px rgba(239,68,68,0.0), 0 0 32px 8px rgba(239,68,68,0.30)",
                     ],
                     scale: [1, 1.05, 1],
+                  } : micArming ? {
+                    boxShadow: [
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
+                      "0 0 0 10px rgba(239,68,68,0.0), 0 0 28px 8px rgba(239,68,68,0.28)",
+                      "0 0 0 0px rgba(239,68,68,0.0), 0 0 20px 4px rgba(239,68,68,0.18)",
+                    ],
+                    scale: [1, 1.02, 1],
                   } : greetingSpeaking ? {
                     boxShadow: [
                       "0 0 0 0px rgba(255,255,255,0.0), 0 0 16px 4px rgba(255,255,255,0.06)",
@@ -2316,21 +2351,12 @@ export default function GuidancePage() {
                     boxShadow: "0 0 0 0px rgba(255,255,255,0.0)",
                     scale: 1,
                   }}
-                  transition={{ duration: entryMicLive ? 1.6 : greetingSpeaking ? 2.0 : 0.3, repeat: entryMicLive || greetingSpeaking ? Infinity : 0, ease: "easeInOut" }}
+                  transition={{ duration: entryMicLive ? 1.6 : micArming ? 1.2 : greetingSpeaking ? 2.0 : 0.3, repeat: micVisualLive || greetingSpeaking ? Infinity : 0, ease: "easeInOut" }}
                 >
-                  {entryMicLive && (
-                    <span style={{
-                      position: "absolute",
-                      inset: 0,
-                      borderRadius: "9999px",
-                      background: "rgba(239,68,68,0.10)",
-                      animation: "ping 1s cubic-bezier(0,0,0.2,1) infinite",
-                    }} />
-                  )}
                   <Mic
                     size={24}
                     style={{
-                      color: entryMicLive
+                      color: micVisualLive
                         ? "rgba(239,68,68,0.90)"
                         : greetingSpeaking
                           ? "rgba(255,255,255,0.20)"
@@ -2347,7 +2373,7 @@ export default function GuidancePage() {
                   fontSize: "11px",
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: entryMicLive
+                  color: micVisualLive
                     ? "rgba(239,68,68,0.60)"
                     : greetingSpeaking
                       ? "rgba(255,255,255,0.18)"
@@ -2356,7 +2382,7 @@ export default function GuidancePage() {
                   transition: "color 0.3s ease",
                   userSelect: "none",
                 }}>
-                  {entryMicLive ? "listening" : greetingSpeaking ? "speaking" : "tap to speak"}
+                  {entryMicLive ? "listening" : micArming ? "opening mic" : greetingSpeaking ? "speaking" : "tap to speak"}
                 </p>
 
                 {/* Type fallback — barely visible, always accessible */}
