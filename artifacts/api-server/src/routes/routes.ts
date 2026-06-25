@@ -60,7 +60,7 @@ import {
   TALK_IT_THROUGH_WALK_TODAY_SYSTEM_PROMPT,
 } from "../talkItThroughPrompt";
 import { buildVariantSystemPrompt, isAbTestEnabled, CRISIS_PROTOCOL } from "../talkItThroughVariants";
-import { generateConversationState, buildStatePromptBlock, detectConversationClosing, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, type ConversationState } from "../conversationState";
+import { generateConversationState, buildStatePromptBlock, detectConversationClosing, selectPhilipMove, getFormulaStreak, getLiteraryCooldownRemaining, detectPassiveSuicidalIdeation, userMessageHasFreshDetail, getEchoStreak, extractPhilipOpeners, shouldFallbackToPlainQuestion, isBannedQuestion, isPureEcho, type ConversationState, type PhilipMove } from "../conversationState";
 import { logAbInteraction, incrementMessageCount, detectCrisisSignal } from "../abTracking";
 import {
   CRISIS_RESPONSE,
@@ -4142,6 +4142,42 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
       return "";
     };
 
+    const validateAndFixQuestion = async (
+      question: string,
+      state: string,
+      history: Array<{ role: "user" | "assistant"; content: string }>,
+    ): Promise<string> => {
+      if (!question || !isBannedQuestion(question)) return question;
+      try {
+        const retried = await generateNextQuestion(
+          state + "\n\n[REJECTED QUESTION — used banned feel-like or echo pattern. Pick a completely different question. No 'feel like'. No quoting their words. Ask about a specific moment, person, or action.]",
+          history,
+        );
+        if (retried && !isBannedQuestion(retried)) return retried;
+      } catch { /* keep original */ }
+      return question;
+    };
+
+    const enforceAntiEcho = (
+      text: string,
+      userMsg: string,
+      priorOpeners: string[],
+      question: string,
+      move: PhilipMove | "sit",
+    ): string => {
+      if (!text.trim()) return text;
+      if (move === "plain_question" || move === "skip") return text;
+      if (shouldFallbackToPlainQuestion(text, userMsg, priorOpeners)) {
+        if (question.trim()) return question;
+      }
+      if (move === "sit" && isPureEcho(text, userMsg, 0.6)) {
+        // Sit that parrots — use a minimal grounded line without echo
+        const words = userMsg.split(/\s+/).filter(w => /^\d+$/.test(w) || /^[A-Z]/.test(w));
+        if (words[0]) return `${words[0]} — that part is still right here.`;
+      }
+      return text;
+    };
+
     // Step 2: write Philip's response anchored to the pre-chosen question
     const generatePhase2WithClaude = async (
       system: string,
@@ -4152,10 +4188,13 @@ Output only the question — no preamble, no explanation, no meta-commentary.`,
       const anchorInstruction = anchoredQuestion
         ? `\n\nYour response MUST end with this exact question (you may adjust wording slightly for flow, but stay faithful to its intent and keep it specific):\n"${anchoredQuestion}"`
         : "";
+      const antiEchoNote = anchoredQuestion
+        ? `\n\nCRITICAL: Do NOT open by quoting the user's words back. Do NOT put their sentence in quotation marks. If you add a preamble, it must name a NEW fact Philip has not said yet — never a mirror of their last message.`
+        : `\n\nCRITICAL: Do NOT parrot the user's last sentence. Name a specific fact or moment in your own words — never a verbatim echo.`;
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: maxTokens,
-        system: system + anchorInstruction,
+        system: system + antiEchoNote + anchorInstruction,
         messages: history,
       });
       for (const block of response.content) {
@@ -4228,20 +4267,23 @@ Under 40 words total.`;
           const priorUserMsgs = claudeHistory.filter(m => m.role === "user").slice(0, -1).map(m => m.content);
           const hasNewDetail = userMessageHasFreshDetail(lastUserMsg, priorUserMsgs);
           const movesUsed = conversationState?.moves_used ?? [];
+          const userMsgs = claudeHistory.filter(m => m.role === "user");
+          const echoStreak = getEchoStreak(philipMsgs, userMsgs);
+          const priorOpeners = conversationState?.philip_openers_used ?? extractPhilipOpeners(philipMsgs);
 
           const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
 
-          // Passive SI or forced sit — skip question planner; land weight only
           if (!forceSit && conversationStateBlock) {
             try {
               nextQuestion = await generateNextQuestion(conversationStateBlock, claudeHistory);
+              nextQuestion = await validateAndFixQuestion(nextQuestion, conversationStateBlock, claudeHistory);
             } catch {
               // Non-fatal — fall through to unanchored generation
             }
           }
 
           if (forceSit || nextQuestion) {
-            const selectedMove = forceSit ? "sit" : selectPhilipMove({
+            const selectedMove: PhilipMove | "sit" = forceSit ? "sit" : selectPhilipMove({
               lastMove: conversationState?.last_move,
               ackRegister: conversationState?.ack_register ?? null,
               literaryCooldownRemaining: conversationState?.literary_cooldown_remaining ?? getLiteraryCooldownRemaining(philipMsgs),
@@ -4252,6 +4294,7 @@ Under 40 words total.`;
               movesUsed,
               hasNewDetail,
               forceSit,
+              echoStreak,
             });
 
             if (selectedMove === "plain_question" && nextQuestion) {
@@ -4265,6 +4308,7 @@ Under 40 words total.`;
                 "",
                 60,
               );
+              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit");
             } else if (nextQuestion) {
               const moveNote = PHILIP_MOVE_TEMPLATES[selectedMove] ?? PHILIP_MOVE_TEMPLATES.plain_question;
               phase2Text = await generatePhase2WithClaude(
@@ -4273,6 +4317,7 @@ Under 40 words total.`;
                 nextQuestion,
                 selectedMove === "skip" ? 40 : 80,
               );
+              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove);
             }
             usedMechanicalConstruction = !!phase2Text;
           }

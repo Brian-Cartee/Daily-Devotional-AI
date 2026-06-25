@@ -45,6 +45,7 @@ export interface ConversationState {
   ack_register?: AckRegister;
   literary_cooldown_remaining?: number;
   moves_used?: string[];
+  philip_openers_used?: string[];
 }
 
 const LITERARY_ACK_PATTERNS = [
@@ -145,6 +146,117 @@ export function userMessageHasFreshDetail(
   return freshWords.length >= 2;
 }
 
+function normalizeWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s']/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length > 2);
+}
+
+/** Word overlap between Philip's preamble and the user's last message (0–1). */
+export function echoOverlapRatio(philipText: string, userText: string): number {
+  const qIdx = philipText.indexOf("?");
+  const preamble = (qIdx >= 0 ? philipText.slice(0, qIdx) : philipText).trim();
+  const pWords = new Set(normalizeWords(preamble));
+  const uWords = normalizeWords(userText);
+  if (uWords.length === 0 || pWords.size === 0) return 0;
+  let match = 0;
+  for (const w of uWords) if (pWords.has(w)) match++;
+  return match / Math.min(uWords.length, pWords.size);
+}
+
+/** True when Philip mostly mirrors the user without adding observation. */
+export function isPureEcho(philipText: string, userText: string, threshold = 0.65): boolean {
+  if (!philipText.trim() || !userText.trim()) return false;
+
+  if (echoOverlapRatio(philipText, userText) >= threshold) return true;
+
+  const preamble = philipText.split("?")[0].trim().toLowerCase();
+  const userWords = normalizeWords(userText);
+  for (let len = Math.min(7, userWords.length); len >= 4; len--) {
+    for (let i = 0; i <= userWords.length - len; i++) {
+      const chunk = userWords.slice(i, i + len).join(" ");
+      if (preamble.includes(chunk)) return true;
+    }
+  }
+
+  // Preamble is nearly identical to a sentence in the user message
+  const userSentences = userText.split(/[.!?]+/).map(s => s.trim().toLowerCase()).filter(s => s.length > 12);
+  for (const sentence of userSentences) {
+    if (preamble.length > 10 && sentence.includes(preamble.slice(0, Math.min(40, preamble.length)))) return true;
+    if (sentence.length > 10 && preamble.includes(sentence.slice(0, Math.min(40, sentence.length)))) return true;
+  }
+
+  return false;
+}
+
+export function opensWithQuotedEcho(philipText: string): boolean {
+  const beforeQ = philipText.split("?")[0].trim();
+  return /^["'"“][^"']{8,}["'"”]/.test(beforeQ);
+}
+
+/** First-sentence openers Philip has already used — ban recycling. */
+export function extractPhilipOpeners(philipMessages: Array<{ content: string }>): string[] {
+  return philipMessages.map(m => {
+    const q = m.content.indexOf("?");
+    const body = (q >= 0 ? m.content.slice(0, q) : m.content).trim();
+    const first = body.split(/[.!]\s+/)[0]?.trim() ?? body;
+    return first.slice(0, 90);
+  }).filter(s => s.length > 4);
+}
+
+export function getEchoStreak(
+  philipMessages: Array<{ content: string }>,
+  userMessages: Array<{ content: string }>,
+): number {
+  let streak = 0;
+  const n = Math.min(philipMessages.length, userMessages.length);
+  for (let i = n - 1; i >= 0; i--) {
+    if (isPureEcho(philipMessages[i].content, userMessages[i].content, 0.55)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+const BANNED_QUESTION_PATTERNS = [
+  /what (did|does|was) .+ feel like/i,
+  /how did .+ feel\b/i,
+  /what was that like for you/i,
+  /isn'?t it\b/i,
+  /that'?s the part that cuts deepest/i,
+];
+
+export function isBannedQuestion(question: string): boolean {
+  return BANNED_QUESTION_PATTERNS.some(p => p.test(question));
+}
+
+/** True if Philip recycled an opener he already used this conversation. */
+export function recyclesPhilipOpener(
+  philipText: string,
+  priorOpeners: string[],
+): boolean {
+  const current = extractPhilipOpeners([{ content: philipText }])[0]?.toLowerCase() ?? "";
+  if (!current) return false;
+  return priorOpeners.some(o => {
+    const prior = o.toLowerCase();
+    return prior === current || prior.includes(current.slice(0, 20)) || current.includes(prior.slice(0, 20));
+  });
+}
+
+/** True when a generated response should be replaced with a bare question. */
+export function shouldFallbackToPlainQuestion(
+  philipText: string,
+  userText: string,
+  priorOpeners: string[],
+): boolean {
+  return (
+    isPureEcho(philipText, userText, 0.65)
+    || opensWithQuotedEcho(philipText)
+    || recyclesPhilipOpener(philipText, priorOpeners)
+  );
+}
+
 /** How many turns remain in literary-ack cooldown (2 turns after an aphoristic preamble). */
 export function getLiteraryCooldownRemaining(
   philipMessages: Array<{ content: string }>,
@@ -181,6 +293,7 @@ export interface SelectPhilipMoveInput {
   movesUsed?: string[];
   hasNewDetail?: boolean;
   forceSit?: boolean;
+  echoStreak?: number;
 }
 
 function filterMovePool(
@@ -188,16 +301,27 @@ function filterMovePool(
   lastMove: string | undefined,
   exchangeNum: number,
   movesUsed: string[],
+  echoStreak: number,
+  hasNewDetail: boolean,
 ): PhilipMove[] {
   let pool = candidates.filter(m => m !== lastMove);
   if (pool.length === 0) pool = [...candidates];
 
   const reflectCount = movesUsed.filter(m => m === "reflect_back").length;
   const reflectInLast3 = movesUsed.slice(-3).includes("reflect_back");
+  const namedFactCount = movesUsed.filter(m => m === "named_fact").length;
 
-  // reflect_back: max 1/conversation, never from exchange 4+ (exchangeNum >= 3)
   if (reflectCount >= 1 || reflectInLast3 || exchangeNum >= 3) {
     pool = pool.filter(m => m !== "reflect_back");
+  }
+
+  // named_fact echoes easily — only when fresh detail and no recent echo
+  if (echoStreak >= 1 || namedFactCount >= 2 || (exchangeNum >= 2 && !hasNewDetail)) {
+    pool = pool.filter(m => m !== "named_fact");
+  }
+
+  if (echoStreak >= 2) {
+    pool = pool.filter(m => m !== "reflect_back" && m !== "named_fact" && m !== "tension");
   }
 
   if (pool.length === 0) return ["plain_question", "sit"];
@@ -217,18 +341,27 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
     movesUsed = [],
     hasNewDetail = false,
     forceSit = false,
+    echoStreak = 0,
   } = input;
 
   if (forceSit) return "sit";
 
   const pick = (candidates: PhilipMove[]): PhilipMove => {
-    const pool = filterMovePool(candidates, lastMove, exchangeNum, movesUsed);
+    const pool = filterMovePool(candidates, lastMove, exchangeNum, movesUsed, echoStreak, hasNewDetail);
     return pool[exchangeNum % pool.length];
   };
 
+  // Echo streak → bare questions only
+  if (echoStreak >= 2) {
+    return pick(["plain_question", "plain_question", "skip"]);
+  }
+  if (echoStreak >= 1) {
+    return pick(["plain_question", "plain_question", "sit", "skip"]);
+  }
+
   // After reflect_back → plain or sit only
-  if (lastMove === "reflect_back") {
-    return pick(["plain_question", "sit"]);
+  if (lastMove === "reflect_back" || lastMove === "named_fact") {
+    return pick(["plain_question", "sit", "skip"]);
   }
 
   // Literary ack or active cooldown → plain or sit only (2-turn cooldown)
@@ -254,27 +387,26 @@ export function selectPhilipMove(input: SelectPhilipMoveInput): PhilipMove {
   // Mid conversation — plain_question base unless fresh detail warrants named_fact
   if (exchangeNum >= 3) {
     if (!hasNewDetail) {
-      return pick(["plain_question", "plain_question", "plain_question", "skip", "sit"]);
+      return pick(["plain_question", "plain_question", "plain_question", "plain_question", "skip", "sit"]);
     }
-    return pick(["plain_question", "plain_question", "named_fact", "skip", "sit"]);
+    return pick(["plain_question", "plain_question", "plain_question", "skip", "sit"]);
   }
 
-  // Early follow-ups — one reflect_back allowed at exchangeNum 1–2 only
+  // Early follow-ups — plain_question default; at most one reflect_back early
   if (exchangeNum >= 2) {
-    const reflectAllowed = movesUsed.filter(m => m === "reflect_back").length === 0;
+    const reflectAllowed = movesUsed.filter(m => m === "reflect_back").length === 0 && echoStreak === 0;
     return pick(
       reflectAllowed
-        ? ["plain_question", "named_fact", "reflect_back"]
-        : ["plain_question", "named_fact"],
+        ? ["plain_question", "plain_question", "named_fact"]
+        : ["plain_question", "plain_question", "skip"],
     );
   }
 
   if (exchangeNum >= 1) {
-    const reflectAllowed = movesUsed.filter(m => m === "reflect_back").length === 0;
-    return pick(reflectAllowed ? ["named_fact", "reflect_back", "plain_question"] : ["named_fact", "plain_question"]);
+    return pick(["plain_question", "plain_question", "named_fact"]);
   }
 
-  return pick(["named_fact", "plain_question"]);
+  return pick(["plain_question", "named_fact"]);
 }
 
 const CLOSING_PHRASES = [
@@ -368,10 +500,15 @@ For conversation_closing: set true if the most recent user message indicates the
       const detectedRegister = detectAckRegister(lastPhilip);
       parsed.ack_register = detectedRegister ?? parsed.ack_register ?? "plain";
       parsed.last_move = parsed.last_move || inferLastMove(lastPhilip);
+      const lastUserBeforePhilip = [...messages].reverse().find(m => m.role === "user")?.content ?? "";
+      if (lastUserBeforePhilip && isPureEcho(lastPhilip, lastUserBeforePhilip, 0.55)) {
+        parsed.last_move = "reflect_back";
+      }
     }
 
     parsed.literary_cooldown_remaining = getLiteraryCooldownRemaining(philipMessages);
     parsed.moves_used = getMovesUsed(philipMessages);
+    parsed.philip_openers_used = extractPhilipOpeners(philipMessages);
 
     // Override closing detection with hard logic
     if (detectConversationClosing(lastUserMessage)) {
@@ -433,13 +570,19 @@ The person is leaving. Speak a brief benediction — 2 sentences, no question, n
     ? `\nKNOWN FACTS: ${state.facts_learned.join("; ")}`
     : "";
 
+  const openersBan = state.philip_openers_used && state.philip_openers_used.length > 0
+    ? `\nBANNED OPENERS (Philip already said these — do not repeat, rephrase, or parrot back):\n${state.philip_openers_used.map((o, i) => `  [${i + 1}] ${o}`).join("\n")}`
+    : "";
+
   return `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CONVERSATION STATE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Core issue: ${state.core_issue}${facts}${explored}${unexplored}${questionsBan}${metaphorsBan}${userWords}
+Core issue: ${state.core_issue}${facts}${explored}${unexplored}${questionsBan}${metaphorsBan}${userWords}${openersBan}
+
+NEVER open by quoting the user's last sentence back verbatim. Add something new or ask the question alone.
 
 DEPTH BEFORE BREADTH: If the user just made a raw confession, disclosed something vulnerable, or asked Philip a direct question — go DEEPER into that before moving to new territory.
 Otherwise: explore something from "NOT YET EXPLORED."
-Your question must not be in "QUESTIONS ALREADY ASKED." Use none of the banned metaphors.`;
+Your question must not be in "QUESTIONS ALREADY ASKED." Use none of the banned metaphors or openers.`;
 }
