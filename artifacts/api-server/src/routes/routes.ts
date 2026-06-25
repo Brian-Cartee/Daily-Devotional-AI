@@ -4241,16 +4241,17 @@ Under 40 words total.`;
             // Shape C (no question) selection — tiered by streak depth:
             // - Never back-to-back (prevents stalls)
             // - High-signal lament: 60% chance
-            // - 5+ consecutive questions, exchange 5+: 75% chance (critical — must break)
-            // - 4+ consecutive questions, exchange 5+: 60% chance (deep streak)
-            // - 3 consecutive questions, exchange 5+: 45% chance (moderate streak)
+            // - 5+ consecutive questions, exchange 4+: 80% chance (critical — must break)
+            // - 4+ consecutive questions, exchange 4+: 65% chance (deep streak)
+            // - 3 consecutive questions, exchange 3+: 50% chance (moderate streak — fire earlier)
             // - Base rate: 10% for structural variety
+            // NOTE: exchangeNum at Philip's Nth response = N-1. So >= 3 means "4th response or later".
             const shapeRoll = Math.random();
             const useShapeC = !lastWasShapeC && (
               isLament ? shapeRoll < 0.60 :
-              formulaStreak5 && exchangeNum >= 5 ? shapeRoll < 0.75 :
-              formulaStreak4 && exchangeNum >= 5 ? shapeRoll < 0.60 :
-              formulaStreak3 && exchangeNum >= 5 ? shapeRoll < 0.45 :
+              formulaStreak5 && exchangeNum >= 4 ? shapeRoll < 0.80 :
+              formulaStreak4 && exchangeNum >= 4 ? shapeRoll < 0.65 :
+              formulaStreak3 && exchangeNum >= 3 ? shapeRoll < 0.50 :
               shapeRoll < 0.10
             );
 
@@ -4290,11 +4291,15 @@ Output ONE sentence only — no preamble, no meta-commentary, no explanation of 
 
 Avoid these weak openers (they name your reaction, not the thing): "Makes sense", "That must hurt", "Understandably", "Of course", "That's a lot", "Makes complete sense". Name the SPECIFIC THING instead.
 
-The voice RANGE — match what the move calls for, not always the lyrical end:
-Direct/factual: "Three weeks. The house still has two coffee cups in the cabinet."
-Terse observation: "He stopped calling the same week she started to."
-Lyrical: "Seven years of showing up to something that stopped showing up for you."
-Stark: "You've been carrying both people through this with no one carrying you."
+WRONG — these are universal aphorisms about grief/loss, not about THIS person:
+"Ordinary moments become sacred only after they're gone forever."
+"Silence where a laugh used to live is its own kind of violence."
+
+RIGHT — these name what THIS person said, specific and grounded:
+"He said good morning first, every day, for forty-one years."
+"She stopped calling six months before anyone named what was happening."
+"Three weeks, and you still reach for the phone to tell him something."
+"He left for work that morning without knowing it was the last time."
 
 Say the sentence. Nothing else.`;
 
