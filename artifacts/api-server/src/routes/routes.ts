@@ -99,6 +99,9 @@ import { logPhilipTurn } from "../philip-runtime/runtime/log";
 import { turnMetadataToHeaders } from "../philip-runtime/runtime/headers";
 import { freeTrialGrants } from "../freeTrialConfig";
 import { registerSpeakLifeRoutes } from "../speakLife";
+import { registerChurchRoutes } from "../church/routes";
+import { ensureChurchSchema } from "../churchMigrations";
+import { adminAuth } from "../adminAuth";
 import { getServerDaysWithApp, touchSessionFirstSeen, getGuidanceConversationCount, incrementGuidanceConversationCount } from "../sessionFirstSeen";
 import { getTriviaSeed } from "../triviaSeed";
 import type { TriviaQuestion } from "@workspace/db";
@@ -398,9 +401,14 @@ export async function registerRoutes(
   registerVoiceStreamWS(httpServer);
 
   registerSpeakLifeRoutes(app);
+  registerChurchRoutes(app);
 
   await ensureIdentitySchema().catch((err) => {
     console.error("[identity] schema ensure failed:", err);
+  });
+
+  await ensureChurchSchema().catch((err) => {
+    console.error("[church] schema ensure failed:", err);
   });
 
   // Sync today's verse from Google Sheets at startup
@@ -6499,14 +6507,6 @@ ${historyNote}`;
   });
 
   // ── Admin endpoints ────────────────────────────────────────────────────────
-  function adminAuth(req: any, res: any): boolean {
-    const password = process.env.ADMIN_PASSWORD;
-    const bypass = process.env.ADMIN_BYPASS;
-    if (!password && !bypass) { res.status(503).json({ message: "Admin not configured." }); return false; }
-    const token = req.headers["x-admin-token"] as string | undefined;
-    if (token !== password && token !== bypass) { res.status(401).json({ message: "Unauthorized." }); return false; }
-    return true;
-  }
 
   app.post("/api/admin/auth", (req, res) => {
     const password = process.env.ADMIN_PASSWORD;

@@ -547,3 +547,91 @@ export const messages = pgTable("messages", {
 
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+
+// ── Church organizations (portal layer — separate from personal Pro) ─────────
+
+export const CHURCH_PLANS = ["none", "basic", "plus", "partner"] as const;
+export type ChurchPlan = (typeof CHURCH_PLANS)[number];
+
+export const CHURCH_ROLES = ["member", "leader", "admin", "owner"] as const;
+export type ChurchRole = (typeof CHURCH_ROLES)[number];
+
+export const CHURCH_MEMBERSHIP_STATUSES = ["active", "invited", "left", "removed"] as const;
+export type ChurchMembershipStatus = (typeof CHURCH_MEMBERSHIP_STATUSES)[number];
+
+export const CHURCH_STATUSES = ["active", "suspended", "archived"] as const;
+export type ChurchStatus = (typeof CHURCH_STATUSES)[number];
+
+export type ChurchPublicSettings = {
+  welcomeMessage?: string;
+  pastorVideoUrl?: string;
+  resourceLinks?: { label: string; url: string }[];
+};
+
+export const churches = pgTable("churches", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  logoUrl: text("logo_url"),
+  primaryColor: text("primary_color"),
+  plan: text("plan").notNull().default("none"),
+  status: text("status").notNull().default("active"),
+  inviteCode: text("invite_code").notNull().unique(),
+  settings: jsonb("settings").$type<ChurchPublicSettings>().default(sql`'{}'::jsonb`).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export const insertChurchSchema = createInsertSchema(churches).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  slug: z.string().min(2).max(64).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  name: z.string().min(1).max(120),
+  plan: z.enum(CHURCH_PLANS).optional().default("none"),
+  status: z.enum(CHURCH_STATUSES).optional().default("active"),
+  inviteCode: z.string().min(6).max(32),
+  logoUrl: z.string().url().optional().or(z.literal("")),
+  primaryColor: z.string().max(32).optional(),
+  settings: z
+    .object({
+      welcomeMessage: z.string().max(500).optional(),
+      pastorVideoUrl: z.string().url().optional().or(z.literal("")),
+      resourceLinks: z
+        .array(z.object({ label: z.string().max(80), url: z.string().url() }))
+        .max(20)
+        .optional(),
+    })
+    .optional(),
+});
+
+export type Church = typeof churches.$inferSelect;
+export type InsertChurch = z.infer<typeof insertChurchSchema>;
+
+export const churchMemberships = pgTable("church_memberships", {
+  id: serial("id").primaryKey(),
+  churchId: text("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  sessionId: text("session_id").notNull(),
+  email: text("email"),
+  role: text("role").notNull().default("member"),
+  status: text("status").notNull().default("active"),
+  joinedAt: timestamp("joined_at").default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export const insertChurchMembershipSchema = createInsertSchema(churchMemberships).omit({
+  id: true,
+  joinedAt: true,
+  updatedAt: true,
+}).extend({
+  churchId: z.string().uuid(),
+  sessionId: z.string().min(1).max(128),
+  email: z.string().email().optional().or(z.literal("")),
+  role: z.enum(CHURCH_ROLES),
+  status: z.enum(CHURCH_MEMBERSHIP_STATUSES).optional().default("active"),
+});
+
+export type ChurchMembership = typeof churchMemberships.$inferSelect;
+export type InsertChurchMembership = z.infer<typeof insertChurchMembershipSchema>;
+
