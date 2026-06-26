@@ -204,6 +204,11 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (idleMs < pause) return;
       if (hasEnoughToSubmit() || totalAudioBytes() >= minAudioBytesForHandoff()) {
         triggerAutoSubmit();
+        return;
+      }
+      // iOS: SR silent but user spoke — hand off on captured audio alone after idle.
+      if (idleMs >= pause + 200 && totalAudioBytes() >= 400) {
+        triggerAutoSubmit();
       }
     }, 250);
   };

@@ -44,6 +44,7 @@ import { type Journey } from "@/data/journeys";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { isPhilipMode, isSoloMode, incrementSoloSessionCount, shouldShowSoloReintro, markSoloReintroShown, setCompanionMode } from "@/lib/companionMode";
 import { VoiceSessionOrb, type VoiceOrbMode } from "@/components/VoiceSessionOrb";
+import { PhilipVoiceHandoffLayer } from "@/components/PhilipVoiceHandoffLayer";
 import { VoiceQuietHint } from "@/components/VoiceQuietHint";
 import {
   VOICE_QUIET_CAPTURE_FAIL,
@@ -1764,9 +1765,12 @@ export default function GuidancePage() {
         const listener = phase1VoiceRef.current;
         const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
         const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
+        const inPhase1Capture =
+          convoRef.current.phase === "p1-reply"
+          || convoRef.current.phase === "p1-silence";
         if (
           isPhilipMode()
-          && convoRef.current.phase === "p1-reply"
+          && inPhase1Capture
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && phase1ResponseRef.current
@@ -1779,7 +1783,7 @@ export default function GuidancePage() {
         phase1VoiceRef.current = null;
         if (
           isPhilipMode()
-          && convoRef.current.phase === "p1-reply"
+          && inPhase1Capture
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && preview.length < 2
@@ -2487,19 +2491,16 @@ export default function GuidancePage() {
     nativeDiag("orb_tap", phase);
 
     const finishPhase1 = () => {
-      const listener = phase1VoiceRef.current;
-      if (!listener) {
-        nativeDiag("orb_tap_no_listener", "p1");
-        return;
-      }
       setVoiceHandoffPending(true);
       setPhase1MicLive(false);
       setPhase1MicArming(false);
-      if (listener.isActive()) {
+      const listener = phase1VoiceRef.current;
+      if (listener?.isActive()) {
         listener.finishSpeaking();
         return;
       }
-      const preview = (listener.getPreview() ?? phase1UserReplyRef.current).trim();
+      const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
+      if (!listener) nativeDiag("orb_tap_no_listener", "p1");
       handlePhase1ContinueRef.current(preview, true);
     };
 
@@ -2915,54 +2916,14 @@ export default function GuidancePage() {
           )}
         </AnimatePresence>
 
-        {/* Single voice orb — follows the conversation after threshold */}
-        {philipOrbMode && !showThresholdOverlay && (
-          <div
-            className={`fixed left-1/2 z-[60] flex flex-col items-center gap-2 ${
-              philipOrbTappable ? "pointer-events-auto" : "pointer-events-none"
-            }`}
-            style={{
-              bottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
-              transform: "translateX(-50%)",
-            }}
-          >
-            {philipOrbTappable ? (
-              <button
-                type="button"
-                data-testid="philip-voice-orb-tap"
-                onPointerUp={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handlePhilipOrbTapRef.current();
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handlePhilipOrbTapRef.current();
-                }}
-                className="border-0 bg-transparent p-3 cursor-pointer touch-manipulation flex flex-col items-center gap-2"
-                style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
-              >
-                <VoiceSessionOrb mode={philipOrbMode} size={88} key={philipOrbMode} />
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "11px",
-                    letterSpacing: "0.06em",
-                    color: "rgba(139,92,246,0.55)",
-                  }}
-                >
-                  {VOICE_TAP_WHEN_DONE}
-                </p>
-              </button>
-            ) : (
-              <VoiceSessionOrb mode={philipOrbMode} size={88} key={philipOrbMode} />
-            )}
-            {philipOrbTappable && (
-              <VoiceQuietHint visible={voiceQuietHintVisible} />
-            )}
-          </div>
-        )}
+        {/* Voice handoff — portal to body so iOS WebView receives taps above scroll content */}
+        <PhilipVoiceHandoffLayer
+          visible={!!philipOrbMode && !showThresholdOverlay}
+          tappable={philipOrbTappable}
+          mode={philipOrbMode ?? "idle"}
+          onDone={() => handlePhilipOrbTapRef.current()}
+          quietHintVisible={voiceQuietHintVisible}
+        />
 
         {/* Hero image must start at y=0 (no sp-app-top-clearance on main) — matches For You / ThresholdHero */}
         <div
