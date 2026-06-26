@@ -49,6 +49,7 @@ import {
   VOICE_QUIET_CAPTURE_FAIL,
   VOICE_QUIET_HANDOFF_FAIL,
   VOICE_QUIET_THRESHOLD_LINE,
+  VOICE_TAP_WHEN_DONE,
 } from "@/lib/voiceQuietHint";
 import { HoldThisWithMeCard } from "@/components/HoldThisWithMeCard";
 import { PatternPhilipCard } from "@/components/PatternPhilipCard";
@@ -2479,6 +2480,7 @@ export default function GuidancePage() {
   const handlePhase1ContinueRef = useRef(handlePhase1Continue);
   handlePhase1ContinueRef.current = handlePhase1Continue;
 
+  const handlePhilipOrbTapRef = useRef<() => void>(() => {});
   const handlePhilipOrbTap = useCallback(() => {
     if (!isPhilipMode() || !hasSpeechSupport) return;
     const phase = convoRef.current.phase;
@@ -2525,6 +2527,7 @@ export default function GuidancePage() {
       else submitFollowUpRef.current(true, followUp);
     }
   }, [hasSpeechSupport, followUp]);
+  handlePhilipOrbTapRef.current = handlePhilipOrbTap;
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -2743,6 +2746,18 @@ export default function GuidancePage() {
     voiceHandoffPending,
   });
 
+  const philipMicCaptureOpen =
+    entryMicLive
+    || micArming
+    || phase1MicLive
+    || phase1MicArming
+    || followUpMicLive
+    || followUpMicArming;
+
+  const philipOrbTappable =
+    philipHandsFreeVoice
+    && (philipOrbMode === "listen" || philipMicCaptureOpen);
+
   const dismissThresholdForTyping = () => {
     greetingEngagedRef.current = true;
     cancelGreetingSpeakRef.current?.();
@@ -2821,7 +2836,36 @@ export default function GuidancePage() {
               {/* One orb — speaker when Philip talks, mic when you talk */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
                 {philipHandsFreeVoice ? (
-                  <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
+                  (entryMicLive || micArming) ? (
+                    <button
+                      type="button"
+                      data-testid="philip-voice-orb-threshold-tap"
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        handlePhilipOrbTapRef.current();
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        handlePhilipOrbTapRef.current();
+                      }}
+                      className="border-0 bg-transparent p-3 cursor-pointer touch-manipulation flex flex-col items-center gap-2"
+                      style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
+                    >
+                      <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "11px",
+                          letterSpacing: "0.06em",
+                          color: "rgba(255,255,255,0.28)",
+                        }}
+                      >
+                        {VOICE_TAP_WHEN_DONE}
+                      </p>
+                    </button>
+                  ) : (
+                    <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
+                  )
                 ) : (
                   <VoiceSessionOrb
                     mode={entryMicLive || micArming ? "listen" : "idle"}
@@ -2875,20 +2919,46 @@ export default function GuidancePage() {
         {philipOrbMode && !showThresholdOverlay && (
           <div
             className={`fixed left-1/2 z-[60] flex flex-col items-center gap-2 ${
-              philipHandsFreeVoice && philipOrbMode === "listen" ? "pointer-events-auto" : "pointer-events-none"
+              philipOrbTappable ? "pointer-events-auto" : "pointer-events-none"
             }`}
             style={{
               bottom: "max(6.5rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
               transform: "translateX(-50%)",
             }}
           >
-            <VoiceSessionOrb
-              mode={philipOrbMode}
-              size={88}
-              key={philipOrbMode}
-              onClick={philipHandsFreeVoice && philipOrbMode === "listen" ? handlePhilipOrbTap : undefined}
-            />
-            {philipHandsFreeVoice && philipOrbMode === "listen" && (
+            {philipOrbTappable ? (
+              <button
+                type="button"
+                data-testid="philip-voice-orb-tap"
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handlePhilipOrbTapRef.current();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handlePhilipOrbTapRef.current();
+                }}
+                className="border-0 bg-transparent p-3 cursor-pointer touch-manipulation flex flex-col items-center gap-2"
+                style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
+              >
+                <VoiceSessionOrb mode={philipOrbMode} size={88} key={philipOrbMode} />
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "11px",
+                    letterSpacing: "0.06em",
+                    color: "rgba(139,92,246,0.55)",
+                  }}
+                >
+                  {VOICE_TAP_WHEN_DONE}
+                </p>
+              </button>
+            ) : (
+              <VoiceSessionOrb mode={philipOrbMode} size={88} key={philipOrbMode} />
+            )}
+            {philipOrbTappable && (
               <VoiceQuietHint visible={voiceQuietHintVisible} />
             )}
           </div>

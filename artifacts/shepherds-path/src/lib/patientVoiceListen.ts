@@ -165,6 +165,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let dynamicSpeechTh: number | null = null;
   let dynamicQuietTh: number | null = null;
   let hysteresisBandSince: number | null = null;
+  let lastConfirmedSpeechAt = 0;
+  let speechIdleWatchdog: ReturnType<typeof setInterval> | null = null;
 
   const rmsSpeechThreshold = () =>
     dynamicSpeechTh ?? (preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD);
@@ -178,7 +180,32 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   const touchSrActivity = () => {
     lastSrActivityAt = Date.now();
     lastAudioGrowthAt = Date.now();
+    lastConfirmedSpeechAt = Date.now();
     onNewSpeechBurst();
+  };
+
+  const markConfirmedSpeech = () => {
+    lastConfirmedSpeechAt = Date.now();
+  };
+
+  const clearSpeechIdleWatchdog = () => {
+    if (speechIdleWatchdog) clearInterval(speechIdleWatchdog);
+    speechIdleWatchdog = null;
+  };
+
+  /** Last-resort iOS handoff — submit after confirmed speech goes idle, ignoring AC/RMS stalls. */
+  const startSpeechIdleWatchdog = () => {
+    if (!opts.conversational) return;
+    clearSpeechIdleWatchdog();
+    speechIdleWatchdog = setInterval(() => {
+      if (!active || autoSubmitFired || !userSpeechDetected || lastConfirmedSpeechAt <= 0) return;
+      const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
+      const idleMs = Date.now() - lastConfirmedSpeechAt;
+      if (idleMs < pause) return;
+      if (hasEnoughToSubmit() || totalAudioBytes() >= minAudioBytesForHandoff()) {
+        triggerAutoSubmit();
+      }
+    }, 250);
   };
 
   const clearSrHandoffPoll = () => {
@@ -267,6 +294,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     scheduleFallbackTimers();
     startSilencePoll();
     startSrHandoffPoll();
+    startSpeechIdleWatchdog();
     absoluteMaxTimer = setTimeout(() => {
       absoluteMaxTimer = null;
       if (!active || autoSubmitFired) return;
@@ -376,7 +404,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const markSpeechActivity = (fromFinal = true) => {
     const now = Date.now();
-    if (fromFinal) lastFinalSpeechAt = now;
+    if (fromFinal) {
+      lastFinalSpeechAt = now;
+      markConfirmedSpeech();
+    }
     // Interim-only updates must not block handoff after the user stops (iOS room tone).
     if (fromFinal || now - lastFinalSpeechAt < 2_500) {
       lastSpeechAt = now;
@@ -506,6 +537,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearSrHandoffPoll();
+    clearSpeechIdleWatchdog();
     clearAbsoluteMax();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
@@ -543,6 +575,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearSrHandoffPoll();
+    clearSpeechIdleWatchdog();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
     teardownAnalyser();
@@ -573,6 +606,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearTimers();
     clearSilencePoll();
     clearSrHandoffPoll();
+    clearSpeechIdleWatchdog();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
     teardownAnalyser();
@@ -916,6 +950,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       dynamicSpeechTh = null;
       dynamicQuietTh = null;
       hysteresisBandSince = null;
+      lastConfirmedSpeechAt = 0;
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
