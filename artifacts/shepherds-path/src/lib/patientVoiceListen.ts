@@ -168,6 +168,30 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let lastConfirmedSpeechAt = 0;
   let speechIdleWatchdog: ReturnType<typeof setInterval> | null = null;
   let micOpenAt = 0;
+  let quickHandoffPoll: ReturnType<typeof setInterval> | null = null;
+
+  const clearQuickHandoffPoll = () => {
+    if (quickHandoffPoll) clearInterval(quickHandoffPoll);
+    quickHandoffPoll = null;
+  };
+
+  /** iOS fallback — hand off on short silence once any speech audio exists. */
+  const startQuickHandoffPoll = () => {
+    if (!opts.conversational) return;
+    clearQuickHandoffPoll();
+    quickHandoffPoll = setInterval(() => {
+      if (!active || autoSubmitFired) return;
+      const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
+      const bytes = totalAudioBytes();
+      if (bytes < minAudioBytesForHandoff()) return;
+      const idleAnchor = lastConfirmedSpeechAt > 0
+        ? lastConfirmedSpeechAt
+        : (lastSrActivityAt > 0 ? lastSrActivityAt : micOpenAt);
+      if (Date.now() - idleAnchor < pause) return;
+      userSpeechDetected = true;
+      triggerAutoSubmit();
+    }, 180);
+  };
 
   const rmsSpeechThreshold = () =>
     dynamicSpeechTh ?? (preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD);
@@ -307,6 +331,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     startSilencePoll();
     startSrHandoffPoll();
     startSpeechIdleWatchdog();
+    startQuickHandoffPoll();
     absoluteMaxTimer = setTimeout(() => {
       absoluteMaxTimer = null;
       if (!active || autoSubmitFired) return;
@@ -558,6 +583,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearSilencePoll();
     clearSrHandoffPoll();
     clearSpeechIdleWatchdog();
+    clearQuickHandoffPoll();
     clearAbsoluteMax();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
@@ -599,6 +625,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearSilencePoll();
     clearSrHandoffPoll();
     clearSpeechIdleWatchdog();
+    clearQuickHandoffPoll();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
     teardownAnalyser();
@@ -638,6 +665,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     clearSilencePoll();
     clearSrHandoffPoll();
     clearSpeechIdleWatchdog();
+    clearQuickHandoffPoll();
     clearPostSpeechSubmit();
     clearUtteranceEndHandoff();
     teardownAnalyser();

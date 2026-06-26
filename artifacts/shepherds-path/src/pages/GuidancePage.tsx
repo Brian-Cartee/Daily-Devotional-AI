@@ -352,7 +352,7 @@ function resolvePhilipOrbMode(opts: {
     return "idle";
   }
 
-  if (!opts.voiceConversation) return null;
+  if (!opts.voiceConversation && !listening) return null;
   if (opts.responseComplete && opts.completionPath !== "stay") return null;
   if ((opts.phase1SilenceActive || opts.phase2SilenceActive) && !listening) return null;
   if ((opts.processingBridge || opts.isReflecting) && !speaking && !listening) return null;
@@ -1755,7 +1755,7 @@ export default function GuidancePage() {
         setPhase1MicArming(false);
         const listener = phase1VoiceRef.current;
         const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
-        const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
+        const hasAudio = listener?.hasRecordedAudio() ?? false;
         const inPhase1Capture =
           convoRef.current.phase === "p1-reply"
           || convoRef.current.phase === "p1-silence";
@@ -1765,7 +1765,7 @@ export default function GuidancePage() {
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && phase1ResponseRef.current
-          && canSubmit
+          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
         ) {
           setVoiceHandoffPending(true);
           handlePhase1ContinueRef.current(preview, true);
@@ -2402,6 +2402,7 @@ export default function GuidancePage() {
         || listener?.canAutoSubmit()
         || phase1MicLive
         || phase1MicArming
+        || phase1VoiceRef.current !== null
       );
     if (!reply.trim() && !hasVoiceCapture) {
       setVoiceHandoffPending(false);
@@ -2497,45 +2498,55 @@ export default function GuidancePage() {
         return;
       }
       const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
-      if (!listener) nativeDiag("orb_tap_no_listener", "p1");
       handlePhase1ContinueRef.current(preview, true);
     };
 
-    const inPhase1ReplyWindow =
-      !!phase1ResponseRef.current
-      && !phase2StartedRef.current
-      && (
-        phase === "p1-reply"
-        || phase === "p1-silence"
-        || phase === "p1-speaking"
-        || phase1MicLive
-        || phase1MicArming
-        || !!phase1VoiceRef.current?.isActive()
-      );
+    const finishEntry = () => {
+      const listener = heartVoiceRef.current;
+      setVoiceHandoffPending(true);
+      setMicArming(false);
+      setEntryMicLive(false);
+      if (listener?.isActive()) {
+        listener.finishSpeaking();
+        return;
+      }
+      submitHeartEntryRef.current((listener?.getPreview() ?? heartInputRef.current).trim(), true);
+    };
 
-    if (inPhase1ReplyWindow) {
+    if (phase1VoiceRef.current?.isActive() || phase1MicLive || phase1MicArming) {
+      if (phase1ResponseRef.current && !phase2StartedRef.current) {
+        finishPhase1();
+        return;
+      }
+    }
+
+    if (heartVoiceRef.current?.isActive() || entryMicLive || micArming) {
+      if (!phase1ResponseRef.current) {
+        finishEntry();
+        return;
+      }
+    }
+
+    if (
+      phase1ResponseRef.current
+      && !phase2StartedRef.current
+      && (phase === "p1-reply" || phase === "p1-silence" || phase === "p1-speaking")
+    ) {
       finishPhase1();
       return;
     }
 
     if (phase === "entry" && !phase1ResponseRef.current) {
-      const listener = heartVoiceRef.current;
-      if (!listener) return;
-      setVoiceHandoffPending(true);
-      setMicArming(false);
-      setEntryMicLive(false);
-      if (listener.isActive()) {
-        listener.finishSpeaking();
-        return;
-      }
-      submitHeartEntryRef.current((listener.getPreview() ?? heartInputRef.current).trim(), true);
-    } else if (phase === "fu-reply") {
+      finishEntry();
+      return;
+    }
+
+    if (phase === "fu-reply") {
       const listener = followUpVoiceRef.current;
-      if (!listener) return;
-      if (listener.isActive()) listener.finishSpeaking();
+      if (listener?.isActive()) listener.finishSpeaking();
       else submitFollowUpRef.current(true, followUp);
     }
-  }, [hasSpeechSupport, followUp, phase1MicLive, phase1MicArming]);
+  }, [hasSpeechSupport, followUp, phase1MicLive, phase1MicArming, entryMicLive, micArming]);
   handlePhilipOrbTapRef.current = handlePhilipOrbTap;
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -2763,10 +2774,6 @@ export default function GuidancePage() {
     || followUpMicLive
     || followUpMicArming;
 
-  const philipOrbTappable =
-    philipHandsFreeVoice
-    && (philipOrbMode === "listen" || philipMicCaptureOpen);
-
   const dismissThresholdForTyping = () => {
     if (isPhilipMode() && hasSpeechSupport) return;
     greetingEngagedRef.current = true;
@@ -2929,8 +2936,8 @@ export default function GuidancePage() {
 
         {/* Voice handoff — portal to body so iOS WebView receives taps above scroll content */}
         <PhilipVoiceHandoffLayer
-          visible={!!philipOrbMode && !showThresholdOverlay}
-          tappable={philipOrbTappable}
+          visible={!!philipOrbMode && (!showThresholdOverlay || philipMicCaptureOpen)}
+          micCaptureOpen={philipMicCaptureOpen}
           mode={philipOrbMode ?? "idle"}
           onDone={() => handlePhilipOrbTapRef.current()}
           quietHintVisible={voiceQuietHintVisible}
