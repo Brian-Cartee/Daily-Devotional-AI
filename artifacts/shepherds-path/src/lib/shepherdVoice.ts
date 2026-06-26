@@ -1,5 +1,8 @@
 import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally } from "@/lib/proStatus";
+import { registerPhilipSpeakCancel } from "@/lib/philipAudioSession";
+
+export { releasePhilipAudioSession, IOS_MIC_SETTLE_MS } from "@/lib/philipAudioSession";
 
 /** Philip — default Talk It Through voice (internal; never shown to users). */
 export const SHEPHERD_VOICE = "onyx";
@@ -146,13 +149,13 @@ export function speakShepherdLine(text: string, opts?: SpeakShepherdOptions): ()
     });
   }
 
-  return () => {
+  return registerPhilipSpeakCancel(() => {
     cancelled = true;
     if (audio) {
       audio.pause();
       audio = null;
     }
-  };
+  });
 }
 
 /** Create an Audio element safe for iOS — playsinline prevents earpiece routing after getUserMedia. */
@@ -160,6 +163,7 @@ function makeAudio(src?: string): HTMLAudioElement {
   const el = src ? new Audio(src) : new Audio();
   el.setAttribute("playsinline", "");
   el.setAttribute("webkit-playsinline", "");
+  el.setAttribute("data-philip-tts", "1");
   return el;
 }
 
@@ -311,10 +315,10 @@ export function speakShepherdStream(
       if (!cancelled) opts?.onEnd?.();
     };
 
-    return () => {
+    return registerPhilipSpeakCancel(() => {
       cancelled = true;
       cleanupAudio();
-    };
+    });
   }
 
   // Blob fallback — no MediaSource support (old iOS).
@@ -341,10 +345,10 @@ export function speakShepherdStream(
     useBlobFallback();
   }
 
-  return () => {
+  return registerPhilipSpeakCancel(() => {
     cancelled = true;
     if (audio) { audio.pause(); audio = null; }
-  };
+  });
 }
 
 export const PROCESSING_BRIDGE = "I'm sitting with what you shared.";
@@ -360,7 +364,7 @@ export const VOICE_SILENCE_ENTRY_MS = 1_000;
 export const VOICE_SILENCE_PHASE1_MS = 800;
 export const VOICE_SILENCE_FOLLOWUP_MS = 900;
 
-export const VOICE_MIC_HANDOFF_PHASE1_MS = 800;
+export const VOICE_MIC_HANDOFF_PHASE1_MS = 500;
 export const VOICE_MIC_HANDOFF_FOLLOWUP_MS = 600;
 
 const HEAVY_REPLY_RE =

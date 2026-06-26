@@ -18,7 +18,7 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
+import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS, releasePhilipAudioSession } from "@/lib/shepherdVoice";
 import { useConvoMachine, type ConvoPhase } from "@/lib/useConvoMachine";
 import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
@@ -49,7 +49,6 @@ import { VoiceSessionOrb, type VoiceOrbMode } from "@/components/VoiceSessionOrb
 import { PhilipVoiceHandoffLayer } from "@/components/PhilipVoiceHandoffLayer";
 import { VoiceQuietHint } from "@/components/VoiceQuietHint";
 import {
-  VOICE_QUIET_CAPTURE_FAIL,
   VOICE_QUIET_HANDOFF_FAIL,
   VOICE_QUIET_THRESHOLD_LINE,
   VOICE_TAP_WHEN_DONE,
@@ -569,12 +568,15 @@ export default function GuidancePage() {
   const voiceQuietHintShownRef = useRef(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
   const [micArming, setMicArming] = useState(false);
+  const [entryRecorderReady, setEntryRecorderReady] = useState(false);
   const heartMicWasLiveRef = useRef(false);
   const [phase1MicLive, setPhase1MicLive] = useState(false);
   const [phase1MicArming, setPhase1MicArming] = useState(false);
+  const [phase1RecorderReady, setPhase1RecorderReady] = useState(false);
   const phase1MicWasLiveRef = useRef(false);
   const [followUpMicLive, setFollowUpMicLive] = useState(false);
   const [followUpMicArming, setFollowUpMicArming] = useState(false);
+  const [followUpRecorderReady, setFollowUpRecorderReady] = useState(false);
   const [voiceHandoffPending, setVoiceHandoffPending] = useState(false);
   const micVisualLive = entryMicLive || micArming;
   const phase1MicVisual = phase1MicLive;
@@ -1594,6 +1596,10 @@ export default function GuidancePage() {
     setHeartListenPhase("listening");
     setMicArming(true);
     setEntryMicLive(false);
+    setEntryRecorderReady(false);
+
+    void releasePhilipAudioSession().then(() => {
+      if (heartVoiceRef.current?.isActive()) return;
 
     // Consume pre-acquired stream if still live — iOS may end tracks during Philip's TTS.
     let preStream = preAcquiredMicRef.current;
@@ -1622,14 +1628,20 @@ export default function GuidancePage() {
           heartMicWasLiveRef.current = true;
           setMicArming(false);
           entryMicRetryRef.current = 0;
+        } else {
+          setEntryRecorderReady(false);
         }
       },
+      onRecorderReady: () => setEntryRecorderReady(true),
       onListenEnd: () => {
         setEntryMicLive(false);
         setMicArming(false);
         const listener = heartVoiceRef.current;
         const preview = (listener?.getPreview() ?? heartInputRef.current).trim();
-        const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
+        const canSubmit =
+          listener?.hadMeaningfulCapture()
+          || listener?.canAutoSubmit()
+          || preview.length >= GUIDANCE_INPUT_MIN;
         if (
           isPhilipMode()
           && convoRef.current.phase === "entry"
@@ -1672,10 +1684,7 @@ export default function GuidancePage() {
         setVoiceHandoffPending(false);
         setEntryMicLive(false);
         setMicArming(false);
-        toast({
-          description: VOICE_QUIET_CAPTURE_FAIL,
-          variant: "destructive",
-        });
+        setEntryRecorderReady(false);
         window.setTimeout(() => {
           if (
             convoRef.current.phase === "entry"
@@ -1705,6 +1714,7 @@ export default function GuidancePage() {
     setHeartHasRecording(true);
     if (convo.phase === "greeting") convo.dispatch({ type: "GREETING_END" });
     convo.dispatch({ type: "ENTRY_OPEN" });
+    });
   }, [convo, convo.phase]);
 
   const startHeartListeningRef = useRef(startHeartListening);
@@ -1757,6 +1767,10 @@ export default function GuidancePage() {
     setPhase1ListenPhase("listening");
     setPhase1MicArming(true);
     setPhase1MicLive(false);
+    setPhase1RecorderReady(false);
+
+    void releasePhilipAudioSession().then(() => {
+      if (phase1VoiceRef.current?.isActive()) return;
 
     const listener = createPatientVoiceListener({
       conversational: true,
@@ -1772,8 +1786,11 @@ export default function GuidancePage() {
           phase1MicWasLiveRef.current = true;
           setPhase1MicArming(false);
           phase1MicRetryRef.current = 0;
+        } else {
+          setPhase1RecorderReady(false);
         }
       },
+      onRecorderReady: () => setPhase1RecorderReady(true),
       onListenEnd: () => {
         setPhase1MicLive(false);
         setPhase1MicArming(false);
@@ -1789,7 +1806,7 @@ export default function GuidancePage() {
           && !phase1SubmittingRef.current
           && !phase2LoadingRef.current
           && phase1ResponseRef.current
-          && (preview.length >= GUIDANCE_INPUT_MIN || hasAudio)
+          && (preview.length >= GUIDANCE_INPUT_MIN || listener?.hadMeaningfulCapture() || hasAudio)
         ) {
           setVoiceHandoffPending(true);
           handlePhase1ContinueRef.current(preview, true);
@@ -1816,10 +1833,7 @@ export default function GuidancePage() {
         setVoiceHandoffPending(false);
         setPhase1MicLive(false);
         setPhase1MicArming(false);
-        toast({
-          description: VOICE_QUIET_CAPTURE_FAIL,
-          variant: "destructive",
-        });
+        setPhase1RecorderReady(false);
         window.setTimeout(() => {
           if (
             !phase1SubmittingRef.current
@@ -1850,6 +1864,7 @@ export default function GuidancePage() {
     listener.start();
     setPhase1Listening(true);
     convo.dispatch({ type: "P1_REPLY_OPEN" });
+    });
   }, []);
 
   const startPhase1ListeningRef = useRef(startPhase1Listening);
@@ -1933,6 +1948,10 @@ export default function GuidancePage() {
     setFollowUpListenPhase("listening");
     setFollowUpMicArming(true);
     setFollowUpMicLive(false);
+    setFollowUpRecorderReady(false);
+
+    void releasePhilipAudioSession().then(() => {
+      if (followUpVoiceRef.current?.isActive()) return;
 
     const listener = createPatientVoiceListener({
       conversational: true,
@@ -1947,14 +1966,20 @@ export default function GuidancePage() {
         if (live) {
           setFollowUpMicArming(false);
           followUpMicRetryRef.current = 0;
+        } else {
+          setFollowUpRecorderReady(false);
         }
       },
+      onRecorderReady: () => setFollowUpRecorderReady(true),
       onListenEnd: () => {
         setFollowUpMicLive(false);
         setFollowUpMicArming(false);
         const listener = followUpVoiceRef.current;
         const preview = (listener?.getPreview() ?? followUp).trim();
-        const canSubmit = listener?.canAutoSubmit() ?? preview.length >= GUIDANCE_INPUT_MIN;
+        const canSubmit =
+          listener?.hadMeaningfulCapture()
+          || listener?.canAutoSubmit()
+          || preview.length >= GUIDANCE_INPUT_MIN;
         if (
           isPhilipMode()
           && convoRef.current.phase === "fu-reply"
@@ -1986,10 +2011,7 @@ export default function GuidancePage() {
         setVoiceHandoffPending(false);
         setFollowUpMicLive(false);
         setFollowUpMicArming(false);
-        toast({
-          description: VOICE_QUIET_CAPTURE_FAIL,
-          variant: "destructive",
-        });
+        setFollowUpRecorderReady(false);
         window.setTimeout(() => {
           if (
             convoRef.current.phase === "fu-reply"
@@ -2014,6 +2036,7 @@ export default function GuidancePage() {
     listener.start();
     setFollowUpListening(true);
     convo.dispatch({ type: "FU_REPLY_OPEN" });
+    });
   }, [isSending, processingBridge]);
 
   const startFollowUpListeningRef = useRef(startFollowUpListening);
@@ -2387,23 +2410,15 @@ export default function GuidancePage() {
     }
 
     const voiceSession = fromVoice && (listener != null || heartMicWasLiveRef.current);
-    if (!trimmed && !voiceSession) {
-      setVoiceHandoffPending(false);
+    if (!fromVoice && !trimmed) {
       toast({
-        description: VOICE_QUIET_CAPTURE_FAIL,
+        description: `Share at least ${GUIDANCE_INPUT_MIN} characters (up to ${GUIDANCE_INPUT_MAX}).`,
         variant: "destructive",
       });
-      window.setTimeout(() => {
-        if (convoRef.current.phase === "entry" && !heartVoiceRef.current?.isActive()) {
-          startHeartListeningRef.current(true);
-        }
-      }, 400);
       return;
     }
-
-    if (!trimmed && fromVoice && !listener) {
+    if (fromVoice && !listener && !heartMicWasLiveRef.current) {
       setVoiceHandoffPending(false);
-      heartMicWasLiveRef.current = false;
       window.setTimeout(() => {
         if (convoRef.current.phase === "entry" && !heartVoiceRef.current?.isActive()) {
           startHeartListeningRef.current(true);
@@ -2505,20 +2520,16 @@ export default function GuidancePage() {
       setPhase1UserReply(stopped || reply);
     }
 
-    const hasVoiceCapture =
-      fromVoiceOverride
-      && (
-        listener != null
-        || phase1MicWasLiveRef.current
-        || phase1MicLive
-        || phase1MicArming
-      );
-    if (!reply.trim() && !hasVoiceCapture) {
-      setVoiceHandoffPending(false);
+    const fromVoice = fromVoiceOverride ?? (!showPhase1TypeFallback && textOverride === undefined);
+    if (!fromVoice && !reply.trim()) {
       toast({
-        description: VOICE_QUIET_CAPTURE_FAIL,
+        description: `Share at least ${GUIDANCE_INPUT_MIN} characters (up to ${GUIDANCE_INPUT_MAX}).`,
         variant: "destructive",
       });
+      return;
+    }
+    if (fromVoice && !listener && !phase1MicWasLiveRef.current) {
+      setVoiceHandoffPending(false);
       window.setTimeout(() => {
         if (!phase1SubmittingRef.current && !phase1VoiceRef.current?.isActive()) {
           startPhase1ListeningRef.current?.();
@@ -2532,7 +2543,6 @@ export default function GuidancePage() {
     setPhase1Listening(false);
     setVoiceHandoffPending(true);
     phase1SubmittingRef.current = true;
-    const fromVoice = fromVoiceOverride ?? (!showPhase1TypeFallback && textOverride === undefined);
     lastInputWasVoiceRef.current = fromVoice;
     if (fromVoice) setVoiceConversation(true);
     setProcessingBridge(true);
@@ -2735,12 +2745,15 @@ export default function GuidancePage() {
       setFollowUp(stopped || text);
     }
 
-    if (!text && !(fromVoice && listener && (listener.hasRecordedAudio() || listener.hadMeaningfulCapture()))) {
-      setVoiceHandoffPending(false);
+    if (!fromVoice && !text) {
       toast({
-        description: VOICE_QUIET_CAPTURE_FAIL,
+        description: `Share at least ${GUIDANCE_INPUT_MIN} characters (up to ${GUIDANCE_INPUT_MAX}).`,
         variant: "destructive",
       });
+      return;
+    }
+    if (fromVoice && !listener?.hadMeaningfulCapture() && !followUpMicLive) {
+      setVoiceHandoffPending(false);
       window.setTimeout(() => {
         if (convoRef.current.phase === "fu-reply" && !followUpVoiceRef.current?.isActive()) {
           startFollowUpListeningRef.current();
@@ -2774,7 +2787,7 @@ export default function GuidancePage() {
           setIsReflecting(false);
           setVoiceHandoffPending(false);
           toast({
-            description: VOICE_QUIET_CAPTURE_FAIL,
+            description: "Philip didn't catch that — speak again when you're ready.",
             variant: "destructive",
           });
           window.setTimeout(() => {
@@ -2921,11 +2934,11 @@ export default function GuidancePage() {
     || followUpMicLive
     || followUpMicArming;
 
-  /** Done-speaking tap only when MediaRecorder is live — not while mic is still arming. */
+  /** Done-speaking tap only when MediaRecorder has delivered at least one chunk. */
   const philipMicCaptureReady =
-    entryMicLive
-    || phase1MicLive
-    || followUpMicLive;
+    (entryMicLive && entryRecorderReady)
+    || (phase1MicLive && phase1RecorderReady)
+    || (followUpMicLive && followUpRecorderReady);
 
   const dismissThresholdForTyping = () => {
     if (isPhilipMode() && hasSpeechSupport) return;

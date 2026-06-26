@@ -12,8 +12,10 @@ export type PatientVoiceListener = {
   hasRecordedAudio: () => boolean;
   /** Enough preview text or captured audio for conversational handoff */
   canAutoSubmit: () => boolean;
-  /** Mic was open and we have bytes, SR activity, or VAD speech — even without preview text */
-  hadMeaningfulCapture: () => boolean;
+  /** MediaRecorder started and at least one audio chunk received — safe to show Done. */
+  isRecorderReady: () => boolean;
+  /** Recording never successfully started (getUserMedia / MediaRecorder failed). */
+  recordingNeverStarted: () => boolean;
   /** User done speaking — submit now (orb tap / escape hatch) */
   forceSubmit: () => void;
   /** Orb tap — stop mic and hand off immediately if any audio captured */
@@ -39,6 +41,8 @@ export type PatientVoiceOptions = {
   onInsufficientCapture?: () => void;
   /** MediaRecorder actually started or stopped — drives live mic UI */
   onMicLive?: (live: boolean) => void;
+  /** First audio chunk captured — Done tap is safe */
+  onRecorderReady?: () => void;
   conversational?: boolean;
   autoSubmitSilenceMs?: number;
   minCharsForAutoSubmit?: number;
@@ -173,6 +177,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let speechIdleWatchdog: ReturnType<typeof setInterval> | null = null;
   let micOpenAt = 0;
   let quickHandoffPoll: ReturnType<typeof setInterval> | null = null;
+  let recorderStarted = false;
+  let chunkReady = false;
 
   const clearQuickHandoffPoll = () => {
     if (quickHandoffPoll) clearInterval(quickHandoffPoll);
@@ -630,7 +636,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (manual) flushRecorderData();
     userSpeechDetected = true;
     const canSubmit = manual
-      ? manualCanSubmit()
+      ? recorderStarted
       : readyForConversationalHandoff();
     if (!canSubmit) {
       if (manual) {
@@ -971,9 +977,14 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       audioChunks = [];
       mimeType = pickGuidanceAudioMimeType();
       mediaRecorder = new MediaRecorder(stream, { mimeType });
+      recorderStarted = true;
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunks.push(e.data);
+          if (!chunkReady) {
+            chunkReady = true;
+            opts.onRecorderReady?.();
+          }
           if (
             opts.conversational
             && micOpenAt > 0
@@ -1040,6 +1051,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       hysteresisBandSince = null;
       lastConfirmedSpeechAt = 0;
       micOpenAt = Date.now();
+      recorderStarted = false;
+      chunkReady = false;
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {
@@ -1063,7 +1076,13 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       return totalAudioBytes() > 0;
     },
     hadMeaningfulCapture() {
-      return manualCanSubmit();
+      return recorderStarted;
+    },
+    isRecorderReady() {
+      return chunkReady;
+    },
+    recordingNeverStarted() {
+      return !recorderStarted;
     },
     canAutoSubmit() {
       return hasEnoughToSubmit();
@@ -1073,24 +1092,24 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     },
     finishSpeaking() {
       flushRecorderData();
-      const delay = preferLocalSilenceDetection() ? 220 : 60;
+      const delay = preferLocalSilenceDetection() ? 280 : 80;
       window.setTimeout(() => {
+        if (!recorderStarted) {
+          opts.onInsufficientCapture?.();
+          return;
+        }
         if (active) {
           submitNow(true);
           return;
         }
-        if (manualCanSubmit() || totalAudioBytes() > 0) {
-          if (!autoSubmitFired) {
-            autoSubmitFired = true;
-            void waitForRecorderStop()
-              .then(() => { endListening(false); opts.onAutoSubmit?.(); })
-              .catch(() => { opts.onAutoSubmit?.(); });
-          } else {
-            opts.onAutoSubmit?.();
-          }
-          return;
+        if (!autoSubmitFired) {
+          autoSubmitFired = true;
+          void waitForRecorderStop()
+            .then(() => { endListening(false); opts.onAutoSubmit?.(); })
+            .catch(() => { opts.onAutoSubmit?.(); });
+        } else {
+          opts.onAutoSubmit?.();
         }
-        opts.onInsufficientCapture?.();
       }, delay);
     },
     getPreview() {
@@ -1101,7 +1120,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       const preview = previewTranscript.trim();
       if (audioChunks.length === 0) return preview;
       const blob = new Blob(audioChunks, { type: mimeType });
-      if (blob.size < 200) return preview;
+      if (blob.size < 32) return preview;
       finalizing = true;
       try {
         const whisper = await transcribeGuidanceAudio(blob, mimeType);
