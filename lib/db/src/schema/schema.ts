@@ -421,6 +421,27 @@ export const userMemory = pgTable("user_memory", {
 
 export type UserMemoryRow = typeof userMemory.$inferSelect;
 
+export const philipRelationshipProfiles = pgTable("philip_relationship_profiles", {
+  sessionId: text("session_id").primaryKey(),
+  trustBand: text("trust_band").default("new").notNull(),
+  exploredAcrossSessions: jsonb("explored_across_sessions")
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  themesAcrossSessions: jsonb("themes_across_sessions")
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  carryForward: text("carry_forward"),
+  lastMeaningfulTopic: text("last_meaningful_topic"),
+  sessionCount: integer("session_count").default(0).notNull(),
+  directnessCeiling: integer("directness_ceiling").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export type PhilipRelationshipProfileRow = typeof philipRelationshipProfiles.$inferSelect;
+
 export const expoPushTokens = pgTable("expo_push_tokens", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull().unique(),

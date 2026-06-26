@@ -16,8 +16,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { getUserName } from "@/lib/userName";
-import { getRelationshipAge } from "@/lib/relationship";
-import { isLateNight } from "@/lib/nightMode";
+import {
+  buildGuidancePhase1Payload,
+  buildGuidanceResponsePayload,
+  buildTwoPhaseRequestMessages,
+} from "@/lib/guidanceConversation";
 import { useAiUsage, refreshAiUsage } from "@/hooks/use-ai-usage";
 import { canUseAi, shouldShowAiCounter } from "@/lib/aiUsage";
 import { AiPauseModal } from "@/components/AiPauseModal";
@@ -206,17 +209,19 @@ export function FloatingAskAI() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(buildGuidanceResponsePayload({
           situation: text,
           messages,
           userName: getUserName() ?? undefined,
-          sessionId: getSessionId(),
           guidanceMode: "pastoral",
-          isLateNight: isLateNight(),
-          daysWithApp: getRelationshipAge(),
-          isPro: isProVerifiedLocally(),
-          ...(options?.phase1Context ?? {}),
-        }),
+          phase1Spine: options?.phase1Context,
+          companionMode: "philip",
+          sessionExtras: {
+            sessionId: getSessionId(),
+            isPro: isProVerifiedLocally(),
+            daysWithApp: getRelationshipAge(),
+          },
+        })),
       });
 
       if (res.status === 429) {
@@ -260,14 +265,17 @@ export function FloatingAskAI() {
       const res = await fetch("/api/guidance/phase1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(buildGuidancePhase1Payload({
           situation: text,
           userName: getUserName() ?? undefined,
-          sessionId: getSessionId(),
-          daysWithApp: getRelationshipAge(),
           guidanceMode: "pastoral",
-          isPro: isProVerifiedLocally(),
-        }),
+          companionMode: "philip",
+          sessionExtras: {
+            sessionId: getSessionId(),
+            isPro: isProVerifiedLocally(),
+            daysWithApp: getRelationshipAge(),
+          },
+        })),
       });
 
       if (res.status === 429) {
@@ -297,11 +305,7 @@ export function FloatingAskAI() {
 
   const handlePhase2 = async (reply: string, listenResponse: string) => {
     await streamGuidanceResponse(submittedQuestion, {
-      messages: [
-        { role: "user", content: submittedQuestion },
-        { role: "assistant", content: listenResponse },
-        { role: "user", content: reply },
-      ],
+      messages: buildTwoPhaseRequestMessages(submittedQuestion),
       phase1Context: {
         phase1Response: listenResponse,
         phase1UserReply: reply,

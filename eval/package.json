@@ -9,6 +9,7 @@
     "eval:response": "npx tsx run-eval.ts --phase response",
     "turing": "npx tsx philip-turing-test.ts",
     "turing:gate": "npx tsx turing-gate.ts",
+    "turing:mind-gate": "npx tsx mind-gate.ts",
     "turing:golden": "npx tsx philip-turing-test.ts --golden",
     "turing:single": "npx tsx philip-turing-test.ts --count 1",
     "turing:category": "npx tsx philip-turing-test.ts --category"

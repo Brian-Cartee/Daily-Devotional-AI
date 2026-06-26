@@ -25,6 +25,8 @@ import {
   SMOKE_CORE_IDS,
   FEATURE_SCENARIO_IDS,
   GATE_MIN_PASS_RATE,
+  MIND_GATE_MIN_EXCHANGE,
+  MIND_GATE_MIN_VERSION,
 } from "./golden.js";
 import { findPostSendOffViolation, questionInventsRelationship, inventsUnsupportedDetail } from "../artifacts/api-server/src/conversationState.ts";
 import { PHILIP_RUNTIME_VERSION } from "../artifacts/api-server/src/philip-runtime/version.ts";
@@ -63,6 +65,15 @@ interface PhilipRuntimeMeta {
   lane: string;
   move: string | null;
   gates: string[];
+  mindVersion: number | null;
+  mindStage: string | null;
+  stateSource: string | null;
+  phase1Included: boolean | null;
+  canonicalHistoryTurns: number | null;
+  questionsAskedCount: number | null;
+  contextMode: string | null;
+  tcpCharCount: number | null;
+  plannerSource: string | null;
 }
 
 interface ExchangeScore {
@@ -104,6 +115,68 @@ const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
 const red   = (s: string) => `\x1b[31m${s}\x1b[0m`;
 const yel   = (s: string) => `\x1b[33m${s}\x1b[0m`;
 const cyan  = (s: string) => `\x1b[36m${s}\x1b[0m`;
+
+function runtimeSupportsMindTelemetry(version: string | null | undefined): boolean {
+  if (!version) return false;
+  const [major, minor] = version.split(".").map(Number);
+  if (!Number.isFinite(major) || !Number.isFinite(minor)) return false;
+  return major > 0 || minor >= 2;
+}
+
+function runtimeSupportsTcp(version: string | null | undefined): boolean {
+  if (!version) return false;
+  const parts = version.split(".").map(Number);
+  const major = parts[0] ?? 0;
+  const minor = parts[1] ?? 0;
+  const patch = parts[2] ?? 0;
+  if (major > 0) return true;
+  if (minor > 2) return true;
+  return minor === 2 && patch >= 2;
+}
+
+function collectMindGateFailures(r: ConversationResult): string[] {
+  const failures: string[] = [];
+  if (!runtimeSupportsMindTelemetry(r.philipRuntimeVersionSeen)) return failures;
+
+  const mindDisabled = r.exchanges.some(e => e.philipRuntime?.stateSource === "disabled");
+  if (mindDisabled) return failures;
+
+  for (const e of r.exchanges) {
+    if (e.exchangeNum < 2 || !e.philipRuntime) continue;
+    const m = e.philipRuntime;
+
+    if (!m.stateSource) {
+      failures.push(`${r.scenario.id} #${e.exchangeNum}: missing stateSource header`);
+    }
+    if (m.mindVersion == null) {
+      failures.push(`${r.scenario.id} #${e.exchangeNum}: missing mindVersion header`);
+    }
+    if (m.phase1Included !== true) {
+      failures.push(`${r.scenario.id} #${e.exchangeNum}: phase1Included not true`);
+    }
+    if (e.exchangeNum === 2 && m.mindVersion != null && m.mindVersion < 1) {
+      failures.push(`${r.scenario.id} #${e.exchangeNum}: expected mindVersion>=1, got ${m.mindVersion}`);
+    }
+    if (e.exchangeNum >= MIND_GATE_MIN_EXCHANGE) {
+      if (m.stateSource !== "cache") {
+        failures.push(`${r.scenario.id} #${e.exchangeNum}: expected stateSource=cache, got ${m.stateSource ?? "null"}`);
+      }
+      if ((m.mindVersion ?? 0) < MIND_GATE_MIN_VERSION) {
+        failures.push(`${r.scenario.id} #${e.exchangeNum}: expected mindVersion>=${MIND_GATE_MIN_VERSION}, got ${m.mindVersion ?? "null"}`);
+      }
+      if (m.phase1Included && (m.canonicalHistoryTurns ?? 0) < 5) {
+        failures.push(`${r.scenario.id} #${e.exchangeNum}: canonicalHistoryTurns=${m.canonicalHistoryTurns ?? "null"} (expected >=5 with phase1 spine)`);
+      }
+    }
+    if (runtimeSupportsTcp(r.philipRuntimeVersionSeen) && e.exchangeNum >= 2) {
+      if (m.contextMode !== "tcp") {
+        failures.push(`${r.scenario.id} #${e.exchangeNum}: expected contextMode=tcp, got ${m.contextMode ?? "null"}`);
+      }
+    }
+  }
+
+  return failures;
+}
 
 function parseFinalVerdictPass(raw: string): boolean {
   if (/\bVERDICT:\s*PASS\b/i.test(raw)) return true;
@@ -221,6 +294,15 @@ async function callPhilipResponse(
           lane: headers.lane,
           move: headers.move ?? null,
           gates: [...headers.gates],
+          mindVersion: headers.mindVersion,
+          mindStage: headers.mindStage,
+          stateSource: headers.stateSource,
+          phase1Included: headers.phase1Included,
+          canonicalHistoryTurns: headers.canonicalHistoryTurns,
+          questionsAskedCount: headers.questionsAskedCount,
+          contextMode: headers.contextMode,
+          tcpCharCount: headers.tcpCharCount,
+          plannerSource: headers.plannerSource,
         }
       : null;
     return { text, philipRuntime };
@@ -299,6 +381,7 @@ Feature lane expectations (when scenario flags include them):
 - dependency / expect-outward-point: Philip should gently point outward (God, a real person) — not deeper into the app. Once is enough. No hotline dump. No "as an AI."
 - send-off-at-8: By exchange 8+, Philip should offer a sending line (permission to stop) with NO question — not another probe.
 - memory-continuity / no-invented-history: Philip must NOT invent visit counts, days they've come back, or prior sessions beyond what the user said.
+- turn3-continuity / named-person: If the user named a specific person (spouse, child, friend), Philip must track them on exchanges 3+ — no re-asking who they mean or "who is he/she" when already established.
 
 Respond in JSON only — no extra text.`;
 
@@ -658,7 +741,7 @@ function buildHtmlReport(results: ConversationResult[]): string {
       const illusion = e.illusionHold ? "✓" : `<span style="color:#f87171">✗ BROKE</span>`;
       const chatbot = e.chatbotPhrase ? `<span style="color:#f87171">"${e.chatbotPhrase}"</span>` : "none";
       const osMeta = e.philipRuntime
-        ? `<span style="font-size:10px;color:#64748b">${e.philipRuntime.lane}${e.philipRuntime.gates.length ? ` · ${e.philipRuntime.gates.join(",")}` : ""}</span>`
+        ? `<span style="font-size:10px;color:#64748b">${e.philipRuntime.lane}${e.philipRuntime.gates.length ? ` · ${e.philipRuntime.gates.join(",")}` : ""}${e.philipRuntime.mindVersion != null ? ` · mind v${e.philipRuntime.mindVersion}` : ""}${e.philipRuntime.stateSource ? ` · ${e.philipRuntime.stateSource}` : ""}${e.philipRuntime.contextMode ? ` · ${e.philipRuntime.contextMode}` : ""}</span>`
         : "";
       return `
         <tr>
@@ -853,7 +936,10 @@ async function main() {
         const avg4 = ((ex.curiosity + ex.specificity + ex.patternBreak + ex.pullScore) / 4).toFixed(1);
         const illusion = ex.illusionHold ? "" : red(" [BROKE]");
         const chatbot  = ex.chatbotPhrase ? yel(` [!${ex.chatbotPhrase}]`) : "";
-        console.log(dim(`  #${ex.exchangeNum} avg=${avg4}${illusion}${chatbot} — ${ex.notes.slice(0, 70)}`));
+        const mindNote = ex.philipRuntime?.mindVersion != null
+          ? dim(` mind=v${ex.philipRuntime.mindVersion}${ex.philipRuntime.stateSource ? `/${ex.philipRuntime.stateSource}` : ""}${ex.philipRuntime.plannerSource ? `/p:${ex.philipRuntime.plannerSource}` : ""}`)
+          : "";
+        console.log(dim(`  #${ex.exchangeNum} avg=${avg4}${illusion}${chatbot}${mindNote} — ${ex.notes.slice(0, 70)}`));
       }
     }
   }
@@ -915,6 +1001,14 @@ async function main() {
           move: e.philipRuntime!.move,
           gates: e.philipRuntime!.gates,
           philipRuntimeVersion: e.philipRuntime!.philipRuntimeVersion,
+          mindVersion: e.philipRuntime!.mindVersion,
+          mindStage: e.philipRuntime!.mindStage,
+          stateSource: e.philipRuntime!.stateSource,
+          phase1Included: e.philipRuntime!.phase1Included,
+          canonicalHistoryTurns: e.philipRuntime!.canonicalHistoryTurns,
+          questionsAskedCount: e.philipRuntime!.questionsAskedCount,
+          contextMode: e.philipRuntime!.contextMode,
+          tcpCharCount: e.philipRuntime!.tcpCharCount,
         })),
     })),
   }, null, 2));
@@ -948,6 +1042,7 @@ async function main() {
           gateFailures.push(`${r.scenario.id} #${e.exchangeNum}: invented unsupported detail`);
         }
       }
+      gateFailures.push(...collectMindGateFailures(r));
     }
     if (gateFailures.length > 0) {
       console.log("\n" + red(bold("GATE FAILED")));

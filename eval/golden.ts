@@ -15,6 +15,7 @@ export const FEATURE_SCENARIO_IDS = [
   "dependency-01",
   "sendoff-01",
   "continuity-01",
+  "continuity-turn3-01",
 ] as const;
 
 /** One anchor per major lane not covered by smoke/feature set. */
@@ -35,3 +36,8 @@ export const GOLDEN_15_IDS = [
 ] as const;
 
 export const GATE_MIN_PASS_RATE = 80;
+
+/** Session Mind telemetry gate — exchange 3+ should read from warm cache. */
+export const MIND_CONTINUITY_SCENARIO_ID = "continuity-turn3-01";
+export const MIND_GATE_MIN_EXCHANGE = 3;
+export const MIND_GATE_MIN_VERSION = 2;

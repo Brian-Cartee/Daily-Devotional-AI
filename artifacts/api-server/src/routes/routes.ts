@@ -101,6 +101,15 @@ import { freeTrialGrants } from "../freeTrialConfig";
 import { registerSpeakLifeRoutes } from "../speakLife";
 import { registerChurchRoutes } from "../church/routes";
 import { ensureChurchSchema } from "../churchMigrations";
+import { ensurePhilipRelationshipSchema } from "../philipRelationshipMigrations";
+import {
+  bootstrapProfileFromJournal,
+  isRelationshipProfileEnabled,
+  mergeGuidanceMemoryIntoProfile,
+  profileHasSignal,
+  type RelationshipProfile,
+} from "../philip-runtime/mind/relationshipProfile";
+import { extractJournalThemes } from "../philip-runtime/memory/orchestrator";
 import { adminAuth } from "../adminAuth";
 import { getServerDaysWithApp, touchSessionFirstSeen, getGuidanceConversationCount, incrementGuidanceConversationCount } from "../sessionFirstSeen";
 import { getTriviaSeed } from "../triviaSeed";
@@ -409,6 +418,10 @@ export async function registerRoutes(
 
   await ensureChurchSchema().catch((err) => {
     console.error("[church] schema ensure failed:", err);
+  });
+
+  await ensurePhilipRelationshipSchema().catch((err) => {
+    console.error("[philip-relationship] schema ensure failed:", err);
   });
 
   // Sync today's verse from Google Sheets at startup
@@ -1723,9 +1736,9 @@ Voice authenticity (internal constraint — never cite these rules in output):
 
   // ── Session context cache — 10-minute TTL, avoids re-fetching unchanged data on every turn ──
   interface SessionCtxEntry {
-    journalContext: { context: string; count: number };
-    recentEcho: string;
-    savedVerses: string;
+    journalContext: { context: string; count: number; themes: string[] };
+    recentEcho: { full: string; themes: string[] };
+    savedVerses: { full: string; verses: Array<{ reference: string; text: string }> };
     userMemCtx: Awaited<ReturnType<typeof getMemoryContext>>;
     cachedAt: number;
   }
@@ -1738,7 +1751,7 @@ Voice authenticity (internal constraint — never cite these rules in output):
     const [journalContext, recentEcho, savedVerses, userMemCtx] = await Promise.all([
       getJournalContext(sessionId),
       getRecentJournalEcho(sessionId),
-      getMemoryVerseNote(sessionId),
+      getMemoryVerseBundle(sessionId),
       getMemoryContext(sessionId),
     ]);
     const entry: SessionCtxEntry = { journalContext, recentEcho, savedVerses, userMemCtx, cachedAt: Date.now() };
@@ -1756,19 +1769,72 @@ Voice authenticity (internal constraint — never cite these rules in output):
     }
   }
 
-  async function getJournalContext(sessionId: string): Promise<{ context: string; count: number }> {
-    if (!sessionId) return { context: "", count: 0 };
+  const RELATIONSHIP_PROFILE_CACHE = new Map<string, { profile: RelationshipProfile | null; cachedAt: number }>();
+
+  async function getRelationshipProfileForSession(sessionId: string): Promise<RelationshipProfile | null> {
+    if (!sessionId || !isRelationshipProfileEnabled()) return null;
+
+    const cached = RELATIONSHIP_PROFILE_CACHE.get(sessionId);
+    if (cached && Date.now() - cached.cachedAt < SESSION_CTX_TTL) {
+      return cached.profile;
+    }
+
+    try {
+      let profile = await storage.getRelationshipProfile(sessionId);
+      if (!profile || !profileHasSignal(profile)) {
+        const entries = await storage.getJournalEntries(sessionId);
+        const bootstrapped = bootstrapProfileFromJournal(sessionId, entries);
+        if (bootstrapped && profileHasSignal(bootstrapped)) {
+          profile = await storage.upsertRelationshipProfile(bootstrapped);
+        } else {
+          profile = bootstrapped ?? profile;
+        }
+      }
+
+      const entry = { profile: profile ?? null, cachedAt: Date.now() };
+      RELATIONSHIP_PROFILE_CACHE.set(sessionId, entry);
+      return entry.profile;
+    } catch {
+      return null;
+    }
+  }
+
+  async function mergeRelationshipProfileOnSessionEnd(
+    sessionId: string,
+    payload: { summary: string; carryForward?: string; themes?: string[]; explored?: string[] },
+    isNewJournalEntry: boolean,
+  ): Promise<void> {
+    if (!sessionId || !isRelationshipProfileEnabled()) return;
+    try {
+      const existing = await storage.getRelationshipProfile(sessionId);
+      const isNewSession = isNewJournalEntry || !existing || existing.sessionCount === 0;
+      const merged = mergeGuidanceMemoryIntoProfile(existing ?? null, payload, sessionId, {
+        isNewSession,
+      });
+      await storage.upsertRelationshipProfile(merged);
+      RELATIONSHIP_PROFILE_CACHE.delete(sessionId);
+    } catch (err) {
+      console.error("[philip-relationship] merge failed:", err);
+    }
+  }
+
+  async function getJournalContext(sessionId: string): Promise<{ context: string; count: number; themes: string[] }> {
+    if (!sessionId) return { context: "", count: 0, themes: [] };
     try {
       const entries = await storage.getJournalEntries(sessionId);
-      if (!entries || entries.length === 0) return { context: "", count: 0 };
+      if (!entries || entries.length === 0) return { context: "", count: 0, themes: [] };
       const visible = entries.filter(e => e.type !== "guidance_memory").slice(0, 5);
       const context = visible.map(e => {
         const label = e.type === "prayer" ? "Prayer" : e.type === "reflection" ? "Reflection" : e.type === "verse" ? "Scripture" : "Note";
         const snippet = e.content.replace(/\n+/g, " ").slice(0, 220);
         return `[${label}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
       }).join("\n");
-      return { context, count: entries.filter(e => e.type !== "guidance_memory").length };
-    } catch { return { context: "", count: 0 }; }
+      return {
+        context,
+        count: entries.filter(e => e.type !== "guidance_memory").length,
+        themes: extractJournalThemes(visible),
+      };
+    } catch { return { context: "", count: 0, themes: [] }; }
   }
 
   /** Optional devotional continuity — never includes guidance_memory; max 48h. */
@@ -1808,11 +1874,11 @@ Voice authenticity (internal constraint — never cite these rules in output):
   }
 
   // Recent personal journal entries from the last 7 days (reflections, prayers, notes — not AI memories)
-  async function getRecentJournalEcho(sessionId: string): Promise<string> {
-    if (!sessionId) return "";
+  async function getRecentJournalEcho(sessionId: string): Promise<{ full: string; themes: string[] }> {
+    if (!sessionId) return { full: "", themes: [] };
     try {
       const entries = await storage.getJournalEntries(sessionId);
-      if (!entries || entries.length === 0) return "";
+      if (!entries || entries.length === 0) return { full: "", themes: [] };
       const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const recent = entries
         .filter(e =>
@@ -1820,7 +1886,7 @@ Voice authenticity (internal constraint — never cite these rules in output):
           new Date(e.createdAt).getTime() > cutoff
         )
         .slice(0, 4);
-      if (recent.length === 0) return "";
+      if (recent.length === 0) return { full: "", themes: [] };
       const lines = recent.map(e => {
         const dayLabel = (() => {
           const diffDays = Math.floor((Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24));
@@ -1832,18 +1898,30 @@ Voice authenticity (internal constraint — never cite these rules in output):
         const snippet = e.content.replace(/\n+/g, " ").slice(0, 180);
         return `[${label}, written ${dayLabel}${e.title ? ` — ${e.title}` : ""}]: ${snippet}`;
       }).join("\n");
-      return lines;
-    } catch { return ""; }
+      return { full: lines, themes: extractJournalThemes(recent) };
+    } catch { return { full: "", themes: [] }; }
+  }
+
+  async function getMemoryVerseBundle(sessionId: string): Promise<{
+    full: string;
+    verses: Array<{ reference: string; text: string }>;
+  }> {
+    if (!sessionId) return { full: "", verses: [] };
+    try {
+      const verses = await storage.getMemoryVerses(sessionId);
+      if (!verses || verses.length === 0) return { full: "", verses: [] };
+      const list = verses.slice(0, 6);
+      return {
+        full: list.map(v => `${v.reference} — "${v.text.slice(0, 100)}"`).join("\n"),
+        verses: list.map(v => ({ reference: v.reference, text: v.text })),
+      };
+    } catch { return { full: "", verses: [] }; }
   }
 
   // Memory verses saved by this person
   async function getMemoryVerseNote(sessionId: string): Promise<string> {
-    if (!sessionId) return "";
-    try {
-      const verses = await storage.getMemoryVerses(sessionId);
-      if (!verses || verses.length === 0) return "";
-      return verses.slice(0, 6).map(v => `${v.reference} — "${v.text.slice(0, 100)}"`).join("\n");
-    } catch { return ""; }
+    const bundle = await getMemoryVerseBundle(sessionId);
+    return bundle.full;
   }
 
   async function streamCompletion(
@@ -4024,6 +4102,7 @@ Sacred restraint: fewer words are better.`;
           anthropic,
           fetchSessionContext: getOrFetchSessionContext,
           fetchPriorSessionContinuity: getPriorSessionContinuity,
+          fetchRelationshipProfile: getRelationshipProfileForSession,
         },
       );
 
@@ -4103,9 +4182,22 @@ Sacred restraint: fewer words are better.`;
         });
         const existing = await storage.getJournalEntries(sessionId);
         const latestMemory = existing.find((e) => e.type === "guidance_memory");
+        let isNewJournalEntry = false;
         if (latestMemory && shouldUpsertGuidanceMemory(latestMemory, isPending)) {
           const updated = await storage.updateJournalEntry(latestMemory.id, sessionId, { content: serialized });
           SESSION_CTX_CACHE.delete(sessionId);
+          if (!isPending) {
+            await mergeRelationshipProfileOnSessionEnd(
+              sessionId,
+              {
+                summary: payload.summary,
+                carryForward: cf,
+                themes: payload.themes,
+                explored: payload.explored,
+              },
+              false,
+            );
+          }
           return res.status(200).json({ ok: true, id: String(updated?.id ?? latestMemory.id), updated: true });
         }
         const entry = await storage.createJournalEntry({
@@ -4114,7 +4206,20 @@ Sacred restraint: fewer words are better.`;
           content: serialized,
           title: undefined,
         });
+        isNewJournalEntry = true;
         SESSION_CTX_CACHE.delete(sessionId);
+        if (!isPending) {
+          await mergeRelationshipProfileOnSessionEnd(
+            sessionId,
+            {
+              summary: payload.summary,
+              carryForward: cf,
+              themes: payload.themes,
+              explored: payload.explored,
+            },
+            isNewJournalEntry,
+          );
+        }
         return res.status(200).json({ ok: true, id: String(entry.id) });
       }
       res.status(200).json({ ok: true, id: null });

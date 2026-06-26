@@ -12,8 +12,8 @@ import {
 import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM, PHILIP_GUARDED_SESSION_SEND_OFF } from "../../philipIdentity";
 import { buildMemoryPromptNote } from "../../lib/userMemory";
 import {
-  buildGuidanceContinuityPrompt,
   appendPriorSessionToPlannerState,
+  buildGuidanceContinuityPrompt,
   type GuidanceContinuityRecord,
 } from "../../lib/guidanceMemory";
 import { getVoiceProfile, buildVoicePromptNote } from "../../lib/voiceProfile";
@@ -53,6 +53,38 @@ import {
 } from "../../conversationState";
 import { PHILIP_RUNTIME_VERSION } from "../version";
 import {
+  commitSessionMind,
+  getSessionMind,
+  isSessionMindEnabled,
+  reconstructCanonicalHistory,
+  setSessionMind,
+} from "../mind/sessionMind";
+import type { SessionMindStateSource } from "../mind/types";
+import {
+  appendRelationshipProfileToPlannerState,
+  buildRelationshipProfileTcpNote,
+  isRelationshipProfileEnabled,
+  mergedPriorExplored,
+  profileHasSignal,
+  type RelationshipProfile,
+} from "../mind/relationshipProfile";
+import {
+  buildTurnContextPackage,
+  isTurnContextPackageEnabled,
+} from "../context/turnContextPackage";
+import {
+  serializeLegacyDynamicNotes,
+  serializeTurnContextPackage,
+} from "../context/serialize";
+import {
+  orchestrateMemoryRetrieval,
+} from "../memory/orchestrator";
+import { isMemoryOrchestratorEnabled } from "../memory/policies";
+import {
+  resolvePlannedQuestion,
+  type PlannerSource,
+} from "../planner/mindPlanner";
+import {
   applyPostTurnGates,
   evaluatePreTurnGates,
   recordGate,
@@ -66,9 +98,9 @@ import type {
 } from "./types";
 
 export interface GuidanceSessionContext {
-  journalContext: { context: string; count: number };
-  recentEcho: string;
-  savedVerses: string;
+  journalContext: { context: string; count: number; themes: string[] };
+  recentEcho: { full: string; themes: string[] };
+  savedVerses: { full: string; verses: Array<{ reference: string; text: string }> };
   userMemCtx: Awaited<ReturnType<typeof import("../../lib/userMemory").getMemoryContext>>;
 }
 
@@ -103,6 +135,7 @@ export interface GuidanceTurnDeps {
   anthropic: Anthropic;
   fetchSessionContext: (sessionId: string) => Promise<GuidanceSessionContext>;
   fetchPriorSessionContinuity: (sessionId: string) => Promise<GuidanceContinuityRecord | null>;
+  fetchRelationshipProfile?: (sessionId: string) => Promise<RelationshipProfile | null>;
 }
 
 function buildInitialMetadata(): PhilipTurnMetadata {
@@ -141,11 +174,22 @@ export async function handleGuidanceTurn(
     buildModeNote,
     buildRelationshipNote,
   } = input;
-  const { openai, anthropic, fetchSessionContext, fetchPriorSessionContinuity } = deps;
+  const { openai, anthropic, fetchSessionContext, fetchPriorSessionContinuity, fetchRelationshipProfile } = deps;
 
 const isFollowUp = !isTwoPhaseCompletion && messages && messages.length > 1;
-// twoPhaseContext is now passed as conversation history (see conversationHistory below)
-// rather than re-injected into the system prompt — same context, ~200 fewer tokens/call.
+const sessionMindEnabled = isSessionMindEnabled();
+const situationText = situation.trim();
+
+const canonicalHistory = reconstructCanonicalHistory({
+  situation: situationText,
+  messages,
+  phase1Response,
+  phase1UserReply,
+});
+const phase1Included = !!(phase1Response?.trim() && phase1UserReply?.trim());
+const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = canonicalHistory.length > 0
+  ? canonicalHistory.map(m => ({ role: m.role, content: m.content }))
+  : [{ role: "user", content: situationText }];
 
 const nameNote = userName
   ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
@@ -154,9 +198,9 @@ const nameNote = userName
 // Fetch journal context, recent journal echo, memory verses, and user memory —
 // cached per session for 10 minutes so multi-turn conversations don't re-query on every turn
 const {
-  journalContext: { context: journalCtx, count: journalEntryCount },
-  recentEcho,
-  savedVerses,
+  journalContext: { context: journalCtx, count: journalEntryCount, themes: journalThemes },
+  recentEcho: { full: recentEcho, themes: journalEchoThemes },
+  savedVerses: { full: savedVerses, verses: savedVerseList },
   userMemCtx,
 } = await fetchSessionContext(sessionId || "");
 
@@ -166,8 +210,27 @@ if (!isFollowUp && priorSessionContinuity) {
   guidanceContinuityNote = buildGuidanceContinuityPrompt(priorSessionContinuity);
 }
 
-const augmentPlannerState = (state: string) =>
-  appendPriorSessionToPlannerState(state, priorSessionContinuity);
+const relationshipProfileEnabled = isRelationshipProfileEnabled();
+const relationshipProfile = relationshipProfileEnabled && sessionId && fetchRelationshipProfile
+  ? await fetchRelationshipProfile(sessionId)
+  : null;
+const relationshipProfileNote =
+  relationshipProfile && profileHasSignal(relationshipProfile)
+    ? buildRelationshipProfileTcpNote(relationshipProfile)
+    : "";
+
+const crossSessionExplored = mergedPriorExplored(
+  priorSessionContinuity?.memory.explored?.filter(Boolean) ?? [],
+  relationshipProfile,
+);
+
+const augmentPlannerState = (state: string) => {
+  let block = appendPriorSessionToPlannerState(state, priorSessionContinuity);
+  if (relationshipProfile) {
+    block = appendRelationshipProfileToPlannerState(block, relationshipProfile);
+  }
+  return block;
+};
 
 const memoryNote = journalCtx
   ? `\n\nWhat you already know about this person — from past conversations, prayers they've written, or journal entries. Use this to make your response feel like a continuation of a real relationship, not a first meeting. Reference past things only when it flows naturally and adds genuine warmth or depth. Never quote their entries back to them verbatim. Memory rules: only surface something from the past if it is directly relevant to what they just shared, recent enough to feel natural, and adds care rather than precision. When you do reference something, keep it soft and permissive — "This feels similar to something you mentioned before… if that still fits, we can stay with it" — never specific dates, never exact phrasing, never pattern claims like "you always" or "you tend to." Memory should feel like being known, not being recorded:\n${journalCtx}`
@@ -231,17 +294,26 @@ const journeyNote = journeyContextText
   ? `\n\nJourney context — this person is currently walking through: ${journeyContextText} If what they share connects naturally to that journey, Philip may acknowledge it once, gently — not as a topic shift, but as recognition that God may be speaking through the same thread in multiple places.`
   : "";
 
-// Generate structured conversation state for follow-up exchanges
-// This gives Philip an explicit map of what's been heard, asked, and explored
+// Generate structured conversation state — incremental when Session Mind cache is warm
 let conversationStateBlock = "";
 let conversationState: ConversationState | null = null;
-if (isFollowUp && messages?.length) {
+let stateSource: SessionMindStateSource = sessionMindEnabled ? "bootstrap" : "disabled";
+const cachedSessionMind = sessionMindEnabled && sessionId ? getSessionMind(sessionId) : null;
+
+const shouldExtractState = isFollowUp || (sessionMindEnabled && isTwoPhaseCompletion);
+if (shouldExtractState && conversationHistory.length > 0) {
   try {
-    const state = await generateConversationState(openai, situation.trim(), messages);
+    if (cachedSessionMind) stateSource = "cache";
+    const state = await generateConversationState(
+      openai,
+      situationText,
+      conversationHistory as Array<{ role: "user" | "assistant"; content: string }>,
+      cachedSessionMind?.state,
+    );
     conversationState = state;
     conversationStateBlock = buildStatePromptBlock(state);
   } catch {
-    // Non-fatal — continue without state block
+    stateSource = sessionMindEnabled ? "fallback" : "disabled";
   }
 } else if (!isFollowUp) {
   // Check closing intent for two-phase flow too
@@ -263,13 +335,114 @@ let lane: PhilipLane = "standard";
 let selectedMove: PhilipMove | "sit" | null = null;
 let engine: PhilipTurnMetadata["engine"] = null;
 
+const turnKind = isFollowUp
+  ? "follow_up" as const
+  : isTwoPhaseCompletion
+    ? "two_phase" as const
+    : "first_response" as const;
+
+const exchangeNumForPolicy = Math.max(
+  0,
+  Math.floor(conversationHistory.length / 2) - (isTwoPhaseCompletion ? 1 : 0),
+);
+
+const memoryOrchestration = orchestrateMemoryRetrieval({
+  turnKind,
+  situation: situationText,
+  coreIssue: conversationState?.core_issue,
+  cachedSessionMind,
+  conversationClosing: conversationState?.conversation_closing,
+  exchangeNum: exchangeNumForPolicy,
+  journalContext: journalCtx,
+  journalThemes,
+  journalEcho: recentEcho,
+  journalEchoThemes,
+  savedVerses,
+  savedVerseList,
+  priorSession: priorSessionContinuity,
+  relationshipProfile,
+  walkingThePathEligible: isWalkingThePath,
+  walkingThePathNote,
+  userMemCtx,
+  fullNotes: {
+    memoryNote,
+    journalEchoNote,
+    memoryVerseNote,
+    guidanceContinuityNote,
+    relationshipProfileNote,
+    walkingThePathNote,
+    userPatternNote,
+  },
+});
+
+const effectiveMemoryNote = memoryOrchestration.memoryNote;
+const effectiveJournalEchoNote = memoryOrchestration.journalEchoNote;
+const effectiveMemoryVerseNote = memoryOrchestration.memoryVerseNote;
+const effectiveGuidanceContinuityNote = memoryOrchestration.guidanceContinuityNote;
+const effectiveRelationshipProfileNote = memoryOrchestration.relationshipProfileNote;
+const effectiveWalkingThePathNote = memoryOrchestration.walkingThePathNote;
+const effectiveUserPatternNote = memoryOrchestration.userPatternNote;
+
+const tcpEnabled = isTurnContextPackageEnabled();
+const contextMode: "tcp" | "legacy" = tcpEnabled ? "tcp" : "legacy";
+let tcpCharCount = 0;
+
+const turnInstructions = isFollowUp
+  ? `${TALK_IT_THROUGH_FOLLOW_UP}${isGuardedUser ? "\n\n" + TALK_IT_THROUGH_GUARDED_FOLLOW_UP : ""}${tcpEnabled ? "" : conversationStateBlock}`
+  : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE;
+
+const legacyDynamicBlock = serializeLegacyDynamicNotes([
+  nameNote,
+  heartNote,
+  journeyNote,
+  relationshipNote,
+  effectiveRelationshipProfileNote,
+  effectiveGuidanceContinuityNote,
+  effectiveMemoryNote,
+  effectiveJournalEchoNote,
+  effectiveMemoryVerseNote,
+  effectiveWalkingThePathNote,
+  modeNote,
+  lateNightNote,
+  acutePainNote,
+  deepConversationNote,
+  effectiveUserPatternNote,
+  voiceNote,
+  guidanceSafetyNote,
+]);
+
+let dynamicContextBlock = legacyDynamicBlock;
+if (tcpEnabled) {
+  const tcp = buildTurnContextPackage(turnKind, {
+    nameNote,
+    heartNote,
+    journeyNote,
+    relationshipNote,
+    relationshipProfileNote: effectiveRelationshipProfileNote,
+    guidanceContinuityNote: effectiveGuidanceContinuityNote,
+    memoryNote: effectiveMemoryNote,
+    journalEchoNote: effectiveJournalEchoNote,
+    memoryVerseNote: effectiveMemoryVerseNote,
+    walkingThePathNote: effectiveWalkingThePathNote,
+    modeNote,
+    lateNightNote,
+    acutePainNote,
+    deepConversationNote,
+    userPatternNote: effectiveUserPatternNote,
+    voiceNote,
+    guidanceSafetyNote,
+    conversationStateBlock,
+  });
+  const serialized = serializeTurnContextPackage(tcp);
+  dynamicContextBlock = serialized.text;
+  tcpCharCount = serialized.charCount;
+}
+
 const systemMsg = `${variantPrompt}
 
 ${TALK_IT_THROUGH_RESPONSE_SCOPE}
 
-${isFollowUp
-  ? `${TALK_IT_THROUGH_FOLLOW_UP}${isGuardedUser ? "\n\n" + TALK_IT_THROUGH_GUARDED_FOLLOW_UP : ""}`
-  : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE}${conversationStateBlock}
+${turnInstructions}
 
 Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone expresses uncertainty about faith, meet them exactly there without assuming belief
@@ -277,22 +450,9 @@ Safety and depth (when relevant — do not override Step 1–2 scope above):
 — If someone is in shame (not guilt): lower temperature; receive them without evaluation
 — If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
 — Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${nameNote}${heartNote}${journeyNote}${relationshipNote}${guidanceContinuityNote}${memoryNote}${journalEchoNote}${memoryVerseNote}${walkingThePathNote}${modeNote}${lateNightNote}${acutePainNote}${deepConversationNote}${userPatternNote}${voiceNote}${guidanceSafetyNote}${promptLayers.scripturalAlignment}${promptLayers.emotionalTone}${promptLayers.voiceAuthenticity}`;
+— Never escalate emotionally beyond where they actually are${dynamicContextBlock}${promptLayers.scripturalAlignment}${promptLayers.emotionalTone}${promptLayers.voiceAuthenticity}`;
 
-// Build conversation history — for two-phase flow, include phase1 exchange as proper
-// message turns rather than re-injecting them into the system prompt
-let conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[];
-if (isTwoPhaseCompletion) {
-  conversationHistory = [
-    { role: "user", content: situation.trim() },
-    { role: "assistant", content: phase1Response!.trim() },
-    { role: "user", content: phase1UserReply!.trim() },
-  ];
-} else if (messages?.length) {
-  conversationHistory = messages.map(m => ({ role: m.role, content: m.content }));
-} else {
-  conversationHistory = [{ role: "user", content: situation.trim() }];
-}
+// conversationHistory built above from canonical spine (includes phase-1 when provided)
 
 // Step 1 of two-step generation: pick the best next question before writing anything.
 // This breaks the metaphor-recycling loop by forcing explicit movement to new territory.
@@ -368,7 +528,7 @@ const validateAndFixQuestion = async (
   const lastUser = [...history].reverse().find(m => m.role === "user")?.content ?? "";
   const userMsgs = history.filter(m => m.role === "user").map(m => m.content);
   const factsLearned = conversationState?.facts_learned ?? [];
-  const priorExplored = priorSessionContinuity?.memory.explored?.filter(Boolean) ?? [];
+  const priorExplored = crossSessionExplored;
 
   const isInvalid = (q: string) =>
     !q?.trim()
@@ -470,6 +630,7 @@ const questionMarkCount = (t: string) => (t.match(/\?/g) ?? []).length;
 
 let phase2Text = "";
 let nextQuestion = "";
+let plannerSource: PlannerSource = "none";
 let usedMechanicalConstruction = false;
   if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
     const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
@@ -525,6 +686,8 @@ let usedMechanicalConstruction = false;
       const priorOpeners = conversationState?.philip_openers_used ?? extractPhilipOpeners(philipMsgs);
       const bannedMetaphors = conversationState?.metaphors_used ?? [];
 
+      const priorExplored = crossSessionExplored;
+
       const isLament = /\b(i'?m done|i give up|nothing matters|what'?s (the )?point|can'?t do this anymore|i don'?t want to (be|do) this|why (even )?bother|no reason (to|for) (keep|try|go|live)|i'?m (broken|numb|empty))\b/i.test(lastUserMsg);
       const isRepetitionPushback = detectRepetitionPushback(lastUserMsg);
       const isReciprocalQuestion = detectReciprocalQuestion(lastUserMsg);
@@ -551,48 +714,16 @@ let usedMechanicalConstruction = false;
           if (retried.trim() && !isReciprocalDodge(retried)) phase2Text = retried;
         }
         usedMechanicalConstruction = true;
-      } else if (isRepetitionPushback && conversationStateBlock) {
-        lane = "repetition_recovery";
-        recordGate(gates, "repetition_recovery");
-        const recoveryState = augmentPlannerState(
-          conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg),
-        );
-        try {
-          nextQuestion = await generateNextQuestion(recoveryState, claudeHistory, isGuardedUser);
-          nextQuestion = await validateAndFixQuestion(nextQuestion, recoveryState, claudeHistory, isGuardedUser);
-          if (conversationState && isPoorRecoveryQuestion(nextQuestion, conversationState)) {
-            const retried = await generateNextQuestion(
-              recoveryState + "\n\n[REJECTED — repeats prior questions or known facts. Pick unexplored territory only. No 'whose X is it'.]",
-              claudeHistory,
-              isGuardedUser,
-            );
-            nextQuestion = await validateAndFixQuestion(retried, recoveryState, claudeHistory, isGuardedUser);
-          }
-        } catch {
-          // Non-fatal — fall through to fallback question
+      } else if (conversationState && conversationStateBlock) {
+        if (isRepetitionPushback) {
+          lane = "repetition_recovery";
+          recordGate(gates, "repetition_recovery");
         }
-        if (conversationState && isPoorRecoveryQuestion(nextQuestion, conversationState)) {
-          nextQuestion = pickRecoveryFallbackQuestion(conversationState);
-        }
-      } else if (!forceSit && conversationStateBlock) {
-        try {
-          const plannerState = augmentPlannerState(conversationStateBlock);
-          nextQuestion = await generateNextQuestion(plannerState, claudeHistory, isGuardedUser);
-          nextQuestion = await validateAndFixQuestion(nextQuestion, plannerState, claudeHistory, isGuardedUser);
-        } catch {
-          // Non-fatal — fall through to unanchored generation
-        }
-      }
 
-      if (isRepetitionPushback && nextQuestion) {
-        phase2Text = `${pickRepetitionAcknowledgment(exchangeNum)} ${nextQuestion}`;
-        usedMechanicalConstruction = true;
-      } else if (!phase2Text && (forceSit || nextQuestion)) {
-        if (forceSit) recordGate(gates, "force_sit");
-      selectedMove = forceSit ? "sit" : selectPhilipMove({
-          lastMove: conversationState?.last_move,
-          ackRegister: conversationState?.ack_register ?? null,
-          literaryCooldownRemaining: conversationState?.literary_cooldown_remaining ?? getLiteraryCooldownRemaining(philipMsgs),
+        selectedMove = forceSit ? "sit" : selectPhilipMove({
+          lastMove: conversationState.last_move,
+          ackRegister: conversationState.ack_register ?? null,
+          literaryCooldownRemaining: conversationState.literary_cooldown_remaining ?? getLiteraryCooldownRemaining(philipMsgs),
           formulaStreak,
           isLament,
           exchangeNum,
@@ -604,29 +735,72 @@ let usedMechanicalConstruction = false;
           isGuardedUser,
         });
 
-        if (selectedMove === "plain_question" && nextQuestion) {
-          phase2Text = nextQuestion;
-        } else if (selectedMove === "skip" && nextQuestion && nextQuestion.split(/\s+/).length <= 10) {
-          phase2Text = nextQuestion;
-        } else if (selectedMove === "sit" || forceSit) {
-          phase2Text = await generatePhase2WithClaude(
-            systemMsg + PHILIP_MOVE_TEMPLATES.sit,
-            claudeHistory,
-            "",
-            60,
-          );
-          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit", bannedMetaphors, exchangeNum, allUserMsgTexts);
-        } else if (nextQuestion) {
-          const moveNote = PHILIP_MOVE_TEMPLATES[selectedMove] ?? PHILIP_MOVE_TEMPLATES.plain_question;
-          phase2Text = await generatePhase2WithClaude(
-            systemMsg + moveNote,
-            claudeHistory,
-            nextQuestion,
-            selectedMove === "skip" ? 40 : 80,
-          );
-          phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors, exchangeNum, allUserMsgTexts);
+        if (!forceSit) {
+          const resolved = await resolvePlannedQuestion({
+            state: conversationState,
+            lastUserMessage: lastUserMsg,
+            priorUserMessages: priorUserMsgs,
+            priorExplored,
+            exchangeNum,
+            isGuardedUser,
+            move: selectedMove,
+            repetitionRecovery: isRepetitionPushback,
+          }, async () => {
+            const plannerState = isRepetitionPushback
+              ? augmentPlannerState(
+                  conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg),
+                )
+              : augmentPlannerState(conversationStateBlock);
+            const raw = await generateNextQuestion(plannerState, claudeHistory, isGuardedUser);
+            let validated = await validateAndFixQuestion(raw, plannerState, claudeHistory, isGuardedUser);
+            if (isRepetitionPushback && isPoorRecoveryQuestion(validated, conversationState)) {
+              const retried = await generateNextQuestion(
+                plannerState + "\n\n[REJECTED — repeats prior questions or known facts. Pick unexplored territory only. No 'whose X is it'.]",
+                claudeHistory,
+                isGuardedUser,
+              );
+              validated = await validateAndFixQuestion(retried, plannerState, claudeHistory, isGuardedUser);
+            }
+            return validated;
+          });
+          nextQuestion = resolved.question;
+          plannerSource = resolved.source;
+          if (isRepetitionPushback && isPoorRecoveryQuestion(nextQuestion, conversationState)) {
+            nextQuestion = pickRecoveryFallbackQuestion(conversationState);
+            plannerSource = "fallback";
+          }
         }
-        usedMechanicalConstruction = !!phase2Text;
+
+        if (isRepetitionPushback && nextQuestion) {
+          phase2Text = `${pickRepetitionAcknowledgment(exchangeNum)} ${nextQuestion}`;
+          usedMechanicalConstruction = true;
+        } else if (!phase2Text && (forceSit || nextQuestion)) {
+          if (forceSit) recordGate(gates, "force_sit");
+
+          if (selectedMove === "plain_question" && nextQuestion) {
+            phase2Text = nextQuestion;
+          } else if (selectedMove === "skip" && nextQuestion && nextQuestion.split(/\s+/).length <= 10) {
+            phase2Text = nextQuestion;
+          } else if (selectedMove === "sit" || forceSit) {
+            phase2Text = await generatePhase2WithClaude(
+              systemMsg + PHILIP_MOVE_TEMPLATES.sit,
+              claudeHistory,
+              "",
+              60,
+            );
+            phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, "", "sit", bannedMetaphors, exchangeNum, allUserMsgTexts);
+          } else if (nextQuestion) {
+            const moveNote = PHILIP_MOVE_TEMPLATES[selectedMove] ?? PHILIP_MOVE_TEMPLATES.plain_question;
+            phase2Text = await generatePhase2WithClaude(
+              systemMsg + moveNote,
+              claudeHistory,
+              nextQuestion,
+              selectedMove === "skip" ? 40 : 80,
+            );
+            phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors, exchangeNum, allUserMsgTexts);
+          }
+          usedMechanicalConstruction = !!phase2Text;
+        }
       }
 
       if (phase2Text && lastUserMsg && opensWithEchoThenReasks(lastUserMsg, phase2Text)) {
@@ -731,6 +905,48 @@ if (usedMechanicalConstruction) recordGate(gates, "mechanical_construction");
   metadata.gates = gates;
   metadata.engine = engine;
   metadata.mechanical = metadata.mechanical || usedMechanicalConstruction;
+
+  metadata.canonicalHistoryTurns = conversationHistory.length;
+  metadata.phase1Included = phase1Included;
+  metadata.questionsAskedCount = conversationState?.questions_asked?.length ?? 0;
+  metadata.stateSource = sessionMindEnabled ? stateSource : "disabled";
+  metadata.contextMode = contextMode;
+  metadata.tcpCharCount = tcpCharCount;
+  metadata.plannerSource = plannerSource;
+  metadata.mindStage = memoryOrchestration.policyStage;
+  if (isMemoryOrchestratorEnabled()) {
+    metadata.memoryPolicy = "stage";
+    metadata.memoryRetrievalChars = memoryOrchestration.retrievalCharCount;
+    metadata.memorySectionsIncluded = memoryOrchestration.sectionsIncluded;
+  } else {
+    metadata.memoryPolicy = "legacy";
+    metadata.memoryRetrievalChars = memoryOrchestration.retrievalCharCount;
+  }
+  if (relationshipProfile && profileHasSignal(relationshipProfile)) {
+    metadata.relationshipTrustBand = relationshipProfile.trustBand;
+    metadata.relationshipSessionCount = relationshipProfile.sessionCount;
+  }
+  if (sessionMindEnabled) {
+    if (cachedSessionMind) metadata.mindVersion = cachedSessionMind.version;
+  }
+
+  if (
+    sessionMindEnabled
+    && sessionId
+    && conversationState
+    && (isFollowUp || isTwoPhaseCompletion)
+  ) {
+    const committed = commitSessionMind(cachedSessionMind, {
+      conversationState,
+      philipResponse: phase2Text,
+      canonicalHistory: conversationHistory as Array<{ role: "user" | "assistant"; content: string }>,
+      phase1Included,
+    });
+    setSessionMind(sessionId, committed);
+    metadata.mindVersion = committed.version;
+    metadata.mindStage = committed.stage;
+    metadata.stateSource = stateSource;
+  }
 
   return { text: phase2Text, metadata };
 }

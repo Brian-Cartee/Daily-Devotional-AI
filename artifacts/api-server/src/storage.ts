@@ -6,7 +6,8 @@ import {
   computeStreakAfterGap,
   currentMonthKey,
 } from "./streakLogic";
-import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, expoPushTokens, aiUsageLogs, betaFeedback, mobileSubscriptions, pastorVideos, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback, type MobileSubscription, type PastorVideo } from "@workspace/db";
+import { verses, subscribers, journalEntries, streaks, proSubscribers, pushSubscriptions, smsConversations, prayerRequests, prayerAmens, verseArt, referralCodes, referrals, memoryVerses, prayerWall, prayerWallPrays, triviaQuestions, triviaChallenges, sermonVideos, sermonSegments, userProfiles, userMemory, philipRelationshipProfiles, expoPushTokens, aiUsageLogs, betaFeedback, mobileSubscriptions, pastorVideos, type InsertVerse, type Verse, type InsertSubscriber, type Subscriber, type JournalEntry, type InsertJournalEntry, type Streak, type ProSubscriber, type PushSubscription, type InsertPushSubscription, type SmsConversation, type SmsMessage, type PrayerRequest, type VerseArt, type ReferralCode, type MemoryVerse, type InsertMemoryVerse, type PrayerWallEntry, type InsertPrayerWallEntry, type TriviaQuestion, type TriviaChallenge, type SermonVideo, type SermonSegment, type UserMemoryRow, type PhilipRelationshipProfileRow, type EmotionPattern, type ExpoPushToken, type AiUsageLog, type InsertAiUsageLog, type BetaFeedback, type InsertBetaFeedback, type MobileSubscription, type PastorVideo } from "@workspace/db";
+import type { RelationshipProfile } from "./philip-runtime/mind/relationshipProfile";
 import { eq, and, or, ne, desc, isNull, isNotNull, lt, lte, sql as sqlExpr, count, gte, asc } from "drizzle-orm";
 
 export interface IStorage {
@@ -121,6 +122,8 @@ export interface IStorage {
   setUserProfileName(sessionId: string, name: string): Promise<void>;
   getUserMemory(sessionId: string): Promise<UserMemoryRow | undefined>;
   upsertUserMemory(sessionId: string, data: Partial<Omit<UserMemoryRow, "sessionId" | "updatedAt">>): Promise<UserMemoryRow>;
+  getRelationshipProfile(sessionId: string): Promise<RelationshipProfile | undefined>;
+  upsertRelationshipProfile(profile: RelationshipProfile): Promise<RelationshipProfile>;
   upsertExpoPushToken(sessionId: string, token: string, hour: number, minute: number): Promise<ExpoPushToken>;
   deleteExpoPushToken(sessionId: string): Promise<void>;
   getExpoPushTokensForHourMinute(hour: number, minute: number): Promise<ExpoPushToken[]>;
@@ -943,6 +946,62 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return row;
+  }
+
+  private rowToRelationshipProfile(row: PhilipRelationshipProfileRow): RelationshipProfile {
+    return {
+      v: row.version,
+      sessionId: row.sessionId,
+      trustBand: row.trustBand as RelationshipProfile["trustBand"],
+      exploredAcrossSessions: row.exploredAcrossSessions ?? [],
+      themesAcrossSessions: row.themesAcrossSessions ?? [],
+      carryForward: row.carryForward ?? undefined,
+      lastMeaningfulTopic: row.lastMeaningfulTopic ?? undefined,
+      sessionCount: row.sessionCount,
+      directnessCeiling: Math.min(3, Math.max(1, row.directnessCeiling)) as 1 | 2 | 3,
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  async getRelationshipProfile(sessionId: string): Promise<RelationshipProfile | undefined> {
+    const [row] = await db
+      .select()
+      .from(philipRelationshipProfiles)
+      .where(eq(philipRelationshipProfiles.sessionId, sessionId));
+    return row ? this.rowToRelationshipProfile(row) : undefined;
+  }
+
+  async upsertRelationshipProfile(profile: RelationshipProfile): Promise<RelationshipProfile> {
+    const [row] = await db
+      .insert(philipRelationshipProfiles)
+      .values({
+        sessionId: profile.sessionId,
+        trustBand: profile.trustBand,
+        exploredAcrossSessions: profile.exploredAcrossSessions,
+        themesAcrossSessions: profile.themesAcrossSessions,
+        carryForward: profile.carryForward,
+        lastMeaningfulTopic: profile.lastMeaningfulTopic,
+        sessionCount: profile.sessionCount,
+        directnessCeiling: profile.directnessCeiling,
+        version: profile.v,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: philipRelationshipProfiles.sessionId,
+        set: {
+          trustBand: profile.trustBand,
+          exploredAcrossSessions: profile.exploredAcrossSessions,
+          themesAcrossSessions: profile.themesAcrossSessions,
+          carryForward: profile.carryForward,
+          lastMeaningfulTopic: profile.lastMeaningfulTopic,
+          sessionCount: profile.sessionCount,
+          directnessCeiling: profile.directnessCeiling,
+          version: profile.v,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return this.rowToRelationshipProfile(row);
   }
 
   async upsertExpoPushToken(sessionId: string, token: string, hour: number, minute: number): Promise<ExpoPushToken> {

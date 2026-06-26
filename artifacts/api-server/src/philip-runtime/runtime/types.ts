@@ -1,4 +1,8 @@
 import type { PhilipMove } from "../../conversationState";
+import type { SessionMindStage, SessionMindStateSource } from "../mind/types";
+import type { PlannerSource } from "../planner/mindPlanner";
+import type { TrustBand } from "../mind/relationshipProfile";
+import type { MemorySourceKey } from "../memory/policies";
 
 export type PhilipLane =
   | "first_response"
@@ -40,6 +44,22 @@ export interface PhilipTurnMetadata {
   gates: PhilipGate[];
   engine: "claude" | "gpt-4o" | null;
   mechanical: boolean;
+  /** Session Mind — present when PHILIP_SESSION_MIND is enabled. */
+  mindVersion?: number;
+  mindStage?: SessionMindStage;
+  stateSource?: SessionMindStateSource;
+  phase1Included?: boolean;
+  canonicalHistoryTurns?: number;
+  questionsAskedCount?: number;
+  /** Turn Context Package — tcp when structured context is active. */
+  contextMode?: "tcp" | "legacy";
+  tcpCharCount?: number;
+  plannerSource?: PlannerSource;
+  relationshipTrustBand?: TrustBand;
+  relationshipSessionCount?: number;
+  memoryPolicy?: "stage" | "legacy";
+  memoryRetrievalChars?: number;
+  memorySectionsIncluded?: MemorySourceKey[];
 }
 
 export interface GuidanceTurnResult {

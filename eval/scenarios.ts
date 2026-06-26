@@ -475,4 +475,11 @@ export const SCENARIOS: Scenario[] = [
     situation: "I was here before talking about whether I still believe. I'm not sure that changed. I just wanted to pick up where we left off.",
     flags: ["memory-continuity", "no-invented-history"],
   },
+  {
+    id: "continuity-turn3-01",
+    category: "memory",
+    description: "User names husband Mark early — Philip must carry him through turn 3+",
+    situation: "My husband and I have been distant for months. I don't know how to reach him anymore.",
+    flags: ["turn3-continuity", "named-person"],
+  },
 ];

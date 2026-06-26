@@ -61,6 +61,15 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canUseAi } from "@/lib/aiUsage";
 import { apiSessionExtras } from "@/lib/requestExtras";
+import {
+  type GuidanceMessage,
+  appendUserMessage,
+  buildGuidancePhase1Payload,
+  buildGuidanceResponsePayload,
+  buildPhase1SpineFields,
+  buildTwoPhaseRequestMessages,
+  commitAssistantTurn,
+} from "@/lib/guidanceConversation";
 import { journalSavedToast } from "@/lib/journalToast";
 import { refreshAiUsage, getGlobalAiUsage } from "@/hooks/use-ai-usage";
 import { AiPauseModal } from "@/components/AiPauseModal";
@@ -98,10 +107,7 @@ interface VerseResult {
   text: string;
 }
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+type Message = GuidanceMessage;
 
 interface GuidanceMovements {
   reflection: string;
@@ -442,6 +448,8 @@ export default function GuidancePage() {
   const phase1UserReplyRef = useRef(phase1UserReply);
   useEffect(() => { phase1UserReplyRef.current = phase1UserReply; }, [phase1UserReply]);
   const [phase1UserReplySubmitted, setPhase1UserReplySubmitted] = useState<string | null>(null);
+  const phase1UserReplySubmittedRef = useRef(phase1UserReplySubmitted);
+  useEffect(() => { phase1UserReplySubmittedRef.current = phase1UserReplySubmitted; }, [phase1UserReplySubmitted]);
   // phase2Loading is now derived from convo machine
   const [phase2Started, setPhase2Started] = useState(false);
   const phase2StartedRef = useRef(phase2Started);
@@ -907,6 +915,21 @@ export default function GuidancePage() {
 
   const isReturnEntry = !situation.trim() && witnessReady && !shouldPlayShepherdGreeting();
 
+  const resolvePhase1Spine = (
+    phase1Context?: { phase1Response: string; phase1UserReply: string },
+  ) => (
+    phase1Context
+      ? {
+          phase1Response: phase1Context.phase1Response,
+          phase1UserReply: phase1Context.phase1UserReply,
+        }
+      : buildPhase1SpineFields({
+          phase1Response: phase1ResponseRef.current,
+          phase1UserReplySubmitted: phase1UserReplySubmittedRef.current,
+          phase1UserReply: phase1UserReplyRef.current,
+        })
+  );
+
   const streamResponse = async (
     conversationMessages: Message[],
     explicitMode?: GuidanceMode,
@@ -942,18 +965,16 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(buildGuidanceResponsePayload({
           situation: activeSituation(),
           messages: conversationMessages,
           userName: getUserName() ?? undefined,
           guidanceMode: explicitMode ?? guidanceMode,
-          isLateNight: isLateNight(),
+          phase1Spine: resolvePhase1Spine(phase1Context),
           heartContext: buildHeartContext(getCurrentHeartState()),
           journeyContext: buildJourneyContext() || undefined,
           companionMode: isPhilipMode() ? "philip" : "solo",
-          ...(phase1Context ?? {}),
-          ...apiSessionExtras(),
-        }),
+        })),
       });
       if (res.status === 429) {
         setShowAiPause(true);
@@ -989,7 +1010,10 @@ export default function GuidancePage() {
         recoverFromStreamFailure();
         return false;
       }
-      setMessages(prev => [...prev, { role: "assistant", content: accumulated }]);
+      setMessages((prev) => commitAssistantTurn(
+        opts?.isFollowUp ? prev : conversationMessages,
+        accumulated,
+      ));
       setStreamingText("");
       setResponseComplete(true);
       return true;
@@ -1013,14 +1037,13 @@ export default function GuidancePage() {
       const res = await fetch("/api/guidance/phase1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(buildGuidancePhase1Payload({
           situation: effectiveSituation,
           situationTopicId: situationTopicId ?? undefined,
           userName: getUserName() ?? undefined,
           heartContext: buildHeartContext(getCurrentHeartState()),
           companionMode: isPhilipMode() ? "philip" : "solo",
-          ...apiSessionExtras(),
-        }),
+        })),
       });
       if (flowGen !== guidanceFlowGenRef.current) return true;
       if (res.status === 429) {
@@ -2585,12 +2608,15 @@ export default function GuidancePage() {
         setConversationPhase(2);
         setPhase2SpeechDone(false);
         phase2SpokenRef.current = null;
-        const initialUserMsg: Message = { role: "user", content: activeSituation() };
         startPhase2(reply);
-        const ok = await streamResponse([initialUserMsg], undefined, {
-          phase1Response,
-          phase1UserReply: reply,
-        });
+        const ok = await streamResponse(
+          buildTwoPhaseRequestMessages(activeSituation()),
+          undefined,
+          {
+            phase1Response: phase1Response!,
+            phase1UserReply: reply,
+          },
+        );
         if (!ok) {
           toast({
             description: "Philip couldn't respond just now — tap Continue to try again.",
@@ -2805,8 +2831,7 @@ export default function GuidancePage() {
         }
         setIsSending(true);
         setRevealStage((s) => Math.max(s, 4));
-        const newUserMsg: Message = { role: "user", content: text };
-        const updated = [...messages, newUserMsg];
+        const updated = appendUserMessage(messages, text);
         setMessages(updated);
         const ok = await streamResponse(updated, undefined, undefined, { isFollowUp: true });
         setIsSending(false);
@@ -2846,8 +2871,7 @@ export default function GuidancePage() {
     setIsReflecting(true);
     setRevealStage(s => Math.max(s, 4));
     setTimeout(() => setIsReflecting(false), 700);
-    const newUserMsg: Message = { role: "user", content: text };
-    const updated = [...messages, newUserMsg];
+    const updated = appendUserMessage(messages, text);
     setMessages(updated);
     await streamResponse(updated, undefined, undefined, { isFollowUp: true });
     setIsSending(false);
