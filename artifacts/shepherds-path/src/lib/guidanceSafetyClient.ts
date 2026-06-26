@@ -46,6 +46,12 @@ export function markPhilipDisclaimerShown(): void {
 export const PHILIP_DISCLAIMER =
   "Philip is an AI spiritual companion — here to help you reflect, pray, and engage with Scripture. He is not a pastor, therapist, or emergency service.";
 
+/** Set false when hands-free voice is stable — shown only in Philip voice mode. */
+export const PHILIP_VOICE_TECHNICAL_NOTICE_ENABLED = true;
+
+export const PHILIP_VOICE_TECHNICAL_NOTICE =
+  "Technical work in progress — we're improving the hands-free voice experience. Thank you for your patience.";
+
 export function isGuidanceSafetyBlock(level: string | null): boolean {
   return !!level && level !== "safe" && level !== "concerning";
 }

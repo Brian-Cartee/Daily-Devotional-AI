@@ -31,6 +31,8 @@ import {
   markGuidanceCrisisEncounter,
   markPhilipDisclaimerShown,
   PHILIP_DISCLAIMER,
+  PHILIP_VOICE_TECHNICAL_NOTICE,
+  PHILIP_VOICE_TECHNICAL_NOTICE_ENABLED,
   shouldShowPhilipDisclaimer,
 } from "@/lib/guidanceSafetyClient";
 import {
@@ -2911,6 +2913,23 @@ export default function GuidancePage() {
                   </p>
                 )}
 
+                {philipHandsFreeVoice && PHILIP_VOICE_TECHNICAL_NOTICE_ENABLED && (
+                  <p
+                    data-testid="philip-voice-technical-notice"
+                    style={{
+                      margin: 0,
+                      maxWidth: "280px",
+                      textAlign: "center",
+                      fontSize: "12px",
+                      lineHeight: 1.5,
+                      letterSpacing: "0.02em",
+                      color: "rgba(255,255,255,0.42)",
+                    }}
+                  >
+                    {PHILIP_VOICE_TECHNICAL_NOTICE}
+                  </p>
+                )}
+
                 {!philipHandsFreeVoice && (
                 <button
                   type="button"
@@ -3025,6 +3044,15 @@ export default function GuidancePage() {
         </div>
 
         <div className="max-w-2xl mx-auto px-3 sm:px-4 -mt-5 relative z-20 pt-1 pb-8">
+
+          {philipHandsFreeVoice && PHILIP_VOICE_TECHNICAL_NOTICE_ENABLED && situation && (
+            <p
+              data-testid="philip-voice-technical-notice-inline"
+              className="mb-4 text-center text-[12px] leading-relaxed text-muted-foreground/65 px-2"
+            >
+              {PHILIP_VOICE_TECHNICAL_NOTICE}
+            </p>
+          )}
 
           {/* Header — pastoral welcome */}
           <motion.div
