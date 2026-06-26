@@ -35,5 +35,9 @@ export function buildPhilipTurnLogEntry(
     relationshipSessionCount: metadata.relationshipSessionCount ?? null,
     memoryPolicy: metadata.memoryPolicy ?? null,
     memoryRetrievalChars: metadata.memoryRetrievalChars ?? null,
+    transcriptMode: metadata.transcriptMode ?? null,
+    transcriptTurnCount: metadata.transcriptTurnCount ?? null,
+    conversationId: metadata.conversationId ?? null,
+    identityKernelMode: metadata.identityKernelMode ?? null,
   };
 }

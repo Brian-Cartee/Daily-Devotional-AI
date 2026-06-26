@@ -95,14 +95,22 @@ export function buildVariantSystemPrompt(
     };
   }
 
-  const addendum =
-    variant === "pastoral" ? VARIANT_PASTORAL_ADDENDUM :
-    variant === "friend"   ? VARIANT_FRIEND_ADDENDUM :
-    variant === "mentor"   ? VARIANT_MENTOR_ADDENDUM :
-    "";
+  const addendum = buildVariantAddendum(variant);
 
   return {
     prompt: `${TALK_IT_THROUGH_SYSTEM_PROMPT}${addendum}${CRISIS_PROTOCOL}`,
     variant,
   };
+}
+
+/** A/B voice addendum only — used with identity kernel (PR-9). */
+export function buildVariantAddendum(variant: PromptVariant = "control"): string {
+  if (variant === "pastoral") return VARIANT_PASTORAL_ADDENDUM;
+  if (variant === "friend") return VARIANT_FRIEND_ADDENDUM;
+  if (variant === "mentor") return VARIANT_MENTOR_ADDENDUM;
+  return "";
+}
+
+export function resolveVariantAddendum(sessionId: string): string {
+  return buildVariantAddendum(assignVariant(sessionId));
 }

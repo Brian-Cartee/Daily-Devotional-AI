@@ -102,6 +102,7 @@ import { registerSpeakLifeRoutes } from "../speakLife";
 import { registerChurchRoutes } from "../church/routes";
 import { ensureChurchSchema } from "../churchMigrations";
 import { ensurePhilipRelationshipSchema } from "../philipRelationshipMigrations";
+import { ensurePhilipTranscriptSchema } from "../philipTranscriptMigrations";
 import {
   bootstrapProfileFromJournal,
   isRelationshipProfileEnabled,
@@ -110,6 +111,13 @@ import {
   type RelationshipProfile,
 } from "../philip-runtime/mind/relationshipProfile";
 import { extractJournalThemes } from "../philip-runtime/memory/orchestrator";
+import {
+  recordAssistantTranscriptTurn,
+  resolveGuidanceTranscript,
+  isTranscriptAuthorityEnabled,
+  type TurnEventInput,
+} from "../philip-runtime/transcript/store";
+import { isIdentityKernelEnabled } from "../philip-runtime/identity/kernel";
 import { adminAuth } from "../adminAuth";
 import { getServerDaysWithApp, touchSessionFirstSeen, getGuidanceConversationCount, incrementGuidanceConversationCount } from "../sessionFirstSeen";
 import { getTriviaSeed } from "../triviaSeed";
@@ -422,6 +430,10 @@ export async function registerRoutes(
 
   await ensurePhilipRelationshipSchema().catch((err) => {
     console.error("[philip-relationship] schema ensure failed:", err);
+  });
+
+  await ensurePhilipTranscriptSchema().catch((err) => {
+    console.error("[philip-transcript] schema ensure failed:", err);
   });
 
   // Sync today's verse from Google Sheets at startup
@@ -3977,6 +3989,8 @@ Write 2–3 sentences to be SPOKEN aloud. Rules:
       userName?: string;
       phase1Response?: string;
       phase1UserReply?: string;
+      conversationId?: string;
+      turnEvent?: TurnEventInput;
     };
     if (!situation?.trim()) return res.status(400).json({ message: "situation required" });
     if (situation.trim().length > 2000) return res.status(400).json({ message: "Input too long" });
@@ -4070,11 +4084,22 @@ Sacred restraint: fewer words are better.`;
 
     const { prompt: variantPrompt, variant: responseVariant } = buildVariantSystemPrompt(sessionId ?? "", "response");
 
+    const transcriptResolution = await resolveGuidanceTranscript({
+      sessionId,
+      conversationId: (req.body as { conversationId?: string }).conversationId,
+      situation: situation.trim(),
+      messages,
+      turnEvent: (req.body as { turnEvent?: TurnEventInput }).turnEvent,
+      phase1Response,
+      phase1UserReply,
+    });
+    const resolvedMessages = transcriptResolution.messages;
+
     try {
       const result = await handleGuidanceTurn(
         {
           situation: situation.trim(),
-          messages,
+          messages: resolvedMessages,
           userName,
           sessionId,
           guidanceMode,
@@ -4106,6 +4131,11 @@ Sacred restraint: fewer words are better.`;
         },
       );
 
+      result.metadata.transcriptMode = transcriptResolution.mode;
+      result.metadata.transcriptTurnCount = transcriptResolution.turnCount;
+      result.metadata.conversationId = transcriptResolution.conversationId;
+      result.metadata.identityKernelMode = isIdentityKernelEnabled() ? "kernel" : "legacy";
+
       logPhilipTurn(result.metadata, sessionId);
       for (const [key, value] of Object.entries(turnMetadataToHeaders(result.metadata))) {
         if (value) res.setHeader(key, value);
@@ -4115,6 +4145,14 @@ Sacred restraint: fewer words are better.`;
       res.setHeader("Cache-Control", "no-cache");
       res.write(result.text);
       res.end();
+
+      if (sessionId && isTranscriptAuthorityEnabled()) {
+        void recordAssistantTranscriptTurn(
+          transcriptResolution.conversationId,
+          sessionId,
+          result.text,
+        );
+      }
 
       if (sessionId) {
         const responseMsgCount = incrementMessageCount(sessionId);

@@ -20,6 +20,7 @@ import {
   buildGuidancePhase1Payload,
   buildGuidanceResponsePayload,
   buildTwoPhaseRequestMessages,
+  buildUserTurnEvent,
 } from "@/lib/guidanceConversation";
 import { useAiUsage, refreshAiUsage } from "@/hooks/use-ai-usage";
 import { canUseAi, shouldShowAiCounter } from "@/lib/aiUsage";
@@ -110,6 +111,7 @@ export function FloatingAskAI() {
   const inputRef = useRef<HTMLInputElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
   const pendingPrefillRef = useRef<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
   const todayWalkMsg = useMemo(() => buildTodayWalkMessage(), [isOpen]);
   const pageContext = useMemo(
@@ -190,6 +192,7 @@ export function FloatingAskAI() {
     setPhase1UserReplySubmitted(null);
     setPhase1Loading(false);
     setUsingTwoPhase(false);
+    conversationIdRef.current = crypto.randomUUID();
   };
 
   const streamGuidanceResponse = async (
@@ -216,6 +219,10 @@ export function FloatingAskAI() {
           guidanceMode: "pastoral",
           phase1Spine: options?.phase1Context,
           companionMode: "philip",
+          conversationId: conversationIdRef.current ?? undefined,
+          turnEvent: buildUserTurnEvent(
+            options?.phase1Context?.phase1UserReply ?? text,
+          ),
           sessionExtras: {
             sessionId: getSessionId(),
             isPro: isProVerifiedLocally(),
@@ -236,6 +243,9 @@ export function FloatingAskAI() {
         setIsStreaming(false);
         return;
       }
+
+      const serverConversationId = res.headers.get("X-Philip-Conversation-Id");
+      if (serverConversationId) conversationIdRef.current = serverConversationId;
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

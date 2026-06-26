@@ -11,6 +11,7 @@ import {
   buildGuidanceResponsePayload,
   buildGuidancePhase1Payload,
   commitAssistantTurn,
+  buildUserTurnEvent,
 } from "../artifacts/shepherds-path/src/lib/guidanceConversationCore.ts";
 
 let passed = 0;
@@ -74,6 +75,17 @@ const followPayload = buildGuidanceResponsePayload({
   sessionExtras: { sessionId: "sess-1", isPro: false, daysWithApp: 3 },
 });
 assert("follow-up still sends spine", followPayload.phase1UserReply === "His name is Mark.");
+
+const eventPayload = buildGuidanceResponsePayload({
+  situation,
+  messages: twoPhase,
+  guidanceMode: "encouraging",
+  conversationId: "conv-abc",
+  turnEvent: buildUserTurnEvent("His name is Mark.", "turn-1"),
+  sessionExtras: { sessionId: "sess-1", isPro: false, daysWithApp: 3 },
+});
+assert("payload carries conversationId", eventPayload.conversationId === "conv-abc");
+assert("payload carries turnEvent", eventPayload.turnEvent?.role === "user");
 
 const phase1Payload = buildGuidancePhase1Payload({
   situation,

@@ -81,6 +81,11 @@ import {
 } from "../memory/orchestrator";
 import { isMemoryOrchestratorEnabled } from "../memory/policies";
 import {
+  buildPhilipWriterSystem,
+  isIdentityKernelEnabled,
+} from "../identity/kernel";
+import { resolveVariantAddendum } from "../../talkItThroughVariants";
+import {
   resolvePlannedQuestion,
   type PlannerSource,
 } from "../planner/mindPlanner";
@@ -387,10 +392,6 @@ const tcpEnabled = isTurnContextPackageEnabled();
 const contextMode: "tcp" | "legacy" = tcpEnabled ? "tcp" : "legacy";
 let tcpCharCount = 0;
 
-const turnInstructions = isFollowUp
-  ? `${TALK_IT_THROUGH_FOLLOW_UP}${isGuardedUser ? "\n\n" + TALK_IT_THROUGH_GUARDED_FOLLOW_UP : ""}${tcpEnabled ? "" : conversationStateBlock}`
-  : TALK_IT_THROUGH_RESPONSE_EXAMPLES + "\n\n" + TALK_IT_THROUGH_FIRST_RESPONSE;
-
 const legacyDynamicBlock = serializeLegacyDynamicNotes([
   nameNote,
   heartNote,
@@ -438,19 +439,16 @@ if (tcpEnabled) {
   tcpCharCount = serialized.charCount;
 }
 
-const systemMsg = `${variantPrompt}
-
-${TALK_IT_THROUGH_RESPONSE_SCOPE}
-
-${turnInstructions}
-
-Safety and depth (when relevant — do not override Step 1–2 scope above):
-— If someone expresses uncertainty about faith, meet them exactly there without assuming belief
-— If someone describes controlling or unsafe relationships: reflect gently, validate impact, restore agency — do not diagnose or prescribe
-— If someone is in shame (not guilt): lower temperature; receive them without evaluation
-— If someone pushes back ("that didn't help"): own the miss, re-open warmly — never defend
-— Never conclude the meaning of their story for them
-— Never escalate emotionally beyond where they actually are${dynamicContextBlock}${promptLayers.scripturalAlignment}${promptLayers.emotionalTone}${promptLayers.voiceAuthenticity}`;
+const systemMsg = buildPhilipWriterSystem({
+  variantPrompt: isIdentityKernelEnabled() ? undefined : variantPrompt,
+  variantAddendum: isIdentityKernelEnabled() ? resolveVariantAddendum(sessionId ?? "") : undefined,
+  turnKind,
+  isGuardedUser,
+  tcpEnabled,
+  conversationStateBlock,
+  dynamicContextBlock,
+  promptLayers,
+});
 
 // conversationHistory built above from canonical spine (includes phase-1 when provided)
 

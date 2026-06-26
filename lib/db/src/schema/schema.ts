@@ -442,6 +442,20 @@ export const philipRelationshipProfiles = pgTable("philip_relationship_profiles"
 
 export type PhilipRelationshipProfileRow = typeof philipRelationshipProfiles.$inferSelect;
 
+export const philipConversationTurns = pgTable("philip_conversation_turns", {
+  id: serial("id").primaryKey(),
+  conversationId: text("conversation_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  turnIndex: integer("turn_index").notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  contentHash: text("content_hash").notNull(),
+  clientTurnId: text("client_turn_id"),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export type PhilipConversationTurnRow = typeof philipConversationTurns.$inferSelect;
+
 export const expoPushTokens = pgTable("expo_push_tokens", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull().unique(),

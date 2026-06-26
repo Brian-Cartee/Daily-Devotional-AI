@@ -2,6 +2,7 @@ import type { PhilipTurnMetadata } from "./types";
 import type { SessionMindStage, SessionMindStateSource } from "../mind/types";
 import type { PlannerSource } from "../planner/mindPlanner";
 import type { TrustBand } from "../mind/relationshipProfile";
+import type { TranscriptAuthorityMode } from "../transcript/store";
 
 export const PHILIP_RUNTIME_VERSION_HEADER = "X-Philip-Runtime-Version";
 /** @deprecated Read-only compat for older eval clients */
@@ -23,6 +24,10 @@ export const PHILIP_RELATIONSHIP_TRUST_HEADER = "X-Philip-Relationship-Trust";
 export const PHILIP_RELATIONSHIP_SESSIONS_HEADER = "X-Philip-Relationship-Sessions";
 export const PHILIP_MEMORY_POLICY_HEADER = "X-Philip-Memory-Policy";
 export const PHILIP_MEMORY_RETRIEVAL_CHARS_HEADER = "X-Philip-Memory-Retrieval-Chars";
+export const PHILIP_TRANSCRIPT_MODE_HEADER = "X-Philip-Transcript-Mode";
+export const PHILIP_TRANSCRIPT_TURNS_HEADER = "X-Philip-Transcript-Turns";
+export const PHILIP_CONVERSATION_ID_HEADER = "X-Philip-Conversation-Id";
+export const PHILIP_IDENTITY_KERNEL_HEADER = "X-Philip-Identity-Kernel";
 
 /** Full turn metadata parsed from response headers (no user content). */
 export interface PhilipTurnHeaders {
@@ -43,6 +48,10 @@ export interface PhilipTurnHeaders {
   relationshipSessionCount: number | null;
   memoryPolicy: "stage" | "legacy" | null;
   memoryRetrievalChars: number | null;
+  transcriptMode: TranscriptAuthorityMode | null;
+  transcriptTurnCount: number | null;
+  conversationId: string | null;
+  identityKernelMode: "kernel" | "legacy" | null;
 }
 
 function parseOptionalInt(raw: string | null): number | null {
@@ -105,6 +114,18 @@ export function turnMetadataToHeaders(metadata: PhilipTurnMetadata): Record<stri
   if (metadata.memoryRetrievalChars != null) {
     headers[PHILIP_MEMORY_RETRIEVAL_CHARS_HEADER] = String(metadata.memoryRetrievalChars);
   }
+  if (metadata.transcriptMode) {
+    headers[PHILIP_TRANSCRIPT_MODE_HEADER] = metadata.transcriptMode;
+  }
+  if (metadata.transcriptTurnCount != null) {
+    headers[PHILIP_TRANSCRIPT_TURNS_HEADER] = String(metadata.transcriptTurnCount);
+  }
+  if (metadata.conversationId) {
+    headers[PHILIP_CONVERSATION_ID_HEADER] = metadata.conversationId;
+  }
+  if (metadata.identityKernelMode) {
+    headers[PHILIP_IDENTITY_KERNEL_HEADER] = metadata.identityKernelMode;
+  }
 
   return headers;
 }
@@ -136,5 +157,9 @@ export function parseTurnHeaders(headers: Headers): PhilipTurnHeaders {
     relationshipSessionCount: parseOptionalInt(headers.get(PHILIP_RELATIONSHIP_SESSIONS_HEADER)),
     memoryPolicy: (headers.get(PHILIP_MEMORY_POLICY_HEADER) as "stage" | "legacy" | null) ?? null,
     memoryRetrievalChars: parseOptionalInt(headers.get(PHILIP_MEMORY_RETRIEVAL_CHARS_HEADER)),
+    transcriptMode: (headers.get(PHILIP_TRANSCRIPT_MODE_HEADER) as TranscriptAuthorityMode | null) ?? null,
+    transcriptTurnCount: parseOptionalInt(headers.get(PHILIP_TRANSCRIPT_TURNS_HEADER)),
+    conversationId: headers.get(PHILIP_CONVERSATION_ID_HEADER),
+    identityKernelMode: (headers.get(PHILIP_IDENTITY_KERNEL_HEADER) as "kernel" | "legacy" | null) ?? null,
   };
 }

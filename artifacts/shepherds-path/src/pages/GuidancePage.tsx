@@ -68,6 +68,7 @@ import {
   buildGuidanceResponsePayload,
   buildPhase1SpineFields,
   buildTwoPhaseRequestMessages,
+  buildUserTurnEvent,
   commitAssistantTurn,
 } from "@/lib/guidanceConversation";
 import { journalSavedToast } from "@/lib/journalToast";
@@ -912,6 +913,7 @@ export default function GuidancePage() {
   /** Invalidates in-flight guidance flows when a newer one starts (Strict Mode / remounts). */
   const guidanceFlowGenRef = useRef(0);
   const phase1RateLimitedRef = useRef(false);
+  const conversationIdRef = useRef<string | null>(null);
 
   const isReturnEntry = !situation.trim() && witnessReady && !shouldPlayShepherdGreeting();
 
@@ -934,7 +936,7 @@ export default function GuidancePage() {
     conversationMessages: Message[],
     explicitMode?: GuidanceMode,
     phase1Context?: { phase1Response: string; phase1UserReply: string },
-    opts?: { isFollowUp?: boolean },
+    opts?: { isFollowUp?: boolean; turnEventContent?: string },
   ): Promise<boolean> => {
     const recoverFromStreamFailure = () => {
       if (opts?.isFollowUp) {
@@ -962,6 +964,10 @@ export default function GuidancePage() {
       walkFetchedRef.current = false;
     }
     try {
+      const turnContent = opts?.turnEventContent
+        ?? (opts?.isFollowUp
+          ? [...conversationMessages].reverse().find((m) => m.role === "user")?.content
+          : phase1Context?.phase1UserReply);
       const res = await fetch("/api/guidance/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -974,6 +980,8 @@ export default function GuidancePage() {
           heartContext: buildHeartContext(getCurrentHeartState()),
           journeyContext: buildJourneyContext() || undefined,
           companionMode: isPhilipMode() ? "philip" : "solo",
+          conversationId: conversationIdRef.current ?? undefined,
+          turnEvent: turnContent?.trim() ? buildUserTurnEvent(turnContent) : undefined,
         })),
       });
       if (res.status === 429) {
@@ -994,6 +1002,8 @@ export default function GuidancePage() {
         recoverFromStreamFailure();
         return false;
       }
+      const serverConversationId = res.headers.get("X-Philip-Conversation-Id");
+      if (serverConversationId) conversationIdRef.current = serverConversationId;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
@@ -1218,6 +1228,7 @@ export default function GuidancePage() {
     recapFetchedRef.current = false;
     convo.dispatch({ type: "RESET" });
     convo.dispatch({ type: "ENTRY_SUBMIT" }); // drives straight to processing
+    conversationIdRef.current = crypto.randomUUID();
     phase2SpokenRef.current = null;
     phase1SpokenRef.current = null;
     followUpSpokenRef.current = null;
@@ -2833,7 +2844,10 @@ export default function GuidancePage() {
         setRevealStage((s) => Math.max(s, 4));
         const updated = appendUserMessage(messages, text);
         setMessages(updated);
-        const ok = await streamResponse(updated, undefined, undefined, { isFollowUp: true });
+        const ok = await streamResponse(updated, undefined, undefined, {
+          isFollowUp: true,
+          turnEventContent: text,
+        });
         setIsSending(false);
         setIsReflecting(false);
         followUpSubmittingRef.current = false;
@@ -2873,7 +2887,10 @@ export default function GuidancePage() {
     setTimeout(() => setIsReflecting(false), 700);
     const updated = appendUserMessage(messages, text);
     setMessages(updated);
-    await streamResponse(updated, undefined, undefined, { isFollowUp: true });
+    await streamResponse(updated, undefined, undefined, {
+      isFollowUp: true,
+      turnEventContent: text,
+    });
     setIsSending(false);
     setTimeout(() => {
       (window.innerWidth < 640 ? floatRef.current : inputRef.current)?.focus();

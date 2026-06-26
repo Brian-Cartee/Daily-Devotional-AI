@@ -3,6 +3,12 @@ export type GuidanceMessage = {
   content: string;
 };
 
+export interface GuidanceTurnEvent {
+  role: "user" | "assistant";
+  content: string;
+  clientTurnId?: string;
+}
+
 export interface Phase1Spine {
   phase1Response: string;
   phase1UserReply: string;
@@ -67,13 +73,15 @@ export interface BuildGuidanceResponsePayloadInput {
   userName?: string;
   isLateNight?: boolean;
   sessionExtras: SessionExtras;
+  conversationId?: string;
+  turnEvent?: GuidanceTurnEvent;
 }
 
 export function buildGuidanceResponsePayload(
   input: BuildGuidanceResponsePayloadInput,
 ): Record<string, unknown> {
   const situation = input.situation.trim();
-  return {
+  const payload: Record<string, unknown> = {
     situation,
     messages: input.messages,
     userName: input.userName,
@@ -84,6 +92,19 @@ export function buildGuidanceResponsePayload(
     companionMode: input.companionMode ?? "solo",
     ...input.phase1Spine,
     ...input.sessionExtras,
+  };
+  if (input.conversationId) payload.conversationId = input.conversationId;
+  if (input.turnEvent?.content?.trim()) payload.turnEvent = input.turnEvent;
+  return payload;
+}
+
+export function buildUserTurnEvent(content: string, clientTurnId?: string): GuidanceTurnEvent {
+  return {
+    role: "user",
+    content: content.trim(),
+    clientTurnId: clientTurnId ?? (typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `turn-${Date.now()}`),
   };
 }
 

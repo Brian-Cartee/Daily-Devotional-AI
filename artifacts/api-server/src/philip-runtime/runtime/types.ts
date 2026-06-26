@@ -3,6 +3,7 @@ import type { SessionMindStage, SessionMindStateSource } from "../mind/types";
 import type { PlannerSource } from "../planner/mindPlanner";
 import type { TrustBand } from "../mind/relationshipProfile";
 import type { MemorySourceKey } from "../memory/policies";
+import type { TranscriptAuthorityMode } from "../transcript/store";
 
 export type PhilipLane =
   | "first_response"
@@ -60,6 +61,10 @@ export interface PhilipTurnMetadata {
   memoryPolicy?: "stage" | "legacy";
   memoryRetrievalChars?: number;
   memorySectionsIncluded?: MemorySourceKey[];
+  transcriptMode?: TranscriptAuthorityMode;
+  transcriptTurnCount?: number;
+  conversationId?: string;
+  identityKernelMode?: "kernel" | "legacy";
 }
 
 export interface GuidanceTurnResult {

@@ -14,6 +14,7 @@ export {
   appendUserMessage,
   appendAssistantMessage,
   commitAssistantTurn,
+  buildUserTurnEvent,
 } from "./guidanceConversationCore";
 import {
   buildGuidancePhase1Payload as buildGuidancePhase1PayloadCore,
