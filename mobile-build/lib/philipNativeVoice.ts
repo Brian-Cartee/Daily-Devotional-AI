@@ -1,5 +1,4 @@
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
-import * as FileSystem from "expo-file-system";
 import { fetchGuidanceTtsAudio, transcribeGuidanceAudioNative } from "./api";
 
 export type PhilipVoiceSlot = "entry" | "p1" | "followup";
@@ -60,16 +59,7 @@ export class PhilipNativeVoiceController {
 
   async initBridge(): Promise<void> {
     try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        this.emit({
-          type: "PHILIP_VOICE_ERROR",
-          code: "mic_denied",
-          message: "Microphone permission is required for Talk It Through voice.",
-        });
-        return;
-      }
-      await this.setPlaybackMode();
+      // Do not request mic permission at app open — only when user enters Talk It Through voice.
       this.bridgeReady = true;
       this.emit({ type: "PHILIP_VOICE_BRIDGE_READY" });
     } catch (err) {
@@ -78,6 +68,15 @@ export class PhilipNativeVoiceController {
         code: "init_failed",
         message: String(err),
       });
+    }
+  }
+
+  private async ensureMicPermission(): Promise<boolean> {
+    try {
+      const { granted } = await Audio.requestPermissionsAsync();
+      return granted;
+    } catch {
+      return false;
     }
   }
 
@@ -200,12 +199,9 @@ export class PhilipNativeVoiceController {
     this.busy = true;
     try {
       const base64 = await fetchGuidanceTtsAudio(trimmed, this.sessionId, this.isPro);
-      const path = `${FileSystem.cacheDirectory}philip-tts-${Date.now()}.mp3`;
-      await FileSystem.writeAsStringAsync(path, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      const uri = `data:audio/mpeg;base64,${base64}`;
       await this.setPlaybackMode();
-      const { sound } = await Audio.Sound.createAsync({ uri: path }, { shouldPlay: false });
+      const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: false });
       this.sound = sound;
       this.emit({ type: "PHILIP_VOICE_TTS_STARTED", slot: opts.slot });
       await sound.playAsync();
@@ -262,6 +258,18 @@ export class PhilipNativeVoiceController {
     this.lastLoudAt = Date.now();
     this.activeSlot = slot;
     this.busy = true;
+
+    const granted = await this.ensureMicPermission();
+    if (!granted) {
+      this.busy = false;
+      this.emit({
+        type: "PHILIP_VOICE_ERROR",
+        code: "mic_denied",
+        message: "Microphone permission is required for Talk It Through voice.",
+        slot,
+      });
+      return;
+    }
 
     await this.setRecordMode();
     const rec = new Audio.Recording();

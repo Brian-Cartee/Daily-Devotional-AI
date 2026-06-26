@@ -19,7 +19,7 @@ import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
 import { injectApplePro, injectAppleMissionPartner, reloadEmbeddedWeb } from "@/lib/inject-pro";
 import { syncMobileProToServer } from "@/lib/sync-mobile-pro";
-import { createPhilipNativeVoiceController } from "@/lib/philipNativeVoice";
+import type { PhilipNativeVoiceController } from "@/lib/philipNativeVoice";
 import { injectPhilipVoiceBridgeEnabled, injectPhilipVoiceEvent } from "@/lib/philipVoiceInject";
 import {
   buildNativeProfileSeedJs,
@@ -39,7 +39,7 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
 // Update this every release — must match app.json version string.
-const APP_VERSION = "2.2.3";
+const APP_VERSION = "2.2.4";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
 function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
@@ -242,19 +242,23 @@ export default function MainScreen() {
   const mainJsPathRef = useRef<string | null>(null);
   const [beforeContentJs, setBeforeContentJs] = useState<string | null>(null);
   const [pullRefreshing, setPullRefreshing] = useState(false);
-  const philipVoiceRef = useRef(
-    createPhilipNativeVoiceController((event) => {
-      injectPhilipVoiceEvent(webviewRef, event);
-    }),
-  );
+  const philipVoiceRef = useRef<PhilipNativeVoiceController | null>(null);
+  const philipVoiceLoadRef = useRef<Promise<PhilipNativeVoiceController> | null>(null);
 
-  const enablePhilipVoiceBridge = useCallback(async () => {
-    if (philipVoiceRef.current.isBridgeReady()) {
-      injectPhilipVoiceBridgeEnabled(webviewRef);
-      return;
+  const loadPhilipVoice = useCallback(async (): Promise<PhilipNativeVoiceController | null> => {
+    if (philipVoiceRef.current) return philipVoiceRef.current;
+    if (!philipVoiceLoadRef.current) {
+      philipVoiceLoadRef.current = import("@/lib/philipNativeVoice")
+        .then(({ createPhilipNativeVoiceController }) =>
+          createPhilipNativeVoiceController((event) => {
+            injectPhilipVoiceEvent(webviewRef, event);
+          }),
+        )
+        .catch(() => null);
     }
-    await philipVoiceRef.current.initBridge();
-    injectPhilipVoiceBridgeEnabled(webviewRef);
+    const ctrl = await philipVoiceLoadRef.current;
+    if (ctrl) philipVoiceRef.current = ctrl;
+    return ctrl;
   }, []);
 
   useEffect(() => {
@@ -356,6 +360,24 @@ export default function MainScreen() {
     if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
     setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
   }, []);
+
+  const enablePhilipVoiceBridge = useCallback(async () => {
+    try {
+      const ctrl = await loadPhilipVoice();
+      if (!ctrl) {
+        pushNativeDiag("voice_bridge_load_failed");
+        return;
+      }
+      if (ctrl.isBridgeReady()) {
+        injectPhilipVoiceBridgeEnabled(webviewRef);
+        return;
+      }
+      await ctrl.initBridge();
+      injectPhilipVoiceBridgeEnabled(webviewRef);
+    } catch (err) {
+      pushNativeDiag("voice_bridge_init_failed", String(err));
+    }
+  }, [loadPhilipVoice, pushNativeDiag]);
 
   useEffect(() => {
     let cancelled = false;
@@ -738,7 +760,9 @@ export default function MainScreen() {
             }
             if (typeof data.type === "string" && data.type.startsWith("PHILIP_VOICE_")) {
               pushNativeDiag(`voice_cmd_${data.type}`);
-              void philipVoiceRef.current.handleCommand(data as Record<string, unknown>);
+              void loadPhilipVoice().then((ctrl) => {
+                if (ctrl) void ctrl.handleCommand(data as Record<string, unknown>);
+              });
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");
