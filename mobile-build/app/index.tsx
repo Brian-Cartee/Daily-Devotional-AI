@@ -85,9 +85,12 @@ function hostAllowedInWebView(url: string): boolean {
 const BEFORE_CONTENT_JS = `(function(){
   document.documentElement.style.backgroundColor='#0d0612';
   if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
-  document.documentElement.setAttribute('data-sp-shell','native');
+    document.documentElement.setAttribute('data-sp-shell','native');
+    document.documentElement.setAttribute('data-sp-philip-native-voice','0');
+    window.__SP_PHILIP_NATIVE_VOICE__=false;
   document.documentElement.setAttribute('data-sp-native-share','1');
   document.documentElement.classList.add('sp-native-shell','dark');
+  document.documentElement.setAttribute('data-sp-philip-native-voice','0');
   true;
 })();`;
 
@@ -716,6 +719,18 @@ export default function MainScreen() {
                 diagLogsRef.current = diagLogsRef.current.slice(-48);
               }
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
+            }
+            if (typeof data.type === "string" && data.type.startsWith("PHILIP_VOICE_")) {
+              pushNativeDiag(`voice_cmd_${data.type}`);
+              const slot = typeof data.slot === "string" ? data.slot : "entry";
+              webviewRef.current?.injectJavaScript(
+                `(function(){try{if(typeof window.__spPhilipVoiceOnEvent==='function'){window.__spPhilipVoiceOnEvent(${JSON.stringify({
+                  type: "PHILIP_VOICE_ERROR",
+                  code: "not_implemented",
+                  message: "Native voice bridge is not enabled in this build yet.",
+                  slot,
+                })})}}catch(e){}}true;)();`,
+              );
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");

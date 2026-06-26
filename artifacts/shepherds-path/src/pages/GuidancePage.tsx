@@ -17,8 +17,7 @@ import { getTodayFramework } from "@/lib/faithFramework";
 import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
-import { getSessionId } from "@/lib/session";
-import { randomId } from "@/lib/randomId";
+import { isNativePhilipVoiceBridgeAvailable, usePhilipWebVoiceCapture } from "@/lib/philipVoiceBridge";
 import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { useConvoMachine, type ConvoPhase } from "@/lib/useConvoMachine";
 import { isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
@@ -510,6 +509,9 @@ export default function GuidancePage() {
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
     || (typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined")
   );
+  /** WebView mic — disabled in the store app until native voice bridge ships. */
+  const webMicEnabled = usePhilipWebVoiceCapture();
+  const philipNativeVoiceReady = isNativePhilipVoiceBridgeAvailable();
   const framework = getTodayFramework();
   const queryClient = useQueryClient();
   const { data: dailyVerse } = useDailyVerse();
@@ -2264,9 +2266,9 @@ export default function GuidancePage() {
     return () => { cancelled = true; };
   }, [situation, witnessReady]);
 
-  // Solo mode — open mic silently without Philip
+  // Solo mode — open mic silently without Philip (web only until native bridge)
   useEffect(() => {
-    if (situation.trim() || !witnessReady || !hasSpeechSupport) return;
+    if (situation.trim() || !witnessReady || !webMicEnabled) return;
     if (!isSoloMode()) return;
     if (greetingEngagedRef.current || autoMicStartedRef.current) return;
     if (heartListening || heartSubmittingRef.current) return;
@@ -2277,7 +2279,7 @@ export default function GuidancePage() {
       startHeartListeningRef.current(false);
     }, 800);
     return () => { cancelled = true; window.clearTimeout(t); };
-  }, [situation, witnessReady, hasSpeechSupport, heartListening]);
+  }, [situation, witnessReady, webMicEnabled, heartListening]);
 
   // Philip speaks first — dynamic opening → auto-mic
   useEffect(() => {
@@ -2291,7 +2293,7 @@ export default function GuidancePage() {
     let autoMicTimer: number | undefined;
 
     const scheduleAutoMic = (withVoice: boolean) => {
-      if (cancelled || autoMicStartedRef.current || !hasSpeechSupport) return;
+      if (cancelled || autoMicStartedRef.current || !webMicEnabled || philipHandsFreeVoice) return;
       autoMicStartedRef.current = true;
       setMicArming(true);
       autoMicTimer = window.setTimeout(() => {
@@ -3049,7 +3051,8 @@ export default function GuidancePage() {
 
   // Philip-first threshold: presence pulse until greeting ends, then mic opens on its own.
   const philipGreetingActive = isPhilipMode() && convo.phase === "greeting";
-  const philipHandsFreeVoice = isPhilipMode() && hasSpeechSupport;
+  /** Hands-free voice only when native bridge owns mic/TTS — not WebView MediaRecorder. */
+  const philipHandsFreeVoice = isPhilipMode() && philipNativeVoiceReady;
 
   const philipOrbMode = resolvePhilipOrbMode({
     philipHandsFreeVoice,
@@ -3099,7 +3102,7 @@ export default function GuidancePage() {
     || (followUpMicLive && followUpRecorderReady);
 
   const dismissThresholdForTyping = () => {
-    if (isPhilipMode() && hasSpeechSupport) return;
+    if (isPhilipMode() && philipHandsFreeVoice) return;
     greetingEngagedRef.current = true;
     cancelGreetingSpeakRef.current?.();
     cancelGreetingSpeakRef.current = null;
@@ -3177,43 +3180,30 @@ export default function GuidancePage() {
               {/* One orb — speaker when Philip talks, mic when you talk */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
                 {philipHandsFreeVoice ? (
-                  (entryMicLive || micArming) ? (
-                    <button
-                      type="button"
-                      data-testid="philip-voice-orb-threshold-tap"
-                      onPointerUp={(e) => {
-                        e.preventDefault();
-                        handlePhilipOrbTapRef.current();
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        handlePhilipOrbTapRef.current();
-                      }}
-                      className="border-0 bg-transparent p-3 cursor-pointer touch-manipulation flex flex-col items-center gap-2"
-                      style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
-                    >
-                      <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "11px",
-                          letterSpacing: "0.06em",
-                          color: "rgba(255,255,255,0.28)",
-                        }}
-                      >
-                        {VOICE_TAP_WHEN_DONE}
-                      </p>
-                    </button>
-                  ) : (
+                  !(entryMicLive || micArming) ? (
                     <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
-                  )
-                ) : (
+                  ) : null
+                ) : webMicEnabled ? (
                   <VoiceSessionOrb
                     mode={entryMicLive || micArming ? "listen" : "idle"}
                     dark
                     onClick={toggleHeartVoice}
                     disabled={micArming}
                   />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={dismissThresholdForTyping}
+                    className="border-0 bg-transparent cursor-pointer touch-manipulation"
+                    style={{
+                      fontSize: "14px",
+                      color: "rgba(255,255,255,0.55)",
+                      letterSpacing: "0.04em",
+                      padding: "12px 16px",
+                    }}
+                  >
+                    Share what&apos;s on your heart — in your own words
+                  </button>
                 )}
                 {philipHandsFreeVoice && (
                   <VoiceQuietHint visible={voiceQuietHintVisible} dark />
@@ -3252,7 +3242,7 @@ export default function GuidancePage() {
                   </p>
                 )}
 
-                {!philipHandsFreeVoice && (
+                {!philipHandsFreeVoice && webMicEnabled && (
                 <button
                   type="button"
                   onClick={dismissThresholdForTyping}
@@ -3277,7 +3267,7 @@ export default function GuidancePage() {
 
         {/* Voice handoff — portal to body so iOS WebView receives taps above scroll content */}
         <PhilipVoiceHandoffLayer
-          visible={!!philipOrbMode && (!showThresholdOverlay || philipMicCaptureOpen)}
+          visible={philipHandsFreeVoice && !!philipOrbMode && philipMicCaptureOpen}
           micCaptureOpen={philipMicCaptureOpen}
           mode={philipOrbMode ?? "idle"}
           onDone={() => handlePhilipOrbTapRef.current()}
@@ -3421,7 +3411,7 @@ export default function GuidancePage() {
                         </p>
                       </div>
                     )}
-                    {hasSpeechSupport && !showHeartTypeFallback && !philipHandsFreeVoice && (
+                    {webMicEnabled && !showHeartTypeFallback && !philipHandsFreeVoice && (
                       <div className="flex flex-col items-center mb-4">
                         <VoiceSessionOrb
                           mode={entryMicLive || micArming ? "listen" : greetingSpeaking ? "speak" : "idle"}
@@ -3432,7 +3422,7 @@ export default function GuidancePage() {
                       </div>
                     )}
 
-                    {hasSpeechSupport && !showHeartTypeFallback && !philipHandsFreeVoice && (
+                    {webMicEnabled && !showHeartTypeFallback && !philipHandsFreeVoice && (
                       <button
                         type="button"
                         onClick={() => {
